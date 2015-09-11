@@ -1,5 +1,6 @@
 # docker-slim: Make Your Fat Containers Skinny
 
+[Docker Global Hack Day](https://www.docker.com/community/hackathon) project
 
 ## Description
 
@@ -9,6 +10,9 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 `docker-slim` is a magic diet pill for your containers :) It will use static and dynamic analysis to create a skinny container for your app.
 
 ## Goals
+
+Build something useful :-)
+
 
 ### Basic Use Case
 
