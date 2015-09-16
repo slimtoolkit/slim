@@ -29,6 +29,19 @@ Build something useful :-)
 
 To do dynamic analysis DockerSlim will need to install a number of system monitoring tools (TBD: add info about the tools)
 
+## People
+
+* [Dmitriy Vorobyev](https://github.com/pydima)
+* [Larry Hitchon](https://github.com/lhitchon)
+* [Kyle Quest](https://github.com/kcq)
+
+## Communication
+
+* IRC (freenode): `#dokerslim`
+* Slack: `http://dockerslim.slack.com`
+* Github issues and wiki `https://github.com/cloudimmunity/docker-slim`
+
+
 
 
 
