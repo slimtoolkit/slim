@@ -1,6 +1,6 @@
 # docker-slim: Make Your Fat Containers Skinny
 
-[Docker Global Hack Day](https://www.docker.com/community/hackathon) project
+[Docker Global Hack Day](https://www.docker.com/community/hackathon) project (status: STARTED!)
 
 ## Description
 
@@ -24,10 +24,31 @@ Build something useful :-)
 1. Inspect container metadata (static analysis)
 2. Inspect container data (static analysis)
 3. Inspect running application (dynamic analysis)
+4. Build an application artifact graph
 
-## Notes
+## Dynamic Analysis Options
 
-To do dynamic analysis DockerSlim will need to install a number of system monitoring tools (TBD: add info about the tools)
+1. Instrument the container image (and replace the entrypoint/cmd) to collect application activity data
+2. Use kernel-level tools that provide visibility into running containers (without instrumenting the containers)
+3. Disable relevant namespaces in the target container to gain container visibility (can be done with runC)
+
+## Phase 1
+
+Goal: build basic infrastructure
+
+Create the "slim" app that:
+
+*  collects basic container image metadata
+*  create a custom image replacing/hooking the original entrypoint/cmd
+
+Create the "slim" launcher that:
+
+* starts the original application (based on the original entrypoint/cmd data)
+* monitors process activity (saving events in a log file)
+* monitors file activity (saving events in a log file)
+
+Explore additional dependency discovery methods
+
 
 ## People
 
