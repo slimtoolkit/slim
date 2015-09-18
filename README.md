@@ -48,7 +48,13 @@ Explore additional dependency discovery methods
 ## BUILD DEPENDENCIES
 
 * Godep - dependency manager ( https://github.com/tools/godep )
-* GOX - to build Linux binaries on a Mac ( https://github.com/mitchellh/gox )
+
+`go get github.com/tools/godep`
+
+* GOX - to build Linux binaries on a Mac ( https://github.com/mitchellh/gox ):
+
+`go get github.com/mitchellh/gox`
+`gox -build-toolchain -os="linux" -os="darwin"` (note:  might have to run it with `sudo`)
 
 ## NOTES
 
