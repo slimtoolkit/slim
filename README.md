@@ -1,6 +1,8 @@
 # docker-slim: Make Your Fat Containers Skinny
 
-[Docker Global Hack Day](https://www.docker.com/community/hackathon) project (status: STARTED!)
+[Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project (status: STARTED!)
+
+IRC (freenode): \#dockerslim
 
 ## DESCRIPTION
 
@@ -54,25 +56,12 @@ Explore additional dependency discovery methods
 * GOX - to build Linux binaries on a Mac ( https://github.com/mitchellh/gox ):
 
 `go get github.com/mitchellh/gox`
+
 `gox -build-toolchain -os="linux" -os="darwin"` (note:  might have to run it with `sudo`)
 
 ## NOTES
 
-Each module directory contains a dummy `.git` directory because `godep` fails to work without it.
-
-## PEOPLE
-
-* [Dmitriy Vorobyev](https://github.com/pydima)
-* [Larry Hitchon](https://github.com/lhitchon)
-* [Kyle Quest](https://github.com/kcq)
-
-## COMMUNICATION
-
-* IRC (freenode): `#dokerslim`
-* Slack: `http://dockerslim.slack.com`
-* Github issues and wiki `https://github.com/cloudimmunity/docker-slim`
-
-
+Each app directory contains a dummy `.git` directory because `godep` fails to work without it.
 
 
 
