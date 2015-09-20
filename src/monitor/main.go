@@ -20,6 +20,7 @@ import (
 	"os"
 	"os/exec"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 )
@@ -117,14 +118,14 @@ func get_files(events chan map[event]bool, pids_map chan map[int][]int, pids cha
 	return files
 }
 
-func write_data(result_file string, files []string) {
+func write_data(result_file string, files map[string]bool) {
 	f, err := os.Create(result_file)
 	check(err)
 	defer f.Close()
 	w := bufio.NewWriter(f)
 
-	for _, v := range files {
-		w.WriteString(v)
+	for k, _ := range files {
+		w.WriteString(k)
 		w.WriteString("\n")
 	}
 	w.Flush()
@@ -190,17 +191,51 @@ func listen_events(mount_point string, stop chan bool) chan map[event]bool {
 	return events_chan
 }
 
-func find_symlinks(files []string, mp string) []string {
+func files_to_inodes(files []string) []int {
+	cmd := "/usr/bin/stat"
+	args := []string{"-L", "-c", "%i"}
+	args = append(args, files...)
+	inodes := make([]int, 0)
+
+	c := exec.Command(cmd, args...)
+	out, _ := c.Output()
+	c.Wait()
+	for _, i := range strings.Split(string(out), "\n") {
+		inode, err := strconv.Atoi(strings.TrimSpace(i))
+		if err != nil {
+			continue
+		}
+		inodes = append(inodes, inode)
+	}
+	return inodes
+}
+
+func find_symlinks(files []string, mp string) map[string]bool {
 	cmd := "/usr/bin/find"
-	result := make([]string, 0)
-	args := []string{"-L", mp, "-samefile", "", "-mount"}
-	for _, f := range files {
-		args[3] = f
-		c := exec.Command(cmd, args...)
-		out, _ := c.Output()
-		c.Wait()
-		f_list := string(out)
-		result = append(result, strings.Split(f_list, "\n")...)
+	args := []string{"-L", mp, "-mount", "-printf", "%i %p\n"}
+	c := exec.Command(cmd, args...)
+	out, _ := c.Output()
+	c.Wait()
+
+	inodes := files_to_inodes(files)
+	inode_to_files := make(map[int][]string)
+
+	for _, v := range strings.Split(string(out), "\n") {
+		v = strings.TrimSpace(v)
+		info := strings.Split(v, " ")
+		inode, err := strconv.Atoi(info[0])
+		if err != nil {
+			continue
+		}
+		inode_to_files[inode] = append(inode_to_files[inode], info[1])
+	}
+
+	result := make(map[string]bool, 0)
+	for _, i := range inodes {
+		v := inode_to_files[i]
+		for _, f := range v {
+			result[f] = true
+		}
 	}
 	return result
 }
