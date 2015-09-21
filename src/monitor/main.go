@@ -37,9 +37,7 @@ func check(err error) {
 }
 
 func listen_signals() chan bool {
-	log.Println("monitor: listen_signals start")
-
-	//start_work := make(chan bool, 1)
+	start_work := make(chan bool, 1)
 	stop_work := make(chan bool, 1)
 	signals := make(chan os.Signal, 1)
 
@@ -49,21 +47,19 @@ func listen_signals() chan bool {
 		for {
 			s := <-signals
 			switch s {
-			//case syscall.SIGUSR1:
-			//	start_work <- true
+			case syscall.SIGUSR1:
+				start_work <- true
 			case syscall.SIGTERM:
 				stop_work <- true
 			}
 		}
 	}()
 
-	//<-start_work
+	<-start_work
 	return stop_work
 }
 
 func listen_pids(socket string) chan []int {
-	log.Printf("monitor: liste_pids start (%v)\n",socket)
-
 	p := make(chan []int, 1)
 
 	go func() {
@@ -136,8 +132,6 @@ func write_data(result_file string, files map[string]bool) {
 }
 
 func monitor_process(stop chan bool) chan map[int][]int {
-	log.Println("monitor: monitor_process start")
-
 	watcher, err := pdiscover.NewAllWatcher(pdiscover.PROC_EVENT_ALL)
 	check(err)
 
@@ -167,8 +161,6 @@ func monitor_process(stop chan bool) chan map[int][]int {
 }
 
 func listen_events(mount_point string, stop chan bool) chan map[event]bool {
-	log.Println("monitor: listen_events start")
-
 	nd, err := fanotify.Initialize(fanotify.FAN_CLASS_NOTIF, os.O_RDONLY)
 	check(err)
 	err = nd.Mark(fanotify.FAN_MARK_ADD|fanotify.FAN_MARK_MOUNT, fanotify.FAN_ACCESS|fanotify.FAN_OPEN, -1, mount_point)
@@ -249,10 +241,9 @@ func find_symlinks(files []string, mp string) map[string]bool {
 }
 
 func main() {
-	log.Println("monitor: starting...")
 	socket, mount_point, file := parse_flags()
-	log.Printf("monitor: socket=%v base_path=%v result_file=%v\n",socket,mount_point,file)
 
+	pids := listen_pids(socket)
 	stop_work := listen_signals()
 	stop_events := make(chan bool, 1)
 	events := listen_events(mount_point, stop_events)
@@ -260,15 +251,10 @@ func main() {
 	stop_process := make(chan bool, 1)
 	pids_map := monitor_process(stop_process)
 
-	pids := listen_pids(socket)
-
 	<-stop_work
-	log.Println("monitor: stop signal...")
 	stop_events <- true
 	stop_process <- true
-	log.Println("monitor: processing data...")
 	files := get_files(events, pids_map, pids)
 	all_files := find_symlinks(files, mount_point)
-	log.Println("monitor: saving results to",file)
 	write_data(file, all_files)
 }
