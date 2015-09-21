@@ -3,7 +3,7 @@
 set -e
 
 source env.sh
-cd src/app
+cd src/slim
 eval "$(docker-machine env default)"
 go run main.go
 

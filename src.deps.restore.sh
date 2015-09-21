@@ -3,5 +3,5 @@
 set -e
 
 source env.sh
-cd src/app
+cd src/slim
 godep restore

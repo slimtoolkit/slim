@@ -1,0 +1,14 @@
+{
+	"ImportPath": "slim",
+	"GoVersion": "go1.4",
+	"Deps": [
+		{
+			"ImportPath": "github.com/dustin/go-humanize",
+			"Rev": "c20a8bde38c8f5ba06f6600edf473705c96829d1"
+		},
+		{
+			"ImportPath": "github.com/fsouza/go-dockerclient",
+			"Rev": "af9789bbd78acf3e279274caa54682185eb7ed33"
+		}
+	]
+}
