@@ -49,7 +49,9 @@ Explore additional dependency discovery methods
 
 ## CURRENT STATE
 
-You can pass an image ID/name to `dockerslim` and it'll figure out what how to make a smaller image from it. The `sample_app` is 430MB and `dockerslim` turns it into 40MB.
+You can pass an image ID/name to `dockerslim` and it'll make a smaller image from it. The `sample_app` is 430MB and `dockerslim` turns it into 40MB.
+
+You can also run `dockerslim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
 Dependencies:
 
@@ -62,7 +64,22 @@ Repro steps:
 3. Use curl (or other tools) to call the `sample_app` (optional)
 4. Wait a couple of minutes until `dockerslim` says it's done
 5. `dist/container` will have a directory with the files that can be used to build a small Docker image.
+6. The generated `slim` image will have `.slim` at the end of its name.
+7. If you selected the `image-info-only` feature you'll find `Dockerfile.fat` in `./container/artifacts/`.
 
+## USAGE
+
+`./dockerslim <IMAGE_ID> [rm-artifacts | image-info-only]`
+
+Example: `./dockerslim 6f74095b68c9`
+
+By default, `dockerslim` doesn't remove the artifacts it generates. To remove them set the `rm-artifacts` flag.
+
+Example: `./dockerslim 6f74095b68c9 rm-artifacts`
+
+To generate a Dockerfile for your "fat" image without creating a new "slim" image set the `image-info-only` flag.
+
+Example: `./dockerslim 6f74095b68c9 image-info-only`
 
 ## BUILD DEPENDENCIES
 
