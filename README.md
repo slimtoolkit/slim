@@ -1,6 +1,6 @@
 # docker-slim: Make Your Fat Containers Skinny
 
-[Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project (status: STARTED!)
+[Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project (status: ACTIVE!)
 
 IRC (freenode): \#dockerslim
 
@@ -46,6 +46,21 @@ Create the "slim" launcher that:
 * monitors file activity (saving events in a log file)
 
 Explore additional dependency discovery methods
+
+## CURRENT STATE
+
+You can pass an image ID/name to `dockerslim` and it'll figure out what how to make a smaller image from it. The `sample_app` is 430MB and `dockerslim` turns it into 40MB.
+
+Still todo: package the artifacts and create a new Docker image
+
+Repro steps:
+
+1. Create a Docker image for `sample_app` (it's a `hello world` node.js app that handles GET / requests).
+2. Run `dockerslim` from the `dist` directory.
+3. Use curl (or other tools) to call the `sample_app` (optional)
+4. Wait a couple of minutes until `dockerslim` says it's done
+5. `dist/container` will have a directory with the files that can be used to build a small Docker image.
+
 
 ## BUILD DEPENDENCIES
 

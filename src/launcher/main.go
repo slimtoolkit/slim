@@ -263,7 +263,7 @@ func write_data(result_file string, files map[string]bool) {
     defer f.Close()
     w := bufio.NewWriter(f)
 
-    artifactDir := "/opt/dockerslim/app_artifacts"
+    artifactDir := "/opt/dockerslim/artifacts"
     err = os.MkdirAll(artifactDir,0777)
     if err != nil {
         log.Println("launcher: monitor - artifact dir error =>",err)
@@ -273,8 +273,8 @@ func write_data(result_file string, files map[string]bool) {
         log.Println("launcher: monitor - saving file record =>",k)
         w.WriteString(k)
         w.WriteString("\n")
-
-        filePath := fmt.Sprintf("%s%s",artifactDir,k)
+        
+        filePath := fmt.Sprintf("%s%s/files",artifactDir,k)
         log.Println("launcher: monitor - saving file data =>",filePath)
         err := cp(k,filePath)
         if err != nil {
