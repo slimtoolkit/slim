@@ -51,7 +51,9 @@ Explore additional dependency discovery methods
 
 You can pass an image ID/name to `dockerslim` and it'll figure out what how to make a smaller image from it. The `sample_app` is 430MB and `dockerslim` turns it into 40MB.
 
-Still todo: package the artifacts and create a new Docker image
+Dependencies:
+
+To run `docker-slim` you need to export docker environment variables. If you use `docker-machine` you get it when you run `eval "$(docker-machine env default)"`.
 
 Repro steps:
 
