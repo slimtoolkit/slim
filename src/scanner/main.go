@@ -1,11 +1,9 @@
 package main
 
 import (
-    "log"
+	"log"
 )
 
 func main() {
-    log.Println("application scanner...")
+	log.Println("application scanner...")
 }
-
-

@@ -1,5 +1,15 @@
 {
 	"ImportPath": "launcher",
 	"GoVersion": "go1.4",
-	"Deps": []
+	"Deps": [
+		{
+			"ImportPath": "bitbucket.org/madmo/fanotify",
+			"Comment": "null-1",
+			"Rev": "200ee16b72adfbea75621666f13ab6ab74ef4fde"
+		},
+		{
+			"ImportPath": "github.com/cloudimmunity/pdiscover",
+			"Rev": "b50b8a21eedbb2aa04ff19eb3d189b48730e5efc"
+		}
+	]
 }

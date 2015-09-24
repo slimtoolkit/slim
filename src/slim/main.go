@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/fsouza/go-dockerclient"
+	"github.com/cloudimmunity/go-dockerclientx"
 )
 
 func failOnError(err error) {
@@ -41,10 +41,12 @@ func myFileDir() string {
 
 type imageInst struct {
 	instCmd string
+	instComment string
 	instType string
 	instTime int64
 	layerImageId string
 	imageName string
+	shortTags []string
 	fullTags []string
 }
 
@@ -87,6 +89,7 @@ func genDockerfileFromHistory(apiClient *docker.Client, imageId string) ([]strin
 				instCmd: inst,
 				instTime: imageHistory[idx].Created,
 				layerImageId: imageHistory[idx].ID,
+				instComment: imageHistory[idx].Comment,
 			}
 
 			instType := "intermediate"
@@ -102,6 +105,12 @@ func genDockerfileFromHistory(apiClient *docker.Client, imageId string) ([]strin
 				}
 
 				instInfo.fullTags = imageHistory[idx].Tags
+
+				for _,fullTag := range instInfo.fullTags {
+					if tagInfo := strings.Split(fullTag, ":"); len(tagInfo) > 1 {
+						instInfo.shortTags = append(instInfo.shortTags,tagInfo[1])
+					}
+				}
 			}
 
 			instInfo.instType = instType
@@ -118,11 +127,17 @@ func genDockerfileFromHistory(apiClient *docker.Client, imageId string) ([]strin
 
 		fatImageDockerfileLines = append(fatImageDockerfileLines,instInfo.instCmd)
 		if instInfo.instType == "last" {
-			commentText := fmt.Sprintf("# end of image: %s", instInfo.imageName)
+			commentText := fmt.Sprintf("# end of image: %s (id: %s tags: %s)", 
+				instInfo.imageName, instInfo.layerImageId, strings.Join(instInfo.shortTags,","))
 			fatImageDockerfileLines = append(fatImageDockerfileLines,commentText)
+			fatImageDockerfileLines = append(fatImageDockerfileLines,"")
 			if idx < (len(fatImageDockerInstructions) - 1) {
 				fatImageDockerfileLines = append(fatImageDockerfileLines,"# new image")
 			}
+		}
+
+		if instInfo.instComment != "" {
+			fatImageDockerfileLines = append(fatImageDockerfileLines,"# " + instInfo.instComment)
 		}
 
 		//TODO: use time diff to separate each instruction
