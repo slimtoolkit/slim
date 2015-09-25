@@ -11,8 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/dustin/go-humanize"
 	"github.com/cloudimmunity/go-dockerclientx"
+	"github.com/dustin/go-humanize"
 )
 
 func failOnError(err error) {
@@ -40,14 +40,14 @@ func myFileDir() string {
 }
 
 type imageInst struct {
-	instCmd string
-	instComment string
-	instType string
-	instTime int64
+	instCmd      string
+	instComment  string
+	instType     string
+	instTime     int64
 	layerImageId string
-	imageName string
-	shortTags []string
-	fullTags []string
+	imageName    string
+	shortTags    []string
+	fullTags     []string
 }
 
 func genDockerfileFromHistory(apiClient *docker.Client, imageId string) ([]string, error) {
@@ -76,8 +76,8 @@ func genDockerfileFromHistory(apiClient *docker.Client, imageId string) ([]strin
 				inst = strings.TrimPrefix(rawLine, nopPrefix)
 			} else if strings.HasPrefix(rawLine, execPrefix) {
 				runData := strings.TrimPrefix(rawLine, execPrefix)
-				if strings.Contains(runData,"&&") {
-					parts := strings.Split(runData,"&&")
+				if strings.Contains(runData, "&&") {
+					parts := strings.Split(runData, "&&")
 					for i := range parts {
 						partPrefix := ""
 						if i != 0 {
@@ -85,7 +85,7 @@ func genDockerfileFromHistory(apiClient *docker.Client, imageId string) ([]strin
 						}
 						parts[i] = partPrefix + strings.TrimSpace(parts[i])
 					}
-					runDataFormatted := strings.Join(parts," && \\\n")
+					runDataFormatted := strings.Join(parts, " && \\\n")
 					inst = "RUN " + runDataFormatted
 				} else {
 					inst = "RUN " + runData
@@ -94,16 +94,16 @@ func genDockerfileFromHistory(apiClient *docker.Client, imageId string) ([]strin
 				inst = rawLine
 			}
 
-			if strings.HasPrefix(inst,"ENTRYPOINT ") {
-				inst = strings.Replace(inst,"&{[","[",-1)
-				inst = strings.Replace(inst,"]}","]",-1)
+			if strings.HasPrefix(inst, "ENTRYPOINT ") {
+				inst = strings.Replace(inst, "&{[", "[", -1)
+				inst = strings.Replace(inst, "]}", "]", -1)
 			}
 
 			instInfo := imageInst{
-				instCmd: inst,
-				instTime: imageHistory[idx].Created,
+				instCmd:      inst,
+				instTime:     imageHistory[idx].Created,
 				layerImageId: imageHistory[idx].ID,
-				instComment: imageHistory[idx].Comment,
+				instComment:  imageHistory[idx].Comment,
 			}
 
 			instType := "intermediate"
@@ -120,9 +120,9 @@ func genDockerfileFromHistory(apiClient *docker.Client, imageId string) ([]strin
 
 				instInfo.fullTags = imageHistory[idx].Tags
 
-				for _,fullTag := range instInfo.fullTags {
+				for _, fullTag := range instInfo.fullTags {
 					if tagInfo := strings.Split(fullTag, ":"); len(tagInfo) > 1 {
-						instInfo.shortTags = append(instInfo.shortTags,tagInfo[1])
+						instInfo.shortTags = append(instInfo.shortTags, tagInfo[1])
 					}
 				}
 			}
@@ -134,24 +134,24 @@ func genDockerfileFromHistory(apiClient *docker.Client, imageId string) ([]strin
 	}
 
 	var fatImageDockerfileLines []string
-	for idx,instInfo := range fatImageDockerInstructions {
+	for idx, instInfo := range fatImageDockerInstructions {
 		if instInfo.instType == "first" {
-			fatImageDockerfileLines = append(fatImageDockerfileLines,"# new image")
+			fatImageDockerfileLines = append(fatImageDockerfileLines, "# new image")
 		}
 
-		fatImageDockerfileLines = append(fatImageDockerfileLines,instInfo.instCmd)
+		fatImageDockerfileLines = append(fatImageDockerfileLines, instInfo.instCmd)
 		if instInfo.instType == "last" {
-			commentText := fmt.Sprintf("# end of image: %s (id: %s tags: %s)", 
-				instInfo.imageName, instInfo.layerImageId, strings.Join(instInfo.shortTags,","))
-			fatImageDockerfileLines = append(fatImageDockerfileLines,commentText)
-			fatImageDockerfileLines = append(fatImageDockerfileLines,"")
+			commentText := fmt.Sprintf("# end of image: %s (id: %s tags: %s)",
+				instInfo.imageName, instInfo.layerImageId, strings.Join(instInfo.shortTags, ","))
+			fatImageDockerfileLines = append(fatImageDockerfileLines, commentText)
+			fatImageDockerfileLines = append(fatImageDockerfileLines, "")
 			if idx < (len(fatImageDockerInstructions) - 1) {
-				fatImageDockerfileLines = append(fatImageDockerfileLines,"# new image")
+				fatImageDockerfileLines = append(fatImageDockerfileLines, "# new image")
 			}
 		}
 
 		if instInfo.instComment != "" {
-			fatImageDockerfileLines = append(fatImageDockerfileLines,"# " + instInfo.instComment)
+			fatImageDockerfileLines = append(fatImageDockerfileLines, "# "+instInfo.instComment)
 		}
 
 		//TODO: use time diff to separate each instruction
@@ -433,5 +433,3 @@ func main() {
 // ./dockerslim 6f74095b68c9
 // ./dockerslim 6f74095b68c9 rm-artifacts
 // ./dockerslim 6f74095b68c9 image-info-only
-
-
