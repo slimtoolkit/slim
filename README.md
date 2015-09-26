@@ -66,6 +66,10 @@ Make sure it works with other images.
 
 Do a better job with links.
 
+Split "monitor" from "launcher" (as it's supposed to work :-))
+
+Add scripting language dependency discovery to the "scanner" app.
+
 Support additional command line parameters to specify CMD, VOLUME, ENV info.
 
 Build/use a custom Boot2docker kernel with every required feature turned on.
