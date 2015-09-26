@@ -60,13 +60,19 @@ Create the "slim" launcher that:
 
 ## PHASE 2
 
-Make sure the new images are really usable :-)
+Make sure the new images are really usable (e.g., fix permission errors, pass env, etc info) :-)
+
+Make sure it works with other images.
 
 Do a better job with links.
+
+Support additional command line parameters to specify CMD, VOLUME, ENV info.
 
 Build/use a custom Boot2docker kernel with every required feature turned on.
 
 Explore additional dependency discovery methods.
+
+"Live" image create mode - to create new images from containers where users install their applications interactively.
 
 ## HOW
 
