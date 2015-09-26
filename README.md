@@ -109,7 +109,8 @@ Some of the advanced analysis options require a number of Linux kernel features 
 
 ## NOTES
 
-Each app directory contains a dummy `.git` directory because `godep` fails to work without it.
+1. The code is really really ugly at this point in time :)
+2. Each app directory contains a dummy `.git` directory because `godep` fails to work without it.
 
 
 
