@@ -2,6 +2,8 @@
 
 [Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project (status: ACTIVE!)
 
+Just because the hack day is over doesn't mean the project is done :-) The project needs your help even if you don't know Docker or Go!
+
 IRC (freenode): \#dockerslim
 
 ## DESCRIPTION
