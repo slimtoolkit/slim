@@ -3,9 +3,8 @@
 here="$(dirname "$BASH_SOURCE")"
 cd $here
 
-docker-machine start default
 eval "$(docker-machine env default)"
-docker build -t my/hapi-hello-v2 .
+docker run -d --name="node_app" -p 8000:8000 my/sample-node-app
 
 
 

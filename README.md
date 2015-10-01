@@ -21,7 +21,9 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 
 ## CURRENT STATE
 
-You can pass an image ID/name to `dockerslim` and it'll make a smaller image from it. The `sample_app` is 430MB and `dockerslim` turns it into 40MB.
+It WORKS with the sample image (built from `sample_apps/node`). More testing needs to be done to see how it works with other images.
+
+The sample node.js app image (built with the standard Ubuntu 14.04 base image) is 430MB and `dockerslim` turns it into 40MB.
 
 You can also run `dockerslim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
@@ -31,7 +33,7 @@ To run `docker-slim` you need to export docker environment variables. If you use
 
 ## USAGE
 
-`./dockerslim <IMAGE_ID> [rm-artifacts | image-info-only]`
+`./dockerslim <IMAGE_ID_OR_NAME> [rm-artifacts | image-info-only]`
 
 Example: `./dockerslim 6f74095b68c9`
 
@@ -43,7 +45,56 @@ To generate a Dockerfile for your "fat" image without creating a new "slim" imag
 
 Example: `./dockerslim 6f74095b68c9 image-info-only`
 
-## PHASE 1 (DONE)
+## DEMO STEPS
+
+1. Clone this repo
+
+	`git clone https://github.com/cloudimmunity/docker-slim.git`
+	
+2. Create a Docker image for the sample node.js app in `sample_apps/node`
+	
+	`cd docker-slim/sample_apps/node`
+	
+	`eval "$(docker-machine env default)"` <- optional (depends on how Docker is installed on your machine)
+	
+	`docker build -t my/sample-node-app .`
+	 
+3. Run `dockerslim`:
+
+	`cd ../../dist`
+	
+	`./dockerslim my/sample-node-app`
+	
+	DockerSlim creates a special container based on the target image you provided.
+
+4. Use curl (or other tools) to call the sample app (optional)
+
+	`curl http://<YOUR_DOCKER_HOST_IP>:8000`
+	
+	This is an optional step to make sure the target app container is doing something. Depending on the application it's an optional step. For some applications it's required if it loads new application resources dynamically based on the requests it's processing.
+
+5. Wait a couple of minutes until `dockerslim` says it's done
+
+6. Once DockerSlim is done check that the new minified image is there
+
+	`docker images`
+	
+	You should see `my/sample-node-app.slim` in the list of images. Right now all generated images have `.slim` at the end of its name.
+
+7. Use the minified image
+
+	`docker run --name="slim_node_app" -p 8000:8000 my/sample-node-app.slim`
+
+Notes:
+
+You can explore the artifacts DockerSlim generates when it's creating a slim image. You'll find those in `dist/container/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.fat`.
+
+If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `image-info-only` option.
+
+
+## DEVELOPMENT
+
+### PHASE 1 (DONE)
 
 Goal: build basic infrastructure
 
@@ -60,16 +111,16 @@ Create the "slim" launcher that:
 * monitors process activity (saving events in a log file) [DONE] (note: doesn't work with all kernels)
 * monitors file activity (saving events in a log file) [DONE]
 
-## PHASE 2 (DONE)
+### PHASE 2 (DONE)
 
 * Fix new image permission errors [DONE]
 * Use env data from the original image [DONE]
 
-## MILESTONE 1 - MINIFIED TEST DOCKER IMAGE (DONE)
+### MILESTONE 1 - MINIFIED TEST DOCKER IMAGE (DONE)
 
 The minified `sample_app` docker image now works! We turned a 430MB node.js app container into a 40MB image.
 
-## PHASE 3
+### PHASE 3 (ACTIVE)
 
 Make sure it works with other images.
 
@@ -104,15 +155,6 @@ Explore additional dependency discovery methods.
 
 Some of the advanced analysis options require a number of Linux kernel features that are not always included. The kernel you get with Docker Machine / Boot2docker is a great example of that.
 
-## DEMO STEPS
-
-1. Create a Docker image for `sample_app` (it's a `hello world` node.js app that handles GET / requests).
-2. Run `dockerslim` from the `dist` directory.
-3. Use curl (or other tools) to call the `sample_app` (optional)
-4. Wait a couple of minutes until `dockerslim` says it's done
-5. `dist/container/artifacts` will contain files and metadata to build a new image.
-6. The generated `slim` image will have `.slim` at the end of its name.
-7. If you selected the `image-info-only` feature you'll find `Dockerfile.fat` in `./container/artifacts/`.
 
 ## BUILD DEPENDENCIES
 
