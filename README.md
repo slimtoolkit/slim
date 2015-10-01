@@ -60,9 +60,16 @@ Create the "slim" launcher that:
 * monitors process activity (saving events in a log file) [DONE] (note: doesn't work with all kernels)
 * monitors file activity (saving events in a log file) [DONE]
 
-## PHASE 2
+## PHASE 2 (DONE)
 
-Make sure the new images are really usable (e.g., fix permission errors, pass env, etc info) :-)
+* Fix new image permission errors [DONE]
+* Use env data from the original image [DONE]
+
+## MILESTONE 1 - MINIFIED TEST DOCKER IMAGE (DONE)
+
+The minified `sample_app` docker image now works! We turned a 430MB node.js app container into a 40MB image.
+
+## PHASE 3
 
 Make sure it works with other images.
 

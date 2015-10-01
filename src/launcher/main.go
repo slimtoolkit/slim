@@ -239,6 +239,8 @@ func cp(src, dst string) error {
 	}
 	defer s.Close()
 
+	
+
 	dstDir := fileDir(dst)
 	err = os.MkdirAll(dstDir, 0777)
 	if err != nil {
@@ -250,6 +252,12 @@ func cp(src, dst string) error {
 		log.Println("launcher: monitor - cp - error opening dst file =>", dst)
 		return err
 	}
+
+	srcFileInfo, err := s.Stat()
+	if err ==  nil {
+		d.Chmod(srcFileInfo.Mode())
+	}
+
 	if _, err := io.Copy(d, s); err != nil {
 		d.Close()
 		return err
@@ -257,24 +265,39 @@ func cp(src, dst string) error {
 	return d.Close()
 }
 
-func write_data(result_file string, files map[string]bool) {
+/*
+//file := "/opt/dockerslim/artifacts/monitor_results"
+	monitorFileName = "monitor_results"
+*/
+
+func write_data(monitorFileName string, files map[string]bool) {
+	artifactDirName := "/opt/dockerslim/artifacts"
+	/*
+		err = os.MkdirAll(artifactDir, 0777)
+		if err != nil {
+			log.Println("launcher: monitor - artifact dir error =>", err)
+		}
+	*/
+	_, err := os.Stat(artifactDirName)
+	if os.IsNotExist(err) {
+		os.MkdirAll(artifactDirName, 0777)
+		_, err = os.Stat(artifactDirName)
+		check(err)
+	}
+
+	result_file := fmt.Sprintf("%s/%s", artifactDirName, monitorFileName)
+	log.Println("launcher: monitor - saving results to", result_file)
 	f, err := os.Create(result_file)
 	check(err)
 	defer f.Close()
 	w := bufio.NewWriter(f)
-
-	artifactDir := "/opt/dockerslim/artifacts"
-	err = os.MkdirAll(artifactDir, 0777)
-	if err != nil {
-		log.Println("launcher: monitor - artifact dir error =>", err)
-	}
 
 	for k, _ := range files {
 		log.Println("launcher: monitor - saving file record =>", k)
 		w.WriteString(k)
 		w.WriteString("\n")
 
-		filePath := fmt.Sprintf("%s%s/files", artifactDir, k)
+		filePath := fmt.Sprintf("%s/files%s", artifactDirName, k)
 		log.Println("launcher: monitor - saving file data =>", filePath)
 		err := cp(k, filePath)
 		if err != nil {
@@ -287,7 +310,8 @@ func write_data(result_file string, files map[string]bool) {
 func monitor(stop_work chan bool, stop_work_ack chan bool, pids chan []int) {
 	log.Println("launcher: monitor starting...")
 	mount_point := "/"
-	file := "/opt/dockerslim/monitor_results"
+	//file := "/opt/dockerslim/artifacts/monitor_results"
+	monitorFileName := "monitor_results"
 
 	stop_events := make(chan bool, 1)
 	events := listen_events(mount_point, stop_events)
@@ -305,8 +329,7 @@ func monitor(stop_work chan bool, stop_work_ack chan bool, pids chan []int) {
 		//files := get_files(events, pids_map, pids)
 		files := get_files_all(events)
 		all_files := find_symlinks(files, mount_point)
-		log.Println("launcher: monitor - saving results to", file)
-		write_data(file, all_files)
+		write_data(monitorFileName, all_files)
 		stop_work_ack <- true
 	}()
 }

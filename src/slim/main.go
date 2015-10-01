@@ -376,6 +376,17 @@ func main() {
 		dfData.WriteString(imageMeta.WorkingDir)
 		dfData.WriteByte('\n')
 
+		if len(imageMeta.Env) > 0 {
+			for _,envInfo := range imageMeta.Env {
+				if envParts := strings.Split(envInfo, "="); len(envParts) > 1 {
+					dfData.WriteString("ENV ")
+					envLine := fmt.Sprintf("%s %s",envParts[0],envParts[1])
+					dfData.WriteString(envLine)
+					dfData.WriteByte('\n')
+				}
+			}
+		}
+
 		if len(imageMeta.ExposedPorts) > 0 {
 			for portInfo := range imageMeta.ExposedPorts {
 				dfData.WriteString("EXPOSE ")
@@ -389,8 +400,16 @@ func main() {
 			for idx := range imageMeta.Entrypoint {
 				quotedEntryPoint = append(quotedEntryPoint, strconv.Quote(imageMeta.Entrypoint[idx]))
 			}
+			/*
+				"Entrypoint": [
+				            "/bin/sh",
+				            "-c",
+				            "node /opt/my/service/server.js"
+				        ],
+			*/
 			dfData.WriteString("ENTRYPOINT [")
 			dfData.WriteString(strings.Join(quotedEntryPoint, ","))
+			//dfData.WriteString(`"/usr/bin/node","/opt/my/service/server.js"`)
 			dfData.WriteByte(']')
 			dfData.WriteByte('\n')
 		}
