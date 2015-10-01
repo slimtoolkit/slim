@@ -69,9 +69,11 @@ Example: `./dockerslim 6f74095b68c9 image-info-only`
 
 4. Use curl (or other tools) to call the sample app (optional)
 
-	`curl http://<YOUR_DOCKER_HOST_IP>:8000`
+	`curl http://<YOUR_DOCKER_HOST_IP>:<PORT>`
 	
 	This is an optional step to make sure the target app container is doing something. Depending on the application it's an optional step. For some applications it's required if it loads new application resources dynamically based on the requests it's processing.
+		
+	You can get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
 
 5. Wait a couple of minutes until `dockerslim` says it's done
 
