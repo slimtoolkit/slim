@@ -13,12 +13,6 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 
 `docker-slim` is a magic diet pill for your containers :) It will use static and dynamic analysis to create a skinny container for your app.
 
-
-### BASIC USE CASE
-
-1. Build a "fat"/unoptimized container for a python/ruby/node web app using a standard Dockerfile (with Ubuntu 14.04)
-2. Run DockerSlim to generate an optimized container
-
 ## CURRENT STATE
 
 It WORKS with the sample image (built from `sample_apps/node`). More testing needs to be done to see how it works with other images.
@@ -45,7 +39,12 @@ To generate a Dockerfile for your "fat" image without creating a new "slim" imag
 
 Example: `./dockerslim 6f74095b68c9 image-info-only`
 
+## DEMO VIDEO
+
+[Demo video on YouTube](https://youtu.be/uKdHnfEbc-E)
+
 ## DEMO STEPS
+
 
 1. Clone this repo
 
