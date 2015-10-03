@@ -45,6 +45,7 @@ Example: `./dockerslim 6f74095b68c9 image-info-only`
 
 ## DEMO STEPS
 
+The demo run on Mac OS X, but you can build a linux version.
 
 1. Clone this repo
 
@@ -91,6 +92,9 @@ Notes:
 You can explore the artifacts DockerSlim generates when it's creating a slim image. You'll find those in `dist/container/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.fat`.
 
 If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `image-info-only` option.
+
+You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.0/mac_dist.zip)
+
 
 
 ## DEVELOPMENT
