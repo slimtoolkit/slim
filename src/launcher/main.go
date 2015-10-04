@@ -231,15 +231,13 @@ func find_symlinks(files []string, mp string) map[string]bool {
 	return result
 }
 
-func cp(src, dst string) error {
+func cpFile(src, dst string) error {
 	s, err := os.Open(src)
 	if err != nil {
 		log.Println("launcher: monitor - cp - error opening source file =>", src)
 		return err
 	}
 	defer s.Close()
-
-	
 
 	dstDir := fileDir(dst)
 	err = os.MkdirAll(dstDir, 0777)
@@ -254,7 +252,7 @@ func cp(src, dst string) error {
 	}
 
 	srcFileInfo, err := s.Stat()
-	if err ==  nil {
+	if err == nil {
 		d.Chmod(srcFileInfo.Mode())
 	}
 
@@ -265,10 +263,133 @@ func cp(src, dst string) error {
 	return d.Close()
 }
 
-/*
-//file := "/opt/dockerslim/artifacts/monitor_results"
-	monitorFileName = "monitor_results"
-*/
+type artifactType int
+
+const (
+	DirArtifactType     = 1
+	FileArtifactType    = 2
+	SymlinkArtifactType = 3
+	UnknownArtifactType = 99
+)
+
+type artifactProps struct {
+	atype   artifactType
+	fmode   os.FileMode
+	linkRef string
+}
+
+type artifactStore struct {
+	storeLocation string
+	rawNames      map[string]bool
+	resolve       map[string]struct{}
+	linkMap       map[string]*artifactProps
+	fileMap       map[string]*artifactProps
+}
+
+func newArtifactStore(storeLocation string, rawNames map[string]bool) *artifactStore {
+	store := &artifactStore{
+		storeLocation: storeLocation,
+		rawNames:      rawNames,
+		resolve:       map[string]struct{}{},
+		linkMap:       map[string]*artifactProps{},
+		fileMap:       map[string]*artifactProps{},
+	}
+
+	return store
+}
+
+func (p *artifactStore) prepareArtifact(artifactFileName string) {
+	srcLinkFileInfo, err := os.Lstat(artifactFileName)
+	if err != nil {
+		log.Printf("prepareArtifact - artifact don't exist: %v (%v)\n", artifactFileName, os.IsNotExist(err))
+		return
+	}
+
+	props := &artifactProps{
+		fmode: srcLinkFileInfo.Mode(),
+	}
+
+	switch {
+	case srcLinkFileInfo.Mode().IsRegular():
+		log.Printf("prepareArtifact - is a regular file")
+		props.atype = FileArtifactType
+		p.fileMap[artifactFileName] = props
+	case (srcLinkFileInfo.Mode() & os.ModeSymlink) != 0:
+		log.Printf("prepareArtifact - is a symlink")
+		linkRef, err := os.Readlink(artifactFileName)
+		if err != nil {
+			log.Printf("prepareArtifact - error getting reference for symlink: %v\n", artifactFileName)
+			return
+		}
+
+		log.Printf("prepareArtifact(%s): src is a link! references => %s\n", artifactFileName, linkRef)
+		props.atype = SymlinkArtifactType
+		props.linkRef = linkRef
+
+		if _, ok := p.rawNames[linkRef]; !ok {
+			p.resolve[linkRef] = struct{}{}
+		}
+
+		p.linkMap[artifactFileName] = props
+
+	case srcLinkFileInfo.Mode().IsDir():
+		log.Printf("prepareArtifact - is a directory (shouldn't see it)")
+		props.atype = DirArtifactType
+	default:
+		log.Printf("prepareArtifact - other type (shouldn't see it)")
+	}
+}
+
+func (p *artifactStore) prepareArtifacts() {
+	for artifactFileName, artifactIsLink := range p.rawNames {
+		log.Printf("prepareArtifacts - artifact => %v (is link: %v)\n",
+			artifactFileName, artifactIsLink)
+
+		p.prepareArtifact(artifactFileName)
+	}
+
+	p.resolveLinks()
+}
+
+func (p *artifactStore) resolveLinks() {
+	for name := range p.resolve {
+		log.Println("resolveLinks - resolving %v\n", name)
+		//TODO
+	}
+}
+
+func (p *artifactStore) saveArtifacts() {
+	for fileName := range p.fileMap {
+		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
+		log.Println("saveArtifacts - saving file data =>", filePath)
+		err := cpFile(fileName, filePath)
+		if err != nil {
+			log.Println("saveArtifacts - error saving file =>", err)
+		}
+	}
+
+	for linkName, linkProps := range p.linkMap {
+		linkPath := fmt.Sprintf("%s/files%s", p.storeLocation, linkName)
+		linkDir := fileDir(linkPath)
+		err := os.MkdirAll(linkDir, 0777)
+		if err != nil {
+			log.Println("saveArtifacts - dir error =>", err)
+			continue
+		}
+		err = os.Symlink(linkProps.linkRef, linkPath)
+		if err != nil {
+			log.Println("saveArtifacts - symlink create error ==>", err)
+		}
+	}
+}
+
+func saveArtifacts(fileNames map[string]bool) {
+	artifactDirName := "/opt/dockerslim/artifacts"
+
+	artifactStore := newArtifactStore(artifactDirName, fileNames)
+	artifactStore.prepareArtifacts()
+	artifactStore.saveArtifacts()
+}
 
 func write_data(monitorFileName string, files map[string]bool) {
 	artifactDirName := "/opt/dockerslim/artifacts"
@@ -292,17 +413,9 @@ func write_data(monitorFileName string, files map[string]bool) {
 	defer f.Close()
 	w := bufio.NewWriter(f)
 
-	for k, _ := range files {
-		log.Println("launcher: monitor - saving file record =>", k)
+	for k := range files {
 		w.WriteString(k)
 		w.WriteString("\n")
-
-		filePath := fmt.Sprintf("%s/files%s", artifactDirName, k)
-		log.Println("launcher: monitor - saving file data =>", filePath)
-		err := cp(k, filePath)
-		if err != nil {
-			log.Println("launcher: monitor - error saving file =>", err)
-		}
 	}
 	w.Flush()
 }
@@ -330,6 +443,7 @@ func monitor(stop_work chan bool, stop_work_ack chan bool, pids chan []int) {
 		files := get_files_all(events)
 		all_files := find_symlinks(files, mount_point)
 		write_data(monitorFileName, all_files)
+		saveArtifacts(all_files)
 		stop_work_ack <- true
 	}()
 }

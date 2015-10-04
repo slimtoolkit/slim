@@ -17,7 +17,7 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 
 It WORKS with the sample image (built from `sample_apps/node`). More testing needs to be done to see how it works with other images.
 
-The sample node.js app image (built with the standard Ubuntu 14.04 base image) is 430MB and `dockerslim` turns it into 40MB.
+The sample node.js app image (built with the standard Ubuntu 14.04 base image) is 430MB and `dockerslim` turns it into 14.22MB.
 
 You can also run `dockerslim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
@@ -42,6 +42,7 @@ Example: `./dockerslim 6f74095b68c9 image-info-only`
 ## DEMO VIDEO
 
 [Demo video on YouTube](https://youtu.be/uKdHnfEbc-E)
+
 
 ## DEMO STEPS
 
@@ -127,21 +128,14 @@ The minified `sample_app` docker image now works! We turned a 430MB node.js app 
 
 ### PHASE 3 (ACTIVE)
 
-Make sure it works with other images.
-
-Do a better job with links.
-
-Split "monitor" from "launcher" (as it's supposed to work :-))
-
-Add scripting language dependency discovery to the "scanner" app.
-
-Support additional command line parameters to specify CMD, VOLUME, ENV info.
-
-Build/use a custom Boot2docker kernel with every required feature turned on.
-
-Explore additional dependency discovery methods.
-
-"Live" image create mode - to create new images from containers where users install their applications interactively.
+* Do a better job with links [DONE] The test image is now even smaller (was: 40MB, now: 14.22MB)
+* Make sure it works with other images.
+* Split "monitor" from "launcher" (as it's supposed to work :-))
+* Add scripting language dependency discovery to the "scanner" app.
+* Support additional command line parameters to specify CMD, VOLUME, ENV info.
+* Build/use a custom Boot2docker kernel with every required feature turned on.
+* Explore additional dependency discovery methods.
+* "Live" image create mode - to create new images from containers where users install their applications interactively.
 
 ## HOW
 

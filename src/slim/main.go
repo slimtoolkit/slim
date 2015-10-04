@@ -377,10 +377,10 @@ func main() {
 		dfData.WriteByte('\n')
 
 		if len(imageMeta.Env) > 0 {
-			for _,envInfo := range imageMeta.Env {
+			for _, envInfo := range imageMeta.Env {
 				if envParts := strings.Split(envInfo, "="); len(envParts) > 1 {
 					dfData.WriteString("ENV ")
-					envLine := fmt.Sprintf("%s %s",envParts[0],envParts[1])
+					envLine := fmt.Sprintf("%s %s", envParts[0], envParts[1])
 					dfData.WriteString(envLine)
 					dfData.WriteByte('\n')
 				}
