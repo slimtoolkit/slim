@@ -13,13 +13,13 @@ server.route(
     path:'/', 
     handler: function (request, reply) 
     {
-       console.log('demo service: GET /');
-       reply({status: 'success', info: 'yes!!!'});
+       console.log('node service: GET /');
+       reply({status: 'success', info: 'yes!!!', 'service': 'node'});
     }
 });
 
 
 server.start(function()
 {
-	console.log('demo service: running at:', server.info.uri);
+	console.log('node service: ', server.info.uri);
 });

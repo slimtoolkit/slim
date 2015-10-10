@@ -68,7 +68,7 @@ func check(err error) {
 	}
 }
 
-func listen_events(mount_point string, stop chan bool) chan map[event]bool {
+func listen_events(mount_point string, stopChan chan bool) chan map[event]bool {
 	log.Println("monitor: listen_events start")
 
 	nd, err := fanotify.Initialize(fanotify.FAN_CLASS_NOTIF, os.O_RDONLY)
@@ -97,10 +97,10 @@ func listen_events(mount_point string, stop chan bool) chan map[event]bool {
 		s := false
 		for !s {
 			select {
-			case <-time.After(20 * time.Second):
-				log.Println("monitor: listen_events - event timeout...")
-				s = true
-			case <-stop:
+			//case <-time.After(110 * time.Second):
+			//	log.Println("monitor: listen_events - event timeout...")
+			//	s = true
+			case <-stopChan:
 				log.Println("monitor: listen_events stopping...")
 				s = true
 			case e := <-eventChan:
@@ -353,7 +353,7 @@ func (p *artifactStore) prepareArtifacts() {
 
 func (p *artifactStore) resolveLinks() {
 	for name := range p.resolve {
-		log.Println("resolveLinks - resolving %v\n", name)
+		log.Println("resolveLinks - resolving:", name)
 		//TODO
 	}
 }
@@ -426,7 +426,8 @@ func monitor(stop_work chan bool, stop_work_ack chan bool, pids chan []int) {
 	//file := "/opt/dockerslim/artifacts/monitor_results"
 	monitorFileName := "monitor_results"
 
-	stop_events := make(chan bool, 1)
+	//stop_events := make(chan bool, 1)
+	stop_events := make(chan bool)
 	events := listen_events(mount_point, stop_events)
 
 	//stop_process := make(chan bool, 1)
@@ -440,6 +441,10 @@ func monitor(stop_work chan bool, stop_work_ack chan bool, pids chan []int) {
 		//stop_process <- true
 		log.Println("launcher: monitor - processing data...")
 		//files := get_files(events, pids_map, pids)
+		//NOTE/TODO: 
+		//should use get_files() though it won't work properly for apps that spawn processes
+		//because the pid list only contains the pid for the main app process
+		//(when process monitoring is not used)
 		files := get_files_all(events)
 		all_files := find_symlinks(files, mount_point)
 		write_data(monitorFileName, all_files)
@@ -503,9 +508,11 @@ func main() {
 	pidsChan <- []int{app.Process.Pid}
 
 	log.Println("alauncher: waiting for monitor:")
-	endTime := time.After(67 * time.Second)
+	//TODO: fix the hard coded timeout
+	endTime := time.After(130 * time.Second)
 	work := 0
-doneRunning:
+
+	doneRunning:
 	for {
 		select {
 		case <-endTime:

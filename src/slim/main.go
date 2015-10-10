@@ -334,9 +334,10 @@ func main() {
 
 		//TODO: keep checking the monitor state until no new files (and processes) are discovered
 		log.Println("docker-slim: watching container monitor...")
-		endTime := time.After(time.Second * 130)
+		endTime := time.After(time.Second * 200)
 		work := 0
-	doneWatching:
+
+		doneWatching:
 		for {
 			select {
 			case <-endTime:
