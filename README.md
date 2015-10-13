@@ -1,4 +1,4 @@
-# docker-slim: Make Your Fat Containers Skinny
+# docker-slim: Make Your Fat Containers Skinny and Tough (optimize and secure)
 
 [Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project (status: ACTIVE!)
 
@@ -15,9 +15,13 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 
 ## CURRENT STATE
 
-It WORKS with the sample image (built from `sample_apps/node`). More testing needs to be done to see how it works with other images.
+It WORKS with the sample node.js, python, and ruby images (built from `sample_apps`). More testing needs to be done to see how it works with other images.
 
-The sample node.js app image (built with the standard Ubuntu 14.04 base image) is 430MB and `dockerslim` turns it into 14.22MB.
+Sample images (built with the standard Ubuntu 14.04 base image):
+
+* nodejs app container: 431.7 MB => 14.22 MB
+* python app container: 433.1 MB => 15.97 MB
+* ruby app container:   406.2 MB => 13.66 MB
 
 You can also run `dockerslim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
