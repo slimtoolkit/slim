@@ -1,4 +1,4 @@
-# docker-slim: Make Your Fat Containers Skinny and Tough (optimize and secure)
+# docker-slim: Make Your Fat Containers Skinny and Tough (optimize and secure*)
 
 [Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project (status: ACTIVE!)
 
