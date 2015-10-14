@@ -6,6 +6,12 @@ Just because the hack day is over doesn't mean the project is done :-) The proje
 
 IRC (freenode): \#dockerslim
 
+## DEMO VIDEO
+
+[![DockerSlim demo](http://img.youtube.com/vi/uKdHnfEbc-E/0.jpg)](https://www.youtube.com/watch?v=uKdHnfEbc-E)
+
+[Demo video on YouTube](https://youtu.be/uKdHnfEbc-E)
+
 ## DESCRIPTION
 
 
@@ -43,11 +49,6 @@ Example: `./dockerslim 6f74095b68c9 rm-artifacts`
 To generate a Dockerfile for your "fat" image without creating a new "slim" image set the `image-info-only` flag.
 
 Example: `./dockerslim 6f74095b68c9 image-info-only`
-
-## DEMO VIDEO
-
-[Demo video on YouTube](https://youtu.be/uKdHnfEbc-E)
-
 
 ## DEMO STEPS
 
