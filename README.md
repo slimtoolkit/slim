@@ -22,6 +22,7 @@ Sample images (built with the standard Ubuntu 14.04 base image):
 * nodejs app container: 431.7 MB => 14.22 MB
 * python app container: 433.1 MB => 15.97 MB
 * ruby app container:   406.2 MB => 13.66 MB
+* java app container:   743.6 MB => 100.3 MB (yes, it's a bit bigger than others :-))
 
 You can also run `dockerslim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
