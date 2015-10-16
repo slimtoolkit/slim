@@ -32,6 +32,8 @@ Sample images (built with the standard Ubuntu 14.04 base image):
 
 You can also run `dockerslim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
+DockerSlim now also generates an AppArmor profile for your container.
+
 Dependencies:
 
 To run `docker-slim` you need to export docker environment variables. If you use `docker-machine` you get it when you run `eval "$(docker-machine env default)"`.
@@ -103,7 +105,6 @@ If you don't want to create a minified image and only want to "reverse engineer"
 You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.2/mac_dist.zip)
 
 
-
 ## DEVELOPMENT
 
 ### PHASE 1 (DONE)
@@ -135,7 +136,11 @@ The minified `sample_app` docker image now works! We turned a 430MB node.js app 
 ### PHASE 3 (ACTIVE)
 
 * Do a better job with links [DONE] The test image is now even smaller (was: 40MB, now: 14.22MB)
-* Make sure it works with other images.
+* Make sure it works with other images [WIP, now: node,python,ruby,java].
+* Refactor the time-based container monitoring phase.
+* Automated interaction with the target container (requires app code analysis).
+* Auto-generate AppArmor profiles [WIP].
+* Auto-generate Seccomp filters.
 * Split "monitor" from "launcher" (as it's supposed to work :-))
 * Add scripting language dependency discovery to the "scanner" app.
 * Support additional command line parameters to specify CMD, VOLUME, ENV info.
@@ -155,6 +160,12 @@ The minified `sample_app` docker image now works! We turned a 430MB node.js app 
 1. Instrument the container image (and replace the entrypoint/cmd) to collect application activity data
 2. Use kernel-level tools that provide visibility into running containers (without instrumenting the containers)
 3. Disable relevant namespaces in the target container to gain container visibility (can be done with runC)
+
+## SECURITY
+
+The goal is to auto-generate Seccomp, AppArmor, (and potentially SELinux) profiles based on the collected information.
+
+* AppArmor profiles (the auto-generated profiles are not really usable yet, but they will be soon).
 
 ## CHALLENGES
 
