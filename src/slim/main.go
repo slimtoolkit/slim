@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"bytes"
 	"fmt"
 	"io/ioutil"
@@ -9,6 +10,7 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"text/template"
 	"time"
 
 	"github.com/cloudimmunity/go-dockerclientx"
@@ -191,6 +193,75 @@ func saveDockerfileData(fatImageDockerfileLocation string, fatImageDockerInstruc
 	return ioutil.WriteFile(fatImageDockerfileLocation, data.Bytes(), 0644)
 }
 
+/////////////////////////////////////////////////////////////////////////////////
+
+const appArmorTemplate = `
+profile {{.ProfileName}} flags=(attach_disconnected,mediate_deleted) {
+
+  network,
+
+{{range $value := .Files}}  {{$value}} r,
+{{end}}
+}
+`
+
+type appArmorProfileData struct {
+	ProfileName string
+	Files       []string
+}
+
+//TODO:
+//need to safe more metadata about the artifacts in the monitor data
+//1. exe bit
+//2. w/r operation info (so we can add useful write rules)
+func genAppArmorProfile(artifactLocation string, profileName string) error {
+	monitorFileName := "monitor_results"
+	monitorFilePath := fmt.Sprintf("%s/%s", artifactLocation, monitorFileName)
+
+	if _, err := os.Stat(monitorFilePath); err != nil {
+		return err
+	}
+	monitorFile, err := os.Open(monitorFilePath)
+	if err != nil {
+		return err
+	}
+	defer monitorFile.Close()
+	monitorFileScanner := bufio.NewScanner(monitorFile)
+	var fileNames []string
+
+	for monitorFileScanner.Scan() {
+		fileNames = append(fileNames, strings.TrimSpace(monitorFileScanner.Text()))
+	}
+
+	if err := monitorFileScanner.Err(); err != nil {
+		return err
+	}
+
+	profilePath := fmt.Sprintf("%s/%s", artifactLocation, profileName)
+
+	profileFile, err := os.OpenFile(profilePath, os.O_CREATE|os.O_TRUNC|os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+
+	defer profileFile.Close()
+
+	profileData := appArmorProfileData{ProfileName: profileName, Files: fileNames}
+
+	t, err := template.New("profile").Parse(appArmorTemplate)
+	if err != nil {
+		return err
+	}
+
+	if err := t.Execute(profileFile, profileData); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
 func main() {
 	failWhen(len(os.Args) < 2, "docker-slim: error => missing image info")
 
@@ -228,10 +299,17 @@ func main() {
 		log.Fatalf("docker-slim: could not find target image in the image list")
 	}
 
+	appArmorProfileName := "apparmor-profile"
 	slimImageRepo := "slim"
 	if len(imageRecord.RepoTags) > 0 {
 		if rtInfo := strings.Split(imageRecord.RepoTags[0], ":"); len(rtInfo) > 1 {
 			slimImageRepo = fmt.Sprintf("%s.slim", rtInfo[0])
+			if nameParts := strings.Split(rtInfo[0], "/"); len(nameParts) > 1 {
+				appArmorProfileName = strings.Join(nameParts, "-")
+			} else {
+				appArmorProfileName = rtInfo[0]
+			}
+			appArmorProfileName = fmt.Sprintf("%s-apparmor-profile", appArmorProfileName)
 		}
 	}
 
@@ -337,7 +415,7 @@ func main() {
 		endTime := time.After(time.Second * 200)
 		work := 0
 
-		doneWatching:
+	doneWatching:
 		for {
 			select {
 			case <-endTime:
@@ -364,6 +442,10 @@ func main() {
 		}
 		err = client.RemoveContainer(removeOption)
 		warnOnError(err)
+
+		log.Println("docker-slim: generating AppArmor profile...")
+		err = genAppArmorProfile(artifactLocation, appArmorProfileName)
+		failOnError(err)
 
 		log.Println("docker-slim: creating \"slim\" image...")
 
@@ -410,7 +492,6 @@ func main() {
 			*/
 			dfData.WriteString("ENTRYPOINT [")
 			dfData.WriteString(strings.Join(quotedEntryPoint, ","))
-			//dfData.WriteString(`"/usr/bin/node","/opt/my/service/server.js"`)
 			dfData.WriteByte(']')
 			dfData.WriteByte('\n')
 		}

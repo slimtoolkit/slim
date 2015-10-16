@@ -441,7 +441,7 @@ func monitor(stop_work chan bool, stop_work_ack chan bool, pids chan []int) {
 		//stop_process <- true
 		log.Println("launcher: monitor - processing data...")
 		//files := get_files(events, pids_map, pids)
-		//NOTE/TODO: 
+		//NOTE/TODO:
 		//should use get_files() though it won't work properly for apps that spawn processes
 		//because the pid list only contains the pid for the main app process
 		//(when process monitoring is not used)
@@ -512,7 +512,7 @@ func main() {
 	endTime := time.After(130 * time.Second)
 	work := 0
 
-	doneRunning:
+doneRunning:
 	for {
 		select {
 		case <-endTime:
