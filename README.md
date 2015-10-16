@@ -102,7 +102,7 @@ You can explore the artifacts DockerSlim generates when it's creating a slim ima
 
 If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `image-info-only` option.
 
-You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.2/mac_dist.zip)
+You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.3/mac_dist.zip)
 
 
 ## DEVELOPMENT
