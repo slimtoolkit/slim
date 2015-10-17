@@ -105,7 +105,60 @@ If you don't want to create a minified image and only want to "reverse engineer"
 You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.3/mac_dist.zip)
 
 
-## DEVELOPMENT
+## BUILD PROCESS
+
+Before you build the tool you need to install GOX and Godep (optional; you'll need it only if you have problems pulling the dependencies the old fashioned way :-))
+
+* Godep - dependency manager ( https://github.com/tools/godep )
+
+1: `go get github.com/tools/godep`
+
+* GOX - to build Linux binaries on a Mac ( https://github.com/mitchellh/gox ):
+
+1: `go get github.com/mitchellh/gox`
+
+2: `gox -build-toolchain -os="linux" -os="darwin"` (note:  might have to run it with `sudo`)
+
+#### Build Steps
+
+1: Pull the dependencies: `./src.deps.get.sh`
+2: Build it: `./src.build.sh`
+
+You can use the clickable `.command` scripts on Mac OS X:
+
+1: `mac.src.deps.get.command`
+2: `mac.src.build.command`
+
+
+## DESIGN
+
+### CORE CONCEPTS
+
+1. Inspect container metadata (static analysis)
+2. Inspect container data (static analysis)
+3. Inspect running application (dynamic analysis)
+4. Build an application artifact graph
+5. Use the collected application data to build small images
+6. Use the collected application data to auto-generate various security framework configurations.
+
+### DYNAMIC ANALYSIS OPTIONS
+
+1. Instrument the container image (and replace the entrypoint/cmd) to collect application activity data
+2. Use kernel-level tools that provide visibility into running containers (without instrumenting the containers)
+3. Disable relevant namespaces in the target container to gain container visibility (can be done with runC)
+
+### SECURITY
+
+The goal is to auto-generate Seccomp, AppArmor, (and potentially SELinux) profiles based on the collected information.
+
+* AppArmor profiles (the auto-generated profiles are not really usable yet, but they will be soon).
+
+### CHALLENGES
+
+Some of the advanced analysis options require a number of Linux kernel features that are not always included. The kernel you get with Docker Machine / Boot2docker is a great example of that.
+
+
+## DEVELOPMENT PROGRESS
 
 ### PHASE 1 (DONE)
 
@@ -148,41 +201,6 @@ The minified `sample_app` docker image now works! We turned a 430MB node.js app 
 * Explore additional dependency discovery methods.
 * "Live" image create mode - to create new images from containers where users install their applications interactively.
 
-## HOW
-
-1. Inspect container metadata (static analysis)
-2. Inspect container data (static analysis)
-3. Inspect running application (dynamic analysis)
-4. Build an application artifact graph
-
-## DYNAMIC ANALYSIS OPTIONS
-
-1. Instrument the container image (and replace the entrypoint/cmd) to collect application activity data
-2. Use kernel-level tools that provide visibility into running containers (without instrumenting the containers)
-3. Disable relevant namespaces in the target container to gain container visibility (can be done with runC)
-
-## SECURITY
-
-The goal is to auto-generate Seccomp, AppArmor, (and potentially SELinux) profiles based on the collected information.
-
-* AppArmor profiles (the auto-generated profiles are not really usable yet, but they will be soon).
-
-## CHALLENGES
-
-Some of the advanced analysis options require a number of Linux kernel features that are not always included. The kernel you get with Docker Machine / Boot2docker is a great example of that.
-
-
-## BUILD DEPENDENCIES
-
-* Godep - dependency manager ( https://github.com/tools/godep )
-
-`go get github.com/tools/godep`
-
-* GOX - to build Linux binaries on a Mac ( https://github.com/mitchellh/gox ):
-
-`go get github.com/mitchellh/gox`
-
-`gox -build-toolchain -os="linux" -os="darwin"` (note:  might have to run it with `sudo`)
 
 ## NOTES
 
