@@ -100,7 +100,7 @@ Notes:
 
 You can explore the artifacts DockerSlim generates when it's creating a slim image. You'll find those in `dist/container/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.fat`. 
 
-If you'd like to see the artifacts without running `docker-slim` you can take a look at the `sample_artifacts` directory in the repo (it doesn't include the image files though), but you'll find:
+If you'd like to see the artifacts without running `docker-slim` you can take a look at the `sample_artifacts` directory in the repo. It doesn't include any image files, but you'll find:
 
 *	a reverse engineered Dockerfile (`Dockerfile.fat`), 
 *	a container report file (`creport.json`),
