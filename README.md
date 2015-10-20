@@ -30,7 +30,7 @@ Sample images (built with the standard Ubuntu 14.04 base image):
 * ruby app container:   406.2 MB => 13.66 MB
 * java app container:   743.6 MB => 100.3 MB (yes, it's a bit bigger than others :-))
 
-You can also run `dockerslim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
+You can also run `docker-slim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
 DockerSlim now also generates an AppArmor profile for your container.
 
@@ -40,17 +40,17 @@ To run `docker-slim` you need to export docker environment variables. If you use
 
 ## USAGE
 
-`./dockerslim <IMAGE_ID_OR_NAME> [rm-artifacts | image-info-only]`
+`./docker-slim <IMAGE_ID_OR_NAME> [rm-artifacts | image-info-only]`
 
-Example: `./dockerslim 6f74095b68c9`
+Example: `./docker-slim 6f74095b68c9`
 
-By default, `dockerslim` doesn't remove the artifacts it generates. To remove them set the `rm-artifacts` flag.
+By default, `docker-slim` doesn't remove the artifacts it generates. To remove them set the `rm-artifacts` flag.
 
-Example: `./dockerslim 6f74095b68c9 rm-artifacts`
+Example: `./docker-slim 6f74095b68c9 rm-artifacts`
 
 To generate a Dockerfile for your "fat" image without creating a new "slim" image set the `image-info-only` flag.
 
-Example: `./dockerslim 6f74095b68c9 image-info-only`
+Example: `./docker-slim 6f74095b68c9 image-info-only`
 
 ## DEMO STEPS
 
@@ -68,11 +68,11 @@ The demo run on Mac OS X, but you can build a linux version.
 	
 	`docker build -t my/sample-node-app .`
 	 
-3. Run `dockerslim`:
+3. Run `docker-slim`:
 
 	`cd ../../dist`
 	
-	`./dockerslim my/sample-node-app`
+	`./docker-slim my/sample-node-app`
 	
 	DockerSlim creates a special container based on the target image you provided.
 
@@ -84,7 +84,7 @@ The demo run on Mac OS X, but you can build a linux version.
 		
 	You can get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
 
-5. Wait a couple of minutes until `dockerslim` says it's done
+5. Wait a couple of minutes until `docker-slim` says it's done
 
 6. Once DockerSlim is done check that the new minified image is there
 
@@ -98,11 +98,17 @@ The demo run on Mac OS X, but you can build a linux version.
 
 Notes:
 
-You can explore the artifacts DockerSlim generates when it's creating a slim image. You'll find those in `dist/container/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.fat`.
+You can explore the artifacts DockerSlim generates when it's creating a slim image. You'll find those in `dist/container/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.fat`. 
+
+If you'd like to see the artifacts without running `docker-slim` you can take a look at the `sample_artifacts` directory in the repo (it doesn't include the image files though), but you'll find:
+
+*	a reverse engineered Dockerfile (`Dockerfile.fat`), 
+*	a container report file (`creport.json`),
+*	and a sample AppArmor profile (which will be named based on your original image name).
 
 If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `image-info-only` option.
 
-You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.3/mac_dist.zip)
+You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.4/mac_dist.zip)
 
 
 ## BUILD PROCESS
@@ -151,7 +157,7 @@ You can use the clickable `.command` scripts on Mac OS X:
 
 The goal is to auto-generate Seccomp, AppArmor, (and potentially SELinux) profiles based on the collected information.
 
-* AppArmor profiles (the auto-generated profiles are not really usable yet, but they will be soon).
+* AppArmor profiles (the auto-generated profiles are almost usable :-)).
 
 ### CHALLENGES
 

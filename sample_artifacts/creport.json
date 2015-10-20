@@ -1,0 +1,2607 @@
+{
+  "monitor": {
+    "monitor_pid": 1,
+    "monitor_ppid": 0,
+    "event_count": 165,
+    "main_process": {
+      "pid": 7,
+      "name": "node",
+      "path": "/usr/bin/nodejs",
+      "cmd": "node /opt/my/service/server.js",
+      "cwd": "/opt/my/service",
+      "root": "/",
+      "ppid": 1
+    },
+    "processes": {
+      "7": {
+        "pid": 7,
+        "name": "node",
+        "path": "/usr/bin/nodejs",
+        "cmd": "node /opt/my/service/server.js",
+        "cwd": "/opt/my/service",
+        "root": "/",
+        "ppid": 1
+      }
+    },
+    "process_files": {
+      "7": {
+        "/etc/ld.so.cache": {
+          "event_count": 1,
+          "first_eid": 0
+        },
+        "/etc/localtime": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/etc/nsswitch.conf": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/lib/x86_64-linux-gnu/ld-2.19.so": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/lib/x86_64-linux-gnu/libc-2.19.so": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/lib/x86_64-linux-gnu/libdl-2.19.so": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/lib/x86_64-linux-gnu/libgcc_s.so.1": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/lib/x86_64-linux-gnu/libm-2.19.so": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/lib/x86_64-linux-gnu/libpthread-2.19.so": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/lib/x86_64-linux-gnu/librt-2.19.so": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/auth.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/connection.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/defaults.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/handler.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/methods.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/plugin.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/protect.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/reply.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/request.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/response.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/route.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/schema.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/server.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/transmit.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/lib/validation.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/accept/lib/charset.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/accept/lib/encoding.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/accept/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/accept/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/ammo/lib/index.js": {
+          "event_count": 2,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/ammo/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/boom/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/boom/package.json": {
+          "event_count": 2,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/call/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/call/lib/regex.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/call/lib/segment.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/call/package.json": {
+          "event_count": 2,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/catbox-memory/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/catbox-memory/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/catbox/lib/client.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/catbox/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/catbox/lib/policy.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/catbox/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/cryptiles/index.js": {
+          "event_count": 2,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/cryptiles/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/cryptiles/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/alternatives.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/any.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/array.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/binary.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/boolean.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/cast.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/date.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/errors.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/function.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/language.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/number.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/object.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/ref.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/string.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/isemail/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/isemail/lib/isemail.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/isemail/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/moment/moment.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/moment/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/heavy/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/hoek/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/hoek/lib/escape.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/hoek/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/hoek/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/iron/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/iron/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/items/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/items/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/items/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/alternatives.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/any.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/array.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/binary.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/boolean.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/cast.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/date.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/errors.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/function.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/language.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/number.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/object.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/ref.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string/ip.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string/rfc3986.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string/uri.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/isemail/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/isemail/lib/isemail.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/isemail/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/moment/moment.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/moment/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/joi/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/kilt/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/kilt/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/kilt/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/mimos/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/mimos/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/mimos/node_modules/mime-db/db.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/mimos/node_modules/mime-db/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/mimos/node_modules/mime-db/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/mimos/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/peekaboo/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/peekaboo/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/peekaboo/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/qs/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/qs/lib/parse.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/qs/lib/stringify.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/qs/lib/utils.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/qs/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/shot/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/shot/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/statehood/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/statehood/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/content/lib/index.js": {
+          "event_count": 2,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/content/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/b64/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/b64/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/b64/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/index.js": {
+          "event_count": 2,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/node_modules/vise/index.js": {
+          "event_count": 2,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/node_modules/vise/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/node_modules/vise/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/payload.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/recorder.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/tap.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/package.json": {
+          "event_count": 2,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/subtext/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/topo/lib/index.js": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/node_modules/topo/package.json": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/opt/my/service/node_modules/hapi/package.json": {
+          "event_count": 4,
+          "first_eid": 0,
+          "reads": 2
+        },
+        "/opt/my/service/server.js": {
+          "event_count": 2,
+          "first_eid": 0,
+          "reads": 1
+        },
+        "/usr/bin/nodejs": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1,
+          "execs": 1
+        },
+        "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.19": {
+          "event_count": 1,
+          "first_eid": 0,
+          "reads": 1
+        }
+      }
+    }
+  },
+  "image": {
+    "files": [
+      {
+        "file_type": "Symlink",
+        "file_path": "/etc/alternatives/node",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "/usr/bin/nodejs",
+        "file_size": 15
+      },
+      {
+        "file_type": "File",
+        "file_path": "/etc/ld.so.cache",
+        "mode": "-rw-r--r--",
+        "data_type": "data",
+        "file_size": 15220,
+        "sha1_hash": "ca4491d92fac4500148a18bd9cada91b49e08701"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/etc/localtime",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "timezone data, version 2, 1 gmt time flag, 1 std time flag, no leap seconds, no transition times, 1 abbreviation char",
+        "file_size": 118,
+        "sha1_hash": "1b4722a913e61f7b016401ad5c7cf1010c5a8c36"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/etc/nsswitch.conf",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 475,
+        "sha1_hash": "b3b317e3180cb84814c551583751aad105525e31"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/lib/x86_64-linux-gnu/ld-2.19.so",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ELF 64-bit LSB  shared object, x86-64, version 1 (SYSV), dynamically linked, BuildID[sha1]=9f00581ab3c73e3aea35995a0c50d24d59a01d47, stripped",
+        "file_size": 149120,
+        "sha1_hash": "d11ce2e31ab441be705df3061a3d6fb7e41a504e"
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/lib/x86_64-linux-gnu/ld-linux-x86-64.so.2",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "ld-2.19.so",
+        "file_size": 10
+      },
+      {
+        "file_type": "File",
+        "file_path": "/lib/x86_64-linux-gnu/libc-2.19.so",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ELF 64-bit LSB  shared object, x86-64, version 1 (SYSV), dynamically linked (uses shared libs), BuildID[sha1]=30c94dc66a1fe95180c3d68d2b89e576d5ae213c, for GNU/Linux 2.6.24, stripped",
+        "file_size": 1840928,
+        "sha1_hash": "1f18479f19ee690de8aab335fafd244c8aa6f17c"
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/lib/x86_64-linux-gnu/libc.so.6",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "libc-2.19.so",
+        "file_size": 12
+      },
+      {
+        "file_type": "File",
+        "file_path": "/lib/x86_64-linux-gnu/libdl-2.19.so",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ELF 64-bit LSB  shared object, x86-64, version 1 (SYSV), dynamically linked (uses shared libs), BuildID[sha1]=c1ae4cb7195d337a77a3c689051dabaa3980ca0c, for GNU/Linux 2.6.24, stripped",
+        "file_size": 14664,
+        "sha1_hash": "cf26e327ee6f69694b080ae66c2572a6cb9c9c66"
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/lib/x86_64-linux-gnu/libdl.so.2",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "libdl-2.19.so",
+        "file_size": 13
+      },
+      {
+        "file_type": "File",
+        "file_path": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ELF 64-bit LSB  shared object, x86-64, version 1 (SYSV), dynamically linked, BuildID[sha1]=8d0aa71411580ee6c08809695c3984769f25725b, stripped",
+        "file_size": 90080,
+        "sha1_hash": "0216d90de6313fc03ea72f5a466601e9878936c0"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/lib/x86_64-linux-gnu/libm-2.19.so",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ELF 64-bit LSB  shared object, x86-64, version 1 (SYSV), dynamically linked (uses shared libs), BuildID[sha1]=1d76b71e905cb867b27cef230fcb20f01a3178f5, for GNU/Linux 2.6.24, stripped",
+        "file_size": 1071552,
+        "sha1_hash": "c8c36aeb5eb79da4292ef0d35b84b8d0c1cdfc62"
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/lib/x86_64-linux-gnu/libm.so.6",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "libm-2.19.so",
+        "file_size": 12
+      },
+      {
+        "file_type": "File",
+        "file_path": "/lib/x86_64-linux-gnu/libpthread-2.19.so",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ELF 64-bit LSB  shared object, x86-64, version 1 (SYSV), dynamically linked (uses shared libs), BuildID[sha1]=9318e8af0bfbe444731bb0461202ef57f7c39542, for GNU/Linux 2.6.24, not stripped",
+        "file_size": 141574,
+        "sha1_hash": "2ddda8d8ea269e2744757f1ea19f7c7009255591"
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/lib/x86_64-linux-gnu/libpthread.so.0",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "libpthread-2.19.so",
+        "file_size": 18
+      },
+      {
+        "file_type": "File",
+        "file_path": "/lib/x86_64-linux-gnu/librt-2.19.so",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ELF 64-bit LSB  shared object, x86-64, version 1 (SYSV), dynamically linked (uses shared libs), BuildID[sha1]=92fcf41efe012d6186e31a59ad05bdbb487769ab, for GNU/Linux 2.6.24, stripped",
+        "file_size": 31792,
+        "sha1_hash": "011ea7ea14e6874e9da0245e4e6ed472d02814ed"
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/lib/x86_64-linux-gnu/librt.so.1",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "librt-2.19.so",
+        "file_size": 13
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/lib64/ld-linux-x86-64.so.2",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "/lib/x86_64-linux-gnu/ld-2.19.so",
+        "file_size": 32
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/auth.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 12977,
+        "sha1_hash": "f593f54648b826ac14cc5e85ebb486aad436c18e"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/connection.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 12086,
+        "sha1_hash": "ce8f5b66b6226466b642bb10bfd1268e6f35541c"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/defaults.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 3345,
+        "sha1_hash": "086135a5290a746e522cd32aafe3beaa5f91e820"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/handler.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 8270,
+        "sha1_hash": "1f74ca5a16a0576da574ae11892f06376a48f812"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 122,
+        "sha1_hash": "cab5328883dcdc27e2b95f8929ad5f581d14e50e"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/methods.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 5593,
+        "sha1_hash": "9acb57a744266c320226008f873fdcd27beb77d8"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/plugin.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 15421,
+        "sha1_hash": "86742f718dcb014e0b0bad8c0c77760130e47972"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/protect.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1355,
+        "sha1_hash": "9a83fbab2a9a556c269e9e9e2738146600089efb"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/reply.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 4064,
+        "sha1_hash": "d36ea400303fbab040a484cdcc2153c5cf8198c1"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/request.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with very long lines",
+        "file_size": 16037,
+        "sha1_hash": "b54d352081ae183722a67088e3d572a9cb149a35"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/response.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 14340,
+        "sha1_hash": "fc1d5e87349bb0cd53ceecba01437a3e5e9ea598"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/route.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 14557,
+        "sha1_hash": "c60803836d466055e897acda80c5c6bf2b3d2325"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/schema.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 8365,
+        "sha1_hash": "5cae91ea67e5bd47bc362048ac73d28d4a71b5fa"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/server.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 9711,
+        "sha1_hash": "cc23450f76cd9b52b66f0b9ca380f4cd2ef24c98"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/transmit.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 16410,
+        "sha1_hash": "688b84faeea978ce6bd932875364f4cf9eac7593"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/lib/validation.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 6026,
+        "sha1_hash": "0ead82192e3a16fc4214cac05f3df6ddd9d50449"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/accept/lib/charset.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 3785,
+        "sha1_hash": "698d3daedee9cf48708c71ffc57fa24e7bec7589"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/accept/lib/encoding.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 3522,
+        "sha1_hash": "052a7aa8c9d4729f399451f4062c78f58c307df2"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/accept/lib/index.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 259,
+        "sha1_hash": "372a660d6a9bca97194f6189ec0ac306f48a57d7"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/accept/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1431,
+        "sha1_hash": "8f0f88a51faa415306598c5fbaf26273776f8773"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/ammo/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 2527,
+        "sha1_hash": "bbe074716b6730c90d8cd75caf50203793085a02"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/ammo/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1364,
+        "sha1_hash": "bcab11aac7100774abefb014bf7f616cf517098c"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/boom/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 6452,
+        "sha1_hash": "e0a512f97269da90134c91addaf122734ae7fc3e"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/boom/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1430,
+        "sha1_hash": "d754af7430080ac3a15551f96d86aed99286d492"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/call/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 10082,
+        "sha1_hash": "6dcd3de04b25a338c57dc08318ef81cdca152412"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/call/lib/regex.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1669,
+        "sha1_hash": "5a335bf48bb9881cde81da87a5e85bbe6f868cd0"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/call/lib/segment.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 7032,
+        "sha1_hash": "bb3e7de39292b1e9fcda5c5a7116376c402a5086"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/call/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1306,
+        "sha1_hash": "978492de466767f3866606d609c056d45577f7e0"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/catbox-memory/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 5782,
+        "sha1_hash": "657bb3f74d44bca5eb486c8bf0448b7da87950cc"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/catbox-memory/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1564,
+        "sha1_hash": "ed9de2f4f8960db251db88628fcd2661015c48d8"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/catbox/lib/client.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 3441,
+        "sha1_hash": "f13cf1d58608b98d7e808a8144af7977aacca0e2"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/catbox/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 198,
+        "sha1_hash": "fa21288b503e52a6dc80e490027fab7ac5ec11a1"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/catbox/lib/policy.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 12124,
+        "sha1_hash": "3e871e9be672c9a2d075c19f2b7540509b86c203"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/catbox/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1459,
+        "sha1_hash": "12c022bdbbbd372e9e087282a45d510f96b30262"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/cryptiles/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with no line terminators",
+        "file_size": 34,
+        "sha1_hash": "fbc929bb3b85e76c25fc52743d325d9f36fb3643"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/cryptiles/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1364,
+        "sha1_hash": "e5c479d1d0966b82298d86669aaa5ed4bcee4fb7"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/cryptiles/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1476,
+        "sha1_hash": "d210f063cf02d5caacf8f943d40920eb42c9ae83"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 35,
+        "sha1_hash": "1ac97bb89494173c0daeb063bb6a28c6bb50c837"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 3877,
+        "sha1_hash": "d5ef1d6b56aaa8440c9d8a82974284d3577ebb2e"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with no line terminators",
+        "file_size": 34,
+        "sha1_hash": "fbc929bb3b85e76c25fc52743d325d9f36fb3643"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/alternatives.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 3836,
+        "sha1_hash": "16a78129e96e1e0111c3bae0e4222a1e0d317793"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/any.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 18083,
+        "sha1_hash": "e946811784d8b70b1e91dc870833ffeabd6296eb"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/array.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 8385,
+        "sha1_hash": "262c91934ed6d4dc876cda6ed94b0e7c360ace55"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/binary.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 2171,
+        "sha1_hash": "9b6f08844af759e97c3dc73e09a8a4a4803dca81"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/boolean.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 937,
+        "sha1_hash": "b849990b16d670ccebd0b62734526e3e96da529d"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/cast.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1615,
+        "sha1_hash": "82dad8939f72d5509c7b793cfbb9b00d323feb97"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/date.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 4005,
+        "sha1_hash": "f67e6594dd64b657ea3d78e8979b8f15e0b08dcf"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/errors.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 4279,
+        "sha1_hash": "932f3b87fc60a03d50b91923e2fc577807f72b3b"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/function.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 550,
+        "sha1_hash": "5843085394e4320bf0f313b4c036753a5a83aaef"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 2720,
+        "sha1_hash": "00bb491ce725f98a9dacc5f5b6d5e43e6cca1de2"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/language.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 4408,
+        "sha1_hash": "cf9585acdb607aca7baf48f91aa25e2a57541a1d"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/number.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 4170,
+        "sha1_hash": "fbdeee85ecd24622c4a51369ac70a0e4f97a75fb"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/object.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 18795,
+        "sha1_hash": "94e8a5d7823ea8d6f3afd0f52fd228442d1ff05d"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/ref.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1093,
+        "sha1_hash": "5176441f234cadf522bce117306a34129ddc3205"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/string.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 7079,
+        "sha1_hash": "d060ff9793fc40243c1f3107316eeecf8a246158"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/isemail/index.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with CRLF line terminators",
+        "file_size": 44,
+        "sha1_hash": "20f1e6568841ea8cc30591ac698a03b6bf829a9a"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/isemail/lib/isemail.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "UTF-8 Unicode text, with CRLF line terminators",
+        "file_size": 64242,
+        "sha1_hash": "b920cf619c2b355c05e208e667b72c128178175c"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/isemail/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1534,
+        "sha1_hash": "1c8532598f336ed91d307685ad75d0d852934673"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/moment/moment.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "Pascal source, ASCII text",
+        "file_size": 104409,
+        "sha1_hash": "65395e3e55adc5e2953e03c8378faa5cd0e324de"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/moment/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 3292,
+        "sha1_hash": "5a0ff7c7b840a061bfc1261a0d7802902ef837d2"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1499,
+        "sha1_hash": "0e687cbf3c17fc34facc5128636913dc361e4517"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/heavy/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1442,
+        "sha1_hash": "3687d39a4b2f8a78e7c438b211674e0c588d336f"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/hoek/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 35,
+        "sha1_hash": "1ac97bb89494173c0daeb063bb6a28c6bb50c837"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/hoek/lib/escape.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 2668,
+        "sha1_hash": "5ccf43b55ca0fbbc307a91235127af5601bd1187"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/hoek/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with CRLF, LF line terminators",
+        "file_size": 24228,
+        "sha1_hash": "2c70cd0fb5426bcf225b9af5845309c448c5da51"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/hoek/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1336,
+        "sha1_hash": "3fabcd50e0814825cd9e8a62e5e8556af3580526"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/iron/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 11065,
+        "sha1_hash": "ba30880ba103d1b727c5da17afe9b0040e639ed1"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/iron/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1531,
+        "sha1_hash": "2333fa20e5fa6d54a9c017a238a00ddd64814a89"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/items/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with no line terminators",
+        "file_size": 34,
+        "sha1_hash": "fbc929bb3b85e76c25fc52743d325d9f36fb3643"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/items/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 2278,
+        "sha1_hash": "8a9fd4187bffea080730ea3f96b93ccb334c15e8"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/items/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1354,
+        "sha1_hash": "a8cf2fcb5452fda8fa12658a6977a43bbc46c34d"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/alternatives.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 4051,
+        "sha1_hash": "0b022bd2de964844426f22bcf2111ecb4eb79f34"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/any.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 23724,
+        "sha1_hash": "0a68f3b88cf8062d5edaed03a705add60ab82444"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/array.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 11556,
+        "sha1_hash": "5df27d2d2102fa47360d73ce42eaa05d3a84a616"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/binary.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 2214,
+        "sha1_hash": "4b2e8526cad79a013b18cd4941f5a10c4bb9c5d6"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/boolean.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 938,
+        "sha1_hash": "1d6e4faa2772e6cbb24c50e588ca636e848d2e1f"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/cast.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1617,
+        "sha1_hash": "2c0498350e8321216d3a113f171bd7a9d97d0f20"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/date.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with very long lines",
+        "file_size": 4115,
+        "sha1_hash": "37772b232fac21fb2b989d73824f3f415b5fbe12"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/errors.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 6951,
+        "sha1_hash": "c5e468d1bca1b5cf69388984196a707fca5576b1"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/function.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 551,
+        "sha1_hash": "e39aa9d63f0dddef522727b8a45769363e576d43"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 2863,
+        "sha1_hash": "5c0d3c0b84676749a85784dfc14f8720d9cc2021"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/language.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 5517,
+        "sha1_hash": "5d5bbbe807a98e2b71f5ea61930be764131d05c7"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/number.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 4699,
+        "sha1_hash": "a581f429f1e08eb844b134e683e837494d31bd46"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/object.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 19742,
+        "sha1_hash": "d193208575d97673c8d6633fdf75241a3194895f"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/ref.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1094,
+        "sha1_hash": "22a409c5f24ecf2adca879de369e1ffaa913d053"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 14139,
+        "sha1_hash": "4a8b71bd60fc6c12828c620fedfea57d8797e6c0"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string/ip.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 813,
+        "sha1_hash": "8f8316c17857de835d536a4ca2d66446087ad5db"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string/rfc3986.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 5669,
+        "sha1_hash": "4eabe62d65ba4711b01b0a6cc527aaad6e9e7567"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string/uri.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 729,
+        "sha1_hash": "f5c2351c1096ce1fc34089153e2dd090cfb5f959"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/isemail/index.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 43,
+        "sha1_hash": "86f557ad16a51889427295b6d9869fcd7b89f72c"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/isemail/lib/isemail.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "UTF-8 Unicode text",
+        "file_size": 47794,
+        "sha1_hash": "cd4992374e89762fb212baa019b70b975ff9ffbb"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/isemail/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1505,
+        "sha1_hash": "decb6ad8e693a27b8a9eeeb77c8eb6bf56d7dd63"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/moment/moment.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "Pascal source, ASCII text",
+        "file_size": 104409,
+        "sha1_hash": "65395e3e55adc5e2953e03c8378faa5cd0e324de"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/moment/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 3292,
+        "sha1_hash": "5a0ff7c7b840a061bfc1261a0d7802902ef837d2"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/joi/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1522,
+        "sha1_hash": "d6dd39914736d3da4da4dc8c5439fec79fe3a386"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/kilt/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with no line terminators",
+        "file_size": 34,
+        "sha1_hash": "fbc929bb3b85e76c25fc52743d325d9f36fb3643"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/kilt/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 2541,
+        "sha1_hash": "1f04a441a7aaf1e4ae3baf5448de1770ec0ca643"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/kilt/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1438,
+        "sha1_hash": "67a7eef2c86f19fd8d23b5c4026fce70cf54a9d7"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/mimos/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with no line terminators",
+        "file_size": 34,
+        "sha1_hash": "fbc929bb3b85e76c25fc52743d325d9f36fb3643"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/mimos/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 2386,
+        "sha1_hash": "16ae3d6e713800babb7a07c395b94515130a759f"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/mimos/node_modules/mime-db/db.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 140349,
+        "sha1_hash": "76d73241021687c9db57e73068bf1a89563c883e"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/mimos/node_modules/mime-db/index.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 136,
+        "sha1_hash": "31180f8d0ae079b1bee7ee03e77ea5323583eb06"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/mimos/node_modules/mime-db/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 2384,
+        "sha1_hash": "bcbb0de08de4e2eb54a27eccf2bf16bfb59e042a"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/mimos/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1332,
+        "sha1_hash": "8d5a337a2db0194e64449cee766b69e43f7a3365"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/peekaboo/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 35,
+        "sha1_hash": "1ac97bb89494173c0daeb063bb6a28c6bb50c837"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/peekaboo/lib/index.js",
+        "mode": "-rwxr-xr--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 563,
+        "sha1_hash": "65c179b497ce40cfb7fe2c5cb81f8d78ff3deb42"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/peekaboo/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1315,
+        "sha1_hash": "52c3404350d8d8746fc3503fa12ee256df6a7680"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/qs/lib/index.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 200,
+        "sha1_hash": "1d12b60ebf187b97694b40050dc582b1205775c0"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/qs/lib/parse.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 5288,
+        "sha1_hash": "19f69f84d674299a50f0cc85e2d40b39f90d48b8"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/qs/lib/stringify.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 3072,
+        "sha1_hash": "e82bbddb05468e80f8632bf3af498f82d1187e40"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/qs/lib/utils.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 4319,
+        "sha1_hash": "88cf9f2bb63a35625f6a50214d77b8eb8afe9035"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/qs/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1427,
+        "sha1_hash": "68bb903de8dad9af581aad25c2a73a8aead9e78a"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/shot/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 7985,
+        "sha1_hash": "ba7f2e9350e6cfc9a90d7dbc917e9bcfdc0d5e13"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/shot/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1475,
+        "sha1_hash": "546300709bc989f588fd6ec7738538e09af2baba"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/statehood/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 15428,
+        "sha1_hash": "a5b220a1b374046053a67d21f62253f99a841765"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/statehood/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1493,
+        "sha1_hash": "316cb9ef298d172732ed59bce04c698b4277e27f"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 11853,
+        "sha1_hash": "60f2a36e27217e2056695efd7412b817b5d0c3d6"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/content/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 3595,
+        "sha1_hash": "cc0880202637edfc6aa454aff2879e4426941fbe"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/content/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1547,
+        "sha1_hash": "0ec4227179e38a2798c754b47295894f40c2f627"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with no line terminators",
+        "file_size": 34,
+        "sha1_hash": "fbc929bb3b85e76c25fc52743d325d9f36fb3643"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 9248,
+        "sha1_hash": "47b6e20e147a0424c519c7f57fa3f7b15fdcfa37"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/b64/index.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with no line terminators",
+        "file_size": 34,
+        "sha1_hash": "fbc929bb3b85e76c25fc52743d325d9f36fb3643"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/b64/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 4053,
+        "sha1_hash": "a70f4d1cb9320b9c0272e9a90ac1e47f1123f7df"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/b64/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1399,
+        "sha1_hash": "047d443f9d87a0ee655e218a5e5b4ee051a7e1f6"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with no line terminators",
+        "file_size": 34,
+        "sha1_hash": "fbc929bb3b85e76c25fc52743d325d9f36fb3643"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 4984,
+        "sha1_hash": "fb946aeb58b14041634cd81b3c8f292be437aa83"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/node_modules/vise/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text, with no line terminators",
+        "file_size": 34,
+        "sha1_hash": "fbc929bb3b85e76c25fc52743d325d9f36fb3643"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/node_modules/vise/lib/index.js",
+        "mode": "-rwxr-xr--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 3562,
+        "sha1_hash": "2410c8746e99cca9f37e673f107b99c36389371e"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/node_modules/vise/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1289,
+        "sha1_hash": "84f86e9e474ffdfd5177c678bbd197b4844e3389"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1354,
+        "sha1_hash": "57ed27d260b5dcd52438126dba3059285b7a9fdf"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1409,
+        "sha1_hash": "9ce05f29d781ed8e2887819e84aaa0e2865ef043"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 12917,
+        "sha1_hash": "e8f6f0a99657519f37e1e7428cfcc760b7d2af88"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/payload.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 924,
+        "sha1_hash": "22f7701958536b1e9c7fbd1c34941ea33b0eea9b"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/recorder.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1073,
+        "sha1_hash": "8823f7b9a5801a96c59dd64a0c9dfd4103aa5bd8"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/tap.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 539,
+        "sha1_hash": "4edd1a437a6834cbdcb500f0bcc68b7aaee5483a"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1406,
+        "sha1_hash": "37a000eda5413b4b2bca2d750926e0234739d0e2"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/subtext/package.json",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1500,
+        "sha1_hash": "1ac3b52e1ffb5059b28c1c7b2f9443b715055ef4"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/topo/lib/index.js",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 5095,
+        "sha1_hash": "5827fdd39dbf00f6f4c2293bad5e7fc43f996aeb"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/node_modules/topo/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1445,
+        "sha1_hash": "00b84286872f5df86f5e5d1bea2c464b90597df0"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/node_modules/hapi/package.json",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 1904,
+        "sha1_hash": "bbea70f527e9d320a9527d71ef41e9e5bde6cc6f"
+      },
+      {
+        "file_type": "File",
+        "file_path": "/opt/my/service/server.js",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ASCII text",
+        "file_size": 396,
+        "sha1_hash": "5bea8484ed6e7d051a47234945e01606d78bd680"
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/usr/bin/node",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "/etc/alternatives/node",
+        "file_size": 22
+      },
+      {
+        "file_type": "File",
+        "file_path": "/usr/bin/nodejs",
+        "mode": "-rwxr-xr-x",
+        "flags": {
+          "R": true,
+          "X": true
+        },
+        "data_type": "ELF 64-bit LSB  executable, x86-64, version 1 (SYSV), dynamically linked (uses shared libs), for GNU/Linux 2.6.24, BuildID[sha1]=904606e797c60c1e5f70984e891351638fc1d8ca, stripped",
+        "file_size": 8827304,
+        "sha1_hash": "05748acf5fc3c906b718ee6b43cee8f25437ceb5"
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/usr/lib/gcc/x86_64-linux-gnu/4.8.4/libgcc_s.so",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "file_size": 35
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/usr/lib/gcc/x86_64-linux-gnu/4.8.4/libstdc++.so",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "../../../x86_64-linux-gnu/libstdc++.so.6",
+        "file_size": 40
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/usr/lib/gcc/x86_64-linux-gnu/4.8/libgcc_s.so",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "/lib/x86_64-linux-gnu/libgcc_s.so.1",
+        "file_size": 35
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/usr/lib/gcc/x86_64-linux-gnu/4.8/libstdc++.so",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "../../../x86_64-linux-gnu/libstdc++.so.6",
+        "file_size": 40
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/usr/lib/x86_64-linux-gnu/libdl.so",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "/lib/x86_64-linux-gnu/libdl.so.2",
+        "file_size": 32
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/usr/lib/x86_64-linux-gnu/libm.so",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "/lib/x86_64-linux-gnu/libm.so.6",
+        "file_size": 31
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/usr/lib/x86_64-linux-gnu/librt.so",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "/lib/x86_64-linux-gnu/librt.so.1",
+        "file_size": 32
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "libstdc++.so.6.0.19",
+        "file_size": 19
+      },
+      {
+        "file_type": "File",
+        "file_path": "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.19",
+        "mode": "-rw-r--r--",
+        "flags": {
+          "R": true
+        },
+        "data_type": "ELF 64-bit LSB  shared object, x86-64, version 1 (SYSV), dynamically linked, BuildID[sha1]=4bf6f7add8244ad86008e6bf40d90f8873892197, stripped",
+        "file_size": 979056,
+        "sha1_hash": "f77283db07bc3305ecf58628284aec3cfcdc338e"
+      },
+      {
+        "file_type": "Symlink",
+        "file_path": "/usr/share/zoneinfo/localtime",
+        "mode": "Lrwxrwxrwx",
+        "link_ref": "/etc/localtime",
+        "file_size": 14
+      }
+    ]
+  }
+}

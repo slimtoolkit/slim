@@ -1,8 +1,8 @@
 package main
 
 import (
-	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -200,14 +200,145 @@ profile {{.ProfileName}} flags=(attach_disconnected,mediate_deleted) {
 
   network,
 
-{{range $value := .Files}}  {{$value}} r,
+{{range $value := .ExeFileRules}}  {{$value.FilePath}} {{$value.PermSet}},
+{{end}}
+{{range $value := .WriteFileRules}}  {{$value.FilePath}} {{$value.PermSet}},
+{{end}}
+{{range $value := .ReadFileRules}}  {{$value.FilePath}} {{$value.PermSet}},
 {{end}}
 }
 `
 
+type appArmorFileRule struct {
+	FilePath string
+	PermSet  string
+}
+
 type appArmorProfileData struct {
-	ProfileName string
-	Files       []string
+	ProfileName    string
+	ExeFileRules   []appArmorFileRule
+	WriteFileRules []appArmorFileRule
+	ReadFileRules  []appArmorFileRule
+}
+
+////////////////////
+//TODO: REFACTOR :)
+
+type artifactType int
+
+const (
+	DirArtifactType     = 1
+	FileArtifactType    = 2
+	SymlinkArtifactType = 3
+	UnknownArtifactType = 99
+)
+
+var artifactTypeNames = map[artifactType]string{
+	DirArtifactType:     "Dir",
+	FileArtifactType:    "File",
+	SymlinkArtifactType: "Symlink",
+	UnknownArtifactType: "Unknown",
+}
+
+func (t artifactType) String() string {
+	return artifactTypeNames[t]
+}
+
+var artifactTypeValues = map[string]artifactType{
+	"Dir":     DirArtifactType,
+	"File":    FileArtifactType,
+	"Symlink": SymlinkArtifactType,
+	"Unknown": UnknownArtifactType,
+}
+
+func getArtifactTypeValue(s string) artifactType {
+	return artifactTypeValues[s]
+}
+
+type processInfo struct {
+	Pid       int32  `json:"pid"`
+	Name      string `json:"name"`
+	Path      string `json:"path"`
+	Cmd       string `json:"cmd"`
+	Cwd       string `json:"cwd"`
+	Root      string `json:"root"`
+	ParentPid int32  `json:"ppid"`
+}
+
+type fileInfo struct {
+	EventCount   uint32 `json:"event_count"`
+	FirstEventId uint32 `json:"first_eid"`
+	Name         string `json:"-"`
+	ReadCount    uint32 `json:"reads,omitempty"`
+	WriteCount   uint32 `json:"writes,omitempty"`
+	ExeCount     uint32 `json:"execs,omitempty"`
+}
+
+type monitorReport struct {
+	MonitorPid       int                             `json:"monitor_pid"`
+	MonitorParentPid int                             `json:"monitor_ppid"`
+	EventCount       uint32                          `json:"event_count"`
+	MainProcess      *processInfo                    `json:"main_process"`
+	Processes        map[string]*processInfo         `json:"processes"`
+	ProcessFiles     map[string]map[string]*fileInfo `json:"process_files"`
+}
+
+type artifactProps struct {
+	FileType artifactType    `json:"-"` //todo
+	FilePath string          `json:"file_path"`
+	Mode     os.FileMode     `json:"-"` //todo
+	ModeText string          `json:"mode"`
+	LinkRef  string          `json:"link_ref,omitempty"`
+	Flags    map[string]bool `json:"flags,omitempty"`
+	DataType string          `json:"data_type,omitempty"`
+	FileSize int64           `json:"file_size"`
+	Sha1Hash string          `json:"sha1_hash,omitempty"`
+	AppType  string          `json:"app_type,omitempty"`
+}
+
+func (p *artifactProps) UnmarshalJSON(data []byte) error {
+	type artifactPropsType artifactProps
+	props := &struct {
+		FileTypeStr string `json:"file_type"`
+		*artifactPropsType
+	}{
+		artifactPropsType: (*artifactPropsType)(p),
+	}
+
+	if err := json.Unmarshal(data, &props); err != nil {
+		return err
+	}
+	p.FileType = getArtifactTypeValue(props.FileTypeStr)
+
+	return nil
+}
+
+type ImageReport struct {
+	Files []*artifactProps `json:"files"`
+}
+
+type ContainerReport struct {
+	Monitor *monitorReport `json:"monitor"`
+	Image   ImageReport    `json:"image"`
+}
+
+///////////
+
+func permSetFromFlags(flags map[string]bool) string {
+	var b bytes.Buffer
+	if flags["R"] {
+		b.WriteString("r")
+	}
+
+	if flags["W"] {
+		b.WriteString("w")
+	}
+
+	if flags["X"] {
+		b.WriteString("ix")
+	}
+
+	return b.String()
 }
 
 //TODO:
@@ -215,25 +346,20 @@ type appArmorProfileData struct {
 //1. exe bit
 //2. w/r operation info (so we can add useful write rules)
 func genAppArmorProfile(artifactLocation string, profileName string) error {
-	monitorFileName := "monitor_results"
-	monitorFilePath := fmt.Sprintf("%s/%s", artifactLocation, monitorFileName)
+	containerReportFileName := "creport.json"
+	containerReportFilePath := fmt.Sprintf("%s/%s", artifactLocation, containerReportFileName)
 
-	if _, err := os.Stat(monitorFilePath); err != nil {
+	if _, err := os.Stat(containerReportFilePath); err != nil {
 		return err
 	}
-	monitorFile, err := os.Open(monitorFilePath)
+	reportFile, err := os.Open(containerReportFilePath)
 	if err != nil {
 		return err
 	}
-	defer monitorFile.Close()
-	monitorFileScanner := bufio.NewScanner(monitorFile)
-	var fileNames []string
+	defer reportFile.Close()
 
-	for monitorFileScanner.Scan() {
-		fileNames = append(fileNames, strings.TrimSpace(monitorFileScanner.Text()))
-	}
-
-	if err := monitorFileScanner.Err(); err != nil {
+	var report ContainerReport
+	if err = json.NewDecoder(reportFile).Decode(&report); err != nil {
 		return err
 	}
 
@@ -246,7 +372,31 @@ func genAppArmorProfile(artifactLocation string, profileName string) error {
 
 	defer profileFile.Close()
 
-	profileData := appArmorProfileData{ProfileName: profileName, Files: fileNames}
+	profileData := appArmorProfileData{ProfileName: profileName}
+
+	for _, aprops := range report.Image.Files {
+		if aprops.Flags["X"] {
+			profileData.ExeFileRules = append(profileData.ExeFileRules,
+				appArmorFileRule{
+					FilePath: aprops.FilePath,
+					PermSet:  permSetFromFlags(aprops.Flags),
+				})
+		} else if aprops.Flags["W"] {
+			profileData.WriteFileRules = append(profileData.WriteFileRules,
+				appArmorFileRule{
+					FilePath: aprops.FilePath,
+					PermSet:  permSetFromFlags(aprops.Flags),
+				})
+		} else if aprops.Flags["R"] {
+			profileData.ReadFileRules = append(profileData.ReadFileRules,
+				appArmorFileRule{
+					FilePath: aprops.FilePath,
+					PermSet:  permSetFromFlags(aprops.Flags),
+				})
+		} else {
+			log.Printf("docker-slim: genAppArmorProfile - other artifact => %v\n", aprops)
+		}
+	}
 
 	t, err := template.New("profile").Parse(appArmorTemplate)
 	if err != nil {
