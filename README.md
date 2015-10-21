@@ -125,15 +125,24 @@ Before you build the tool you need to install GOX and Godep (optional; you'll ne
 
 2: `gox -build-toolchain -os="linux" -os="darwin"` (note:  might have to run it with `sudo`)
 
-#### Build Steps
+#### Local Build Steps
 
-1: Pull the dependencies: `./src.deps.get.sh`
-2: Build it: `./src.build.sh`
+Once you install the dependencies (GOX - required; Godep - optional) run these scripts:
+
+1. Pull the dependencies: `./src.deps.get.sh`
+2. Build it: `./src.build.sh`
 
 You can use the clickable `.command` scripts on Mac OS X:
 
-1: `mac.src.deps.get.command`
-2: `mac.src.build.command`
+1. `mac.src.deps.get.command`
+2. `mac.src.build.command`
+
+#### Builder Image Steps
+
+You can also build `docker-slim` using a "builder" Docker image.
+
+1. Create the "builder" image: `./docker-slim-builder.build.sh` (or click on `docker-slim-builder.build.command` if you are using Mac OS X)
+2. Build the tool: `docker-slim-builder.run.sh` (or click on `docker-slim-builder.run.command` if you are using Mac OS X)
 
 
 ## DESIGN
