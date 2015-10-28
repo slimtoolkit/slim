@@ -5,7 +5,8 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	//"syscall"
+	"syscall"
+	"os/signal"
 	"bufio"
 	"bytes"
 	"crypto/sha1"
@@ -20,6 +21,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/gdamore/mangos"
+	"github.com/gdamore/mangos/protocol/rep"
+	"github.com/gdamore/mangos/protocol/pub"
+	//"github.com/gdamore/mangos/transport/ipc"
+	"github.com/gdamore/mangos/transport/tcp"
 	"bitbucket.org/madmo/fanotify"
 	"github.com/cloudimmunity/pdiscover"
 )
@@ -47,6 +53,178 @@ func fileDir(fileName string) string {
 	failOnError(err)
 	return dirName
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+var doneChan chan struct{}
+
+var cmdChannelAddr = "tcp://0.0.0.0:65501"
+//var cmdChannelAddr = "ipc:///tmp/docker-slim-launcher.cmds.ipc"
+//var cmdChannelAddr = "ipc:///opt/dockerslim/ipc/docker-slim-launcher.cmds.ipc"
+var cmdChannel mangos.Socket
+
+func newCmdServer(addr string) (mangos.Socket,error) {
+	log.Println("alauncher: creating cmd server...")
+	socket, err := rep.NewSocket()
+	if err != nil {
+		return nil,err
+	}
+
+	if err := socket.SetOption(mangos.OptionRecvDeadline,time.Second * 3); err != nil {
+		socket.Close()
+		return nil,err
+	}
+
+	//socket.AddTransport(ipc.NewTransport())
+	socket.AddTransport(tcp.NewTransport())
+	if err := socket.Listen(addr); err != nil {
+		socket.Close()
+		return nil,err
+	}
+
+	return socket,nil
+}
+
+func runCmdServer(channel mangos.Socket,done <-chan struct{}) (<-chan string,error) {
+	cmdChan := make(chan string)
+	go func() {
+		for {
+			// Could also use sock.RecvMsg to get header
+			log.Println("alauncher: cmd server - waiting for a command...")
+			select {
+				case <- done:
+					log.Println("alauncher: cmd server - done...")
+					return
+				default:
+					if rawCmd, err := channel.Recv(); err != nil {
+						switch err {
+							case mangos.ErrRecvTimeout:
+								log.Println("alauncher: cmd server - timeout... ok")
+							default:
+								log.Println("alauncher: cmd server - error =>",err)
+						}
+					} else {
+						cmd := string(rawCmd)
+						log.Println("alauncher: cmd server - got a command =>",cmd)
+						cmdChan <- cmd
+						//for now just ack the command and process the command asynchronously
+						//NOTE:
+						//must reply before receiving the next message 
+						//otherwise nanomsg/mangos will be confused :-)
+						monitorFinishReply := "ok"
+						err = channel.Send([]byte(monitorFinishReply))
+						if err != nil {
+							log.Println("alauncher: cmd server - fail to send monitor.finish reply =>",err)
+						}
+					}
+			}
+		}
+	}()
+
+	return cmdChan,nil
+}
+
+func shutdownCmdChannel() {
+	if cmdChannel != nil {
+		cmdChannel.Close()
+		cmdChannel = nil
+	}
+}
+
+var evtChannelAddr = "tcp://0.0.0.0:65502"
+//var evtChannelAddr = "ipc:///tmp/docker-slim-launcher.events.ipc"
+//var evtChannelAddr = "ipc:///opt/dockerslim/ipc/docker-slim-launcher.events.ipc"
+var evtChannel mangos.Socket
+
+func newEvtPublisher(addr string) (mangos.Socket,error) {
+	log.Println("alauncher: creating event publisher...")
+	socket, err := pub.NewSocket()
+	if err != nil {
+		return nil,err
+	}
+
+	if err := socket.SetOption(mangos.OptionSendDeadline,time.Second * 3); err != nil {
+		socket.Close()
+		return nil,err
+	}
+
+	//socket.AddTransport(ipc.NewTransport())
+	socket.AddTransport(tcp.NewTransport())
+	if err = socket.Listen(addr); err != nil {
+		socket.Close()
+		return nil,err
+	}
+
+	return socket,nil
+}
+
+func publishEvt(channel mangos.Socket,evt string) error {
+	if err := channel.Send([]byte(evt)); err != nil {
+		log.Printf("fail to publish '%v' event:%v\n",evt,err)
+		return err
+	}
+
+	return nil
+}
+
+func shutdownEvtChannel() {
+	if evtChannel != nil {
+		evtChannel.Close()
+		evtChannel = nil
+	}
+}
+
+//////////////
+
+func cleanupOnStartup() {
+	if _, err := os.Stat("/tmp/docker-slim-launcher.cmds.ipc"); err == nil {
+		if err := os.Remove("/tmp/docker-slim-launcher.cmds.ipc"); err != nil {
+			fmt.Printf("Error removing unix socket %s: %s", "/tmp/docker-slim-launcher.cmds.ipc", err.Error())
+		}
+	}
+	
+	if _, err := os.Stat("/tmp/docker-slim-launcher.events.ipc"); err == nil {
+		if err := os.Remove("/tmp/docker-slim-launcher.events.ipc"); err != nil {
+			fmt.Printf("Error removing unix socket %s: %s", "/tmp/docker-slim-launcher.events.ipc", err.Error())
+		}
+	}
+}
+
+func cleanupOnShutdown() {
+	fmt.Println("cleanupOnShutdown()...")
+
+	if doneChan != nil {
+		close(doneChan)
+		doneChan = nil
+	}
+
+	shutdownCmdChannel()
+	shutdownEvtChannel()
+}
+
+//////////////
+
+var signals = []os.Signal{
+	os.Interrupt,
+	syscall.SIGTERM,
+	syscall.SIGQUIT,
+	syscall.SIGHUP,
+	syscall.SIGSTOP,
+	syscall.SIGCONT,
+}
+
+func initSignalHandlers() {
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan,signals...)
+	go func(){
+	    sig := <-sigChan
+	    fmt.Printf("cleanup on signal (%v)...\n",sig)
+	    cleanupOnShutdown()
+	    os.Exit(0)
+	}()
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 func sendPids(pidList []int) {
 	pidsData, err := json.Marshal(pidList)
@@ -832,6 +1010,12 @@ func main() {
 		appArgs = os.Args[2:]
 	}
 
+	initSignalHandlers()
+	defer func() {
+		fmt.Println("defered cleanup on shutdown...")
+		cleanupOnShutdown()
+	}()
+
 	/*
 	   monitorPath := fmt.Sprintf("%s/amonitor",myFileDir())
 	   log.Printf("launcher: start monitor (%v)\n",monitorPath)
@@ -871,6 +1055,7 @@ func main() {
 	pidsChan <- []int{app.Process.Pid}
 
 	log.Println("alauncher: waiting for monitor:")
+	/*
 	//TODO: fix the hard coded timeout
 	endTime := time.After(130 * time.Second)
 	work := 0
@@ -886,6 +1071,33 @@ doneRunning:
 			log.Printf(".")
 		}
 	}
+	*/
+
+	doneChan = make(chan struct{})
+	evtChannel,err = newEvtPublisher(evtChannelAddr)
+	failOnError(err)
+	cmdChannel,err = newCmdServer(cmdChannelAddr)
+	failOnError(err)
+
+	cmdChan,err := runCmdServer(cmdChannel,doneChan)
+	failOnError(err)
+	doneRunning:
+	for {
+		select {
+		case cmd := <-cmdChan:
+			log.Println("\nalauncher: command =>",cmd)
+			switch(cmd) {
+				case "monitor.finish":
+					log.Println("alauncher: stopping monitor...")
+					break doneRunning
+				default:
+					log.Println("alauncher: ignoring command =>",cmd)
+			}
+			
+		case <-time.After(time.Second * 5):
+			log.Printf(".")
+		}
+	}
 
 	log.Println("launcher: stopping monitor...")
 	//monitor.Process.Signal(syscall.SIGTERM)
@@ -893,6 +1105,22 @@ doneRunning:
 	log.Println("launcher: waiting for monitor to finish...")
 	<-monDoneAckChan
 	//time.Sleep(3 * time.Second)
+
+	for ptry := 0; ptry < 3; ptry++ {
+		log.Println("launcher: trying to publish 'monitor.finish.completed' event (attempt %v)\n",ptry + 1)
+		err = publishEvt(evtChannel,"monitor.finish.completed")
+	    if err != nil {
+	    	log.Println("launcher: published 'monitor.finish.completed'")
+	    	break
+	    }
+
+		switch err {
+			case mangos.ErrRecvTimeout:
+				log.Println("launcher: publish event timeout... ok")
+			default:
+				log.Println("launcher: publish event error =>",err)
+		}
+	}
 
 	log.Println("launcher: done!")
 }

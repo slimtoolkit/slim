@@ -1,20 +1,30 @@
 package main
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
-	"log"
 	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
-	"text/template"
+	"fmt"
+	"log"
+	"net"
+	"net/url"
 	"time"
-
+	"bytes"
+	"bufio"
+	"strings"
+	//"syscall"
+	"strconv"
+	//"os/signal"
+	"io/ioutil"
+	"encoding/json"
+	"path/filepath"
+	"text/template"
+	
 	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/dustin/go-humanize"
+	"github.com/gdamore/mangos"
+	"github.com/gdamore/mangos/protocol/req"
+	"github.com/gdamore/mangos/protocol/sub"
+	//"github.com/gdamore/mangos/transport/ipc"
+	"github.com/gdamore/mangos/transport/tcp"
 )
 
 func failOnError(err error) {
@@ -40,6 +50,155 @@ func myFileDir() string {
 	failOnError(err)
 	return dirName
 }
+
+func getDockerHostIp() string {
+	dockerHost := os.Getenv("DOCKER_HOST")
+	if dockerHost == "" {
+		return "127.0.0.1"
+	}
+
+	u, err := url.Parse(dockerHost)
+	if err != nil {
+		return "127.0.0.1"
+	}
+
+	switch u.Scheme {
+	case "unix":
+		return "127.0.0.1"
+	default:
+		host,_, err := net.SplitHostPort(u.Host)
+		if err != nil {
+			return "127.0.0.1"
+		}
+
+		return host
+	}
+}
+
+///////////////////////////////////////////////////////////////////////////////
+
+//var cmdChannelAddr = "ipc:///tmp/docker-slim-launcher.cmds.ipc"
+var cmdChannelAddr = "tcp://127.0.0.1:65501"
+var cmdChannel mangos.Socket
+
+func newCmdClient(addr string) (mangos.Socket,error) {
+	socket, err := req.NewSocket()
+	if err != nil {
+		return nil,err
+	}
+
+	if err := socket.SetOption(mangos.OptionSendDeadline,time.Second * 3); err != nil {
+		socket.Close()
+		return nil,err
+	}
+
+	if err := socket.SetOption(mangos.OptionRecvDeadline,time.Second * 3); err != nil {
+		socket.Close()
+		return nil,err
+	}
+
+	//socket.AddTransport(ipc.NewTransport())
+	socket.AddTransport(tcp.NewTransport())
+	if err := socket.Dial(addr); err != nil {
+		socket.Close()
+		return nil,err
+	}
+
+	return socket,nil
+}
+
+func shutdownCmdChannel() {
+	if cmdChannel != nil {
+		cmdChannel.Close()
+		cmdChannel = nil
+	}
+}
+
+func sendCmd(channel mangos.Socket, cmd string) (string,error) {
+	sendTimeouts := 0
+	recvTimeouts := 0
+
+	log.Printf("sendCmd(%s)\n",cmd)
+	for {
+		if err := channel.Send([]byte(cmd)); err != nil {
+			switch err {
+				case mangos.ErrSendTimeout:
+					log.Println("sendCmd(): send timeout...")
+					sendTimeouts++
+					if sendTimeouts > 3 {
+						return "",err
+					}
+				default:
+					return "",err
+			}
+		}
+
+		response, err := channel.Recv()
+		if err != nil {
+			switch err {
+				case mangos.ErrRecvTimeout:
+					log.Println("sendCmd(): receive timeout...")
+					recvTimeouts++
+					if recvTimeouts > 3 {
+						return "",err
+					}
+				default:
+					return "",err
+			}
+		}
+
+		return string(response),nil
+	}
+}
+
+var evtChannelAddr = "tcp://127.0.0.1:65502"
+//var evtChannelAddr = "ipc:///tmp/docker-slim-launcher.events.ipc"
+var evtChannel mangos.Socket
+
+func newEvtChannel(addr string) (mangos.Socket,error) {
+	socket, err := sub.NewSocket()
+	if err != nil {
+		return nil,err
+	}
+
+	//if err := socket.SetOption(mangos.OptionRecvDeadline,time.Second * 30); err != nil {
+	//	socket.Close()
+	//	return nil,err
+	//}
+
+	//socket.AddTransport(ipc.NewTransport())
+	socket.AddTransport(tcp.NewTransport())
+	if err := socket.Dial(addr); err != nil {
+		socket.Close()
+		return nil,err
+	}
+
+	err = socket.SetOption(mangos.OptionSubscribe, []byte(""))
+	if err != nil {
+		return nil,err
+	}
+
+	return socket,nil
+}
+
+func shutdownEvtChannel() {
+	if evtChannel != nil {
+		evtChannel.Close()
+		evtChannel = nil
+	}
+}
+
+func getEvt(channel mangos.Socket) (string,error) {
+	log.Println("getEvt()")
+	evt, err := channel.Recv()
+	if err != nil {
+		return "",err
+	}
+
+	return string(evt),nil
+}
+
+///////////////////////////////////////////////////////////////////////////////
 
 type imageInst struct {
 	instCmd      string
@@ -503,12 +662,20 @@ func main() {
 	}
 
 	localVolumePath := fmt.Sprintf("%s/container", myFileDir())
-	artifactLocation := fmt.Sprintf("%v/artifacts", localVolumePath)
 
+	artifactLocation := fmt.Sprintf("%v/artifacts", localVolumePath)
 	artifactDir, err := os.Stat(artifactLocation)
 	if os.IsNotExist(err) {
 		os.MkdirAll(artifactLocation, 0777)
 		artifactDir, err = os.Stat(artifactLocation)
+		failOnError(err)
+	}
+	
+	ipcLocation := fmt.Sprintf("%v/ipc", localVolumePath)
+	_, err = os.Stat(ipcLocation)
+	if os.IsNotExist(err) {
+		os.MkdirAll(ipcLocation, 0777)
+		_, err = os.Stat(ipcLocation)
 		failOnError(err)
 	}
 
@@ -522,6 +689,9 @@ func main() {
 	if !features["image-info-only"] {
 		mountInfo := fmt.Sprintf("%s:/opt/dockerslim", localVolumePath)
 
+		var cmdPort docker.Port = "65501/tcp"
+		var evtPort docker.Port = "65502/tcp"
+
 		containerOptions := docker.CreateContainerOptions{
 			Name: "dockerslimk",
 			Config: &docker.Config{
@@ -534,6 +704,10 @@ func main() {
 				//        RW: true,
 				//    },
 				//},
+				ExposedPorts: map[docker.Port]struct{}{
+					cmdPort: struct{}{},
+					evtPort: struct{}{},
+					},
 				Entrypoint: []string{"/opt/dockerslim/bin/alauncher"},
 				Cmd:        fatContainerCmd,
 				Labels:     map[string]string{"type": "dockerslim"},
@@ -560,22 +734,52 @@ func main() {
 		})
 		failOnError(err)
 
+		inspContainerInfo, err := client.InspectContainer(containerInfo.ID)
+		failWhen(inspContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
+		log.Printf("container NetworkSettings.Ports => %#v\n",inspContainerInfo.NetworkSettings.Ports)
+		
+		cmdPortBindings := inspContainerInfo.NetworkSettings.Ports[cmdPort]
+		evtPortBindings := inspContainerInfo.NetworkSettings.Ports[evtPort]
+		dockerHostIp := getDockerHostIp()
+		cmdChannelAddr = fmt.Sprintf("tcp://%v:%v", dockerHostIp,cmdPortBindings[0].HostPort)
+		evtChannelAddr = fmt.Sprintf("tcp://%v:%v", dockerHostIp,evtPortBindings[0].HostPort)
+		log.Printf("cmdChannelAddr=%v evtChannelAddr=%v\n",cmdChannelAddr,evtChannelAddr)
 		//TODO: keep checking the monitor state until no new files (and processes) are discovered
 		log.Println("docker-slim: watching container monitor...")
-		endTime := time.After(time.Second * 200)
-		work := 0
 
-	doneWatching:
-		for {
-			select {
-			case <-endTime:
-				log.Println("docker-slim: done with work!")
-				break doneWatching
-			case <-time.After(time.Second * 3):
-				work++
-				log.Println("docker-slim: still watching =>", work)
-			}
-		}
+		//evtChannelAddr = fmt.Sprintf("ipc://%v/ipc/docker-slim-launcher.events.ipc", localVolumePath)
+		//cmdChannelAddr = fmt.Sprintf("ipc://%v/ipc/docker-slim-launcher.cmds.ipc", localVolumePath)
+
+		evtChannel,err = newEvtChannel(evtChannelAddr)
+		failOnError(err)
+		cmdChannel,err = newCmdClient(cmdChannelAddr)
+		failOnError(err)
+
+		//endTime := time.After(time.Second * 200)
+		//work := 0
+		//doneWatching:
+		//for {
+		//	select {
+		//	case <-endTime:
+		//		log.Println("docker-slim: done with work!")
+		//		break doneWatching
+		//	case <-time.After(time.Second * 3):
+		//		work++
+		//		log.Println("docker-slim: still watching =>", work)
+		//	}
+		//}
+		log.Println("press any key when you are done using the container...")
+		creader := bufio.NewReader(os.Stdin)
+		_,_,_ = creader.ReadLine() //or _,_ = creaderReadString('\n')
+		cmdResponse,err := sendCmd(cmdChannel,"monitor.finish")
+		log.Printf("'monitor.finish' response => '%v'\n",cmdResponse)
+		log.Println("waiting for the container finish its work...")
+		//for now there's only one event ("done")
+		evt,err := getEvt(evtChannel)
+		log.Printf("got alauncher event => '%v'\n",evt)
+
+		shutdownEvtChannel()
+		shutdownCmdChannel()
 
 		//log.Println("docker-slim: exporting \"fat\" container artifacts...")
 		//time.Sleep(5 * time.Second)

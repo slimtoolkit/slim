@@ -70,7 +70,7 @@ The demo run on Mac OS X, but you can build a linux version.
 	 
 3. Run `docker-slim`:
 
-	`cd ../../dist`
+	`cd ../../dist_mac`
 	
 	`./docker-slim my/sample-node-app`
 	
@@ -84,7 +84,7 @@ The demo run on Mac OS X, but you can build a linux version.
 		
 	You can get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
 
-5. Wait a couple of minutes until `docker-slim` says it's done
+5. Press any key and wait until `docker-slim` says it's done
 
 6. Once DockerSlim is done check that the new minified image is there
 
@@ -98,7 +98,7 @@ The demo run on Mac OS X, but you can build a linux version.
 
 Notes:
 
-You can explore the artifacts DockerSlim generates when it's creating a slim image. You'll find those in `dist/container/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.fat`. 
+You can explore the artifacts DockerSlim generates when it's creating a slim image. You'll find those in `dist_mac/container/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.fat`. 
 
 If you'd like to see the artifacts without running `docker-slim` you can take a look at the `sample_artifacts` directory in the repo. It doesn't include any image files, but you'll find:
 
@@ -108,7 +108,7 @@ If you'd like to see the artifacts without running `docker-slim` you can take a 
 
 If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `image-info-only` option.
 
-You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.4/mac_dist.zip)
+You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.5/dist_mac.zip)
 
 
 ## BUILD PROCESS
