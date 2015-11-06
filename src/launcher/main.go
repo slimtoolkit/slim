@@ -1,33 +1,33 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"os"
-	"os/exec"
-	"syscall"
-	"os/signal"
 	"bufio"
 	"bytes"
 	"crypto/sha1"
 	"encoding/hex"
 	"encoding/json"
+	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"net"
+	"os"
+	"os/exec"
+	"os/signal"
 	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/gdamore/mangos"
-	"github.com/gdamore/mangos/protocol/rep"
 	"github.com/gdamore/mangos/protocol/pub"
+	"github.com/gdamore/mangos/protocol/rep"
 	//"github.com/gdamore/mangos/transport/ipc"
-	"github.com/gdamore/mangos/transport/tcp"
 	"bitbucket.org/madmo/fanotify"
 	"github.com/cloudimmunity/pdiscover"
+	"github.com/gdamore/mangos/transport/tcp"
 )
 
 func failOnError(err error) {
@@ -59,69 +59,70 @@ func fileDir(fileName string) string {
 var doneChan chan struct{}
 
 var cmdChannelAddr = "tcp://0.0.0.0:65501"
+
 //var cmdChannelAddr = "ipc:///tmp/docker-slim-launcher.cmds.ipc"
 //var cmdChannelAddr = "ipc:///opt/dockerslim/ipc/docker-slim-launcher.cmds.ipc"
 var cmdChannel mangos.Socket
 
-func newCmdServer(addr string) (mangos.Socket,error) {
+func newCmdServer(addr string) (mangos.Socket, error) {
 	log.Println("alauncher: creating cmd server...")
 	socket, err := rep.NewSocket()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
-	if err := socket.SetOption(mangos.OptionRecvDeadline,time.Second * 3); err != nil {
+	if err := socket.SetOption(mangos.OptionRecvDeadline, time.Second*3); err != nil {
 		socket.Close()
-		return nil,err
+		return nil, err
 	}
 
 	//socket.AddTransport(ipc.NewTransport())
 	socket.AddTransport(tcp.NewTransport())
 	if err := socket.Listen(addr); err != nil {
 		socket.Close()
-		return nil,err
+		return nil, err
 	}
 
-	return socket,nil
+	return socket, nil
 }
 
-func runCmdServer(channel mangos.Socket,done <-chan struct{}) (<-chan string,error) {
+func runCmdServer(channel mangos.Socket, done <-chan struct{}) (<-chan string, error) {
 	cmdChan := make(chan string)
 	go func() {
 		for {
 			// Could also use sock.RecvMsg to get header
 			log.Println("alauncher: cmd server - waiting for a command...")
 			select {
-				case <- done:
-					log.Println("alauncher: cmd server - done...")
-					return
-				default:
-					if rawCmd, err := channel.Recv(); err != nil {
-						switch err {
-							case mangos.ErrRecvTimeout:
-								log.Println("alauncher: cmd server - timeout... ok")
-							default:
-								log.Println("alauncher: cmd server - error =>",err)
-						}
-					} else {
-						cmd := string(rawCmd)
-						log.Println("alauncher: cmd server - got a command =>",cmd)
-						cmdChan <- cmd
-						//for now just ack the command and process the command asynchronously
-						//NOTE:
-						//must reply before receiving the next message 
-						//otherwise nanomsg/mangos will be confused :-)
-						monitorFinishReply := "ok"
-						err = channel.Send([]byte(monitorFinishReply))
-						if err != nil {
-							log.Println("alauncher: cmd server - fail to send monitor.finish reply =>",err)
-						}
+			case <-done:
+				log.Println("alauncher: cmd server - done...")
+				return
+			default:
+				if rawCmd, err := channel.Recv(); err != nil {
+					switch err {
+					case mangos.ErrRecvTimeout:
+						log.Println("alauncher: cmd server - timeout... ok")
+					default:
+						log.Println("alauncher: cmd server - error =>", err)
 					}
+				} else {
+					cmd := string(rawCmd)
+					log.Println("alauncher: cmd server - got a command =>", cmd)
+					cmdChan <- cmd
+					//for now just ack the command and process the command asynchronously
+					//NOTE:
+					//must reply before receiving the next message
+					//otherwise nanomsg/mangos will be confused :-)
+					monitorFinishReply := "ok"
+					err = channel.Send([]byte(monitorFinishReply))
+					if err != nil {
+						log.Println("alauncher: cmd server - fail to send monitor.finish reply =>", err)
+					}
+				}
 			}
 		}
 	}()
 
-	return cmdChan,nil
+	return cmdChan, nil
 }
 
 func shutdownCmdChannel() {
@@ -132,35 +133,36 @@ func shutdownCmdChannel() {
 }
 
 var evtChannelAddr = "tcp://0.0.0.0:65502"
+
 //var evtChannelAddr = "ipc:///tmp/docker-slim-launcher.events.ipc"
 //var evtChannelAddr = "ipc:///opt/dockerslim/ipc/docker-slim-launcher.events.ipc"
 var evtChannel mangos.Socket
 
-func newEvtPublisher(addr string) (mangos.Socket,error) {
+func newEvtPublisher(addr string) (mangos.Socket, error) {
 	log.Println("alauncher: creating event publisher...")
 	socket, err := pub.NewSocket()
 	if err != nil {
-		return nil,err
+		return nil, err
 	}
 
-	if err := socket.SetOption(mangos.OptionSendDeadline,time.Second * 3); err != nil {
+	if err := socket.SetOption(mangos.OptionSendDeadline, time.Second*3); err != nil {
 		socket.Close()
-		return nil,err
+		return nil, err
 	}
 
 	//socket.AddTransport(ipc.NewTransport())
 	socket.AddTransport(tcp.NewTransport())
 	if err = socket.Listen(addr); err != nil {
 		socket.Close()
-		return nil,err
+		return nil, err
 	}
 
-	return socket,nil
+	return socket, nil
 }
 
-func publishEvt(channel mangos.Socket,evt string) error {
+func publishEvt(channel mangos.Socket, evt string) error {
 	if err := channel.Send([]byte(evt)); err != nil {
-		log.Printf("fail to publish '%v' event:%v\n",evt,err)
+		log.Printf("fail to publish '%v' event:%v\n", evt, err)
 		return err
 	}
 
@@ -182,7 +184,7 @@ func cleanupOnStartup() {
 			fmt.Printf("Error removing unix socket %s: %s", "/tmp/docker-slim-launcher.cmds.ipc", err.Error())
 		}
 	}
-	
+
 	if _, err := os.Stat("/tmp/docker-slim-launcher.events.ipc"); err == nil {
 		if err := os.Remove("/tmp/docker-slim-launcher.events.ipc"); err != nil {
 			fmt.Printf("Error removing unix socket %s: %s", "/tmp/docker-slim-launcher.events.ipc", err.Error())
@@ -191,7 +193,7 @@ func cleanupOnStartup() {
 }
 
 func cleanupOnShutdown() {
-	fmt.Println("cleanupOnShutdown()...")
+	//fmt.Println("cleanupOnShutdown()...")
 
 	if doneChan != nil {
 		close(doneChan)
@@ -215,12 +217,12 @@ var signals = []os.Signal{
 
 func initSignalHandlers() {
 	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan,signals...)
-	go func(){
-	    sig := <-sigChan
-	    fmt.Printf("cleanup on signal (%v)...\n",sig)
-	    cleanupOnShutdown()
-	    os.Exit(0)
+	signal.Notify(sigChan, signals...)
+	go func() {
+		sig := <-sigChan
+		fmt.Printf(" launcher: cleanup on signal (%v)...\n", sig)
+		cleanupOnShutdown()
+		os.Exit(0)
 	}()
 }
 
@@ -241,7 +243,7 @@ func sendPids(pidList []int) {
 /////////
 
 type event struct {
-	Id      uint32
+	ID      uint32
 	Pid     int32
 	File    string
 	IsRead  bool
@@ -266,7 +268,7 @@ type processInfo struct {
 
 type fileInfo struct {
 	EventCount   uint32 `json:"event_count"`
-	FirstEventId uint32 `json:"first_eid"`
+	FirstEventID uint32 `json:"first_eid"`
 	Name         string `json:"-"`
 	ReadCount    uint32 `json:"reads,omitempty"`
 	WriteCount   uint32 `json:"writes,omitempty"`
@@ -340,21 +342,21 @@ func getProcessInfo(pid int32) (*processInfo, error) {
 	return info, nil
 }
 
-//func listen_events(mount_point string, stopChan chan bool) chan map[event]bool {
-func listen_events(mount_point string, stopChan chan bool) <-chan *monitorReport {
-	log.Println("monitor: listen_events start")
+//func listenEvents(mountPoint string, stopChan chan bool) chan map[event]bool {
+func listenEvents(mountPoint string, stopChan chan bool) <-chan *monitorReport {
+	log.Println("monitor: listenEvents start")
 
 	nd, err := fanotify.Initialize(fanotify.FAN_CLASS_NOTIF, os.O_RDONLY)
 	check(err)
 	err = nd.Mark(fanotify.FAN_MARK_ADD|fanotify.FAN_MARK_MOUNT,
-		fanotify.FAN_MODIFY|fanotify.FAN_ACCESS|fanotify.FAN_OPEN, -1, mount_point)
+		fanotify.FAN_MODIFY|fanotify.FAN_ACCESS|fanotify.FAN_OPEN, -1, mountPoint)
 	check(err)
 
-	//events_chan := make(chan map[event]bool, 1)
-	events_chan := make(chan *monitorReport, 1)
+	//eventsChan := make(chan map[event]bool, 1)
+	eventsChan := make(chan *monitorReport, 1)
 
 	go func() {
-		log.Println("monitor: listen_events worker starting")
+		log.Println("monitor: listenEvents worker starting")
 		//events := make(map[event]bool, 1)
 		report := &monitorReport{
 			MonitorPid:       os.Getpid(),
@@ -364,15 +366,15 @@ func listen_events(mount_point string, stopChan chan bool) <-chan *monitorReport
 
 		eventChan := make(chan event)
 		go func() {
-			var eventId uint32 = 0
+			var eventID uint32
 
 			for {
 				data, err := nd.GetEvent()
 				check(err)
-				//log.Printf("TMP: monitor: listen_events: data.Mask =>%x\n",data.Mask)
+				//log.Printf("TMP: monitor: listenEvents: data.Mask =>%x\n",data.Mask)
 
 				if (data.Mask & fanotify.FAN_Q_OVERFLOW) == fanotify.FAN_Q_OVERFLOW {
-					log.Println("monitor: listen_events: overflow event")
+					log.Println("monitor: listenEvents: overflow event")
 					continue
 				}
 
@@ -381,30 +383,30 @@ func listen_events(mount_point string, stopChan chan bool) <-chan *monitorReport
 				isWrite := false
 
 				if (data.Mask & fanotify.FAN_OPEN) == fanotify.FAN_OPEN {
-					//log.Println("TMP: monitor: listen_events: file open")
+					//log.Println("TMP: monitor: listenEvents: file open")
 					doNotify = true
 				}
 
 				if (data.Mask & fanotify.FAN_ACCESS) == fanotify.FAN_ACCESS {
-					//log.Println("TMP: monitor: listen_events: file read")
+					//log.Println("TMP: monitor: listenEvents: file read")
 					isRead = true
 					doNotify = true
 				}
 
 				if (data.Mask & fanotify.FAN_MODIFY) == fanotify.FAN_MODIFY {
-					//log.Println("TMP: monitor: listen_events: file write")
+					//log.Println("TMP: monitor: listenEvents: file write")
 					isWrite = true
 					doNotify = true
 				}
 
 				path, err := os.Readlink(fmt.Sprintf("/proc/self/fd/%d", data.File.Fd()))
 				check(err)
-				//log.Println("TMP: monitor: listen_events: file path =>",path)
+				//log.Println("TMP: monitor: listenEvents: file path =>",path)
 
 				data.File.Close()
 				if doNotify {
-					eventId++
-					e := event{Id: eventId, Pid: data.Pid, File: path, IsRead: isRead, IsWrite: isWrite}
+					eventID++
+					e := event{ID: eventID, Pid: data.Pid, File: path, IsRead: isRead, IsWrite: isWrite}
 					eventChan <- e
 				}
 			}
@@ -414,29 +416,29 @@ func listen_events(mount_point string, stopChan chan bool) <-chan *monitorReport
 		for !s {
 			select {
 			//case <-time.After(110 * time.Second):
-			//	log.Println("monitor: listen_events - event timeout...")
+			//	log.Println("monitor: listenEvents - event timeout...")
 			//	s = true
 			case <-stopChan:
-				log.Println("monitor: listen_events stopping...")
+				log.Println("monitor: listenEvents stopping...")
 				s = true
 			case e := <-eventChan:
 				report.EventCount++
-				//log.Println("TMP: monitor: listen_events: event ",report.EventCount)
+				//log.Println("TMP: monitor: listenEvents: event ",report.EventCount)
 
-				if e.Id == 1 {
+				if e.ID == 1 {
 					//first event represents the main process
 					if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
 						report.MainProcess = pinfo
 						report.Processes = make(map[string]*processInfo)
 						report.Processes[strconv.Itoa(int(e.Pid))] = pinfo
-						//log.Println("TMP: monitor: listen_events: (1) adding pi for ",
+						//log.Println("TMP: monitor: listenEvents: (1) adding pi for ",
 						//	e.Pid,"info:",report.Processes[strconv.Itoa(int(e.Pid))])
 					}
 				} else {
 					if _, ok := report.Processes[strconv.Itoa(int(e.Pid))]; !ok {
 						if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
 							report.Processes[strconv.Itoa(int(e.Pid))] = pinfo
-							//log.Println("TMP: monitor: listen_events: (2) adding pi for ",
+							//log.Println("TMP: monitor: listenEvents: (2) adding pi for ",
 							//	e.Pid,"info:",report.Processes[strconv.Itoa(int(e.Pid))])
 						}
 					}
@@ -444,7 +446,7 @@ func listen_events(mount_point string, stopChan chan bool) <-chan *monitorReport
 
 				if _, ok := report.ProcessFiles[strconv.Itoa(int(e.Pid))]; !ok {
 					report.ProcessFiles[strconv.Itoa(int(e.Pid))] = make(map[string]*fileInfo)
-					//log.Println("TMP: monitor: listen_events: adding pf for ",e.Pid)
+					//log.Println("TMP: monitor: listenEvents: adding pf for ",e.Pid)
 				}
 
 				if existingFi, ok := report.ProcessFiles[strconv.Itoa(int(e.Pid))][e.File]; !ok {
@@ -482,24 +484,24 @@ func listen_events(mount_point string, stopChan chan bool) <-chan *monitorReport
 					}
 				}
 
-				log.Printf("monitor: listen_events event => %#v\n", e)
+				//log.Printf("monitor: listenEvents event => %#v\n", e)
 			}
 		}
 
-		log.Printf("monitor: listen_events - sending report (processed %v events)...\n", report.EventCount)
-		events_chan <- report
+		log.Printf("monitor: listenEvents - sending report (processed %v events)...\n", report.EventCount)
+		eventsChan <- report
 	}()
 
-	return events_chan
+	return eventsChan
 }
 
-func monitor_process(stop chan bool) chan map[int][]int {
-	log.Println("monitor: monitor_process start")
+func monitorProcess(stop chan bool) chan map[int][]int {
+	log.Println("monitor: monitorProcess start")
 
 	watcher, err := pdiscover.NewAllWatcher(pdiscover.PROC_EVENT_ALL)
 	check(err)
 
-	forks_chan := make(chan map[int][]int, 1)
+	forksChan := make(chan map[int][]int, 1)
 
 	go func() {
 		forks := make(map[int][]int)
@@ -517,29 +519,29 @@ func monitor_process(stop chan bool) chan map[int][]int {
 				panic(err)
 			}
 		}
-		forks_chan <- forks
+		forksChan <- forks
 		watcher.Close()
 	}()
 
-	return forks_chan
+	return forksChan
 }
 
-func get_files(events chan map[event]bool, pids_map chan map[int][]int, pids chan []int) []string {
+func getFiles(events chan map[event]bool, pidsMap chan map[int][]int, pids chan []int) []string {
 	p := <-pids
-	pm := <-pids_map
+	pm := <-pidsMap
 	e := <-events
-	all_pids := make(map[int]bool, 0)
+	allPids := make(map[int]bool, 0)
 
 	for _, v := range p {
-		all_pids[v] = true
+		allPids[v] = true
 		for _, pl := range pm[v] {
-			all_pids[pl] = true
+			allPids[pl] = true
 		}
 	}
 
-	files := make([]string, 0)
-	for k, _ := range e {
-		_, found := all_pids[int(k.Pid)]
+	var files []string
+	for k := range e {
+		_, found := allPids[int(k.Pid)]
 		if found {
 			files = append(files, k.File)
 		}
@@ -547,23 +549,24 @@ func get_files(events chan map[event]bool, pids_map chan map[int][]int, pids cha
 	return files
 }
 
-func get_files_all(events chan map[event]bool) []string {
-	log.Println("launcher: get_files_all - getting events...")
+func getFilesAll(events chan map[event]bool) []string {
+	log.Println("launcher: getFilesAll - getting events...")
 	e := <-events
-	log.Println("launcher: get_files_all - event count =>", len(e))
-	files := make([]string, 0)
-	for k, _ := range e {
-		log.Println("launcher: get_files_all - adding file =>", k.File)
+	log.Println("launcher: getFilesAll - event count =>", len(e))
+
+	var files []string
+	for k := range e {
+		log.Println("launcher: getFilesAll - adding file =>", k.File)
 		files = append(files, k.File)
 	}
 	return files
 }
 
-func files_to_inodes(files []string) []int {
+func filesToInodes(files []string) []int {
 	cmd := "/usr/bin/stat"
 	args := []string{"-L", "-c", "%i"}
 	args = append(args, files...)
-	inodes := make([]int, 0)
+	var inodes []int
 
 	c := exec.Command(cmd, args...)
 	out, _ := c.Output()
@@ -578,15 +581,15 @@ func files_to_inodes(files []string) []int {
 	return inodes
 }
 
-func find_symlinks(files []string, mp string) map[string]*artifactProps {
+func findSymlinks(files []string, mp string) map[string]*artifactProps {
 	cmd := "/usr/bin/find"
 	args := []string{"-L", mp, "-mount", "-printf", "%i %p\n"}
 	c := exec.Command(cmd, args...)
 	out, _ := c.Output()
 	c.Wait()
 
-	inodes := files_to_inodes(files)
-	inode_to_files := make(map[int][]string)
+	inodes := filesToInodes(files)
+	inodeToFiles := make(map[int][]string)
 
 	for _, v := range strings.Split(string(out), "\n") {
 		v = strings.TrimSpace(v)
@@ -595,12 +598,12 @@ func find_symlinks(files []string, mp string) map[string]*artifactProps {
 		if err != nil {
 			continue
 		}
-		inode_to_files[inode] = append(inode_to_files[inode], info[1])
+		inodeToFiles[inode] = append(inodeToFiles[inode], info[1])
 	}
 
 	result := make(map[string]*artifactProps, 0)
 	for _, i := range inodes {
-		v := inode_to_files[i]
+		v := inodeToFiles[i]
 		for _, f := range v {
 			result[f] = nil
 		}
@@ -682,17 +685,17 @@ func getDataType(artifactFileName string) (string, error) {
 type artifactType int
 
 const (
-	DirArtifactType     = 1
-	FileArtifactType    = 2
-	SymlinkArtifactType = 3
-	UnknownArtifactType = 99
+	dirArtifactType     = 1
+	fileArtifactType    = 2
+	symlinkArtifactType = 3
+	unknownArtifactType = 99
 )
 
 var artifactTypeNames = map[artifactType]string{
-	DirArtifactType:     "Dir",
-	FileArtifactType:    "File",
-	SymlinkArtifactType: "Symlink",
-	UnknownArtifactType: "Unknown",
+	dirArtifactType:     "Dir",
+	fileArtifactType:    "File",
+	symlinkArtifactType: "Symlink",
+	unknownArtifactType: "Unknown",
 }
 
 func (t artifactType) String() string {
@@ -794,22 +797,22 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 
 	switch {
 	case srcLinkFileInfo.Mode().IsRegular():
-		log.Printf("prepareArtifact - is a regular file")
-		props.FileType = FileArtifactType
+		//log.Printf("prepareArtifact - is a regular file")
+		props.FileType = fileArtifactType
 		props.Sha1Hash, _ = getFileHash(artifactFileName)
 		props.DataType, _ = getDataType(artifactFileName)
 		p.fileMap[artifactFileName] = props
 		p.rawNames[artifactFileName] = props
 	case (srcLinkFileInfo.Mode() & os.ModeSymlink) != 0:
-		log.Printf("prepareArtifact - is a symlink")
+		//log.Printf("prepareArtifact - is a symlink")
 		linkRef, err := os.Readlink(artifactFileName)
 		if err != nil {
 			log.Printf("prepareArtifact - error getting reference for symlink: %v\n", artifactFileName)
 			return
 		}
 
-		log.Printf("prepareArtifact(%s): src is a link! references => %s\n", artifactFileName, linkRef)
-		props.FileType = SymlinkArtifactType
+		//log.Printf("prepareArtifact(%s): src is a link! references => %s\n", artifactFileName, linkRef)
+		props.FileType = symlinkArtifactType
 		props.LinkRef = linkRef
 
 		if _, ok := p.rawNames[linkRef]; !ok {
@@ -821,17 +824,15 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 
 	case srcLinkFileInfo.Mode().IsDir():
 		log.Printf("prepareArtifact - is a directory (shouldn't see it)")
-		props.FileType = DirArtifactType
+		props.FileType = dirArtifactType
 	default:
 		log.Printf("prepareArtifact - other type (shouldn't see it)")
 	}
 }
 
 func (p *artifactStore) prepareArtifacts() {
-	for artifactFileName, artifactIsLink := range p.rawNames {
-		log.Printf("prepareArtifacts - artifact => %v (is link: %v)\n",
-			artifactFileName, artifactIsLink)
-
+	for artifactFileName := range p.rawNames {
+		//log.Printf("prepareArtifacts - artifact => %v\n",artifactFileName)
 		p.prepareArtifact(artifactFileName)
 	}
 
@@ -840,7 +841,8 @@ func (p *artifactStore) prepareArtifacts() {
 
 func (p *artifactStore) resolveLinks() {
 	for name := range p.resolve {
-		log.Println("resolveLinks - resolving:", name)
+		_ = name
+		//log.Println("resolveLinks - resolving:", name)
 		//TODO
 	}
 }
@@ -848,7 +850,7 @@ func (p *artifactStore) resolveLinks() {
 func (p *artifactStore) saveArtifacts() {
 	for fileName := range p.fileMap {
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
-		log.Println("saveArtifacts - saving file data =>", filePath)
+		//log.Println("saveArtifacts - saving file data =>", filePath)
 		err := cpFile(fileName, filePath)
 		if err != nil {
 			log.Println("saveArtifacts - error saving file =>", err)
@@ -870,19 +872,19 @@ func (p *artifactStore) saveArtifacts() {
 	}
 }
 
-type ImageReport struct {
+type imageReport struct {
 	Files []*artifactProps `json:"files"`
 }
 
-type ReportInfo struct {
+type reportInfo struct {
 	Monitor *monitorReport `json:"monitor"`
-	Image   ImageReport    `json:"image"`
+	Image   imageReport    `json:"image"`
 }
 
 func (p *artifactStore) saveReport() {
 	sort.Strings(p.nameList)
 
-	report := ReportInfo{Monitor: p.monReport}
+	report := reportInfo{Monitor: p.monReport}
 
 	for _, fname := range p.nameList {
 		report.Image.Files = append(report.Image.Files, p.rawNames[fname])
@@ -898,7 +900,7 @@ func (p *artifactStore) saveReport() {
 		check(err)
 	}
 
-	reportFilePath := fmt.Sprintf("%s/%s", artifactDirName, reportName)
+	reportFilePath := filepath.Join(artifactDirName, reportName)
 	log.Println("launcher: monitor - saving report to", reportFilePath)
 
 	reportData, err := json.MarshalIndent(report, "", "  ")
@@ -917,7 +919,7 @@ func saveResults(monReport *monitorReport, fileNames map[string]*artifactProps) 
 	artifactStore.saveReport()
 }
 
-func write_data(monitorFileName string, files map[string]bool) {
+func writeData(monitorFileName string, files map[string]bool) {
 	artifactDirName := "/opt/dockerslim/artifacts"
 	/*
 		err = os.MkdirAll(artifactDir, 0777)
@@ -932,9 +934,10 @@ func write_data(monitorFileName string, files map[string]bool) {
 		check(err)
 	}
 
-	result_file := fmt.Sprintf("%s/%s", artifactDirName, monitorFileName)
-	log.Println("launcher: monitor - saving results to", result_file)
-	f, err := os.Create(result_file)
+	resultFile := filepath.Join(artifactDirName, monitorFileName)
+
+	log.Println("launcher: monitor - saving results to", resultFile)
+	f, err := os.Create(resultFile)
 	check(err)
 	defer f.Close()
 	w := bufio.NewWriter(f)
@@ -946,33 +949,33 @@ func write_data(monitorFileName string, files map[string]bool) {
 	w.Flush()
 }
 
-func monitor(stop_work chan bool, stop_work_ack chan bool, pids chan []int) {
+func monitor(stopWork chan bool, stopWorkAck chan bool, pids chan []int) {
 	log.Println("launcher: monitor starting...")
-	mount_point := "/"
+	mountPoint := "/"
 	//file := "/opt/dockerslim/artifacts/monitor_results"
 	//monitorFileName := "monitor_results"
 
-	//stop_events := make(chan bool, 1)
-	stop_events := make(chan bool)
-	//events := listen_events(mount_point, stop_events)
-	reportChan := listen_events(mount_point, stop_events)
+	//stopEvents := make(chan bool, 1)
+	stopEvents := make(chan bool)
+	//events := listenEvents(mountPoint, stopEvents)
+	reportChan := listenEvents(mountPoint, stopEvents)
 
 	//stop_process := make(chan bool, 1)
-	//pids_map := monitor_process(stop_process)
+	//pidsMap := monitorProcess(stop_process)
 
 	go func() {
 		log.Println("launcher: monitor - waiting to stop monitoring...")
-		<-stop_work
+		<-stopWork
 		log.Println("launcher: monitor - stop message...")
-		stop_events <- true
+		stopEvents <- true
 		//stop_process <- true
 		log.Println("launcher: monitor - processing data...")
-		//files := get_files(events, pids_map, pids)
+		//files := getFiles(events, pidsMap, pids)
 		//NOTE/TODO:
-		//should use get_files() though it won't work properly for apps that spawn processes
+		//should use getFiles() though it won't work properly for apps that spawn processes
 		//because the pid list only contains the pid for the main app process
 		//(when process monitoring is not used)
-		//files := get_files_all(events)
+		//files := getFilesAll(events)
 		report := <-reportChan
 
 		//processCount := len(report.ProcessFiles)
@@ -987,10 +990,10 @@ func monitor(stop_work chan bool, stop_work_ack chan bool, pids chan []int) {
 			}
 		}
 
-		allFilesMap := find_symlinks(fileList, mount_point)
-		//write_data(monitorFileName, allFilesList)
+		allFilesMap := findSymlinks(fileList, mountPoint)
+		//writeData(monitorFileName, allFilesList)
 		saveResults(report, allFilesMap)
-		stop_work_ack <- true
+		stopWorkAck <- true
 	}()
 }
 
@@ -1056,44 +1059,44 @@ func main() {
 
 	log.Println("alauncher: waiting for monitor:")
 	/*
-	//TODO: fix the hard coded timeout
-	endTime := time.After(130 * time.Second)
-	work := 0
+			//TODO: fix the hard coded timeout
+			endTime := time.After(130 * time.Second)
+			work := 0
 
-doneRunning:
-	for {
-		select {
-		case <-endTime:
-			log.Println("\nalauncher: done waiting :)")
-			break doneRunning
-		case <-time.After(time.Second * 5):
-			work++
-			log.Printf(".")
-		}
-	}
+		doneRunning:
+			for {
+				select {
+				case <-endTime:
+					log.Println("\nalauncher: done waiting :)")
+					break doneRunning
+				case <-time.After(time.Second * 5):
+					work++
+					log.Printf(".")
+				}
+			}
 	*/
 
 	doneChan = make(chan struct{})
-	evtChannel,err = newEvtPublisher(evtChannelAddr)
+	evtChannel, err = newEvtPublisher(evtChannelAddr)
 	failOnError(err)
-	cmdChannel,err = newCmdServer(cmdChannelAddr)
+	cmdChannel, err = newCmdServer(cmdChannelAddr)
 	failOnError(err)
 
-	cmdChan,err := runCmdServer(cmdChannel,doneChan)
+	cmdChan, err := runCmdServer(cmdChannel, doneChan)
 	failOnError(err)
-	doneRunning:
+doneRunning:
 	for {
 		select {
 		case cmd := <-cmdChan:
-			log.Println("\nalauncher: command =>",cmd)
-			switch(cmd) {
-				case "monitor.finish":
-					log.Println("alauncher: stopping monitor...")
-					break doneRunning
-				default:
-					log.Println("alauncher: ignoring command =>",cmd)
+			log.Println("\nalauncher: command =>", cmd)
+			switch cmd {
+			case "monitor.finish":
+				log.Println("alauncher: stopping monitor...")
+				break doneRunning
+			default:
+				log.Println("alauncher: ignoring command =>", cmd)
 			}
-			
+
 		case <-time.After(time.Second * 5):
 			log.Printf(".")
 		}
@@ -1107,18 +1110,18 @@ doneRunning:
 	//time.Sleep(3 * time.Second)
 
 	for ptry := 0; ptry < 3; ptry++ {
-		log.Println("launcher: trying to publish 'monitor.finish.completed' event (attempt %v)\n",ptry + 1)
-		err = publishEvt(evtChannel,"monitor.finish.completed")
-	    if err != nil {
-	    	log.Println("launcher: published 'monitor.finish.completed'")
-	    	break
-	    }
+		log.Printf("launcher: trying to publish 'monitor.finish.completed' event (attempt %v)\n", ptry+1)
+		err = publishEvt(evtChannel, "monitor.finish.completed")
+		if err == nil {
+			log.Println("launcher: published 'monitor.finish.completed'")
+			break
+		}
 
 		switch err {
-			case mangos.ErrRecvTimeout:
-				log.Println("launcher: publish event timeout... ok")
-			default:
-				log.Println("launcher: publish event error =>",err)
+		case mangos.ErrRecvTimeout:
+			log.Println("launcher: publish event timeout... ok")
+		default:
+			log.Println("launcher: publish event error =>", err)
 		}
 	}
 

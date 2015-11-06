@@ -6,6 +6,7 @@
 
 package main
 
+/* TODO: refactor so we can share the monitor code with the launcher process...
 import (
 	"bitbucket.org/madmo/fanotify"
 	"github.com/cloudimmunity/pdiscover"
@@ -272,3 +273,4 @@ func main() {
 	log.Println("monitor: saving results to", file)
 	write_data(file, all_files)
 }
+*/

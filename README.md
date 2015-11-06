@@ -40,17 +40,15 @@ To run `docker-slim` you need to export docker environment variables. If you use
 
 ## USAGE
 
-`./docker-slim <IMAGE_ID_OR_NAME> [rm-artifacts | image-info-only]`
+`./docker-slim COMMAND(info|build) <IMAGE_ID_OR_NAME> [rm-artifacts | image-info-only]`
 
-Example: `./docker-slim 6f74095b68c9`
+Example: `./docker-slim build 6f74095b68c9`
 
-By default, `docker-slim` doesn't remove the artifacts it generates. To remove them set the `rm-artifacts` flag.
+By default, `docker-slim build` doesn't remove the artifacts it generates. To remove them set the `remove-file-artifacts` flag.
 
-Example: `./docker-slim 6f74095b68c9 rm-artifacts`
+To generate a Dockerfile for your "fat" image without creating a new "slim" image use the `info` command.
 
-To generate a Dockerfile for your "fat" image without creating a new "slim" image set the `image-info-only` flag.
-
-Example: `./docker-slim 6f74095b68c9 image-info-only`
+Example: `./docker-slim info 6f74095b68c9`
 
 ## DEMO STEPS
 
@@ -72,7 +70,7 @@ The demo run on Mac OS X, but you can build a linux version.
 
 	`cd ../../dist_mac`
 	
-	`./docker-slim my/sample-node-app`
+	`./docker-slim build my/sample-node-app`
 	
 	DockerSlim creates a special container based on the target image you provided.
 
@@ -83,6 +81,8 @@ The demo run on Mac OS X, but you can build a linux version.
 	This is an optional step to make sure the target app container is doing something. Depending on the application it's an optional step. For some applications it's required if it loads new application resources dynamically based on the requests it's processing.
 		
 	You can get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
+
+	If you set the `http-probe` flag then `docker-slim` will try to call your application using HTTP/HTTPS: `./docker-slim build my/sample-node-app --http-probe`
 
 5. Press any key and wait until `docker-slim` says it's done
 
@@ -106,9 +106,9 @@ If you'd like to see the artifacts without running `docker-slim` you can take a 
 *	a container report file (`creport.json`),
 *	and a sample AppArmor profile (which will be named based on your original image name).
 
-If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `image-info-only` option.
+If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `info` command.
 
-You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.5/dist_mac.zip)
+You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.6/dist_mac.zip)
 
 
 ## BUILD PROCESS
@@ -205,8 +205,8 @@ The minified `sample_app` docker image now works! We turned a 430MB node.js app 
 
 * Do a better job with links [DONE] The test image is now even smaller (was: 40MB, now: 14.22MB)
 * Make sure it works with other images [WIP, now: node,python,ruby,java].
-* Refactor the time-based container monitoring phase.
-* Automated interaction with the target container (requires app code analysis).
+* Refactor the time-based container monitoring phase [DONE].
+* Automated interaction with the target container (requires app code analysis) [WIP;DONE - simple version].
 * Auto-generate AppArmor profiles [WIP].
 * Auto-generate Seccomp filters.
 * Split "monitor" from "launcher" (as it's supposed to work :-))
