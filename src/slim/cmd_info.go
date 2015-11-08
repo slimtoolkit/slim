@@ -42,7 +42,7 @@ func onInfoCommand(imageRef string) {
 	log.Infof("docker-slim: 'fat' image size => %v (%v)\n",
 		imageInfo.VirtualSize, humanize.Bytes(uint64(imageInfo.VirtualSize)))
 
-	fatImageDockerInstructions, err := genDockerfileFromHistory(client, imageRef)
+	fatImageDockerInstructions, err := reverseDockerfileFromHistory(client, imageRef)
 	failOnError(err)
 
 	localVolumePath := filepath.Join(myFileDir(), "container")

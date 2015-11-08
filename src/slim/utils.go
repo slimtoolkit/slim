@@ -30,3 +30,17 @@ func myFileDir() string {
 	failOnError(err)
 	return dirName
 }
+
+func myAppDirs() (string, string) {
+	localVolumePath := filepath.Join(myFileDir(), "container")
+	artifactLocation := filepath.Join(localVolumePath, "artifacts")
+	artifactDir, err := os.Stat(artifactLocation)
+	if os.IsNotExist(err) {
+		os.MkdirAll(artifactLocation, 0777)
+		artifactDir, err = os.Stat(artifactLocation)
+		failOnError(err)
+	}
+	failWhen(!artifactDir.IsDir(), "artifact location is not a directory")
+
+	return localVolumePath, artifactLocation
+}

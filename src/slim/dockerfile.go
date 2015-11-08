@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
+	"strconv"
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
@@ -21,7 +23,7 @@ type imageInst struct {
 	fullTags     []string
 }
 
-func genDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]string, error) {
+func reverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]string, error) {
 	//NOTE: comment field is missing (TODO: enhance the lib...)
 	imageHistory, err := apiClient.ImageHistory(imageID)
 	if err != nil {
@@ -160,4 +162,72 @@ func saveDockerfileData(fatImageDockerfileLocation string, fatImageDockerInstruc
 	var data bytes.Buffer
 	data.WriteString(strings.Join(fatImageDockerInstructions, "\n"))
 	return ioutil.WriteFile(fatImageDockerfileLocation, data.Bytes(), 0644)
+}
+
+func generateDockerfile(location string,
+	workingDir string,
+	env []string,
+	exposedPorts map[docker.Port]struct{},
+	entrypoint []string,
+	cmd []string) error {
+
+	dockerfileLocation := filepath.Join(location, "Dockerfile")
+
+	var dfData bytes.Buffer
+	dfData.WriteString("FROM scratch\n")
+	dfData.WriteString("COPY files /\n")
+
+	dfData.WriteString("WORKDIR ")
+	dfData.WriteString(workingDir)
+	dfData.WriteByte('\n')
+
+	if len(env) > 0 {
+		for _, envInfo := range env {
+			if envParts := strings.Split(envInfo, "="); len(envParts) > 1 {
+				dfData.WriteString("ENV ")
+				envLine := fmt.Sprintf("%s %s", envParts[0], envParts[1])
+				dfData.WriteString(envLine)
+				dfData.WriteByte('\n')
+			}
+		}
+	}
+
+	if len(exposedPorts) > 0 {
+		for portInfo := range exposedPorts {
+			dfData.WriteString("EXPOSE ")
+			dfData.WriteString(string(portInfo))
+			dfData.WriteByte('\n')
+		}
+	}
+
+	if len(entrypoint) > 0 {
+		var quotedEntryPoint []string
+		for idx := range entrypoint {
+			quotedEntryPoint = append(quotedEntryPoint, strconv.Quote(entrypoint[idx]))
+		}
+		/*
+			"Entrypoint": [
+			            "/bin/sh",
+			            "-c",
+			            "node /opt/my/service/server.js"
+			        ],
+		*/
+		dfData.WriteString("ENTRYPOINT [")
+		dfData.WriteString(strings.Join(quotedEntryPoint, ","))
+		dfData.WriteByte(']')
+		dfData.WriteByte('\n')
+	}
+
+	if len(cmd) > 0 {
+		var quotedCmd []string
+		for idx := range cmd {
+			quotedCmd = append(quotedCmd, strconv.Quote(cmd[idx]))
+		}
+		dfData.WriteString("CMD [")
+		dfData.WriteString(strings.Join(quotedCmd, ","))
+		dfData.WriteByte(']')
+		dfData.WriteByte('\n')
+	}
+
+	return ioutil.WriteFile(dockerfileLocation, dfData.Bytes(), 0644)
 }
