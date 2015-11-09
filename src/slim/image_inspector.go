@@ -1,9 +1,7 @@
 package main
 
 import (
-	//"bytes"
 	"fmt"
-	//"io/ioutil"
 	"path/filepath"
 	"strings"
 

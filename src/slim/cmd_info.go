@@ -2,8 +2,6 @@ package main
 
 import (
 	"fmt"
-	"os"
-	"path/filepath"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
@@ -13,54 +11,23 @@ import (
 func onInfoCommand(imageRef string) {
 	fmt.Println("docker-slim: [info] image=", imageRef)
 
+	_, artifactLocation := myAppDirs()
+
 	client, _ := docker.NewClientFromEnv()
 
-	fmt.Println("docker-slim: inspecting 'fat' image metadata...")
-
-	imageInfo, err := client.InspectImage(imageRef)
-	if err != nil {
-		if err == docker.ErrNoSuchImage {
-			log.Fatalf("docker-slim: could not find target image")
-		}
-		log.Fatalf("docker-slim: InspectImage(%v) error => %v", imageRef, err)
-	}
-
-	var imageRecord docker.APIImages
-	imageList, err := client.ListImages(docker.ListImagesOptions{All: true})
+	imageInspector, err := NewImageInspector(client, imageRef, artifactLocation)
 	failOnError(err)
-	for _, r := range imageList {
-		if r.ID == imageInfo.ID {
-			imageRecord = r
-			break
-		}
-	}
 
-	if imageRecord.ID == "" {
-		log.Fatalf("docker-slim: could not find target image in the image list")
-	}
+	log.Info("docker-slim: inspecting 'fat' image metadata...")
+	err = imageInspector.Inspect()
+	failOnError(err)
 
 	log.Infof("docker-slim: 'fat' image size => %v (%v)\n",
-		imageInfo.VirtualSize, humanize.Bytes(uint64(imageInfo.VirtualSize)))
+		imageInspector.ImageInfo.VirtualSize,
+		humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)))
 
-	fatImageDockerInstructions, err := reverseDockerfileFromHistory(client, imageRef)
-	failOnError(err)
-
-	localVolumePath := filepath.Join(myFileDir(), "container")
-
-	artifactLocation := filepath.Join(localVolumePath, "artifacts")
-	artifactDir, err := os.Stat(artifactLocation)
-	if os.IsNotExist(err) {
-		os.MkdirAll(artifactLocation, 0777)
-		artifactDir, err = os.Stat(artifactLocation)
-		failOnError(err)
-	}
-
-	failWhen(!artifactDir.IsDir(), "artifact location is not a directory")
-
-	log.Info("docker-slim: saving 'fat' image info...")
-
-	fatImageDockerfileLocation := filepath.Join(artifactLocation, "Dockerfile.fat")
-	err = saveDockerfileData(fatImageDockerfileLocation, fatImageDockerInstructions)
+	log.Info("docker-slim: processing 'fat' image info...")
+	err = imageInspector.ProcessCollectedData()
 	failOnError(err)
 
 	fmt.Println("docker-slim: [info] done.")

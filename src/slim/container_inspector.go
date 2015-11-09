@@ -1,10 +1,7 @@
 package main
 
 import (
-	//"bytes"
 	"fmt"
-	//"io/ioutil"
-	//"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
@@ -18,7 +15,7 @@ type ContainerInspector struct {
 	CmdPort         docker.Port
 	EvtPort         docker.Port
 	DockerHostIP    string
-	ImgInspector    *ImageInspector
+	ImageInspector  *ImageInspector
 	ApiClient       *docker.Client
 }
 
@@ -27,7 +24,7 @@ func NewContainerInspector(client *docker.Client, imageInspector *ImageInspector
 		LocalVolumePath: localVolumePath,
 		CmdPort:         "65501/tcp",
 		EvtPort:         "65502/tcp",
-		ImgInspector:    imageInspector,
+		ImageInspector:  imageInspector,
 		ApiClient:       client,
 	}
 
@@ -48,7 +45,7 @@ func (i *ContainerInspector) RunContainer() error {
 	containerOptions := docker.CreateContainerOptions{
 		Name: "dockerslimk",
 		Config: &docker.Config{
-			Image: i.ImgInspector.ImageRef,
+			Image: i.ImageInspector.ImageRef,
 			ExposedPorts: map[docker.Port]struct{}{
 				i.CmdPort: struct{}{},
 				i.EvtPort: struct{}{},
@@ -162,4 +159,9 @@ func (i *ContainerInspector) initContainerChannels() error {
 func (i *ContainerInspector) shutdownContainerChannels() {
 	shutdownEvtChannel()
 	shutdownCmdChannel()
+}
+
+func (i *ContainerInspector) ProcessCollectedData() error {
+	log.Info("docker-slim: generating AppArmor profile...")
+	return genAppArmorProfile(i.ImageInspector.ArtifactLocation, i.ImageInspector.AppArmorProfileName)
 }

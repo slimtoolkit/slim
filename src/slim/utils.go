@@ -44,3 +44,7 @@ func myAppDirs() (string, string) {
 
 	return localVolumePath, artifactLocation
 }
+
+func removeArtifacts(artifactLocation string) error {
+	return os.RemoveAll(artifactLocation)
+}

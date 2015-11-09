@@ -2,10 +2,6 @@ package main
 
 import (
 	"os"
-	//"bytes"
-	//"fmt"
-	//"io/ioutil"
-	//"strings"
 
 	//log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"

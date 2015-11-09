@@ -2,13 +2,8 @@ package main
 
 import (
 	"bufio"
-	//"bytes"
 	"fmt"
-	//"io/ioutil"
 	"os"
-	//"path/filepath"
-	//"strconv"
-	//"strings"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
@@ -45,19 +40,12 @@ func onBuildCommand(imageRef string, doHttpProbe bool, doRmFileArtifacts bool) {
 	err = containerInspector.RunContainer()
 	failOnError(err)
 
-	var httpProbePorts []string
-	for nsPortKey, nsPortData := range containerInspector.ContainerInfo.NetworkSettings.Ports {
-		if (nsPortKey == containerInspector.CmdPort) || (nsPortKey == containerInspector.EvtPort) {
-			continue
-		}
-
-		httpProbePorts = append(httpProbePorts, nsPortData[0].HostPort)
-	}
-
 	log.Info("docker-slim: watching container monitor...")
 
 	if doHttpProbe {
-		startHTTPProbe(containerInspector.DockerHostIP, httpProbePorts)
+		probe, err := NewHttpProbe(containerInspector)
+		failOnError(err)
+		probe.Start()
 	}
 
 	fmt.Println("docker-slim: press any key when you are done using the container...")
@@ -70,8 +58,8 @@ func onBuildCommand(imageRef string, doHttpProbe bool, doRmFileArtifacts bool) {
 	err = containerInspector.ShutdownContainer()
 	warnOnError(err)
 
-	log.Info("docker-slim: generating AppArmor profile...")
-	err = genAppArmorProfile(artifactLocation, imageInspector.AppArmorProfileName)
+	log.Info("docker-slim: processing instrumented 'fat' container info...")
+	err = containerInspector.ProcessCollectedData()
 	failOnError(err)
 
 	log.Info("docker-slim: building 'slim' image...")
@@ -84,7 +72,7 @@ func onBuildCommand(imageRef string, doHttpProbe bool, doRmFileArtifacts bool) {
 
 	if doRmFileArtifacts {
 		log.Info("docker-slim: removing temporary artifacts...")
-		err = os.RemoveAll(artifactLocation) //TODO: remove only the "files" subdirectory
+		err = removeArtifacts(artifactLocation) //TODO: remove only the "files" subdirectory
 		warnOnError(err)
 	}
 

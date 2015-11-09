@@ -8,7 +8,28 @@ import (
 	"github.com/franela/goreq"
 )
 
-func startHTTPProbe(dockerHostIP string, httpProbePorts []string) {
+type HttpProbe struct {
+	Ports              []string
+	ContainerInspector *ContainerInspector
+}
+
+func NewHttpProbe(inspector *ContainerInspector) (*HttpProbe, error) {
+	probe := &HttpProbe{
+		ContainerInspector: inspector,
+	}
+
+	for nsPortKey, nsPortData := range inspector.ContainerInfo.NetworkSettings.Ports {
+		if (nsPortKey == inspector.CmdPort) || (nsPortKey == inspector.EvtPort) {
+			continue
+		}
+
+		probe.Ports = append(probe.Ports, nsPortData[0].HostPort)
+	}
+
+	return probe, nil
+}
+
+func (p *HttpProbe) Start() {
 	go func(hpHost string, hpPorts []string) {
 		log.Info("docker-slim: HTTP probe started...")
 		goreq.SetConnectTimeout(3 * time.Second)
@@ -42,5 +63,5 @@ func startHTTPProbe(dockerHostIP string, httpProbePorts []string) {
 		}
 
 		log.Info("docker-slim: HTTP probe done.")
-	}(dockerHostIP, httpProbePorts)
+	}(p.ContainerInspector.DockerHostIP, p.Ports)
 }

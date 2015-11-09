@@ -130,8 +130,8 @@ func init() {
 	}
 }
 
-func runCli(args []string) {
-	if err := app.Run(args); err != nil {
+func runCli() {
+	if err := app.Run(os.Args); err != nil {
 		log.Fatal(err)
 	}
 }
