@@ -114,10 +114,11 @@ func (i *ContainerInspector) FinishMonitoring() {
 	log.Info("docker-slim: waiting for the container finish its work...")
 
 	//for now there's only one event ("done")
+	//getEvt() should timeout in two minutes (todo: pick a good timeout)
 	evt, err := getEvt(evtChannel)
 	warnOnError(err)
 	_ = evt
-	log.Debugf("docker-slim: alauncher event => '%v'\n", evt)
+	log.Debugf("docker-slim: launcher event => '%v'\n", evt)
 }
 
 func (i *ContainerInspector) initContainerChannels() error {

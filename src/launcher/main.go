@@ -25,7 +25,6 @@ import (
 	"github.com/gdamore/mangos/protocol/pub"
 	"github.com/gdamore/mangos/protocol/rep"
 	//"github.com/gdamore/mangos/transport/ipc"
-	"bitbucket.org/madmo/fanotify"
 	"github.com/cloudimmunity/pdiscover"
 	"github.com/gdamore/mangos/transport/tcp"
 )
@@ -65,7 +64,7 @@ var cmdChannelAddr = "tcp://0.0.0.0:65501"
 var cmdChannel mangos.Socket
 
 func newCmdServer(addr string) (mangos.Socket, error) {
-	log.Println("alauncher: creating cmd server...")
+	log.Println("launcher: creating cmd server...")
 	socket, err := rep.NewSocket()
 	if err != nil {
 		return nil, err
@@ -91,22 +90,22 @@ func runCmdServer(channel mangos.Socket, done <-chan struct{}) (<-chan string, e
 	go func() {
 		for {
 			// Could also use sock.RecvMsg to get header
-			log.Println("alauncher: cmd server - waiting for a command...")
+			log.Println("launcher: cmd server - waiting for a command...")
 			select {
 			case <-done:
-				log.Println("alauncher: cmd server - done...")
+				log.Println("launcher: cmd server - done...")
 				return
 			default:
 				if rawCmd, err := channel.Recv(); err != nil {
 					switch err {
 					case mangos.ErrRecvTimeout:
-						log.Println("alauncher: cmd server - timeout... ok")
+						log.Println("launcher: cmd server - timeout... ok")
 					default:
-						log.Println("alauncher: cmd server - error =>", err)
+						log.Println("launcher: cmd server - error =>", err)
 					}
 				} else {
 					cmd := string(rawCmd)
-					log.Println("alauncher: cmd server - got a command =>", cmd)
+					log.Println("launcher: cmd server - got a command =>", cmd)
 					cmdChan <- cmd
 					//for now just ack the command and process the command asynchronously
 					//NOTE:
@@ -115,7 +114,7 @@ func runCmdServer(channel mangos.Socket, done <-chan struct{}) (<-chan string, e
 					monitorFinishReply := "ok"
 					err = channel.Send([]byte(monitorFinishReply))
 					if err != nil {
-						log.Println("alauncher: cmd server - fail to send monitor.finish reply =>", err)
+						log.Println("launcher: cmd server - fail to send monitor.finish reply =>", err)
 					}
 				}
 			}
@@ -139,7 +138,7 @@ var evtChannelAddr = "tcp://0.0.0.0:65502"
 var evtChannel mangos.Socket
 
 func newEvtPublisher(addr string) (mangos.Socket, error) {
-	log.Println("alauncher: creating event publisher...")
+	log.Println("launcher: creating event publisher...")
 	socket, err := pub.NewSocket()
 	if err != nil {
 		return nil, err
@@ -254,245 +253,6 @@ func check(err error) {
 	if err != nil {
 		log.Fatalln("monitor error:", err)
 	}
-}
-
-type processInfo struct {
-	Pid       int32  `json:"pid"`
-	Name      string `json:"name"`
-	Path      string `json:"path"`
-	Cmd       string `json:"cmd"`
-	Cwd       string `json:"cwd"`
-	Root      string `json:"root"`
-	ParentPid int32  `json:"ppid"`
-}
-
-type fileInfo struct {
-	EventCount   uint32 `json:"event_count"`
-	FirstEventID uint32 `json:"first_eid"`
-	Name         string `json:"-"`
-	ReadCount    uint32 `json:"reads,omitempty"`
-	WriteCount   uint32 `json:"writes,omitempty"`
-	ExeCount     uint32 `json:"execs,omitempty"`
-}
-
-type monitorReport struct {
-	MonitorPid       int                             `json:"monitor_pid"`
-	MonitorParentPid int                             `json:"monitor_ppid"`
-	EventCount       uint32                          `json:"event_count"`
-	MainProcess      *processInfo                    `json:"main_process"`
-	Processes        map[string]*processInfo         `json:"processes"`
-	ProcessFiles     map[string]map[string]*fileInfo `json:"process_files"`
-}
-
-func procFilePath(pid int, key string) string {
-	return fmt.Sprintf("/proc/%v/%v", pid, key)
-}
-
-func getProcessInfo(pid int32) (*processInfo, error) {
-	info := &processInfo{Pid: pid}
-	var err error
-
-	info.Path, err = os.Readlink(procFilePath(int(pid), "exe"))
-	if err != nil {
-		return nil, err
-	}
-
-	info.Cwd, err = os.Readlink(procFilePath(int(pid), "cwd"))
-	if err != nil {
-		return nil, err
-	}
-
-	info.Root, err = os.Readlink(procFilePath(int(pid), "root"))
-	if err != nil {
-		return nil, err
-	}
-
-	rawCmdline, err := ioutil.ReadFile(procFilePath(int(pid), "cmdline"))
-	if err != nil {
-		return nil, err
-	}
-
-	if len(rawCmdline) > 0 {
-		rawCmdline = bytes.TrimRight(rawCmdline, "\x00")
-		//NOTE: later/future (when we do more app analytics)
-		//split rawCmdline and resolve the "entry point" (exe or cmd param)
-		info.Cmd = string(bytes.Replace(rawCmdline, []byte("\x00"), []byte(" "), -1))
-	}
-
-	//note: will need to get "environ" at some point :)
-	//rawEnviron, err := ioutil.ReadFile(procFilePath(int(pid), "environ"))
-	//if err != nil {
-	//	return nil, err
-	//}
-	//if len(rawEnviron) > 0 {
-	//	rawEnviron = bytes.TrimRight(rawEnviron,"\x00")
-	//	info.Env = strings.Split(string(rawEnviron),"\x00")
-	//}
-
-	stat, err := ioutil.ReadFile(procFilePath(int(pid), "stat"))
-	var procPid int
-	var procName string
-	var procStatus string
-	var procPpid int
-	fmt.Sscanf(string(stat), "%d %s %s %d", &procPid, &procName, &procStatus, &procPpid)
-
-	info.Name = procName[1 : len(procName)-1]
-	info.ParentPid = int32(procPpid)
-
-	return info, nil
-}
-
-//func listenEvents(mountPoint string, stopChan chan bool) chan map[event]bool {
-func listenEvents(mountPoint string, stopChan chan bool) <-chan *monitorReport {
-	log.Println("monitor: listenEvents start")
-
-	nd, err := fanotify.Initialize(fanotify.FAN_CLASS_NOTIF, os.O_RDONLY)
-	check(err)
-	err = nd.Mark(fanotify.FAN_MARK_ADD|fanotify.FAN_MARK_MOUNT,
-		fanotify.FAN_MODIFY|fanotify.FAN_ACCESS|fanotify.FAN_OPEN, -1, mountPoint)
-	check(err)
-
-	//eventsChan := make(chan map[event]bool, 1)
-	eventsChan := make(chan *monitorReport, 1)
-
-	go func() {
-		log.Println("monitor: listenEvents worker starting")
-		//events := make(map[event]bool, 1)
-		report := &monitorReport{
-			MonitorPid:       os.Getpid(),
-			MonitorParentPid: os.Getppid(),
-			ProcessFiles:     make(map[string]map[string]*fileInfo),
-		}
-
-		eventChan := make(chan event)
-		go func() {
-			var eventID uint32
-
-			for {
-				data, err := nd.GetEvent()
-				check(err)
-				//log.Printf("TMP: monitor: listenEvents: data.Mask =>%x\n",data.Mask)
-
-				if (data.Mask & fanotify.FAN_Q_OVERFLOW) == fanotify.FAN_Q_OVERFLOW {
-					log.Println("monitor: listenEvents: overflow event")
-					continue
-				}
-
-				doNotify := false
-				isRead := false
-				isWrite := false
-
-				if (data.Mask & fanotify.FAN_OPEN) == fanotify.FAN_OPEN {
-					//log.Println("TMP: monitor: listenEvents: file open")
-					doNotify = true
-				}
-
-				if (data.Mask & fanotify.FAN_ACCESS) == fanotify.FAN_ACCESS {
-					//log.Println("TMP: monitor: listenEvents: file read")
-					isRead = true
-					doNotify = true
-				}
-
-				if (data.Mask & fanotify.FAN_MODIFY) == fanotify.FAN_MODIFY {
-					//log.Println("TMP: monitor: listenEvents: file write")
-					isWrite = true
-					doNotify = true
-				}
-
-				path, err := os.Readlink(fmt.Sprintf("/proc/self/fd/%d", data.File.Fd()))
-				check(err)
-				//log.Println("TMP: monitor: listenEvents: file path =>",path)
-
-				data.File.Close()
-				if doNotify {
-					eventID++
-					e := event{ID: eventID, Pid: data.Pid, File: path, IsRead: isRead, IsWrite: isWrite}
-					eventChan <- e
-				}
-			}
-		}()
-
-		s := false
-		for !s {
-			select {
-			//case <-time.After(110 * time.Second):
-			//	log.Println("monitor: listenEvents - event timeout...")
-			//	s = true
-			case <-stopChan:
-				log.Println("monitor: listenEvents stopping...")
-				s = true
-			case e := <-eventChan:
-				report.EventCount++
-				//log.Println("TMP: monitor: listenEvents: event ",report.EventCount)
-
-				if e.ID == 1 {
-					//first event represents the main process
-					if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
-						report.MainProcess = pinfo
-						report.Processes = make(map[string]*processInfo)
-						report.Processes[strconv.Itoa(int(e.Pid))] = pinfo
-						//log.Println("TMP: monitor: listenEvents: (1) adding pi for ",
-						//	e.Pid,"info:",report.Processes[strconv.Itoa(int(e.Pid))])
-					}
-				} else {
-					if _, ok := report.Processes[strconv.Itoa(int(e.Pid))]; !ok {
-						if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
-							report.Processes[strconv.Itoa(int(e.Pid))] = pinfo
-							//log.Println("TMP: monitor: listenEvents: (2) adding pi for ",
-							//	e.Pid,"info:",report.Processes[strconv.Itoa(int(e.Pid))])
-						}
-					}
-				}
-
-				if _, ok := report.ProcessFiles[strconv.Itoa(int(e.Pid))]; !ok {
-					report.ProcessFiles[strconv.Itoa(int(e.Pid))] = make(map[string]*fileInfo)
-					//log.Println("TMP: monitor: listenEvents: adding pf for ",e.Pid)
-				}
-
-				if existingFi, ok := report.ProcessFiles[strconv.Itoa(int(e.Pid))][e.File]; !ok {
-					fi := &fileInfo{
-						EventCount: 1,
-						Name:       e.File,
-					}
-
-					if e.IsRead {
-						fi.ReadCount = 1
-					}
-
-					if e.IsWrite {
-						fi.WriteCount = 1
-					}
-
-					if pi, ok := report.Processes[strconv.Itoa(int(e.Pid))]; ok && (e.File == pi.Path) {
-						fi.ExeCount = 1
-					}
-
-					report.ProcessFiles[strconv.Itoa(int(e.Pid))][e.File] = fi
-				} else {
-					existingFi.EventCount++
-
-					if e.IsRead {
-						existingFi.ReadCount++
-					}
-
-					if e.IsWrite {
-						existingFi.WriteCount++
-					}
-
-					if pi, ok := report.Processes[strconv.Itoa(int(e.Pid))]; ok && (e.File == pi.Path) {
-						existingFi.ExeCount++
-					}
-				}
-
-				//log.Printf("monitor: listenEvents event => %#v\n", e)
-			}
-		}
-
-		log.Printf("monitor: listenEvents - sending report (processed %v events)...\n", report.EventCount)
-		eventsChan <- report
-	}()
-
-	return eventsChan
 }
 
 func monitorProcess(stop chan bool) chan map[int][]int {
@@ -728,7 +488,8 @@ func (p *artifactProps) MarshalJSON() ([]byte, error) {
 
 type artifactStore struct {
 	storeLocation string
-	monReport     *monitorReport
+	fanMonReport  *fanMonitorReport
+	ptMonReport   *ptMonitorReport
 	rawNames      map[string]*artifactProps
 	nameList      []string
 	resolve       map[string]struct{}
@@ -737,11 +498,13 @@ type artifactStore struct {
 }
 
 func newArtifactStore(storeLocation string,
-	monReport *monitorReport,
-	rawNames map[string]*artifactProps) *artifactStore {
+	fanMonReport *fanMonitorReport,
+	rawNames map[string]*artifactProps,
+	ptMonReport *ptMonitorReport) *artifactStore {
 	store := &artifactStore{
 		storeLocation: storeLocation,
-		monReport:     monReport,
+		fanMonReport:  fanMonReport,
+		ptMonReport:   ptMonReport,
 		rawNames:      rawNames,
 		nameList:      make([]string, 0, len(rawNames)),
 		resolve:       map[string]struct{}{},
@@ -754,7 +517,7 @@ func newArtifactStore(storeLocation string,
 
 func (p *artifactStore) getArtifactFlags(artifactFileName string) map[string]bool {
 	flags := map[string]bool{}
-	for _, processFileMap := range p.monReport.ProcessFiles {
+	for _, processFileMap := range p.fanMonReport.ProcessFiles {
 		if finfo, ok := processFileMap[artifactFileName]; ok {
 			if finfo.ReadCount > 0 {
 				flags["R"] = true
@@ -876,15 +639,25 @@ type imageReport struct {
 	Files []*artifactProps `json:"files"`
 }
 
-type reportInfo struct {
-	Monitor *monitorReport `json:"monitor"`
-	Image   imageReport    `json:"image"`
+type monitorReports struct {
+	Fan *fanMonitorReport `json:"fan"`
+	Pt *ptMonitorReport `json:"pt"`
+}
+
+type containerReport struct {
+	Monitors monitorReports `json:"monitors"`
+	Image   imageReport     `json:"image"`
 }
 
 func (p *artifactStore) saveReport() {
 	sort.Strings(p.nameList)
-
-	report := reportInfo{Monitor: p.monReport}
+	
+	report := containerReport{
+		Monitors: monitorReports{
+			Pt: p.ptMonReport,
+			Fan:  p.fanMonReport,
+		},
+	}
 
 	for _, fname := range p.nameList {
 		report.Image.Files = append(report.Image.Files, p.rawNames[fname])
@@ -910,10 +683,10 @@ func (p *artifactStore) saveReport() {
 	check(err)
 }
 
-func saveResults(monReport *monitorReport, fileNames map[string]*artifactProps) {
+func saveResults(fanMonReport *fanMonitorReport, fileNames map[string]*artifactProps, ptMonReport *ptMonitorReport) {
 	artifactDirName := "/opt/dockerslim/artifacts"
 
-	artifactStore := newArtifactStore(artifactDirName, monReport, fileNames)
+	artifactStore := newArtifactStore(artifactDirName, fanMonReport, fileNames, ptMonReport)
 	artifactStore.prepareArtifacts()
 	artifactStore.saveArtifacts()
 	artifactStore.saveReport()
@@ -949,16 +722,25 @@ func writeData(monitorFileName string, files map[string]bool) {
 	w.Flush()
 }
 
-func monitor(stopWork chan bool, stopWorkAck chan bool, pids chan []int) {
+func monitor(stopWork chan bool, 
+	stopWorkAck chan bool, 
+	pids chan []int, 
+	ptmonStartChan chan int,
+	appName string,
+	appArgs []string,
+	dirName string) {
 	log.Println("launcher: monitor starting...")
 	mountPoint := "/"
 	//file := "/opt/dockerslim/artifacts/monitor_results"
 	//monitorFileName := "monitor_results"
 
 	//stopEvents := make(chan bool, 1)
-	stopEvents := make(chan bool)
+	//stopEvents := make(chan bool)
+	stopMonitor := make(chan struct{})
 	//events := listenEvents(mountPoint, stopEvents)
-	reportChan := listenEvents(mountPoint, stopEvents)
+	//reportChan := fanmon.RunMonitor(mountPoint, stopEvents)
+	fanReportChan := fanRunMonitor(mountPoint, stopMonitor)
+	ptReportChan := ptRunMonitor(ptmonStartChan, stopMonitor,appName, appArgs, dirName)
 
 	//stop_process := make(chan bool, 1)
 	//pidsMap := monitorProcess(stop_process)
@@ -967,7 +749,8 @@ func monitor(stopWork chan bool, stopWorkAck chan bool, pids chan []int) {
 		log.Println("launcher: monitor - waiting to stop monitoring...")
 		<-stopWork
 		log.Println("launcher: monitor - stop message...")
-		stopEvents <- true
+		//stopEvents <- true
+		close(stopMonitor)
 		//stop_process <- true
 		log.Println("launcher: monitor - processing data...")
 		//files := getFiles(events, pidsMap, pids)
@@ -976,23 +759,27 @@ func monitor(stopWork chan bool, stopWorkAck chan bool, pids chan []int) {
 		//because the pid list only contains the pid for the main app process
 		//(when process monitoring is not used)
 		//files := getFilesAll(events)
-		report := <-reportChan
+		fanReport := <-fanReportChan
+		//var fanReport *fanMonitorReport
+		ptReport := <-ptReportChan
+		//var ptReport *ptMonitorReport
 
 		//processCount := len(report.ProcessFiles)
 		fileCount := 0
-		for _, processFileMap := range report.ProcessFiles {
+		for _, processFileMap := range fanReport.ProcessFiles {
 			fileCount += len(processFileMap)
 		}
 		fileList := make([]string, 0, fileCount)
-		for _, processFileMap := range report.ProcessFiles {
+		for _, processFileMap := range fanReport.ProcessFiles {
 			for fpath := range processFileMap {
 				fileList = append(fileList, fpath)
 			}
 		}
 
 		allFilesMap := findSymlinks(fileList, mountPoint)
+		//allFilesMap := map[string]*artifactProps{}
 		//writeData(monitorFileName, allFilesList)
-		saveResults(report, allFilesMap)
+		saveResults(fanReport, allFilesMap, ptReport)
 		stopWorkAck <- true
 	}()
 }
@@ -1039,43 +826,29 @@ func main() {
 	monDoneChan := make(chan bool, 1)
 	monDoneAckChan := make(chan bool)
 	pidsChan := make(chan []int, 1)
-	monitor(monDoneChan, monDoneAckChan, pidsChan)
+	ptmonStartChan := make(chan int, 1)
+	monitor(monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan,appName,appArgs,dirName)
 
 	log.Printf("launcher: start target app => %v %#v\n", appName, appArgs)
 
-	app := exec.Command(appName, appArgs...)
-	app.Dir = dirName
-	app.Stdout = os.Stdout
-	app.Stderr = os.Stderr
-
-	err = app.Start()
-	failOnError(err)
-	defer app.Wait()
-	log.Printf("launcher: target app pid => %v\n", app.Process.Pid)
+	/*
+		app := exec.Command(appName, appArgs...)
+		app.Dir = dirName
+		app.Stdout = os.Stdout
+		app.Stderr = os.Stderr
+		err = app.Start()
+	*/
+	//app, err := startTargetApp(appName, appArgs, dirName, true)
+	//failOnError(err)
+	//defer app.Wait()
+	//log.Printf("launcher: target app pid => %v\n", app.Process.Pid)
 	time.Sleep(3 * time.Second)
 
 	//sendPids([]int{app.Process.Pid})
-	pidsChan <- []int{app.Process.Pid}
+	//TMP: pidsChan <- []int{app.Process.Pid}
+	//TMP: ptmonStartChan <- app.Process.Pid
 
-	log.Println("alauncher: waiting for monitor:")
-	/*
-			//TODO: fix the hard coded timeout
-			endTime := time.After(130 * time.Second)
-			work := 0
-
-		doneRunning:
-			for {
-				select {
-				case <-endTime:
-					log.Println("\nalauncher: done waiting :)")
-					break doneRunning
-				case <-time.After(time.Second * 5):
-					work++
-					log.Printf(".")
-				}
-			}
-	*/
-
+	log.Println("launcher: setting up channels...")
 	doneChan = make(chan struct{})
 	evtChannel, err = newEvtPublisher(evtChannelAddr)
 	failOnError(err)
@@ -1084,17 +857,18 @@ func main() {
 
 	cmdChan, err := runCmdServer(cmdChannel, doneChan)
 	failOnError(err)
-doneRunning:
+	log.Println("launcher: waiting for commands...")
+	doneRunning:
 	for {
 		select {
 		case cmd := <-cmdChan:
-			log.Println("\nalauncher: command =>", cmd)
+			log.Println("\nlauncher: command =>", cmd)
 			switch cmd {
 			case "monitor.finish":
-				log.Println("alauncher: stopping monitor...")
+				log.Println("launcher: 'monitor.finish' command - stopping monitor...")
 				break doneRunning
 			default:
-				log.Println("alauncher: ignoring command =>", cmd)
+				log.Println("launcher: ignoring command =>", cmd)
 			}
 
 		case <-time.After(time.Second * 5):
@@ -1104,6 +878,7 @@ doneRunning:
 
 	log.Println("launcher: stopping monitor...")
 	//monitor.Process.Signal(syscall.SIGTERM)
+
 	monDoneChan <- true
 	log.Println("launcher: waiting for monitor to finish...")
 	<-monDoneAckChan

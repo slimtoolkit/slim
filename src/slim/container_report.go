@@ -58,13 +58,25 @@ type fileInfo struct {
 	ExeCount     uint32 `json:"execs,omitempty"`
 }
 
-type monitorReport struct {
+type fanMonitorReport struct {
 	MonitorPid       int                             `json:"monitor_pid"`
 	MonitorParentPid int                             `json:"monitor_ppid"`
 	EventCount       uint32                          `json:"event_count"`
 	MainProcess      *processInfo                    `json:"main_process"`
 	Processes        map[string]*processInfo         `json:"processes"`
 	ProcessFiles     map[string]map[string]*fileInfo `json:"process_files"`
+}
+
+type syscallStatInfo struct {
+	Number uint64 `json:"num"`
+	Name   string `json:"name"`
+	Count  uint64 `json:"count"`
+}
+
+type ptMonitorReport struct {
+	SyscallCount uint64                     `json:"syscall_count"`
+	SyscallNum   uint32                     `json:"syscall_num"`
+	SyscallStats map[string]syscallStatInfo `json:"syscall_stats"`
 }
 
 type artifactProps struct {
@@ -101,9 +113,14 @@ type imageReport struct {
 	Files []*artifactProps `json:"files"`
 }
 
+type monitorReports struct {
+	Fan *fanMonitorReport `json:"fan"`
+	Pt *ptMonitorReport `json:"pt"`
+}
+
 type containerReport struct {
-	Monitor *monitorReport `json:"monitor"`
-	Image   imageReport    `json:"image"`
+	Monitors monitorReports `json:"monitors"`
+	Image   imageReport     `json:"image"`
 }
 
 func permSetFromFlags(flags map[string]bool) string {

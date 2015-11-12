@@ -31,6 +31,9 @@ func NewHttpProbe(inspector *ContainerInspector) (*HttpProbe, error) {
 
 func (p *HttpProbe) Start() {
 	go func(hpHost string, hpPorts []string) {
+		//TODO: need to do a better job figuring out if the target app is ready to accept connections
+		time.Sleep(3 * time.Second)
+		
 		log.Info("docker-slim: HTTP probe started...")
 		goreq.SetConnectTimeout(3 * time.Second)
 

@@ -1,794 +1,1002 @@
 {
-  "monitor": {
-    "monitor_pid": 1,
-    "monitor_ppid": 0,
-    "event_count": 165,
-    "main_process": {
-      "pid": 7,
-      "name": "node",
-      "path": "/usr/bin/nodejs",
-      "cmd": "node /opt/my/service/server.js",
-      "cwd": "/opt/my/service",
-      "root": "/",
-      "ppid": 1
-    },
-    "processes": {
-      "7": {
-        "pid": 7,
+  "monitors": {
+    "fan": {
+      "monitor_pid": 1,
+      "monitor_ppid": 0,
+      "event_count": 306,
+      "main_process": {
+        "pid": 12,
         "name": "node",
         "path": "/usr/bin/nodejs",
         "cmd": "node /opt/my/service/server.js",
         "cwd": "/opt/my/service",
         "root": "/",
         "ppid": 1
+      },
+      "processes": {
+        "12": {
+          "pid": 12,
+          "name": "node",
+          "path": "/usr/bin/nodejs",
+          "cmd": "node /opt/my/service/server.js",
+          "cwd": "/opt/my/service",
+          "root": "/",
+          "ppid": 1
+        }
+      },
+      "process_files": {
+        "12": {
+          "/etc/ld.so.cache": {
+            "event_count": 1,
+            "first_eid": 0
+          },
+          "/etc/localtime": {
+            "event_count": 3,
+            "first_eid": 0,
+            "reads": 2
+          },
+          "/etc/nsswitch.conf": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/lib/x86_64-linux-gnu/ld-2.19.so": {
+            "event_count": 1,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/lib/x86_64-linux-gnu/libc-2.19.so": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/lib/x86_64-linux-gnu/libdl-2.19.so": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/lib/x86_64-linux-gnu/libgcc_s.so.1": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/lib/x86_64-linux-gnu/libm-2.19.so": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/lib/x86_64-linux-gnu/libpthread-2.19.so": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/lib/x86_64-linux-gnu/librt-2.19.so": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/auth.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/connection.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/defaults.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/handler.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/methods.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/plugin.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/protect.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/reply.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/request.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/response.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/route.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/schema.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/server.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/transmit.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/lib/validation.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/accept/lib/charset.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/accept/lib/encoding.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/accept/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/accept/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/ammo/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/ammo/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/boom/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/boom/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/call/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/call/lib/regex.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/call/lib/segment.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/call/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/catbox-memory/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/catbox-memory/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/catbox/lib/client.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/catbox/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/catbox/lib/policy.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/catbox/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/cryptiles/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/cryptiles/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/cryptiles/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/alternatives.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/any.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/array.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/binary.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/boolean.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/cast.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/date.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/errors.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/function.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/language.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/number.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/object.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/ref.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/string.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/isemail/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/isemail/lib/isemail.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/isemail/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/moment/moment.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/moment/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/heavy/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/hoek/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/hoek/lib/escape.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/hoek/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/hoek/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/iron/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/iron/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/items/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/items/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/items/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/alternatives.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/any.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/array.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/binary.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/boolean.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/cast.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/date.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/errors.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/function.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/language.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/number.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/object.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/ref.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string/ip.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string/rfc3986.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string/uri.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/isemail/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/isemail/lib/isemail.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/isemail/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/moment/moment.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/moment/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/joi/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/kilt/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/kilt/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/kilt/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/mimos/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/mimos/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/mimos/node_modules/mime-db/db.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/mimos/node_modules/mime-db/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/mimos/node_modules/mime-db/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/mimos/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/peekaboo/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/peekaboo/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/peekaboo/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/qs/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/qs/lib/parse.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/qs/lib/stringify.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/qs/lib/utils.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/qs/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/shot/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/shot/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/statehood/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/statehood/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/content/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/content/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/b64/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/b64/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/b64/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/node_modules/vise/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/node_modules/vise/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/node_modules/vise/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/payload.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/recorder.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/tap.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/subtext/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/topo/lib/index.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/node_modules/topo/package.json": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/opt/my/service/node_modules/hapi/package.json": {
+            "event_count": 4,
+            "first_eid": 0,
+            "reads": 2
+          },
+          "/opt/my/service/server.js": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          },
+          "/usr/bin/nodejs": {
+            "event_count": 1,
+            "first_eid": 0,
+            "reads": 1,
+            "execs": 1
+          },
+          "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.19": {
+            "event_count": 2,
+            "first_eid": 0,
+            "reads": 1
+          }
+        }
       }
     },
-    "process_files": {
-      "7": {
-        "/etc/ld.so.cache": {
-          "event_count": 1,
-          "first_eid": 0
-        },
-        "/etc/localtime": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/etc/nsswitch.conf": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/lib/x86_64-linux-gnu/ld-2.19.so": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/lib/x86_64-linux-gnu/libc-2.19.so": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/lib/x86_64-linux-gnu/libdl-2.19.so": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/lib/x86_64-linux-gnu/libgcc_s.so.1": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/lib/x86_64-linux-gnu/libm-2.19.so": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/lib/x86_64-linux-gnu/libpthread-2.19.so": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/lib/x86_64-linux-gnu/librt-2.19.so": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/auth.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/connection.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/defaults.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/handler.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/methods.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/plugin.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/protect.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/reply.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/request.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/response.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/route.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/schema.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/server.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/transmit.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/lib/validation.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/accept/lib/charset.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/accept/lib/encoding.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/accept/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/accept/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/ammo/lib/index.js": {
-          "event_count": 2,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/ammo/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/boom/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/boom/package.json": {
-          "event_count": 2,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/call/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/call/lib/regex.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/call/lib/segment.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/call/package.json": {
-          "event_count": 2,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/catbox-memory/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/catbox-memory/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/catbox/lib/client.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/catbox/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/catbox/lib/policy.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/catbox/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/cryptiles/index.js": {
-          "event_count": 2,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/cryptiles/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/cryptiles/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/alternatives.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/any.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/array.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/binary.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/boolean.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/cast.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/date.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/errors.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/function.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/language.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/number.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/object.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/ref.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/lib/string.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/isemail/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/isemail/lib/isemail.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/isemail/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/moment/moment.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/node_modules/moment/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/node_modules/joi/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/heavy/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/hoek/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/hoek/lib/escape.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/hoek/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/hoek/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/iron/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/iron/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/items/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/items/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/items/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/alternatives.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/any.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/array.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/binary.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/boolean.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/cast.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/date.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/errors.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/function.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/language.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/number.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/object.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/ref.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string/ip.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string/rfc3986.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/lib/string/uri.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/isemail/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/isemail/lib/isemail.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/isemail/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/moment/moment.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/node_modules/moment/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/joi/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/kilt/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/kilt/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/kilt/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/mimos/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/mimos/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/mimos/node_modules/mime-db/db.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/mimos/node_modules/mime-db/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/mimos/node_modules/mime-db/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/mimos/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/peekaboo/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/peekaboo/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/peekaboo/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/qs/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/qs/lib/parse.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/qs/lib/stringify.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/qs/lib/utils.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/qs/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/shot/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/shot/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/statehood/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/statehood/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/content/lib/index.js": {
-          "event_count": 2,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/content/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/b64/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/b64/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/b64/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/index.js": {
-          "event_count": 2,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/node_modules/vise/index.js": {
-          "event_count": 2,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/node_modules/vise/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/node_modules/vise/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/node_modules/nigel/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/pez/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/payload.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/recorder.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/lib/tap.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/node_modules/wreck/package.json": {
-          "event_count": 2,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/subtext/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/topo/lib/index.js": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/node_modules/topo/package.json": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/opt/my/service/node_modules/hapi/package.json": {
-          "event_count": 4,
-          "first_eid": 0,
-          "reads": 2
-        },
-        "/opt/my/service/server.js": {
-          "event_count": 2,
-          "first_eid": 0,
-          "reads": 1
-        },
-        "/usr/bin/nodejs": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1,
-          "execs": 1
-        },
-        "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.19": {
-          "event_count": 1,
-          "first_eid": 0,
-          "reads": 1
+    "pt": {
+      "syscall_count": 2971,
+      "syscall_num": 40,
+      "syscall_stats": {
+        "0": {
+          "num": 0,
+          "name": "read",
+          "count": 161
+        },
+        "1": {
+          "num": 1,
+          "name": "write",
+          "count": 8
+        },
+        "10": {
+          "num": 10,
+          "name": "mprotect",
+          "count": 31
+        },
+        "11": {
+          "num": 11,
+          "name": "munmap",
+          "count": 38
+        },
+        "12": {
+          "num": 12,
+          "name": "brk",
+          "count": 31
+        },
+        "13": {
+          "num": 13,
+          "name": "rt_sigaction",
+          "count": 6
+        },
+        "14": {
+          "num": 14,
+          "name": "rt_sigprocmask",
+          "count": 3
+        },
+        "158": {
+          "num": 158,
+          "name": "arch_prctl",
+          "count": 1
+        },
+        "16": {
+          "num": 16,
+          "name": "ioctl",
+          "count": 22
+        },
+        "186": {
+          "num": 186,
+          "name": "gettid",
+          "count": 1
+        },
+        "2": {
+          "num": 2,
+          "name": "open",
+          "count": 299
+        },
+        "202": {
+          "num": 202,
+          "name": "futex",
+          "count": 208
+        },
+        "21": {
+          "num": 21,
+          "name": "access",
+          "count": 9
+        },
+        "218": {
+          "num": 218,
+          "name": "set_tid_address",
+          "count": 1
+        },
+        "229": {
+          "num": 229,
+          "name": "clock_getres",
+          "count": 1
+        },
+        "232": {
+          "num": 232,
+          "name": "epoll_wait",
+          "count": 5
+        },
+        "233": {
+          "num": 233,
+          "name": "epoll_ctl",
+          "count": 6
+        },
+        "273": {
+          "num": 273,
+          "name": "set_robust_list",
+          "count": 1
+        },
+        "288": {
+          "num": 288,
+          "name": "accept4",
+          "count": 2
+        },
+        "290": {
+          "num": 290,
+          "name": "eventfd2",
+          "count": 1
+        },
+        "291": {
+          "num": 291,
+          "name": "epoll_create1",
+          "count": 1
+        },
+        "293": {
+          "num": 293,
+          "name": "pipe2",
+          "count": 2
+        },
+        "3": {
+          "num": 3,
+          "name": "close",
+          "count": 155
+        },
+        "4": {
+          "num": 4,
+          "name": "stat",
+          "count": 1512
+        },
+        "41": {
+          "num": 41,
+          "name": "socket",
+          "count": 1
+        },
+        "49": {
+          "num": 49,
+          "name": "bind",
+          "count": 1
+        },
+        "5": {
+          "num": 5,
+          "name": "fstat",
+          "count": 160
+        },
+        "50": {
+          "num": 50,
+          "name": "listen",
+          "count": 1
+        },
+        "51": {
+          "num": 51,
+          "name": "getsockname",
+          "count": 1
+        },
+        "52": {
+          "num": 52,
+          "name": "getpeername",
+          "count": 1
+        },
+        "54": {
+          "num": 54,
+          "name": "setsockopt",
+          "count": 1
+        },
+        "56": {
+          "num": 56,
+          "name": "clone",
+          "count": 5
+        },
+        "59": {
+          "num": 59,
+          "name": "execve",
+          "count": 1
+        },
+        "6": {
+          "num": 6,
+          "name": "lstat",
+          "count": 185
+        },
+        "63": {
+          "num": 63,
+          "name": "uname",
+          "count": 3
+        },
+        "79": {
+          "num": 79,
+          "name": "getcwd",
+          "count": 1
+        },
+        "8": {
+          "num": 8,
+          "name": "lseek",
+          "count": 1
+        },
+        "89": {
+          "num": 89,
+          "name": "readlink",
+          "count": 1
+        },
+        "9": {
+          "num": 9,
+          "name": "mmap",
+          "count": 101
+        },
+        "97": {
+          "num": 97,
+          "name": "getrlimit",
+          "count": 2
         }
       }
     }

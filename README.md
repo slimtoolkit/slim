@@ -32,7 +32,7 @@ Sample images (built with the standard Ubuntu 14.04 base image):
 
 You can also run `docker-slim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
-DockerSlim now also generates an AppArmor profile for your container.
+DockerSlim now also generates an AppArmor profile for your container (still more todo). DockerSlim also collects the information necessary to create seccomp filters. As soon as Docker supports seccomp DockerSlim will be able to auto-generate seccomp filters for you!
 
 Dependencies:
 
@@ -112,6 +112,8 @@ You can get the current binaries for Macs [here](https://github.com/cloudimmunit
 
 
 ## BUILD PROCESS
+
+Go 1.5.1 or higher is required. Earlier versions of Go have a Docker/ptrace related bug (Go kills processes if your app is PID 1). When the 'monitor' is separate from the 'launcher' process it will be possible to user older Go versions again.
 
 Before you build the tool you need to install GOX and Godep (optional; you'll need it only if you have problems pulling the dependencies the old fashioned way :-))
 
@@ -208,7 +210,7 @@ The minified `sample_app` docker image now works! We turned a 430MB node.js app 
 * Refactor the time-based container monitoring phase [DONE].
 * Automated interaction with the target container (requires app code analysis) [WIP;DONE - simple version].
 * Auto-generate AppArmor profiles [WIP].
-* Auto-generate Seccomp filters.
+* Auto-generate Seccomp filters [WIP].
 * Split "monitor" from "launcher" (as it's supposed to work :-))
 * Add scripting language dependency discovery to the "scanner" app.
 * Support additional command line parameters to specify CMD, VOLUME, ENV info.
@@ -219,7 +221,7 @@ The minified `sample_app` docker image now works! We turned a 430MB node.js app 
 
 ## NOTES
 
-1. The code is really really ugly at this point in time :)
+1. The code is still pretty ugly at this point in time :)
 2. Each app directory contains a dummy `.git` directory because `godep` fails to work without it.
 
 
