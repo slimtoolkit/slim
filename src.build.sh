@@ -3,9 +3,9 @@
 set -e
 
 source env.sh
-pushd src/slim
-#gox -osarch="linux/amd64" -output="../../bin/linux/docker-slim"
-gox -osarch="darwin/amd64" -output="../../bin/mac/docker-slim"
+pushd src/slim/app
+#gox -osarch="linux/amd64" -output="../../../bin/linux/docker-slim"
+gox -osarch="darwin/amd64" -output="../../../bin/mac/docker-slim"
 popd
 #pushd src/scanner
 #gox -osarch="linux/amd64" -output="../../bin/linux/ascanner"
