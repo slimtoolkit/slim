@@ -4,11 +4,11 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 
 	"bitbucket.org/madmo/fanotify"
+	log "github.com/Sirupsen/logrus"
 )
 
 type fanMonitorReport struct {
@@ -20,22 +20,28 @@ type fanMonitorReport struct {
 	ProcessFiles     map[string]map[string]*fileInfo `json:"process_files"`
 }
 
-//func listenEvents(mountPoint string, stopChan chan bool) chan map[event]bool {
+type event struct {
+	ID      uint32
+	Pid     int32
+	File    string
+	IsRead  bool
+	IsWrite bool
+}
+
 func fanRunMonitor(mountPoint string, stopChan chan struct{}) <-chan *fanMonitorReport {
-	log.Println("monitor: fanRunMonitor start")
+	log.Info("fanmon: starting...")
 
 	nd, err := fanotify.Initialize(fanotify.FAN_CLASS_NOTIF, os.O_RDONLY)
-	check(err)
+	failOnError(err)
 	err = nd.Mark(fanotify.FAN_MARK_ADD|fanotify.FAN_MARK_MOUNT,
 		fanotify.FAN_MODIFY|fanotify.FAN_ACCESS|fanotify.FAN_OPEN, -1, mountPoint)
-	check(err)
+	failOnError(err)
 
-	//eventsChan := make(chan map[event]bool, 1)
 	eventsChan := make(chan *fanMonitorReport, 1)
 
 	go func() {
-		log.Println("monitor: fanRunMonitor worker starting")
-		//events := make(map[event]bool, 1)
+		log.Debug("fanmon: fanRunMonitor worker starting")
+
 		report := &fanMonitorReport{
 			MonitorPid:       os.Getpid(),
 			MonitorParentPid: os.Getppid(),
@@ -44,16 +50,16 @@ func fanRunMonitor(mountPoint string, stopChan chan struct{}) <-chan *fanMonitor
 
 		eventChan := make(chan event)
 		go func() {
-			log.Println("monitor: fanRunMonitor worker (monitor) starting")
+			log.Debug("fanmon: fanRunMonitor worker (monitor) starting")
 			var eventID uint32
 
 			for {
 				data, err := nd.GetEvent()
-				check(err)
-				log.Printf("TMP: monitor: fanRunMonitor: data.Mask =>%x\n",data.Mask)
+				failOnError(err)
+				log.Debugf("fanmon: data.Mask =>%x\n", data.Mask)
 
 				if (data.Mask & fanotify.FAN_Q_OVERFLOW) == fanotify.FAN_Q_OVERFLOW {
-					log.Println("monitor: fanRunMonitor: overflow event")
+					log.Debug("fanmon: overflow event")
 					continue
 				}
 
@@ -62,25 +68,25 @@ func fanRunMonitor(mountPoint string, stopChan chan struct{}) <-chan *fanMonitor
 				isWrite := false
 
 				if (data.Mask & fanotify.FAN_OPEN) == fanotify.FAN_OPEN {
-					//log.Println("TMP: monitor: fanRunMonitor: file open")
+					log.Debug("fanmon: file open")
 					doNotify = true
 				}
 
 				if (data.Mask & fanotify.FAN_ACCESS) == fanotify.FAN_ACCESS {
-					//log.Println("TMP: monitor: fanRunMonitor: file read")
+					log.Debug("fanmon: file read")
 					isRead = true
 					doNotify = true
 				}
 
 				if (data.Mask & fanotify.FAN_MODIFY) == fanotify.FAN_MODIFY {
-					//log.Println("TMP: monitor: fanRunMonitor: file write")
+					log.Debug("fanmon: file write")
 					isWrite = true
 					doNotify = true
 				}
 
 				path, err := os.Readlink(fmt.Sprintf("/proc/self/fd/%d", data.File.Fd()))
-				check(err)
-				//log.Println("TMP: monitor: fanRunMonitor: file path =>",path)
+				failOnError(err)
+				log.Debug("fanmon: file path =>", path)
 
 				data.File.Close()
 				if doNotify {
@@ -91,18 +97,15 @@ func fanRunMonitor(mountPoint string, stopChan chan struct{}) <-chan *fanMonitor
 			}
 		}()
 
-		s := false
-		for !s {
+	done:
+		for {
 			select {
-			//case <-time.After(110 * time.Second):
-			//	log.Println("monitor: fanRunMonitor - event timeout...")
-			//	s = true
 			case <-stopChan:
-				log.Println("monitor: fanRunMonitor stopping...")
-				s = true
+				log.Info("fanmon: stopping...")
+				break done
 			case e := <-eventChan:
 				report.EventCount++
-				log.Println("TMP: monitor: fanRunMonitor: event ",report.EventCount)
+				log.Debug("fanmon: event ", report.EventCount)
 
 				if e.ID == 1 {
 					//first event represents the main process
@@ -110,22 +113,17 @@ func fanRunMonitor(mountPoint string, stopChan chan struct{}) <-chan *fanMonitor
 						report.MainProcess = pinfo
 						report.Processes = make(map[string]*processInfo)
 						report.Processes[strconv.Itoa(int(e.Pid))] = pinfo
-						//log.Println("TMP: monitor: listenEvents: (1) adding pi for ",
-						//	e.Pid,"info:",report.Processes[strconv.Itoa(int(e.Pid))])
 					}
 				} else {
 					if _, ok := report.Processes[strconv.Itoa(int(e.Pid))]; !ok {
 						if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
 							report.Processes[strconv.Itoa(int(e.Pid))] = pinfo
-							//log.Println("TMP: monitor: fanRunMonitor: (2) adding pi for ",
-							//	e.Pid,"info:",report.Processes[strconv.Itoa(int(e.Pid))])
 						}
 					}
 				}
 
 				if _, ok := report.ProcessFiles[strconv.Itoa(int(e.Pid))]; !ok {
 					report.ProcessFiles[strconv.Itoa(int(e.Pid))] = make(map[string]*fileInfo)
-					//log.Println("TMP: monitor: fanRunMonitor: adding pf for ",e.Pid)
 				}
 
 				if existingFi, ok := report.ProcessFiles[strconv.Itoa(int(e.Pid))][e.File]; !ok {
@@ -162,12 +160,10 @@ func fanRunMonitor(mountPoint string, stopChan chan struct{}) <-chan *fanMonitor
 						existingFi.ExeCount++
 					}
 				}
-
-				//log.Printf("monitor: listenEvents event => %#v\n", e)
 			}
 		}
 
-		log.Printf("monitor: listenEvents - sending report (processed %v events)...\n", report.EventCount)
+		log.Debugf("fanmon: sending report (processed %v events)...\n", report.EventCount)
 		eventsChan <- report
 	}()
 

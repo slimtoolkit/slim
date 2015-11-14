@@ -21,7 +21,7 @@ func init() {
 	app.Name = "docker-slim"
 	app.Usage = USAGE
 	app.CommandNotFound = func(ctx *cli.Context, command string) {
-		fmt.Println("unknown command -", command, "\n")
+		fmt.Printf("unknown command - %v \n\n", command)
 		cli.ShowAppHelp(ctx)
 	}
 
@@ -75,7 +75,7 @@ func init() {
 			Usage:   "Collects fat image information and reverse engineers its Dockerfile",
 			Action: func(ctx *cli.Context) {
 				if len(ctx.Args()) < 1 {
-					fmt.Println("[info] missing image ID/name...\n")
+					fmt.Printf("[info] missing image ID/name...\n\n")
 					cli.ShowCommandHelp(ctx, "info")
 					return
 				}
@@ -98,7 +98,7 @@ func init() {
 			},
 			Action: func(ctx *cli.Context) {
 				if len(ctx.Args()) < 1 {
-					fmt.Println("[build] missing image ID/name...\n")
+					fmt.Printf("[build] missing image ID/name...\n\n")
 					cli.ShowCommandHelp(ctx, "build")
 					return
 				}
@@ -118,7 +118,7 @@ func init() {
 			},
 			Action: func(ctx *cli.Context) {
 				if len(ctx.Args()) < 1 {
-					fmt.Println("[profile] missing image ID/name...\n")
+					fmt.Printf("[profile] missing image ID/name...\n\n")
 					cli.ShowCommandHelp(ctx, "profile")
 					return
 				}

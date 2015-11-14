@@ -115,12 +115,12 @@ type imageReport struct {
 
 type monitorReports struct {
 	Fan *fanMonitorReport `json:"fan"`
-	Pt *ptMonitorReport `json:"pt"`
+	Pt  *ptMonitorReport  `json:"pt"`
 }
 
 type containerReport struct {
 	Monitors monitorReports `json:"monitors"`
-	Image   imageReport     `json:"image"`
+	Image    imageReport    `json:"image"`
 }
 
 func permSetFromFlags(flags map[string]bool) string {

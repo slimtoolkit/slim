@@ -1,12 +1,12 @@
 package main
 
 import (
-	"log"
-	//"os"
 	"os/exec"
 	"runtime"
-	"syscall"
 	"strconv"
+	"syscall"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 type syscallStatInfo struct {
@@ -23,33 +23,22 @@ type ptMonitorReport struct {
 
 type syscallEvent struct {
 	callNum uint64
-	retVal uint64
+	retVal  uint64
 }
 
-
-func ptRunMonitor(startChan <-chan int, 
+func ptRunMonitor(startChan <-chan int,
 	stopChan chan struct{},
 	appName string,
 	appArgs []string,
 	dirName string) <-chan *ptMonitorReport {
+	log.Info("ptmon: starting...")
+
 	reportChan := make(chan *ptMonitorReport, 1)
 
 	go func() {
 		report := &ptMonitorReport{
 			SyscallStats: map[string]syscallStatInfo{},
 		}
-
-		//log.Println("ptmon: waiting for process...")
-		//targetPid, ok := <-startChan
-		//app, err := startTargetApp(appName, appArgs, dirName, true)
-		//failOnError(err)
-		//targetPid := app.Process.Pid
-
-		//log.Printf("ptmon: target PID => %d\n", targetPid)
-		//if !ok {
-		//	reportChan <- report
-		//	return
-		//}
 
 		syscallStats := map[uint64]uint64{}
 		eventChan := make(chan syscallEvent)
@@ -58,7 +47,6 @@ func ptRunMonitor(startChan <-chan int,
 		var app *exec.Cmd
 
 		go func() {
-			//IMPORTANT NOTE:
 			//Ptrace is not pretty... and it requires that you do all ptrace calls from the same thread
 			runtime.LockOSThread()
 
@@ -67,25 +55,24 @@ func ptRunMonitor(startChan <-chan int,
 			failOnError(err)
 			targetPid := app.Process.Pid
 
-			log.Printf("ptmon: target PID ==> %d\n", targetPid)
+			log.Debugf("ptmon: target PID ==> %d\n", targetPid)
 
 			var wstat syscall.WaitStatus
-			//log.Println("TMP: ptmon: get initial process status...")
 			_, err = syscall.Wait4(targetPid, &wstat, 0, nil)
 			if err != nil {
-				log.Printf("ptmon: error waiting for %d: %v\n", targetPid, err)
+				log.Warnf("ptmon: error waiting for %d: %v\n", targetPid, err)
 				doneMonitoring <- 1
 			}
 
-			//log.Println("TMP: ptmon: initial process status =>",wstat)
+			log.Debugln("ptmon: initial process status =>", wstat)
 
 			if wstat.Exited() {
-				log.Println("ptmon: app exited unexpectedly")
+				log.Warn("ptmon: app exited (unexpected)")
 				doneMonitoring <- 2
 			}
 
 			if wstat.Signaled() {
-				log.Println("ptmon: app signalled unexpectedly")
+				log.Warn("ptmon: app signalled (unexpected)")
 				doneMonitoring <- 3
 			}
 
@@ -97,89 +84,83 @@ func ptRunMonitor(startChan <-chan int,
 			for wstat.Stopped() {
 				var regs syscall.PtraceRegs
 
-				//log.Println("TMP: ptmon: get syscall info...")
 				switch syscallReturn {
 				case false:
 					if err := syscall.PtraceGetRegs(targetPid, &regs); err != nil {
-						log.Fatalf("PtraceGetRegs(call): %v", err)
+						log.Fatalf("ptmon: PtraceGetRegs(call): %v", err)
 					}
 
 					callNum = regs.Orig_rax
-					//log.Printf("[syscall]: %v\n", callNum)
 					syscallReturn = true
 					gotCallNum = true
 				case true:
 					if err := syscall.PtraceGetRegs(targetPid, &regs); err != nil {
-						log.Fatalf("PtraceGetRegs(return): %v", err)
+						log.Fatalf("ptmon: PtraceGetRegs(return): %v", err)
 					}
 
 					retVal = regs.Rax
-					//log.Printf("[syscall return]: %v\n", retVal)
 					syscallReturn = false
 					gotRetVal = true
 				}
 
 				err = syscall.PtraceSyscall(targetPid, 0)
 				if err != nil {
-					log.Printf("PtraceSyscall error: %v\n", err)
+					log.Warnf("ptmon: PtraceSyscall error: %v\n", err)
 					break
 				}
 				_, err = syscall.Wait4(targetPid, &wstat, 0, nil)
 				if err != nil {
-					log.Printf("error waiting 4 %d: %v\n", targetPid, err)
+					log.Warnf("ptmon: error waiting 4 %d: %v\n", targetPid, err)
 					break
 				}
 
 				if gotCallNum && gotRetVal {
 					gotCallNum = false
 					gotRetVal = false
-					//log.Printf("TMP: ptmon: sending event data: %v %v\n",callNum,retVal)
+
 					eventChan <- syscallEvent{
 						callNum: callNum,
-						retVal: retVal,
+						retVal:  retVal,
 					}
 				}
 			}
 
-			log.Println("ptmon: monitor is exiting... status=",wstat)
+			log.Infoln("ptmon: monitor is exiting... status=", wstat)
 			doneMonitoring <- 0
-		}()	
+		}()
 
-		done_monitoring:
+	done:
 		for {
 			select {
-				case rc := <-doneMonitoring:
-					log.Println("monitor.ptRunMonitor done =>",rc)
-					break done_monitoring
-				case <-stopChan:
-					log.Println("monitor.ptRunMonitor stopping...")
-					//NOTE: need a better way to stop the target app...
-					if err := app.Process.Signal(syscall.SIGTERM); err != nil {
-						log.Println("monitor.ptRunMonitor - error stopping target app =>",err)
-						if err := app.Process.Kill(); err != nil {
-							log.Println("monitor.ptRunMonitor - error killing target app =>",err)
-						}
+			case rc := <-doneMonitoring:
+				log.Info("ptmon: done =>", rc)
+				break done
+			case <-stopChan:
+				log.Info("ptmon: stopping...")
+				//NOTE: need a better way to stop the target app...
+				if err := app.Process.Signal(syscall.SIGTERM); err != nil {
+					log.Warnln("ptmon: error stopping target app =>", err)
+					if err := app.Process.Kill(); err != nil {
+						log.Warnln("ptmon: error killing target app =>", err)
 					}
-					break done_monitoring
-				case e := <- eventChan:
-					report.SyscallCount++
-					//log.Printf("TMP: monitor.ptRunMonitor: event %v => %v\n",report.SyscallCount,e)
+				}
+				break done
+			case e := <-eventChan:
+				report.SyscallCount++
 
-					if _, ok := syscallStats[e.callNum]; ok {
-						//log.Printf("TMP: monitor.ptRunMonitor - updating syscall => %v / %v\n",e.callNum,syscallName64(e.callNum))
-						syscallStats[e.callNum]++
-					} else {
-						//log.Printf("TMP: monitor.ptRunMonitor - first seen syscall => %v / %v\n",e.callNum,syscallName64(e.callNum))
-						syscallStats[e.callNum] = 1
-					}
+				if _, ok := syscallStats[e.callNum]; ok {
+					syscallStats[e.callNum]++
+				} else {
+					syscallStats[e.callNum] = 1
+				}
 			}
 		}
 
-		//log.Printf("TMP: monitor.ptRunMonitor: summary - syscall executions = %d\n", report.SyscallCount)
-		//log.Printf("TMP: monitor.ptRunMonitor: summary - number of syscalls: %v\n", len(syscallStats))
+		log.Debugf("ptmon: executed syscall count = %d\n", report.SyscallCount)
+		log.Debugf("ptmon: number of syscalls: %v\n", len(syscallStats))
 		for scNum, scCount := range syscallStats {
-			log.Printf("[%v] %v = %v", scNum, syscallName64(scNum), scCount)
-			report.SyscallStats[strconv.FormatUint(scNum,10)] = syscallStatInfo{
+			log.Debugf("[%v] %v = %v", scNum, syscallName64(scNum), scCount)
+			report.SyscallStats[strconv.FormatUint(scNum, 10)] = syscallStatInfo{
 				Number: scNum,
 				Name:   syscallName64(scNum),
 				Count:  scCount,

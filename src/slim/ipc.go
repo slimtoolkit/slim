@@ -96,9 +96,9 @@ func newEvtChannel(addr string) (mangos.Socket, error) {
 		return nil, err
 	}
 
-	if err := socket.SetOption(mangos.OptionRecvDeadline,time.Second * 120); err != nil {
+	if err := socket.SetOption(mangos.OptionRecvDeadline, time.Second*120); err != nil {
 		socket.Close()
-		return nil,err
+		return nil, err
 	}
 
 	//socket.AddTransport(ipc.NewTransport())

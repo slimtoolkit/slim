@@ -1,15 +1,15 @@
 package main
 
 import (
-	"log"
 	"os"
 	"os/exec"
-	//"runtime"
 	"syscall"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 func startTargetApp(appName string, appArgs []string, appDir string, doPtrace bool) (*exec.Cmd, error) {
-	log.Printf("launcher.startTargetApp(%v,%v,%v)\n",appName,appArgs,appDir)
+	log.Debugf("launcher.startTargetApp(%v,%v,%v)\n", appName, appArgs, appDir)
 	app := exec.Command(appName, appArgs...)
 
 	if doPtrace {
@@ -26,10 +26,10 @@ func startTargetApp(appName string, appArgs []string, appDir string, doPtrace bo
 
 	err := app.Start()
 	if err != nil {
-		log.Printf("app.Start error: %v", err)
+		log.Warnf("app.Start error: %v\n", err)
 		return nil, err
 	}
 
-	log.Printf("launcher.startTargetApp: started target app --> PID=%d\n", app.Process.Pid)
+	log.Debugf("launcher.startTargetApp: started target app --> PID=%d\n", app.Process.Pid)
 	return app, nil
 }
