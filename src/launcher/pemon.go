@@ -1,6 +1,8 @@
 package main
 
 import (
+	"internal/utils"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/pdiscover"
 )
@@ -17,7 +19,7 @@ func peRunMonitor(stopChan chan struct{}) <-chan *peMonitorReport {
 	log.Info("pemon: starting...")
 
 	watcher, err := pdiscover.NewAllWatcher(pdiscover.PROC_EVENT_ALL)
-	failOnError(err)
+	utils.FailOn(err)
 
 	reportChan := make(chan *peMonitorReport, 1)
 
@@ -39,7 +41,7 @@ func peRunMonitor(stopChan chan struct{}) <-chan *peMonitorReport {
 			case <-watcher.Exec:
 			case <-watcher.Exit:
 			case err := <-watcher.Error:
-				failOnError(err)
+				utils.FailOn(err)
 			}
 		}
 

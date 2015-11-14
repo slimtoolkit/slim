@@ -1,8 +1,10 @@
-package main
+package http
 
 import (
 	"fmt"
 	"time"
+
+	"slim/inspectors/container"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/franela/goreq"
@@ -10,10 +12,10 @@ import (
 
 type HttpProbe struct {
 	Ports              []string
-	ContainerInspector *ContainerInspector
+	ContainerInspector *container.Inspector
 }
 
-func NewHttpProbe(inspector *ContainerInspector) (*HttpProbe, error) {
+func NewRootProbe(inspector *container.Inspector) (*HttpProbe, error) {
 	probe := &HttpProbe{
 		ContainerInspector: inspector,
 	}

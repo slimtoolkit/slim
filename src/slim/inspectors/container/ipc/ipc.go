@@ -1,6 +1,7 @@
-package main
+package ipc
 
 import (
+	"fmt"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -10,6 +11,40 @@ import (
 	//"github.com/gdamore/mangos/transport/ipc"
 	"github.com/gdamore/mangos/transport/tcp"
 )
+
+func InitContainerChannels(dockerHostIp, cmdChannelPort, evtChannelPort string) error {
+	cmdChannelAddr = fmt.Sprintf("tcp://%v:%v", dockerHostIp, cmdChannelPort)
+	evtChannelAddr = fmt.Sprintf("tcp://%v:%v", dockerHostIp, evtChannelPort)
+	log.Debugf("cmdChannelAddr=%v evtChannelAddr=%v\n", cmdChannelAddr, evtChannelAddr)
+
+	//evtChannelAddr = fmt.Sprintf("ipc://%v/ipc/docker-slim-launcher.events.ipc", localVolumePath)
+	//cmdChannelAddr = fmt.Sprintf("ipc://%v/ipc/docker-slim-launcher.cmds.ipc", localVolumePath)
+
+	var err error
+	evtChannel, err = newEvtChannel(evtChannelAddr)
+	if err != nil {
+		return err
+	}
+	cmdChannel, err = newCmdClient(cmdChannelAddr)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func SendContainerCmd(cmd string) (string, error) {
+	return sendCmd(cmdChannel, cmd)
+}
+
+func GetContainerEvt() (string, error) {
+	return getEvt(evtChannel)
+}
+
+func ShutdownContainerChannels() {
+	shutdownEvtChannel()
+	shutdownCmdChannel()
+}
 
 //var cmdChannelAddr = "ipc:///tmp/docker-slim-launcher.cmds.ipc"
 var cmdChannelAddr = "tcp://127.0.0.1:65501"

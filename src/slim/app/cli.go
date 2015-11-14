@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"slim/commands"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 )
@@ -81,7 +83,7 @@ func init() {
 				}
 
 				imageRef := ctx.Args().First()
-				onInfoCommand(imageRef)
+				commands.OnInfo(imageRef)
 			},
 		},
 		{
@@ -106,7 +108,7 @@ func init() {
 				imageRef := ctx.Args().First()
 				doHttpProbe := ctx.Bool("http-probe")
 				doRmFileArtifacts := ctx.Bool("remove-file-artifacts")
-				onBuildCommand(imageRef, doHttpProbe, doRmFileArtifacts)
+				commands.OnBuild(imageRef, doHttpProbe, doRmFileArtifacts)
 			},
 		},
 		{
@@ -124,7 +126,7 @@ func init() {
 				}
 
 				imageRef := ctx.Args().First()
-				onProfileCommand(imageRef)
+				commands.OnProfile(imageRef)
 			},
 		},
 	}

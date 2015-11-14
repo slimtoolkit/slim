@@ -7,6 +7,8 @@ import (
 	"os"
 	"strconv"
 
+	"internal/utils"
+
 	"bitbucket.org/madmo/fanotify"
 	log "github.com/Sirupsen/logrus"
 )
@@ -32,10 +34,10 @@ func fanRunMonitor(mountPoint string, stopChan chan struct{}) <-chan *fanMonitor
 	log.Info("fanmon: starting...")
 
 	nd, err := fanotify.Initialize(fanotify.FAN_CLASS_NOTIF, os.O_RDONLY)
-	failOnError(err)
+	utils.FailOn(err)
 	err = nd.Mark(fanotify.FAN_MARK_ADD|fanotify.FAN_MARK_MOUNT,
 		fanotify.FAN_MODIFY|fanotify.FAN_ACCESS|fanotify.FAN_OPEN, -1, mountPoint)
-	failOnError(err)
+	utils.FailOn(err)
 
 	eventsChan := make(chan *fanMonitorReport, 1)
 
@@ -55,7 +57,7 @@ func fanRunMonitor(mountPoint string, stopChan chan struct{}) <-chan *fanMonitor
 
 			for {
 				data, err := nd.GetEvent()
-				failOnError(err)
+				utils.FailOn(err)
 				log.Debugf("fanmon: data.Mask =>%x\n", data.Mask)
 
 				if (data.Mask & fanotify.FAN_Q_OVERFLOW) == fanotify.FAN_Q_OVERFLOW {
@@ -85,7 +87,7 @@ func fanRunMonitor(mountPoint string, stopChan chan struct{}) <-chan *fanMonitor
 				}
 
 				path, err := os.Readlink(fmt.Sprintf("/proc/self/fd/%d", data.File.Fd()))
-				failOnError(err)
+				utils.FailOn(err)
 				log.Debug("fanmon: file path =>", path)
 
 				data.File.Close()

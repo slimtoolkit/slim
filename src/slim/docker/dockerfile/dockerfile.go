@@ -1,4 +1,4 @@
-package main
+package dockerfile
 
 import (
 	"bytes"
@@ -23,7 +23,7 @@ type imageInst struct {
 	fullTags     []string
 }
 
-func reverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]string, error) {
+func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]string, error) {
 	//NOTE: comment field is missing (TODO: enhance the lib...)
 	imageHistory, err := apiClient.ImageHistory(imageID)
 	if err != nil {
@@ -158,13 +158,13 @@ func reverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]s
 	*/
 }
 
-func saveDockerfileData(fatImageDockerfileLocation string, fatImageDockerInstructions []string) error {
+func SaveDockerfileData(fatImageDockerfileLocation string, fatImageDockerInstructions []string) error {
 	var data bytes.Buffer
 	data.WriteString(strings.Join(fatImageDockerInstructions, "\n"))
 	return ioutil.WriteFile(fatImageDockerfileLocation, data.Bytes(), 0644)
 }
 
-func generateDockerfile(location string,
+func GenerateFromInfo(location string,
 	workingDir string,
 	env []string,
 	exposedPorts map[docker.Port]struct{},

@@ -1,4 +1,4 @@
-package main
+package host
 
 import (
 	"net"
@@ -6,7 +6,7 @@ import (
 	"os"
 )
 
-func getDockerHostIP() string {
+func GetIP() string {
 	dockerHost := os.Getenv("DOCKER_HOST")
 	if dockerHost == "" {
 		return "127.0.0.1"

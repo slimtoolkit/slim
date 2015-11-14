@@ -12,6 +12,8 @@ import (
 	"strconv"
 	"strings"
 
+	"internal/utils"
+
 	log "github.com/Sirupsen/logrus"
 )
 
@@ -103,7 +105,7 @@ func cpFile(src, dst string) error {
 	}
 	defer s.Close()
 
-	dstDir := fileDir(dst)
+	dstDir := utils.FileDir(dst)
 	err = os.MkdirAll(dstDir, 0777)
 	if err != nil {
 		log.Warnln("launcher: monitor - dir error =>", err)

@@ -7,6 +7,8 @@ import (
 	"syscall"
 	"time"
 
+	"internal/utils"
+
 	log "github.com/Sirupsen/logrus"
 )
 
@@ -121,10 +123,10 @@ func main() {
 	//log.SetLevel(log.DebugLevel)
 
 	log.Infof("launcher: args => %#v\n", os.Args)
-	failWhen(len(os.Args) < 2, "missing app information")
+	utils.FailWhen(len(os.Args) < 2, "missing app information")
 
 	dirName, err := os.Getwd()
-	failOnError(err)
+	utils.FailOn(err)
 	log.Debugf("launcher: cwd => %#v\n", dirName)
 
 	appName := os.Args[1]
@@ -153,12 +155,12 @@ func main() {
 	log.Debug("launcher: setting up channels...")
 	doneChan = make(chan struct{})
 	evtChannel, err = newEvtPublisher(evtChannelAddr)
-	failOnError(err)
+	utils.FailOn(err)
 	cmdChannel, err = newCmdServer(cmdChannelAddr)
-	failOnError(err)
+	utils.FailOn(err)
 
 	cmdChan, err := runCmdServer(cmdChannel, doneChan)
-	failOnError(err)
+	utils.FailOn(err)
 	log.Info("launcher: waiting for commands...")
 doneRunning:
 	for {

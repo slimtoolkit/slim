@@ -1,13 +1,15 @@
-package main
+package builder
 
 import (
 	"os"
+
+	"slim/docker/dockerfile"
 
 	//log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
 )
 
-type imageBuilder struct {
+type ImageBuilder struct {
 	RepoName     string
 	ID           string
 	Entrypoint   []string
@@ -22,8 +24,8 @@ type imageBuilder struct {
 	ApiClient    *docker.Client
 }
 
-func NewImageBuilder(client *docker.Client, imageRepoName string, imageInfo *docker.Image, artifactLocation string) (*imageBuilder, error) {
-	builder := &imageBuilder{
+func NewImageBuilder(client *docker.Client, imageRepoName string, imageInfo *docker.Image, artifactLocation string) (*ImageBuilder, error) {
+	builder := &ImageBuilder{
 		RepoName:     imageRepoName,
 		ID:           imageInfo.ID,
 		Entrypoint:   imageInfo.Config.Entrypoint,
@@ -47,7 +49,7 @@ func NewImageBuilder(client *docker.Client, imageRepoName string, imageInfo *doc
 	return builder, nil
 }
 
-func (b *imageBuilder) Build() error {
+func (b *ImageBuilder) Build() error {
 	if err := b.GenerateDockerfile(); err != nil {
 		return err
 	}
@@ -55,8 +57,8 @@ func (b *imageBuilder) Build() error {
 	return b.ApiClient.BuildImage(b.BuildOptions)
 }
 
-func (b *imageBuilder) GenerateDockerfile() error {
-	return generateDockerfile(b.BuildOptions.ContextDir,
+func (b *ImageBuilder) GenerateDockerfile() error {
+	return dockerfile.GenerateFromInfo(b.BuildOptions.ContextDir,
 		b.WorkingDir,
 		b.Env,
 		b.ExposedPorts,

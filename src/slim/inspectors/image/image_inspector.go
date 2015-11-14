@@ -1,15 +1,18 @@
-package main
+package image
 
 import (
 	"fmt"
 	"path/filepath"
 	"strings"
 
+	"internal/utils"
+	"slim/docker/dockerfile"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
 )
 
-type ImageInspector struct {
+type Inspector struct {
 	ImageRef            string
 	ArtifactLocation    string
 	SlimImageRepo       string
@@ -19,8 +22,8 @@ type ImageInspector struct {
 	ApiClient           *docker.Client
 }
 
-func NewImageInspector(client *docker.Client, imageRef string, artifactLocation string) (*ImageInspector, error) {
-	inspector := &ImageInspector{
+func NewInspector(client *docker.Client, imageRef string, artifactLocation string) (*Inspector, error) {
+	inspector := &Inspector{
 		ImageRef:            imageRef,
 		SlimImageRepo:       "slim",
 		AppArmorProfileName: "apparmor-profile",
@@ -31,7 +34,7 @@ func NewImageInspector(client *docker.Client, imageRef string, artifactLocation 
 	return inspector, nil
 }
 
-func (i *ImageInspector) Inspect() error {
+func (i *Inspector) Inspect() error {
 	var err error
 	i.ImageInfo, err = i.ApiClient.InspectImage(i.ImageRef)
 	if err != nil {
@@ -61,7 +64,7 @@ func (i *ImageInspector) Inspect() error {
 	return nil
 }
 
-func (i *ImageInspector) processImageName() {
+func (i *Inspector) processImageName() {
 	if len(i.ImageRecordInfo.RepoTags) > 0 {
 		if rtInfo := strings.Split(i.ImageRecordInfo.RepoTags[0], ":"); len(rtInfo) > 1 {
 			i.SlimImageRepo = fmt.Sprintf("%s.slim", rtInfo[0])
@@ -75,16 +78,16 @@ func (i *ImageInspector) processImageName() {
 	}
 }
 
-func (i *ImageInspector) ProcessCollectedData() error {
+func (i *Inspector) ProcessCollectedData() error {
 	i.processImageName()
 
-	fatImageDockerInstructions, err := reverseDockerfileFromHistory(i.ApiClient, i.ImageRef)
+	fatImageDockerInstructions, err := dockerfile.ReverseDockerfileFromHistory(i.ApiClient, i.ImageRef)
 	if err != nil {
 		return err
 	}
 	fatImageDockerfileLocation := filepath.Join(i.ArtifactLocation, "Dockerfile.fat")
-	err = saveDockerfileData(fatImageDockerfileLocation, fatImageDockerInstructions)
-	failOnError(err)
+	err = dockerfile.SaveDockerfileData(fatImageDockerfileLocation, fatImageDockerInstructions)
+	utils.FailOn(err)
 
 	return nil
 }

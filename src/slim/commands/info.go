@@ -1,26 +1,29 @@
-package main
+package commands
 
 import (
 	"fmt"
 
+	"internal/utils"
+	"slim/inspectors/image"
+	
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/dustin/go-humanize"
 )
 
-func onInfoCommand(imageRef string) {
+func OnInfo(imageRef string) {
 	fmt.Println("docker-slim: [info] image=", imageRef)
 
-	_, artifactLocation := myAppDirs()
+	_, artifactLocation := utils.PrepareSlimDirs()
 
 	client, _ := docker.NewClientFromEnv()
 
-	imageInspector, err := NewImageInspector(client, imageRef, artifactLocation)
-	failOnError(err)
+	imageInspector, err := image.NewInspector(client, imageRef, artifactLocation)
+	utils.FailOn(err)
 
 	log.Info("docker-slim: inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
-	failOnError(err)
+	utils.FailOn(err)
 
 	log.Infof("docker-slim: 'fat' image size => %v (%v)\n",
 		imageInspector.ImageInfo.VirtualSize,
@@ -28,7 +31,7 @@ func onInfoCommand(imageRef string) {
 
 	log.Info("docker-slim: processing 'fat' image info...")
 	err = imageInspector.ProcessCollectedData()
-	failOnError(err)
+	utils.FailOn(err)
 
 	fmt.Println("docker-slim: [info] done.")
 }

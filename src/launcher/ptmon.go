@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"syscall"
 
+	"internal/utils"
+
 	log "github.com/Sirupsen/logrus"
 )
 
@@ -52,7 +54,7 @@ func ptRunMonitor(startChan <-chan int,
 
 			var err error
 			app, err = startTargetApp(appName, appArgs, dirName, true)
-			failOnError(err)
+			utils.FailOn(err)
 			targetPid := app.Process.Pid
 
 			log.Debugf("ptmon: target PID ==> %d\n", targetPid)

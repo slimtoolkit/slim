@@ -1,29 +1,35 @@
-package main
+package commands
 
 import (
 	"bufio"
 	"fmt"
 	"os"
 
+	"internal/utils"
+	"slim/inspectors/image"
+	"slim/inspectors/container"
+	"slim/inspectors/container/probes/http"
+	"slim/builder"
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/dustin/go-humanize"
 )
 
-func onBuildCommand(imageRef string, doHttpProbe bool, doRmFileArtifacts bool) {
+func OnBuild(imageRef string, doHttpProbe bool, doRmFileArtifacts bool) {
 	fmt.Printf("docker-slim: [build] image=%v http-probe=%v remove-file-artifacts=%v\n",
 		imageRef, doHttpProbe, doRmFileArtifacts)
 
-	localVolumePath, artifactLocation := myAppDirs()
+	localVolumePath, artifactLocation := utils.PrepareSlimDirs()
 
 	client, _ := docker.NewClientFromEnv()
 
-	imageInspector, err := NewImageInspector(client, imageRef, artifactLocation)
-	failOnError(err)
+	imageInspector, err := image.NewInspector(client, imageRef, artifactLocation)
+	utils.FailOn(err)
 
 	log.Info("docker-slim: inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
-	failOnError(err)
+	utils.FailOn(err)
 
 	log.Infof("docker-slim: 'fat' image size => %v (%v)\n",
 		imageInspector.ImageInfo.VirtualSize,
@@ -31,20 +37,20 @@ func onBuildCommand(imageRef string, doHttpProbe bool, doRmFileArtifacts bool) {
 
 	log.Info("docker-slim: processing 'fat' image info...")
 	err = imageInspector.ProcessCollectedData()
-	failOnError(err)
+	utils.FailOn(err)
 
-	containerInspector, err := NewContainerInspector(client, imageInspector, localVolumePath)
-	failOnError(err)
+	containerInspector, err := container.NewInspector(client, imageInspector, localVolumePath)
+	utils.FailOn(err)
 
 	log.Info("docker-slim: starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
-	failOnError(err)
+	utils.FailOn(err)
 
 	log.Info("docker-slim: watching container monitor...")
 
 	if doHttpProbe {
-		probe, err := NewHttpProbe(containerInspector)
-		failOnError(err)
+		probe, err := http.NewRootProbe(containerInspector)
+		utils.FailOn(err)
 		probe.Start()
 	}
 
@@ -56,24 +62,24 @@ func onBuildCommand(imageRef string, doHttpProbe bool, doRmFileArtifacts bool) {
 
 	log.Info("docker-slim: shutting down 'fat' container...")
 	err = containerInspector.ShutdownContainer()
-	warnOnError(err)
+	utils.WarnOn(err)
 
 	log.Info("docker-slim: processing instrumented 'fat' container info...")
 	err = containerInspector.ProcessCollectedData()
-	failOnError(err)
+	utils.FailOn(err)
 
 	log.Info("docker-slim: building 'slim' image...")
-	builder, err := NewImageBuilder(client, imageInspector.SlimImageRepo, imageInspector.ImageInfo, artifactLocation)
-	failOnError(err)
+	builder, err := builder.NewImageBuilder(client, imageInspector.SlimImageRepo, imageInspector.ImageInfo, artifactLocation)
+	utils.FailOn(err)
 	err = builder.Build()
-	failOnError(err)
+	utils.FailOn(err)
 
 	log.Infoln("docker-slim: created new image:", builder.RepoName)
 
 	if doRmFileArtifacts {
 		log.Info("docker-slim: removing temporary artifacts...")
-		err = removeArtifacts(artifactLocation) //TODO: remove only the "files" subdirectory
-		warnOnError(err)
+		err = utils.RemoveArtifacts(artifactLocation) //TODO: remove only the "files" subdirectory
+		utils.WarnOn(err)
 	}
 
 	fmt.Println("docker-slim: [build] done.")

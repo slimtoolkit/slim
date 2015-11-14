@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"sort"
 
+	"internal/utils"
+
 	log "github.com/Sirupsen/logrus"
 )
 
@@ -222,7 +224,7 @@ func (p *artifactStore) saveArtifacts() {
 
 	for linkName, linkProps := range p.linkMap {
 		linkPath := fmt.Sprintf("%s/files%s", p.storeLocation, linkName)
-		linkDir := fileDir(linkPath)
+		linkDir := utils.FileDir(linkPath)
 		err := os.MkdirAll(linkDir, 0777)
 		if err != nil {
 			log.Warnln("saveArtifacts - dir error =>", err)
@@ -256,17 +258,17 @@ func (p *artifactStore) saveReport() {
 	if os.IsNotExist(err) {
 		os.MkdirAll(artifactDirName, 0777)
 		_, err = os.Stat(artifactDirName)
-		failOnError(err)
+		utils.FailOn(err)
 	}
 
 	reportFilePath := filepath.Join(artifactDirName, reportName)
 	log.Debugln("launcher: monitor - saving report to", reportFilePath)
 
 	reportData, err := json.MarshalIndent(report, "", "  ")
-	failOnError(err)
+	utils.FailOn(err)
 
 	err = ioutil.WriteFile(reportFilePath, reportData, 0644)
-	failOnError(err)
+	utils.FailOn(err)
 }
 
 func saveResults(fanMonReport *fanMonitorReport, fileNames map[string]*artifactProps, ptMonReport *ptMonitorReport) {
