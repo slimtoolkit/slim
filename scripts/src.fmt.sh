@@ -3,9 +3,8 @@
 set -e
 
 source env.sh
-cd src
-go tool vet .
-golint ./...
+cd $BDIR/src
+go fmt ./...
 
 
 

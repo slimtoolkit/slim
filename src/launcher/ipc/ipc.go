@@ -1,4 +1,4 @@
-package main
+package ipc
 
 import (
 	"time"
@@ -10,6 +10,30 @@ import (
 	//"github.com/gdamore/mangos/transport/ipc"
 	"github.com/gdamore/mangos/transport/tcp"
 )
+
+func InitChannels() error {
+	var err error
+	evtChannel, err = newEvtPublisher(evtChannelAddr)
+	if err != nil {
+		return err
+	}
+
+	cmdChannel, err = newCmdServer(cmdChannelAddr)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func ShutdownChannels() {
+	shutdownCmdChannel()
+	shutdownEvtChannel()
+}
+
+func RunCmdServer(done <-chan struct{}) (<-chan string, error) {
+	return runCmdServer(cmdChannel, done)
+}
 
 var cmdChannelAddr = "tcp://0.0.0.0:65501"
 
@@ -122,7 +146,7 @@ func publishEvt(channel mangos.Socket, evt string) error {
 	return nil
 }
 
-func tryPublishEvt(ptry uint, event string) {
+func TryPublishEvt(ptry uint, event string) {
 	for ptry := 0; ptry < 3; ptry++ {
 		log.Debugf("launcher: trying to publish '%v' event (attempt %v)\n", event, ptry+1)
 		err := publishEvt(evtChannel, "monitor.finish.completed")

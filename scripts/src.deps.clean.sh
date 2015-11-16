@@ -2,6 +2,7 @@
 
 set -e
 
-cd _vendor
+source env.sh
+cd $BDIR/_vendor
 rm -rfv *
 

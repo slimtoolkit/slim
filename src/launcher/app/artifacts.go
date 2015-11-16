@@ -1,110 +1,51 @@
 package main
 
 import (
-	"encoding/json"
-	"fmt"
-	"io/ioutil"
 	"os"
-	"path/filepath"
+	"fmt"
+	"bytes"
+	"encoding/hex"
+	"crypto/sha1"
+	"encoding/json"
+	"os/exec"
 	"sort"
+	"strings"
+	"path/filepath"
+	"io/ioutil"
+	"io"
 
 	"internal/utils"
+	"internal/report"
 
 	log "github.com/Sirupsen/logrus"
 )
 
-type processInfo struct {
-	Pid       int32  `json:"pid"`
-	Name      string `json:"name"`
-	Path      string `json:"path"`
-	Cmd       string `json:"cmd"`
-	Cwd       string `json:"cwd"`
-	Root      string `json:"root"`
-	ParentPid int32  `json:"ppid"`
-}
+func saveResults(fanMonReport *report.FanMonitorReport, 
+				fileNames map[string]*report.ArtifactProps, 
+				ptMonReport *report.PtMonitorReport) {
+	artifactDirName := "/opt/dockerslim/artifacts"
 
-type fileInfo struct {
-	EventCount   uint32 `json:"event_count"`
-	FirstEventID uint32 `json:"first_eid"`
-	Name         string `json:"-"`
-	ReadCount    uint32 `json:"reads,omitempty"`
-	WriteCount   uint32 `json:"writes,omitempty"`
-	ExeCount     uint32 `json:"execs,omitempty"`
-}
-
-type artifactType int
-
-const (
-	dirArtifactType     = 1
-	fileArtifactType    = 2
-	symlinkArtifactType = 3
-	unknownArtifactType = 99
-)
-
-var artifactTypeNames = map[artifactType]string{
-	dirArtifactType:     "Dir",
-	fileArtifactType:    "File",
-	symlinkArtifactType: "Symlink",
-	unknownArtifactType: "Unknown",
-}
-
-func (t artifactType) String() string {
-	return artifactTypeNames[t]
-}
-
-type artifactProps struct {
-	FileType artifactType    `json:"-"`
-	FilePath string          `json:"file_path"`
-	Mode     os.FileMode     `json:"-"`
-	ModeText string          `json:"mode"`
-	LinkRef  string          `json:"link_ref,omitempty"`
-	Flags    map[string]bool `json:"flags,omitempty"`
-	DataType string          `json:"data_type,omitempty"`
-	FileSize int64           `json:"file_size"`
-	Sha1Hash string          `json:"sha1_hash,omitempty"`
-	AppType  string          `json:"app_type,omitempty"`
+	artifactStore := newArtifactStore(artifactDirName, fanMonReport, fileNames, ptMonReport)
+	artifactStore.prepareArtifacts()
+	artifactStore.saveArtifacts()
+	artifactStore.saveReport()
 }
 
 type artifactStore struct {
 	storeLocation string
-	fanMonReport  *fanMonitorReport
-	ptMonReport   *ptMonitorReport
-	rawNames      map[string]*artifactProps
+	fanMonReport  *report.FanMonitorReport
+	ptMonReport   *report.PtMonitorReport
+	rawNames      map[string]*report.ArtifactProps
 	nameList      []string
 	resolve       map[string]struct{}
-	linkMap       map[string]*artifactProps
-	fileMap       map[string]*artifactProps
-}
-
-type imageReport struct {
-	Files []*artifactProps `json:"files"`
-}
-
-type monitorReports struct {
-	Fan *fanMonitorReport `json:"fan"`
-	Pt  *ptMonitorReport  `json:"pt"`
-}
-
-type containerReport struct {
-	Monitors monitorReports `json:"monitors"`
-	Image    imageReport    `json:"image"`
-}
-
-func (p *artifactProps) MarshalJSON() ([]byte, error) {
-	type artifactPropsType artifactProps
-	return json.Marshal(&struct {
-		FileTypeStr string `json:"file_type"`
-		*artifactPropsType
-	}{
-		FileTypeStr:       p.FileType.String(),
-		artifactPropsType: (*artifactPropsType)(p),
-	})
+	linkMap       map[string]*report.ArtifactProps
+	fileMap       map[string]*report.ArtifactProps
 }
 
 func newArtifactStore(storeLocation string,
-	fanMonReport *fanMonitorReport,
-	rawNames map[string]*artifactProps,
-	ptMonReport *ptMonitorReport) *artifactStore {
+	fanMonReport *report.FanMonitorReport,
+	rawNames map[string]*report.ArtifactProps,
+	ptMonReport *report.PtMonitorReport) *artifactStore {
 	store := &artifactStore{
 		storeLocation: storeLocation,
 		fanMonReport:  fanMonReport,
@@ -112,8 +53,8 @@ func newArtifactStore(storeLocation string,
 		rawNames:      rawNames,
 		nameList:      make([]string, 0, len(rawNames)),
 		resolve:       map[string]struct{}{},
-		linkMap:       map[string]*artifactProps{},
-		fileMap:       map[string]*artifactProps{},
+		linkMap:       map[string]*report.ArtifactProps{},
+		fileMap:       map[string]*report.ArtifactProps{},
 	}
 
 	return store
@@ -153,7 +94,7 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 
 	p.nameList = append(p.nameList, artifactFileName)
 
-	props := &artifactProps{
+	props := &report.ArtifactProps{
 		FilePath: artifactFileName,
 		Mode:     srcLinkFileInfo.Mode(),
 		ModeText: srcLinkFileInfo.Mode().String(),
@@ -165,7 +106,7 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 	log.Debugf("prepareArtifact - file mode:%v\n", srcLinkFileInfo.Mode())
 	switch {
 	case srcLinkFileInfo.Mode().IsRegular():
-		props.FileType = fileArtifactType
+		props.FileType = report.FileArtifactType
 		props.Sha1Hash, _ = getFileHash(artifactFileName)
 		props.DataType, _ = getDataType(artifactFileName)
 		p.fileMap[artifactFileName] = props
@@ -177,7 +118,7 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 			return
 		}
 
-		props.FileType = symlinkArtifactType
+		props.FileType = report.SymlinkArtifactType
 		props.LinkRef = linkRef
 
 		if _, ok := p.rawNames[linkRef]; !ok {
@@ -189,7 +130,7 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 
 	case srcLinkFileInfo.Mode().IsDir():
 		log.Warnf("prepareArtifact - is a directory (shouldn't see it)")
-		props.FileType = dirArtifactType
+		props.FileType = report.DirArtifactType
 	default:
 		log.Warn("prepareArtifact - other type (shouldn't see it)")
 	}
@@ -240,15 +181,15 @@ func (p *artifactStore) saveArtifacts() {
 func (p *artifactStore) saveReport() {
 	sort.Strings(p.nameList)
 
-	report := containerReport{
-		Monitors: monitorReports{
+	creport := report.ContainerReport{
+		Monitors: report.MonitorReports{
 			Pt:  p.ptMonReport,
 			Fan: p.fanMonReport,
 		},
 	}
 
 	for _, fname := range p.nameList {
-		report.Image.Files = append(report.Image.Files, p.rawNames[fname])
+		creport.Image.Files = append(creport.Image.Files, p.rawNames[fname])
 	}
 
 	artifactDirName := "/opt/dockerslim/artifacts"
@@ -264,18 +205,77 @@ func (p *artifactStore) saveReport() {
 	reportFilePath := filepath.Join(artifactDirName, reportName)
 	log.Debugln("launcher: monitor - saving report to", reportFilePath)
 
-	reportData, err := json.MarshalIndent(report, "", "  ")
+	reportData, err := json.MarshalIndent(creport, "", "  ")
 	utils.FailOn(err)
 
 	err = ioutil.WriteFile(reportFilePath, reportData, 0644)
 	utils.FailOn(err)
 }
 
-func saveResults(fanMonReport *fanMonitorReport, fileNames map[string]*artifactProps, ptMonReport *ptMonitorReport) {
-	artifactDirName := "/opt/dockerslim/artifacts"
+func getFileHash(artifactFileName string) (string, error) {
+	fileData, err := ioutil.ReadFile(artifactFileName)
+	if err != nil {
+		return "", err
+	}
 
-	artifactStore := newArtifactStore(artifactDirName, fanMonReport, fileNames, ptMonReport)
-	artifactStore.prepareArtifacts()
-	artifactStore.saveArtifacts()
-	artifactStore.saveReport()
+	hash := sha1.Sum(fileData)
+	return hex.EncodeToString(hash[:]), nil
 }
+
+func getDataType(artifactFileName string) (string, error) {
+	//TODO: use libmagic (pure impl)
+	var cerr bytes.Buffer
+	var cout bytes.Buffer
+
+	cmd := exec.Command("file", artifactFileName)
+	cmd.Stderr = &cerr
+	cmd.Stdout = &cout
+
+	if err := cmd.Start(); err != nil {
+		return "", err
+	}
+
+	if err := cmd.Wait(); err != nil {
+		err = fmt.Errorf("Error getting data type: %s / stderr: %s", err, cerr.String())
+		return "", err
+	}
+
+	if typeInfo := strings.Split(strings.TrimSpace(cout.String()), ":"); len(typeInfo) > 1 {
+		return strings.TrimSpace(typeInfo[1]), nil
+	}
+
+	return "unknown", nil
+}
+
+func cpFile(src, dst string) error {
+	s, err := os.Open(src)
+	if err != nil {
+		log.Warnln("launcher: monitor - cp - error opening source file =>", src)
+		return err
+	}
+	defer s.Close()
+
+	dstDir := utils.FileDir(dst)
+	err = os.MkdirAll(dstDir, 0777)
+	if err != nil {
+		log.Warnln("launcher: monitor - dir error =>", err)
+	}
+
+	d, err := os.Create(dst)
+	if err != nil {
+		log.Warnln("launcher: monitor - cp - error opening dst file =>", dst)
+		return err
+	}
+
+	srcFileInfo, err := s.Stat()
+	if err == nil {
+		d.Chmod(srcFileInfo.Mode())
+	}
+
+	if _, err := io.Copy(d, s); err != nil {
+		d.Close()
+		return err
+	}
+	return d.Close()
+}
+

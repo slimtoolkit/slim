@@ -6,8 +6,6 @@ import (
 	"os"
 )
 
-//TODO: REFACTOR :)
-
 type ArtifactType int
 
 const (
@@ -67,6 +65,11 @@ type FanMonitorReport struct {
 	ProcessFiles     map[string]map[string]*FileInfo `json:"process_files"`
 }
 
+type PeMonitorReport struct {
+	Children map[int][]int
+	Parents  map[int]int
+}
+
 type SyscallStatInfo struct {
 	Number uint64 `json:"num"`
 	Name   string `json:"name"`
@@ -107,6 +110,17 @@ func (p *ArtifactProps) UnmarshalJSON(data []byte) error {
 	p.FileType = GetArtifactTypeValue(props.FileTypeStr)
 
 	return nil
+}
+
+func (p *ArtifactProps) MarshalJSON() ([]byte, error) {
+	type artifactPropsType ArtifactProps
+	return json.Marshal(&struct {
+		FileTypeStr string `json:"file_type"`
+		*artifactPropsType
+	}{
+		FileTypeStr:       p.FileType.String(),
+		artifactPropsType: (*artifactPropsType)(p),
+	})
 }
 
 type ImageReport struct {

@@ -3,11 +3,10 @@
 set -e
 
 source env.sh
-cd src/slim
+cd $BDIR
+#docker-machine start default
 eval "$(docker-machine env default)"
-go run main.go
-
-
+docker build -t my/docker-slim-builder .
 
 
 

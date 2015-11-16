@@ -1,7 +1,6 @@
-FROM golang:1.4
+FROM golang:1.5.1
 
-RUN go get github.com/mitchellh/gox && \
-	gox -build-toolchain -os="linux" -os="darwin"
+RUN go get github.com/mitchellh/gox
 
 
 

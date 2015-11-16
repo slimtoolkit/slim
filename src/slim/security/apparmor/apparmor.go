@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"slim/report"
+	"internal/report"
 )
 
 const appArmorTemplate = `

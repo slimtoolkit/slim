@@ -1,4 +1,4 @@
-package main
+package target
 
 import (
 	"os"
@@ -8,7 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
-func startTargetApp(appName string, appArgs []string, appDir string, doPtrace bool) (*exec.Cmd, error) {
+func Start(appName string, appArgs []string, appDir string, doPtrace bool) (*exec.Cmd, error) {
 	log.Debugf("launcher.startTargetApp(%v,%v,%v)\n", appName, appArgs, appDir)
 	app := exec.Command(appName, appArgs...)
 

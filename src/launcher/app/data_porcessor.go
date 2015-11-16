@@ -1,21 +1,31 @@
 package main
 
 import (
-	"bytes"
-	"crypto/sha1"
-	"encoding/hex"
-	"fmt"
-	"io"
-	"io/ioutil"
-	"os"
 	"os/exec"
 	"strconv"
 	"strings"
-
-	"internal/utils"
-
-	log "github.com/Sirupsen/logrus"
+	
+	"launcher/monitors/fanotify"
+	"internal/report"
 )
+
+func processReports(mountPoint string,fanReport *report.FanMonitorReport,
+	ptReport *report.PtMonitorReport) {
+
+	fileCount := 0
+	for _, processFileMap := range fanReport.ProcessFiles {
+		fileCount += len(processFileMap)
+	}
+	fileList := make([]string, 0, fileCount)
+	for _, processFileMap := range fanReport.ProcessFiles {
+		for fpath := range processFileMap {
+			fileList = append(fileList, fpath)
+		}
+	}
+
+	allFilesMap := findSymlinks(fileList, mountPoint)
+	saveResults(fanReport, allFilesMap, ptReport)
+} 
 
 func getProcessChildren(pid int, targetPidList map[int]bool, processChildrenMap map[int][]int) {
 	if children, ok := processChildrenMap[pid]; ok {
@@ -37,7 +47,7 @@ func findTargetAppProcesses(rootPidList []int, processChildrenMap map[int][]int)
 	return targetPidList
 }
 
-func filterFileEvents(fileEvents map[event]bool, targetPidList map[int]bool) []string {
+func filterFileEvents(fileEvents map[fanotify.Event]bool, targetPidList map[int]bool) []string {
 	var files []string
 	for evt := range fileEvents {
 		if _, ok := targetPidList[int(evt.Pid)]; ok {
@@ -67,7 +77,7 @@ func filesToInodes(files []string) []int {
 	return inodes
 }
 
-func findSymlinks(files []string, mp string) map[string]*artifactProps {
+func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 	cmd := "/usr/bin/find"
 	args := []string{"-L", mp, "-mount", "-printf", "%i %p\n"}
 	c := exec.Command(cmd, args...)
@@ -87,7 +97,7 @@ func findSymlinks(files []string, mp string) map[string]*artifactProps {
 		inodeToFiles[inode] = append(inodeToFiles[inode], info[1])
 	}
 
-	result := make(map[string]*artifactProps, 0)
+	result := make(map[string]*report.ArtifactProps, 0)
 	for _, i := range inodes {
 		v := inodeToFiles[i]
 		for _, f := range v {
@@ -97,69 +107,9 @@ func findSymlinks(files []string, mp string) map[string]*artifactProps {
 	return result
 }
 
-func cpFile(src, dst string) error {
-	s, err := os.Open(src)
-	if err != nil {
-		log.Warnln("launcher: monitor - cp - error opening source file =>", src)
-		return err
-	}
-	defer s.Close()
 
-	dstDir := utils.FileDir(dst)
-	err = os.MkdirAll(dstDir, 0777)
-	if err != nil {
-		log.Warnln("launcher: monitor - dir error =>", err)
-	}
 
-	d, err := os.Create(dst)
-	if err != nil {
-		log.Warnln("launcher: monitor - cp - error opening dst file =>", dst)
-		return err
-	}
 
-	srcFileInfo, err := s.Stat()
-	if err == nil {
-		d.Chmod(srcFileInfo.Mode())
-	}
 
-	if _, err := io.Copy(d, s); err != nil {
-		d.Close()
-		return err
-	}
-	return d.Close()
-}
 
-func getFileHash(artifactFileName string) (string, error) {
-	fileData, err := ioutil.ReadFile(artifactFileName)
-	if err != nil {
-		return "", err
-	}
 
-	hash := sha1.Sum(fileData)
-	return hex.EncodeToString(hash[:]), nil
-}
-
-func getDataType(artifactFileName string) (string, error) {
-	//TODO: use libmagic (pure impl)
-	var cerr bytes.Buffer
-	var cout bytes.Buffer
-
-	cmd := exec.Command("file", artifactFileName)
-	cmd.Stderr = &cerr
-	cmd.Stdout = &cout
-
-	if err := cmd.Start(); err != nil {
-		return "", err
-	}
-
-	if err := cmd.Wait(); err != nil {
-		err = fmt.Errorf("Error getting data type: %s / stderr: %s", err, cerr.String())
-		return "", err
-	}
-
-	if typeInfo := strings.Split(strings.TrimSpace(cout.String()), ":"); len(typeInfo) > 1 {
-		return strings.TrimSpace(typeInfo[1]), nil
-	}
-
-	return "unknown", nil
-}

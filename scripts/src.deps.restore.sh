@@ -3,10 +3,5 @@
 set -e
 
 source env.sh
-cd src
-go fmt ./...
-
-
-
-
-
+cd $BDIR/src/slim
+godep restore

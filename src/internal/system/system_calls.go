@@ -1,4 +1,4 @@
-package main
+package system
 
 //NOTES:
 //* syscall constants in the "syscall" package are nice, but some syscalls there are missing
@@ -338,7 +338,7 @@ var syscallNumTable64 = [...]string{
 	"execveat",
 }
 
-func syscallName64(num uint64) string {
+func CallName64(num uint64) string {
 	if num > SYSCALL_MAX_NUM64 {
 		return SYSCALL_NAME_UNKNOWN
 	}
@@ -346,7 +346,7 @@ func syscallName64(num uint64) string {
 	return syscallNumTable64[num]
 }
 
-func syscallNumTableIsOk64() bool {
+func CallNumTableIsOk64() bool {
 	if (len(syscallNumTable64) == SYSCALL_MAX_NUM64+1) &&
 		syscallNumTable64[SYSCALL_MAX_NUM64] == "execveat" {
 		return true

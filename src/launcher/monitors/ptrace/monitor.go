@@ -1,4 +1,4 @@
-package main
+package ptrace
 
 import (
 	"os/exec"
@@ -7,39 +7,30 @@ import (
 	"syscall"
 
 	"internal/utils"
+	"internal/system"
+	"internal/report"
+	"launcher/target"
 
 	log "github.com/Sirupsen/logrus"
 )
-
-type syscallStatInfo struct {
-	Number uint64 `json:"num"`
-	Name   string `json:"name"`
-	Count  uint64 `json:"count"`
-}
-
-type ptMonitorReport struct {
-	SyscallCount uint64                     `json:"syscall_count"`
-	SyscallNum   uint32                     `json:"syscall_num"`
-	SyscallStats map[string]syscallStatInfo `json:"syscall_stats"`
-}
 
 type syscallEvent struct {
 	callNum uint64
 	retVal  uint64
 }
 
-func ptRunMonitor(startChan <-chan int,
+func Run(startChan <-chan int,
 	stopChan chan struct{},
 	appName string,
 	appArgs []string,
-	dirName string) <-chan *ptMonitorReport {
+	dirName string) <-chan *report.PtMonitorReport {
 	log.Info("ptmon: starting...")
 
-	reportChan := make(chan *ptMonitorReport, 1)
+	reportChan := make(chan *report.PtMonitorReport, 1)
 
 	go func() {
-		report := &ptMonitorReport{
-			SyscallStats: map[string]syscallStatInfo{},
+		ptReport := &report.PtMonitorReport{
+			SyscallStats: map[string]report.SyscallStatInfo{},
 		}
 
 		syscallStats := map[uint64]uint64{}
@@ -53,7 +44,7 @@ func ptRunMonitor(startChan <-chan int,
 			runtime.LockOSThread()
 
 			var err error
-			app, err = startTargetApp(appName, appArgs, dirName, true)
+			app, err = target.Start(appName, appArgs, dirName, true)
 			utils.FailOn(err)
 			targetPid := app.Process.Pid
 
@@ -148,7 +139,7 @@ func ptRunMonitor(startChan <-chan int,
 				}
 				break done
 			case e := <-eventChan:
-				report.SyscallCount++
+				ptReport.SyscallCount++
 
 				if _, ok := syscallStats[e.callNum]; ok {
 					syscallStats[e.callNum]++
@@ -158,19 +149,19 @@ func ptRunMonitor(startChan <-chan int,
 			}
 		}
 
-		log.Debugf("ptmon: executed syscall count = %d\n", report.SyscallCount)
+		log.Debugf("ptmon: executed syscall count = %d\n", ptReport.SyscallCount)
 		log.Debugf("ptmon: number of syscalls: %v\n", len(syscallStats))
 		for scNum, scCount := range syscallStats {
-			log.Debugf("[%v] %v = %v", scNum, syscallName64(scNum), scCount)
-			report.SyscallStats[strconv.FormatUint(scNum, 10)] = syscallStatInfo{
+			log.Debugf("[%v] %v = %v", scNum, system.CallName64(scNum), scCount)
+			ptReport.SyscallStats[strconv.FormatUint(scNum, 10)] = report.SyscallStatInfo{
 				Number: scNum,
-				Name:   syscallName64(scNum),
+				Name:   system.CallName64(scNum),
 				Count:  scCount,
 			}
 		}
 
-		report.SyscallNum = uint32(len(report.SyscallStats))
-		reportChan <- report
+		ptReport.SyscallNum = uint32(len(ptReport.SyscallStats))
+		reportChan <- ptReport
 	}()
 
 	return reportChan

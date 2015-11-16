@@ -1,68 +1,18 @@
 package main
 
 import (
-	"fmt"
 	"os"
-	"os/signal"
-	"syscall"
 	"time"
 
 	"internal/utils"
+	"launcher/monitors/fanotify"
+	"launcher/monitors/ptrace"
+	"launcher/ipc"
 
 	log "github.com/Sirupsen/logrus"
 )
 
 var doneChan chan struct{}
-
-///////////////////////////////////////////////////////////////////////////////
-
-func cleanupOnStartup() {
-	if _, err := os.Stat("/tmp/docker-slim-launcher.cmds.ipc"); err == nil {
-		if err := os.Remove("/tmp/docker-slim-launcher.cmds.ipc"); err != nil {
-			fmt.Printf("Error removing unix socket %s: %s", "/tmp/docker-slim-launcher.cmds.ipc", err.Error())
-		}
-	}
-
-	if _, err := os.Stat("/tmp/docker-slim-launcher.events.ipc"); err == nil {
-		if err := os.Remove("/tmp/docker-slim-launcher.events.ipc"); err != nil {
-			fmt.Printf("Error removing unix socket %s: %s", "/tmp/docker-slim-launcher.events.ipc", err.Error())
-		}
-	}
-}
-
-func cleanupOnShutdown() {
-	log.Debug("cleanupOnShutdown()")
-
-	if doneChan != nil {
-		close(doneChan)
-		doneChan = nil
-	}
-
-	shutdownCmdChannel()
-	shutdownEvtChannel()
-}
-
-//////////////
-
-var signals = []os.Signal{
-	os.Interrupt,
-	syscall.SIGTERM,
-	syscall.SIGQUIT,
-	syscall.SIGHUP,
-	syscall.SIGSTOP,
-	syscall.SIGCONT,
-}
-
-func initSignalHandlers() {
-	sigChan := make(chan os.Signal, 1)
-	signal.Notify(sigChan, signals...)
-	go func() {
-		sig := <-sigChan
-		fmt.Printf(" launcher: cleanup on signal (%v)...\n", sig)
-		cleanupOnShutdown()
-		os.Exit(0)
-	}()
-}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -78,8 +28,8 @@ func monitor(stopWork chan bool,
 
 	stopMonitor := make(chan struct{})
 
-	fanReportChan := fanRunMonitor(mountPoint, stopMonitor)
-	ptReportChan := ptRunMonitor(ptmonStartChan, stopMonitor, appName, appArgs, dirName)
+	fanReportChan := fanotify.Run(mountPoint, stopMonitor)
+	ptReportChan := ptrace.Run(ptmonStartChan, stopMonitor, appName, appArgs, dirName)
 	//NOTE:
 	//Disabled until linux-kernel module is added to check if the ProcEvents are enabled in the kernel
 	//ProcEvents are not enabled in the boot2docker kernel
@@ -100,19 +50,7 @@ func monitor(stopWork chan bool,
 		//peReport := <-peReportChan
 		//TODO: when peReport is available filter file events from fanReport
 
-		fileCount := 0
-		for _, processFileMap := range fanReport.ProcessFiles {
-			fileCount += len(processFileMap)
-		}
-		fileList := make([]string, 0, fileCount)
-		for _, processFileMap := range fanReport.ProcessFiles {
-			for fpath := range processFileMap {
-				fileList = append(fileList, fpath)
-			}
-		}
-
-		allFilesMap := findSymlinks(fileList, mountPoint)
-		saveResults(fanReport, allFilesMap, ptReport)
+		processReports(mountPoint,fanReport,ptReport)
 		stopWorkAck <- true
 	}()
 }
@@ -154,12 +92,11 @@ func main() {
 
 	log.Debug("launcher: setting up channels...")
 	doneChan = make(chan struct{})
-	evtChannel, err = newEvtPublisher(evtChannelAddr)
-	utils.FailOn(err)
-	cmdChannel, err = newCmdServer(cmdChannelAddr)
+
+	err = ipc.InitChannels()
 	utils.FailOn(err)
 
-	cmdChan, err := runCmdServer(cmdChannel, doneChan)
+	cmdChan, err := ipc.RunCmdServer(doneChan)
 	utils.FailOn(err)
 	log.Info("launcher: waiting for commands...")
 doneRunning:
@@ -184,7 +121,7 @@ doneRunning:
 	log.Info("launcher: waiting for monitor to finish...")
 	<-monDoneAckChan
 
-	tryPublishEvt(3, "monitor.finish.completed")
+	ipc.TryPublishEvt(3, "monitor.finish.completed")
 
 	log.Info("launcher: done!")
 }

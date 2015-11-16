@@ -40,9 +40,9 @@ To run `docker-slim` you need to export docker environment variables. If you use
 
 ## USAGE
 
-`./docker-slim COMMAND(info|build) <IMAGE_ID_OR_NAME> [rm-artifacts | image-info-only]`
+`./docker-slim [info|build] [--http-probe|--remove-file-artifacts] <IMAGE_ID_OR_NAME>`
 
-Example: `./docker-slim build 6f74095b68c9`
+Example: `./docker-slim build --http-probe 6f74095b68c9`
 
 By default, `docker-slim build` doesn't remove the artifacts it generates. To remove them set the `remove-file-artifacts` flag.
 
@@ -60,7 +60,7 @@ The demo run on Mac OS X, but you can build a linux version.
 	
 2. Create a Docker image for the sample node.js app in `sample_apps/node`
 	
-	`cd docker-slim/sample_apps/node`
+	`cd docker-slim/sample/apps/node`
 	
 	`eval "$(docker-machine env default)"` <- optional (depends on how Docker is installed on your machine)
 	
@@ -68,9 +68,9 @@ The demo run on Mac OS X, but you can build a linux version.
 	 
 3. Run `docker-slim`:
 
-	`cd ../../dist_mac`
+	`cd ../../../dist_mac`
 	
-	`./docker-slim build my/sample-node-app`
+	`./docker-slim build --http-probe my/sample-node-app`
 	
 	DockerSlim creates a special container based on the target image you provided.
 
@@ -82,7 +82,7 @@ The demo run on Mac OS X, but you can build a linux version.
 		
 	You can get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
 
-	If you set the `http-probe` flag then `docker-slim` will try to call your application using HTTP/HTTPS: `./docker-slim build my/sample-node-app --http-probe`
+	If you set the `http-probe` flag then `docker-slim` will try to call your application using HTTP/HTTPS: `./docker-slim build --http-probe my/sample-node-app`
 
 5. Press any key and wait until `docker-slim` says it's done
 
@@ -100,7 +100,7 @@ Notes:
 
 You can explore the artifacts DockerSlim generates when it's creating a slim image. You'll find those in `dist_mac/container/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.fat`. 
 
-If you'd like to see the artifacts without running `docker-slim` you can take a look at the `sample_artifacts` directory in the repo. It doesn't include any image files, but you'll find:
+If you'd like to see the artifacts without running `docker-slim` you can take a look at the `sample/artifacts` directory in the repo. It doesn't include any image files, but you'll find:
 
 *	a reverse engineered Dockerfile (`Dockerfile.fat`), 
 *	a container report file (`creport.json`),
@@ -127,14 +127,18 @@ Before you build the tool you need to install GOX and Godep (optional; you'll ne
 
 2: `gox -build-toolchain -os="linux" -os="darwin"` (note:  might have to run it with `sudo`)
 
+Note:
+
+Step 2 is not necessary with Go 1.5.
+
 #### Local Build Steps
 
 Once you install the dependencies (GOX - required; Godep - optional) run these scripts:
 
-1. Pull the dependencies: `./src.deps.get.sh`
-2. Build it: `./src.build.sh`
+1. Pull the dependencies: `./scripts/src.deps.get.sh`
+2. Build it: `./scripts/src.build.sh`
 
-You can use the clickable `.command` scripts on Mac OS X:
+You can use the clickable `.command` scripts on Mac OS X (located in the `scripts` directory):
 
 1. `mac.src.deps.get.command`
 2. `mac.src.build.command`
@@ -146,6 +150,9 @@ You can also build `docker-slim` using a "builder" Docker image.
 1. Create the "builder" image: `./docker-slim-builder.build.sh` (or click on `docker-slim-builder.build.command` if you are using Mac OS X)
 2. Build the tool: `docker-slim-builder.run.sh` (or click on `docker-slim-builder.run.command` if you are using Mac OS X)
 
+Note:
+
+The helper scripts are located in the `scripts` directory.
 
 ## DESIGN
 

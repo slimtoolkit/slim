@@ -3,19 +3,19 @@
 set -e
 
 source env.sh
-pushd src/slim
+pushd $BDIR/src/slim
 godep save
 rm -rfv Godeps/_workspace
 popd
-pushd src/launcher
+pushd $BDIR/src/launcher
 godep save
 rm -rfv Godeps/_workspace
 popd
-pushd src/monitor
+pushd $BDIR/src/monitor
 godep save
 rm -rfv Godeps/_workspace
 popd
-pushd src/scanner
+pushd $BDIR/src/scanner
 godep save
 rm -rfv Godeps/_workspace
 popd
