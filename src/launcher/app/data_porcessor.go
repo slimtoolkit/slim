@@ -4,12 +4,12 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	
-	"launcher/monitors/fanotify"
+
 	"internal/report"
+	"launcher/monitors/fanotify"
 )
 
-func processReports(mountPoint string,fanReport *report.FanMonitorReport,
+func processReports(mountPoint string, fanReport *report.FanMonitorReport,
 	ptReport *report.PtMonitorReport) {
 
 	fileCount := 0
@@ -25,7 +25,7 @@ func processReports(mountPoint string,fanReport *report.FanMonitorReport,
 
 	allFilesMap := findSymlinks(fileList, mountPoint)
 	saveResults(fanReport, allFilesMap, ptReport)
-} 
+}
 
 func getProcessChildren(pid int, targetPidList map[int]bool, processChildrenMap map[int][]int) {
 	if children, ok := processChildrenMap[pid]; ok {
@@ -106,10 +106,3 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 	}
 	return result
 }
-
-
-
-
-
-
-

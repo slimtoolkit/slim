@@ -1,8 +1,8 @@
 package pevent
 
 import (
-	"internal/utils"
 	"internal/report"
+	"internal/utils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/pdiscover"

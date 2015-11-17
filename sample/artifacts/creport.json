@@ -3,9 +3,9 @@
     "fan": {
       "monitor_pid": 1,
       "monitor_ppid": 0,
-      "event_count": 306,
+      "event_count": 307,
       "main_process": {
-        "pid": 12,
+        "pid": 13,
         "name": "node",
         "path": "/usr/bin/nodejs",
         "cmd": "node /opt/my/service/server.js",
@@ -14,8 +14,8 @@
         "ppid": 1
       },
       "processes": {
-        "12": {
-          "pid": 12,
+        "13": {
+          "pid": 13,
           "name": "node",
           "path": "/usr/bin/nodejs",
           "cmd": "node /opt/my/service/server.js",
@@ -25,7 +25,7 @@
         }
       },
       "process_files": {
-        "12": {
+        "13": {
           "/etc/ld.so.cache": {
             "event_count": 1,
             "first_eid": 0
@@ -781,10 +781,10 @@
             "reads": 1
           },
           "/usr/bin/nodejs": {
-            "event_count": 1,
+            "event_count": 2,
             "first_eid": 0,
             "reads": 1,
-            "execs": 1
+            "execs": 2
           },
           "/usr/lib/x86_64-linux-gnu/libstdc++.so.6.0.19": {
             "event_count": 2,
@@ -795,7 +795,7 @@
       }
     },
     "pt": {
-      "syscall_count": 2971,
+      "syscall_count": 2883,
       "syscall_num": 40,
       "syscall_stats": {
         "0": {
@@ -856,7 +856,7 @@
         "202": {
           "num": 202,
           "name": "futex",
-          "count": 208
+          "count": 120
         },
         "21": {
           "num": 21,

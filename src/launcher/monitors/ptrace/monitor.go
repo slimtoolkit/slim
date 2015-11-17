@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"syscall"
 
-	"internal/utils"
-	"internal/system"
 	"internal/report"
+	"internal/system"
+	"internal/utils"
 	"launcher/target"
 
 	log "github.com/Sirupsen/logrus"

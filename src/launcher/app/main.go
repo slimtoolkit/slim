@@ -5,9 +5,9 @@ import (
 	"time"
 
 	"internal/utils"
+	"launcher/ipc"
 	"launcher/monitors/fanotify"
 	"launcher/monitors/ptrace"
-	"launcher/ipc"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -50,7 +50,7 @@ func monitor(stopWork chan bool,
 		//peReport := <-peReportChan
 		//TODO: when peReport is available filter file events from fanReport
 
-		processReports(mountPoint,fanReport,ptReport)
+		processReports(mountPoint, fanReport, ptReport)
 		stopWorkAck <- true
 	}()
 }

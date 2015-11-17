@@ -21,4 +21,3 @@ func FailWhen(cond bool, msg string) {
 		log.WithField("error", msg).Fatal("docker-slim: failure")
 	}
 }
-

@@ -17,6 +17,7 @@ type Inspector struct {
 	ArtifactLocation    string
 	SlimImageRepo       string
 	AppArmorProfileName string
+	SeccompProfileName  string
 	ImageInfo           *docker.Image
 	ImageRecordInfo     docker.APIImages
 	ApiClient           *docker.Client
@@ -27,6 +28,7 @@ func NewInspector(client *docker.Client, imageRef string, artifactLocation strin
 		ImageRef:            imageRef,
 		SlimImageRepo:       "slim",
 		AppArmorProfileName: "apparmor-profile",
+		SeccompProfileName:  "seccomp-profile",
 		ArtifactLocation:    artifactLocation,
 		ApiClient:           client,
 	}
@@ -70,10 +72,13 @@ func (i *Inspector) processImageName() {
 			i.SlimImageRepo = fmt.Sprintf("%s.slim", rtInfo[0])
 			if nameParts := strings.Split(rtInfo[0], "/"); len(nameParts) > 1 {
 				i.AppArmorProfileName = strings.Join(nameParts, "-")
+				i.SeccompProfileName = strings.Join(nameParts, "-")
 			} else {
 				i.AppArmorProfileName = rtInfo[0]
+				i.SeccompProfileName = rtInfo[0]
 			}
 			i.AppArmorProfileName = fmt.Sprintf("%s-apparmor-profile", i.AppArmorProfileName)
+			i.SeccompProfileName = fmt.Sprintf("%s-seccomp.json", i.SeccompProfileName)
 		}
 	}
 }

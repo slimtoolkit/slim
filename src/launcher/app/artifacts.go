@@ -1,28 +1,28 @@
 package main
 
 import (
-	"os"
-	"fmt"
 	"bytes"
-	"encoding/hex"
 	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
+	"fmt"
+	"io"
+	"io/ioutil"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"sort"
 	"strings"
-	"path/filepath"
-	"io/ioutil"
-	"io"
 
-	"internal/utils"
 	"internal/report"
+	"internal/utils"
 
 	log "github.com/Sirupsen/logrus"
 )
 
-func saveResults(fanMonReport *report.FanMonitorReport, 
-				fileNames map[string]*report.ArtifactProps, 
-				ptMonReport *report.PtMonitorReport) {
+func saveResults(fanMonReport *report.FanMonitorReport,
+	fileNames map[string]*report.ArtifactProps,
+	ptMonReport *report.PtMonitorReport) {
 	artifactDirName := "/opt/dockerslim/artifacts"
 
 	artifactStore := newArtifactStore(artifactDirName, fanMonReport, fileNames, ptMonReport)
@@ -203,7 +203,7 @@ func (p *artifactStore) saveReport() {
 	}
 
 	reportFilePath := filepath.Join(artifactDirName, reportName)
-	log.Debugln("launcher: monitor - saving report to", reportFilePath)
+	log.Debug("launcher: monitor - saving report to ", reportFilePath)
 
 	reportData, err := json.MarshalIndent(creport, "", "  ")
 	utils.FailOn(err)
@@ -278,4 +278,3 @@ func cpFile(src, dst string) error {
 	}
 	return d.Close()
 }
-

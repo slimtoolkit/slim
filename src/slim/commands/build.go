@@ -6,10 +6,10 @@ import (
 	"os"
 
 	"internal/utils"
-	"slim/inspectors/image"
+	"slim/builder"
 	"slim/inspectors/container"
 	"slim/inspectors/container/probes/http"
-	"slim/builder"
+	"slim/inspectors/image"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"

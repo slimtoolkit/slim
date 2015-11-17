@@ -32,7 +32,7 @@ Sample images (built with the standard Ubuntu 14.04 base image):
 
 You can also run `docker-slim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
-DockerSlim now also generates an AppArmor profile for your container (still more todo). DockerSlim also collects the information necessary to create seccomp filters. As soon as Docker supports seccomp DockerSlim will be able to auto-generate seccomp filters for you!
+DockerSlim now also generates AppArmor and Seccomp profiles for your container.
 
 Dependencies:
 
@@ -102,13 +102,14 @@ You can explore the artifacts DockerSlim generates when it's creating a slim ima
 
 If you'd like to see the artifacts without running `docker-slim` you can take a look at the `sample/artifacts` directory in the repo. It doesn't include any image files, but you'll find:
 
-*	a reverse engineered Dockerfile (`Dockerfile.fat`), 
-*	a container report file (`creport.json`),
-*	and a sample AppArmor profile (which will be named based on your original image name).
+*	a reverse engineered Dockerfile (`Dockerfile.fat`)
+*	a container report file (`creport.json`)
+*	a sample AppArmor profile (which will be named based on your original image name)
+*   and a sample Seccomp profile (for the upcoming Docker release)
 
 If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `info` command.
 
-You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.7/dist_mac.zip)
+You can get the current binaries for Macs [here](https://github.com/cloudimmunity/docker-slim/releases/download/v1.8/dist_mac.zip)
 
 
 ## BUILD PROCESS
@@ -175,7 +176,8 @@ The helper scripts are located in the `scripts` directory.
 
 The goal is to auto-generate Seccomp, AppArmor, (and potentially SELinux) profiles based on the collected information.
 
-* AppArmor profiles (the auto-generated profiles are almost usable :-)).
+* AppArmor profiles
+* Seccomp profiles
 
 ### CHALLENGES
 

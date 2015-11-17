@@ -27,7 +27,7 @@ func PrepareSlimDirs() (string, string) {
 		os.MkdirAll(artifactLocation, 0777)
 		artifactDir, err = os.Stat(artifactLocation)
 		FailOn(err)
-		log.Debug("created artifact directory: ",artifactDir)
+		log.Debug("created artifact directory: ", artifactDir)
 	}
 	FailWhen(!artifactDir.IsDir(), "artifact location is not a directory")
 

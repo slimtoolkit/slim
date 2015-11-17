@@ -2,7 +2,7 @@ package main
 
 import (
 	"os"
-	
+
 	"launcher/ipc"
 
 	log "github.com/Sirupsen/logrus"

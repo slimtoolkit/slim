@@ -16,7 +16,7 @@ RUN echo '#!/bin/sh' > /usr/sbin/policy-rc.d && \
 	echo 'Acquire::GzipIndexes "true"; Acquire::CompressionTypes::Order:: "gz";' > /etc/apt/apt.conf.d/docker-gzip-indexes
 RUN sed -i 's/^#\s*\(deb.*universe\)$/\1/g' /etc/apt/sources.list
 CMD [/bin/bash]
-# end of image: ubuntu (id: 5ba9dab47459d81c0037ca3836a368a4f8ce5050505ce89720e1fb8839ea048a tags: 14.04,14.04.1,latest,trusty)
+# end of image: ubuntu (id: 5ba9dab47459d81c0037ca3836a368a4f8ce5050505ce89720e1fb8839ea048a tags: 14.04.1,latest,trusty,14.04)
 
 # new image
 RUN apt-get update && \

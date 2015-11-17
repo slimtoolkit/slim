@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
-	"internal/utils"
 	"internal/report"
+	"internal/utils"
 
 	fanapi "bitbucket.org/madmo/fanotify"
 	log "github.com/Sirupsen/logrus"

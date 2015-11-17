@@ -4,10 +4,11 @@ import (
 	"fmt"
 
 	"internal/utils"
-	"slim/inspectors/container/ipc"
 	dockerhost "slim/docker/host"
+	"slim/inspectors/container/ipc"
 	"slim/inspectors/image"
 	"slim/security/apparmor"
+	"slim/security/seccomp"
 
 	log "github.com/Sirupsen/logrus"
 	dockerapi "github.com/cloudimmunity/go-dockerclientx"
@@ -143,29 +144,9 @@ func (i *Inspector) initContainerChannels() error {
 	evtPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.EvtPort]
 	i.DockerHostIP = dockerhost.GetIP()
 
-	if err := ipc.InitContainerChannels(i.DockerHostIP,cmdPortBindings[0].HostPort,evtPortBindings[0].HostPort); err != nil {
+	if err := ipc.InitContainerChannels(i.DockerHostIP, cmdPortBindings[0].HostPort, evtPortBindings[0].HostPort); err != nil {
 		return err
 	}
-
-	/* TODO REMOVE TODAY
-	cmdChannelAddr = fmt.Sprintf("tcp://%v:%v", i.DockerHostIP, cmdPortBindings[0].HostPort)
-	evtChannelAddr = fmt.Sprintf("tcp://%v:%v", i.DockerHostIP, evtPortBindings[0].HostPort)
-	log.Debugf("cmdChannelAddr=%v evtChannelAddr=%v\n", cmdChannelAddr, evtChannelAddr)
-
-	//evtChannelAddr = fmt.Sprintf("ipc://%v/ipc/docker-slim-launcher.events.ipc", localVolumePath)
-	//cmdChannelAddr = fmt.Sprintf("ipc://%v/ipc/docker-slim-launcher.cmds.ipc", localVolumePath)
-
-	//NOTE: cmdChannel and evtChannel are globals (need to refactor this hack :))
-	var err error
-	evtChannel, err = newEvtChannel(evtChannelAddr)
-	if err != nil {
-		return err
-	}
-	cmdChannel, err = newCmdClient(cmdChannelAddr)
-	if err != nil {
-		return err
-	}
-	*/
 
 	return nil
 }
@@ -176,5 +157,10 @@ func (i *Inspector) shutdownContainerChannels() {
 
 func (i *Inspector) ProcessCollectedData() error {
 	log.Info("docker-slim: generating AppArmor profile...")
-	return apparmor.GenProfile(i.ImageInspector.ArtifactLocation, i.ImageInspector.AppArmorProfileName)
+	err := apparmor.GenProfile(i.ImageInspector.ArtifactLocation, i.ImageInspector.AppArmorProfileName)
+	if err != nil {
+		return err
+	}
+
+	return seccomp.GenProfile(i.ImageInspector.ArtifactLocation, i.ImageInspector.SeccompProfileName)
 }

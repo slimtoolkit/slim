@@ -5,7 +5,7 @@ import (
 
 	"internal/utils"
 	"slim/inspectors/image"
-	
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/dustin/go-humanize"
