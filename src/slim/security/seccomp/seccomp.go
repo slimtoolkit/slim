@@ -10,7 +10,20 @@ import (
 	"internal/report"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/cloudimmunity/system"
 )
+
+var archMap = map[system.ArchName]specs.Arch{
+	system.ArchName386:   specs.ArchX86,
+	system.ArchNameAmd64: specs.ArchX86_64,
+}
+
+func archNameToSeccompArch(name string) specs.Arch {
+	if arch, ok := archMap[system.ArchName(name)]; ok == true {
+		return arch
+	}
+	return "unknown"
+}
 
 func GenProfile(artifactLocation string, profileName string) error {
 	containerReportFileName := "creport.json"
@@ -35,7 +48,7 @@ func GenProfile(artifactLocation string, profileName string) error {
 
 	profile := &specs.Seccomp{
 		DefaultAction: specs.ActErrno,
-		Architectures: []specs.Arch{specs.ArchX86_64}, //TODO: get arch info from creport
+		Architectures: []specs.Arch{archNameToSeccompArch(creport.Monitors.Pt.ArchName)},
 	}
 
 	for _, scInfo := range creport.Monitors.Pt.SyscallStats {

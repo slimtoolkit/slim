@@ -4,12 +4,15 @@ import (
 	"os"
 	"time"
 
+	"internal/report"
 	"internal/utils"
 	"launcher/ipc"
 	"launcher/monitors/fanotify"
+	"launcher/monitors/pevent"
 	"launcher/monitors/ptrace"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/cloudimmunity/system"
 )
 
 var doneChan chan struct{}
@@ -28,12 +31,17 @@ func monitor(stopWork chan bool,
 
 	stopMonitor := make(chan struct{})
 
+	var peReportChan <-chan *report.PeMonitorReport
+	var peReport *report.PeMonitorReport
+	usePEMon, err := system.DefaultKernelFeatures.IsCompiled("CONFIG_PROC_EVENTS")
+	if (err == nil) && usePEMon {
+		log.Info("launcher: proc events are available!")
+		peReportChan = pevent.Run(stopMonitor)
+		//ProcEvents are not enabled in the default boot2docker kernel
+	}
+
 	fanReportChan := fanotify.Run(mountPoint, stopMonitor)
 	ptReportChan := ptrace.Run(ptmonStartChan, stopMonitor, appName, appArgs, dirName)
-	//NOTE:
-	//Disabled until linux-kernel module is added to check if the ProcEvents are enabled in the kernel
-	//ProcEvents are not enabled in the boot2docker kernel
-	//peReportChan := peRunMonitor(stopMonitor)
 
 	go func() {
 		log.Debug("launcher: monitor - waiting to stop monitoring...")
@@ -47,10 +55,12 @@ func monitor(stopWork chan bool,
 		fanReport := <-fanReportChan
 		ptReport := <-ptReportChan
 
-		//peReport := <-peReportChan
-		//TODO: when peReport is available filter file events from fanReport
+		if peReportChan != nil {
+			peReport = <-peReportChan
+			//TODO: when peReport is available filter file events from fanReport
+		}
 
-		processReports(mountPoint, fanReport, ptReport)
+		processReports(mountPoint, fanReport, ptReport, peReport)
 		stopWorkAck <- true
 	}()
 }

@@ -7,15 +7,15 @@ import (
 	"syscall"
 
 	"internal/report"
-	"internal/system"
 	"internal/utils"
 	"launcher/target"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/cloudimmunity/system"
 )
 
 type syscallEvent struct {
-	callNum uint64
+	callNum int16
 	retVal  uint64
 }
 
@@ -26,14 +26,19 @@ func Run(startChan <-chan int,
 	dirName string) <-chan *report.PtMonitorReport {
 	log.Info("ptmon: starting...")
 
+	sysInfo := system.GetSystemInfo()
+	archName := system.MachineToArchName(sysInfo.Machine)
+	syscallResolver := system.CallNumberResolver(archName)
+
 	reportChan := make(chan *report.PtMonitorReport, 1)
 
 	go func() {
 		ptReport := &report.PtMonitorReport{
+			ArchName:     string(archName),
 			SyscallStats: map[string]report.SyscallStatInfo{},
 		}
 
-		syscallStats := map[uint64]uint64{}
+		syscallStats := map[int16]uint64{}
 		eventChan := make(chan syscallEvent)
 		doneMonitoring := make(chan int)
 
@@ -112,7 +117,7 @@ func Run(startChan <-chan int,
 					gotRetVal = false
 
 					eventChan <- syscallEvent{
-						callNum: callNum,
+						callNum: int16(callNum),
 						retVal:  retVal,
 					}
 				}
@@ -152,10 +157,10 @@ func Run(startChan <-chan int,
 		log.Debugf("ptmon: executed syscall count = %d\n", ptReport.SyscallCount)
 		log.Debugf("ptmon: number of syscalls: %v\n", len(syscallStats))
 		for scNum, scCount := range syscallStats {
-			log.Debugf("[%v] %v = %v", scNum, system.CallName64(scNum), scCount)
-			ptReport.SyscallStats[strconv.FormatUint(scNum, 10)] = report.SyscallStatInfo{
+			log.Debugf("[%v] %v = %v", scNum, syscallResolver(scNum), scCount)
+			ptReport.SyscallStats[strconv.FormatInt(int64(scNum), 10)] = report.SyscallStatInfo{
 				Number: scNum,
-				Name:   system.CallName64(scNum),
+				Name:   syscallResolver(scNum),
 				Count:  scCount,
 			}
 		}

@@ -9,8 +9,10 @@ import (
 	"launcher/monitors/fanotify"
 )
 
-func processReports(mountPoint string, fanReport *report.FanMonitorReport,
-	ptReport *report.PtMonitorReport) {
+func processReports(mountPoint string,
+	fanReport *report.FanMonitorReport,
+	ptReport *report.PtMonitorReport,
+	peReport *report.PeMonitorReport) {
 
 	fileCount := 0
 	for _, processFileMap := range fanReport.ProcessFiles {
@@ -24,7 +26,7 @@ func processReports(mountPoint string, fanReport *report.FanMonitorReport,
 	}
 
 	allFilesMap := findSymlinks(fileList, mountPoint)
-	saveResults(fanReport, allFilesMap, ptReport)
+	saveResults(fanReport, allFilesMap, ptReport, peReport)
 }
 
 func getProcessChildren(pid int, targetPidList map[int]bool, processChildrenMap map[int][]int) {

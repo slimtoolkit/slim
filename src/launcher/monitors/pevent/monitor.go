@@ -11,7 +11,7 @@ import (
 //Process Event Monitor goal:
 //Watch the processes to separate the activity we care about from unrelated stuff running in the background.
 
-func peRunMonitor(stopChan chan struct{}) <-chan *report.PeMonitorReport {
+func Run(stopChan chan struct{}) <-chan *report.PeMonitorReport {
 	log.Info("pemon: starting...")
 
 	watcher, err := pdiscover.NewAllWatcher(pdiscover.PROC_EVENT_ALL)

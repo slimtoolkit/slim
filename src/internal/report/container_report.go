@@ -71,12 +71,13 @@ type PeMonitorReport struct {
 }
 
 type SyscallStatInfo struct {
-	Number uint64 `json:"num"`
+	Number int16  `json:"num"`
 	Name   string `json:"name"`
 	Count  uint64 `json:"count"`
 }
 
 type PtMonitorReport struct {
+	ArchName     string                     `json:"arch_name"`
 	SyscallCount uint64                     `json:"syscall_count"`
 	SyscallNum   uint32                     `json:"syscall_num"`
 	SyscallStats map[string]SyscallStatInfo `json:"syscall_stats"`

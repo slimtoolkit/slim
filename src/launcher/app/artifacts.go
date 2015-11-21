@@ -22,10 +22,11 @@ import (
 
 func saveResults(fanMonReport *report.FanMonitorReport,
 	fileNames map[string]*report.ArtifactProps,
-	ptMonReport *report.PtMonitorReport) {
+	ptMonReport *report.PtMonitorReport,
+	peReport *report.PeMonitorReport) {
 	artifactDirName := "/opt/dockerslim/artifacts"
 
-	artifactStore := newArtifactStore(artifactDirName, fanMonReport, fileNames, ptMonReport)
+	artifactStore := newArtifactStore(artifactDirName, fanMonReport, fileNames, ptMonReport, peReport)
 	artifactStore.prepareArtifacts()
 	artifactStore.saveArtifacts()
 	artifactStore.saveReport()
@@ -35,6 +36,7 @@ type artifactStore struct {
 	storeLocation string
 	fanMonReport  *report.FanMonitorReport
 	ptMonReport   *report.PtMonitorReport
+	peMonReport   *report.PeMonitorReport
 	rawNames      map[string]*report.ArtifactProps
 	nameList      []string
 	resolve       map[string]struct{}
@@ -45,11 +47,13 @@ type artifactStore struct {
 func newArtifactStore(storeLocation string,
 	fanMonReport *report.FanMonitorReport,
 	rawNames map[string]*report.ArtifactProps,
-	ptMonReport *report.PtMonitorReport) *artifactStore {
+	ptMonReport *report.PtMonitorReport,
+	peMonReport *report.PeMonitorReport) *artifactStore {
 	store := &artifactStore{
 		storeLocation: storeLocation,
 		fanMonReport:  fanMonReport,
 		ptMonReport:   ptMonReport,
+		peMonReport:   peMonReport,
 		rawNames:      rawNames,
 		nameList:      make([]string, 0, len(rawNames)),
 		resolve:       map[string]struct{}{},
