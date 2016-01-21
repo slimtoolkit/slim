@@ -38,6 +38,16 @@ Dependencies:
 
 To run `docker-slim` you need to export docker environment variables. If you use `docker-machine` you get it when you run `eval "$(docker-machine env default)"`.
 
+## FAQ
+
+### Is it safe for production use?
+
+Yes! Either way, you should test your Docker images.
+
+### What's the best application for DockerSlim
+
+DockerSlim will work for any dockerized application; however, DockerSlim automates app interactions for applications with an HTTP API. You can use DockerSlim even if your app doesn't have an HTTP API. You'll need to interact with your application manually to make sure DockerSlim can observe your application behavior.
+
 ## USAGE
 
 `./docker-slim [info|build] [--http-probe|--remove-file-artifacts] <IMAGE_ID_OR_NAME>`
