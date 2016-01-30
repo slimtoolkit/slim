@@ -6,6 +6,10 @@ Just because the hack day is over doesn't mean the project is done :-) The proje
 
 IRC (freenode): \#dockerslim
 
+## WIP
+
+Docker 1.9 and 1.10 updates haven't been merged yet. Use Docker 1.8 for now.
+
 ## DEMO VIDEO
 
 [![DockerSlim demo](http://img.youtube.com/vi/uKdHnfEbc-E/0.jpg)](https://www.youtube.com/watch?v=uKdHnfEbc-E)
@@ -43,6 +47,10 @@ To run `docker-slim` you need to export docker environment variables. If you use
 ### Is it safe for production use?
 
 Yes! Either way, you should test your Docker images.
+
+### How can I contribute if I don't know Go?
+
+You don't need to read the language spec and lots of books :-) Go through the [Tour of Go](https://tour.golang.org/welcome/1) and optionally read [50 Shades of Go](http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/) and you'll be ready to contribute!
 
 ### What's the best application for DockerSlim
 
