@@ -3,6 +3,7 @@ package utils
 import (
 	"os"
 	"path/filepath"
+	"strings"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -20,8 +21,13 @@ func FileDir(fileName string) string {
 }
 
 func PrepareSlimDirs(imageId string) (string, string) {
-	//localVolumePath := filepath.Join(ExeDir(), "container")
-	localVolumePath := filepath.Join(ExeDir(), ".images",imageId)
+	//images IDs in Docker 1.9+ are prefixed with a hash type...
+	if strings.Contains(imageId, ":") {
+		parts := strings.Split(imageId, ":")
+		imageId = parts[1]
+	}
+
+	localVolumePath := filepath.Join(ExeDir(), ".images", imageId)
 	artifactLocation := filepath.Join(localVolumePath, "artifacts")
 	artifactDir, err := os.Stat(artifactLocation)
 	if os.IsNotExist(err) {

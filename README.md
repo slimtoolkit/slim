@@ -8,7 +8,7 @@ IRC (freenode): \#dockerslim
 
 ## WIP
 
-Docker 1.9 and 1.10 updates haven't been merged yet. Use Docker 1.8 for now.
+Docker 1.10 updates haven't been merged yet. Use Docker 1.8 or 1.9.
 
 ## DEMO VIDEO
 
@@ -37,6 +37,8 @@ Sample images (built with the standard Ubuntu 14.04 base image):
 You can also run `docker-slim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
 DockerSlim now also generates AppArmor and Seccomp profiles for your container.
+
+Works with Docker 1.8 and 1.9.
 
 Dependencies:
 

@@ -5,11 +5,11 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cloudimmunity/docker-slim/utils"
 	"github.com/cloudimmunity/docker-slim/master/builder"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container/probes/http"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/image"
+	"github.com/cloudimmunity/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
@@ -20,11 +20,9 @@ func OnBuild(imageRef string, doHttpProbe bool, doRmFileArtifacts bool) {
 	fmt.Printf("docker-slim: [build] image=%v http-probe=%v remove-file-artifacts=%v\n",
 		imageRef, doHttpProbe, doRmFileArtifacts)
 
-	//localVolumePath, artifactLocation := utils.PrepareSlimDirs()
-
 	client, _ := docker.NewClientFromEnv()
 
-	imageInspector, err := image.NewInspector(client, imageRef/*, artifactLocation*/)
+	imageInspector, err := image.NewInspector(client, imageRef)
 	utils.FailOn(err)
 
 	log.Info("docker-slim: inspecting 'fat' image metadata...")
@@ -34,7 +32,8 @@ func OnBuild(imageRef string, doHttpProbe bool, doRmFileArtifacts bool) {
 	localVolumePath, artifactLocation := utils.PrepareSlimDirs(imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
-	log.Infof("docker-slim: 'fat' image size => %v (%v)\n",
+	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)\n",
+		imageInspector.ImageInfo.ID,
 		imageInspector.ImageInfo.VirtualSize,
 		humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)))
 

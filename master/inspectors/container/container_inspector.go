@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"path/filepath"
 
-	"github.com/cloudimmunity/docker-slim/utils"
 	"github.com/cloudimmunity/docker-slim/master/docker/dockerhost"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container/ipc"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/image"
 	"github.com/cloudimmunity/docker-slim/master/security/apparmor"
 	"github.com/cloudimmunity/docker-slim/master/security/seccomp"
+	"github.com/cloudimmunity/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	dockerapi "github.com/cloudimmunity/go-dockerclientx"
@@ -67,7 +67,7 @@ func (i *Inspector) RunContainer() error {
 			Labels:     map[string]string{"type": "dockerslim"},
 		},
 		HostConfig: &dockerapi.HostConfig{
-			Binds:           []string{artifactsMountInfo,sensorMountInfo},
+			Binds:           []string{artifactsMountInfo, sensorMountInfo},
 			PublishAllPorts: true,
 			CapAdd:          []string{"SYS_ADMIN"},
 			Privileged:      true,

@@ -5,11 +5,11 @@ import (
 	"time"
 
 	"github.com/cloudimmunity/docker-slim/report"
-	"github.com/cloudimmunity/docker-slim/utils"
 	"github.com/cloudimmunity/docker-slim/sensor/ipc"
 	"github.com/cloudimmunity/docker-slim/sensor/monitors/fanotify"
 	"github.com/cloudimmunity/docker-slim/sensor/monitors/pevent"
 	"github.com/cloudimmunity/docker-slim/sensor/monitors/ptrace"
+	"github.com/cloudimmunity/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/system"

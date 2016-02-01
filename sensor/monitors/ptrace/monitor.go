@@ -7,8 +7,8 @@ import (
 	"syscall"
 
 	"github.com/cloudimmunity/docker-slim/report"
-	"github.com/cloudimmunity/docker-slim/utils"
 	"github.com/cloudimmunity/docker-slim/sensor/target"
+	"github.com/cloudimmunity/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/system"

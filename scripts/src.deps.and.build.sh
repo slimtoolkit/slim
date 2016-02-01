@@ -12,7 +12,7 @@ go get github.com/cloudimmunity/system
 go get github.com/codegangsta/cli
 go get github.com/Sirupsen/logrus
 go get github.com/franela/goreq
-go get github.com/gdamore/mangos
+go get github.com/go-mangos/mangos
 go get github.com/dustin/go-humanize
 go get -d bitbucket.org/madmo/fanotify
 popd

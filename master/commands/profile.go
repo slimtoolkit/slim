@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cloudimmunity/docker-slim/utils"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container/probes/http"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/image"
+	"github.com/cloudimmunity/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
@@ -20,11 +20,9 @@ func OnProfile(imageRef string) {
 	doHttpProbe := true
 	doRmFileArtifacts := false
 
-	//localVolumePath, artifactLocation := utils.PrepareSlimDirs()
-
 	client, _ := docker.NewClientFromEnv()
 
-	imageInspector, err := image.NewInspector(client, imageRef/*, artifactLocation*/)
+	imageInspector, err := image.NewInspector(client, imageRef)
 	utils.FailOn(err)
 
 	log.Info("docker-slim: inspecting 'fat' image metadata...")
@@ -34,7 +32,8 @@ func OnProfile(imageRef string) {
 	localVolumePath, artifactLocation := utils.PrepareSlimDirs(imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
-	log.Infof("docker-slim: 'fat' image size => %v (%v)\n",
+	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)\n",
+		imageInspector.ImageInfo.ID,
 		imageInspector.ImageInfo.VirtualSize,
 		humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)))
 

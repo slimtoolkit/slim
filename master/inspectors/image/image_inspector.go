@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cloudimmunity/docker-slim/utils"
 	"github.com/cloudimmunity/docker-slim/master/docker/dockerfile"
+	"github.com/cloudimmunity/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
@@ -23,14 +23,14 @@ type Inspector struct {
 	ApiClient           *docker.Client
 }
 
-func NewInspector(client *docker.Client, imageRef string/*, artifactLocation string*/) (*Inspector, error) {
+func NewInspector(client *docker.Client, imageRef string /*, artifactLocation string*/) (*Inspector, error) {
 	inspector := &Inspector{
 		ImageRef:            imageRef,
 		SlimImageRepo:       "slim",
 		AppArmorProfileName: "apparmor-profile",
 		SeccompProfileName:  "seccomp-profile",
 		//ArtifactLocation:    artifactLocation,
-		ApiClient:           client,
+		ApiClient: client,
 	}
 
 	return inspector, nil
