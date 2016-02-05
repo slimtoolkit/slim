@@ -38,7 +38,7 @@ You can also run `docker-slim` in the `info` mode and it'll generate useful imag
 
 DockerSlim now also generates AppArmor and Seccomp profiles for your container.
 
-Works with Docker 1.8 and 1.9.
+Works with Docker 1.8, 1.9 and 1.10.
 
 Dependencies:
 
@@ -254,7 +254,7 @@ The minified `sample_app` docker image now works! We turned a 430MB node.js app 
 * Refactor the time-based container monitoring phase [DONE].
 * Automated interaction with the target container (requires app code analysis) [WIP;DONE - simple version].
 * Auto-generate AppArmor profiles [WIP].
-* Auto-generate Seccomp filters [USABLE :)].
+* Auto-generate Seccomp filters [USABLE, Docker 1.10+ is required].
 * Split "monitor" from "launcher" (as it's supposed to work :-))
 * Add scripting language dependency discovery to the "scanner" app.
 * Support additional command line parameters to specify CMD, VOLUME, ENV info.
