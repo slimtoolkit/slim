@@ -8,7 +8,7 @@ IRC (freenode): \#dockerslim
 
 ## NEW
 
-Official seccomp support Docker 1.10 
+Auto-generated seccomp profiles for Docker 1.10. [Latest binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_mac.zip)
 
 ## DEMO VIDEO
 
@@ -72,7 +72,7 @@ Example: `./docker-slim info 6f74095b68c9`
 
 The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-0. Get the docker-slim [binaries](https://github.com/cloudimmunity/docker-slim/releases/download/v1.11/dist_mac.zip). Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+0. Get the docker-slim [binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_mac.zip). Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
 	The extracted directory contains two binaries:
 
