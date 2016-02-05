@@ -25,6 +25,23 @@ func archNameToSeccompArch(name string) specs.Arch {
 	return "unknown"
 }
 
+var extraCalls = []string{
+	"openat",
+	"getdents64",
+	"capget",
+	"capset",
+	"chdir",
+	"setuid",
+	"setgroups",
+	"setgid",
+	"prctl",
+	"fchown",
+	"getppid",
+	"getpid",
+	"getuid",
+	"getgid",
+}
+
 func GenProfile(artifactLocation string, profileName string) error {
 	containerReportFileName := "creport.json"
 	containerReportFilePath := filepath.Join(artifactLocation, containerReportFileName)
@@ -49,6 +66,12 @@ func GenProfile(artifactLocation string, profileName string) error {
 	profile := &specs.Seccomp{
 		DefaultAction: specs.ActErrno,
 		Architectures: []specs.Arch{archNameToSeccompArch(creport.Monitors.Pt.ArchName)},
+	}
+
+	for _, xcall := range extraCalls {
+		if _, ok := creport.Monitors.Pt.SyscallStats[xcall]; !ok {
+			creport.Monitors.Pt.SyscallStats[xcall] = report.SyscallStatInfo{Name: xcall}
+		}
 	}
 
 	for _, scInfo := range creport.Monitors.Pt.SyscallStats {

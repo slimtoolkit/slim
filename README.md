@@ -6,9 +6,9 @@ Just because the hack day is over doesn't mean the project is done :-) The proje
 
 IRC (freenode): \#dockerslim
 
-## WIP
+## NEW
 
-Docker 1.10 updates haven't been merged yet. Use Docker 1.8 or 1.9.
+Official seccomp support Docker 1.10 
 
 ## DEMO VIDEO
 
@@ -54,7 +54,7 @@ Yes! Either way, you should test your Docker images.
 
 You don't need to read the language spec and lots of books :-) Go through the [Tour of Go](https://tour.golang.org/welcome/1) and optionally read [50 Shades of Go](http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/) and you'll be ready to contribute!
 
-### What's the best application for DockerSlim
+### What's the best application for DockerSlim?
 
 DockerSlim will work for any dockerized application; however, DockerSlim automates app interactions for applications with an HTTP API. You can use DockerSlim even if your app doesn't have an HTTP API. You'll need to interact with your application manually to make sure DockerSlim can observe your application behavior.
 
@@ -72,7 +72,7 @@ Example: `./docker-slim info 6f74095b68c9`
 
 The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-0. Get the docker-slim [binaries](https://github.com/cloudimmunity/docker-slim/releases/download/v1.9/dist_mac.zip). Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+0. Get the docker-slim [binaries](https://github.com/cloudimmunity/docker-slim/releases/download/v1.11/dist_mac.zip). Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
 	The extracted directory contains two binaries:
 
@@ -128,10 +128,15 @@ If you'd like to see the artifacts without running `docker-slim` you can take a 
 *	a reverse engineered Dockerfile (`Dockerfile.fat`)
 *	a container report file (`creport.json`)
 *	a sample AppArmor profile (which will be named based on your original image name)
-*   and a sample Seccomp profile (for the upcoming Docker release)
+*   and a sample Seccomp profile
 
 If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `info` command.
 
+## USING AUTO-GENERATED SECCOMP PROFILES
+
+You can use the generated profile with your original image or with the minified image DockerSlim created:
+
+`docker run --security-opt seccomp:path_to/my-sample-node-app-seccomp.json -p 8000:8000 my/sample-node-app.slim`
 
 ## BUILD PROCESS
 
@@ -249,7 +254,7 @@ The minified `sample_app` docker image now works! We turned a 430MB node.js app 
 * Refactor the time-based container monitoring phase [DONE].
 * Automated interaction with the target container (requires app code analysis) [WIP;DONE - simple version].
 * Auto-generate AppArmor profiles [WIP].
-* Auto-generate Seccomp filters [WIP].
+* Auto-generate Seccomp filters [USABLE :)].
 * Split "monitor" from "launcher" (as it's supposed to work :-))
 * Add scripting language dependency discovery to the "scanner" app.
 * Support additional command line parameters to specify CMD, VOLUME, ENV info.

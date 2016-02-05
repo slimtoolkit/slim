@@ -5,83 +5,7 @@
   ],
   "syscalls": [
     {
-      "name": "bind",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "getsockname",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "read",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "munmap",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "rt_sigaction",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "epoll_ctl",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "getcwd",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "readlink",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "arch_prctl",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "access",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "set_tid_address",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "uname",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "write",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "lseek",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "getrlimit",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "getpeername",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "mprotect",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "brk",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "futex",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "epoll_create1",
+      "name": "rt_sigprocmask",
       "action": "SCMP_ACT_ALLOW"
     },
     {
@@ -89,31 +13,11 @@
       "action": "SCMP_ACT_ALLOW"
     },
     {
-      "name": "set_robust_list",
+      "name": "prctl",
       "action": "SCMP_ACT_ALLOW"
     },
     {
-      "name": "eventfd2",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "pipe2",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "stat",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "epoll_wait",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "socket",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "listen",
+      "name": "write",
       "action": "SCMP_ACT_ALLOW"
     },
     {
@@ -121,7 +25,19 @@
       "action": "SCMP_ACT_ALLOW"
     },
     {
-      "name": "mmap",
+      "name": "getdents64",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "getuid",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "munmap",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "getsockname",
       "action": "SCMP_ACT_ALLOW"
     },
     {
@@ -129,27 +45,11 @@
       "action": "SCMP_ACT_ALLOW"
     },
     {
-      "name": "open",
+      "name": "set_robust_list",
       "action": "SCMP_ACT_ALLOW"
     },
     {
-      "name": "accept4",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "execve",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "clone",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "lstat",
-      "action": "SCMP_ACT_ALLOW"
-    },
-    {
-      "name": "rt_sigprocmask",
+      "name": "read",
       "action": "SCMP_ACT_ALLOW"
     },
     {
@@ -157,11 +57,167 @@
       "action": "SCMP_ACT_ALLOW"
     },
     {
-      "name": "clock_getres",
+      "name": "eventfd2",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "bind",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "mmap",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "access",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "openat",
       "action": "SCMP_ACT_ALLOW"
     },
     {
       "name": "close",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "lseek",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "epoll_ctl",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "socket",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "capget",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "getgid",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "open",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "futex",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "listen",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "lstat",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "epoll_create1",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "clock_getres",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "clone",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "rt_sigaction",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "stat",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "capset",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "getpid",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "mprotect",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "arch_prctl",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "uname",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "setgid",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "pipe2",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "getcwd",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "setuid",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "epoll_wait",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "chdir",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "setgroups",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "fchown",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "execve",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "readlink",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "getpeername",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "getppid",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "set_tid_address",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "accept4",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "getrlimit",
+      "action": "SCMP_ACT_ALLOW"
+    },
+    {
+      "name": "brk",
       "action": "SCMP_ACT_ALLOW"
     }
   ]

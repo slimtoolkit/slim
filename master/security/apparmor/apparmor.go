@@ -69,31 +69,43 @@ func GenProfile(artifactLocation string, profileName string) error {
 	profileData := appArmorProfileData{ProfileName: profileName}
 
 	for _, aprops := range creport.Image.Files {
-		if aprops.Flags["X"] {
-			profileData.ExeFileRules = append(profileData.ExeFileRules,
-				appArmorFileRule{
-					FilePath: aprops.FilePath,
-					PermSet:  report.PermSetFromFlags(aprops.Flags),
-				})
-		} else if aprops.Flags["W"] {
-			profileData.WriteFileRules = append(profileData.WriteFileRules,
-				appArmorFileRule{
-					FilePath: aprops.FilePath,
-					PermSet:  report.PermSetFromFlags(aprops.Flags),
-				})
-		} else if aprops.Flags["R"] {
+		if aprops == nil {
+			continue
+		}
+		if aprops.Flags == nil {
+			//default to "R" (todo: double check flag creation...)
 			profileData.ReadFileRules = append(profileData.ReadFileRules,
 				appArmorFileRule{
 					FilePath: aprops.FilePath,
-					PermSet:  report.PermSetFromFlags(aprops.Flags),
+					PermSet:  "r",
 				})
 		} else {
-			//logrus.Printf("docker-slim: genAppArmorProfile - other artifact => %v\n", aprops)
-			//note: most are Symlinks
-			//&{Symlink /lib/x86_64-linux-gnu/libc.so.6 ---------- Lrwxrwxrwx libc-2.19.so map[]  12  }
-			//todo: double check this file:
-			//&{File /etc/ld.so.cache ---------- -rw-r--r--  map[] data 15220 ca4491d92fac4500148a18bd9cada91b49e08701 }
-			//-rw-r--r--  1 user  group    15K Month  1 20:14 ld.so.cache
+			if aprops.Flags["X"] {
+				profileData.ExeFileRules = append(profileData.ExeFileRules,
+					appArmorFileRule{
+						FilePath: aprops.FilePath,
+						PermSet:  report.PermSetFromFlags(aprops.Flags),
+					})
+			} else if aprops.Flags["W"] {
+				profileData.WriteFileRules = append(profileData.WriteFileRules,
+					appArmorFileRule{
+						FilePath: aprops.FilePath,
+						PermSet:  report.PermSetFromFlags(aprops.Flags),
+					})
+			} else if aprops.Flags["R"] {
+				profileData.ReadFileRules = append(profileData.ReadFileRules,
+					appArmorFileRule{
+						FilePath: aprops.FilePath,
+						PermSet:  report.PermSetFromFlags(aprops.Flags),
+					})
+			} else {
+				//logrus.Printf("docker-slim: genAppArmorProfile - other artifact => %v\n", aprops)
+				//note: most are Symlinks
+				//&{Symlink /lib/x86_64-linux-gnu/libc.so.6 ---------- Lrwxrwxrwx libc-2.19.so map[]  12  }
+				//todo: double check this file:
+				//&{File /etc/ld.so.cache ---------- -rw-r--r--  map[] data 15220 ca4491d92fac4500148a18bd9cada91b49e08701 }
+				//-rw-r--r--  1 user  group    15K Month  1 20:14 ld.so.cache
+			}
 		}
 	}
 
