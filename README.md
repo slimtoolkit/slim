@@ -6,6 +6,8 @@ Just because the hack day is over doesn't mean the project is done :-) The proje
 
 IRC (freenode): \#dockerslim
 
+Docker Hub: dslim (dockerslim is already taken :-()
+
 ## NEW
 
 Auto-generated seccomp profiles for Docker 1.10. [Latest binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_mac.zip)
