@@ -27,7 +27,7 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 
 ## CURRENT STATE
 
-It WORKS with the sample node.js, python, and ruby images (built from `sample_apps`). More testing needs to be done to see how it works with other images.
+It WORKS with the sample Node.js, Python, Ruby and Java images (built from `sample/apps`). More testing needs to be done to see how it works with other images.
 
 Sample images (built with the standard Ubuntu 14.04 base image):
 
@@ -38,9 +38,13 @@ Sample images (built with the standard Ubuntu 14.04 base image):
 
 You can also run `docker-slim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
-DockerSlim now also generates AppArmor and Seccomp profiles for your container.
+DockerSlim now also generates Seccomp (usable) and AppArmor (WIP) profiles for your container.
 
 Works with Docker 1.8, 1.9 and 1.10.
+
+Note:
+
+You don't need Docker 1.10 to generate Seccomp profiles, but you do need it if you want to use the generated profiles.
 
 Dependencies:
 
