@@ -10,7 +10,11 @@ Docker Hub: dslim (dockerslim is already taken :-()
 
 ## NEW
 
-Auto-generated seccomp profiles for Docker 1.10. [Latest binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_mac.zip)
+Auto-generated seccomp profiles for Docker 1.10. 
+
+[Latest Mac binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_mac.zip)
+
+[Latest Linux binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_linux.zip)
 
 ## DEMO VIDEO
 
@@ -78,7 +82,7 @@ Example: `./docker-slim info 6f74095b68c9`
 
 The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-0. Get the docker-slim [binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_mac.zip). Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+0. Get the docker-slim [Mac](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_mac.zip) or [Linux](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_linux.zip) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
 	The extracted directory contains two binaries:
 
@@ -227,52 +231,25 @@ Some of the advanced analysis options require a number of Linux kernel features 
 
 ## DEVELOPMENT PROGRESS
 
-### PHASE 1 (DONE)
+### PHASE 3 (WIP)
 
-Goal: build basic infrastructure
-
-Create the "slim" app that:
-
-*  collects basic container image metadata [DONE]
-*  "reverse engineers" the Dockerfile used to create the target image [DONE]
-*  creates a container replacing/hooking the original entrypoint/cmd [DONE]
-*  creates a new "slim" image from the collected information and artifacts [DONE]
-
-Create the "slim" launcher that:
-
-* starts the original application (based on the original entrypoint/cmd data) [DONE]
-* monitors process activity (saving events in a log file) [DONE] (note: doesn't work with all kernels)
-* monitors file activity (saving events in a log file) [DONE]
-
-### PHASE 2 (DONE)
-
-* Fix new image permission errors [DONE]
-* Use env data from the original image [DONE]
-
-### MILESTONE 1 - MINIFIED TEST DOCKER IMAGE (DONE)
-
-The minified `sample_app` docker image now works! We turned a 430MB node.js app container into a 40MB image.
-
-### PHASE 3 (ACTIVE)
-
-* Do a better job with links [DONE] The test image is now even smaller (was: 40MB, now: 14.22MB)
-* Make sure it works with other images [WIP, now: node,python,ruby,java].
-* Refactor the time-based container monitoring phase [DONE].
-* Automated interaction with the target container (requires app code analysis) [WIP;DONE - simple version].
-* Auto-generate AppArmor profiles [WIP].
-* Auto-generate Seccomp filters [USABLE, Docker 1.10+ is required].
-* Split "monitor" from "launcher" (as it's supposed to work :-))
-* Add scripting language dependency discovery to the "scanner" app.
+* Auto-generate AppArmor profiles (almost usable :-))
+* Option to pause builder execution to allow manual changes to the minified image artifacts.
 * Support additional command line parameters to specify CMD, VOLUME, ENV info.
-* Build/use a custom Boot2docker kernel with every required feature turned on.
-* Explore additional dependency discovery methods.
-* "Live" image create mode - to create new images from containers where users install their applications interactively.
+* Better support for command line applications
 
+### TODO
+
+* Discover HTTP endpoints to make the HTTP probe more intelligent.
+* Scripting language dependency discovery in the "scanner" app.
+* Explore additional dependency discovery methods.
+* Build/use a custom Boot2docker kernel with every required feature turned on.
+* "Live" image create mode - to create new images from containers where users install their applications interactively.
 
 ## NOTES
 
-1. The code is still pretty ugly at this point in time :)
-2. Each app directory contains a dummy `.git` directory because `godep` fails to work without it.
+* The code is still not very pretty at this point in time :)
+
 
 
 
