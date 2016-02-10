@@ -177,9 +177,11 @@ func GenerateFromInfo(location string,
 	dfData.WriteString("FROM scratch\n")
 	dfData.WriteString("COPY files /\n")
 
-	dfData.WriteString("WORKDIR ")
-	dfData.WriteString(workingDir)
-	dfData.WriteByte('\n')
+	if workingDir != "" {
+		dfData.WriteString("WORKDIR ")
+		dfData.WriteString(workingDir)
+		dfData.WriteByte('\n')
+	}
 
 	if len(env) > 0 {
 		for _, envInfo := range env {
