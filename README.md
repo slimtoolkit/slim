@@ -8,7 +8,7 @@ Auto-generated seccomp profiles for Docker 1.10.
 
 [Latest Linux binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_linux.zip)
 
-## QUICK SECCOMP EXAMPLES
+## QUICK SECCOMP EXAMPLE
 
 If you want to auto-generate a Seccomp profile AND minify your image use the `build` command. If you only want to auto-generate a Seccomp profile (along with other interesting image metadata) use the `profile` command.
 
@@ -20,7 +20,7 @@ Step two: use the generated Seccomp profile
 
 `docker run --security-opt seccomp:<docker-slim directory>/.images/<YOUR_APP_IMAGE_ID>/artifacts/your-name-your-app-seccomp.json <your other run params> your-name/your-app`
 
-`<docker-slim directory>/.images/<YOUR_APP_IMAGE_ID>/artifacts`
+Feel free to copy the generated profile :-)
 
 You can use the generated Seccomp profile with your original image or with the minified image.
 
