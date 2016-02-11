@@ -1,13 +1,5 @@
 # docker-slim: Lean and Mean Docker containers
 
-[Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project (status: ACTIVE!)
-
-Just because the hack day is over doesn't mean the project is done :-) The project needs your help even if you don't know Docker or Go!
-
-IRC (freenode): \#dockerslim
-
-Docker Hub: dslim (dockerslim is already taken :-()
-
 ## NEW
 
 Auto-generated seccomp profiles for Docker 1.10. 
@@ -16,7 +8,23 @@ Auto-generated seccomp profiles for Docker 1.10.
 
 [Latest Linux binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_linux.zip)
 
-## DEMO VIDEO
+## QUICK SECCOMP EXAMPLES
+
+If you want to auto-generate a Seccomp profile AND minify your image use the `build` command. If you only want to auto-generate a Seccomp profile (along with other interesting image metadata) use the `profile` command.
+
+Step one: run DockerSlim
+
+`./docker-slim build --http-probe your-name/your-app`
+
+Step two: use the generated Seccomp profile
+
+`docker run --security-opt seccomp:<docker-slim directory>/.images/<YOUR_APP_IMAGE_ID>/artifacts/your-name-your-app-seccomp.json <your other run params> your-name/your-app`
+
+`<docker-slim directory>/.images/<YOUR_APP_IMAGE_ID>/artifacts`
+
+You can use the generated Seccomp profile with your original image or with the minified image.
+
+## ORIGINAL DEMO VIDEO
 
 [![DockerSlim demo](http://img.youtube.com/vi/uKdHnfEbc-E/0.jpg)](https://www.youtube.com/watch?v=uKdHnfEbc-E)
 
@@ -31,7 +39,7 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 
 ## CURRENT STATE
 
-It WORKS with the sample Node.js, Python, Ruby and Java images (built from `sample/apps`). More testing needs to be done to see how it works with other images.
+It works pretty well with the sample Node.js, Python, Ruby and Java images (built from `sample/apps`). More testing needs to be done to see how it works with other images.
 
 Sample images (built with the standard Ubuntu 14.04 base image):
 
@@ -245,6 +253,19 @@ Some of the advanced analysis options require a number of Linux kernel features 
 * Explore additional dependency discovery methods.
 * Build/use a custom Boot2docker kernel with every required feature turned on.
 * "Live" image create mode - to create new images from containers where users install their applications interactively.
+
+## ORIGINS
+
+DockerSlim was a Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project. It barely worked at the time :-) 
+
+Since then it's been improved and it works pretty well for its core use cases. It can be better though. That's why the project needs your help! You don't need to know much about Docker and you don't need to know anything about Go. You can contribute in many different ways. For example, use DockerSlim on your images and open a Github issue documenting your experience even if it worked just fine :-)
+
+## ONLINE
+
+IRC (freenode): \#dockerslim
+
+Docker Hub: dslim (dockerslim is already taken :-()
+
 
 ## NOTES
 
