@@ -1,3 +1,39 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [docker-slim: Lean and Mean Docker containers](#docker-slim-lean-and-mean-docker-containers)
+  - [DESCRIPTION](#description)
+  - [NEW](#new)
+  - [Downloads](#downloads)
+  - [USAGE](#usage)
+  - [QUICK SECCOMP EXAMPLE](#quick-seccomp-example)
+  - [ORIGINAL DEMO VIDEO](#original-demo-video)
+  - [DEMO STEPS](#demo-steps)
+  - [CURRENT STATE](#current-state)
+  - [FAQ](#faq)
+    - [Is it safe for production use?](#is-it-safe-for-production-use)
+    - [How can I contribute if I don't know Go?](#how-can-i-contribute-if-i-dont-know-go)
+    - [What's the best application for DockerSlim?](#whats-the-best-application-for-dockerslim)
+  - [USING AUTO-GENERATED SECCOMP PROFILES](#using-auto-generated-seccomp-profiles)
+  - [BUILD PROCESS](#build-process)
+      - [Local Build Steps](#local-build-steps)
+      - [Traditional Go Way to Build](#traditional-go-way-to-build)
+      - [Builder Image Steps](#builder-image-steps)
+  - [DESIGN](#design)
+    - [CORE CONCEPTS](#core-concepts)
+    - [DYNAMIC ANALYSIS OPTIONS](#dynamic-analysis-options)
+    - [SECURITY](#security)
+    - [CHALLENGES](#challenges)
+  - [DEVELOPMENT PROGRESS](#development-progress)
+    - [PHASE 3 (WIP)](#phase-3-wip)
+    - [TODO](#todo)
+  - [ORIGINS](#origins)
+  - [ONLINE](#online)
+  - [NOTES](#notes)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # docker-slim: Lean and Mean Docker containers
 
 ## DESCRIPTION
