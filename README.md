@@ -79,6 +79,12 @@ Feel free to copy the generated profile :-)
 
 You can use the generated Seccomp profile with your original image or with the minified image.
 
+## USING AUTO-GENERATED SECCOMP PROFILES
+
+You can use the generated profile with your original image or with the minified image DockerSlim created:
+
+`docker run --security-opt seccomp:path_to/my-sample-node-app-seccomp.json -p 8000:8000 my/sample-node-app.slim`
+
 ## ORIGINAL DEMO VIDEO
 
 [![DockerSlim demo](http://img.youtube.com/vi/uKdHnfEbc-E/0.jpg)](https://www.youtube.com/watch?v=uKdHnfEbc-E)
@@ -188,12 +194,6 @@ If you'd like to see the artifacts without running `docker-slim` you can take a 
 *   and a sample Seccomp profile
 
 If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `info` command.
-
-## USING AUTO-GENERATED SECCOMP PROFILES
-
-You can use the generated profile with your original image or with the minified image DockerSlim created:
-
-`docker run --security-opt seccomp:path_to/my-sample-node-app-seccomp.json -p 8000:8000 my/sample-node-app.slim`
 
 ## BUILD PROCESS
 
