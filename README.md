@@ -1,12 +1,68 @@
 # docker-slim: Lean and Mean Docker containers
 
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [docker-slim: Lean and Mean Docker containers](#docker-slim-lean-and-mean-docker-containers)
+  - [DESCRIPTION](#description)
+  - [NEW](#new)
+  - [Downloads](#downloads)
+  - [USAGE](#usage)
+  - [QUICK SECCOMP EXAMPLE](#quick-seccomp-example)
+  - [USING AUTO-GENERATED SECCOMP PROFILES](#using-auto-generated-seccomp-profiles)
+  - [ORIGINAL DEMO VIDEO](#original-demo-video)
+  - [DEMO STEPS](#demo-steps)
+  - [CURRENT STATE](#current-state)
+  - [FAQ](#faq)
+    - [Is it safe for production use?](#is-it-safe-for-production-use)
+    - [How can I contribute if I don't know Go?](#how-can-i-contribute-if-i-dont-know-go)
+    - [What's the best application for DockerSlim?](#whats-the-best-application-for-dockerslim)
+  - [BUILD PROCESS](#build-process)
+      - [Local Build Steps](#local-build-steps)
+      - [Traditional Go Way to Build](#traditional-go-way-to-build)
+      - [Builder Image Steps](#builder-image-steps)
+  - [DESIGN](#design)
+    - [CORE CONCEPTS](#core-concepts)
+    - [DYNAMIC ANALYSIS OPTIONS](#dynamic-analysis-options)
+    - [SECURITY](#security)
+    - [CHALLENGES](#challenges)
+  - [DEVELOPMENT PROGRESS](#development-progress)
+    - [PHASE 3 (WIP)](#phase-3-wip)
+    - [TODO](#todo)
+  - [ORIGINS](#origins)
+  - [ONLINE](#online)
+  - [NOTES](#notes)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+
+## DESCRIPTION
+
+
+Creating small containers requires a lot of voodoo magic and it can be pretty painful. You shouldn't have to throw away your tools and your workflow to have skinny containers. Using Docker should be easy.
+
+`docker-slim` is a magic diet pill for your containers :) It will use static and dynamic analysis to create a skinny container for your app.
+
 ## NEW
 
-Auto-generated seccomp profiles for Docker 1.10. 
+Auto-generated seccomp profiles for Docker 1.10.
+
+## Downloads
 
 [Latest Mac binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_mac.zip)
 
 [Latest Linux binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_linux.zip)
+
+## USAGE
+
+`./docker-slim [info|build] [--http-probe|--remove-file-artifacts] <IMAGE_ID_OR_NAME>`
+
+Example: `./docker-slim build --http-probe my/sample-node-app`
+
+To generate a Dockerfile for your "fat" image without creating a new "slim" image use the `info` command.
+
+Example: `./docker-slim info 6f74095b68c9`
 
 ## QUICK SECCOMP EXAMPLE
 
@@ -24,18 +80,68 @@ Feel free to copy the generated profile :-)
 
 You can use the generated Seccomp profile with your original image or with the minified image.
 
+## USING AUTO-GENERATED SECCOMP PROFILES
+
+You can use the generated profile with your original image or with the minified image DockerSlim created:
+
+`docker run --security-opt seccomp:path_to/my-sample-node-app-seccomp.json -p 8000:8000 my/sample-node-app.slim`
+
 ## ORIGINAL DEMO VIDEO
 
 [![DockerSlim demo](http://img.youtube.com/vi/uKdHnfEbc-E/0.jpg)](https://www.youtube.com/watch?v=uKdHnfEbc-E)
 
 [Demo video on YouTube](https://youtu.be/uKdHnfEbc-E)
 
-## DESCRIPTION
+## DEMO STEPS
 
+The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-Creating small containers requires a lot of voodoo magic and it can be pretty painful. You shouldn't have to throw away your tools and your workflow to have skinny containers. Using Docker should be easy. 
+0. Get the docker-slim [Mac](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_mac.zip) or [Linux](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_linux.zip) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
-`docker-slim` is a magic diet pill for your containers :) It will use static and dynamic analysis to create a skinny container for your app.
+	The extracted directory contains two binaries:
+
+	* `docker-slim` <- the main application
+	* `docker-slim-sensor` <- the sensor application used to collect information from running containers
+
+1. Clone this repo to use the sample apps. You can skip this step if you have your own app.
+
+	`git clone https://github.com/cloudimmunity/docker-slim.git`
+
+2. Create a Docker image for the sample node.js app in `sample/apps/node`. You can skip this step if you have your own app.
+
+	`cd docker-slim/sample/apps/node`
+
+	`eval "$(docker-machine env default)"` <- optional (depends on how Docker is installed on your machine); if the Docker host is not running you'll need to start it first: `docker-machine start default`
+
+	`docker build -t my/sample-node-app .`
+
+3. Run `docker-slim`:
+
+	`./docker-slim build --http-probe my/sample-node-app` <- run it from the location where you extraced the docker-slim binaries
+
+	DockerSlim creates a special container based on the target image you provided. It also creates a resource directory where it stores the information it discovers about your image: `<docker-slim directory>/.images/<TARGET_IMAGE_ID>`.
+
+4. Use curl (or other tools) to call the sample app (optional)
+
+	`curl http://<YOUR_DOCKER_HOST_IP>:<PORT>`
+
+	This is an optional step to make sure the target app container is doing something. Depending on the application it's an optional step. For some applications it's required if it loads new application resources dynamically based on the requests it's processing.
+
+	You can get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
+
+	If you set the `http-probe` flag then `docker-slim` will try to call your application using HTTP/HTTPS: `./docker-slim build --http-probe my/sample-node-app`
+
+5. Press any key and wait until `docker-slim` says it's done
+
+6. Once DockerSlim is done check that the new minified image is there
+
+	`docker images`
+
+	You should see `my/sample-node-app.slim` in the list of images. Right now all generated images have `.slim` at the end of its name.
+
+7. Use the minified image
+
+	`docker run --name="slim_node_app" -p 8000:8000 my/sample-node-app.slim`
 
 ## CURRENT STATE
 
@@ -76,70 +182,10 @@ You don't need to read the language spec and lots of books :-) Go through the [T
 
 DockerSlim will work for any dockerized application; however, DockerSlim automates app interactions for applications with an HTTP API. You can use DockerSlim even if your app doesn't have an HTTP API. You'll need to interact with your application manually to make sure DockerSlim can observe your application behavior.
 
-## USAGE
-
-`./docker-slim [info|build] [--http-probe|--remove-file-artifacts] <IMAGE_ID_OR_NAME>`
-
-Example: `./docker-slim build --http-probe my/sample-node-app`
-
-To generate a Dockerfile for your "fat" image without creating a new "slim" image use the `info` command.
-
-Example: `./docker-slim info 6f74095b68c9`
-
-## DEMO STEPS
-
-The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
-
-0. Get the docker-slim [Mac](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_mac.zip) or [Linux](https://github.com/cloudimmunity/docker-slim/releases/download/1.11/dist_linux.zip) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
-
-	The extracted directory contains two binaries:
-
-	* `docker-slim` <- the main application
-	* `docker-slim-sensor` <- the sensor application used to collect information from running containers
-
-1. Clone this repo to use the sample apps. You can skip this step if you have your own app.
-
-	`git clone https://github.com/cloudimmunity/docker-slim.git`
-	
-2. Create a Docker image for the sample node.js app in `sample/apps/node`. You can skip this step if you have your own app.
-	
-	`cd docker-slim/sample/apps/node`
-	
-	`eval "$(docker-machine env default)"` <- optional (depends on how Docker is installed on your machine); if the Docker host is not running you'll need to start it first: `docker-machine start default`
-	
-	`docker build -t my/sample-node-app .`
-	 
-3. Run `docker-slim`:
-	
-	`./docker-slim build --http-probe my/sample-node-app` <- run it from the location where you extraced the docker-slim binaries
-	
-	DockerSlim creates a special container based on the target image you provided. It also creates a resource directory where it stores the information it discovers about your image: `<docker-slim directory>/.images/<TARGET_IMAGE_ID>`.
-
-4. Use curl (or other tools) to call the sample app (optional)
-
-	`curl http://<YOUR_DOCKER_HOST_IP>:<PORT>`
-	
-	This is an optional step to make sure the target app container is doing something. Depending on the application it's an optional step. For some applications it's required if it loads new application resources dynamically based on the requests it's processing.
-		
-	You can get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
-
-	If you set the `http-probe` flag then `docker-slim` will try to call your application using HTTP/HTTPS: `./docker-slim build --http-probe my/sample-node-app`
-
-5. Press any key and wait until `docker-slim` says it's done
-
-6. Once DockerSlim is done check that the new minified image is there
-
-	`docker images`
-	
-	You should see `my/sample-node-app.slim` in the list of images. Right now all generated images have `.slim` at the end of its name.
-
-7. Use the minified image
-
-	`docker run --name="slim_node_app" -p 8000:8000 my/sample-node-app.slim`
 
 Notes:
 
-You can explore the artifacts DockerSlim generates when it's creating a slim image. You'll find those in `<docker-slim directory>/.images/<TARGET_IMAGE_ID>/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.fat`. 
+You can explore the artifacts DockerSlim generates when it's creating a slim image. You'll find those in `<docker-slim directory>/.images/<TARGET_IMAGE_ID>/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.fat`.
 
 If you'd like to see the artifacts without running `docker-slim` you can take a look at the `sample/artifacts` directory in this repo. It doesn't include any image files, but you'll find:
 
@@ -149,12 +195,6 @@ If you'd like to see the artifacts without running `docker-slim` you can take a 
 *   and a sample Seccomp profile
 
 If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `info` command.
-
-## USING AUTO-GENERATED SECCOMP PROFILES
-
-You can use the generated profile with your original image or with the minified image DockerSlim created:
-
-`docker run --security-opt seccomp:path_to/my-sample-node-app-seccomp.json -p 8000:8000 my/sample-node-app.slim`
 
 ## BUILD PROCESS
 
@@ -256,7 +296,7 @@ Some of the advanced analysis options require a number of Linux kernel features 
 
 ## ORIGINS
 
-DockerSlim was a [Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project. It barely worked at the time :-) 
+DockerSlim was a [Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project. It barely worked at the time :-)
 
 Since then it's been improved and it works pretty well for its core use cases. It can be better though. That's why the project needs your help! You don't need to know much about Docker and you don't need to know anything about Go. You can contribute in many different ways. For example, use DockerSlim on your images and open a Github issue documenting your experience even if it worked just fine :-)
 
@@ -270,10 +310,3 @@ Docker Hub: dslim (dockerslim is already taken :-()
 ## NOTES
 
 * The code is still not very pretty at this point in time :)
-
-
-
-
-
-
-
