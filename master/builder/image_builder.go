@@ -3,6 +3,7 @@ package builder
 import (
 	"os"
 
+	"github.com/cloudimmunity/docker-slim/master/config"
 	"github.com/cloudimmunity/docker-slim/master/docker/dockerfile"
 
 	//log "github.com/Sirupsen/logrus"
@@ -24,7 +25,12 @@ type ImageBuilder struct {
 	ApiClient    *docker.Client
 }
 
-func NewImageBuilder(client *docker.Client, imageRepoName string, imageInfo *docker.Image, artifactLocation string) (*ImageBuilder, error) {
+func NewImageBuilder(client *docker.Client,
+	imageRepoName string,
+	imageInfo *docker.Image,
+	artifactLocation string,
+	imageOverrides map[string]bool,
+	overrides *config.ContainerOverrides) (*ImageBuilder, error) {
 	builder := &ImageBuilder{
 		RepoName:     imageRepoName,
 		ID:           imageInfo.ID,

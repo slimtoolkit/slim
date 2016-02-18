@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"path/filepath"
 
+	"github.com/cloudimmunity/docker-slim/master/config"
 	"github.com/cloudimmunity/docker-slim/master/docker/dockerhost"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container/ipc"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/image"
@@ -27,7 +28,10 @@ type Inspector struct {
 	ApiClient       *dockerapi.Client
 }
 
-func NewInspector(client *dockerapi.Client, imageInspector *image.Inspector, localVolumePath string) (*Inspector, error) {
+func NewInspector(client *dockerapi.Client,
+	imageInspector *image.Inspector,
+	localVolumePath string,
+	overrides *config.ContainerOverrides) (*Inspector, error) {
 	inspector := &Inspector{
 		LocalVolumePath: localVolumePath,
 		CmdPort:         "65501/tcp",
@@ -36,11 +40,25 @@ func NewInspector(client *dockerapi.Client, imageInspector *image.Inspector, loc
 		ApiClient:       client,
 	}
 
-	if len(imageInspector.ImageInfo.Config.Entrypoint) > 0 {
+	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
+		log.Debugf("overriding Entrypoint %+v => %+v (%v)\n",
+			imageInspector.ImageInfo.Config.Entrypoint, overrides.Entrypoint, overrides.ClearEntrypoint)
+		if len(overrides.Entrypoint) > 0 {
+			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Entrypoint...)
+		}
+
+	} else if len(imageInspector.ImageInfo.Config.Entrypoint) > 0 {
 		inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Entrypoint...)
 	}
 
-	if len(imageInspector.ImageInfo.Config.Cmd) > 0 {
+	if overrides != nil && ((len(overrides.Cmd) > 0) || overrides.ClearCmd) {
+		log.Debugf("overriding Cmd %+v => %+v (%v)\n",
+			imageInspector.ImageInfo.Config.Cmd, overrides.Cmd, overrides.ClearCmd)
+		if len(overrides.Cmd) > 0 {
+			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
+		}
+
+	} else if len(imageInspector.ImageInfo.Config.Cmd) > 0 {
 		inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Cmd...)
 	}
 

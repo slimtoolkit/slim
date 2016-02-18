@@ -5,23 +5,25 @@ import (
 	"os"
 
 	"github.com/cloudimmunity/docker-slim/master/commands"
+	"github.com/cloudimmunity/docker-slim/master/config"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
 )
 
 const (
-	VERSION = "0.9"
-	USAGE   = "optimize and secure your Docker containers!"
+	APP_NAME    = "docker-slim"
+	APP_VERSION = "1.11"
+	APP_USAGE   = "optimize and secure your Docker containers!"
 )
 
 var app *cli.App
 
 func init() {
 	app = cli.NewApp()
-	app.Version = VERSION
-	app.Name = "docker-slim"
-	app.Usage = USAGE
+	app.Version = APP_VERSION
+	app.Name = APP_NAME
+	app.Usage = APP_USAGE
 	app.CommandNotFound = func(ctx *cli.Context, command string) {
 		fmt.Printf("unknown command - %v \n\n", command)
 		cli.ShowAppHelp(ctx)
@@ -70,6 +72,41 @@ func init() {
 		EnvVar: "DSLIM_HTTP_PROBE",
 	}
 
+	doUseEntrypointFlag := cli.StringFlag{
+		Name:   "entrypoint",
+		Value:  "",
+		Usage:  "Override ENTRYPOINT analyzing image",
+		EnvVar: "DSLIM_ENTRYPOINT",
+	}
+
+	doUseCmdFlag := cli.StringFlag{
+		Name:   "cmd",
+		Value:  "",
+		Usage:  "Override CMD analyzing image",
+		EnvVar: "DSLIM_TARGET_CMD",
+	}
+
+	doUseWorkdirFlag := cli.StringFlag{
+		Name:   "workdir",
+		Value:  "",
+		Usage:  "Override WORKDIR analyzing image",
+		EnvVar: "DSLIM_TARGET_WORKDIR",
+	}
+
+	doUseEnvFlag := cli.StringSliceFlag{
+		Name:   "env",
+		Value:  &cli.StringSlice{},
+		Usage:  "Override ENV analyzing image",
+		EnvVar: "DSLIM_TARGET_ENV",
+	} //merge overriding conflicting environments
+
+	doUseExposeFlag := cli.StringSliceFlag{
+		Name:   "expose",
+		Value:  &cli.StringSlice{},
+		Usage:  "Use additional EXPOSE instructions analyzing image",
+		EnvVar: "DSLIM_TARGET_EXPOSE",
+	}
+
 	app.Commands = []cli.Command{
 		{
 			Name:    "info",
@@ -97,6 +134,17 @@ func init() {
 					Usage:  "remove file artifacts when command is done",
 					EnvVar: "DSLIM_RM_FILE_ARTIFACTS",
 				},
+				cli.StringFlag{
+					Name:   "image-overrides",
+					Value:  "",
+					Usage:  "Use overrides in generated image",
+					EnvVar: "DSLIM_TARGET_OVERRIDES",
+				},
+				doUseEntrypointFlag,
+				doUseCmdFlag,
+				doUseWorkdirFlag,
+				doUseEnvFlag,
+				doUseExposeFlag,
 			},
 			Action: func(ctx *cli.Context) {
 				if len(ctx.Args()) < 1 {
@@ -108,7 +156,17 @@ func init() {
 				imageRef := ctx.Args().First()
 				doHttpProbe := ctx.Bool("http-probe")
 				doRmFileArtifacts := ctx.Bool("remove-file-artifacts")
-				commands.OnBuild(imageRef, doHttpProbe, doRmFileArtifacts)
+
+				doImageOverrides := ctx.String("image-overrides")
+				overrides, err := getContainerOverrides(ctx)
+				if err != nil {
+					fmt.Printf("[build] invalid container overrides: %v", err)
+					return
+				}
+
+				commands.OnBuild(imageRef, doHttpProbe, doRmFileArtifacts,
+					parseImageOverrides(doImageOverrides),
+					overrides)
 			},
 		},
 		{
@@ -117,6 +175,11 @@ func init() {
 			Usage:   "Collects fat image information and generates a fat container report",
 			Flags: []cli.Flag{
 				doHttpProbeFlag,
+				doUseEntrypointFlag,
+				doUseCmdFlag,
+				doUseWorkdirFlag,
+				doUseEnvFlag,
+				doUseExposeFlag,
 			},
 			Action: func(ctx *cli.Context) {
 				if len(ctx.Args()) < 1 {
@@ -126,10 +189,54 @@ func init() {
 				}
 
 				imageRef := ctx.Args().First()
-				commands.OnProfile(imageRef)
+				overrides, err := getContainerOverrides(ctx)
+				if err != nil {
+					fmt.Printf("[profile] invalid container overrides: %v", err)
+					return
+				}
+
+				commands.OnProfile(imageRef, overrides)
 			},
 		},
 	}
+}
+
+func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error) {
+	doUseEntrypoint := ctx.String("entrypoint")
+	doUseCmd := ctx.String("cmd")
+	doUseExpose := ctx.StringSlice("expose")
+
+	overrides := &config.ContainerOverrides{
+		Workdir: ctx.String("workdir"),
+		Env:     ctx.StringSlice("env"),
+	}
+
+	var err error
+	if len(doUseExpose) > 0 {
+		overrides.ExposedPorts, err = parseDockerExposeOpt(doUseExpose)
+		if err != nil {
+			fmt.Printf("invalid expose options..\n\n")
+			return nil, err
+		}
+	}
+
+	overrides.Entrypoint, err = parseExec(doUseEntrypoint)
+	if err != nil {
+		fmt.Printf("invalid entrypoint option..\n\n")
+		return nil, err
+	}
+
+	overrides.ClearEntrypoint = isOneSpace(doUseEntrypoint)
+
+	overrides.Cmd, err = parseExec(doUseCmd)
+	if err != nil {
+		fmt.Printf("invalid cmd option..\n\n")
+		return nil, err
+	}
+
+	overrides.ClearCmd = isOneSpace(doUseCmd)
+
+	return overrides, nil
 }
 
 func runCli() {

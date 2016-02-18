@@ -17,5 +17,6 @@ go get github.com/dustin/go-humanize
 go get -d bitbucket.org/madmo/fanotify
 go get github.com/codegangsta/cli
 go get github.com/Sirupsen/logrus
+go get github.com/docker/go-connections/nat
 popd
 popd

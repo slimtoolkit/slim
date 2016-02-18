@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/cloudimmunity/docker-slim/master/builder"
+	"github.com/cloudimmunity/docker-slim/master/config"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container/probes/http"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/image"
@@ -16,9 +17,16 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-func OnBuild(imageRef string, doHttpProbe bool, doRmFileArtifacts bool) {
-	fmt.Printf("docker-slim: [build] image=%v http-probe=%v remove-file-artifacts=%v\n",
-		imageRef, doHttpProbe, doRmFileArtifacts)
+func OnBuild(imageRef string,
+	doHttpProbe bool,
+	doRmFileArtifacts bool,
+	imageOverrides map[string]bool,
+	overrides *config.ContainerOverrides) {
+	fmt.Printf("docker-slim: [build] image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v\n",
+		imageRef, doHttpProbe, doRmFileArtifacts,
+		imageOverrides,
+		overrides.Entrypoint, overrides.ClearEntrypoint, overrides.Cmd, overrides.ClearCmd,
+		overrides.Workdir, overrides.Env, overrides.ExposedPorts)
 
 	client, _ := docker.NewClientFromEnv()
 
@@ -41,7 +49,7 @@ func OnBuild(imageRef string, doHttpProbe bool, doRmFileArtifacts bool) {
 	err = imageInspector.ProcessCollectedData()
 	utils.FailOn(err)
 
-	containerInspector, err := container.NewInspector(client, imageInspector, localVolumePath)
+	containerInspector, err := container.NewInspector(client, imageInspector, localVolumePath, overrides)
 	utils.FailOn(err)
 
 	log.Info("docker-slim: starting instrumented 'fat' container...")
@@ -71,7 +79,12 @@ func OnBuild(imageRef string, doHttpProbe bool, doRmFileArtifacts bool) {
 	utils.FailOn(err)
 
 	log.Info("docker-slim: building 'slim' image...")
-	builder, err := builder.NewImageBuilder(client, imageInspector.SlimImageRepo, imageInspector.ImageInfo, artifactLocation)
+	builder, err := builder.NewImageBuilder(client,
+		imageInspector.SlimImageRepo,
+		imageInspector.ImageInfo,
+		artifactLocation,
+		imageOverrides,
+		overrides)
 	utils.FailOn(err)
 	err = builder.Build()
 	utils.FailOn(err)

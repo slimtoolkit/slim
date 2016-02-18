@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cloudimmunity/docker-slim/master/config"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container/probes/http"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/image"
@@ -15,8 +16,8 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-func OnProfile(imageRef string) {
-	fmt.Println("docker-slim: [profile] image=", imageRef)
+func OnProfile(imageRef string, overrides *config.ContainerOverrides) {
+	fmt.Printf("docker-slim: [profile] image=%v\n", imageRef)
 	doHttpProbe := true
 	doRmFileArtifacts := false
 
@@ -41,7 +42,7 @@ func OnProfile(imageRef string) {
 	err = imageInspector.ProcessCollectedData()
 	utils.FailOn(err)
 
-	containerInspector, err := container.NewInspector(client, imageInspector, localVolumePath)
+	containerInspector, err := container.NewInspector(client, imageInspector, localVolumePath, overrides)
 	utils.FailOn(err)
 
 	log.Info("docker-slim: starting instrumented 'fat' container...")
