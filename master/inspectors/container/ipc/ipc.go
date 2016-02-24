@@ -93,7 +93,7 @@ func sendCmd(channel mangos.Socket, cmd messages.Message) (string, error) {
 	for {
 		sendData, err := messages.Encode(cmd)
 		if err != nil {
-			log.Info("sendCmd(): malformed cmd - ",err)
+			log.Info("sendCmd(): malformed cmd - ", err)
 			return "", err
 		}
 

@@ -15,7 +15,7 @@ type ContainerOverrides struct {
 }
 
 type VolumeMount struct {
-	Source		string
+	Source      string
 	Destination string
-	Options		string
+	Options     string
 }

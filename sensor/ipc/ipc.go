@@ -85,7 +85,7 @@ func runCmdServer(channel mangos.Socket, done <-chan struct{}) (<-chan messages.
 					}
 				} else {
 					log.Debug("sensor: cmd server - got a command => ", string(rawCmd))
-					
+
 					if cmd, err := messages.Decode(rawCmd); err != nil {
 						log.Println(err)
 					} else {

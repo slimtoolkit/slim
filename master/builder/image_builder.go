@@ -25,9 +25,9 @@ type ImageBuilder struct {
 	ApiClient    *docker.Client
 }
 
-func NewImageBuilder(client *docker.Client, 
-	imageRepoName string, 
-	imageInfo *docker.Image, 
+func NewImageBuilder(client *docker.Client,
+	imageRepoName string,
+	imageInfo *docker.Image,
 	artifactLocation string,
 	imageOverrides map[string]bool,
 	overrides *config.ContainerOverrides) (*ImageBuilder, error) {

@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cloudimmunity/docker-slim/master/config"
 	"github.com/cloudimmunity/docker-slim/master/builder"
+	"github.com/cloudimmunity/docker-slim/master/config"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container/probes/http"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/image"
@@ -18,21 +18,21 @@ import (
 )
 
 func OnBuild(doDebug bool,
-			imageRef string,
-			customImageTag string,
-			doHttpProbe bool, 
-			doRmFileArtifacts bool,
-			doShowContainerLogs bool,
-			imageOverrides map[string]bool,
-			overrides *config.ContainerOverrides,
-			volumeMounts map[string]config.VolumeMount,
-			excludePaths map[string]bool,
-			includePaths map[string]bool) {
+	imageRef string,
+	customImageTag string,
+	doHttpProbe bool,
+	doRmFileArtifacts bool,
+	doShowContainerLogs bool,
+	imageOverrides map[string]bool,
+	overrides *config.ContainerOverrides,
+	volumeMounts map[string]config.VolumeMount,
+	excludePaths map[string]bool,
+	includePaths map[string]bool) {
 	fmt.Printf("docker-slim: [build] image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v\n",
 		imageRef, doHttpProbe, doRmFileArtifacts,
 		imageOverrides,
-		overrides.Entrypoint,overrides.ClearEntrypoint,overrides.Cmd,overrides.ClearCmd,
-		overrides.Workdir,overrides.Env,overrides.ExposedPorts)
+		overrides.Entrypoint, overrides.ClearEntrypoint, overrides.Cmd, overrides.ClearCmd,
+		overrides.Workdir, overrides.Env, overrides.ExposedPorts)
 
 	client, _ := docker.NewClientFromEnv()
 
@@ -55,10 +55,10 @@ func OnBuild(doDebug bool,
 	err = imageInspector.ProcessCollectedData()
 	utils.FailOn(err)
 
-	containerInspector, err := container.NewInspector(client, 
-		imageInspector, 
-		localVolumePath, 
-		overrides, 
+	containerInspector, err := container.NewInspector(client,
+		imageInspector,
+		localVolumePath,
+		overrides,
 		doShowContainerLogs,
 		volumeMounts,
 		excludePaths,
@@ -97,11 +97,11 @@ func OnBuild(doDebug bool,
 	}
 
 	log.Info("docker-slim: building 'slim' image...")
-	builder, err := builder.NewImageBuilder(client, 
-		customImageTag, 
-		imageInspector.ImageInfo, 
+	builder, err := builder.NewImageBuilder(client,
+		customImageTag,
+		imageInspector.ImageInfo,
 		artifactLocation,
-		imageOverrides, 
+		imageOverrides,
 		overrides)
 	utils.FailOn(err)
 	err = builder.Build()

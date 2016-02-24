@@ -1,18 +1,18 @@
 package main
 
 import (
+	"flag"
 	"os"
 	"time"
-	"flag"
 
+	"github.com/cloudimmunity/docker-slim/messages"
 	"github.com/cloudimmunity/docker-slim/report"
 	"github.com/cloudimmunity/docker-slim/sensor/ipc"
 	"github.com/cloudimmunity/docker-slim/sensor/monitors/fanotify"
 	"github.com/cloudimmunity/docker-slim/sensor/monitors/pevent"
 	"github.com/cloudimmunity/docker-slim/sensor/monitors/ptrace"
 	"github.com/cloudimmunity/docker-slim/utils"
-	"github.com/cloudimmunity/docker-slim/messages"
-	
+
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/system"
 )
@@ -72,7 +72,7 @@ func monitor(stopWork chan bool,
 var enableDebug bool
 
 func init() {
-	flag.BoolVar(&enableDebug,"d",false,"enable debug logging")
+	flag.BoolVar(&enableDebug, "d", false, "enable debug logging")
 }
 
 /////////
@@ -109,7 +109,7 @@ func main() {
 	monDoneAckChan := make(chan bool)
 	pidsChan := make(chan []int, 1)
 	ptmonStartChan := make(chan int, 1)
-	
+
 	log.Info("sensor: waiting for commands...")
 doneRunning:
 	for {
@@ -123,7 +123,7 @@ doneRunning:
 					break
 				}
 
-				log.Debugf("sensor: 'start' command (%#v) - starting monitor...\n",data)
+				log.Debugf("sensor: 'start' command (%#v) - starting monitor...\n", data)
 				monitor(monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, data.AppName, data.AppArgs, dirName)
 
 				//target app started by ptmon... (long story :-))

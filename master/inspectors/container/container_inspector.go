@@ -3,8 +3,8 @@ package container
 import (
 	"bufio"
 	"bytes"
-	"os"
 	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/cloudimmunity/docker-slim/master/config"
@@ -13,8 +13,8 @@ import (
 	"github.com/cloudimmunity/docker-slim/master/inspectors/image"
 	"github.com/cloudimmunity/docker-slim/master/security/apparmor"
 	"github.com/cloudimmunity/docker-slim/master/security/seccomp"
-	"github.com/cloudimmunity/docker-slim/utils"
 	"github.com/cloudimmunity/docker-slim/messages"
+	"github.com/cloudimmunity/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	dockerapi "github.com/cloudimmunity/go-dockerclientx"
@@ -43,17 +43,17 @@ func pathMapKeys(m map[string]bool) []string {
 		return nil
 	}
 
-	keys := make([]string,0,len(m))
+	keys := make([]string, 0, len(m))
 	for k := range m {
-		keys = append(keys,k)
+		keys = append(keys, k)
 	}
 
 	return keys
 }
 
-func NewInspector(client *dockerapi.Client, 
-	imageInspector *image.Inspector, 
-	localVolumePath string, 
+func NewInspector(client *dockerapi.Client,
+	imageInspector *image.Inspector,
+	localVolumePath string,
 	overrides *config.ContainerOverrides,
 	showContainerLogs bool,
 	volumeMounts map[string]config.VolumeMount,
@@ -76,8 +76,8 @@ func NewInspector(client *dockerapi.Client,
 	}
 
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
-		log.Debugf("overriding Entrypoint %+v => %+v (%v)\n", 
-			imageInspector.ImageInfo.Config.Entrypoint, overrides.Entrypoint,overrides.ClearEntrypoint)
+		log.Debugf("overriding Entrypoint %+v => %+v (%v)\n",
+			imageInspector.ImageInfo.Config.Entrypoint, overrides.Entrypoint, overrides.ClearEntrypoint)
 		if len(overrides.Entrypoint) > 0 {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Entrypoint...)
 		}
@@ -87,8 +87,8 @@ func NewInspector(client *dockerapi.Client,
 	}
 
 	if overrides != nil && ((len(overrides.Cmd) > 0) || overrides.ClearCmd) {
-		log.Debugf("overriding Cmd %+v => %+v (%v)\n", 
-			imageInspector.ImageInfo.Config.Cmd,overrides.Cmd,overrides.ClearCmd)
+		log.Debugf("overriding Cmd %+v => %+v (%v)\n",
+			imageInspector.ImageInfo.Config.Cmd, overrides.Cmd, overrides.ClearCmd)
 		if len(overrides.Cmd) > 0 {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
 		}
@@ -106,19 +106,19 @@ func (i *Inspector) RunContainer() error {
 
 	artifactsMountInfo := fmt.Sprintf("%s:/opt/dockerslim/artifacts", artifactsPath)
 	sensorMountInfo := fmt.Sprintf("%s:/opt/dockerslim/bin/sensor:ro", sensorPath)
-	
+
 	var volumeBinds []string
-	for _,volumeMount := range i.VolumeMounts {
-		mountInfo := fmt.Sprintf("%s:%s:%s", volumeMount.Source,volumeMount.Destination,volumeMount.Options)
-		volumeBinds = append(volumeBinds,mountInfo)
+	for _, volumeMount := range i.VolumeMounts {
+		mountInfo := fmt.Sprintf("%s:%s:%s", volumeMount.Source, volumeMount.Destination, volumeMount.Options)
+		volumeBinds = append(volumeBinds, mountInfo)
 	}
 
-	volumeBinds = append(volumeBinds,artifactsMountInfo)
-	volumeBinds = append(volumeBinds,sensorMountInfo)
+	volumeBinds = append(volumeBinds, artifactsMountInfo)
+	volumeBinds = append(volumeBinds, sensorMountInfo)
 
 	var containerCmd []string
 	if i.DoDebug {
-		containerCmd = append(containerCmd,"-d")
+		containerCmd = append(containerCmd, "-d")
 	}
 
 	containerOptions := dockerapi.CreateContainerOptions{
@@ -199,16 +199,16 @@ func (i *Inspector) ShutdownContainer() error {
 
 		log.Debug("docker-slim: getting container logs => ", i.ContainerID)
 		logsOptions := dockerapi.LogsOptions{
-				Container:    i.ContainerID,
-				OutputStream: outw,
-				ErrorStream:  errw,
-				Stdout:       true,
-				Stderr:       true,
+			Container:    i.ContainerID,
+			OutputStream: outw,
+			ErrorStream:  errw,
+			Stdout:       true,
+			Stderr:       true,
 		}
 
 		err := i.ApiClient.Logs(logsOptions)
 		if err != nil {
-			log.Infof("docker-slim: error getting container logs => %v - %v\n", i.ContainerID,err)
+			log.Infof("docker-slim: error getting container logs => %v - %v\n", i.ContainerID, err)
 		} else {
 			outw.Flush()
 			errw.Flush()

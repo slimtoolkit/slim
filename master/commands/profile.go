@@ -17,13 +17,13 @@ import (
 )
 
 func OnProfile(doDebug bool,
-			imageRef string,
-			doHttpProbe bool,
-			doShowContainerLogs bool,
-			overrides *config.ContainerOverrides,
-			volumeMounts map[string]config.VolumeMount,
-			excludePaths map[string]bool,
-			includePaths map[string]bool) {
+	imageRef string,
+	doHttpProbe bool,
+	doShowContainerLogs bool,
+	overrides *config.ContainerOverrides,
+	volumeMounts map[string]config.VolumeMount,
+	excludePaths map[string]bool,
+	includePaths map[string]bool) {
 	fmt.Printf("docker-slim: [profile] image=%v\n", imageRef)
 	doRmFileArtifacts := false
 

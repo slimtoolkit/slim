@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cloudimmunity/docker-slim/master/config"
 	"github.com/cloudimmunity/docker-slim/master/commands"
+	"github.com/cloudimmunity/docker-slim/master/config"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
@@ -203,17 +203,17 @@ func init() {
 				doShowContainerLogs := ctx.Bool("show-clogs")
 
 				doTag := ctx.String("tag")
-				
+
 				doImageOverrides := ctx.String("image-overrides")
 				overrides, err := getContainerOverrides(ctx)
 				if err != nil {
-					fmt.Printf("[build] invalid container overrides: %v\n",err)
+					fmt.Printf("[build] invalid container overrides: %v\n", err)
 					return
 				}
 
 				volumeMounts, err := parseVolumeMounts(ctx.StringSlice("mount"))
 				if err != nil {
-					fmt.Printf("[build] invalid volume mounts: %v\n",err)
+					fmt.Printf("[build] invalid volume mounts: %v\n", err)
 					return
 				}
 
@@ -222,23 +222,23 @@ func init() {
 
 				doExcludeMounts := ctx.BoolT("exclude-mounts")
 				if doExcludeMounts {
-					for mpath,_ := range volumeMounts {
+					for mpath, _ := range volumeMounts {
 						excludePaths[mpath] = true
 					}
 				}
 
-				for ipath,_ := range includePaths {
+				for ipath, _ := range includePaths {
 					if excludePaths[ipath] {
-						fmt.Printf("[build] include and exclude path conflict: %v\n",err)
+						fmt.Printf("[build] include and exclude path conflict: %v\n", err)
 						return
 					}
 				}
 
 				commands.OnBuild(ctx.GlobalBool("debug"),
-					imageRef, doTag, doHttpProbe, doRmFileArtifacts,doShowContainerLogs,
+					imageRef, doTag, doHttpProbe, doRmFileArtifacts, doShowContainerLogs,
 					parseImageOverrides(doImageOverrides),
 					overrides,
-					volumeMounts,excludePaths,includePaths)
+					volumeMounts, excludePaths, includePaths)
 			},
 		},
 		{
@@ -270,13 +270,13 @@ func init() {
 				doShowContainerLogs := ctx.Bool("show-clogs")
 				overrides, err := getContainerOverrides(ctx)
 				if err != nil {
-					fmt.Printf("[profile] invalid container overrides: %v",err)
+					fmt.Printf("[profile] invalid container overrides: %v", err)
 					return
 				}
 
 				volumeMounts, err := parseVolumeMounts(ctx.StringSlice("mount"))
 				if err != nil {
-					fmt.Printf("[profile] invalid volume mounts: %v\n",err)
+					fmt.Printf("[profile] invalid volume mounts: %v\n", err)
 					return
 				}
 
@@ -285,21 +285,21 @@ func init() {
 
 				doExcludeMounts := ctx.Bool("exclude-mounts")
 				if doExcludeMounts {
-					for mpath,_ := range volumeMounts {
+					for mpath, _ := range volumeMounts {
 						excludePaths[mpath] = true
 					}
 				}
 
-				for ipath,_ := range includePaths {
+				for ipath, _ := range includePaths {
 					if excludePaths[ipath] {
-						fmt.Printf("[profile] include and exclude path conflict: %v\n",err)
+						fmt.Printf("[profile] include and exclude path conflict: %v\n", err)
 						return
 					}
 				}
 
 				commands.OnProfile(ctx.GlobalBool("debug"),
 					imageRef, doHttpProbe, doShowContainerLogs, overrides,
-					volumeMounts,excludePaths,includePaths)
+					volumeMounts, excludePaths, includePaths)
 			},
 		},
 	}
@@ -312,12 +312,12 @@ func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 
 	overrides := &config.ContainerOverrides{
 		Workdir: ctx.String("workdir"),
-		Env: ctx.StringSlice("env"),
-	}	
+		Env:     ctx.StringSlice("env"),
+	}
 
 	var err error
 	if len(doUseExpose) > 0 {
-		overrides.ExposedPorts,err = parseDockerExposeOpt(doUseExpose)
+		overrides.ExposedPorts, err = parseDockerExposeOpt(doUseExpose)
 		if err != nil {
 			fmt.Printf("invalid expose options..\n\n")
 			return nil, err
