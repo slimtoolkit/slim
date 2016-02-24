@@ -13,3 +13,9 @@ type ContainerOverrides struct {
 	Env             []string
 	ExposedPorts    map[docker.Port]struct{}
 }
+
+type VolumeMount struct {
+	Source		string
+	Destination string
+	Options		string
+}

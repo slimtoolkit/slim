@@ -10,6 +10,8 @@ import (
 	"github.com/go-mangos/mangos/protocol/sub"
 	//"github.com/go-mangos/mangos/transport/ipc"
 	"github.com/go-mangos/mangos/transport/tcp"
+
+	"github.com/cloudimmunity/docker-slim/messages"
 )
 
 func InitContainerChannels(dockerHostIp, cmdChannelPort, evtChannelPort string) error {
@@ -33,7 +35,7 @@ func InitContainerChannels(dockerHostIp, cmdChannelPort, evtChannelPort string) 
 	return nil
 }
 
-func SendContainerCmd(cmd string) (string, error) {
+func SendContainerCmd(cmd messages.Message) (string, error) {
 	return sendCmd(cmdChannel, cmd)
 }
 
@@ -83,13 +85,19 @@ func shutdownCmdChannel() {
 	}
 }
 
-func sendCmd(channel mangos.Socket, cmd string) (string, error) {
+func sendCmd(channel mangos.Socket, cmd messages.Message) (string, error) {
 	sendTimeouts := 0
 	recvTimeouts := 0
 
 	log.Debugf("sendCmd(%s)\n", cmd)
 	for {
-		if err := channel.Send([]byte(cmd)); err != nil {
+		sendData, err := messages.Encode(cmd)
+		if err != nil {
+			log.Info("sendCmd(): malformed cmd - ",err)
+			return "", err
+		}
+
+		if err := channel.Send(sendData); err != nil {
 			switch err {
 			case mangos.ErrSendTimeout:
 				log.Info("sendCmd(): send timeout...")

@@ -16,9 +16,15 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-func OnProfile(imageRef string, overrides *config.ContainerOverrides) {
+func OnProfile(doDebug bool,
+			imageRef string,
+			doHttpProbe bool,
+			doShowContainerLogs bool,
+			overrides *config.ContainerOverrides,
+			volumeMounts map[string]config.VolumeMount,
+			excludePaths map[string]bool,
+			includePaths map[string]bool) {
 	fmt.Printf("docker-slim: [profile] image=%v\n", imageRef)
-	doHttpProbe := true
 	doRmFileArtifacts := false
 
 	client, _ := docker.NewClientFromEnv()
@@ -42,7 +48,15 @@ func OnProfile(imageRef string, overrides *config.ContainerOverrides) {
 	err = imageInspector.ProcessCollectedData()
 	utils.FailOn(err)
 
-	containerInspector, err := container.NewInspector(client, imageInspector, localVolumePath, overrides)
+	containerInspector, err := container.NewInspector(client,
+		imageInspector,
+		localVolumePath,
+		overrides,
+		doShowContainerLogs,
+		volumeMounts,
+		excludePaths,
+		includePaths,
+		doDebug)
 	utils.FailOn(err)
 
 	log.Info("docker-slim: starting instrumented 'fat' container...")

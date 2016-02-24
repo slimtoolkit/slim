@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"time"
+	"flag"
 
 	"github.com/cloudimmunity/docker-slim/report"
 	"github.com/cloudimmunity/docker-slim/sensor/ipc"
@@ -10,7 +11,8 @@ import (
 	"github.com/cloudimmunity/docker-slim/sensor/monitors/pevent"
 	"github.com/cloudimmunity/docker-slim/sensor/monitors/ptrace"
 	"github.com/cloudimmunity/docker-slim/utils"
-
+	"github.com/cloudimmunity/docker-slim/messages"
+	
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/system"
 )
@@ -67,38 +69,32 @@ func monitor(stopWork chan bool,
 
 /////////
 
+var enableDebug bool
+
+func init() {
+	flag.BoolVar(&enableDebug,"d",false,"enable debug logging")
+}
+
+/////////
+
 func main() {
-	//log.SetLevel(log.DebugLevel)
+	flag.Parse()
+
+	if enableDebug {
+		log.SetLevel(log.DebugLevel)
+	}
 
 	log.Infof("sensor: args => %#v\n", os.Args)
-	utils.FailWhen(len(os.Args) < 2, "missing app information")
 
 	dirName, err := os.Getwd()
 	utils.FailOn(err)
 	log.Debugf("sensor: cwd => %#v\n", dirName)
-
-	appName := os.Args[1]
-	var appArgs []string
-	if len(os.Args) > 2 {
-		appArgs = os.Args[2:]
-	}
 
 	initSignalHandlers()
 	defer func() {
 		log.Debug("defered cleanup on shutdown...")
 		cleanupOnShutdown()
 	}()
-
-	monDoneChan := make(chan bool, 1)
-	monDoneAckChan := make(chan bool)
-	pidsChan := make(chan []int, 1)
-	ptmonStartChan := make(chan int, 1)
-	monitor(monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, appName, appArgs, dirName)
-
-	//target app started by ptmon... (long story :-))
-	//TODO: need to get the target app pid to pemon, so it can filter process events
-	log.Debugf("sensor: target app started => %v %#v\n", appName, appArgs)
-	time.Sleep(3 * time.Second)
 
 	log.Debug("sensor: setting up channels...")
 	doneChan = make(chan struct{})
@@ -108,18 +104,38 @@ func main() {
 
 	cmdChan, err := ipc.RunCmdServer(doneChan)
 	utils.FailOn(err)
+
+	monDoneChan := make(chan bool, 1)
+	monDoneAckChan := make(chan bool)
+	pidsChan := make(chan []int, 1)
+	ptmonStartChan := make(chan int, 1)
+	
 	log.Info("sensor: waiting for commands...")
 doneRunning:
 	for {
 		select {
 		case cmd := <-cmdChan:
-			log.Debugln("\nsensor: command =>", cmd)
-			switch cmd {
-			case "monitor.finish":
-				log.Debug("sensor: 'monitor.finish' command - stopping monitor...")
+			log.Debug("\nsensor: command => ", cmd)
+			switch data := cmd.(type) {
+			case *messages.StartMonitor:
+				if data == nil {
+					log.Info("sensor: 'start' command - no data...")
+					break
+				}
+
+				log.Debugf("sensor: 'start' command (%#v) - starting monitor...\n",data)
+				monitor(monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, data.AppName, data.AppArgs, dirName)
+
+				//target app started by ptmon... (long story :-))
+				//TODO: need to get the target app pid to pemon, so it can filter process events
+				log.Debugf("sensor: target app started => %v %#v\n", data.AppName, data.AppArgs)
+				time.Sleep(3 * time.Second)
+
+			case *messages.StopMonitor:
+				log.Debug("sensor: 'stop' command - stopping monitor...")
 				break doneRunning
 			default:
-				log.Debugln("sensor: ignoring command =>", cmd)
+				log.Debug("sensor: ignoring unknown command => ", cmd)
 			}
 
 		case <-time.After(time.Second * 5):

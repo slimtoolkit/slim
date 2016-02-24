@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/cloudimmunity/docker-slim/master/commands"
 	"github.com/cloudimmunity/docker-slim/master/config"
+	"github.com/cloudimmunity/docker-slim/master/commands"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
@@ -68,8 +68,14 @@ func init() {
 
 	doHttpProbeFlag := cli.BoolFlag{
 		Name:   "http-probe, p",
-		Usage:  "enables HTTP probe",
+		Usage:  "Enables HTTP probe",
 		EnvVar: "DSLIM_HTTP_PROBE",
+	}
+
+	doShowContainerLogsFlag := cli.BoolFlag{
+		Name:   "show-clogs",
+		Usage:  "Show container logs",
+		EnvVar: "DSLIM_SHOW_CLOGS",
 	}
 
 	doUseEntrypointFlag := cli.StringFlag{
@@ -98,13 +104,40 @@ func init() {
 		Value:  &cli.StringSlice{},
 		Usage:  "Override ENV analyzing image",
 		EnvVar: "DSLIM_TARGET_ENV",
-	} //merge overriding conflicting environments
+	}
 
 	doUseExposeFlag := cli.StringSliceFlag{
 		Name:   "expose",
 		Value:  &cli.StringSlice{},
 		Usage:  "Use additional EXPOSE instructions analyzing image",
 		EnvVar: "DSLIM_TARGET_EXPOSE",
+	}
+
+	doExcludeMountsFlag := cli.BoolTFlag{
+		Name:   "exclude-mounts",
+		Usage:  "Exclude mounted volumes from image",
+		EnvVar: "DSLIM_EXCLUDE_MOUNTS",
+	}
+
+	doExcludePathFlag := cli.StringSliceFlag{
+		Name:   "exclude-path",
+		Value:  &cli.StringSlice{},
+		Usage:  "Exclude path from image",
+		EnvVar: "DSLIM_EXCLUDE_PATH",
+	}
+
+	doIncludePathFlag := cli.StringSliceFlag{
+		Name:   "include-path",
+		Value:  &cli.StringSlice{},
+		Usage:  "Include path from image",
+		EnvVar: "DSLIM_INCLUDE_PATH",
+	}
+
+	doUseMountFlag := cli.StringSliceFlag{
+		Name:   "mount",
+		Value:  &cli.StringSlice{},
+		Usage:  "Mount volume analyzing image",
+		EnvVar: "DSLIM_MOUNT",
 	}
 
 	app.Commands = []cli.Command{
@@ -129,10 +162,17 @@ func init() {
 			Usage:   "Collects fat image information and builds a slim image from it",
 			Flags: []cli.Flag{
 				doHttpProbeFlag,
+				doShowContainerLogsFlag,
 				cli.BoolFlag{
 					Name:   "remove-file-artifacts, r",
 					Usage:  "remove file artifacts when command is done",
 					EnvVar: "DSLIM_RM_FILE_ARTIFACTS",
+				},
+				cli.StringFlag{
+					Name:   "tag",
+					Value:  "",
+					Usage:  "Custom tag for the generated image",
+					EnvVar: "DSLIM_TARGET_TAG",
 				},
 				cli.StringFlag{
 					Name:   "image-overrides",
@@ -145,6 +185,10 @@ func init() {
 				doUseWorkdirFlag,
 				doUseEnvFlag,
 				doUseExposeFlag,
+				doExcludeMountsFlag,
+				doExcludePathFlag,
+				doIncludePathFlag,
+				doUseMountFlag,
 			},
 			Action: func(ctx *cli.Context) {
 				if len(ctx.Args()) < 1 {
@@ -154,19 +198,47 @@ func init() {
 				}
 
 				imageRef := ctx.Args().First()
-				doHttpProbe := ctx.Bool("http-probe")
 				doRmFileArtifacts := ctx.Bool("remove-file-artifacts")
+				doHttpProbe := ctx.Bool("http-probe")
+				doShowContainerLogs := ctx.Bool("show-clogs")
 
+				doTag := ctx.String("tag")
+				
 				doImageOverrides := ctx.String("image-overrides")
 				overrides, err := getContainerOverrides(ctx)
 				if err != nil {
-					fmt.Printf("[build] invalid container overrides: %v", err)
+					fmt.Printf("[build] invalid container overrides: %v\n",err)
 					return
 				}
 
-				commands.OnBuild(imageRef, doHttpProbe, doRmFileArtifacts,
+				volumeMounts, err := parseVolumeMounts(ctx.StringSlice("mount"))
+				if err != nil {
+					fmt.Printf("[build] invalid volume mounts: %v\n",err)
+					return
+				}
+
+				excludePaths := parsePaths(ctx.StringSlice("exclude-path"))
+				includePaths := parsePaths(ctx.StringSlice("include-path"))
+
+				doExcludeMounts := ctx.BoolT("exclude-mounts")
+				if doExcludeMounts {
+					for mpath,_ := range volumeMounts {
+						excludePaths[mpath] = true
+					}
+				}
+
+				for ipath,_ := range includePaths {
+					if excludePaths[ipath] {
+						fmt.Printf("[build] include and exclude path conflict: %v\n",err)
+						return
+					}
+				}
+
+				commands.OnBuild(ctx.GlobalBool("debug"),
+					imageRef, doTag, doHttpProbe, doRmFileArtifacts,doShowContainerLogs,
 					parseImageOverrides(doImageOverrides),
-					overrides)
+					overrides,
+					volumeMounts,excludePaths,includePaths)
 			},
 		},
 		{
@@ -175,11 +247,16 @@ func init() {
 			Usage:   "Collects fat image information and generates a fat container report",
 			Flags: []cli.Flag{
 				doHttpProbeFlag,
+				doShowContainerLogsFlag,
 				doUseEntrypointFlag,
 				doUseCmdFlag,
 				doUseWorkdirFlag,
 				doUseEnvFlag,
 				doUseExposeFlag,
+				doExcludeMountsFlag,
+				doExcludePathFlag,
+				doIncludePathFlag,
+				doUseMountFlag,
 			},
 			Action: func(ctx *cli.Context) {
 				if len(ctx.Args()) < 1 {
@@ -189,13 +266,40 @@ func init() {
 				}
 
 				imageRef := ctx.Args().First()
+				doHttpProbe := ctx.Bool("http-probe")
+				doShowContainerLogs := ctx.Bool("show-clogs")
 				overrides, err := getContainerOverrides(ctx)
 				if err != nil {
-					fmt.Printf("[profile] invalid container overrides: %v", err)
+					fmt.Printf("[profile] invalid container overrides: %v",err)
 					return
 				}
 
-				commands.OnProfile(imageRef, overrides)
+				volumeMounts, err := parseVolumeMounts(ctx.StringSlice("mount"))
+				if err != nil {
+					fmt.Printf("[profile] invalid volume mounts: %v\n",err)
+					return
+				}
+
+				excludePaths := parsePaths(ctx.StringSlice("exclude-path"))
+				includePaths := parsePaths(ctx.StringSlice("include-path"))
+
+				doExcludeMounts := ctx.Bool("exclude-mounts")
+				if doExcludeMounts {
+					for mpath,_ := range volumeMounts {
+						excludePaths[mpath] = true
+					}
+				}
+
+				for ipath,_ := range includePaths {
+					if excludePaths[ipath] {
+						fmt.Printf("[profile] include and exclude path conflict: %v\n",err)
+						return
+					}
+				}
+
+				commands.OnProfile(ctx.GlobalBool("debug"),
+					imageRef, doHttpProbe, doShowContainerLogs, overrides,
+					volumeMounts,excludePaths,includePaths)
 			},
 		},
 	}
@@ -208,12 +312,12 @@ func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 
 	overrides := &config.ContainerOverrides{
 		Workdir: ctx.String("workdir"),
-		Env:     ctx.StringSlice("env"),
-	}
+		Env: ctx.StringSlice("env"),
+	}	
 
 	var err error
 	if len(doUseExpose) > 0 {
-		overrides.ExposedPorts, err = parseDockerExposeOpt(doUseExpose)
+		overrides.ExposedPorts,err = parseDockerExposeOpt(doUseExpose)
 		if err != nil {
 			fmt.Printf("invalid expose options..\n\n")
 			return nil, err

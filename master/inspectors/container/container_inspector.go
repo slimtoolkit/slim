@@ -1,6 +1,9 @@
 package container
 
 import (
+	"bufio"
+	"bytes"
+	"os"
 	"fmt"
 	"path/filepath"
 
@@ -11,38 +14,70 @@ import (
 	"github.com/cloudimmunity/docker-slim/master/security/apparmor"
 	"github.com/cloudimmunity/docker-slim/master/security/seccomp"
 	"github.com/cloudimmunity/docker-slim/utils"
+	"github.com/cloudimmunity/docker-slim/messages"
 
 	log "github.com/Sirupsen/logrus"
 	dockerapi "github.com/cloudimmunity/go-dockerclientx"
 )
 
 type Inspector struct {
-	ContainerInfo   *dockerapi.Container
-	ContainerID     string
-	FatContainerCmd []string
-	LocalVolumePath string
-	CmdPort         dockerapi.Port
-	EvtPort         dockerapi.Port
-	DockerHostIP    string
-	ImageInspector  *image.Inspector
-	ApiClient       *dockerapi.Client
+	ContainerInfo     *dockerapi.Container
+	ContainerID       string
+	FatContainerCmd   []string
+	LocalVolumePath   string
+	CmdPort           dockerapi.Port
+	EvtPort           dockerapi.Port
+	DockerHostIP      string
+	ImageInspector    *image.Inspector
+	ApiClient         *dockerapi.Client
+	Overrides         *config.ContainerOverrides
+	ShowContainerLogs bool
+	VolumeMounts      map[string]config.VolumeMount
+	ExcludePaths      map[string]bool
+	IncludePaths      map[string]bool
+	DoDebug           bool
 }
 
-func NewInspector(client *dockerapi.Client,
-	imageInspector *image.Inspector,
-	localVolumePath string,
-	overrides *config.ContainerOverrides) (*Inspector, error) {
+func pathMapKeys(m map[string]bool) []string {
+	if len(m) == 0 {
+		return nil
+	}
+
+	keys := make([]string,0,len(m))
+	for k := range m {
+		keys = append(keys,k)
+	}
+
+	return keys
+}
+
+func NewInspector(client *dockerapi.Client, 
+	imageInspector *image.Inspector, 
+	localVolumePath string, 
+	overrides *config.ContainerOverrides,
+	showContainerLogs bool,
+	volumeMounts map[string]config.VolumeMount,
+	excludePaths map[string]bool,
+	includePaths map[string]bool,
+	doDebug bool) (*Inspector, error) {
+
 	inspector := &Inspector{
-		LocalVolumePath: localVolumePath,
-		CmdPort:         "65501/tcp",
-		EvtPort:         "65502/tcp",
-		ImageInspector:  imageInspector,
-		ApiClient:       client,
+		LocalVolumePath:   localVolumePath,
+		CmdPort:           "65501/tcp",
+		EvtPort:           "65502/tcp",
+		ImageInspector:    imageInspector,
+		ApiClient:         client,
+		Overrides:         overrides,
+		ShowContainerLogs: showContainerLogs,
+		VolumeMounts:      volumeMounts,
+		ExcludePaths:      excludePaths,
+		IncludePaths:      includePaths,
+		DoDebug:           doDebug,
 	}
 
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
-		log.Debugf("overriding Entrypoint %+v => %+v (%v)\n",
-			imageInspector.ImageInfo.Config.Entrypoint, overrides.Entrypoint, overrides.ClearEntrypoint)
+		log.Debugf("overriding Entrypoint %+v => %+v (%v)\n", 
+			imageInspector.ImageInfo.Config.Entrypoint, overrides.Entrypoint,overrides.ClearEntrypoint)
 		if len(overrides.Entrypoint) > 0 {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Entrypoint...)
 		}
@@ -52,8 +87,8 @@ func NewInspector(client *dockerapi.Client,
 	}
 
 	if overrides != nil && ((len(overrides.Cmd) > 0) || overrides.ClearCmd) {
-		log.Debugf("overriding Cmd %+v => %+v (%v)\n",
-			imageInspector.ImageInfo.Config.Cmd, overrides.Cmd, overrides.ClearCmd)
+		log.Debugf("overriding Cmd %+v => %+v (%v)\n", 
+			imageInspector.ImageInfo.Config.Cmd,overrides.Cmd,overrides.ClearCmd)
 		if len(overrides.Cmd) > 0 {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
 		}
@@ -71,6 +106,20 @@ func (i *Inspector) RunContainer() error {
 
 	artifactsMountInfo := fmt.Sprintf("%s:/opt/dockerslim/artifacts", artifactsPath)
 	sensorMountInfo := fmt.Sprintf("%s:/opt/dockerslim/bin/sensor:ro", sensorPath)
+	
+	var volumeBinds []string
+	for _,volumeMount := range i.VolumeMounts {
+		mountInfo := fmt.Sprintf("%s:%s:%s", volumeMount.Source,volumeMount.Destination,volumeMount.Options)
+		volumeBinds = append(volumeBinds,mountInfo)
+	}
+
+	volumeBinds = append(volumeBinds,artifactsMountInfo)
+	volumeBinds = append(volumeBinds,sensorMountInfo)
+
+	var containerCmd []string
+	if i.DoDebug {
+		containerCmd = append(containerCmd,"-d")
+	}
 
 	containerOptions := dockerapi.CreateContainerOptions{
 		Name: "dockerslimk",
@@ -81,11 +130,11 @@ func (i *Inspector) RunContainer() error {
 				i.EvtPort: struct{}{},
 			},
 			Entrypoint: []string{"/opt/dockerslim/bin/sensor"},
-			Cmd:        i.FatContainerCmd,
+			Cmd:        containerCmd,
 			Labels:     map[string]string{"type": "dockerslim"},
 		},
 		HostConfig: &dockerapi.HostConfig{
-			Binds:           []string{artifactsMountInfo, sensorMountInfo},
+			Binds:           volumeBinds,
 			PublishAllPorts: true,
 			CapAdd:          []string{"SYS_ADMIN"},
 			Privileged:      true,
@@ -108,20 +157,67 @@ func (i *Inspector) RunContainer() error {
 		return err
 	}
 
-	//inspContainerInfo
-	i.ContainerInfo, err = i.ApiClient.InspectContainer(i.ContainerID)
-	if err != nil {
+	if i.ContainerInfo, err = i.ApiClient.InspectContainer(i.ContainerID); err != nil {
 		return err
 	}
 
 	utils.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
 	log.Debugf("container NetworkSettings.Ports => %#v\n", i.ContainerInfo.NetworkSettings.Ports)
 
-	return i.initContainerChannels()
+	if err = i.initContainerChannels(); err != nil {
+		return err
+	}
+
+	cmd := &messages.StartMonitor{
+		AppName: i.FatContainerCmd[0],
+	}
+
+	if len(i.FatContainerCmd) > 1 {
+		cmd.AppArgs = i.FatContainerCmd[1:]
+	}
+
+	if len(i.ExcludePaths) > 0 {
+		cmd.Excludes = pathMapKeys(i.ExcludePaths)
+	}
+
+	if len(i.IncludePaths) > 0 {
+		cmd.Includes = pathMapKeys(i.IncludePaths)
+	}
+
+	_, err = ipc.SendContainerCmd(cmd)
+	return err
 }
 
 func (i *Inspector) ShutdownContainer() error {
 	i.shutdownContainerChannels()
+
+	if i.ShowContainerLogs {
+		var outData bytes.Buffer
+		outw := bufio.NewWriter(&outData)
+		var errData bytes.Buffer
+		errw := bufio.NewWriter(&errData)
+
+		log.Debug("docker-slim: getting container logs => ", i.ContainerID)
+		logsOptions := dockerapi.LogsOptions{
+				Container:    i.ContainerID,
+				OutputStream: outw,
+				ErrorStream:  errw,
+				Stdout:       true,
+				Stderr:       true,
+		}
+
+		err := i.ApiClient.Logs(logsOptions)
+		if err != nil {
+			log.Infof("docker-slim: error getting container logs => %v - %v\n", i.ContainerID,err)
+		} else {
+			outw.Flush()
+			errw.Flush()
+			fmt.Println("docker-slim: container stdout:")
+			outData.WriteTo(os.Stdout)
+			fmt.Println("docker-slim: container stderr:")
+			errData.WriteTo(os.Stdout)
+		}
+	}
 
 	err := i.ApiClient.StopContainer(i.ContainerID, 9)
 	utils.WarnOn(err)
@@ -136,11 +232,11 @@ func (i *Inspector) ShutdownContainer() error {
 }
 
 func (i *Inspector) FinishMonitoring() {
-	cmdResponse, err := ipc.SendContainerCmd("monitor.finish")
+	cmdResponse, err := ipc.SendContainerCmd(&messages.StopMonitor{})
 	utils.WarnOn(err)
 	_ = cmdResponse
 
-	log.Debugf("'monitor.finish' response => '%v'\n", cmdResponse)
+	log.Debugf("'stop' response => '%v'\n", cmdResponse)
 	log.Info("docker-slim: waiting for the container finish its work...")
 
 	//for now there's only one event ("done")

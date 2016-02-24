@@ -9,6 +9,8 @@ import (
 	"github.com/go-mangos/mangos/protocol/rep"
 	//"github.com/go-mangos/mangos/transport/ipc"
 	"github.com/go-mangos/mangos/transport/tcp"
+
+	"github.com/cloudimmunity/docker-slim/messages"
 )
 
 func InitChannels() error {
@@ -31,7 +33,7 @@ func ShutdownChannels() {
 	shutdownEvtChannel()
 }
 
-func RunCmdServer(done <-chan struct{}) (<-chan string, error) {
+func RunCmdServer(done <-chan struct{}) (<-chan messages.Message, error) {
 	return runCmdServer(cmdChannel, done)
 }
 
@@ -63,8 +65,8 @@ func newCmdServer(addr string) (mangos.Socket, error) {
 	return socket, nil
 }
 
-func runCmdServer(channel mangos.Socket, done <-chan struct{}) (<-chan string, error) {
-	cmdChan := make(chan string)
+func runCmdServer(channel mangos.Socket, done <-chan struct{}) (<-chan messages.Message, error) {
+	cmdChan := make(chan messages.Message)
 	go func() {
 		for {
 			// Could also use sock.RecvMsg to get header
@@ -82,9 +84,14 @@ func runCmdServer(channel mangos.Socket, done <-chan struct{}) (<-chan string, e
 						log.Debugln("sensor: cmd server - error =>", err)
 					}
 				} else {
-					cmd := string(rawCmd)
-					log.Debugln("sensor: cmd server - got a command =>", cmd)
-					cmdChan <- cmd
+					log.Debug("sensor: cmd server - got a command => ", string(rawCmd))
+					
+					if cmd, err := messages.Decode(rawCmd); err != nil {
+						log.Println(err)
+					} else {
+						cmdChan <- cmd
+					}
+
 					//for now just ack the command and process the command asynchronously
 					//NOTE:
 					//must reply before receiving the next message
