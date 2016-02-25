@@ -6,6 +6,7 @@
 
 - [docker-slim: Lean and Mean Docker containers](#docker-slim-lean-and-mean-docker-containers)
   - [DESCRIPTION](#description)
+  - [WIP](#wip)
   - [NEW](#new)
   - [Downloads](#downloads)
   - [USAGE](#usage)
@@ -43,6 +44,10 @@
 Creating small containers requires a lot of voodoo magic and it can be pretty painful. You shouldn't have to throw away your tools and your workflow to have skinny containers. Using Docker should be easy.
 
 `docker-slim` is a magic diet pill for your containers :) It will use static and dynamic analysis to create a skinny container for your app.
+
+## WIP
+
+Python 3 is not supported yet (resolving issues with pycache behavior in Python 3).
 
 ## NEW
 
