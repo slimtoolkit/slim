@@ -6,7 +6,6 @@
 
 - [docker-slim: Lean and Mean Docker containers](#docker-slim-lean-and-mean-docker-containers)
   - [DESCRIPTION](#description)
-  - [WIP](#wip)
   - [NEW](#new)
   - [Downloads](#downloads)
   - [USAGE](#usage)
@@ -45,13 +44,10 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 
 `docker-slim` is a magic diet pill for your containers :) It will use static and dynamic analysis to create a skinny container for your app.
 
-## WIP
-
-Python 3 is not supported yet (resolving issues with pycache behavior in Python 3).
-
 ## NEW
 
-Auto-generated seccomp profiles for Docker 1.10.
+* Auto-generated seccomp profiles for Docker 1.10.
+* Python 3 support
 
 ## Downloads
 

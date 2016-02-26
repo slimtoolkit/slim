@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -18,6 +19,13 @@ import (
 	"github.com/cloudimmunity/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
+)
+
+const (
+	pycExt     = ".pyc"
+	pyoExt     = ".pyo"
+	pycacheDir = "/__pycache__/"
+	pycache    = "__pycache__"
 )
 
 func saveResults(fanMonReport *report.FanMonitorReport,
@@ -160,10 +168,10 @@ func (p *artifactStore) resolveLinks() {
 func (p *artifactStore) saveArtifacts() {
 	for fileName := range p.fileMap {
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
-		log.Debugln("saveArtifacts - saving file data =>", filePath)
+		log.Debug("saveArtifacts - saving file data => ", filePath)
 		err := cpFile(fileName, filePath)
 		if err != nil {
-			log.Warnln("saveArtifacts - error saving file =>", err)
+			log.Warn("saveArtifacts - error saving file => ", err)
 		}
 	}
 
@@ -172,12 +180,21 @@ func (p *artifactStore) saveArtifacts() {
 		linkDir := utils.FileDir(linkPath)
 		err := os.MkdirAll(linkDir, 0777)
 		if err != nil {
-			log.Warnln("saveArtifacts - dir error =>", err)
+			log.Warn("saveArtifacts - dir error => ", err)
 			continue
 		}
 		err = os.Symlink(linkProps.LinkRef, linkPath)
 		if err != nil {
-			log.Warnln("saveArtifacts - symlink create error ==>", err)
+			log.Warn("saveArtifacts - symlink create error ==> ", err)
+		}
+	}
+
+	for fileName := range p.fileMap {
+		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
+
+		err := fixPy3CacheFile(fileName, filePath)
+		if err != nil {
+			log.Warn("saveArtifacts - error fixing py3 cache file => ", err)
 		}
 	}
 }
@@ -281,4 +298,84 @@ func cpFile(src, dst string) error {
 		return err
 	}
 	return d.Close()
+}
+
+func py3FileNameFromCache(p string) string {
+	ext := path.Ext(p)
+
+	if !(((ext == pycExt) || (ext == pycExt)) && strings.Contains(p, pycacheDir)) {
+		return ""
+	}
+
+	pathParts := strings.Split(p, "/")
+
+	if !((len(pathParts) > 1) && (pycache == pathParts[len(pathParts)-2])) {
+		return ""
+	}
+
+	pycFileName := path.Base(p)
+
+	nameParts := strings.Split(pycFileName, ".")
+	if !(len(nameParts) > 2) {
+		return ""
+	}
+
+	var pyFileName string
+	if len(nameParts) == 3 {
+		pyFileName = fmt.Sprintf("%v.py", nameParts[0])
+	} else {
+		pyFileName = fmt.Sprintf("%v.py", strings.Join(nameParts[0:len(nameParts)-2], "."))
+	}
+
+	return path.Join(path.Dir(path.Dir(p)), pyFileName)
+}
+
+func createDummyFile(src, dst string) error {
+	_, err := os.Stat(dst)
+	if err != nil && os.IsNotExist(err) {
+
+		f, err := os.Create(dst)
+		if err != nil {
+			return err
+		}
+
+		defer f.Close()
+		f.WriteString(" ")
+
+		s, err := os.Open(src)
+		if err != nil {
+			return err
+		}
+		defer s.Close()
+
+		srcFileInfo, err := s.Stat()
+		if err != nil {
+			return err
+		}
+
+		f.Chmod(srcFileInfo.Mode())
+	}
+
+	return nil
+}
+
+func fixPy3CacheFile(src, dst string) error {
+	dstPyFilePath := py3FileNameFromCache(dst)
+	if dstPyFilePath == "" {
+		return nil
+	}
+
+	srcPyFilePath := py3FileNameFromCache(src)
+	if srcPyFilePath == "" {
+		return nil
+	}
+
+	if _, err := os.Stat(dstPyFilePath); err != nil && os.IsNotExist(err) {
+		if err := cpFile(srcPyFilePath, dstPyFilePath); err != nil {
+			log.Warnln("sensor: monitor - fixPy3CacheFile - error copying file =>", dstPyFilePath)
+			return err
+		}
+	}
+
+	return nil
 }
