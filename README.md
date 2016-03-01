@@ -7,7 +7,7 @@
 - [docker-slim: Lean and Mean Docker containers](#docker-slim-lean-and-mean-docker-containers)
   - [DESCRIPTION](#description)
   - [NEW](#new)
-  - [DOWNLOADS](#downloads)
+  - [INSTALLATION](#installation)
   - [BASIC USAGE INFO](#basic-usage-info)
   - [QUICK SECCOMP EXAMPLE](#quick-seccomp-example)
   - [USING AUTO-GENERATED SECCOMP PROFILES](#using-auto-generated-seccomp-profiles)
@@ -53,11 +53,15 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 * Auto-generated seccomp profiles for Docker 1.10.
 * Python 3 support
 
-## DOWNLOADS
+## INSTALLATION
 
-[Latest Mac binaries](https://github.com/cloudimmunity/docker-slim/releases/download/v1.12/dist_mac.zip)
+1. Download the zip package for your platform.
+   - [Latest Mac binaries](https://github.com/cloudimmunity/docker-slim/releases/download/v1.12/dist_mac.zip)
+   - [Latest Linux binaries](https://github.com/cloudimmunity/docker-slim/releases/download/v1.12/dist_linux.zip)
+2. Unzip the package.
+3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
-[Latest Linux binaries](https://github.com/cloudimmunity/docker-slim/releases/download/v1.12/dist_linux.zip)
+If the directory where you extracted the binaries is not in your PATH then you'll need to run your `docker-slim` commands from that directory.
 
 ## BASIC USAGE INFO
 
