@@ -13,7 +13,7 @@ import (
 
 const (
 	APP_NAME    = "docker-slim"
-	APP_VERSION = "1.11"
+	APP_VERSION = "1.12"
 	APP_USAGE   = "optimize and secure your Docker containers!"
 )
 

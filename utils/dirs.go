@@ -6,12 +6,13 @@ import (
 	"strings"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/cloudimmunity/pdiscover"
 )
 
 func ExeDir() string {
-	dirName, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	exePath, err := pdiscover.GetOwnProcPath()
 	FailOn(err)
-	return dirName
+	return filepath.Dir(exePath)
 }
 
 func FileDir(fileName string) string {
