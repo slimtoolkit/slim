@@ -230,7 +230,29 @@ Here's an example:
 
 Commands in `probeCmds.json`:
 
-
+```
+{
+  "commands":
+  [
+   {
+     "resource": "/api/info"
+   },
+   {
+     "method": "POST",
+     "resource": "/submit"
+   },
+   {
+     "procotol": "http",
+     "resource": "/api/call?arg=one"
+   },
+   {
+     "protocol": "http",
+     "method": "POST",
+     "resource": "/submit2"
+   }
+  ]
+}
+```
 
 The HTTP probe command file path can be a relative path (relative to the current working directory) or it can be an absolute path.
 
