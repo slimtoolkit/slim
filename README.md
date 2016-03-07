@@ -200,11 +200,11 @@ You can override all Docker connection options using these flags: `--host`, `--t
 
 If you want to use TLS with verification:
 
-`docker-slim --debug --host=tcp://192.168.99.100:2376 --tls-cert-path=/Users/youruser/.docker/machine/machines/default --tls=true --tls-verify=true build --http-probe=true my/sample-node-app-multi`
+`docker-slim --host=tcp://192.168.99.100:2376 --tls-cert-path=/Users/youruser/.docker/machine/machines/default --tls=true --tls-verify=true build --http-probe=true my/sample-node-app-multi`
 
 If you want to use TLS without verification:
 
-`docker-slim --debug --host=tcp://192.168.99.100:2376 --tls-cert-path=/Users/youruser/.docker/machine/machines/default --tls=true --tls-verify=false build --http-probe=true my/sample-node-app-multi`
+`docker-slim --host=tcp://192.168.99.100:2376 --tls-cert-path=/Users/youruser/.docker/machine/machines/default --tls=true --tls-verify=false build --http-probe=true my/sample-node-app-multi`
 
 If the Docker environment variables are not set and if you don't specify any Docker connect options `docker-slim` will try to use the default unix socket.
 
@@ -217,16 +217,16 @@ The `--http-probe-cmd` option is good when you want to specify a small number of
 Here are a couple of examples:
 
 Adds two extra probe commands: `GET /api/info` and `POST /submit` (tries http first, then tries https):
-`docker-slim --debug build --show-clogs --http-probe-cmd /api/info --http-probe-cmd POST:/submit my/sample-node-app-multi`
+`docker-slim build --show-clogs --http-probe-cmd /api/info --http-probe-cmd POST:/submit my/sample-node-app-multi`
 
 Adds one extra probe command: `POST /submit` (using only http):
-`docker-slim --debug build --show-clogs --http-probe-cmd http:POST:/submit my/sample-node-app-multi`
+`docker-slim build --show-clogs --http-probe-cmd http:POST:/submit my/sample-node-app-multi`
 
 The `--http-probe-cmd-file` option is good when you have a lot of commands and/or you want to select additional HTTP command options.
 
 Here's an example:
 
-`docker-slim --debug build --show-clogs --http-probe-cmd-file probeCmds.json my/sample-node-app-multi`
+`docker-slim build --show-clogs --http-probe-cmd-file probeCmds.json my/sample-node-app-multi`
 
 Commands in `probeCmds.json`:
 
