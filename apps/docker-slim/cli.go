@@ -12,9 +12,8 @@ import (
 )
 
 const (
-	APP_NAME    = "docker-slim"
-	APP_VERSION = "1.12"
-	APP_USAGE   = "optimize and secure your Docker containers!"
+	APP_NAME  = "docker-slim"
+	APP_USAGE = "optimize and secure your Docker containers!"
 )
 
 var app *cli.App
@@ -43,6 +42,24 @@ func init() {
 			Value: "text",
 			Usage: "set the format used by logs ('text' (default), or 'json')",
 		},
+		cli.BoolTFlag{
+			Name:  "tls",
+			Usage: "use TLS",
+		},
+		cli.BoolTFlag{
+			Name:  "tls-verify",
+			Usage: "verify TLS",
+		},
+		cli.StringFlag{
+			Name:  "tls-cert-path",
+			Value: "",
+			Usage: "path to TLS cert files",
+		},
+		cli.StringFlag{
+			Name:  "host",
+			Value: "",
+			Usage: "Docker host address",
+		},
 	}
 
 	app.Before = func(ctx *cli.Context) error {
@@ -70,6 +87,20 @@ func init() {
 		Name:   "http-probe, p",
 		Usage:  "Enables HTTP probe",
 		EnvVar: "DSLIM_HTTP_PROBE",
+	}
+
+	doHttpProbeCmdFlag := cli.StringSliceFlag{
+		Name:   "http-probe-cmd",
+		Value:  &cli.StringSlice{},
+		Usage:  "User defined HTTP probes",
+		EnvVar: "DSLIM_HTTP_PROBE_CMD",
+	}
+
+	doHttpProbeCmdFileFlag := cli.StringFlag{
+		Name:   "http-probe-cmd-file",
+		Value:  "",
+		Usage:  "File with user defined HTTP probes",
+		EnvVar: "DSLIM_HTTP_PROBE_CMD_FILE",
 	}
 
 	doShowContainerLogsFlag := cli.BoolFlag{
@@ -153,7 +184,9 @@ func init() {
 				}
 
 				imageRef := ctx.Args().First()
-				commands.OnInfo(imageRef)
+				clientConfig := getDockerClientConfig(ctx)
+
+				commands.OnInfo(clientConfig, imageRef)
 			},
 		},
 		{
@@ -162,6 +195,8 @@ func init() {
 			Usage:   "Collects fat image information and builds a slim image from it",
 			Flags: []cli.Flag{
 				doHttpProbeFlag,
+				doHttpProbeCmdFlag,
+				doHttpProbeCmdFileFlag,
 				doShowContainerLogsFlag,
 				cli.BoolFlag{
 					Name:   "remove-file-artifacts, r",
@@ -198,10 +233,22 @@ func init() {
 				}
 
 				imageRef := ctx.Args().First()
+				clientConfig := getDockerClientConfig(ctx)
 				doRmFileArtifacts := ctx.Bool("remove-file-artifacts")
-				doHttpProbe := ctx.Bool("http-probe")
-				doShowContainerLogs := ctx.Bool("show-clogs")
 
+				doHttpProbe := ctx.Bool("http-probe")
+
+				httpProbeCmds, err := getHttpProbes(ctx)
+				if err != nil {
+					fmt.Printf("[build] invalid HTTP probes: %v\n", err)
+					return
+				}
+
+				if len(httpProbeCmds) > 0 {
+					doHttpProbe = true
+				}
+
+				doShowContainerLogs := ctx.Bool("show-clogs")
 				doTag := ctx.String("tag")
 
 				doImageOverrides := ctx.String("image-overrides")
@@ -235,7 +282,10 @@ func init() {
 				}
 
 				commands.OnBuild(ctx.GlobalBool("debug"),
-					imageRef, doTag, doHttpProbe, doRmFileArtifacts, doShowContainerLogs,
+					clientConfig,
+					imageRef, doTag,
+					doHttpProbe, httpProbeCmds,
+					doRmFileArtifacts, doShowContainerLogs,
 					parseImageOverrides(doImageOverrides),
 					overrides,
 					volumeMounts, excludePaths, includePaths)
@@ -247,6 +297,8 @@ func init() {
 			Usage:   "Collects fat image information and generates a fat container report",
 			Flags: []cli.Flag{
 				doHttpProbeFlag,
+				doHttpProbeCmdFlag,
+				doHttpProbeCmdFileFlag,
 				doShowContainerLogsFlag,
 				doUseEntrypointFlag,
 				doUseCmdFlag,
@@ -266,7 +318,19 @@ func init() {
 				}
 
 				imageRef := ctx.Args().First()
+				clientConfig := getDockerClientConfig(ctx)
 				doHttpProbe := ctx.Bool("http-probe")
+
+				httpProbeCmds, err := getHttpProbes(ctx)
+				if err != nil {
+					fmt.Printf("[profile] invalid HTTP probes: %v\n", err)
+					return
+				}
+
+				if len(httpProbeCmds) > 0 {
+					doHttpProbe = true
+				}
+
 				doShowContainerLogs := ctx.Bool("show-clogs")
 				overrides, err := getContainerOverrides(ctx)
 				if err != nil {
@@ -298,7 +362,10 @@ func init() {
 				}
 
 				commands.OnProfile(ctx.GlobalBool("debug"),
-					imageRef, doHttpProbe, doShowContainerLogs, overrides,
+					clientConfig,
+					imageRef,
+					doHttpProbe, httpProbeCmds,
+					doShowContainerLogs, overrides,
 					volumeMounts, excludePaths, includePaths)
 			},
 		},
@@ -341,6 +408,46 @@ func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	overrides.ClearCmd = isOneSpace(doUseCmd)
 
 	return overrides, nil
+}
+
+func getHttpProbes(ctx *cli.Context) ([]config.HttpProbeCmd, error) {
+	httpProbeCmds, err := parseHttpProbes(ctx.StringSlice("http-probe-cmd"))
+	if err != nil {
+		return nil, err
+	}
+
+	moreHttpProbeCmds, err := parseHttpProbesFile(ctx.String("http-probe-cmd-file"))
+	if err != nil {
+		return nil, err
+	}
+
+	if moreHttpProbeCmds != nil {
+		httpProbeCmds = append(httpProbeCmds, moreHttpProbeCmds...)
+	}
+
+	return httpProbeCmds, nil
+}
+
+func getDockerClientConfig(ctx *cli.Context) *config.DockerClient {
+	config := &config.DockerClient{
+		UseTLS:      ctx.GlobalBool("tls"),
+		VerifyTLS:   ctx.GlobalBool("tls-verify"),
+		TLSCertPath: ctx.GlobalString("tls-cert-path"),
+		Host:        ctx.GlobalString("host"),
+		Env:         map[string]string{},
+	}
+
+	getEnv := func(name string) {
+		if value, exists := os.LookupEnv(name); exists {
+			config.Env[name] = value
+		}
+	}
+
+	getEnv("DOCKER_HOST")
+	getEnv("DOCKER_TLS_VERIFY")
+	getEnv("DOCKER_CERT_PATH")
+
+	return config
 }
 
 func runCli() {

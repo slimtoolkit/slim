@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"unicode"
@@ -134,4 +136,144 @@ func parsePaths(values []string) map[string]bool {
 	}
 
 	return paths
+}
+
+func parseHttpProbes(values []string) ([]config.HttpProbeCmd, error) {
+	probes := []config.HttpProbeCmd{}
+
+	for _, raw := range values {
+		sepCount := strings.Count(raw, ":")
+		switch sepCount {
+		case 0:
+			if raw == "" || !isResource(raw) {
+				return nil, fmt.Errorf("Invalid HTTP probe command resource: %+v", raw)
+			}
+
+			probes = append(probes, config.HttpProbeCmd{Protocol: "http", Method: "GET", Resource: raw})
+		case 1:
+			parts := strings.SplitN(raw, ":", 2)
+
+			if parts[0] != "" && !isMethod(parts[0]) {
+				return nil, fmt.Errorf("Invalid HTTP probe command method: %+v", raw)
+			}
+
+			if parts[1] == "" || !isResource(parts[1]) {
+				return nil, fmt.Errorf("Invalid HTTP probe command resource: %+v", raw)
+			}
+
+			probes = append(probes, config.HttpProbeCmd{Protocol: "http", Method: strings.ToUpper(parts[0]), Resource: parts[1]})
+		case 2:
+			parts := strings.SplitN(raw, ":", 3)
+
+			if parts[0] != "" && !isProto(parts[0]) {
+				return nil, fmt.Errorf("Invalid HTTP probe command protocol: %+v", raw)
+			}
+
+			if parts[1] != "" && !isMethod(parts[1]) {
+				return nil, fmt.Errorf("Invalid HTTP probe command method: %+v", raw)
+			}
+
+			if parts[2] == "" || !isResource(parts[2]) {
+				return nil, fmt.Errorf("Invalid HTTP probe command resource: %+v", raw)
+			}
+
+			probes = append(probes, config.HttpProbeCmd{Protocol: parts[0], Method: strings.ToUpper(parts[1]), Resource: parts[2]})
+		default:
+			return nil, fmt.Errorf("Invalid HTTP probe command: %s", raw)
+		}
+	}
+
+	return probes, nil
+}
+
+func parseHttpProbesFile(filePath string) ([]config.HttpProbeCmd, error) {
+	probes := []config.HttpProbeCmd{}
+
+	if filePath != "" {
+		fullPath, err := filepath.Abs(filePath)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err := os.Stat(fullPath); err != nil {
+			return nil, err
+		}
+
+		configFile, err := os.Open(fullPath)
+		if err != nil {
+			return nil, err
+		}
+		defer configFile.Close()
+
+		var configs config.HttpProbeCmds
+		if err = json.NewDecoder(configFile).Decode(&configs); err != nil {
+			return nil, err
+		}
+
+		for _, cmd := range configs.Commands {
+			if cmd.Protocol != "" && !isProto(cmd.Protocol) {
+				return nil, fmt.Errorf("Invalid HTTP probe command protocol: %+v", cmd)
+			}
+
+			if cmd.Method != "" && !isMethod(cmd.Method) {
+				return nil, fmt.Errorf("Invalid HTTP probe command method: %+v", cmd)
+			}
+
+			if cmd.Method == "" {
+				cmd.Method = "GET"
+			}
+
+			cmd.Method = strings.ToUpper(cmd.Method)
+
+			if cmd.Resource == "" || !isResource(cmd.Resource) {
+				return nil, fmt.Errorf("Invalid HTTP probe command resource: %+v", cmd)
+			}
+
+			if cmd.Port != 0 && !isPortNum(cmd.Port) {
+				return nil, fmt.Errorf("Invalid HTTP probe command port: %v", cmd)
+			}
+
+			probes = append(probes, cmd)
+		}
+	}
+
+	return probes, nil
+}
+
+func isProto(value string) bool {
+	switch strings.ToLower(value) {
+	case "http", "https":
+		return true
+	default:
+		return false
+	}
+
+	return false
+}
+
+func isMethod(value string) bool {
+	switch strings.ToUpper(value) {
+	case "HEAD", "GET", "POST", "PUT", "DELETE", "PATCH":
+		return true
+	default:
+		return false
+	}
+
+	return false
+}
+
+func isResource(value string) bool {
+	if value != "" && value[0] == '/' {
+		return true
+	}
+
+	return false
+}
+
+func isPortNum(value int) bool {
+	if 1 <= value && value <= 65535 {
+		return true
+	}
+
+	return false
 }

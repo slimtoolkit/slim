@@ -7,20 +7,22 @@ import (
 
 	"github.com/cloudimmunity/docker-slim/master/builder"
 	"github.com/cloudimmunity/docker-slim/master/config"
+	"github.com/cloudimmunity/docker-slim/master/docker/dockerclient"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/container/probes/http"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/image"
 	"github.com/cloudimmunity/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/dustin/go-humanize"
 )
 
 func OnBuild(doDebug bool,
+	clientConfig *config.DockerClient,
 	imageRef string,
 	customImageTag string,
 	doHttpProbe bool,
+	httpProbeCmds []config.HttpProbeCmd,
 	doRmFileArtifacts bool,
 	doShowContainerLogs bool,
 	imageOverrides map[string]bool,
@@ -34,7 +36,7 @@ func OnBuild(doDebug bool,
 		overrides.Entrypoint, overrides.ClearEntrypoint, overrides.Cmd, overrides.ClearCmd,
 		overrides.Workdir, overrides.Env, overrides.ExposedPorts)
 
-	client, _ := docker.NewClientFromEnv()
+	client := dockerclient.New(clientConfig)
 
 	imageInspector, err := image.NewInspector(client, imageRef)
 	utils.FailOn(err)
@@ -73,7 +75,7 @@ func OnBuild(doDebug bool,
 	log.Info("docker-slim: watching container monitor...")
 
 	if doHttpProbe {
-		probe, err := http.NewRootProbe(containerInspector)
+		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds)
 		utils.FailOn(err)
 		probe.Start()
 	}

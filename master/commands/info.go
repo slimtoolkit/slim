@@ -3,18 +3,19 @@ package commands
 import (
 	"fmt"
 
+	"github.com/cloudimmunity/docker-slim/master/config"
+	"github.com/cloudimmunity/docker-slim/master/docker/dockerclient"
 	"github.com/cloudimmunity/docker-slim/master/inspectors/image"
 	"github.com/cloudimmunity/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/dustin/go-humanize"
 )
 
-func OnInfo(imageRef string) {
+func OnInfo(clientConfig *config.DockerClient, imageRef string) {
 	fmt.Println("docker-slim: [info] image=", imageRef)
 
-	client, _ := docker.NewClientFromEnv()
+	client := dockerclient.New(clientConfig)
 
 	imageInspector, err := image.NewInspector(client, imageRef)
 	utils.FailOn(err)
