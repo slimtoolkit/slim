@@ -25,8 +25,7 @@ func monitor(stopWork chan bool,
 	stopWorkAck chan bool,
 	pids chan []int,
 	ptmonStartChan chan int,
-	appName string,
-	appArgs []string,
+	cmd *messages.StartMonitor,
 	dirName string) {
 	log.Info("sensor: monitor starting...")
 	mountPoint := "/"
@@ -42,8 +41,8 @@ func monitor(stopWork chan bool,
 		//ProcEvents are not enabled in the default boot2docker kernel
 	}
 
-	fanReportChan := fanotify.Run(mountPoint, stopMonitor)
-	ptReportChan := ptrace.Run(ptmonStartChan, stopMonitor, appName, appArgs, dirName)
+	fanReportChan := fanotify.Run(mountPoint, stopMonitor) //data.AppName, data.AppArgs
+	ptReportChan := ptrace.Run(ptmonStartChan, stopMonitor, cmd.AppName, cmd.AppArgs, dirName)
 
 	go func() {
 		log.Debug("sensor: monitor - waiting to stop monitoring...")
@@ -62,7 +61,7 @@ func monitor(stopWork chan bool,
 			//TODO: when peReport is available filter file events from fanReport
 		}
 
-		processReports(mountPoint, fanReport, ptReport, peReport)
+		processReports(mountPoint, fanReport, ptReport, peReport, cmd)
 		stopWorkAck <- true
 	}()
 }
@@ -124,7 +123,7 @@ doneRunning:
 				}
 
 				log.Debugf("sensor: 'start' command (%#v) - starting monitor...\n", data)
-				monitor(monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, data.AppName, data.AppArgs, dirName)
+				monitor(monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, data, dirName)
 
 				//target app started by ptmon... (long story :-))
 				//TODO: need to get the target app pid to pemon, so it can filter process events

@@ -1,5 +1,7 @@
 package main
 
-const (
-	APP_VERSION = "1.13"
+var (
+	appVersionTag = "latest"
+	appVersionRev = "latest"
+	appVersionTime = "latest"
 )

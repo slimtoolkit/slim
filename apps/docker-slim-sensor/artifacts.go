@@ -15,6 +15,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/cloudimmunity/docker-slim/messages"
 	"github.com/cloudimmunity/docker-slim/report"
 	"github.com/cloudimmunity/docker-slim/utils"
 
@@ -26,15 +27,18 @@ const (
 	pyoExt     = ".pyo"
 	pycacheDir = "/__pycache__/"
 	pycache    = "__pycache__"
+	defaultReportName = "creport.json"
+	defaultArtifactDirName = "/opt/dockerslim/artifacts"
 )
 
 func saveResults(fanMonReport *report.FanMonitorReport,
 	fileNames map[string]*report.ArtifactProps,
 	ptMonReport *report.PtMonitorReport,
-	peReport *report.PeMonitorReport) {
-	artifactDirName := "/opt/dockerslim/artifacts"
+	peReport *report.PeMonitorReport,
+	cmd *messages.StartMonitor) {
+	artifactDirName := defaultArtifactDirName
 
-	artifactStore := newArtifactStore(artifactDirName, fanMonReport, fileNames, ptMonReport, peReport)
+	artifactStore := newArtifactStore(artifactDirName, fanMonReport, fileNames, ptMonReport, peReport, cmd)
 	artifactStore.prepareArtifacts()
 	artifactStore.saveArtifacts()
 	artifactStore.saveReport()
@@ -50,13 +54,15 @@ type artifactStore struct {
 	resolve       map[string]struct{}
 	linkMap       map[string]*report.ArtifactProps
 	fileMap       map[string]*report.ArtifactProps
+	cmd           *messages.StartMonitor
 }
 
 func newArtifactStore(storeLocation string,
 	fanMonReport *report.FanMonitorReport,
 	rawNames map[string]*report.ArtifactProps,
 	ptMonReport *report.PtMonitorReport,
-	peMonReport *report.PeMonitorReport) *artifactStore {
+	peMonReport *report.PeMonitorReport,
+	cmd *messages.StartMonitor) *artifactStore {
 	store := &artifactStore{
 		storeLocation: storeLocation,
 		fanMonReport:  fanMonReport,
@@ -67,6 +73,7 @@ func newArtifactStore(storeLocation string,
 		resolve:       map[string]struct{}{},
 		linkMap:       map[string]*report.ArtifactProps{},
 		fileMap:       map[string]*report.ArtifactProps{},
+		cmd:           cmd,
 	}
 
 	return store
@@ -160,12 +167,44 @@ func (p *artifactStore) prepareArtifacts() {
 func (p *artifactStore) resolveLinks() {
 	for name := range p.resolve {
 		_ = name
-		log.Debugln("resolveLinks - resolving:", name)
+		log.Debug("resolveLinks - resolving: ", name)
 		//TODO
 	}
 }
 
 func (p *artifactStore) saveArtifacts() {
+	var excludePaths map[string]bool
+	var includePaths map[string]bool
+
+	preparePaths := func(pathList []string) map[string]bool {
+		if len(pathList) < 1 {
+			return nil
+		}
+
+		var paths map[string]bool
+		for _,pathValue := range pathList {
+			pathInfo, err := os.Stat(pathValue)
+			if err != nil {
+				log.Debug("saveArtifacts.preparePaths(): skipping path = ", pathValue)
+				continue
+			}
+
+			if pathInfo.IsDir() {
+				paths[pathValue] = true
+			} else {
+				paths[pathValue] = false
+			}
+		}
+
+		return paths
+	}
+
+	includePaths = preparePaths(p.cmd.Includes)
+	excludePaths = preparePaths(p.cmd.Excludes)
+	log.Debugf("includePaths: %+v\n",includePaths)
+	log.Debugf("excludePaths: %+v\n",excludePaths)
+
+	//TODO: use exludePaths to filter discovered files
 	for fileName := range p.fileMap {
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
 		log.Debug("saveArtifacts - saving file data => ", filePath)
@@ -175,6 +214,7 @@ func (p *artifactStore) saveArtifacts() {
 		}
 	}
 
+	//TODO: use exludePaths to filter discovered links
 	for linkName, linkProps := range p.linkMap {
 		linkPath := fmt.Sprintf("%s/files%s", p.storeLocation, linkName)
 		linkDir := utils.FileDir(linkPath)
@@ -197,6 +237,25 @@ func (p *artifactStore) saveArtifacts() {
 			log.Warn("saveArtifacts - error fixing py3 cache file => ", err)
 		}
 	}
+
+	//TODO: use exludePaths to filter included paths
+	for inPath, isDir := range includePaths {
+		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, inPath)
+		if isDir {
+			err, errs := utils.CopyDir(inPath,dstPath,true,true,nil,nil,nil)
+    		if err != nil {
+    			log.Warnf("CopyDir(%v,%v) error: %v\n",inPath,dstPath,err)
+    		}
+
+    		if len(errs) > 0 {
+    			log.Warnf("CopyDir(%v,%v) copy errors: %+v\n",inPath,dstPath,errs)
+    		}
+		} else {
+			if err := utils.CopyFile(inPath,dstPath,true); err != nil {
+				log.Warnf("CopyFile(%v,%v) error: %v\n",inPath,dstPath,err)
+			}
+		}
+	}
 }
 
 func (p *artifactStore) saveReport() {
@@ -213,8 +272,8 @@ func (p *artifactStore) saveReport() {
 		creport.Image.Files = append(creport.Image.Files, p.rawNames[fname])
 	}
 
-	artifactDirName := "/opt/dockerslim/artifacts"
-	reportName := "creport.json"
+	artifactDirName := defaultArtifactDirName
+	reportName := defaultReportName
 
 	_, err := os.Stat(artifactDirName)
 	if os.IsNotExist(err) {

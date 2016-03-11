@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/cloudimmunity/docker-slim/messages"
 	"github.com/cloudimmunity/docker-slim/report"
 	"github.com/cloudimmunity/docker-slim/sensor/monitors/fanotify"
 )
@@ -12,7 +13,8 @@ import (
 func processReports(mountPoint string,
 	fanReport *report.FanMonitorReport,
 	ptReport *report.PtMonitorReport,
-	peReport *report.PeMonitorReport) {
+	peReport *report.PeMonitorReport,
+	cmd *messages.StartMonitor) {
 
 	fileCount := 0
 	for _, processFileMap := range fanReport.ProcessFiles {
@@ -26,7 +28,7 @@ func processReports(mountPoint string,
 	}
 
 	allFilesMap := findSymlinks(fileList, mountPoint)
-	saveResults(fanReport, allFilesMap, ptReport, peReport)
+	saveResults(fanReport, allFilesMap, ptReport, peReport, cmd)
 }
 
 func getProcessChildren(pid int, targetPidList map[int]bool, processChildrenMap map[int][]int) {
