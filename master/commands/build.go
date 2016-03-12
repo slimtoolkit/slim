@@ -80,7 +80,7 @@ func OnBuild(doDebug bool,
 		probe.Start()
 	}
 
-	fmt.Println("docker-slim: press any key when you are done using the container...")
+	fmt.Println("docker-slim: press <enter> when you are done using the container...")
 	creader := bufio.NewReader(os.Stdin)
 	_, _, _ = creader.ReadLine()
 
