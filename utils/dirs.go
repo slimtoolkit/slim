@@ -1,24 +1,24 @@
 package utils
 
 import (
+	"errors"
+	"fmt"
 	"io"
 	"os"
-	"fmt"
 	"path/filepath"
 	"strings"
-	"errors"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/pdiscover"
 )
 
 var (
-	ErrNoSrcDir = errors.New("no source directory path")
-	ErrNoDstDir = errors.New("no destination directory path")
-	ErrSameDir = errors.New("source and destination directories are the same")
-	ErrSrcDirNotExist = errors.New("source directory doesn't exist")
-	ErrSrcNotDir = errors.New("source is not a directory")
-	ErrSrcNotRegularFile = errors.New("source is not a regular file")
+	ErrNoSrcDir                  = errors.New("no source directory path")
+	ErrNoDstDir                  = errors.New("no destination directory path")
+	ErrSameDir                   = errors.New("source and destination directories are the same")
+	ErrSrcDirNotExist            = errors.New("source directory doesn't exist")
+	ErrSrcNotDir                 = errors.New("source is not a directory")
+	ErrSrcNotRegularFile         = errors.New("source is not a regular file")
 	ErrUnsupportedFileObjectType = errors.New("unsupported file object type")
 )
 
@@ -64,9 +64,12 @@ func CopyFile(src, dst string, makeDir bool) error {
 	}
 
 	switch {
-		case info.Mode().IsRegular(): return CopyRegularFile(src,dst,makeDir)
-		case (info.Mode() & os.ModeSymlink) == os.ModeSymlink: return CopySymlinkFile(src,dst,makeDir)
-		default: return ErrUnsupportedFileObjectType
+	case info.Mode().IsRegular():
+		return CopyRegularFile(src, dst, makeDir)
+	case (info.Mode() & os.ModeSymlink) == os.ModeSymlink:
+		return CopySymlinkFile(src, dst, makeDir)
+	default:
+		return ErrUnsupportedFileObjectType
 	}
 }
 
@@ -76,14 +79,14 @@ func CopySymlinkFile(src, dst string, makeDir bool) error {
 	linkRef, err := os.Readlink(src)
 	if err != nil {
 		return err
- 	}
+	}
 
 	err = os.Symlink(linkRef, dst)
 	if err != nil {
 		return err
- 	}
+	}
 
- 	return nil
+	return nil
 }
 
 func CopyRegularFile(src, dst string, makeDir bool) error {
@@ -120,9 +123,9 @@ func CopyRegularFile(src, dst string, makeDir bool) error {
 			if os.IsNotExist(err) {
 
 				srcDirInfo, err := os.Stat(srcDirName)
-		        if err != nil {
-		            return err
-		        }
+				if err != nil {
+					return err
+				}
 
 				err = os.MkdirAll(dstDirName, srcDirInfo.Mode())
 				if err != nil {
@@ -131,7 +134,7 @@ func CopyRegularFile(src, dst string, makeDir bool) error {
 
 			} else {
 				return err
-			} 
+			}
 		}
 	}
 
@@ -149,9 +152,9 @@ func CopyRegularFile(src, dst string, makeDir bool) error {
 
 		if written != srcFileInfo.Size() {
 			log.Debugf("CopyRegularFile(%v,%v,%v) - copy data mismatch - %v/%v",
-				src, dst, makeDir,written, srcFileInfo.Size())
+				src, dst, makeDir, written, srcFileInfo.Size())
 			d.Close()
-			return fmt.Errorf("%s -> %s: partial copy - %d/%d", 
+			return fmt.Errorf("%s -> %s: partial copy - %d/%d",
 				src, dst, written, srcFileInfo.Size())
 		}
 	}
@@ -161,19 +164,19 @@ func CopyRegularFile(src, dst string, makeDir bool) error {
 }
 
 func copyFileObjectHandler(
-	srcBase, dstBase string, 
+	srcBase, dstBase string,
 	copyRelPath, skipErrors bool,
 	ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{},
 	errs *[]error) filepath.WalkFunc {
 	var foCount uint64
 
-	return func (path string, info os.FileInfo, err error) error {
-  		foCount++
-  		
+	return func(path string, info os.FileInfo, err error) error {
+		foCount++
+
 		if err != nil {
 
 			if skipErrors {
-				*errs = append(*errs,err)
+				*errs = append(*errs, err)
 				return nil
 			}
 
@@ -182,7 +185,7 @@ func copyFileObjectHandler(
 
 		var targetPath string
 		if copyRelPath {
-			targetPath = filepath.Join(dstBase,strings.TrimPrefix(path,srcBase))
+			targetPath = filepath.Join(dstBase, strings.TrimPrefix(path, srcBase))
 		} else {
 			targetPath = filepath.Join(dstBase, path)
 		}
@@ -190,90 +193,90 @@ func copyFileObjectHandler(
 		foBase := filepath.Base(path)
 
 		switch {
-		  	case info.Mode().IsDir():
-		  		if _,ok := ignorePaths[path]; ok {
-		  			log.Debug("dir path in ignorePath list (skipping dir)...")
-					return filepath.SkipDir
-				}
+		case info.Mode().IsDir():
+			if _, ok := ignorePaths[path]; ok {
+				log.Debug("dir path in ignorePath list (skipping dir)...")
+				return filepath.SkipDir
+			}
 
-				if _,ok := ignoreDirNames[foBase]; ok {
-		  			log.Debug("dir name in ignoreDirNames list (skipping dir)...")
-					return filepath.SkipDir
-				}
+			if _, ok := ignoreDirNames[foBase]; ok {
+				log.Debug("dir name in ignoreDirNames list (skipping dir)...")
+				return filepath.SkipDir
+			}
 
-		  		err = os.MkdirAll(targetPath, info.Mode())
-		     	if err != nil {
-		         	if skipErrors {
-						*errs = append(*errs,err)
-						return nil
-					}
-
-					return err
-		     	}
-		  	case info.Mode().IsRegular():
-		  		if _,ok := ignorePaths[path]; ok {
-		  			log.Debug("file path in ignorePath list (skipping file)...")
+			err = os.MkdirAll(targetPath, info.Mode())
+			if err != nil {
+				if skipErrors {
+					*errs = append(*errs, err)
 					return nil
 				}
 
-				if _,ok := ignoreFileNames[foBase]; ok {
-		  			log.Debug("file name in ignoreDirNames list (skipping file)...")
+				return err
+			}
+		case info.Mode().IsRegular():
+			if _, ok := ignorePaths[path]; ok {
+				log.Debug("file path in ignorePath list (skipping file)...")
+				return nil
+			}
+
+			if _, ok := ignoreFileNames[foBase]; ok {
+				log.Debug("file name in ignoreDirNames list (skipping file)...")
+				return nil
+			}
+
+			err = CopyRegularFile(path, targetPath, true)
+			if err != nil {
+				if skipErrors {
+					*errs = append(*errs, err)
 					return nil
 				}
 
-		  		err = CopyRegularFile(path, targetPath, true)
-		  		if err != nil {
-		         	if skipErrors {
-						*errs = append(*errs,err)
-						return nil
-					}
+				return err
+			}
+		case (info.Mode() & os.ModeSymlink) == os.ModeSymlink:
+			if _, ok := ignorePaths[path]; ok {
+				log.Debug("link file path in ignorePath list (skipping file)...")
+				return nil
+			}
 
-					return err
-		     	}
-		  	case (info.Mode() & os.ModeSymlink) == os.ModeSymlink:
-		  		if _,ok := ignorePaths[path]; ok {
-		  			log.Debug("link file path in ignorePath list (skipping file)...")
+			if _, ok := ignoreFileNames[foBase]; ok {
+				log.Debug("link file name in ignoreDirNames list (skipping file)...")
+				return nil
+			}
+
+			//TODO: (add a flag)
+			//to make it more generic need to support absolute path link rewriting
+			//if they point to other copied file objects
+			linkRef, err := os.Readlink(path)
+			if err != nil {
+				if skipErrors {
+					*errs = append(*errs, err)
 					return nil
 				}
 
-				if _,ok := ignoreFileNames[foBase]; ok {
-		  			log.Debug("link file name in ignoreDirNames list (skipping file)...")
+				return err
+			}
+
+			err = os.Symlink(linkRef, targetPath)
+			if err != nil {
+				if skipErrors {
+					*errs = append(*errs, err)
 					return nil
 				}
 
-		  		//TODO: (add a flag)
-		  		//to make it more generic need to support absolute path link rewriting
-		  		//if they point to other copied file objects
-		  		linkRef, err := os.Readlink(path)
-		  		if err != nil {
-		         	if skipErrors {
-						*errs = append(*errs,err)
-						return nil
-					}
-
-					return err
-		     	}
-
-		  		err = os.Symlink(linkRef, targetPath)
-		  		if err != nil {
-		         	if skipErrors {
-						*errs = append(*errs,err)
-						return nil
-					}
-
-					return err
-		     	}
-		  	default:
-		  		log.Debug("is other file object type... (ignoring)")
+				return err
+			}
+		default:
+			log.Debug("is other file object type... (ignoring)")
 		}
 
-  		return nil
-	} 
+		return nil
+	}
 }
 
-func CopyDir(src, dst string, 
-			 copyRelPath, skipErrors bool, 
-			 ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{}) (error, []error) {
+func CopyDir(src, dst string,
+	copyRelPath, skipErrors bool,
+	ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{}) (error, []error) {
 	if src == "" {
 		return ErrNoSrcDir, nil
 	}
@@ -310,10 +313,10 @@ func CopyDir(src, dst string,
 
 	var errs []error
 	err = filepath.Walk(src, copyFileObjectHandler(
-		src,dst,copyRelPath,skipErrors,ignorePaths, ignoreDirNames, ignoreFileNames, &errs))
-    if err != nil {
-    	return err, nil
-    }
+		src, dst, copyRelPath, skipErrors, ignorePaths, ignoreDirNames, ignoreFileNames, &errs))
+	if err != nil {
+		return err, nil
+	}
 
 	return nil, errs
 }
@@ -324,7 +327,7 @@ func CopyDir(src, dst string,
     }
 
     err, errs := CopyDir("./src","./dst/src",true,true,nil,nil,ignoreFileNames)
-    
+
     if err != nil {
     	fmt.Println("CopyDir() error:",err)
     	return

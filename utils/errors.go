@@ -1,27 +1,39 @@
 package utils
 
 import (
+	"runtime/debug"
+
 	log "github.com/Sirupsen/logrus"
 )
 
 func FailOn(err error) {
 	if err != nil {
-		log.WithError(err).Fatal("docker-slim: failure")
+		stackData := debug.Stack()
+		log.WithError(err).WithField("stack", string(stackData)).Fatal("docker-slim: failure")
 	}
 }
 
 func WarnOn(err error) {
 	if err != nil {
-		log.WithError(err).Warn("docker-slim: warning")
+		stackData := debug.Stack()
+		log.WithError(err).WithField("stack", string(stackData)).Warn("docker-slim: warning")
 	}
 }
 
 func FailWhen(cond bool, msg string) {
 	if cond {
-		log.WithField("error", msg).Fatal("docker-slim: failure")
+		stackData := debug.Stack()
+		log.WithFields(log.Fields{
+			"error": msg,
+			"stack": string(stackData),
+		}).Fatal("docker-slim: failure")
 	}
 }
 
 func Fail(msg string) {
-	log.WithField("error", msg).Fatal("docker-slim: failure")
+	stackData := debug.Stack()
+	log.WithFields(log.Fields{
+		"error": msg,
+		"stack": string(stackData),
+	}).Fatal("docker-slim: failure")
 }

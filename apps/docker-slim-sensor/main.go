@@ -86,7 +86,7 @@ func main() {
 	log.Infof("sensor: args => %#v\n", os.Args)
 
 	dirName, err := os.Getwd()
-	utils.FailOn(err)
+	utils.WarnOn(err)
 	log.Debugf("sensor: cwd => %#v\n", dirName)
 
 	initSignalHandlers()

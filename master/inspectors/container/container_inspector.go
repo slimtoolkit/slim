@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/cloudimmunity/docker-slim/master/config"
 	"github.com/cloudimmunity/docker-slim/master/docker/dockerhost"
@@ -23,6 +24,7 @@ import (
 type Inspector struct {
 	ContainerInfo     *dockerapi.Container
 	ContainerID       string
+	ContainerName     string
 	FatContainerCmd   []string
 	LocalVolumePath   string
 	CmdPort           dockerapi.Port
@@ -121,8 +123,10 @@ func (i *Inspector) RunContainer() error {
 		containerCmd = append(containerCmd, "-d")
 	}
 
+	i.ContainerName = fmt.Sprintf("dockerslimk_%v_%v", os.Getpid(), time.Now().UTC().Format("20060102150405"))
+
 	containerOptions := dockerapi.CreateContainerOptions{
-		Name: "dockerslimk",
+		Name: i.ContainerName,
 		Config: &dockerapi.Config{
 			Image: i.ImageInspector.ImageRef,
 			ExposedPorts: map[dockerapi.Port]struct{}{

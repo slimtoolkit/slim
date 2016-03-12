@@ -1,7 +1,7 @@
 package main
 
 var (
-	appVersionTag = "latest"
-	appVersionRev = "latest"
+	appVersionTag  = "latest"
+	appVersionRev  = "latest"
 	appVersionTime = "latest"
 )

@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/cloudimmunity/docker-slim/consts"
 	"github.com/cloudimmunity/docker-slim/master/commands"
 	"github.com/cloudimmunity/docker-slim/master/config"
-	"github.com/cloudimmunity/docker-slim/consts"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
@@ -21,7 +21,7 @@ var app *cli.App
 
 func init() {
 	app = cli.NewApp()
-	app.Version = fmt.Sprintf("%v|%v|%v|%v",consts.APP_VERSION_NAME,appVersionTag,appVersionRev,appVersionTime)
+	app.Version = fmt.Sprintf("%v|%v|%v|%v", consts.APP_VERSION_NAME, appVersionTag, appVersionRev, appVersionTime)
 	app.Name = APP_NAME
 	app.Usage = APP_USAGE
 	app.CommandNotFound = func(ctx *cli.Context, command string) {

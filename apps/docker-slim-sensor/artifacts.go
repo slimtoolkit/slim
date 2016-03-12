@@ -23,11 +23,11 @@ import (
 )
 
 const (
-	pycExt     = ".pyc"
-	pyoExt     = ".pyo"
-	pycacheDir = "/__pycache__/"
-	pycache    = "__pycache__"
-	defaultReportName = "creport.json"
+	pycExt                 = ".pyc"
+	pyoExt                 = ".pyo"
+	pycacheDir             = "/__pycache__/"
+	pycache                = "__pycache__"
+	defaultReportName      = "creport.json"
 	defaultArtifactDirName = "/opt/dockerslim/artifacts"
 )
 
@@ -182,7 +182,7 @@ func (p *artifactStore) saveArtifacts() {
 		}
 
 		var paths map[string]bool
-		for _,pathValue := range pathList {
+		for _, pathValue := range pathList {
 			pathInfo, err := os.Stat(pathValue)
 			if err != nil {
 				log.Debug("saveArtifacts.preparePaths(): skipping path = ", pathValue)
@@ -201,8 +201,8 @@ func (p *artifactStore) saveArtifacts() {
 
 	includePaths = preparePaths(p.cmd.Includes)
 	excludePaths = preparePaths(p.cmd.Excludes)
-	log.Debugf("includePaths: %+v\n",includePaths)
-	log.Debugf("excludePaths: %+v\n",excludePaths)
+	log.Debugf("includePaths: %+v\n", includePaths)
+	log.Debugf("excludePaths: %+v\n", excludePaths)
 
 	//TODO: use exludePaths to filter discovered files
 	for fileName := range p.fileMap {
@@ -242,17 +242,17 @@ func (p *artifactStore) saveArtifacts() {
 	for inPath, isDir := range includePaths {
 		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, inPath)
 		if isDir {
-			err, errs := utils.CopyDir(inPath,dstPath,true,true,nil,nil,nil)
-    		if err != nil {
-    			log.Warnf("CopyDir(%v,%v) error: %v\n",inPath,dstPath,err)
-    		}
+			err, errs := utils.CopyDir(inPath, dstPath, true, true, nil, nil, nil)
+			if err != nil {
+				log.Warnf("CopyDir(%v,%v) error: %v\n", inPath, dstPath, err)
+			}
 
-    		if len(errs) > 0 {
-    			log.Warnf("CopyDir(%v,%v) copy errors: %+v\n",inPath,dstPath,errs)
-    		}
+			if len(errs) > 0 {
+				log.Warnf("CopyDir(%v,%v) copy errors: %+v\n", inPath, dstPath, errs)
+			}
 		} else {
-			if err := utils.CopyFile(inPath,dstPath,true); err != nil {
-				log.Warnf("CopyFile(%v,%v) error: %v\n",inPath,dstPath,err)
+			if err := utils.CopyFile(inPath, dstPath, true); err != nil {
+				log.Warnf("CopyFile(%v,%v) error: %v\n", inPath, dstPath, err)
 			}
 		}
 	}
