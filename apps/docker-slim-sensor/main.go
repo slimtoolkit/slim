@@ -35,6 +35,8 @@ func monitor(stopWork chan bool,
 	var peReportChan <-chan *report.PeMonitorReport
 	var peReport *report.PeMonitorReport
 	usePEMon, err := system.DefaultKernelFeatures.IsCompiled("CONFIG_PROC_EVENTS")
+	//tmp: disalbe PEVENTs (due to problems with the new boot2docker host OS)
+	usePEMon = false
 	if (err == nil) && usePEMon {
 		log.Info("sensor: proc events are available!")
 		peReportChan = pevent.Run(stopMonitor)

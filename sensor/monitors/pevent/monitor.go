@@ -14,6 +14,7 @@ import (
 func Run(stopChan chan struct{}) <-chan *report.PeMonitorReport {
 	log.Info("pemon: starting...")
 
+	//"connection refused" with boot2docker...
 	watcher, err := pdiscover.NewAllWatcher(pdiscover.PROC_EVENT_ALL)
 	utils.FailOn(err)
 
