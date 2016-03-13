@@ -181,7 +181,7 @@ func (p *artifactStore) saveArtifacts() {
 			return nil
 		}
 
-		var paths map[string]bool
+		paths := map[string]bool{}
 		for _, pathValue := range pathList {
 			pathInfo, err := os.Stat(pathValue)
 			if err != nil {
