@@ -189,8 +189,11 @@ Global options:
 * `--cmd` - override CMD analyzing image
 * `--mount` - mount volume analyzing image (the mount parameter format is identical to the `-v` mount command in Docker) [zero or more]
 * `--include-path` - Include directory or file from image [zero or more]
+* `--continue-after` - Select continue mode: enter | signal | probe | timeout or numberInSeconds (default: enter)
 
 The `--include-path` option is useful if you want to customize your minified image adding extra files and directories. Future versions will also include the `--exclude-path` option to have even more control.
+
+The `--continue-after` option is useful if you need to script `docker-slim`. If you pick the `probe` option then `docker-slim` will continue executing the build command after the HTTP probe is done executing. If you pick the `timeout` option `docker-slim` will allow the target container to run for 60 seconds before it will attempt to collect the artifacts. You can specify a custom timeout value by passing a number of seconds you need instead of the `timeout` string. If you pick the `signal` option you'll need to send a USR1 signal to the `docker-slim` process.
 
 ## DOCKER CONNECT OPTIONS
 
