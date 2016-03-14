@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"strconv"
+	"time"
 
 	"github.com/cloudimmunity/docker-slim/consts"
 	"github.com/cloudimmunity/docker-slim/master/commands"
@@ -172,6 +174,13 @@ func init() {
 		EnvVar: "DSLIM_MOUNT",
 	}
 
+	doConfinueAfterFlag := cli.StringFlag{
+		Name:   "continue-after",
+		Value:  "enter",
+		Usage:  "Select continue mode: enter | signal | probe | timeout or numberInSeconds",
+		EnvVar: "DSLIM_CONTINUE_AFTER",
+	}
+
 	app.Commands = []cli.Command{
 		{
 			Name:    "info",
@@ -225,6 +234,7 @@ func init() {
 				doExcludePathFlag,
 				doIncludePathFlag,
 				doUseMountFlag,
+				doConfinueAfterFlag,
 			},
 			Action: func(ctx *cli.Context) {
 				if len(ctx.Args()) < 1 {
@@ -275,6 +285,12 @@ func init() {
 					}
 				}
 
+				confinueAfter, err := getContinueAfter(ctx)
+				if err != nil {
+					fmt.Printf("[build] invalid continue-after mode: %v\n", err)
+					return
+				}
+
 				for ipath, _ := range includePaths {
 					if excludePaths[ipath] {
 						fmt.Printf("[build] include and exclude path conflict: %v\n", err)
@@ -289,7 +305,8 @@ func init() {
 					doRmFileArtifacts, doShowContainerLogs,
 					parseImageOverrides(doImageOverrides),
 					overrides,
-					volumeMounts, excludePaths, includePaths)
+					volumeMounts, excludePaths, includePaths,
+					confinueAfter)
 			},
 		},
 		{
@@ -310,6 +327,7 @@ func init() {
 				doExcludePathFlag,
 				doIncludePathFlag,
 				doUseMountFlag,
+				doConfinueAfterFlag,
 			},
 			Action: func(ctx *cli.Context) {
 				if len(ctx.Args()) < 1 {
@@ -355,6 +373,12 @@ func init() {
 					}
 				}
 
+				confinueAfter, err := getContinueAfter(ctx)
+				if err != nil {
+					fmt.Printf("[profile] invalid continue-after mode: %v\n", err)
+					return
+				}
+
 				for ipath, _ := range includePaths {
 					if excludePaths[ipath] {
 						fmt.Printf("[profile] include and exclude path conflict: %v\n", err)
@@ -367,10 +391,38 @@ func init() {
 					imageRef,
 					doHttpProbe, httpProbeCmds,
 					doShowContainerLogs, overrides,
-					volumeMounts, excludePaths, includePaths)
+					volumeMounts, excludePaths, includePaths,
+					confinueAfter)
 			},
 		},
 	}
+}
+
+func getContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
+	info := &config.ContinueAfter{
+		Mode: "enter",
+	}
+
+	doConfinueAfter := ctx.String("continue-after")
+	switch doConfinueAfter {
+	case "enter":
+		info.Mode = "enter"
+	case "signal":
+		info.Mode = "signal"
+		info.ContinueChan = appContinueChan
+	case "probe":
+		info.Mode = "probe"
+	case "timeout":
+		info.Mode = "timeout"
+		info.Timeout = 60
+	default:
+		if waitTime, err := strconv.Atoi(doConfinueAfter); err == nil && waitTime > 0 {
+			info.Mode = "timeout"
+			info.Timeout = time.Duration(waitTime)
+		}
+	}
+
+	return info, nil
 }
 
 func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error) {

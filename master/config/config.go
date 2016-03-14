@@ -1,6 +1,8 @@
 package config
 
 import (
+	"time"
+
 	"github.com/cloudimmunity/go-dockerclientx"
 )
 
@@ -41,4 +43,10 @@ type DockerClient struct {
 	TLSCertPath string
 	Host        string
 	Env         map[string]string
+}
+
+type ContinueAfter struct {
+	Mode         string
+	Timeout      time.Duration
+	ContinueChan <-chan struct{}
 }

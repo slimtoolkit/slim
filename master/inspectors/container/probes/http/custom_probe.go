@@ -15,6 +15,7 @@ type HttpProbe struct {
 	Ports              []string
 	Cmds               []config.HttpProbeCmd
 	ContainerInspector *container.Inspector
+	doneChan           chan struct{}
 }
 
 func NewCustomProbe(inspector *container.Inspector, cmds []config.HttpProbeCmd) (*HttpProbe, error) {
@@ -24,6 +25,7 @@ func NewCustomProbe(inspector *container.Inspector, cmds []config.HttpProbeCmd) 
 	probe := &HttpProbe{
 		Cmds:               cmds,
 		ContainerInspector: inspector,
+		doneChan:           make(chan struct{}),
 	}
 
 	for nsPortKey, nsPortData := range inspector.ContainerInfo.NetworkSettings.Ports {
@@ -74,5 +76,10 @@ func (p *HttpProbe) Start() {
 		}
 
 		log.Info("docker-slim: HTTP probe done.")
+		close(p.doneChan)
 	}()
+}
+
+func (p *HttpProbe) DoneChan() <-chan struct{} {
+	return p.doneChan
 }

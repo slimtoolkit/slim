@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/cloudimmunity/docker-slim/master/builder"
 	"github.com/cloudimmunity/docker-slim/master/config"
@@ -29,7 +30,8 @@ func OnBuild(doDebug bool,
 	overrides *config.ContainerOverrides,
 	volumeMounts map[string]config.VolumeMount,
 	excludePaths map[string]bool,
-	includePaths map[string]bool) {
+	includePaths map[string]bool,
+	continueAfter *config.ContinueAfter) {
 	fmt.Printf("docker-slim: [build] image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v\n",
 		imageRef, doHttpProbe, doRmFileArtifacts,
 		imageOverrides,
@@ -74,15 +76,37 @@ func OnBuild(doDebug bool,
 
 	log.Info("docker-slim: watching container monitor...")
 
+	if "probe" == continueAfter.Mode {
+		doHttpProbe = true
+	}
+
 	if doHttpProbe {
 		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds)
 		utils.FailOn(err)
 		probe.Start()
+		continueAfter.ContinueChan = probe.DoneChan()
 	}
 
-	fmt.Println("docker-slim: press <enter> when you are done using the container...")
-	creader := bufio.NewReader(os.Stdin)
-	_, _, _ = creader.ReadLine()
+	switch continueAfter.Mode {
+	case "enter":
+		fmt.Println("docker-slim: press <enter> when you are done using the container...")
+		creader := bufio.NewReader(os.Stdin)
+		_, _, _ = creader.ReadLine()
+	case "signal":
+		fmt.Println("docker-slim: send SIGUSR1 when you are done using the container...")
+		<-continueAfter.ContinueChan
+		fmt.Println("docker-slim: got SIGUSR1...")
+	case "timeout":
+		fmt.Printf("docker-slim: waiting for the target container (%v seconds)...\n", int(continueAfter.Timeout))
+		<-time.After(time.Second * continueAfter.Timeout)
+		fmt.Printf("docker-slim: done waiting for the target container...")
+	case "probe":
+		fmt.Println("docker-slim: waiting for the HTTP probe to finish...")
+		<-continueAfter.ContinueChan
+		fmt.Println("docker-slim: HTTP probe is done...")
+	default:
+		utils.Fail("unknown continue-after mode")
+	}
 
 	containerInspector.FinishMonitoring()
 
