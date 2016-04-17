@@ -61,6 +61,7 @@ func (p *HttpProbe) Start() {
 					res, err := goreq.Request{
 						Method:  cmd.Method,
 						Uri:     addr,
+						Body:    cmd.Body,
 						Timeout: 5 * time.Second,
 						//ShowDebug: true,
 					}.Do()

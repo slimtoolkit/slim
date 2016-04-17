@@ -257,7 +257,8 @@ Commands in `probeCmds.json`:
    {
      "protocol": "http",
      "method": "POST",
-     "resource": "/submit2"
+     "resource": "/submit2",
+     "body": "key=value"
    }
   ]
 }
