@@ -362,7 +362,7 @@ func cpFile(src, dst string) error {
 func py3FileNameFromCache(p string) string {
 	ext := path.Ext(p)
 
-	if !(((ext == pycExt) || (ext == pycExt)) && strings.Contains(p, pycacheDir)) {
+	if !(((ext == pycExt) || (ext == pyoExt)) && strings.Contains(p, pycacheDir)) {
 		return ""
 	}
 

@@ -12,7 +12,7 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
-func OnInfo(clientConfig *config.DockerClient, imageRef string) {
+func OnInfo(statePath string, clientConfig *config.DockerClient, imageRef string) {
 	fmt.Println("docker-slim: [info] image=", imageRef)
 
 	client := dockerclient.New(clientConfig)
@@ -24,7 +24,7 @@ func OnInfo(clientConfig *config.DockerClient, imageRef string) {
 	err = imageInspector.Inspect()
 	utils.FailOn(err)
 
-	_, artifactLocation := utils.PrepareSlimDirs(imageInspector.ImageInfo.ID)
+	_, artifactLocation := utils.PrepareSlimDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
 	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)\n",

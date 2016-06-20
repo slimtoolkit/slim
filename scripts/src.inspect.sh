@@ -2,7 +2,11 @@
 
 set -e
 
-source env.sh
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
+SDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+source $SDIR/env.sh
 cd $BDIR/apps
 go tool vet .
 golint ./...
@@ -18,6 +22,4 @@ golint ./...
 cd $BDIR/utils
 go tool vet .
 golint ./...
-
-
 

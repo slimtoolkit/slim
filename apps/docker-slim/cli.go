@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -23,7 +24,7 @@ var app *cli.App
 
 func init() {
 	app = cli.NewApp()
-	app.Version = fmt.Sprintf("%v|%v|%v|%v", consts.APP_VERSION_NAME, appVersionTag, appVersionRev, appVersionTime)
+	app.Version = fmt.Sprintf("%v|%v|%v|%v|%v", runtime.GOOS, consts.APP_VERSION_NAME, appVersionTag, appVersionRev, appVersionTime)
 	app.Name = APP_NAME
 	app.Usage = APP_USAGE
 	app.CommandNotFound = func(ctx *cli.Context, command string) {
@@ -62,6 +63,11 @@ func init() {
 			Name:  "host",
 			Value: "",
 			Usage: "Docker host address",
+		},
+		cli.StringFlag{
+			Name:  "state-path",
+			Value: "",
+			Usage: "DockerSlim state base path",
 		},
 	}
 
@@ -186,17 +192,20 @@ func init() {
 			Name:    "info",
 			Aliases: []string{"i"},
 			Usage:   "Collects fat image information and reverse engineers its Dockerfile",
-			Action: func(ctx *cli.Context) {
+			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
 					fmt.Printf("[info] missing image ID/name...\n\n")
 					cli.ShowCommandHelp(ctx, "info")
-					return
+					return nil
 				}
+
+				statePath := ctx.GlobalString("state-path")
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
 
-				commands.OnInfo(clientConfig, imageRef)
+				commands.OnInfo(statePath, clientConfig, imageRef)
+				return nil
 			},
 		},
 		{
@@ -236,12 +245,14 @@ func init() {
 				doUseMountFlag,
 				doConfinueAfterFlag,
 			},
-			Action: func(ctx *cli.Context) {
+			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
 					fmt.Printf("[build] missing image ID/name...\n\n")
 					cli.ShowCommandHelp(ctx, "build")
-					return
+					return nil
 				}
+
+				statePath := ctx.GlobalString("state-path")
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
@@ -252,7 +263,7 @@ func init() {
 				httpProbeCmds, err := getHttpProbes(ctx)
 				if err != nil {
 					fmt.Printf("[build] invalid HTTP probes: %v\n", err)
-					return
+					return err
 				}
 
 				if len(httpProbeCmds) > 0 {
@@ -266,13 +277,13 @@ func init() {
 				overrides, err := getContainerOverrides(ctx)
 				if err != nil {
 					fmt.Printf("[build] invalid container overrides: %v\n", err)
-					return
+					return err
 				}
 
 				volumeMounts, err := parseVolumeMounts(ctx.StringSlice("mount"))
 				if err != nil {
 					fmt.Printf("[build] invalid volume mounts: %v\n", err)
-					return
+					return err
 				}
 
 				excludePaths := parsePaths(ctx.StringSlice("exclude-path"))
@@ -288,17 +299,18 @@ func init() {
 				confinueAfter, err := getContinueAfter(ctx)
 				if err != nil {
 					fmt.Printf("[build] invalid continue-after mode: %v\n", err)
-					return
+					return err
 				}
 
 				for ipath, _ := range includePaths {
 					if excludePaths[ipath] {
 						fmt.Printf("[build] include and exclude path conflict: %v\n", err)
-						return
+						return nil
 					}
 				}
 
 				commands.OnBuild(ctx.GlobalBool("debug"),
+					statePath,
 					clientConfig,
 					imageRef, doTag,
 					doHttpProbe, httpProbeCmds,
@@ -307,6 +319,8 @@ func init() {
 					overrides,
 					volumeMounts, excludePaths, includePaths,
 					confinueAfter)
+
+				return nil
 			},
 		},
 		{
@@ -329,12 +343,14 @@ func init() {
 				doUseMountFlag,
 				doConfinueAfterFlag,
 			},
-			Action: func(ctx *cli.Context) {
+			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
 					fmt.Printf("[profile] missing image ID/name...\n\n")
 					cli.ShowCommandHelp(ctx, "profile")
-					return
+					return nil
 				}
+
+				statePath := ctx.GlobalString("state-path")
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
@@ -343,7 +359,7 @@ func init() {
 				httpProbeCmds, err := getHttpProbes(ctx)
 				if err != nil {
 					fmt.Printf("[profile] invalid HTTP probes: %v\n", err)
-					return
+					return err
 				}
 
 				if len(httpProbeCmds) > 0 {
@@ -354,13 +370,13 @@ func init() {
 				overrides, err := getContainerOverrides(ctx)
 				if err != nil {
 					fmt.Printf("[profile] invalid container overrides: %v", err)
-					return
+					return err
 				}
 
 				volumeMounts, err := parseVolumeMounts(ctx.StringSlice("mount"))
 				if err != nil {
 					fmt.Printf("[profile] invalid volume mounts: %v\n", err)
-					return
+					return err
 				}
 
 				excludePaths := parsePaths(ctx.StringSlice("exclude-path"))
@@ -376,23 +392,26 @@ func init() {
 				confinueAfter, err := getContinueAfter(ctx)
 				if err != nil {
 					fmt.Printf("[profile] invalid continue-after mode: %v\n", err)
-					return
+					return err
 				}
 
 				for ipath, _ := range includePaths {
 					if excludePaths[ipath] {
 						fmt.Printf("[profile] include and exclude path conflict: %v\n", err)
-						return
+						return nil
 					}
 				}
 
 				commands.OnProfile(ctx.GlobalBool("debug"),
+					statePath,
 					clientConfig,
 					imageRef,
 					doHttpProbe, httpProbeCmds,
 					doShowContainerLogs, overrides,
 					volumeMounts, excludePaths, includePaths,
 					confinueAfter)
+
+				return nil
 			},
 		},
 	}

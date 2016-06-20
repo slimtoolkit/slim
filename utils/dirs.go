@@ -352,21 +352,26 @@ func FileDir(fileName string) string {
 	return dirName
 }
 
-func PrepareSlimDirs(imageId string) (string, string) {
+func PrepareSlimDirs(statePath, imageId string) (string, string) {
 	//images IDs in Docker 1.9+ are prefixed with a hash type...
 	if strings.Contains(imageId, ":") {
 		parts := strings.Split(imageId, ":")
 		imageId = parts[1]
 	}
 
-	localVolumePath := filepath.Join(ExeDir(), ".images", imageId)
+	if statePath == "" {
+		statePath = ExeDir()
+	}
+
+	localVolumePath := filepath.Join(statePath, ".images", imageId)
 	artifactLocation := filepath.Join(localVolumePath, "artifacts")
 	artifactDir, err := os.Stat(artifactLocation)
 	if os.IsNotExist(err) {
-		os.MkdirAll(artifactLocation, 0777)
+		err = os.MkdirAll(artifactLocation, 0777)
+		FailOn(err)
 		artifactDir, err = os.Stat(artifactLocation)
 		FailOn(err)
-		log.Debug("created artifact directory: ", artifactDir)
+		log.Debug("created artifact directory: ", artifactLocation)
 	}
 	FailWhen(!artifactDir.IsDir(), "artifact location is not a directory")
 

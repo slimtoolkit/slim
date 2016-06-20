@@ -2,7 +2,11 @@
 
 set -e
 
-source env.sh
+SOURCE="${BASH_SOURCE[0]}"
+while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
+SDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
+
+source $SDIR/env.sh
 pushd $BDIR/apps/docker-slim
 build_time="$(date -u '+%Y-%m-%d_%I:%M:%S%p')"
 tag="current"

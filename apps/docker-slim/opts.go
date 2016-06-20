@@ -247,8 +247,6 @@ func isProto(value string) bool {
 	default:
 		return false
 	}
-
-	return false
 }
 
 func isMethod(value string) bool {
@@ -258,8 +256,6 @@ func isMethod(value string) bool {
 	default:
 		return false
 	}
-
-	return false
 }
 
 func isResource(value string) bool {

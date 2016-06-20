@@ -18,6 +18,7 @@ import (
 )
 
 func OnProfile(doDebug bool,
+	statePath string,
 	clientConfig *config.DockerClient,
 	imageRef string,
 	doHttpProbe bool,
@@ -40,7 +41,7 @@ func OnProfile(doDebug bool,
 	err = imageInspector.Inspect()
 	utils.FailOn(err)
 
-	localVolumePath, artifactLocation := utils.PrepareSlimDirs(imageInspector.ImageInfo.ID)
+	localVolumePath, artifactLocation := utils.PrepareSlimDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
 	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)\n",
