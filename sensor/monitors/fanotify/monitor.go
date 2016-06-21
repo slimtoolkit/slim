@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
-	"github.com/cloudimmunity/docker-slim/report"
-	"github.com/cloudimmunity/docker-slim/utils"
+	"github.com/docker-slim/docker-slim/report"
+	"github.com/docker-slim/docker-slim/utils"
 
 	fanapi "bitbucket.org/madmo/fanotify"
 	log "github.com/Sirupsen/logrus"

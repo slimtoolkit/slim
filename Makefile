@@ -1,4 +1,4 @@
-NAME = cloudimmunity/docker-slim
+NAME = docker-slim/docker-slim
 INSTANCE = docker-slim
 
 .PHONY: default build 

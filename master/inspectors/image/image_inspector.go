@@ -5,8 +5,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/cloudimmunity/docker-slim/master/docker/dockerfile"
-	"github.com/cloudimmunity/docker-slim/utils"
+	"github.com/docker-slim/docker-slim/master/docker/dockerfile"
+	"github.com/docker-slim/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"

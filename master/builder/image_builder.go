@@ -3,8 +3,8 @@ package builder
 import (
 	"os"
 
-	"github.com/cloudimmunity/docker-slim/master/config"
-	"github.com/cloudimmunity/docker-slim/master/docker/dockerfile"
+	"github.com/docker-slim/docker-slim/master/config"
+	"github.com/docker-slim/docker-slim/master/docker/dockerfile"
 
 	//log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"

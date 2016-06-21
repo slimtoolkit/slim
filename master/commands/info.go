@@ -3,10 +3,10 @@ package commands
 import (
 	"fmt"
 
-	"github.com/cloudimmunity/docker-slim/master/config"
-	"github.com/cloudimmunity/docker-slim/master/docker/dockerclient"
-	"github.com/cloudimmunity/docker-slim/master/inspectors/image"
-	"github.com/cloudimmunity/docker-slim/utils"
+	"github.com/docker-slim/docker-slim/master/config"
+	"github.com/docker-slim/docker-slim/master/docker/dockerclient"
+	"github.com/docker-slim/docker-slim/master/inspectors/image"
+	"github.com/docker-slim/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/dustin/go-humanize"

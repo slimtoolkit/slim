@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/cloudimmunity/docker-slim/master/config"
-	"github.com/cloudimmunity/docker-slim/master/inspectors/container"
+	"github.com/docker-slim/docker-slim/master/config"
+	"github.com/docker-slim/docker-slim/master/inspectors/container"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/franela/goreq"

@@ -15,9 +15,9 @@ import (
 	"sort"
 	"strings"
 
-	"github.com/cloudimmunity/docker-slim/messages"
-	"github.com/cloudimmunity/docker-slim/report"
-	"github.com/cloudimmunity/docker-slim/utils"
+	"github.com/docker-slim/docker-slim/messages"
+	"github.com/docker-slim/docker-slim/report"
+	"github.com/docker-slim/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 )

@@ -5,9 +5,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/cloudimmunity/docker-slim/messages"
-	"github.com/cloudimmunity/docker-slim/report"
-	"github.com/cloudimmunity/docker-slim/sensor/monitors/fanotify"
+	"github.com/docker-slim/docker-slim/messages"
+	"github.com/docker-slim/docker-slim/report"
+	"github.com/docker-slim/docker-slim/sensor/monitors/fanotify"
 )
 
 func processReports(mountPoint string,

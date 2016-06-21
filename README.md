@@ -1,6 +1,6 @@
-[![Go Report Card](https://goreportcard.com/badge/github.com/cloudimmunity/docker-slim)](https://goreportcard.com/report/github.com/cloudimmunity/docker-slim)
+[![Go Report Card](https://goreportcard.com/badge/github.com/docker-slim/docker-slim)](https://goreportcard.com/report/github.com/docker-slim/docker-slim)
 
-# docker-slim: Lean and Mean Docker containers
+# docker-slim: Lean and Mean Docker containers (free and open source!)
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
@@ -66,8 +66,8 @@ Latest version: 1.15 (6/19/2016)
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.15/dist_mac.zip)
-   - [Latest Linux binaries](https://github.com/cloudimmunity/docker-slim/releases/download/1.15/dist_linux.zip)
+   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.15/dist_mac.zip)
+   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.15/dist_linux.zip)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -115,7 +115,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://github.com/cloudimmunity/docker-slim/releases/download/1.15/dist_mac.zip) or [Linux](https://github.com/cloudimmunity/docker-slim/releases/download/1.15/dist_linux.zip) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://github.com/docker-slim/docker-slim/releases/download/1.15/dist_mac.zip) or [Linux](https://github.com/docker-slim/docker-slim/releases/download/1.15/dist_linux.zip) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
   The extracted directory contains two binaries:
 
@@ -124,7 +124,7 @@ The demo run on Mac OS X, but you can build a linux version. Note that these ste
 
 2. Clone this repo to use the sample apps. You can skip this step if you have your own app.
 
-  `git clone https://github.com/cloudimmunity/docker-slim.git`
+  `git clone https://github.com/docker-slim/docker-slim.git`
 
 3. Create a Docker image for the sample node.js app in `sample/apps/node`. You can skip this step if you have your own app.
 
@@ -379,9 +379,9 @@ You can use the clickable `.command` scripts on Mac OS X (located in the `script
 If you don't want to use the helper scripts you can build `docker-slim` using regular go commands:
 
 1. `cd $GOPATH`
-2. `mkdir -p src/github.com/cloudimmunity`
-3. `cd $GOPATH/src/github.com/cloudimmunity`
-4. `git clone https://github.com/cloudimmunity/docker-slim.git` <- if you decide to use `go get` to pull the `docker-slim` repo make sure to use the `-d` flag, so Go doesn't try to build it
+2. `mkdir -p src/github.com/docker-slim`
+3. `cd $GOPATH/src/github.com/docker-slim`
+4. `git clone https://github.com/docker-slim/docker-slim.git` <- if you decide to use `go get` to pull the `docker-slim` repo make sure to use the `-d` flag, so Go doesn't try to build it
 5. `cd docker-slim`
 6. `go get -d -v ./...`
 7. `go build -v ./apps/docker-slim` <- builds the main app in the repo's root directory

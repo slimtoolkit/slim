@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/cloudimmunity/docker-slim/report"
+	"github.com/docker-slim/docker-slim/report"
 )
 
 const appArmorTemplate = `

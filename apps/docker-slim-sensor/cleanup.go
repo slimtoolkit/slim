@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/cloudimmunity/docker-slim/sensor/ipc"
+	"github.com/docker-slim/docker-slim/sensor/ipc"
 
 	log "github.com/Sirupsen/logrus"
 )

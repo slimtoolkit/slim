@@ -10,8 +10,8 @@ source $SDIR/env.sh
 pushd $BDIR
 mkdir _vendor
 pushd $BDIR/_vendor
-mkdir -p src/github.com/cloudimmunity
-ln -sf $BDIR src/github.com/cloudimmunity/docker-slim
+mkdir -p src/github.com/docker-slim
+ln -sf $BDIR src/github.com/docker-slim/docker-slim
 go get github.com/cloudimmunity/go-dockerclientx
 go get github.com/cloudimmunity/pdiscover
 go get github.com/cloudimmunity/system

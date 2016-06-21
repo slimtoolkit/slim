@@ -7,9 +7,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/cloudimmunity/docker-slim/consts"
-	"github.com/cloudimmunity/docker-slim/master/commands"
-	"github.com/cloudimmunity/docker-slim/master/config"
+	"github.com/docker-slim/docker-slim/consts"
+	"github.com/docker-slim/docker-slim/master/commands"
+	"github.com/docker-slim/docker-slim/master/config"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"

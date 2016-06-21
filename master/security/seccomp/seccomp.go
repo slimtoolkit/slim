@@ -6,8 +6,8 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cloudimmunity/docker-slim/external/opencontainers/specs"
-	"github.com/cloudimmunity/docker-slim/report"
+	"github.com/docker-slim/docker-slim/external/opencontainers/specs"
+	"github.com/docker-slim/docker-slim/report"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/system"

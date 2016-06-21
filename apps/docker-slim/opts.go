@@ -13,7 +13,7 @@ import (
 	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/docker/go-connections/nat"
 
-	"github.com/cloudimmunity/docker-slim/master/config"
+	"github.com/docker-slim/docker-slim/master/config"
 )
 
 //based on expose opt parsing in Docker

@@ -11,7 +11,7 @@ import (
 	//"github.com/go-mangos/mangos/transport/ipc"
 	"github.com/go-mangos/mangos/transport/tcp"
 
-	"github.com/cloudimmunity/docker-slim/messages"
+	"github.com/docker-slim/docker-slim/messages"
 )
 
 func InitContainerChannels(dockerHostIp, cmdChannelPort, evtChannelPort string) error {
