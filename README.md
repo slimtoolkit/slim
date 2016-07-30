@@ -54,8 +54,9 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 
 ## RECENT UPDATES
 
-Latest version: 1.15 (6/19/2016)
+Latest version: 1.16 (7/30/2016)
 
+* Docker 1.12 support
 * User selected location to store DockerSlim state (global `--state-path` parameter).
 * Auto-generated seccomp profiles for Docker 1.10.
 * Python 3 support

@@ -153,11 +153,7 @@ func (i *Inspector) RunContainer() error {
 	i.ContainerID = containerInfo.ID
 	log.Infoln("docker-slim: created container =>", i.ContainerID)
 
-	if err := i.ApiClient.StartContainer(i.ContainerID, &dockerapi.HostConfig{
-		PublishAllPorts: true,
-		CapAdd:          []string{"SYS_ADMIN"},
-		Privileged:      true,
-	}); err != nil {
+	if err := i.ApiClient.StartContainer(i.ContainerID, nil); err != nil {
 		return err
 	}
 
