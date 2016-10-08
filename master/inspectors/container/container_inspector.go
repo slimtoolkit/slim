@@ -135,6 +135,7 @@ func (i *Inspector) RunContainer() error {
 			},
 			Entrypoint: []string{"/opt/dockerslim/bin/sensor"},
 			Cmd:        containerCmd,
+			Env:        i.Overrides.Env,
 			Labels:     map[string]string{"type": "dockerslim"},
 		},
 		HostConfig: &dockerapi.HostConfig{
