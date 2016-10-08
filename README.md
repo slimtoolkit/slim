@@ -54,8 +54,9 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 
 ## RECENT UPDATES
 
-Latest version: 1.16 (7/30/2016)
+Latest version: 1.17 (10/10/2016) (WIP)
 
+* Ability to override ENV variables analyzing target image
 * Docker 1.12 support
 * User selected location to store DockerSlim state (global `--state-path` parameter).
 * Auto-generated seccomp profiles for Docker 1.10.
@@ -195,6 +196,7 @@ Global options:
 * `--cmd` - override CMD analyzing image
 * `--mount` - mount volume analyzing image (the mount parameter format is identical to the `-v` mount command in Docker) [zero or more]
 * `--include-path` - Include directory or file from image [zero or more]
+* `--env` - override ENV analyzing image [zero or more]
 * `--continue-after` - Select continue mode: enter | signal | probe | timeout or numberInSeconds (default: enter)
 
 The `--include-path` option is useful if you want to customize your minified image adding extra files and directories. Future versions will also include the `--exclude-path` option to have even more control.
