@@ -24,7 +24,7 @@ var app *cli.App
 
 func init() {
 	app = cli.NewApp()
-	app.Version = fmt.Sprintf("%v|%v|%v|%v|%v", runtime.GOOS, consts.APP_VERSION_NAME, appVersionTag, appVersionRev, appVersionTime)
+	app.Version = fmt.Sprintf("%v|%v|%v|%v|%v (%v)", runtime.GOOS, consts.APP_VERSION_NAME, appVersionTag, appVersionRev, appVersionTime, runtime.Version())
 	app.Name = APP_NAME
 	app.Usage = APP_USAGE
 	app.CommandNotFound = func(ctx *cli.Context, command string) {

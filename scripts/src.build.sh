@@ -15,8 +15,8 @@ if hash git 2>/dev/null && [ -e $BDIR/.git ]; then
   tag="$(git describe --tags)"
   revision="$(git rev-parse HEAD)"
 fi
-gox -osarch="linux/amd64" -output="$BDIR/bin/linux/docker-slim" -ldflags="-X main.appVersionTag $tag -X main.appVersionRev $revision -X main.appVersionTime $build_time"
-gox -osarch="darwin/amd64" -output="$BDIR/bin/mac/docker-slim" -ldflags="-X main.appVersionTag $tag -X main.appVersionRev $revision -X main.appVersionTime $build_time"
+gox -osarch="linux/amd64" -output="$BDIR/bin/linux/docker-slim" -ldflags="-X main.appVersionTag=$tag -X main.appVersionRev=$revision -X main.appVersionTime=$build_time"
+gox -osarch="darwin/amd64" -output="$BDIR/bin/mac/docker-slim" -ldflags="-X main.appVersionTag=$tag -X main.appVersionRev=$revision -X main.appVersionTime=$build_time"
 #gox -osarch="linux/arm" -output="$BDIR/bin/linux_arm/docker-slim"
 popd
 pushd $BDIR/apps/docker-slim-sensor
