@@ -7,6 +7,8 @@ while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
 SDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 source $SDIR/env.sh
+pushd $BDIR
+mkdir -p _vendor
 pushd $BDIR/_vendor
 mkdir -p src/github.com/docker-slim
 ln -sf $BDIR src/github.com/docker-slim/docker-slim
@@ -26,4 +28,5 @@ gox -osarch="darwin/amd64" -output="$BDIR/bin/mac/docker-slim"
 popd
 pushd $BDIR/apps/docker-slim-sensor
 gox -osarch="linux/amd64" -output="$BDIR/bin/linux/docker-slim-sensor"
+popd
 popd
