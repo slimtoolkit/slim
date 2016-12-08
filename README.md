@@ -2,7 +2,7 @@
 
 # docker-slim: Lean and Mean Docker containers (free and open source!)
 
-![DSLIM1](assets/images/dslim/DockerSlimLogo1Big.jpeg)
+![DSLIM1](assets/images/dslim/DockerSlimLogo1Big.png)
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
