@@ -27,6 +27,7 @@
     - [How can I contribute if I don't know Go?](#how-can-i-contribute-if-i-dont-know-go)
     - [What's the best application for DockerSlim?](#whats-the-best-application-for-dockerslim)
     - [Can I use DockerSlim with dockerized command line tools?](#can-i-use-dockerslim-with-dockerized-command-line-tools)
+    - [How can I get around the current USER command limitation?](#how-can-i-get-around-the-current-user-command-limitation)
   - [BUILD PROCESS](#build-process)
       - [Local Build Steps](#local-build-steps)
       - [Traditional Go Way to Build](#traditional-go-way-to-build)
