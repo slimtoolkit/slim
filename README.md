@@ -350,9 +350,9 @@ If you don't want to create a minified image and only want to "reverse engineer"
 
 ### How can I get around the current USER command limitation?
 
-If you have a non-root user declared in your Dockerfile you'll need to use a workaround to make sure DockerSlim can minify your image.
+If you have a non-root user declared in your Dockerfile you'll need to use this workaround to make sure DockerSlim can minify your image:
 
-Option 1:
+Don't add an explicit USER statement in your Dockerfile.
 
 Explicitly include /etc/passwd when you minify your image with DockerSlim (using the --include-path docker-slim parameter).
 
@@ -362,10 +362,6 @@ Use an explicit -u parameter in docker run.
 Example: docker run -d -u "your-user-name" -p 8000:8000 your-minified-docker-image-name
 
 Note that you should be able to avoid including /etc/passwd if you are ok with using UIDs instead of text user name in the -u parameter to docker run.
-
-Option 2:
-
-Don't add an explicit USER statement in your Dockerfile.
 
 ## BUILD PROCESS
 
