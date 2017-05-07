@@ -3,13 +3,12 @@ package main
 import (
 	"fmt"
 	"os"
-	"runtime"
 	"strconv"
 	"time"
 
-	"github.com/docker-slim/docker-slim/consts"
 	"github.com/docker-slim/docker-slim/master/commands"
 	"github.com/docker-slim/docker-slim/master/config"
+	"github.com/docker-slim/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
@@ -24,7 +23,7 @@ var app *cli.App
 
 func init() {
 	app = cli.NewApp()
-	app.Version = fmt.Sprintf("%v|%v|%v|%v|%v (%v)", runtime.GOOS, consts.APP_VERSION_NAME, appVersionTag, appVersionRev, appVersionTime, runtime.Version())
+	app.Version = utils.CurrentVersion()
 	app.Name = APP_NAME
 	app.Usage = APP_USAGE
 	app.CommandNotFound = func(ctx *cli.Context, command string) {

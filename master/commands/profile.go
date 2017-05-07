@@ -29,6 +29,7 @@ func OnProfile(doDebug bool,
 	excludePaths map[string]bool,
 	includePaths map[string]bool,
 	continueAfter *config.ContinueAfter) {
+
 	fmt.Printf("docker-slim: [profile] image=%v\n", imageRef)
 	doRmFileArtifacts := false
 
@@ -36,6 +37,11 @@ func OnProfile(doDebug bool,
 
 	imageInspector, err := image.NewInspector(client, imageRef)
 	utils.FailOn(err)
+
+	if imageInspector.NoImage() {
+		fmt.Println("docker-slim: [profile] target image not found -", imageRef)
+		return
+	}
 
 	log.Info("docker-slim: inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
@@ -107,6 +113,12 @@ func OnProfile(doDebug bool,
 	log.Info("docker-slim: shutting down 'fat' container...")
 	err = containerInspector.ShutdownContainer()
 	utils.WarnOn(err)
+
+	if !containerInspector.HasCollectedData() {
+		imageInspector.ShowFatImageDockerInstructions()
+		fmt.Printf("docker-slim: [profile] no data collected (no minified image generated) - done. (version: %v)\n", utils.CurrentVersion())
+		return
+	}
 
 	log.Info("docker-slim: processing instrumented 'fat' container info...")
 	err = containerInspector.ProcessCollectedData()

@@ -2,9 +2,11 @@ package builder
 
 import (
 	"os"
+	"path/filepath"
 
 	"github.com/docker-slim/docker-slim/master/config"
 	"github.com/docker-slim/docker-slim/master/docker/dockerfile"
+	"github.com/docker-slim/docker-slim/utils"
 
 	//log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
@@ -21,6 +23,7 @@ type ImageBuilder struct {
 	Volumes      map[string]struct{}
 	OnBuild      []string
 	User         string
+	HasData      bool
 	BuildOptions docker.BuildImageOptions
 	ApiClient    *docker.Client
 }
@@ -52,6 +55,9 @@ func NewImageBuilder(client *docker.Client,
 		ApiClient: client,
 	}
 
+	dataDir := filepath.Join(artifactLocation, "files")
+	builder.HasData = utils.IsDir(dataDir)
+
 	return builder, nil
 }
 
@@ -69,5 +75,6 @@ func (b *ImageBuilder) GenerateDockerfile() error {
 		b.Env,
 		b.ExposedPorts,
 		b.Entrypoint,
-		b.Cmd)
+		b.Cmd,
+		b.HasData)
 }

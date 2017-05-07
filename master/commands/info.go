@@ -13,12 +13,18 @@ import (
 )
 
 func OnInfo(statePath string, clientConfig *config.DockerClient, imageRef string) {
+
 	fmt.Println("docker-slim: [info] image=", imageRef)
 
 	client := dockerclient.New(clientConfig)
 
 	imageInspector, err := image.NewInspector(client, imageRef)
 	utils.FailOn(err)
+
+	if imageInspector.NoImage() {
+		fmt.Println("docker-slim: [info] target image not found -", imageRef)
+		return
+	}
 
 	log.Info("docker-slim: inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()

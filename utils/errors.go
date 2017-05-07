@@ -9,14 +9,14 @@ import (
 func FailOn(err error) {
 	if err != nil {
 		stackData := debug.Stack()
-		log.WithError(err).WithField("stack", string(stackData)).Fatal("docker-slim: failure")
+		log.WithError(err).WithField("version", CurrentVersion()).WithField("stack", string(stackData)).Fatal("docker-slim: failure")
 	}
 }
 
 func WarnOn(err error) {
 	if err != nil {
 		stackData := debug.Stack()
-		log.WithError(err).WithField("stack", string(stackData)).Warn("docker-slim: warning")
+		log.WithError(err).WithField("version", CurrentVersion()).WithField("stack", string(stackData)).Warn("docker-slim: warning")
 	}
 }
 
@@ -24,8 +24,9 @@ func FailWhen(cond bool, msg string) {
 	if cond {
 		stackData := debug.Stack()
 		log.WithFields(log.Fields{
-			"error": msg,
-			"stack": string(stackData),
+			"version": CurrentVersion(),
+			"error":   msg,
+			"stack":   string(stackData),
 		}).Fatal("docker-slim: failure")
 	}
 }
@@ -33,7 +34,8 @@ func FailWhen(cond bool, msg string) {
 func Fail(msg string) {
 	stackData := debug.Stack()
 	log.WithFields(log.Fields{
-		"error": msg,
-		"stack": string(stackData),
+		"version": CurrentVersion(),
+		"error":   msg,
+		"stack":   string(stackData),
 	}).Fatal("docker-slim: failure")
 }

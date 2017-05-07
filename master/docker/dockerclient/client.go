@@ -5,9 +5,9 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/docker-slim/docker-slim/master/config"
 	"github.com/docker-slim/docker-slim/utils"
-	"github.com/cloudimmunity/go-dockerclientx"
 
 	log "github.com/Sirupsen/logrus"
 )

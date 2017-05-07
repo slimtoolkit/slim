@@ -43,8 +43,7 @@ var extraCalls = []string{
 }
 
 func GenProfile(artifactLocation string, profileName string) error {
-	containerReportFileName := "creport.json"
-	containerReportFilePath := filepath.Join(artifactLocation, containerReportFileName)
+	containerReportFilePath := filepath.Join(artifactLocation, report.DefaultContainerReportFileName)
 
 	if _, err := os.Stat(containerReportFilePath); err != nil {
 		return err

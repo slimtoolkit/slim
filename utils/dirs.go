@@ -23,6 +23,7 @@ var (
 )
 
 func Exists(target string) bool {
+	//if _, err := os.Stat(target); os.IsNotExist(err) {
 	if _, err := os.Stat(target); err != nil {
 		return false
 	}

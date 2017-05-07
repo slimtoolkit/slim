@@ -13,14 +13,15 @@ import (
 )
 
 type Inspector struct {
-	ImageRef            string
-	ArtifactLocation    string
-	SlimImageRepo       string
-	AppArmorProfileName string
-	SeccompProfileName  string
-	ImageInfo           *docker.Image
-	ImageRecordInfo     docker.APIImages
-	ApiClient           *docker.Client
+	ImageRef                   string
+	ArtifactLocation           string
+	SlimImageRepo              string
+	AppArmorProfileName        string
+	SeccompProfileName         string
+	ImageInfo                  *docker.Image
+	ImageRecordInfo            docker.APIImages
+	ApiClient                  *docker.Client
+	fatImageDockerInstructions []string
 }
 
 func NewInspector(client *docker.Client, imageRef string /*, artifactLocation string*/) (*Inspector, error) {
@@ -34,6 +35,17 @@ func NewInspector(client *docker.Client, imageRef string /*, artifactLocation st
 	}
 
 	return inspector, nil
+}
+
+func (i *Inspector) NoImage() bool {
+	_, err := i.ApiClient.InspectImage(i.ImageRef)
+	if err != nil {
+		if err == docker.ErrNoSuchImage {
+			return true
+		}
+	}
+
+	return false
 }
 
 func (i *Inspector) Inspect() error {
@@ -86,13 +98,22 @@ func (i *Inspector) processImageName() {
 func (i *Inspector) ProcessCollectedData() error {
 	i.processImageName()
 
-	fatImageDockerInstructions, err := dockerfile.ReverseDockerfileFromHistory(i.ApiClient, i.ImageRef)
+	var err error
+	i.fatImageDockerInstructions, err = dockerfile.ReverseDockerfileFromHistory(i.ApiClient, i.ImageRef)
 	if err != nil {
 		return err
 	}
 	fatImageDockerfileLocation := filepath.Join(i.ArtifactLocation, "Dockerfile.fat")
-	err = dockerfile.SaveDockerfileData(fatImageDockerfileLocation, fatImageDockerInstructions)
+	err = dockerfile.SaveDockerfileData(fatImageDockerfileLocation, i.fatImageDockerInstructions)
 	utils.FailOn(err)
 
 	return nil
+}
+
+func (i *Inspector) ShowFatImageDockerInstructions() {
+	if i.fatImageDockerInstructions != nil {
+		fmt.Println("docker-slim: Fat image - Dockerfile instructures: start ====")
+		fmt.Println(strings.Join(i.fatImageDockerInstructions, "\n"))
+		fmt.Println("docker-slim: Fat image - Dockerfile instructures: end ======")
+	}
 }

@@ -157,6 +157,8 @@ The demo run on Mac OS X, but you can build a linux version. Note that these ste
 
 6. Press <enter> and wait until `docker-slim` says it's done
 
+  If you set the `http-probe` flag and you press <enter> before the HTTP probe is done the probe might produce an EOF error because DockerSlim will shut down the target container before all probe commands are done executing. It's ok to ignore it unless you really need the probe to finish.
+
 7. Once DockerSlim is done check that the new minified image is there
 
   `docker images`
@@ -379,9 +381,10 @@ Before you build the tool you need to install GOX and Godep (optional; you'll ne
 
 2: `gox -build-toolchain -os="linux" -os="darwin"` (note:  might have to run it with `sudo`)
 
-Note:
+Notes:
 
-Step 2 is not necessary with Go 1.5.
+* Step 2 is not necessary with Go 1.5.
+* Make sure you have `golint` if you intend to run the `src.inspect.sh` or `mac.src.inspect.command` scripts. Install it with `go get -u github.com/golang/lint/golint` if you don't have it.
 
 #### Local Build Steps
 

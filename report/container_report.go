@@ -15,6 +15,10 @@ const (
 	UnknownArtifactType = 99
 )
 
+const (
+	DefaultContainerReportFileName = "creport.json"
+)
+
 var artifactTypeNames = map[ArtifactType]string{
 	DirArtifactType:     "Dir",
 	FileArtifactType:    "File",

@@ -40,8 +40,7 @@ type appArmorProfileData struct {
 //1. exe bit
 //2. w/r operation info (so we can add useful write rules)
 func GenProfile(artifactLocation string, profileName string) error {
-	containerReportFileName := "creport.json"
-	containerReportFilePath := filepath.Join(artifactLocation, containerReportFileName)
+	containerReportFilePath := filepath.Join(artifactLocation, report.DefaultContainerReportFileName)
 
 	if _, err := os.Stat(containerReportFilePath); err != nil {
 		return err

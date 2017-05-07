@@ -15,11 +15,14 @@ import (
 	"github.com/docker-slim/docker-slim/master/security/apparmor"
 	"github.com/docker-slim/docker-slim/master/security/seccomp"
 	"github.com/docker-slim/docker-slim/messages"
+	"github.com/docker-slim/docker-slim/report"
 	"github.com/docker-slim/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	dockerapi "github.com/cloudimmunity/go-dockerclientx"
 )
+
+const IpcErrRecvTimeoutStr = "receive time out"
 
 type Inspector struct {
 	ContainerInfo     *dockerapi.Container
@@ -189,39 +192,55 @@ func (i *Inspector) RunContainer() error {
 	return err
 }
 
+func (i *Inspector) showContainerLogs() {
+	var outData bytes.Buffer
+	outw := bufio.NewWriter(&outData)
+	var errData bytes.Buffer
+	errw := bufio.NewWriter(&errData)
+
+	log.Debug("docker-slim: getting container logs => ", i.ContainerID)
+	logsOptions := dockerapi.LogsOptions{
+		Container:    i.ContainerID,
+		OutputStream: outw,
+		ErrorStream:  errw,
+		Stdout:       true,
+		Stderr:       true,
+	}
+
+	err := i.ApiClient.Logs(logsOptions)
+	if err != nil {
+		log.Infof("docker-slim: error getting container logs => %v - %v\n", i.ContainerID, err)
+	} else {
+		outw.Flush()
+		errw.Flush()
+		fmt.Println("docker-slim: container stdout:")
+		outData.WriteTo(os.Stdout)
+		fmt.Println("docker-slim: container stderr:")
+		errData.WriteTo(os.Stdout)
+		fmt.Println("docker-slim: end of container logs =============")
+	}
+}
+
 func (i *Inspector) ShutdownContainer() error {
 	i.shutdownContainerChannels()
 
 	if i.ShowContainerLogs {
-		var outData bytes.Buffer
-		outw := bufio.NewWriter(&outData)
-		var errData bytes.Buffer
-		errw := bufio.NewWriter(&errData)
-
-		log.Debug("docker-slim: getting container logs => ", i.ContainerID)
-		logsOptions := dockerapi.LogsOptions{
-			Container:    i.ContainerID,
-			OutputStream: outw,
-			ErrorStream:  errw,
-			Stdout:       true,
-			Stderr:       true,
-		}
-
-		err := i.ApiClient.Logs(logsOptions)
-		if err != nil {
-			log.Infof("docker-slim: error getting container logs => %v - %v\n", i.ContainerID, err)
-		} else {
-			outw.Flush()
-			errw.Flush()
-			fmt.Println("docker-slim: container stdout:")
-			outData.WriteTo(os.Stdout)
-			fmt.Println("docker-slim: container stderr:")
-			errData.WriteTo(os.Stdout)
-		}
+		i.showContainerLogs()
 	}
 
 	err := i.ApiClient.StopContainer(i.ContainerID, 9)
-	utils.WarnOn(err)
+
+	if _, ok := err.(*dockerapi.ContainerNotRunning); ok {
+		log.Info("docker-slim: can't stop the docker-slim container (container is not running)...")
+
+		//show container logs if they aren't shown yet
+		if !i.ShowContainerLogs {
+			i.showContainerLogs()
+		}
+
+	} else {
+		utils.WarnOn(err)
+	}
 
 	removeOption := dockerapi.RemoveContainerOptions{
 		ID:            i.ContainerID,
@@ -238,11 +257,18 @@ func (i *Inspector) FinishMonitoring() {
 	_ = cmdResponse
 
 	log.Debugf("'stop' response => '%v'\n", cmdResponse)
-	log.Info("docker-slim: waiting for the container finish its work...")
+	log.Info("docker-slim: waiting for the container to finish its work...")
 
 	//for now there's only one event ("done")
 	//getEvt() should timeout in two minutes (todo: pick a good timeout)
 	evt, err := ipc.GetContainerEvt()
+
+	//don't want to expose mangos here... mangos.ErrRecvTimeout = errors.New("receive time out")
+	if err != nil && err.Error() == IpcErrRecvTimeoutStr {
+		log.Info("docker-slim: timeout waiting for the docker-slim container to finish its work...")
+		return
+	}
+
 	utils.WarnOn(err)
 	_ = evt
 	log.Debugf("docker-slim: sensor event => '%v'\n", evt)
@@ -273,6 +299,10 @@ func (i *Inspector) initContainerChannels() error {
 
 func (i *Inspector) shutdownContainerChannels() {
 	ipc.ShutdownContainerChannels()
+}
+
+func (i *Inspector) HasCollectedData() bool {
+	return utils.Exists(filepath.Join(i.ImageInspector.ArtifactLocation, report.DefaultContainerReportFileName))
 }
 
 func (i *Inspector) ProcessCollectedData() error {

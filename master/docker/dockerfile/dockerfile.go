@@ -169,13 +169,17 @@ func GenerateFromInfo(location string,
 	env []string,
 	exposedPorts map[docker.Port]struct{},
 	entrypoint []string,
-	cmd []string) error {
+	cmd []string,
+	hasData bool) error {
 
 	dockerfileLocation := filepath.Join(location, "Dockerfile")
 
 	var dfData bytes.Buffer
 	dfData.WriteString("FROM scratch\n")
-	dfData.WriteString("COPY files /\n")
+
+	if hasData {
+		dfData.WriteString("COPY files /\n")
+	}
 
 	if workingDir != "" {
 		dfData.WriteString("WORKDIR ")
@@ -207,13 +211,7 @@ func GenerateFromInfo(location string,
 		for idx := range entrypoint {
 			quotedEntryPoint = append(quotedEntryPoint, strconv.Quote(entrypoint[idx]))
 		}
-		/*
-			"Entrypoint": [
-			            "/bin/sh",
-			            "-c",
-			            "node /opt/my/service/server.js"
-			        ],
-		*/
+
 		dfData.WriteString("ENTRYPOINT [")
 		dfData.WriteString(strings.Join(quotedEntryPoint, ","))
 		dfData.WriteByte(']')

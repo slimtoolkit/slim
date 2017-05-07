@@ -33,6 +33,7 @@ func OnBuild(doDebug bool,
 	excludePaths map[string]bool,
 	includePaths map[string]bool,
 	continueAfter *config.ContinueAfter) {
+
 	fmt.Printf("docker-slim: [build] image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v\n",
 		imageRef, doHttpProbe, doRmFileArtifacts,
 		imageOverrides,
@@ -43,6 +44,11 @@ func OnBuild(doDebug bool,
 
 	imageInspector, err := image.NewInspector(client, imageRef)
 	utils.FailOn(err)
+
+	if imageInspector.NoImage() {
+		fmt.Println("docker-slim: [build] target image not found -", imageRef)
+		return
+	}
 
 	log.Info("docker-slim: inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
@@ -115,6 +121,12 @@ func OnBuild(doDebug bool,
 	err = containerInspector.ShutdownContainer()
 	utils.WarnOn(err)
 
+	if !containerInspector.HasCollectedData() {
+		imageInspector.ShowFatImageDockerInstructions()
+		fmt.Printf("docker-slim: [build] no data collected (no minified image generated) - done. (version: %v)\n", utils.CurrentVersion())
+		return
+	}
+
 	log.Info("docker-slim: processing instrumented 'fat' container info...")
 	err = containerInspector.ProcessCollectedData()
 	utils.FailOn(err)
@@ -131,10 +143,15 @@ func OnBuild(doDebug bool,
 		imageOverrides,
 		overrides)
 	utils.FailOn(err)
+
+	if !builder.HasData {
+		log.Info("docker-slim: WARNING - no data artifacts")
+	}
+
 	err = builder.Build()
 	utils.FailOn(err)
 
-	log.Infoln("docker-slim: created new image:", builder.RepoName)
+	log.Infoln("docker-slim: created new image:", builder.RepoName, "( has data artifacts:", builder.HasData, ")")
 
 	if doRmFileArtifacts {
 		log.Info("docker-slim: removing temporary artifacts...")

@@ -26,6 +26,7 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 	log.Info("fanmon: starting...")
 
 	nd, err := fanapi.Initialize(fanapi.FAN_CLASS_NOTIF, os.O_RDONLY)
+	//TODO: need to propagate the FANOTIFY init failure back to the master instead of just crashing the sensor!
 	utils.FailOn(err)
 	err = nd.Mark(fanapi.FAN_MARK_ADD|fanapi.FAN_MARK_MOUNT,
 		fanapi.FAN_MODIFY|fanapi.FAN_ACCESS|fanapi.FAN_OPEN, -1, mountPoint)
