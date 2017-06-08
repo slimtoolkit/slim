@@ -39,5 +39,3 @@ Yes :-)
 ### Pull Requests
 
 Standard guidelines for [pull requests](https://help.github.com/articles/using-pull-requests)
-
-
