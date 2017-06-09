@@ -1,0 +1,58 @@
+[
+	{
+		"project": "github.com/Sirupsen/logrus",
+		"license": "MIT License",
+		"confidence": 1
+	},
+	{
+		"project": "github.com/cloudimmunity/go-dockerclientx",
+		"license": "BSD 2-clause \"Simplified\" License",
+		"confidence": 1
+	},
+	{
+		"project": "github.com/cloudimmunity/go-dockerclientx/external/github.com/Sirupsen/logrus",
+		"license": "MIT License",
+		"confidence": 1
+	},
+	{
+		"project": "github.com/codegangsta/cli",
+		"license": "MIT License",
+		"confidence": 1
+	},
+	{
+		"project": "github.com/docker-slim/docker-slim",
+		"license": "\"Do What The F*ck You Want To Public License\"",
+		"confidence": 0.047
+	},
+	{
+		"project": "github.com/docker/go-connections/nat",
+		"license": "Apache License 2.0",
+		"confidence": 0.966
+	},
+	{
+		"project": "github.com/dustin/go-humanize",
+		"license": "MIT License",
+		"confidence": 0.969
+	},
+	{
+		"project": "github.com/franela/goreq",
+		"license": "MIT License",
+		"confidence": 1
+	},
+	{
+		"project": "github.com/go-mangos/mangos",
+		"license": "Apache License 2.0",
+		"confidence": 1
+	}
+]
+
+[
+	{
+		"project": "github.com/cloudimmunity/pdiscover",
+		"error": "No license detected"
+	},
+	{
+		"project": "github.com/cloudimmunity/system",
+		"error": "No license detected"
+	}
+]
