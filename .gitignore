@@ -1,3 +1,8 @@
 .DS_Store
 /docker-slim
 /docker-slim-sensor
+/dist_linux/
+/dist_mac/
+/bin/
+/_gopath/
+

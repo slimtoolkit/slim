@@ -367,36 +367,37 @@ Note that you should be able to avoid including /etc/passwd if you are ok with u
 
 ## BUILD PROCESS
 
-Go 1.5.1 or higher is required. Earlier versions of Go have a Docker/ptrace related bug (Go kills processes if your app is PID 1). When the 'monitor' is separate from the 'launcher' process it will be possible to user older Go versions again.
+Go 1.8 or higher is recommended. You can use earlier version of Go, but it can't be lower than Go 1.5.1. Versions prior to 1.5.1 have a Docker/ptrace related bug (Go kills processes if your app is PID 1). When the 'monitor' is separate from the 'launcher' process it will be possible to user older Go versions again.
 
-Before you build the tool you need to install GOX and Godep (optional; you'll need it only if you have problems pulling the dependencies with vanilla `go get`)
+Before you build `docker-slim` you need to install `gox`. Additional tools to install:`golint` and `govendor`) (optional; you'll need it only if you have problems pulling the dependencies with vanilla `go get`)
 
-* Godep - dependency manager ( https://github.com/tools/godep )
+Tools:
 
-1: `go get github.com/tools/godep`
+* `gox` - Must install it if you want to use the build scripts (not required if you want to do native builds). See `https://github.com/mitchellh/gox` for more details.
+* `govendor` - Should install if you intend to add/change dependencies (you can still manage dependencies manually if want). See `https://github.com/kardianos/govendor` for more details.
+* `golint` - Optional tool for code analysis.  See `https://github.com/golang/lint` for more details.
 
-* GOX - to build Linux binaries on a Mac ( https://github.com/mitchellh/gox ):
-
-1: `go get github.com/mitchellh/gox`
-
-2: `gox -build-toolchain -os="linux" -os="darwin"` (note:  might have to run it with `sudo`)
+You can install these tools using the `tools.get.sh` shell script in the `scripts` directory.
 
 Notes:
 
-* Step 2 is not necessary with Go 1.5.
 * Make sure you have `golint` if you intend to run the `src.inspect.sh` or `mac.src.inspect.command` scripts. Install it with `go get -u github.com/golang/lint/golint` if you don't have it.
 
 #### Local Build Steps
 
 Once you install the dependencies (GOX - required; Godep - optional) run these scripts:
 
-1. Pull the dependencies: `./scripts/src.deps.get.sh`
+1. Prepare the code (do it once after you download the code): `./scripts/src.prep.sh`
 2. Build it: `./scripts/src.build.sh`
 
 You can use the clickable `.command` scripts on Mac OS X (located in the `scripts` directory):
 
-1. `mac.src.deps.get.command`
+1. `mac.src.prep.command`
 2. `mac.src.build.command`
+
+Notes:
+
+These helper scripts make it possible to build the code anywhere on the system. It doesn't have to be in the `$GOPATH/src` directory.
 
 #### Traditional Go Way to Build
 
@@ -407,9 +408,8 @@ If you don't want to use the helper scripts you can build `docker-slim` using re
 3. `cd $GOPATH/src/github.com/docker-slim`
 4. `git clone https://github.com/docker-slim/docker-slim.git` <- if you decide to use `go get` to pull the `docker-slim` repo make sure to use the `-d` flag, so Go doesn't try to build it
 5. `cd docker-slim`
-6. `go get -d -v ./...`
-7. `go build -v ./apps/docker-slim` <- builds the main app in the repo's root directory
-8. `env GOOS=linux GOARCH=amd64 go build -v ./apps/docker-slim-sensor` <- builds the sensor app (must be built as a linux executable)
+6. `go build -v ./apps/docker-slim` <- builds the main app in the repo's root directory
+7. `env GOOS=linux GOARCH=amd64 go build -v ./apps/docker-slim-sensor` <- builds the sensor app (must be built as a linux executable)
 
 #### Builder Image Steps
 
@@ -484,4 +484,4 @@ Docker Hub: [dslim](https://hub.docker.com/r/dslim/) (dockerslim is already take
 
 ## NOTES
 
-* The code is still not very pretty, so feel free to make improvements and submit your PRs :)
+If the project sounds interesting or if you found a bug make sure to read `CONTRIBUTING.md` and submit a PR!
