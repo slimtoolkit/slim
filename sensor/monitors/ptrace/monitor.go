@@ -19,6 +19,7 @@ type syscallEvent struct {
 	retVal  uint64
 }
 
+// Run starts the PTRACE monitor
 func Run(startChan <-chan int,
 	stopChan chan struct{},
 	appName string,

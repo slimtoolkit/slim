@@ -6,6 +6,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// FailOn logs the error information and terminates the application if there's an error
 func FailOn(err error) {
 	if err != nil {
 		stackData := debug.Stack()
@@ -13,6 +14,7 @@ func FailOn(err error) {
 	}
 }
 
+// WarnOn logs the error information as a warning
 func WarnOn(err error) {
 	if err != nil {
 		stackData := debug.Stack()
@@ -20,6 +22,7 @@ func WarnOn(err error) {
 	}
 }
 
+// FailWhen logs the given message if the condition is true (terminates the application)
 func FailWhen(cond bool, msg string) {
 	if cond {
 		stackData := debug.Stack()
@@ -31,6 +34,7 @@ func FailWhen(cond bool, msg string) {
 	}
 }
 
+// Fail logs the given messages and terminates the application
 func Fail(msg string) {
 	stackData := debug.Stack()
 	log.WithFields(log.Fields{

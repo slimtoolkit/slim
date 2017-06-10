@@ -23,6 +23,7 @@ type imageInst struct {
 	fullTags     []string
 }
 
+// ReverseDockerfileFromHistory recreates Dockerfile information from container image history
 func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]string, error) {
 	//NOTE: comment field is missing (TODO: enhance the lib...)
 	imageHistory, err := apiClient.ImageHistory(imageID)
@@ -158,12 +159,14 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]s
 	*/
 }
 
+// SaveDockerfileData saves the Dockerfile information to a file
 func SaveDockerfileData(fatImageDockerfileLocation string, fatImageDockerInstructions []string) error {
 	var data bytes.Buffer
 	data.WriteString(strings.Join(fatImageDockerInstructions, "\n"))
 	return ioutil.WriteFile(fatImageDockerfileLocation, data.Bytes(), 0644)
 }
 
+// GenerateFromInfo builds and saves a Dockerfile file object
 func GenerateFromInfo(location string,
 	workingDir string,
 	env []string,

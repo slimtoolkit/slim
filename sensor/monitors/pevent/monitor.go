@@ -11,6 +11,7 @@ import (
 //Process Event Monitor goal:
 //Watch the processes to separate the activity we care about from unrelated stuff running in the background.
 
+// Run starts the PEVENT monitor
 func Run(stopChan chan struct{}) <-chan *report.PeMonitorReport {
 	log.Info("pemon: starting...")
 

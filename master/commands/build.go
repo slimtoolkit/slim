@@ -18,13 +18,14 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
+// OnBuild implements the 'build' docker-slim command
 func OnBuild(doDebug bool,
 	statePath string,
 	clientConfig *config.DockerClient,
 	imageRef string,
 	customImageTag string,
-	doHttpProbe bool,
-	httpProbeCmds []config.HttpProbeCmd,
+	doHTTPProbe bool,
+	httpProbeCmds []config.HTTPProbeCmd,
 	doRmFileArtifacts bool,
 	doShowContainerLogs bool,
 	imageOverrides map[string]bool,
@@ -35,7 +36,7 @@ func OnBuild(doDebug bool,
 	continueAfter *config.ContinueAfter) {
 
 	fmt.Printf("docker-slim: [build] image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v\n",
-		imageRef, doHttpProbe, doRmFileArtifacts,
+		imageRef, doHTTPProbe, doRmFileArtifacts,
 		imageOverrides,
 		overrides.Entrypoint, overrides.ClearEntrypoint, overrides.Cmd, overrides.ClearCmd,
 		overrides.Workdir, overrides.Env, overrides.ExposedPorts)
@@ -84,10 +85,10 @@ func OnBuild(doDebug bool,
 	log.Info("docker-slim: watching container monitor...")
 
 	if "probe" == continueAfter.Mode {
-		doHttpProbe = true
+		doHTTPProbe = true
 	}
 
-	if doHttpProbe {
+	if doHTTPProbe {
 		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds)
 		utils.FailOn(err)
 		probe.Start()

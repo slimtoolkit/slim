@@ -6,6 +6,7 @@ import (
 	"github.com/cloudimmunity/go-dockerclientx"
 )
 
+// ContainerOverrides provides a set of container field overrides
 type ContainerOverrides struct {
 	Entrypoint      []string
 	ClearEntrypoint bool
@@ -16,13 +17,15 @@ type ContainerOverrides struct {
 	ExposedPorts    map[docker.Port]struct{}
 }
 
+// VolumeMount provides the volume mount configuration information
 type VolumeMount struct {
 	Source      string
 	Destination string
 	Options     string
 }
 
-type HttpProbeCmd struct {
+// HTTPProbeCmd provides the HTTP probe parameters
+type HTTPProbeCmd struct {
 	Method   string   `json:"method"`
 	Resource string   `json:"resource"`
 	Port     int      `json:"port"`
@@ -33,10 +36,12 @@ type HttpProbeCmd struct {
 	Password string   `json:"password"`
 }
 
-type HttpProbeCmds struct {
-	Commands []HttpProbeCmd `json:"commands"`
+// HTTPProbeCmds is a list of HTTPProbeCmd instances
+type HTTPProbeCmds struct {
+	Commands []HTTPProbeCmd `json:"commands"`
 }
 
+// DockerClient provides Docker client parameters
 type DockerClient struct {
 	UseTLS      bool
 	VerifyTLS   bool
@@ -45,6 +50,7 @@ type DockerClient struct {
 	Env         map[string]string
 }
 
+// ContinueAfter provides the command execution mode parameters
 type ContinueAfter struct {
 	Mode         string
 	Timeout      time.Duration

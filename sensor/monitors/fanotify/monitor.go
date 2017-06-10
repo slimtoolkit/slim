@@ -14,6 +14,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// Event is file operation event
 type Event struct {
 	ID      uint32
 	Pid     int32
@@ -22,6 +23,7 @@ type Event struct {
 	IsWrite bool
 }
 
+// Run starts the FANOTIFY monitor
 func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorReport {
 	log.Info("fanmon: starting...")
 

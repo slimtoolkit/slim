@@ -12,6 +12,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// New creates a new Docker client instance
 func New(config *config.DockerClient) *docker.Client {
 	var client *docker.Client
 	var err error

@@ -13,6 +13,7 @@ import (
 	"github.com/docker-slim/docker-slim/messages"
 )
 
+// InitChannels initializes the communication channels with the master
 func InitChannels() error {
 	var err error
 	evtChannel, err = newEvtPublisher(evtChannelAddr)
@@ -28,11 +29,13 @@ func InitChannels() error {
 	return nil
 }
 
+// ShutdownChannels destroys the communication channels with the master
 func ShutdownChannels() {
 	shutdownCmdChannel()
 	shutdownEvtChannel()
 }
 
+// RunCmdServer starts the command server
 func RunCmdServer(done <-chan struct{}) (<-chan messages.Message, error) {
 	return runCmdServer(cmdChannel, done)
 }
@@ -153,6 +156,7 @@ func publishEvt(channel mangos.Socket, evt string) error {
 	return nil
 }
 
+// TryPublishEvt attempts to publish an event to the master
 func TryPublishEvt(ptry uint, event string) {
 	for ptry := 0; ptry < 3; ptry++ {
 		log.Debugf("sensor: trying to publish '%v' event (attempt %v)\n", event, ptry+1)

@@ -39,6 +39,8 @@ type appArmorProfileData struct {
 //need to safe more metadata about the artifacts in the monitor data
 //1. exe bit
 //2. w/r operation info (so we can add useful write rules)
+
+// GenProfile creates an AppArmor profile
 func GenProfile(artifactLocation string, profileName string) error {
 	containerReportFilePath := filepath.Join(artifactLocation, report.DefaultContainerReportFileName)
 

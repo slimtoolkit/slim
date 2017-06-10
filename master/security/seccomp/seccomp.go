@@ -42,6 +42,7 @@ var extraCalls = []string{
 	"getgid",
 }
 
+// GenProfile creates a SecComp profile
 func GenProfile(artifactLocation string, profileName string) error {
 	containerReportFilePath := filepath.Join(artifactLocation, report.DefaultContainerReportFileName)
 

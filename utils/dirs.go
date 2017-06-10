@@ -12,6 +12,7 @@ import (
 	"github.com/cloudimmunity/pdiscover"
 )
 
+// Directory and file related errors
 var (
 	ErrNoSrcDir                  = errors.New("no source directory path")
 	ErrNoDstDir                  = errors.New("no destination directory path")
@@ -22,6 +23,7 @@ var (
 	ErrUnsupportedFileObjectType = errors.New("unsupported file object type")
 )
 
+// Exists returns true if the target file system object exists
 func Exists(target string) bool {
 	//if _, err := os.Stat(target); os.IsNotExist(err) {
 	if _, err := os.Stat(target); err != nil {
@@ -31,6 +33,7 @@ func Exists(target string) bool {
 	return true
 }
 
+// IsDir returns true if the target file system object is a directory
 func IsDir(target string) bool {
 	info, err := os.Stat(target)
 	if err != nil {
@@ -40,6 +43,7 @@ func IsDir(target string) bool {
 	return info.IsDir()
 }
 
+// IsRegularFile returns true if the target file system object is a regular file
 func IsRegularFile(target string) bool {
 	info, err := os.Stat(target)
 	if err != nil {
@@ -49,6 +53,7 @@ func IsRegularFile(target string) bool {
 	return info.Mode().IsRegular()
 }
 
+// IsSymlink returns true if the target file system object is a symlink
 func IsSymlink(target string) bool {
 	info, err := os.Stat(target)
 	if err != nil {
@@ -58,6 +63,7 @@ func IsSymlink(target string) bool {
 	return (info.Mode() & os.ModeSymlink) == os.ModeSymlink
 }
 
+// CopyFile copies the source file system object to the desired destination
 func CopyFile(src, dst string, makeDir bool) error {
 	info, err := os.Stat(src)
 	if err != nil {
@@ -74,6 +80,7 @@ func CopyFile(src, dst string, makeDir bool) error {
 	}
 }
 
+// CopySymlinkFile copies a symlink file
 func CopySymlinkFile(src, dst string, makeDir bool) error {
 	log.Debugf("CopySymlinkFile(%v,%v,%v)", src, dst, makeDir)
 
@@ -90,6 +97,7 @@ func CopySymlinkFile(src, dst string, makeDir bool) error {
 	return nil
 }
 
+// CopyRegularFile copies a regular file
 func CopyRegularFile(src, dst string, makeDir bool) error {
 	log.Debugf("CopyRegularFile(%v,%v,%v)", src, dst, makeDir)
 
@@ -275,6 +283,7 @@ func copyFileObjectHandler(
 	}
 }
 
+// CopyDir copies a directory
 func CopyDir(src, dst string,
 	copyRelPath, skipErrors bool,
 	ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{}) (error, []error) {
@@ -303,9 +312,9 @@ func CopyDir(src, dst string,
 	if err != nil {
 		if os.IsNotExist(err) {
 			return ErrSrcDirNotExist, nil
-		} else {
-			return err, nil
 		}
+
+		return err, nil
 	}
 
 	if !srcInfo.IsDir() {
@@ -341,30 +350,33 @@ func CopyDir(src, dst string,
 
 ///////////////////////////////////////////////////////////////////////////////
 
+// ExeDir returns the directory information for the application
 func ExeDir() string {
 	exePath, err := pdiscover.GetOwnProcPath()
 	FailOn(err)
 	return filepath.Dir(exePath)
 }
 
+// FileDir returns the directory information for the given file
 func FileDir(fileName string) string {
 	dirName, err := filepath.Abs(filepath.Dir(fileName))
 	FailOn(err)
 	return dirName
 }
 
-func PrepareSlimDirs(statePath, imageId string) (string, string) {
+// PrepareSlimDirs ensures that the required application directories exist
+func PrepareSlimDirs(statePath, imageID string) (string, string) {
 	//images IDs in Docker 1.9+ are prefixed with a hash type...
-	if strings.Contains(imageId, ":") {
-		parts := strings.Split(imageId, ":")
-		imageId = parts[1]
+	if strings.Contains(imageID, ":") {
+		parts := strings.Split(imageID, ":")
+		imageID = parts[1]
 	}
 
 	if statePath == "" {
 		statePath = ExeDir()
 	}
 
-	localVolumePath := filepath.Join(statePath, ".images", imageId)
+	localVolumePath := filepath.Join(statePath, ".images", imageID)
 	artifactLocation := filepath.Join(localVolumePath, "artifacts")
 	artifactDir, err := os.Stat(artifactLocation)
 	if os.IsNotExist(err) {

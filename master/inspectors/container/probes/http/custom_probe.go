@@ -11,18 +11,20 @@ import (
 	"github.com/franela/goreq"
 )
 
-type HttpProbe struct {
+// CustomProbe is a custom HTTP probe
+type CustomProbe struct {
 	Ports              []string
-	Cmds               []config.HttpProbeCmd
+	Cmds               []config.HTTPProbeCmd
 	ContainerInspector *container.Inspector
 	doneChan           chan struct{}
 }
 
-func NewCustomProbe(inspector *container.Inspector, cmds []config.HttpProbeCmd) (*HttpProbe, error) {
+// NewCustomProbe creates a new custom HTTP probe
+func NewCustomProbe(inspector *container.Inspector, cmds []config.HTTPProbeCmd) (*CustomProbe, error) {
 	//add default probe: GET /
-	cmds = append(cmds, config.HttpProbeCmd{Protocol: "http", Method: "GET", Resource: "/"})
+	cmds = append(cmds, config.HTTPProbeCmd{Protocol: "http", Method: "GET", Resource: "/"})
 
-	probe := &HttpProbe{
+	probe := &CustomProbe{
 		Cmds:               cmds,
 		ContainerInspector: inspector,
 		doneChan:           make(chan struct{}),
@@ -39,7 +41,8 @@ func NewCustomProbe(inspector *container.Inspector, cmds []config.HttpProbeCmd) 
 	return probe, nil
 }
 
-func (p *HttpProbe) Start() {
+// Start starts the HTTP probe instance execution
+func (p *CustomProbe) Start() {
 	go func() {
 		//TODO: need to do a better job figuring out if the target app is ready to accept connections
 		time.Sleep(4 * time.Second)
@@ -81,6 +84,7 @@ func (p *HttpProbe) Start() {
 	}()
 }
 
-func (p *HttpProbe) DoneChan() <-chan struct{} {
+// DoneChan returns the 'done' channel for the HTTP probe instance
+func (p *CustomProbe) DoneChan() <-chan struct{} {
 	return p.doneChan
 }

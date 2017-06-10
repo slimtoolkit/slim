@@ -6,8 +6,10 @@ import (
 	"os"
 )
 
+// ArtifactType is an artifact type ID
 type ArtifactType int
 
+// Artifact type ID constants
 const (
 	DirArtifactType     = 1
 	FileArtifactType    = 2
@@ -15,9 +17,8 @@ const (
 	UnknownArtifactType = 99
 )
 
-const (
-	DefaultContainerReportFileName = "creport.json"
-)
+// DefaultContainerReportFileName is the default container report file name
+const DefaultContainerReportFileName = "creport.json"
 
 var artifactTypeNames = map[ArtifactType]string{
 	DirArtifactType:     "Dir",
@@ -26,6 +27,7 @@ var artifactTypeNames = map[ArtifactType]string{
 	UnknownArtifactType: "Unknown",
 }
 
+// String converts the artifact type ID to a string
 func (t ArtifactType) String() string {
 	return artifactTypeNames[t]
 }
@@ -37,10 +39,12 @@ var artifactTypeValues = map[string]ArtifactType{
 	"Unknown": UnknownArtifactType,
 }
 
+// GetArtifactTypeValue maps an artifact type name to an artifact type ID
 func GetArtifactTypeValue(s string) ArtifactType {
 	return artifactTypeValues[s]
 }
 
+// ProcessInfo contains various process object metadata
 type ProcessInfo struct {
 	Pid       int32  `json:"pid"`
 	Name      string `json:"name"`
@@ -51,6 +55,7 @@ type ProcessInfo struct {
 	ParentPid int32  `json:"ppid"`
 }
 
+// FileInfo contains various file object and activity metadata
 type FileInfo struct {
 	EventCount   uint32 `json:"event_count"`
 	FirstEventID uint32 `json:"first_eid"`
@@ -60,6 +65,7 @@ type FileInfo struct {
 	ExeCount     uint32 `json:"execs,omitempty"`
 }
 
+// FanMonitorReport is a file monitoring report
 type FanMonitorReport struct {
 	MonitorPid       int                             `json:"monitor_pid"`
 	MonitorParentPid int                             `json:"monitor_ppid"`
@@ -69,17 +75,20 @@ type FanMonitorReport struct {
 	ProcessFiles     map[string]map[string]*FileInfo `json:"process_files"`
 }
 
+// PeMonitorReport is a processing monitoring report
 type PeMonitorReport struct {
 	Children map[int][]int
 	Parents  map[int]int
 }
 
+// SyscallStatInfo contains various system call activity metadata
 type SyscallStatInfo struct {
 	Number int16  `json:"num"`
 	Name   string `json:"name"`
 	Count  uint64 `json:"count"`
 }
 
+// PtMonitorReport contains various process execution metadata
 type PtMonitorReport struct {
 	ArchName     string                     `json:"arch_name"`
 	SyscallCount uint64                     `json:"syscall_count"`
@@ -87,6 +96,7 @@ type PtMonitorReport struct {
 	SyscallStats map[string]SyscallStatInfo `json:"syscall_stats"`
 }
 
+// ArtifactProps contains various file system artifact properties
 type ArtifactProps struct {
 	FileType ArtifactType    `json:"-"` //todo
 	FilePath string          `json:"file_path"`
@@ -100,6 +110,7 @@ type ArtifactProps struct {
 	AppType  string          `json:"app_type,omitempty"`
 }
 
+// UnmarshalJSON decodes artifact property data
 func (p *ArtifactProps) UnmarshalJSON(data []byte) error {
 	type artifactPropsType ArtifactProps
 	props := &struct {
@@ -117,6 +128,7 @@ func (p *ArtifactProps) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
+// MarshalJSON encodes artifact property data
 func (p *ArtifactProps) MarshalJSON() ([]byte, error) {
 	type artifactPropsType ArtifactProps
 	return json.Marshal(&struct {
@@ -128,20 +140,24 @@ func (p *ArtifactProps) MarshalJSON() ([]byte, error) {
 	})
 }
 
+// ImageReport contains image report fields
 type ImageReport struct {
 	Files []*ArtifactProps `json:"files"`
 }
 
+// MonitorReports contains monitoring report fields
 type MonitorReports struct {
 	Fan *FanMonitorReport `json:"fan"`
 	Pt  *PtMonitorReport  `json:"pt"`
 }
 
+// ContainerReport contains container report fields
 type ContainerReport struct {
 	Monitors MonitorReports `json:"monitors"`
 	Image    ImageReport    `json:"image"`
 }
 
+// PermSetFromFlags maps artifact flags to permissions
 func PermSetFromFlags(flags map[string]bool) string {
 	var b bytes.Buffer
 	if flags["R"] {

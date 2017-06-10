@@ -12,6 +12,7 @@ import (
 	"github.com/cloudimmunity/go-dockerclientx"
 )
 
+// ImageBuilder creates new container images
 type ImageBuilder struct {
 	RepoName     string
 	ID           string
@@ -25,9 +26,10 @@ type ImageBuilder struct {
 	User         string
 	HasData      bool
 	BuildOptions docker.BuildImageOptions
-	ApiClient    *docker.Client
+	APIClient    *docker.Client
 }
 
+// NewImageBuilder creates a new ImageBuilder instances
 func NewImageBuilder(client *docker.Client,
 	imageRepoName string,
 	imageInfo *docker.Image,
@@ -52,7 +54,7 @@ func NewImageBuilder(client *docker.Client,
 			Dockerfile:     "Dockerfile",
 			OutputStream:   os.Stdout,
 		},
-		ApiClient: client,
+		APIClient: client,
 	}
 
 	dataDir := filepath.Join(artifactLocation, "files")
@@ -61,14 +63,16 @@ func NewImageBuilder(client *docker.Client,
 	return builder, nil
 }
 
+// Build creates a new container image
 func (b *ImageBuilder) Build() error {
 	if err := b.GenerateDockerfile(); err != nil {
 		return err
 	}
 
-	return b.ApiClient.BuildImage(b.BuildOptions)
+	return b.APIClient.BuildImage(b.BuildOptions)
 }
 
+// GenerateDockerfile creates a Dockerfile file
 func (b *ImageBuilder) GenerateDockerfile() error {
 	return dockerfile.GenerateFromInfo(b.BuildOptions.ContextDir,
 		b.WorkingDir,

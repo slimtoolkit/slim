@@ -14,9 +14,10 @@ import (
 	"github.com/codegangsta/cli"
 )
 
+// DockerSlim app CLI constants
 const (
-	APP_NAME  = "docker-slim"
-	APP_USAGE = "optimize and secure your Docker containers!"
+	AppName  = "docker-slim"
+	AppUsage = "optimize and secure your Docker containers!"
 )
 
 var app *cli.App
@@ -24,8 +25,8 @@ var app *cli.App
 func init() {
 	app = cli.NewApp()
 	app.Version = utils.CurrentVersion()
-	app.Name = APP_NAME
-	app.Usage = APP_USAGE
+	app.Name = AppName
+	app.Usage = AppUsage
 	app.CommandNotFound = func(ctx *cli.Context, command string) {
 		fmt.Printf("unknown command - %v \n\n", command)
 		cli.ShowAppHelp(ctx)
@@ -91,20 +92,20 @@ func init() {
 		return nil
 	}
 
-	doHttpProbeFlag := cli.BoolFlag{
+	doHTTPProbeFlag := cli.BoolFlag{
 		Name:   "http-probe, p",
 		Usage:  "Enables HTTP probe",
 		EnvVar: "DSLIM_HTTP_PROBE",
 	}
 
-	doHttpProbeCmdFlag := cli.StringSliceFlag{
+	doHTTPProbeCmdFlag := cli.StringSliceFlag{
 		Name:   "http-probe-cmd",
 		Value:  &cli.StringSlice{},
 		Usage:  "User defined HTTP probes",
 		EnvVar: "DSLIM_HTTP_PROBE_CMD",
 	}
 
-	doHttpProbeCmdFileFlag := cli.StringFlag{
+	doHTTPProbeCmdFileFlag := cli.StringFlag{
 		Name:   "http-probe-cmd-file",
 		Value:  "",
 		Usage:  "File with user defined HTTP probes",
@@ -212,9 +213,9 @@ func init() {
 			Aliases: []string{"b"},
 			Usage:   "Collects fat image information and builds a slim image from it",
 			Flags: []cli.Flag{
-				doHttpProbeFlag,
-				doHttpProbeCmdFlag,
-				doHttpProbeCmdFileFlag,
+				doHTTPProbeFlag,
+				doHTTPProbeCmdFlag,
+				doHTTPProbeCmdFileFlag,
 				doShowContainerLogsFlag,
 				cli.BoolFlag{
 					Name:   "remove-file-artifacts, r",
@@ -257,16 +258,16 @@ func init() {
 				clientConfig := getDockerClientConfig(ctx)
 				doRmFileArtifacts := ctx.Bool("remove-file-artifacts")
 
-				doHttpProbe := ctx.Bool("http-probe")
+				doHTTPProbe := ctx.Bool("http-probe")
 
-				httpProbeCmds, err := getHttpProbes(ctx)
+				httpProbeCmds, err := getHTTPProbes(ctx)
 				if err != nil {
 					fmt.Printf("[build] invalid HTTP probes: %v\n", err)
 					return err
 				}
 
 				if len(httpProbeCmds) > 0 {
-					doHttpProbe = true
+					doHTTPProbe = true
 				}
 
 				doShowContainerLogs := ctx.Bool("show-clogs")
@@ -290,7 +291,7 @@ func init() {
 
 				doExcludeMounts := ctx.BoolT("exclude-mounts")
 				if doExcludeMounts {
-					for mpath, _ := range volumeMounts {
+					for mpath := range volumeMounts {
 						excludePaths[mpath] = true
 					}
 				}
@@ -301,7 +302,7 @@ func init() {
 					return err
 				}
 
-				for ipath, _ := range includePaths {
+				for ipath := range includePaths {
 					if excludePaths[ipath] {
 						fmt.Printf("[build] include and exclude path conflict: %v\n", err)
 						return nil
@@ -312,7 +313,7 @@ func init() {
 					statePath,
 					clientConfig,
 					imageRef, doTag,
-					doHttpProbe, httpProbeCmds,
+					doHTTPProbe, httpProbeCmds,
 					doRmFileArtifacts, doShowContainerLogs,
 					parseImageOverrides(doImageOverrides),
 					overrides,
@@ -327,9 +328,9 @@ func init() {
 			Aliases: []string{"p"},
 			Usage:   "Collects fat image information and generates a fat container report",
 			Flags: []cli.Flag{
-				doHttpProbeFlag,
-				doHttpProbeCmdFlag,
-				doHttpProbeCmdFileFlag,
+				doHTTPProbeFlag,
+				doHTTPProbeCmdFlag,
+				doHTTPProbeCmdFileFlag,
 				doShowContainerLogsFlag,
 				doUseEntrypointFlag,
 				doUseCmdFlag,
@@ -353,16 +354,16 @@ func init() {
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
-				doHttpProbe := ctx.Bool("http-probe")
+				doHTTPProbe := ctx.Bool("http-probe")
 
-				httpProbeCmds, err := getHttpProbes(ctx)
+				httpProbeCmds, err := getHTTPProbes(ctx)
 				if err != nil {
 					fmt.Printf("[profile] invalid HTTP probes: %v\n", err)
 					return err
 				}
 
 				if len(httpProbeCmds) > 0 {
-					doHttpProbe = true
+					doHTTPProbe = true
 				}
 
 				doShowContainerLogs := ctx.Bool("show-clogs")
@@ -383,7 +384,7 @@ func init() {
 
 				doExcludeMounts := ctx.Bool("exclude-mounts")
 				if doExcludeMounts {
-					for mpath, _ := range volumeMounts {
+					for mpath := range volumeMounts {
 						excludePaths[mpath] = true
 					}
 				}
@@ -394,7 +395,7 @@ func init() {
 					return err
 				}
 
-				for ipath, _ := range includePaths {
+				for ipath := range includePaths {
 					if excludePaths[ipath] {
 						fmt.Printf("[profile] include and exclude path conflict: %v\n", err)
 						return nil
@@ -405,7 +406,7 @@ func init() {
 					statePath,
 					clientConfig,
 					imageRef,
-					doHttpProbe, httpProbeCmds,
+					doHTTPProbe, httpProbeCmds,
 					doShowContainerLogs, overrides,
 					volumeMounts, excludePaths, includePaths,
 					confinueAfter)
@@ -481,19 +482,19 @@ func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	return overrides, nil
 }
 
-func getHttpProbes(ctx *cli.Context) ([]config.HttpProbeCmd, error) {
-	httpProbeCmds, err := parseHttpProbes(ctx.StringSlice("http-probe-cmd"))
+func getHTTPProbes(ctx *cli.Context) ([]config.HTTPProbeCmd, error) {
+	httpProbeCmds, err := parseHTTPProbes(ctx.StringSlice("http-probe-cmd"))
 	if err != nil {
 		return nil, err
 	}
 
-	moreHttpProbeCmds, err := parseHttpProbesFile(ctx.String("http-probe-cmd-file"))
+	moreHTTPProbeCmds, err := parseHTTPProbesFile(ctx.String("http-probe-cmd-file"))
 	if err != nil {
 		return nil, err
 	}
 
-	if moreHttpProbeCmds != nil {
-		httpProbeCmds = append(httpProbeCmds, moreHttpProbeCmds...)
+	if moreHTTPProbeCmds != nil {
+		httpProbeCmds = append(httpProbeCmds, moreHTTPProbeCmds...)
 	}
 
 	return httpProbeCmds, nil

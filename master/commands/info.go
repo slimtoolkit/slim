@@ -12,6 +12,7 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
+// OnInfo implements the 'info' docker-slim command
 func OnInfo(statePath string, clientConfig *config.DockerClient, imageRef string) {
 
 	fmt.Println("docker-slim: [info] image=", imageRef)

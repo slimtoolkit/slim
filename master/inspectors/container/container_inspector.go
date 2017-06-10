@@ -22,8 +22,10 @@ import (
 	dockerapi "github.com/cloudimmunity/go-dockerclientx"
 )
 
+// IpcErrRecvTimeoutStr - an IPC receive timeout error
 const IpcErrRecvTimeoutStr = "receive time out"
 
+// Inspector is a container execution inspector
 type Inspector struct {
 	ContainerInfo     *dockerapi.Container
 	ContainerID       string
@@ -34,7 +36,7 @@ type Inspector struct {
 	EvtPort           dockerapi.Port
 	DockerHostIP      string
 	ImageInspector    *image.Inspector
-	ApiClient         *dockerapi.Client
+	APIClient         *dockerapi.Client
 	Overrides         *config.ContainerOverrides
 	ShowContainerLogs bool
 	VolumeMounts      map[string]config.VolumeMount
@@ -56,6 +58,7 @@ func pathMapKeys(m map[string]bool) []string {
 	return keys
 }
 
+// NewInspector creates a new container execution inspector
 func NewInspector(client *dockerapi.Client,
 	imageInspector *image.Inspector,
 	localVolumePath string,
@@ -71,7 +74,7 @@ func NewInspector(client *dockerapi.Client,
 		CmdPort:           "65501/tcp",
 		EvtPort:           "65502/tcp",
 		ImageInspector:    imageInspector,
-		ApiClient:         client,
+		APIClient:         client,
 		Overrides:         overrides,
 		ShowContainerLogs: showContainerLogs,
 		VolumeMounts:      volumeMounts,
@@ -105,6 +108,7 @@ func NewInspector(client *dockerapi.Client,
 	return inspector, nil
 }
 
+// RunContainer starts the container inspector instance execution
 func (i *Inspector) RunContainer() error {
 	artifactsPath := filepath.Join(i.LocalVolumePath, "artifacts")
 	sensorPath := filepath.Join(utils.ExeDir(), "docker-slim-sensor")
@@ -149,7 +153,7 @@ func (i *Inspector) RunContainer() error {
 		},
 	}
 
-	containerInfo, err := i.ApiClient.CreateContainer(containerOptions)
+	containerInfo, err := i.APIClient.CreateContainer(containerOptions)
 	if err != nil {
 		return err
 	}
@@ -157,11 +161,11 @@ func (i *Inspector) RunContainer() error {
 	i.ContainerID = containerInfo.ID
 	log.Infoln("docker-slim: created container =>", i.ContainerID)
 
-	if err := i.ApiClient.StartContainer(i.ContainerID, nil); err != nil {
+	if err := i.APIClient.StartContainer(i.ContainerID, nil); err != nil {
 		return err
 	}
 
-	if i.ContainerInfo, err = i.ApiClient.InspectContainer(i.ContainerID); err != nil {
+	if i.ContainerInfo, err = i.APIClient.InspectContainer(i.ContainerID); err != nil {
 		return err
 	}
 
@@ -207,7 +211,7 @@ func (i *Inspector) showContainerLogs() {
 		Stderr:       true,
 	}
 
-	err := i.ApiClient.Logs(logsOptions)
+	err := i.APIClient.Logs(logsOptions)
 	if err != nil {
 		log.Infof("docker-slim: error getting container logs => %v - %v\n", i.ContainerID, err)
 	} else {
@@ -221,6 +225,7 @@ func (i *Inspector) showContainerLogs() {
 	}
 }
 
+// ShutdownContainer terminates the container inspector instance execution
 func (i *Inspector) ShutdownContainer() error {
 	i.shutdownContainerChannels()
 
@@ -228,7 +233,7 @@ func (i *Inspector) ShutdownContainer() error {
 		i.showContainerLogs()
 	}
 
-	err := i.ApiClient.StopContainer(i.ContainerID, 9)
+	err := i.APIClient.StopContainer(i.ContainerID, 9)
 
 	if _, ok := err.(*dockerapi.ContainerNotRunning); ok {
 		log.Info("docker-slim: can't stop the docker-slim container (container is not running)...")
@@ -247,10 +252,11 @@ func (i *Inspector) ShutdownContainer() error {
 		RemoveVolumes: true,
 		Force:         true,
 	}
-	err = i.ApiClient.RemoveContainer(removeOption)
+	err = i.APIClient.RemoveContainer(removeOption)
 	return nil
 }
 
+// FinishMonitoring ends the target container monitoring activities
 func (i *Inspector) FinishMonitoring() {
 	cmdResponse, err := ipc.SendContainerCmd(&messages.StopMonitor{})
 	utils.WarnOn(err)
@@ -301,10 +307,12 @@ func (i *Inspector) shutdownContainerChannels() {
 	ipc.ShutdownContainerChannels()
 }
 
+// HasCollectedData returns true if any data was produced monitoring the target container
 func (i *Inspector) HasCollectedData() bool {
 	return utils.Exists(filepath.Join(i.ImageInspector.ArtifactLocation, report.DefaultContainerReportFileName))
 }
 
+// ProcessCollectedData performs post-processing on the collected container data
 func (i *Inspector) ProcessCollectedData() error {
 	log.Info("docker-slim: generating AppArmor profile...")
 	err := apparmor.GenProfile(i.ImageInspector.ArtifactLocation, i.ImageInspector.AppArmorProfileName)

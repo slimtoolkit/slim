@@ -8,6 +8,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 )
 
+// Start starts the target application in the container
 func Start(appName string, appArgs []string, appDir string, doPtrace bool) (*exec.Cmd, error) {
 	log.Debugf("sensor.startTargetApp(%v,%v,%v)\n", appName, appArgs, appDir)
 	app := exec.Command(appName, appArgs...)

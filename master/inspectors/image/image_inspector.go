@@ -12,6 +12,7 @@ import (
 	"github.com/cloudimmunity/go-dockerclientx"
 )
 
+// Inspector is a container image inspector
 type Inspector struct {
 	ImageRef                   string
 	ArtifactLocation           string
@@ -20,10 +21,11 @@ type Inspector struct {
 	SeccompProfileName         string
 	ImageInfo                  *docker.Image
 	ImageRecordInfo            docker.APIImages
-	ApiClient                  *docker.Client
+	APIClient                  *docker.Client
 	fatImageDockerInstructions []string
 }
 
+// NewInspector creates a new container image inspector
 func NewInspector(client *docker.Client, imageRef string /*, artifactLocation string*/) (*Inspector, error) {
 	inspector := &Inspector{
 		ImageRef:            imageRef,
@@ -31,14 +33,15 @@ func NewInspector(client *docker.Client, imageRef string /*, artifactLocation st
 		AppArmorProfileName: "apparmor-profile",
 		SeccompProfileName:  "seccomp-profile",
 		//ArtifactLocation:    artifactLocation,
-		ApiClient: client,
+		APIClient: client,
 	}
 
 	return inspector, nil
 }
 
+// NoImage returns true if the target image doesn't exist
 func (i *Inspector) NoImage() bool {
-	_, err := i.ApiClient.InspectImage(i.ImageRef)
+	_, err := i.APIClient.InspectImage(i.ImageRef)
 	if err != nil {
 		if err == docker.ErrNoSuchImage {
 			return true
@@ -48,9 +51,10 @@ func (i *Inspector) NoImage() bool {
 	return false
 }
 
+// Inspect starts the target image inspection
 func (i *Inspector) Inspect() error {
 	var err error
-	i.ImageInfo, err = i.ApiClient.InspectImage(i.ImageRef)
+	i.ImageInfo, err = i.APIClient.InspectImage(i.ImageRef)
 	if err != nil {
 		if err == docker.ErrNoSuchImage {
 			log.Info("docker-slim: could not find target image")
@@ -58,7 +62,7 @@ func (i *Inspector) Inspect() error {
 		return err
 	}
 
-	imageList, err := i.ApiClient.ListImages(docker.ListImagesOptions{All: true})
+	imageList, err := i.APIClient.ListImages(docker.ListImagesOptions{All: true})
 	if err != nil {
 		return err
 	}
@@ -95,11 +99,12 @@ func (i *Inspector) processImageName() {
 	}
 }
 
+// ProcessCollectedData performs post-processing on the collected image data
 func (i *Inspector) ProcessCollectedData() error {
 	i.processImageName()
 
 	var err error
-	i.fatImageDockerInstructions, err = dockerfile.ReverseDockerfileFromHistory(i.ApiClient, i.ImageRef)
+	i.fatImageDockerInstructions, err = dockerfile.ReverseDockerfileFromHistory(i.APIClient, i.ImageRef)
 	if err != nil {
 		return err
 	}
@@ -110,6 +115,7 @@ func (i *Inspector) ProcessCollectedData() error {
 	return nil
 }
 
+// ShowFatImageDockerInstructions prints the original target image Dockerfile instructions
 func (i *Inspector) ShowFatImageDockerInstructions() {
 	if i.fatImageDockerInstructions != nil {
 		fmt.Println("docker-slim: Fat image - Dockerfile instructures: start ====")

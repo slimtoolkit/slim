@@ -6,6 +6,7 @@ import (
 	"os"
 )
 
+// GetIP returns the Docker host IP address
 func GetIP() string {
 	dockerHost := os.Getenv("DOCKER_HOST")
 	if dockerHost == "" {

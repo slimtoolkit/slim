@@ -17,12 +17,13 @@ import (
 	"github.com/dustin/go-humanize"
 )
 
+// OnProfile implements the 'profile' docker-slim command
 func OnProfile(doDebug bool,
 	statePath string,
 	clientConfig *config.DockerClient,
 	imageRef string,
-	doHttpProbe bool,
-	httpProbeCmds []config.HttpProbeCmd,
+	doHTTPProbe bool,
+	httpProbeCmds []config.HTTPProbeCmd,
 	doShowContainerLogs bool,
 	overrides *config.ContainerOverrides,
 	volumeMounts map[string]config.VolumeMount,
@@ -77,10 +78,10 @@ func OnProfile(doDebug bool,
 	log.Info("docker-slim: watching container monitor...")
 
 	if "probe" == continueAfter.Mode {
-		doHttpProbe = true
+		doHTTPProbe = true
 	}
 
-	if doHttpProbe {
+	if doHTTPProbe {
 		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds)
 		utils.FailOn(err)
 		probe.Start()

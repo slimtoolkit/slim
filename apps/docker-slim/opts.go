@@ -138,8 +138,8 @@ func parsePaths(values []string) map[string]bool {
 	return paths
 }
 
-func parseHttpProbes(values []string) ([]config.HttpProbeCmd, error) {
-	probes := []config.HttpProbeCmd{}
+func parseHTTPProbes(values []string) ([]config.HTTPProbeCmd, error) {
+	probes := []config.HTTPProbeCmd{}
 
 	for _, raw := range values {
 		sepCount := strings.Count(raw, ":")
@@ -149,7 +149,7 @@ func parseHttpProbes(values []string) ([]config.HttpProbeCmd, error) {
 				return nil, fmt.Errorf("Invalid HTTP probe command resource: %+v", raw)
 			}
 
-			probes = append(probes, config.HttpProbeCmd{Protocol: "http", Method: "GET", Resource: raw})
+			probes = append(probes, config.HTTPProbeCmd{Protocol: "http", Method: "GET", Resource: raw})
 		case 1:
 			parts := strings.SplitN(raw, ":", 2)
 
@@ -161,7 +161,7 @@ func parseHttpProbes(values []string) ([]config.HttpProbeCmd, error) {
 				return nil, fmt.Errorf("Invalid HTTP probe command resource: %+v", raw)
 			}
 
-			probes = append(probes, config.HttpProbeCmd{Protocol: "http", Method: strings.ToUpper(parts[0]), Resource: parts[1]})
+			probes = append(probes, config.HTTPProbeCmd{Protocol: "http", Method: strings.ToUpper(parts[0]), Resource: parts[1]})
 		case 2:
 			parts := strings.SplitN(raw, ":", 3)
 
@@ -177,7 +177,7 @@ func parseHttpProbes(values []string) ([]config.HttpProbeCmd, error) {
 				return nil, fmt.Errorf("Invalid HTTP probe command resource: %+v", raw)
 			}
 
-			probes = append(probes, config.HttpProbeCmd{Protocol: parts[0], Method: strings.ToUpper(parts[1]), Resource: parts[2]})
+			probes = append(probes, config.HTTPProbeCmd{Protocol: parts[0], Method: strings.ToUpper(parts[1]), Resource: parts[2]})
 		default:
 			return nil, fmt.Errorf("Invalid HTTP probe command: %s", raw)
 		}
@@ -186,8 +186,8 @@ func parseHttpProbes(values []string) ([]config.HttpProbeCmd, error) {
 	return probes, nil
 }
 
-func parseHttpProbesFile(filePath string) ([]config.HttpProbeCmd, error) {
-	probes := []config.HttpProbeCmd{}
+func parseHTTPProbesFile(filePath string) ([]config.HTTPProbeCmd, error) {
+	probes := []config.HTTPProbeCmd{}
 
 	if filePath != "" {
 		fullPath, err := filepath.Abs(filePath)
@@ -205,7 +205,7 @@ func parseHttpProbesFile(filePath string) ([]config.HttpProbeCmd, error) {
 		}
 		defer configFile.Close()
 
-		var configs config.HttpProbeCmds
+		var configs config.HTTPProbeCmds
 		if err = json.NewDecoder(configFile).Decode(&configs); err != nil {
 			return nil, err
 		}
