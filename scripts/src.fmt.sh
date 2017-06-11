@@ -8,14 +8,17 @@ SDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 source $SDIR/env.sh
 cd $BDIR/apps
-go fmt ./...
+gofmt -l -w -s .
 cd $BDIR/master
-go fmt ./...
+gofmt -l -w -s .
+cd $BDIR/messages
+gofmt -l -w -s .
 cd $BDIR/sensor
-go fmt ./...
+gofmt -l -w -s .
 cd $BDIR/report
-go fmt ./...
+gofmt -l -w -s .
 cd $BDIR/utils
-go fmt ./...
-
+gofmt -l -w -s .
+cd $BDIR/consts
+gofmt -l -w -s .
 

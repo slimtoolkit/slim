@@ -47,41 +47,39 @@ func Encode(m Message) ([]byte, error) {
 	obj := messageWrapper{
 		Name: m.GetName(),
 	}
-	
+
 	switch v := m.(type) {
-		case *StartMonitor:
-			var err error
-			obj.Data, err = json.Marshal(v)
-			if err != nil {
-				return nil, err
-			}
-		case *StopMonitor:
-		default:
-			return nil, ErrUnknownMessage
+	case *StartMonitor:
+		var err error
+		obj.Data, err = json.Marshal(v)
+		if err != nil {
+			return nil, err
+		}
+	case *StopMonitor:
+	default:
+		return nil, ErrUnknownMessage
 	}
-	
+
 	return json.Marshal(&obj)
 }
 
 func Decode(data []byte) (Message, error) {
 	var wrapper messageWrapper
-	if err := json.Unmarshal(data,&wrapper); err != nil {
-    		return nil,err
-    	}
-	
-	switch wrapper.Name {
-		case StartMonitorName:
-			var cmd StartMonitor
-			if err := json.Unmarshal(wrapper.Data,&cmd); err != nil {
-				return nil, err
-			}
-			
-			return &cmd, nil
-		case StopMonitorName:
-			return &StopMonitor{}, nil
-		default:
-			return nil, ErrUnknownMessage
+	if err := json.Unmarshal(data, &wrapper); err != nil {
+		return nil, err
 	}
-	
-	return nil,nil
+
+	switch wrapper.Name {
+	case StartMonitorName:
+		var cmd StartMonitor
+		if err := json.Unmarshal(wrapper.Data, &cmd); err != nil {
+			return nil, err
+		}
+
+		return &cmd, nil
+	case StopMonitorName:
+		return &StopMonitor{}, nil
+	default:
+		return nil, ErrUnknownMessage
+	}
 }

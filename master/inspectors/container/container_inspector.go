@@ -137,8 +137,8 @@ func (i *Inspector) RunContainer() error {
 		Config: &dockerapi.Config{
 			Image: i.ImageInspector.ImageRef,
 			ExposedPorts: map[dockerapi.Port]struct{}{
-				i.CmdPort: struct{}{},
-				i.EvtPort: struct{}{},
+				i.CmdPort: {},
+				i.EvtPort: {},
 			},
 			Entrypoint: []string{"/opt/dockerslim/bin/sensor"},
 			Cmd:        containerCmd,
