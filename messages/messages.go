@@ -5,21 +5,26 @@ import (
 	"errors"
 )
 
+// Message errors
 var (
 	ErrUnknownMessage = errors.New("unknown type")
 )
 
+// MessageName is a message ID type
 type MessageName string
 
+// Supported messages
 const (
 	StartMonitorName MessageName = "cmd.monitor.start"
 	StopMonitorName  MessageName = "cmd.monitor.stop"
 )
 
+// Message represents the message interface
 type Message interface {
 	GetName() MessageName
 }
 
+// StartMonitor contains the start monitor command fields
 type StartMonitor struct {
 	AppName  string   `json:"app_name"`
 	AppArgs  []string `json:"app_args,omitempty"`
@@ -27,13 +32,16 @@ type StartMonitor struct {
 	Includes []string `json:"includes,omitempty"`
 }
 
+// GetName returns the command message ID for the start monitor command
 func (m *StartMonitor) GetName() MessageName {
 	return StartMonitorName
 }
 
+// StopMonitor contains the stop monitor command fields
 type StopMonitor struct {
 }
 
+// GetName returns the command message ID for the stop monitor command
 func (m *StopMonitor) GetName() MessageName {
 	return StopMonitorName
 }
@@ -43,6 +51,7 @@ type messageWrapper struct {
 	Data json.RawMessage `json:"data,omitempty"`
 }
 
+// Encode encodes the message instance to a JSON buffer object
 func Encode(m Message) ([]byte, error) {
 	obj := messageWrapper{
 		Name: m.GetName(),
@@ -63,6 +72,7 @@ func Encode(m Message) ([]byte, error) {
 	return json.Marshal(&obj)
 }
 
+// Decode decodes JSON data into a message instance
 func Decode(data []byte) (Message, error) {
 	var wrapper messageWrapper
 	if err := json.Unmarshal(data, &wrapper); err != nil {

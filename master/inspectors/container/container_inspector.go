@@ -252,7 +252,7 @@ func (i *Inspector) ShutdownContainer() error {
 		RemoveVolumes: true,
 		Force:         true,
 	}
-	err = i.APIClient.RemoveContainer(removeOption)
+	_ = i.APIClient.RemoveContainer(removeOption)
 	return nil
 }
 

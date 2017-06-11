@@ -10,7 +10,13 @@ source $SDIR/env.sh
 cd $BDIR/apps
 go tool vet .
 golint ./...
+cd $BDIR/consts
+go tool vet .
+golint ./...
 cd $BDIR/master
+go tool vet .
+golint ./...
+cd $BDIR/messages
 go tool vet .
 golint ./...
 cd $BDIR/sensor

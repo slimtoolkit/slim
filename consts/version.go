@@ -1,5 +1,6 @@
 package consts
 
+// App version constants
 const (
-	APP_VERSION_NAME = "Tetra"
+	AppVersionName = "Tetra"
 )

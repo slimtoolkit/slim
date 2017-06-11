@@ -212,15 +212,20 @@ func getProcessInfo(pid int32) (*report.ProcessInfo, error) {
 	//	info.Env = strings.Split(string(rawEnviron),"\x00")
 	//}
 
-	stat, err := ioutil.ReadFile(procFilePath(int(pid), "stat"))
-	var procPid int
-	var procName string
-	var procStatus string
-	var procPpid int
-	fmt.Sscanf(string(stat), "%d %s %s %d", &procPid, &procName, &procStatus, &procPpid)
+	info.Name = "uknown"
+	info.ParentPid = -1
 
-	info.Name = procName[1 : len(procName)-1]
-	info.ParentPid = int32(procPpid)
+	stat, err := ioutil.ReadFile(procFilePath(int(pid), "stat"))
+	if err == nil {
+		var procPid int
+		var procName string
+		var procStatus string
+		var procPpid int
+		fmt.Sscanf(string(stat), "%d %s %s %d", &procPid, &procName, &procStatus, &procPpid)
+
+		info.Name = procName[1 : len(procName)-1]
+		info.ParentPid = int32(procPpid)
+	}
 
 	return info, nil
 }
