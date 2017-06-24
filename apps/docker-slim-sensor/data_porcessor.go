@@ -1,13 +1,19 @@
 package main
 
 import (
+	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
+	"syscall"
 
 	"github.com/docker-slim/docker-slim/messages"
 	"github.com/docker-slim/docker-slim/report"
 	"github.com/docker-slim/docker-slim/sensor/monitors/fanotify"
+
+	log "github.com/Sirupsen/logrus"
 )
 
 func processReports(mountPoint string,
@@ -62,7 +68,127 @@ func filterFileEvents(fileEvents map[fanotify.Event]bool, targetPidList map[int]
 	return files
 }
 
-func filesToInodes(files []string) []int {
+///////////////////////////////////////////////////////////////////////////////////////
+
+func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
+	result := make(map[string]*report.ArtifactProps, 0)
+
+	//getting the root device is a leftover from the legacy code (not really necessary anymore)
+	devId, err := getFileDevice(mp)
+	if err != nil {
+		return result
+	}
+
+	log.Debugf("findSymlinks - deviceId=%v\n", devId)
+
+	inodes, devices := filesToInodesNative(files)
+	inodeToFiles := make(map[uint64][]string)
+
+	//native filepath.Walk is a bit slow (compared to the "find" command)
+	//but it's fast enough for now
+	filepath.Walk(mp, func(fullName string, fileInfo os.FileInfo, err error) error {
+		sysStatInfo, ok := fileInfo.Sys().(*syscall.Stat_t)
+		if !ok {
+			return fmt.Errorf("findSymlinks - could not convert fileInfo to Stat_t for %s", fullName)
+		}
+
+		if _, ok := devices[uint64(sysStatInfo.Dev)]; !ok {
+			return filepath.SkipDir
+		}
+
+		if fileInfo.Mode()&os.ModeSymlink != 0 {
+			if info, err := getFileSysStats(fullName); err == nil {
+
+				if _, ok := inodes[info.Ino]; ok {
+					//not using the inode for the link (using the target inode instead)
+					inodeToFiles[info.Ino] = append(inodeToFiles[info.Ino], fullName)
+				} else {
+					//log.Debugf("findSymlinks - don't care about this symlink (%s)",fullName)
+				}
+
+			} else {
+				log.Infof("findSymlinks - could not get target stats info for %v\n", fullName)
+			}
+
+		} else {
+			if _, ok := inodes[sysStatInfo.Ino]; ok {
+				inodeToFiles[sysStatInfo.Ino] = append(inodeToFiles[sysStatInfo.Ino], fullName)
+			} else {
+				//log.Debugf("findSymlinks - don't care about this file (%s)",fullName)
+			}
+		}
+
+		return nil
+	})
+
+	for inodeId := range inodes {
+		v := inodeToFiles[inodeId]
+		for _, f := range v {
+			//result[f] = inodeId
+			result[f] = nil
+		}
+	}
+
+	return result
+}
+
+func filesToInodesNative(files []string) (map[uint64]struct{}, map[uint64]struct{}) {
+	inodes := map[uint64]struct{}{}
+	devices := map[uint64]struct{}{}
+
+	for _, fullName := range files {
+		info, err := getFileSysStats(fullName)
+		if err != nil {
+			log.Debugf("filesToInodesNative - could not get inode for %s", fullName)
+			continue
+		}
+
+		inodes[info.Ino] = struct{}{}
+		devices[uint64(info.Dev)] = struct{}{}
+	}
+
+	return inodes, devices
+}
+
+func getFileSysStats(fullName string) (*syscall.Stat_t, error) {
+	statInfo, err := os.Stat(fullName)
+	if err != nil {
+		return nil, err
+	}
+
+	sysStatInfo, ok := statInfo.Sys().(*syscall.Stat_t)
+	if !ok {
+		return nil, fmt.Errorf("failed to get system stat info for %s", fullName)
+	}
+
+	return sysStatInfo, nil
+}
+
+func getFileDevice(fullName string) (uint64, error) {
+	info, err := getFileSysStats(fullName)
+	if err != nil {
+		return 0, err
+	}
+
+	return uint64(info.Dev), nil
+}
+
+func getFileInode(fullName string) (uint64, error) {
+	info, err := getFileSysStats(fullName)
+	if err != nil {
+		return 0, err
+	}
+
+	log.Debugf("getFileInode(%s) => %v", fullName, info)
+
+	return info.Ino, nil
+}
+
+///////////////////////////////////////////////////////////////////////////////////////
+//DEPRICATING
+///////////////////////////////////////////////////////////////////////////////////////
+
+func filesToInodesLegacy(files []string) []int {
 	cmd := "/usr/bin/stat"
 	args := []string{"-L", "-c", "%i"}
 	args = append(args, files...)
@@ -81,14 +207,14 @@ func filesToInodes(files []string) []int {
 	return inodes
 }
 
-func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
+func findSymlinksLegacy(files []string, mp string) map[string]*report.ArtifactProps {
 	cmd := "/usr/bin/find"
 	args := []string{"-L", mp, "-mount", "-printf", "%i %p\n"}
 	c := exec.Command(cmd, args...)
 	out, _ := c.Output()
 	c.Wait()
 
-	inodes := filesToInodes(files)
+	inodes := filesToInodesLegacy(files)
 	inodeToFiles := make(map[int][]string)
 
 	for _, v := range strings.Split(string(out), "\n") {

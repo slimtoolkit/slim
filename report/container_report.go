@@ -98,16 +98,17 @@ type PtMonitorReport struct {
 
 // ArtifactProps contains various file system artifact properties
 type ArtifactProps struct {
-	FileType ArtifactType    `json:"-"` //todo
-	FilePath string          `json:"file_path"`
-	Mode     os.FileMode     `json:"-"` //todo
-	ModeText string          `json:"mode"`
-	LinkRef  string          `json:"link_ref,omitempty"`
-	Flags    map[string]bool `json:"flags,omitempty"`
-	DataType string          `json:"data_type,omitempty"`
-	FileSize int64           `json:"file_size"`
-	Sha1Hash string          `json:"sha1_hash,omitempty"`
-	AppType  string          `json:"app_type,omitempty"`
+	FileType  ArtifactType    `json:"-"` //todo
+	FilePath  string          `json:"file_path"`
+	Mode      os.FileMode     `json:"-"` //todo
+	ModeText  string          `json:"mode"`
+	LinkRef   string          `json:"link_ref,omitempty"`
+	Flags     map[string]bool `json:"flags,omitempty"`
+	DataType  string          `json:"data_type,omitempty"`
+	FileSize  int64           `json:"file_size"`
+	Sha1Hash  string          `json:"sha1_hash,omitempty"`
+	AppType   string          `json:"app_type,omitempty"`
+	FileInode uint64          `json:"-"` //todo
 }
 
 // UnmarshalJSON decodes artifact property data

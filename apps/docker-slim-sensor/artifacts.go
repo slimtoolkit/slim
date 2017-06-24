@@ -29,7 +29,24 @@ const (
 	pycache                = "__pycache__"
 	defaultReportName      = "creport.json"
 	defaultArtifactDirName = "/opt/dockerslim/artifacts"
+	fileTypeCmdName        = "file"
 )
+
+var fileTypeCmd string
+
+func init() {
+	findFileTypeCmd()
+}
+
+func findFileTypeCmd() {
+	fileTypeCmd, err := exec.LookPath(fileTypeCmdName)
+	if err != nil {
+		log.Debugf("findFileTypeCmd - cmd not found: %v", err)
+		return
+	}
+
+	log.Debugf("findFileTypeCmd - cmd found: %v", fileTypeCmd)
+}
 
 func saveResults(fanMonReport *report.FanMonitorReport,
 	fileNames map[string]*report.ArtifactProps,
@@ -127,7 +144,11 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 	case srcLinkFileInfo.Mode().IsRegular():
 		props.FileType = report.FileArtifactType
 		props.Sha1Hash, _ = getFileHash(artifactFileName)
-		props.DataType, _ = getDataType(artifactFileName)
+
+		if fileTypeCmd != "" {
+			props.DataType, _ = getDataType(artifactFileName)
+		}
+
 		p.fileMap[artifactFileName] = props
 		p.rawNames[artifactFileName] = props
 	case (srcLinkFileInfo.Mode() & os.ModeSymlink) != 0:
@@ -307,7 +328,7 @@ func getDataType(artifactFileName string) (string, error) {
 	var cerr bytes.Buffer
 	var cout bytes.Buffer
 
-	cmd := exec.Command("file", artifactFileName)
+	cmd := exec.Command(fileTypeCmd, artifactFileName)
 	cmd.Stderr = &cerr
 	cmd.Stdout = &cout
 
@@ -316,7 +337,7 @@ func getDataType(artifactFileName string) (string, error) {
 	}
 
 	if err := cmd.Wait(); err != nil {
-		err = fmt.Errorf("Error getting data type: %s / stderr: %s", err, cerr.String())
+		err = fmt.Errorf("getDataType - error getting data type: %s / stderr: %s", err, cerr.String())
 		return "", err
 	}
 

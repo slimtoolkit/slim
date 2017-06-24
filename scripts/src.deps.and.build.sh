@@ -20,15 +20,18 @@ ln -sf $BDIR src/github.com/docker-slim/docker-slim
 popd
 
 pushd $BDIR_GOPATH/apps/docker-slim
-build_time="$(date -u '+%Y-%m-%d_%I:%M:%S%p')"
-tag="current"
+BUILD_TIME="$(date -u '+%Y-%m-%d_%I:%M:%S%p')"
+TAG="current"
 revision="current"
 if hash git 2>/dev/null && [ -e $BDIR_GOPATH/.git ]; then
-  tag="$(git describe --tags)"
+  TAG="$(git describe --tags)"
   revision="$(git rev-parse HEAD)"
 fi
-gox -osarch="linux/amd64" -output="$BDIR_GOPATH/bin/linux/docker-slim" -ldflags="-X utils.appVersionTag=$tag -X utils.appVersionRev=$revision -X utils.appVersionTime=$build_time"
-gox -osarch="darwin/amd64" -output="$BDIR_GOPATH/bin/mac/docker-slim" -ldflags="-X utils.appVersionTag=$tag -X utils.appVersionRev=$revision -X utils.appVersionTime=$build_time"
+
+LD_FLAGS="-X github.com/docker-slim/docker-slim/utils.appVersionTag=${TAG} -X github.com/docker-slim/docker-slim/utils.appVersionRev=${REVISION} -X github.com/docker-slim/docker-slim/utils.appVersionTime=${BUILD_TIME}"
+
+gox -osarch="linux/amd64" -ldflags "${LD_FLAGS}" -output "$BDIR_GOPATH/bin/linux/docker-slim"
+gox -osarch="darwin/amd64" -ldflags "${LD_FLAGS}" -output "$BDIR_GOPATH/bin/mac/docker-slim"
 popd
 pushd $BDIR_GOPATH/apps/docker-slim-sensor
 gox -osarch="linux/amd64" -output="$BDIR_GOPATH/bin/linux/docker-slim-sensor"
