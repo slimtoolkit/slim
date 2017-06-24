@@ -79,7 +79,7 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 		return result
 	}
 
-	log.Debugf("findSymlinks - deviceId=%v\n", devId)
+	log.Debugf("findSymlinks - deviceId=%v", devId)
 
 	inodes, devices := filesToInodesNative(files)
 	inodeToFiles := make(map[uint64][]string)
@@ -107,7 +107,7 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 				}
 
 			} else {
-				log.Infof("findSymlinks - could not get target stats info for %v\n", fullName)
+				log.Infof("findSymlinks - could not get target stats info for %v", fullName)
 			}
 
 		} else {

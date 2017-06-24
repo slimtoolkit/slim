@@ -18,7 +18,7 @@ import (
 func InitContainerChannels(dockerHostIP, cmdChannelPort, evtChannelPort string) error {
 	cmdChannelAddr = fmt.Sprintf("tcp://%v:%v", dockerHostIP, cmdChannelPort)
 	evtChannelAddr = fmt.Sprintf("tcp://%v:%v", dockerHostIP, evtChannelPort)
-	log.Debugf("cmdChannelAddr=%v evtChannelAddr=%v\n", cmdChannelAddr, evtChannelAddr)
+	log.Debugf("cmdChannelAddr=%v evtChannelAddr=%v", cmdChannelAddr, evtChannelAddr)
 
 	//evtChannelAddr = fmt.Sprintf("ipc://%v/ipc/docker-slim-sensor.events.ipc", localVolumePath)
 	//cmdChannelAddr = fmt.Sprintf("ipc://%v/ipc/docker-slim-sensor.cmds.ipc", localVolumePath)
@@ -93,7 +93,7 @@ func sendCmd(channel mangos.Socket, cmd messages.Message) (string, error) {
 	sendTimeouts := 0
 	recvTimeouts := 0
 
-	log.Debugf("sendCmd(%s)\n", cmd)
+	log.Debugf("sendCmd(%s)", cmd)
 	for {
 		sendData, err := messages.Encode(cmd)
 		if err != nil {

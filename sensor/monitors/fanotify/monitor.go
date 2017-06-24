@@ -53,7 +53,7 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 			for {
 				data, err := nd.GetEvent()
 				utils.FailOn(err)
-				log.Debugf("fanmon: data.Mask =>%x\n", data.Mask)
+				log.Debugf("fanmon: data.Mask =>%x", data.Mask)
 
 				if (data.Mask & fanapi.FAN_Q_OVERFLOW) == fanapi.FAN_Q_OVERFLOW {
 					log.Debug("fanmon: overflow event")
@@ -160,7 +160,7 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 			}
 		}
 
-		log.Debugf("fanmon: sending report (processed %v events)...\n", fanReport.EventCount)
+		log.Debugf("fanmon: sending report (processed %v events)...", fanReport.EventCount)
 		eventsChan <- fanReport
 	}()
 

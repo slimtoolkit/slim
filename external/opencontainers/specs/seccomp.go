@@ -7,10 +7,12 @@ type Seccomp struct {
 	Syscalls      []*Syscall `json:"syscalls"`
 }
 
+// Arch - architecture type
 // Additional architectures permitted to be used for system calls
 // By default only the native architecture of the kernel is permitted
 type Arch string
 
+// Architecture types
 const (
 	ArchX86         Arch = "SCMP_ARCH_X86"
 	ArchX86_64      Arch = "SCMP_ARCH_X86_64"
@@ -28,6 +30,7 @@ const (
 // Action taken upon Seccomp rule match
 type Action string
 
+// Action types
 const (
 	ActKill  Action = "SCMP_ACT_KILL"
 	ActTrap  Action = "SCMP_ACT_TRAP"
@@ -39,6 +42,7 @@ const (
 // Operator used to match syscall arguments in Seccomp
 type Operator string
 
+// Operator types
 const (
 	OpNotEqual     Operator = "SCMP_CMP_NE"
 	OpLessThan     Operator = "SCMP_CMP_LT"

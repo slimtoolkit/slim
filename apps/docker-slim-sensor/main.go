@@ -85,11 +85,11 @@ func main() {
 		log.SetLevel(log.DebugLevel)
 	}
 
-	log.Infof("sensor: args => %#v\n", os.Args)
+	log.Infof("sensor: args => %#v", os.Args)
 
 	dirName, err := os.Getwd()
 	utils.WarnOn(err)
-	log.Debugf("sensor: cwd => %#v\n", dirName)
+	log.Debugf("sensor: cwd => %#v", dirName)
 
 	initSignalHandlers()
 	defer func() {
@@ -124,12 +124,12 @@ doneRunning:
 					break
 				}
 
-				log.Debugf("sensor: 'start' command (%#v) - starting monitor...\n", data)
+				log.Debugf("sensor: 'start' command (%#v) - starting monitor...", data)
 				monitor(monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, data, dirName)
 
 				//target app started by ptmon... (long story :-))
 				//TODO: need to get the target app pid to pemon, so it can filter process events
-				log.Debugf("sensor: target app started => %v %#v\n", data.AppName, data.AppArgs)
+				log.Debugf("sensor: target app started => %v %#v", data.AppName, data.AppArgs)
 				time.Sleep(3 * time.Second)
 
 			case *messages.StopMonitor:

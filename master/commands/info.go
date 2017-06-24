@@ -34,7 +34,7 @@ func OnInfo(statePath string, clientConfig *config.DockerClient, imageRef string
 	_, artifactLocation := utils.PrepareSlimDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
-	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)\n",
+	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)",
 		imageInspector.ImageInfo.ID,
 		imageInspector.ImageInfo.VirtualSize,
 		humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)))

@@ -51,7 +51,7 @@ func OnProfile(doDebug bool,
 	localVolumePath, artifactLocation := utils.PrepareSlimDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
-	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)\n",
+	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)",
 		imageInspector.ImageInfo.ID,
 		imageInspector.ImageInfo.VirtualSize,
 		humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)))

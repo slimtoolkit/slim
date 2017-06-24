@@ -54,12 +54,12 @@ func Run(startChan <-chan int,
 			utils.FailOn(err)
 			targetPid := app.Process.Pid
 
-			log.Debugf("ptmon: target PID ==> %d\n", targetPid)
+			log.Debugf("ptmon: target PID ==> %d", targetPid)
 
 			var wstat syscall.WaitStatus
 			_, err = syscall.Wait4(targetPid, &wstat, 0, nil)
 			if err != nil {
-				log.Warnf("ptmon: error waiting for %d: %v\n", targetPid, err)
+				log.Warnf("ptmon: error waiting for %d: %v", targetPid, err)
 				doneMonitoring <- 1
 			}
 
@@ -104,12 +104,12 @@ func Run(startChan <-chan int,
 
 				err = syscall.PtraceSyscall(targetPid, 0)
 				if err != nil {
-					log.Warnf("ptmon: PtraceSyscall error: %v\n", err)
+					log.Warnf("ptmon: PtraceSyscall error: %v", err)
 					break
 				}
 				_, err = syscall.Wait4(targetPid, &wstat, 0, nil)
 				if err != nil {
-					log.Warnf("ptmon: error waiting 4 %d: %v\n", targetPid, err)
+					log.Warnf("ptmon: error waiting 4 %d: %v", targetPid, err)
 					break
 				}
 
@@ -155,8 +155,8 @@ func Run(startChan <-chan int,
 			}
 		}
 
-		log.Debugf("ptmon: executed syscall count = %d\n", ptReport.SyscallCount)
-		log.Debugf("ptmon: number of syscalls: %v\n", len(syscallStats))
+		log.Debugf("ptmon: executed syscall count = %d", ptReport.SyscallCount)
+		log.Debugf("ptmon: number of syscalls: %v", len(syscallStats))
 		for scNum, scCount := range syscallStats {
 			log.Debugf("[%v] %v = %v", scNum, syscallResolver(scNum), scCount)
 			ptReport.SyscallStats[strconv.FormatInt(int64(scNum), 10)] = report.SyscallStatInfo{

@@ -84,7 +84,7 @@ func NewInspector(client *dockerapi.Client,
 	}
 
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
-		log.Debugf("overriding Entrypoint %+v => %+v (%v)\n",
+		log.Debugf("overriding Entrypoint %+v => %+v (%v)",
 			imageInspector.ImageInfo.Config.Entrypoint, overrides.Entrypoint, overrides.ClearEntrypoint)
 		if len(overrides.Entrypoint) > 0 {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Entrypoint...)
@@ -95,7 +95,7 @@ func NewInspector(client *dockerapi.Client,
 	}
 
 	if overrides != nil && ((len(overrides.Cmd) > 0) || overrides.ClearCmd) {
-		log.Debugf("overriding Cmd %+v => %+v (%v)\n",
+		log.Debugf("overriding Cmd %+v => %+v (%v)",
 			imageInspector.ImageInfo.Config.Cmd, overrides.Cmd, overrides.ClearCmd)
 		if len(overrides.Cmd) > 0 {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
@@ -170,7 +170,7 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	utils.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
-	log.Debugf("container NetworkSettings.Ports => %#v\n", i.ContainerInfo.NetworkSettings.Ports)
+	log.Debugf("container NetworkSettings.Ports => %#v", i.ContainerInfo.NetworkSettings.Ports)
 
 	if err = i.initContainerChannels(); err != nil {
 		return err
@@ -213,7 +213,7 @@ func (i *Inspector) showContainerLogs() {
 
 	err := i.APIClient.Logs(logsOptions)
 	if err != nil {
-		log.Infof("docker-slim: error getting container logs => %v - %v\n", i.ContainerID, err)
+		log.Infof("docker-slim: error getting container logs => %v - %v", i.ContainerID, err)
 	} else {
 		outw.Flush()
 		errw.Flush()
@@ -262,7 +262,7 @@ func (i *Inspector) FinishMonitoring() {
 	utils.WarnOn(err)
 	_ = cmdResponse
 
-	log.Debugf("'stop' response => '%v'\n", cmdResponse)
+	log.Debugf("'stop' response => '%v'", cmdResponse)
 	log.Info("docker-slim: waiting for the container to finish its work...")
 
 	//for now there's only one event ("done")
@@ -277,7 +277,7 @@ func (i *Inspector) FinishMonitoring() {
 
 	utils.WarnOn(err)
 	_ = evt
-	log.Debugf("docker-slim: sensor event => '%v'\n", evt)
+	log.Debugf("docker-slim: sensor event => '%v'", evt)
 }
 
 func (i *Inspector) initContainerChannels() error {

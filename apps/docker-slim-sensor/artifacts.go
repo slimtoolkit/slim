@@ -124,7 +124,7 @@ func (p *artifactStore) getArtifactFlags(artifactFileName string) map[string]boo
 func (p *artifactStore) prepareArtifact(artifactFileName string) {
 	srcLinkFileInfo, err := os.Lstat(artifactFileName)
 	if err != nil {
-		log.Warnf("prepareArtifact - artifact don't exist: %v (%v)\n", artifactFileName, os.IsNotExist(err))
+		log.Warnf("prepareArtifact - artifact don't exist: %v (%v)", artifactFileName, os.IsNotExist(err))
 		return
 	}
 
@@ -139,7 +139,7 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 
 	props.Flags = p.getArtifactFlags(artifactFileName)
 
-	log.Debugf("prepareArtifact - file mode:%v\n", srcLinkFileInfo.Mode())
+	log.Debugf("prepareArtifact - file mode:%v", srcLinkFileInfo.Mode())
 	switch {
 	case srcLinkFileInfo.Mode().IsRegular():
 		props.FileType = report.FileArtifactType
@@ -154,7 +154,7 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 	case (srcLinkFileInfo.Mode() & os.ModeSymlink) != 0:
 		linkRef, err := os.Readlink(artifactFileName)
 		if err != nil {
-			log.Warnf("prepareArtifact - error getting reference for symlink: %v\n", artifactFileName)
+			log.Warnf("prepareArtifact - error getting reference for symlink: %v", artifactFileName)
 			return
 		}
 
@@ -178,7 +178,7 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 
 func (p *artifactStore) prepareArtifacts() {
 	for artifactFileName := range p.rawNames {
-		log.Debugf("prepareArtifacts - artifact => %v\n", artifactFileName)
+		log.Debugf("prepareArtifacts - artifact => %v", artifactFileName)
 		p.prepareArtifact(artifactFileName)
 	}
 
@@ -222,8 +222,8 @@ func (p *artifactStore) saveArtifacts() {
 
 	includePaths = preparePaths(p.cmd.Includes)
 	excludePaths = preparePaths(p.cmd.Excludes)
-	log.Debugf("includePaths: %+v\n", includePaths)
-	log.Debugf("excludePaths: %+v\n", excludePaths)
+	log.Debugf("includePaths: %+v", includePaths)
+	log.Debugf("excludePaths: %+v", excludePaths)
 
 	//TODO: use exludePaths to filter discovered files
 	for fileName := range p.fileMap {
@@ -265,15 +265,15 @@ func (p *artifactStore) saveArtifacts() {
 		if isDir {
 			err, errs := utils.CopyDir(inPath, dstPath, true, true, nil, nil, nil)
 			if err != nil {
-				log.Warnf("CopyDir(%v,%v) error: %v\n", inPath, dstPath, err)
+				log.Warnf("CopyDir(%v,%v) error: %v", inPath, dstPath, err)
 			}
 
 			if len(errs) > 0 {
-				log.Warnf("CopyDir(%v,%v) copy errors: %+v\n", inPath, dstPath, errs)
+				log.Warnf("CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
 			}
 		} else {
 			if err := utils.CopyFile(inPath, dstPath, true); err != nil {
-				log.Warnf("CopyFile(%v,%v) error: %v\n", inPath, dstPath, err)
+				log.Warnf("CopyFile(%v,%v) error: %v", inPath, dstPath, err)
 			}
 		}
 	}

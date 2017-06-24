@@ -149,7 +149,7 @@ func newEvtPublisher(addr string) (mangos.Socket, error) {
 
 func publishEvt(channel mangos.Socket, evt string) error {
 	if err := channel.Send([]byte(evt)); err != nil {
-		log.Debugf("fail to publish '%v' event:%v\n", evt, err)
+		log.Debugf("fail to publish '%v' event:%v", evt, err)
 		return err
 	}
 
@@ -159,7 +159,7 @@ func publishEvt(channel mangos.Socket, evt string) error {
 // TryPublishEvt attempts to publish an event to the master
 func TryPublishEvt(ptry uint, event string) {
 	for ptry := 0; ptry < 3; ptry++ {
-		log.Debugf("sensor: trying to publish '%v' event (attempt %v)\n", event, ptry+1)
+		log.Debugf("sensor: trying to publish '%v' event (attempt %v)", event, ptry+1)
 		err := publishEvt(evtChannel, "monitor.finish.completed")
 		if err == nil {
 			log.Infof("sensor: published '%v'", event)

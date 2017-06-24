@@ -70,11 +70,11 @@ func (p *CustomProbe) Start() {
 					}.Do()
 
 					if err == nil {
-						log.Infof("docker-slim: http probe - %v %v => %v\n", cmd.Method, addr, res.StatusCode)
+						log.Infof("docker-slim: http probe - %v %v => %v", cmd.Method, addr, res.StatusCode)
 						break
 					}
 
-					log.Infof("docker-slim: http probe - %v %v error: %v\n", cmd.Method, addr, err)
+					log.Infof("docker-slim: http probe - %v %v error: %v", cmd.Method, addr, err)
 				}
 			}
 		}

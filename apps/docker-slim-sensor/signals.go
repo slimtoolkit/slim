@@ -22,7 +22,7 @@ func initSignalHandlers() {
 	signal.Notify(sigChan, signals...)
 	go func() {
 		sig := <-sigChan
-		log.Debugf("sensor: cleanup on signal (%v)...\n", sig)
+		log.Debugf("sensor: cleanup on signal (%v)...", sig)
 		cleanupOnShutdown()
 		os.Exit(0)
 	}()
