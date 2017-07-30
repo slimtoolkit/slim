@@ -74,12 +74,12 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 	result := make(map[string]*report.ArtifactProps, 0)
 
 	//getting the root device is a leftover from the legacy code (not really necessary anymore)
-	devId, err := getFileDevice(mp)
+	devID, err := getFileDevice(mp)
 	if err != nil {
 		return result
 	}
 
-	log.Debugf("findSymlinks - deviceId=%v", devId)
+	log.Debugf("findSymlinks - deviceId=%v", devID)
 
 	inodes, devices := filesToInodesNative(files)
 	inodeToFiles := make(map[uint64][]string)
@@ -121,10 +121,10 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 		return nil
 	})
 
-	for inodeId := range inodes {
-		v := inodeToFiles[inodeId]
+	for inodeID := range inodes {
+		v := inodeToFiles[inodeID]
 		for _, f := range v {
-			//result[f] = inodeId
+			//result[f] = inodeID
 			result[f] = nil
 		}
 	}

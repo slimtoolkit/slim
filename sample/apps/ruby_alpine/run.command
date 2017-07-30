@@ -3,9 +3,8 @@
 here="$(dirname "$BASH_SOURCE")"
 cd $here
 
-#docker-machine start default
 #eval "$(docker-machine env default)"
-docker build -t my/sample-node-app-jessie .
+docker run -it --name="ruby_app" -p 7000:7000 my/ruby-app-alpine
 
 
 

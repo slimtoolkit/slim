@@ -3,9 +3,7 @@
 here="$(dirname "$BASH_SOURCE")"
 cd $here
 
-#docker-machine start default
 #eval "$(docker-machine env default)"
-docker build -t my/sample-node-app-jessie .
-
+docker-slim build --http-probe my/sample-python-app-gunicorn
 
 

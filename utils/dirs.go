@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/pdiscover"
@@ -390,3 +391,13 @@ func PrepareSlimDirs(statePath, imageID string) (string, string) {
 
 	return localVolumePath, artifactLocation
 }
+
+///////////////////////////////////////////////////////////////////////////////
+
+// UpdateFileTimes updates the atime and mtime timestamps on the target file
+func UpdateFileTimes(target string, atime, mtime syscall.Timespec) error {
+	ts := []syscall.Timespec{atime, mtime}
+	return syscall.UtimesNano(target, ts)
+}
+
+//todo: UpdateSymlinkTimes()

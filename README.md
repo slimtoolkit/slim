@@ -57,8 +57,10 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 
 ## RECENT UPDATES
 
-Latest version: 1.17 (10/9/2016)
+Latest version: 1.18 (10/9/2016)
 
+* Alpine image support (NEW)
+* New sample apps (NEW)
 * Ability to override ENV variables analyzing target image
 * Docker 1.12 support
 * User selected location to store DockerSlim state (global `--state-path` parameter).
@@ -71,8 +73,8 @@ Latest version: 1.17 (10/9/2016)
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.17/dist_mac.zip)
-   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.17/dist_linux.zip)
+   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.18/dist_mac.zip)
+   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.18/dist_linux.zip)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -120,7 +122,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://github.com/docker-slim/docker-slim/releases/download/1.17/dist_mac.zip) or [Linux](https://github.com/docker-slim/docker-slim/releases/download/1.17/dist_linux.zip) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://github.com/docker-slim/docker-slim/releases/download/1.18/dist_mac.zip) or [Linux](https://github.com/docker-slim/docker-slim/releases/download/1.18/dist_linux.zip) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
   The extracted directory contains two binaries:
 
@@ -309,11 +311,16 @@ Sample images (built with the standard Ubuntu 14.04 base image):
 * ruby app container:   406.2 MB => 13.66 MB
 * java app container:   743.6 MB => 100.3 MB (yes, it's a bit bigger than others :-))
 
+Sample images built with Alpine:
+
+* nodejs app container: 66.4 MB => 34.7 MB
+* python app container: 86 MB   => 22.1 MB
+
 You can also run `docker-slim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
 DockerSlim now also generates Seccomp (usable) and AppArmor (WIP) profiles for your container.
 
-Works with Docker 1.8, 1.9, 1.10 and 1.11.
+Works with Docker 1.8, 1.9, 1.10, 1.11, 1.12, 1.13, 17.03.
 
 Note:
 

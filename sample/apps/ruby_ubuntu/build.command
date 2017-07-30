@@ -5,7 +5,7 @@ cd $here
 
 #docker-machine start default
 #eval "$(docker-machine env default)"
-docker build -t my/sample-node-app-jessie .
+docker build -t my/ruby-app .
 
 
 

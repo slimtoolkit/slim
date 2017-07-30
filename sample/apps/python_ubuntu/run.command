@@ -3,9 +3,8 @@
 here="$(dirname "$BASH_SOURCE")"
 cd $here
 
-#docker-machine start default
 #eval "$(docker-machine env default)"
-docker build -t my/sample-node-app-jessie .
+docker run -d --name="python_app" -p 9000:9000 my/sample-python-app
 
 
 

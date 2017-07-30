@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 
 	"github.com/docker-slim/docker-slim/messages"
 	"github.com/docker-slim/docker-slim/report"
@@ -368,16 +369,43 @@ func cpFile(src, dst string) error {
 		return err
 	}
 
+	//todo: copy owner info...
+
 	srcFileInfo, err := s.Stat()
 	if err == nil {
-		d.Chmod(srcFileInfo.Mode())
+		if err := d.Chmod(srcFileInfo.Mode()); err != nil {
+			log.Warnln("sensor: cpFile - unable to set mode =>", dst)
+		}
 	}
 
 	if _, err := io.Copy(d, s); err != nil {
 		d.Close()
 		return err
 	}
-	return d.Close()
+
+	if err := d.Close(); err != nil {
+		return err
+	}
+
+	sysStat, ok := srcFileInfo.Sys().(*syscall.Stat_t)
+	if !ok {
+		log.Warnln("sensor: cpFile - unable to get Stat_t =>", src)
+		return nil
+	}
+
+	//note: cpFile() is only for regular files
+	if srcFileInfo.Mode()&os.ModeSymlink != 0 {
+		log.Warnln("sensor: cpFile - source is a symlink =>", src)
+		return nil
+	}
+
+	//note: need to do the same for symlinks too
+	if err := utils.UpdateFileTimes(dst, sysStat.Atim, sysStat.Mtim); err != nil {
+		log.Warnln("sensor: cpFile - UpdateFileTimes error =>", dst)
+		return err
+	}
+
+	return nil
 }
 
 func py3FileNameFromCache(p string) string {
@@ -434,6 +462,24 @@ func createDummyFile(src, dst string) error {
 		}
 
 		f.Chmod(srcFileInfo.Mode())
+
+		sysStat, ok := srcFileInfo.Sys().(*syscall.Stat_t)
+		if !ok {
+			log.Warnln("sensor: createDummyFile - unable to get Stat_t =>", src)
+			return nil
+		}
+
+		//note: doing it only for regular files
+		if srcFileInfo.Mode()&os.ModeSymlink != 0 {
+			log.Warnln("sensor: createDummyFile - source is a symlink =>", src)
+			return nil
+		}
+
+		//note: need to do the same for symlinks too
+		if err := utils.UpdateFileTimes(dst, sysStat.Mtim, sysStat.Atim); err != nil {
+			log.Warnln("sensor: createDummyFile - UpdateFileTimes error =>", dst)
+			return err
+		}
 	}
 
 	return nil
