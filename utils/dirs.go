@@ -46,7 +46,7 @@ func IsDir(target string) bool {
 
 // IsRegularFile returns true if the target file system object is a regular file
 func IsRegularFile(target string) bool {
-	info, err := os.Stat(target)
+	info, err := os.Lstat(target)
 	if err != nil {
 		return false
 	}
@@ -56,7 +56,7 @@ func IsRegularFile(target string) bool {
 
 // IsSymlink returns true if the target file system object is a symlink
 func IsSymlink(target string) bool {
-	info, err := os.Stat(target)
+	info, err := os.Lstat(target)
 	if err != nil {
 		return false
 	}
@@ -66,7 +66,7 @@ func IsSymlink(target string) bool {
 
 // CopyFile copies the source file system object to the desired destination
 func CopyFile(src, dst string, makeDir bool) error {
-	info, err := os.Stat(src)
+	info, err := os.Lstat(src)
 	if err != nil {
 		return err
 	}
