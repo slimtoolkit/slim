@@ -19,7 +19,7 @@ mkdir -p src/github.com/docker-slim
 ln -sf $BDIR src/github.com/docker-slim/docker-slim
 popd
 
-pushd $BDIR_GOPATH/apps/docker-slim
+pushd $BDIR_GOPATH/cmd/docker-slim
 BUILD_TIME="$(date -u '+%Y-%m-%d_%I:%M:%S%p')"
 TAG="current"
 revision="current"
@@ -33,7 +33,7 @@ LD_FLAGS="-X github.com/docker-slim/docker-slim/utils.appVersionTag=${TAG} -X gi
 gox -osarch="linux/amd64" -ldflags "${LD_FLAGS}" -output "$BDIR_GOPATH/bin/linux/docker-slim"
 gox -osarch="darwin/amd64" -ldflags "${LD_FLAGS}" -output "$BDIR_GOPATH/bin/mac/docker-slim"
 popd
-pushd $BDIR_GOPATH/apps/docker-slim-sensor
+pushd $BDIR_GOPATH/cmd/docker-slim-sensor
 gox -osarch="linux/amd64" -output="$BDIR_GOPATH/bin/linux/docker-slim-sensor"
 popd
 popd

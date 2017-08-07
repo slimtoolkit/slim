@@ -11,7 +11,7 @@ export CGO_ENABLED=0
 source ${SDIR}/env.sh
 BDIR_GOPATH=${BDIR}/_gopath/src/github.com/docker-slim/docker-slim
 
-pushd ${BDIR_GOPATH}/apps/docker-slim
+pushd ${BDIR_GOPATH}/cmd/docker-slim
 BUILD_TIME="$(date -u '+%Y-%m-%d_%I:%M:%S%p')"
 TAG="current"
 REVISION="current"
@@ -26,7 +26,7 @@ gox -osarch="linux/amd64" -ldflags "${LD_FLAGS}" -output "${BDIR_GOPATH}/bin/lin
 gox -osarch="darwin/amd64" -ldflags "${LD_FLAGS}" -output "${BDIR_GOPATH}/bin/mac/docker-slim"
 #gox -osarch="linux/arm" -output "$BDIR_GOPATH/bin/linux_arm/docker-slim"
 popd
-pushd ${BDIR_GOPATH}/apps/docker-slim-sensor
+pushd ${BDIR_GOPATH}/cmd/docker-slim-sensor
 gox -osarch="linux/amd64" -output="${BDIR_GOPATH}/bin/linux/docker-slim-sensor"
 #gox -osarch="linux/arm" -output "$BDIR_GOPATH/bin/linux_arm/docker-slim-sensor"
 popd

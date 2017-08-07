@@ -7,7 +7,7 @@ while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
 SDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 
 source $SDIR/env.sh
-cd $BDIR/apps
+cd $BDIR/cmd
 gofmt -l -w -s .
 cd $BDIR/master
 gofmt -l -w -s .
