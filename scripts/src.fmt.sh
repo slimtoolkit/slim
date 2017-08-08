@@ -17,7 +17,7 @@ cd $BDIR/sensor
 gofmt -l -w -s .
 cd $BDIR/report
 gofmt -l -w -s .
-cd $BDIR/utils
+cd $BDIR/pkg
 gofmt -l -w -s .
 cd $BDIR/consts
 gofmt -l -w -s .

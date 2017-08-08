@@ -6,12 +6,12 @@ import (
 	"time"
 
 	"github.com/docker-slim/docker-slim/messages"
+	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 	"github.com/docker-slim/docker-slim/report"
 	"github.com/docker-slim/docker-slim/sensor/ipc"
 	"github.com/docker-slim/docker-slim/sensor/monitors/fanotify"
 	"github.com/docker-slim/docker-slim/sensor/monitors/pevent"
 	"github.com/docker-slim/docker-slim/sensor/monitors/ptrace"
-	"github.com/docker-slim/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/system"
@@ -88,7 +88,7 @@ func main() {
 	log.Infof("sensor: args => %#v", os.Args)
 
 	dirName, err := os.Getwd()
-	utils.WarnOn(err)
+	errutils.WarnOn(err)
 	log.Debugf("sensor: cwd => %#v", dirName)
 
 	initSignalHandlers()
@@ -101,10 +101,10 @@ func main() {
 	doneChan = make(chan struct{})
 
 	err = ipc.InitChannels()
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	cmdChan, err := ipc.RunCmdServer(doneChan)
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	monDoneChan := make(chan bool, 1)
 	monDoneAckChan := make(chan bool)

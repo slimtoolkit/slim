@@ -17,8 +17,9 @@ import (
 	"syscall"
 
 	"github.com/docker-slim/docker-slim/messages"
+	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
+	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
 	"github.com/docker-slim/docker-slim/report"
-	"github.com/docker-slim/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -239,7 +240,7 @@ func (p *artifactStore) saveArtifacts() {
 	//TODO: use exludePaths to filter discovered links
 	for linkName, linkProps := range p.linkMap {
 		linkPath := fmt.Sprintf("%s/files%s", p.storeLocation, linkName)
-		linkDir := utils.FileDir(linkPath)
+		linkDir := fsutils.FileDir(linkPath)
 		err := os.MkdirAll(linkDir, 0777)
 		if err != nil {
 			log.Warn("saveArtifacts - dir error => ", err)
@@ -264,7 +265,7 @@ func (p *artifactStore) saveArtifacts() {
 	for inPath, isDir := range includePaths {
 		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, inPath)
 		if isDir {
-			err, errs := utils.CopyDir(inPath, dstPath, true, true, nil, nil, nil)
+			err, errs := fsutils.CopyDir(inPath, dstPath, true, true, nil, nil, nil)
 			if err != nil {
 				log.Warnf("CopyDir(%v,%v) error: %v", inPath, dstPath, err)
 			}
@@ -273,7 +274,7 @@ func (p *artifactStore) saveArtifacts() {
 				log.Warnf("CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
 			}
 		} else {
-			if err := utils.CopyFile(inPath, dstPath, true); err != nil {
+			if err := fsutils.CopyFile(inPath, dstPath, true); err != nil {
 				log.Warnf("CopyFile(%v,%v) error: %v", inPath, dstPath, err)
 			}
 		}
@@ -301,17 +302,17 @@ func (p *artifactStore) saveReport() {
 	if os.IsNotExist(err) {
 		os.MkdirAll(artifactDirName, 0777)
 		_, err = os.Stat(artifactDirName)
-		utils.FailOn(err)
+		errutils.FailOn(err)
 	}
 
 	reportFilePath := filepath.Join(artifactDirName, reportName)
 	log.Debug("sensor: monitor - saving report to ", reportFilePath)
 
 	reportData, err := json.MarshalIndent(creport, "", "  ")
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	err = ioutil.WriteFile(reportFilePath, reportData, 0644)
-	utils.FailOn(err)
+	errutils.FailOn(err)
 }
 
 func getFileHash(artifactFileName string) (string, error) {
@@ -357,7 +358,7 @@ func cpFile(src, dst string) error {
 	}
 	defer s.Close()
 
-	dstDir := utils.FileDir(dst)
+	dstDir := fsutils.FileDir(dst)
 	err = os.MkdirAll(dstDir, 0777)
 	if err != nil {
 		log.Warnln("sensor: monitor - dir error =>", err)
@@ -400,7 +401,7 @@ func cpFile(src, dst string) error {
 	}
 
 	//note: need to do the same for symlinks too
-	if err := utils.UpdateFileTimes(dst, sysStat.Atim, sysStat.Mtim); err != nil {
+	if err := fsutils.UpdateFileTimes(dst, sysStat.Atim, sysStat.Mtim); err != nil {
 		log.Warnln("sensor: cpFile - UpdateFileTimes error =>", dst)
 		return err
 	}
@@ -476,7 +477,7 @@ func createDummyFile(src, dst string) error {
 		}
 
 		//note: need to do the same for symlinks too
-		if err := utils.UpdateFileTimes(dst, sysStat.Mtim, sysStat.Atim); err != nil {
+		if err := fsutils.UpdateFileTimes(dst, sysStat.Mtim, sysStat.Atim); err != nil {
 			log.Warnln("sensor: createDummyFile - UpdateFileTimes error =>", dst)
 			return err
 		}

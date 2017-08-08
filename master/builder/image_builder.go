@@ -6,7 +6,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/master/config"
 	"github.com/docker-slim/docker-slim/master/docker/dockerfile"
-	"github.com/docker-slim/docker-slim/utils"
+	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
 
 	//log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
@@ -58,7 +58,7 @@ func NewImageBuilder(client *docker.Client,
 	}
 
 	dataDir := filepath.Join(artifactLocation, "files")
-	builder.HasData = utils.IsDir(dataDir)
+	builder.HasData = fsutils.IsDir(dataDir)
 
 	return builder, nil
 }

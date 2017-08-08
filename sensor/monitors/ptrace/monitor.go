@@ -6,9 +6,9 @@ import (
 	"strconv"
 	"syscall"
 
+	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 	"github.com/docker-slim/docker-slim/report"
 	"github.com/docker-slim/docker-slim/sensor/target"
-	"github.com/docker-slim/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/system"
@@ -51,7 +51,7 @@ func Run(startChan <-chan int,
 
 			var err error
 			app, err = target.Start(appName, appArgs, dirName, true)
-			utils.FailOn(err)
+			errutils.FailOn(err)
 			targetPid := app.Process.Pid
 
 			log.Debugf("ptmon: target PID ==> %d", targetPid)

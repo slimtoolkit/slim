@@ -6,7 +6,8 @@ import (
 	"github.com/docker-slim/docker-slim/master/config"
 	"github.com/docker-slim/docker-slim/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/master/inspectors/image"
-	"github.com/docker-slim/docker-slim/utils"
+	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
+	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/dustin/go-humanize"
@@ -20,7 +21,7 @@ func OnInfo(statePath string, clientConfig *config.DockerClient, imageRef string
 	client := dockerclient.New(clientConfig)
 
 	imageInspector, err := image.NewInspector(client, imageRef)
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	if imageInspector.NoImage() {
 		fmt.Println("docker-slim: [info] target image not found -", imageRef)
@@ -29,9 +30,9 @@ func OnInfo(statePath string, clientConfig *config.DockerClient, imageRef string
 
 	log.Info("docker-slim: inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
-	_, artifactLocation := utils.PrepareSlimDirs(statePath, imageInspector.ImageInfo.ID)
+	_, artifactLocation := fsutils.PrepareSlimDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
 	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)",
@@ -41,7 +42,7 @@ func OnInfo(statePath string, clientConfig *config.DockerClient, imageRef string
 
 	log.Info("docker-slim: processing 'fat' image info...")
 	err = imageInspector.ProcessCollectedData()
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	fmt.Println("docker-slim: [info] done.")
 }

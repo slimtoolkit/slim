@@ -1,4 +1,4 @@
-package utils
+package fsutils
 
 import (
 	"errors"
@@ -8,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+
+	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/pdiscover"
@@ -23,6 +25,11 @@ var (
 	ErrSrcNotRegularFile         = errors.New("source is not a regular file")
 	ErrUnsupportedFileObjectType = errors.New("unsupported file object type")
 )
+
+// Remove removes the artifacts generated during the current application execution
+func Remove(artifactLocation string) error {
+	return os.RemoveAll(artifactLocation)
+}
 
 // Exists returns true if the target file system object exists
 func Exists(target string) bool {
@@ -354,14 +361,14 @@ func CopyDir(src, dst string,
 // ExeDir returns the directory information for the application
 func ExeDir() string {
 	exePath, err := pdiscover.GetOwnProcPath()
-	FailOn(err)
+	errutils.FailOn(err)
 	return filepath.Dir(exePath)
 }
 
 // FileDir returns the directory information for the given file
 func FileDir(fileName string) string {
 	dirName, err := filepath.Abs(filepath.Dir(fileName))
-	FailOn(err)
+	errutils.FailOn(err)
 	return dirName
 }
 
@@ -382,12 +389,12 @@ func PrepareSlimDirs(statePath, imageID string) (string, string) {
 	artifactDir, err := os.Stat(artifactLocation)
 	if os.IsNotExist(err) {
 		err = os.MkdirAll(artifactLocation, 0777)
-		FailOn(err)
+		errutils.FailOn(err)
 		artifactDir, err = os.Stat(artifactLocation)
-		FailOn(err)
+		errutils.FailOn(err)
 		log.Debug("created artifact directory: ", artifactLocation)
 	}
-	FailWhen(!artifactDir.IsDir(), "artifact location is not a directory")
+	errutils.FailWhen(!artifactDir.IsDir(), "artifact location is not a directory")
 
 	return localVolumePath, artifactLocation
 }

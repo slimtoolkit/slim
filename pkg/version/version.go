@@ -1,4 +1,4 @@
-package utils
+package version
 
 import (
 	"fmt"
@@ -18,7 +18,7 @@ func init() {
 	currentVersion = fmt.Sprintf("%v|%v|%v|%v|%v (%v)", runtime.GOOS, consts.AppVersionName, appVersionTag, appVersionRev, appVersionTime, runtime.Version())
 }
 
-// CurrentVersion returns the current version information
-func CurrentVersion() string {
+// Current returns the current version information
+func Current() string {
 	return currentVersion
 }

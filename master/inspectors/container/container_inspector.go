@@ -15,8 +15,9 @@ import (
 	"github.com/docker-slim/docker-slim/master/security/apparmor"
 	"github.com/docker-slim/docker-slim/master/security/seccomp"
 	"github.com/docker-slim/docker-slim/messages"
+	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
+	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
 	"github.com/docker-slim/docker-slim/report"
-	"github.com/docker-slim/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	dockerapi "github.com/cloudimmunity/go-dockerclientx"
@@ -111,7 +112,7 @@ func NewInspector(client *dockerapi.Client,
 // RunContainer starts the container inspector instance execution
 func (i *Inspector) RunContainer() error {
 	artifactsPath := filepath.Join(i.LocalVolumePath, "artifacts")
-	sensorPath := filepath.Join(utils.ExeDir(), "docker-slim-sensor")
+	sensorPath := filepath.Join(fsutils.ExeDir(), "docker-slim-sensor")
 
 	artifactsMountInfo := fmt.Sprintf("%s:/opt/dockerslim/artifacts", artifactsPath)
 	sensorMountInfo := fmt.Sprintf("%s:/opt/dockerslim/bin/sensor:ro", sensorPath)
@@ -169,7 +170,7 @@ func (i *Inspector) RunContainer() error {
 		return err
 	}
 
-	utils.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
+	errutils.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
 	log.Debugf("container NetworkSettings.Ports => %#v", i.ContainerInfo.NetworkSettings.Ports)
 
 	if err = i.initContainerChannels(); err != nil {
@@ -244,7 +245,7 @@ func (i *Inspector) ShutdownContainer() error {
 		}
 
 	} else {
-		utils.WarnOn(err)
+		errutils.WarnOn(err)
 	}
 
 	removeOption := dockerapi.RemoveContainerOptions{
@@ -259,7 +260,7 @@ func (i *Inspector) ShutdownContainer() error {
 // FinishMonitoring ends the target container monitoring activities
 func (i *Inspector) FinishMonitoring() {
 	cmdResponse, err := ipc.SendContainerCmd(&messages.StopMonitor{})
-	utils.WarnOn(err)
+	errutils.WarnOn(err)
 	_ = cmdResponse
 
 	log.Debugf("'stop' response => '%v'", cmdResponse)
@@ -275,7 +276,7 @@ func (i *Inspector) FinishMonitoring() {
 		return
 	}
 
-	utils.WarnOn(err)
+	errutils.WarnOn(err)
 	_ = evt
 	log.Debugf("docker-slim: sensor event => '%v'", evt)
 }
@@ -288,7 +289,7 @@ func (i *Inspector) initContainerChannels() error {
 		if os.IsNotExist(err) {
 			os.MkdirAll(ipcLocation, 0777)
 			_, err = os.Stat(ipcLocation)
-			utils.FailOn(err)
+			errutils.FailOn(err)
 		}
 	*/
 
@@ -309,7 +310,7 @@ func (i *Inspector) shutdownContainerChannels() {
 
 // HasCollectedData returns true if any data was produced monitoring the target container
 func (i *Inspector) HasCollectedData() bool {
-	return utils.Exists(filepath.Join(i.ImageInspector.ArtifactLocation, report.DefaultContainerReportFileName))
+	return fsutils.Exists(filepath.Join(i.ImageInspector.ArtifactLocation, report.DefaultContainerReportFileName))
 }
 
 // ProcessCollectedData performs post-processing on the collected container data

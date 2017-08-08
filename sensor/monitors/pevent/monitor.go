@@ -1,8 +1,8 @@
 package pevent
 
 import (
+	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 	"github.com/docker-slim/docker-slim/report"
-	"github.com/docker-slim/docker-slim/utils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/pdiscover"
@@ -17,7 +17,7 @@ func Run(stopChan chan struct{}) <-chan *report.PeMonitorReport {
 
 	//"connection refused" with boot2docker...
 	watcher, err := pdiscover.NewAllWatcher(pdiscover.PROC_EVENT_ALL)
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	reportChan := make(chan *report.PeMonitorReport, 1)
 
@@ -39,7 +39,7 @@ func Run(stopChan chan struct{}) <-chan *report.PeMonitorReport {
 			case <-watcher.Exec:
 			case <-watcher.Exit:
 			case err := <-watcher.Error:
-				utils.FailOn(err)
+				errutils.FailOn(err)
 			}
 		}
 

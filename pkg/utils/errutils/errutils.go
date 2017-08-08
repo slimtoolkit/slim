@@ -1,7 +1,9 @@
-package utils
+package errutils
 
 import (
 	"runtime/debug"
+
+	"github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -10,7 +12,7 @@ import (
 func FailOn(err error) {
 	if err != nil {
 		stackData := debug.Stack()
-		log.WithError(err).WithField("version", CurrentVersion()).WithField("stack", string(stackData)).Fatal("docker-slim: failure")
+		log.WithError(err).WithField("version", version.Current()).WithField("stack", string(stackData)).Fatal("docker-slim: failure")
 	}
 }
 
@@ -18,7 +20,7 @@ func FailOn(err error) {
 func WarnOn(err error) {
 	if err != nil {
 		stackData := debug.Stack()
-		log.WithError(err).WithField("version", CurrentVersion()).WithField("stack", string(stackData)).Warn("docker-slim: warning")
+		log.WithError(err).WithField("version", version.Current()).WithField("stack", string(stackData)).Warn("docker-slim: warning")
 	}
 }
 
@@ -27,7 +29,7 @@ func FailWhen(cond bool, msg string) {
 	if cond {
 		stackData := debug.Stack()
 		log.WithFields(log.Fields{
-			"version": CurrentVersion(),
+			"version": version.Current(),
 			"error":   msg,
 			"stack":   string(stackData),
 		}).Fatal("docker-slim: failure")
@@ -38,7 +40,7 @@ func FailWhen(cond bool, msg string) {
 func Fail(msg string) {
 	stackData := debug.Stack()
 	log.WithFields(log.Fields{
-		"version": CurrentVersion(),
+		"version": version.Current(),
 		"error":   msg,
 		"stack":   string(stackData),
 	}).Fatal("docker-slim: failure")

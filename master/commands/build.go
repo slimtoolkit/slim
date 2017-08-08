@@ -12,7 +12,9 @@ import (
 	"github.com/docker-slim/docker-slim/master/inspectors/container"
 	"github.com/docker-slim/docker-slim/master/inspectors/container/probes/http"
 	"github.com/docker-slim/docker-slim/master/inspectors/image"
-	"github.com/docker-slim/docker-slim/utils"
+	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
+	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
+	"github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/dustin/go-humanize"
@@ -44,7 +46,7 @@ func OnBuild(doDebug bool,
 	client := dockerclient.New(clientConfig)
 
 	imageInspector, err := image.NewInspector(client, imageRef)
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	if imageInspector.NoImage() {
 		fmt.Println("docker-slim: [build] target image not found -", imageRef)
@@ -53,9 +55,9 @@ func OnBuild(doDebug bool,
 
 	log.Info("docker-slim: inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
-	localVolumePath, artifactLocation := utils.PrepareSlimDirs(statePath, imageInspector.ImageInfo.ID)
+	localVolumePath, artifactLocation := fsutils.PrepareSlimDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
 	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)",
@@ -65,7 +67,7 @@ func OnBuild(doDebug bool,
 
 	log.Info("docker-slim: processing 'fat' image info...")
 	err = imageInspector.ProcessCollectedData()
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	containerInspector, err := container.NewInspector(client,
 		imageInspector,
@@ -76,11 +78,11 @@ func OnBuild(doDebug bool,
 		excludePaths,
 		includePaths,
 		doDebug)
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	log.Info("docker-slim: starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	log.Info("docker-slim: watching container monitor...")
 
@@ -90,7 +92,7 @@ func OnBuild(doDebug bool,
 
 	if doHTTPProbe {
 		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds)
-		utils.FailOn(err)
+		errutils.FailOn(err)
 		probe.Start()
 		continueAfter.ContinueChan = probe.DoneChan()
 	}
@@ -113,24 +115,24 @@ func OnBuild(doDebug bool,
 		<-continueAfter.ContinueChan
 		fmt.Println("docker-slim: HTTP probe is done...")
 	default:
-		utils.Fail("unknown continue-after mode")
+		errutils.Fail("unknown continue-after mode")
 	}
 
 	containerInspector.FinishMonitoring()
 
 	log.Info("docker-slim: shutting down 'fat' container...")
 	err = containerInspector.ShutdownContainer()
-	utils.WarnOn(err)
+	errutils.WarnOn(err)
 
 	if !containerInspector.HasCollectedData() {
 		imageInspector.ShowFatImageDockerInstructions()
-		fmt.Printf("docker-slim: [build] no data collected (no minified image generated) - done. (version: %v)\n", utils.CurrentVersion())
+		fmt.Printf("docker-slim: [build] no data collected (no minified image generated) - done. (version: %v)\n", version.Current())
 		return
 	}
 
 	log.Info("docker-slim: processing instrumented 'fat' container info...")
 	err = containerInspector.ProcessCollectedData()
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	if customImageTag == "" {
 		customImageTag = imageInspector.SlimImageRepo
@@ -143,21 +145,21 @@ func OnBuild(doDebug bool,
 		artifactLocation,
 		imageOverrides,
 		overrides)
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	if !builder.HasData {
 		log.Info("docker-slim: WARNING - no data artifacts")
 	}
 
 	err = builder.Build()
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	log.Infoln("docker-slim: created new image:", builder.RepoName, "( has data artifacts:", builder.HasData, ")")
 
 	if doRmFileArtifacts {
 		log.Info("docker-slim: removing temporary artifacts...")
-		err = utils.RemoveArtifacts(artifactLocation) //TODO: remove only the "files" subdirectory
-		utils.WarnOn(err)
+		err = fsutils.Remove(artifactLocation) //TODO: remove only the "files" subdirectory
+		errutils.WarnOn(err)
 	}
 
 	fmt.Println("docker-slim: [build] done.")

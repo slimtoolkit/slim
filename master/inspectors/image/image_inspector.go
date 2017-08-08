@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/docker-slim/docker-slim/master/docker/dockerfile"
-	"github.com/docker-slim/docker-slim/utils"
+	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
@@ -110,7 +110,7 @@ func (i *Inspector) ProcessCollectedData() error {
 	}
 	fatImageDockerfileLocation := filepath.Join(i.ArtifactLocation, "Dockerfile.fat")
 	err = dockerfile.SaveDockerfileData(fatImageDockerfileLocation, i.fatImageDockerInstructions)
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	return nil
 }

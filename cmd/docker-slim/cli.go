@@ -8,7 +8,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/master/commands"
 	"github.com/docker-slim/docker-slim/master/config"
-	"github.com/docker-slim/docker-slim/utils"
+	"github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/codegangsta/cli"
@@ -24,7 +24,7 @@ var app *cli.App
 
 func init() {
 	app = cli.NewApp()
-	app.Version = utils.CurrentVersion()
+	app.Version = version.Current()
 	app.Name = AppName
 	app.Usage = AppUsage
 	app.CommandNotFound = func(ctx *cli.Context, command string) {

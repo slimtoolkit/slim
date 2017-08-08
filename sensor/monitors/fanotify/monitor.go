@@ -7,8 +7,8 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 	"github.com/docker-slim/docker-slim/report"
-	"github.com/docker-slim/docker-slim/utils"
 
 	fanapi "bitbucket.org/madmo/fanotify"
 	log "github.com/Sirupsen/logrus"
@@ -29,10 +29,10 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 
 	nd, err := fanapi.Initialize(fanapi.FAN_CLASS_NOTIF, os.O_RDONLY)
 	//TODO: need to propagate the FANOTIFY init failure back to the master instead of just crashing the sensor!
-	utils.FailOn(err)
+	errutils.FailOn(err)
 	err = nd.Mark(fanapi.FAN_MARK_ADD|fanapi.FAN_MARK_MOUNT,
 		fanapi.FAN_MODIFY|fanapi.FAN_ACCESS|fanapi.FAN_OPEN, -1, mountPoint)
-	utils.FailOn(err)
+	errutils.FailOn(err)
 
 	eventsChan := make(chan *report.FanMonitorReport, 1)
 
@@ -52,7 +52,7 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 
 			for {
 				data, err := nd.GetEvent()
-				utils.FailOn(err)
+				errutils.FailOn(err)
 				log.Debugf("fanmon: data.Mask =>%x", data.Mask)
 
 				if (data.Mask & fanapi.FAN_Q_OVERFLOW) == fanapi.FAN_Q_OVERFLOW {
@@ -82,7 +82,7 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 				}
 
 				path, err := os.Readlink(fmt.Sprintf("/proc/self/fd/%d", data.File.Fd()))
-				utils.FailOn(err)
+				errutils.FailOn(err)
 				log.Debug("fanmon: file path =>", path)
 
 				data.File.Close()
