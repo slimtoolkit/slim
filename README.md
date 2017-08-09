@@ -57,7 +57,7 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 
 ## RECENT UPDATES
 
-Latest version: 1.18 (10/9/2016)
+Latest version: 1.18 (8/9/2017)
 
 * Alpine image support (NEW)
 * New sample apps (NEW)
