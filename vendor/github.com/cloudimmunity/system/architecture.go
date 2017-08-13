@@ -61,8 +61,8 @@ var unknownArch = ArchInfo{
 }
 
 var archMap = map[MachineName]*ArchInfo{
-	MachineNameNamei386: &x86Family32Arch,
-	MachineNameNamei586: &x86Family32Arch,
+	MachineNameNamei386:   &x86Family32Arch,
+	MachineNameNamei586:   &x86Family32Arch,
 	MachineNameNamei686:   &x86Family32Arch,
 	MachineNameNamex86_64: &x86Family64Arch,
 	MachineNameNameArm:    &unsupportedArch,

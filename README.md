@@ -61,6 +61,7 @@ Latest version: 1.18 (8/9/2017)
 
 * Alpine image support (NEW)
 * New sample apps (NEW)
+* Extended version information (NEW)
 * Ability to override ENV variables analyzing target image
 * Docker 1.12 support
 * User selected location to store DockerSlim state (global `--state-path` parameter).
@@ -82,7 +83,7 @@ If the directory where you extracted the binaries is not in your PATH then you'l
 
 ## BASIC USAGE INFO
 
-`docker-slim [info|build|profile] [--http-probe|--remove-file-artifacts] <IMAGE_ID_OR_NAME>`
+`docker-slim [version|info|build|profile] [--http-probe|--remove-file-artifacts] <IMAGE_ID_OR_NAME>`
 
 Example: `docker-slim build --http-probe my/sample-node-app`
 
@@ -180,6 +181,7 @@ Commands:
 * `build` - Collect fat image information and build a slim image from it
 * `profile` - Collect fat image information and generate a fat container report
 * `info` - Collect fat image information and reverse engineers its Dockerfile (no runtime container analysis)
+* `version` - Show docker-slim and docker version information
 
 Global options:
 

@@ -189,6 +189,16 @@ func init() {
 
 	app.Commands = []cli.Command{
 		{
+			Name:    "version",
+			Aliases: []string{"v"},
+			Usage:   "Shows docker-slim and docker version information",
+			Action: func(ctx *cli.Context) error {
+				clientConfig := getDockerClientConfig(ctx)
+				commands.OnVersion(clientConfig)
+				return nil
+			},
+		},
+		{
 			Name:    "info",
 			Aliases: []string{"i"},
 			Usage:   "Collects fat image information and reverse engineers its Dockerfile",
