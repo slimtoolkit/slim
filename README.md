@@ -134,9 +134,9 @@ The demo run on Mac OS X, but you can build a linux version. Note that these ste
 
   `git clone https://github.com/docker-slim/docker-slim.git`
 
-3. Create a Docker image for the sample node.js app in `sample/apps/node`. You can skip this step if you have your own app.
+3. Create a Docker image for the sample node.js app in `examples/apps/node_ubuntu`. You can skip this step if you have your own app.
 
-  `cd docker-slim/sample/apps/node`
+  `cd docker-slim/examples/apps/node_ubuntu`
 
   `eval "$(docker-machine env default)"` <- optional (depends on how Docker is installed on your machine); if the Docker host is not running you'll need to start it first: `docker-machine start default`; see the `Docker connect options` section for more details.
 
@@ -304,7 +304,7 @@ It's used to minify the `container-transform` tool. You can get the minified ima
 
 ## CURRENT STATE
 
-It works pretty well with the sample Node.js, Python (2 and 3), Ruby and Java images (built from `sample/apps`). More testing needs to be done to see how it works with other images. Rails/unicorn app images are not fully supported yet (WIP).
+It works pretty well with the sample Node.js, Python (2 and 3), Ruby and Java images (built from `examples/apps`). More testing needs to be done to see how it works with other images. Rails/unicorn app images are not fully supported yet (WIP).
 
 Sample images (built with the standard Ubuntu 14.04 base image):
 
@@ -350,7 +350,7 @@ Notes:
 
 You can explore the artifacts DockerSlim generates when it's creating a slim image. You'll find those in `<docker-slim directory>/.images/<TARGET_IMAGE_ID>/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.fat`.
 
-If you'd like to see the artifacts without running `docker-slim` you can take a look at the `sample/artifacts` directory in this repo. It doesn't include any image files, but you'll find:
+If you'd like to see the artifacts without running `docker-slim` you can take a look at the `examples/artifacts` directory in this repo. It doesn't include any image files, but you'll find:
 
 * a reverse engineered Dockerfile (`Dockerfile.fat`)
 * a container report file (`creport.json`)

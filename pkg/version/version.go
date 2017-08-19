@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"runtime"
 
-	"github.com/docker-slim/docker-slim/consts"
+	"github.com/docker-slim/docker-slim/pkg/consts"
 )
 
 var (
