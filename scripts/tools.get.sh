@@ -14,3 +14,4 @@ if ! which gox > /dev/null; then
     echo "Tools: No gox. Installing..."
     go get -u github.com/mitchellh/gox
 fi
+
