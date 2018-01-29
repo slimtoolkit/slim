@@ -70,6 +70,8 @@ func OnProfile(doDebug bool,
 		volumeMounts,
 		excludePaths,
 		includePaths,
+		// this is not implemented yet
+		[]string{},
 		doDebug)
 	errutils.FailOn(err)
 

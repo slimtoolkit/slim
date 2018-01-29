@@ -43,6 +43,7 @@ type Inspector struct {
 	VolumeMounts      map[string]config.VolumeMount
 	ExcludePaths      map[string]bool
 	IncludePaths      map[string]bool
+	LinkPaths         []string
 	DoDebug           bool
 }
 
@@ -68,6 +69,7 @@ func NewInspector(client *dockerapi.Client,
 	volumeMounts map[string]config.VolumeMount,
 	excludePaths map[string]bool,
 	includePaths map[string]bool,
+	linkPaths []string,
 	doDebug bool) (*Inspector, error) {
 
 	inspector := &Inspector{
@@ -81,6 +83,7 @@ func NewInspector(client *dockerapi.Client,
 		VolumeMounts:      volumeMounts,
 		ExcludePaths:      excludePaths,
 		IncludePaths:      includePaths,
+		LinkPaths:         linkPaths,
 		DoDebug:           doDebug,
 	}
 
@@ -147,6 +150,7 @@ func (i *Inspector) RunContainer() error {
 			Labels:     map[string]string{"type": "dockerslim"},
 		},
 		HostConfig: &dockerapi.HostConfig{
+			Links:           i.LinkPaths,
 			Binds:           volumeBinds,
 			PublishAllPorts: true,
 			CapAdd:          []string{"SYS_ADMIN"},

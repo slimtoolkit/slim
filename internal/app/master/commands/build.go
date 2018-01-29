@@ -35,6 +35,7 @@ func OnBuild(doDebug bool,
 	volumeMounts map[string]config.VolumeMount,
 	excludePaths map[string]bool,
 	includePaths map[string]bool,
+	linkPaths []string,
 	continueAfter *config.ContinueAfter) {
 
 	fmt.Printf("docker-slim: [build] image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v\n",
@@ -77,6 +78,7 @@ func OnBuild(doDebug bool,
 		volumeMounts,
 		excludePaths,
 		includePaths,
+		linkPaths,
 		doDebug)
 	errutils.FailOn(err)
 

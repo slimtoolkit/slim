@@ -203,6 +203,7 @@ Global options:
 * `--tag` - use a custom tag for the generated image (instead of the default: `<original_image_name>.slim`)
 * `--entrypoint` - override ENTRYPOINT analyzing image
 * `--cmd` - override CMD analyzing image
+* `--link` - allow to link with other container (see also [container links documentation](https://docs.docker.com/engine/userguide/networking/default_network/dockerlinks/))
 * `--mount` - mount volume analyzing image (the mount parameter format is identical to the `-v` mount command in Docker) [zero or more]
 * `--include-path` - Include directory or file from image [zero or more]
 * `--env` - override ENV analyzing image [zero or more]
