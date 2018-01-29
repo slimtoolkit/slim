@@ -139,6 +139,13 @@ func init() {
 		EnvVar: "DSLIM_TARGET_WORKDIR",
 	}
 
+	doUseLinkFlag := cli.StringSliceFlag{
+		Name:   "link",
+		Value:  &cli.StringSlice{},
+		Usage:  "Link with other containers (i.e other-container:other-container)",
+		EnvVar: "DSLIM_TARGET_LINK",
+	}
+
 	doUseEnvFlag := cli.StringSliceFlag{
 		Name:   "env",
 		Value:  &cli.StringSlice{},
@@ -247,6 +254,7 @@ func init() {
 				doUseEntrypointFlag,
 				doUseCmdFlag,
 				doUseWorkdirFlag,
+				doUseLinkFlag,
 				doUseEnvFlag,
 				doUseExposeFlag,
 				doExcludeMountsFlag,
@@ -328,6 +336,7 @@ func init() {
 					parseImageOverrides(doImageOverrides),
 					overrides,
 					volumeMounts, excludePaths, includePaths,
+					ctx.StringSlice("link"),
 					confinueAfter)
 
 				return nil
