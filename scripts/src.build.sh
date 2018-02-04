@@ -20,7 +20,7 @@ if hash git 2>/dev/null && [ -e ${BDIR_GOPATH}/.git ]; then
   REVISION="$(git rev-parse HEAD)"
 fi
 
-LD_FLAGS="-X github.com/docker-slim/docker-slim/utils.appVersionTag=${TAG} -X github.com/docker-slim/docker-slim/utils.appVersionRev=${REVISION} -X github.com/docker-slim/docker-slim/utils.appVersionTime=${BUILD_TIME}"
+LD_FLAGS="-X github.com/docker-slim/docker-slim/pkg/version.appVersionTag=${TAG} -X github.com/docker-slim/docker-slim/pkg/version.appVersionRev=${REVISION} -X github.com/docker-slim/docker-slim/pkg/version.appVersionTime=${BUILD_TIME}"
 
 gox -osarch="linux/amd64" -ldflags "${LD_FLAGS}" -output "${BDIR_GOPATH}/bin/linux/docker-slim" 
 gox -osarch="darwin/amd64" -ldflags "${LD_FLAGS}" -output "${BDIR_GOPATH}/bin/mac/docker-slim"
@@ -34,6 +34,9 @@ rm -rfv ${BDIR_GOPATH}/dist_mac
 mkdir ${BDIR_GOPATH}/dist_mac
 cp ${BDIR_GOPATH}/bin/mac/docker-slim ${BDIR_GOPATH}/dist_mac/docker-slim
 cp ${BDIR_GOPATH}/bin/linux/docker-slim-sensor ${BDIR_GOPATH}/dist_mac/docker-slim-sensor
+pushd ${BDIR_GOPATH}
+zip -r dist_mac.zip dist_mac -x "*.DS_Store"
+popd
 rm -rfv ${BDIR_GOPATH}/dist_linux
 mkdir ${BDIR_GOPATH}/dist_linux
 cp ${BDIR_GOPATH}/bin/linux/docker-slim ${BDIR_GOPATH}/dist_linux/docker-slim
@@ -42,4 +45,7 @@ cp ${BDIR_GOPATH}/bin/linux/docker-slim-sensor ${BDIR_GOPATH}/dist_linux/docker-
 #mkdir $BDIR_GOPATH/dist_linux_arm
 #cp $BDIR_GOPATH/bin/linux_arm/docker-slim $BDIR_GOPATH/dist_linux_arm/docker-slim
 #cp $BDIR_GOPATH/bin/linux_arm/docker-slim-sensor $BDIR_GOPATH/dist_linux_arm/docker-slim-sensor
+pushd ${BDIR_GOPATH}
+tar -czvf dist_linux.tar.gz dist_linux
+popd
 rm -rfv ${BDIR_GOPATH}/bin
