@@ -1,4 +1,4 @@
-package messages
+package command
 
 import (
 	"encoding/json"
@@ -7,7 +7,7 @@ import (
 
 // Message errors
 var (
-	ErrUnknownMessage = errors.New("unknown type")
+	ErrUnknownMessage = errors.New("unknown command type")
 )
 
 // MessageName is a message ID type
@@ -15,8 +15,9 @@ type MessageName string
 
 // Supported messages
 const (
-	StartMonitorName MessageName = "cmd.monitor.start"
-	StopMonitorName  MessageName = "cmd.monitor.stop"
+	StartMonitorName   MessageName = "cmd.monitor.start"
+	StopMonitorName    MessageName = "cmd.monitor.stop"
+	ShutdownSensorName MessageName = "cmd.sensor.shutdown"
 )
 
 // Message represents the message interface
@@ -46,6 +47,15 @@ func (m *StopMonitor) GetName() MessageName {
 	return StopMonitorName
 }
 
+// ShutdownSensor contains the shutdown sensor command fields
+type ShutdownSensor struct {
+}
+
+// GetName returns the command message ID for the shutdown sensor command
+func (m *ShutdownSensor) GetName() MessageName {
+	return ShutdownSensorName
+}
+
 type messageWrapper struct {
 	Name MessageName     `json:"name"`
 	Data json.RawMessage `json:"data,omitempty"`
@@ -65,6 +75,7 @@ func Encode(m Message) ([]byte, error) {
 			return nil, err
 		}
 	case *StopMonitor:
+	case *ShutdownSensor:
 	default:
 		return nil, ErrUnknownMessage
 	}
@@ -89,6 +100,8 @@ func Decode(data []byte) (Message, error) {
 		return &cmd, nil
 	case StopMonitorName:
 		return &StopMonitor{}, nil
+	case ShutdownSensorName:
+		return &ShutdownSensor{}, nil
 	default:
 		return nil, ErrUnknownMessage
 	}

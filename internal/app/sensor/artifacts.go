@@ -16,7 +16,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/docker-slim/docker-slim/pkg/messages"
+	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
@@ -54,7 +54,7 @@ func saveResults(fanMonReport *report.FanMonitorReport,
 	fileNames map[string]*report.ArtifactProps,
 	ptMonReport *report.PtMonitorReport,
 	peReport *report.PeMonitorReport,
-	cmd *messages.StartMonitor) {
+	cmd *command.StartMonitor) {
 	artifactDirName := defaultArtifactDirName
 
 	artifactStore := newArtifactStore(artifactDirName, fanMonReport, fileNames, ptMonReport, peReport, cmd)
@@ -73,7 +73,7 @@ type artifactStore struct {
 	resolve       map[string]struct{}
 	linkMap       map[string]*report.ArtifactProps
 	fileMap       map[string]*report.ArtifactProps
-	cmd           *messages.StartMonitor
+	cmd           *command.StartMonitor
 }
 
 func newArtifactStore(storeLocation string,
@@ -81,7 +81,7 @@ func newArtifactStore(storeLocation string,
 	rawNames map[string]*report.ArtifactProps,
 	ptMonReport *report.PtMonitorReport,
 	peMonReport *report.PeMonitorReport,
-	cmd *messages.StartMonitor) *artifactStore {
+	cmd *command.StartMonitor) *artifactStore {
 	store := &artifactStore{
 		storeLocation: storeLocation,
 		fanMonReport:  fanMonReport,

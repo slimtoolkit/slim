@@ -1,6 +1,7 @@
 package ipc
 
 import (
+	"fmt"
 	"time"
 
 	log "github.com/Sirupsen/logrus"
@@ -10,7 +11,9 @@ import (
 	//"github.com/go-mangos/mangos/transport/ipc"
 	"github.com/go-mangos/mangos/transport/tcp"
 
-	"github.com/docker-slim/docker-slim/pkg/messages"
+	"github.com/docker-slim/docker-slim/pkg/ipc/channel"
+	"github.com/docker-slim/docker-slim/pkg/ipc/command"
+	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 )
 
 // InitChannels initializes the communication channels with the master
@@ -36,11 +39,11 @@ func ShutdownChannels() {
 }
 
 // RunCmdServer starts the command server
-func RunCmdServer(done <-chan struct{}) (<-chan messages.Message, error) {
+func RunCmdServer(done <-chan struct{}) (<-chan command.Message, error) {
 	return runCmdServer(cmdChannel, done)
 }
 
-var cmdChannelAddr = "tcp://0.0.0.0:65501"
+var cmdChannelAddr = fmt.Sprintf("tcp://0.0.0.0:%d", channel.CmdPort)
 
 //var cmdChannelAddr = "ipc:///tmp/docker-slim-sensor.cmds.ipc"
 //var cmdChannelAddr = "ipc:///opt/dockerslim/ipc/docker-slim-sensor.cmds.ipc"
@@ -68,8 +71,8 @@ func newCmdServer(addr string) (mangos.Socket, error) {
 	return socket, nil
 }
 
-func runCmdServer(channel mangos.Socket, done <-chan struct{}) (<-chan messages.Message, error) {
-	cmdChan := make(chan messages.Message)
+func runCmdServer(channel mangos.Socket, done <-chan struct{}) (<-chan command.Message, error) {
+	cmdChan := make(chan command.Message)
 	go func() {
 		for {
 			// Could also use sock.RecvMsg to get header
@@ -89,7 +92,7 @@ func runCmdServer(channel mangos.Socket, done <-chan struct{}) (<-chan messages.
 				} else {
 					log.Debug("sensor: cmd server - got a command => ", string(rawCmd))
 
-					if cmd, err := messages.Decode(rawCmd); err != nil {
+					if cmd, err := command.Decode(rawCmd); err != nil {
 						log.Println(err)
 					} else {
 						cmdChan <- cmd
@@ -99,10 +102,10 @@ func runCmdServer(channel mangos.Socket, done <-chan struct{}) (<-chan messages.
 					//NOTE:
 					//must reply before receiving the next message
 					//otherwise nanomsg/mangos will be confused :-)
-					monitorFinishReply := "ok"
-					err = channel.Send([]byte(monitorFinishReply))
+					cmdStatusReply := "ok"
+					err = channel.Send([]byte(cmdStatusReply))
 					if err != nil {
-						log.Warnln("sensor: cmd server - fail to send monitor.finish reply =>", err)
+						log.Warnln("sensor: cmd server - fail to send command status reply =>", err)
 					}
 				}
 			}
@@ -119,7 +122,7 @@ func shutdownCmdChannel() {
 	}
 }
 
-var evtChannelAddr = "tcp://0.0.0.0:65502"
+var evtChannelAddr = fmt.Sprintf("tcp://0.0.0.0:%d", channel.EvtPort)
 
 //var evtChannelAddr = "ipc:///tmp/docker-slim-sensor.events.ipc"
 //var evtChannelAddr = "ipc:///opt/dockerslim/ipc/docker-slim-sensor.events.ipc"
@@ -147,9 +150,10 @@ func newEvtPublisher(addr string) (mangos.Socket, error) {
 	return socket, nil
 }
 
-func publishEvt(channel mangos.Socket, evt string) error {
-	if err := channel.Send([]byte(evt)); err != nil {
-		log.Debugf("fail to publish '%v' event:%v", evt, err)
+func publishEvt(channel mangos.Socket, event event.Name) error {
+	log.Debugf("publishEvt(%v)", event)
+	if err := channel.Send([]byte(event)); err != nil {
+		log.Debugf("fail to publish '%v' event:%v", event, err)
 		return err
 	}
 
@@ -157,10 +161,12 @@ func publishEvt(channel mangos.Socket, evt string) error {
 }
 
 // TryPublishEvt attempts to publish an event to the master
-func TryPublishEvt(ptry uint, event string) {
+func TryPublishEvt(ptry uint, event event.Name) {
+	log.Debugf("TryPublishEvt(%v,%v)", ptry, event)
+
 	for ptry := 0; ptry < 3; ptry++ {
 		log.Debugf("sensor: trying to publish '%v' event (attempt %v)", event, ptry+1)
-		err := publishEvt(evtChannel, "monitor.finish.completed")
+		err := publishEvt(evtChannel, event)
 		if err == nil {
 			log.Infof("sensor: published '%v'", event)
 			break

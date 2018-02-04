@@ -10,7 +10,7 @@ import (
 	"syscall"
 
 	"github.com/docker-slim/docker-slim/internal/app/sensor/monitors/fanotify"
-	"github.com/docker-slim/docker-slim/pkg/messages"
+	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
 
 	log "github.com/Sirupsen/logrus"
@@ -20,7 +20,7 @@ func processReports(mountPoint string,
 	fanReport *report.FanMonitorReport,
 	ptReport *report.PtMonitorReport,
 	peReport *report.PeMonitorReport,
-	cmd *messages.StartMonitor) {
+	cmd *command.StartMonitor) {
 
 	fileCount := 0
 	for _, processFileMap := range fanReport.ProcessFiles {

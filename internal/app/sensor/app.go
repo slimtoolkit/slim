@@ -9,7 +9,8 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/sensor/monitors/fanotify"
 	"github.com/docker-slim/docker-slim/internal/app/sensor/monitors/pevent"
 	"github.com/docker-slim/docker-slim/internal/app/sensor/monitors/ptrace"
-	"github.com/docker-slim/docker-slim/pkg/messages"
+	"github.com/docker-slim/docker-slim/pkg/ipc/command"
+	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 
@@ -25,7 +26,7 @@ func monitor(stopWork chan bool,
 	stopWorkAck chan bool,
 	pids chan []int,
 	ptmonStartChan chan int,
-	cmd *messages.StartMonitor,
+	cmd *command.StartMonitor,
 	dirName string) {
 	log.Info("sensor: monitor starting...")
 	mountPoint := "/"
@@ -119,13 +120,13 @@ doneRunning:
 		case cmd := <-cmdChan:
 			log.Debug("\nsensor: command => ", cmd)
 			switch data := cmd.(type) {
-			case *messages.StartMonitor:
+			case *command.StartMonitor:
 				if data == nil {
-					log.Info("sensor: 'start' command - no data...")
+					log.Info("sensor: 'start' monitor command - no data...")
 					break
 				}
 
-				log.Debugf("sensor: 'start' command (%#v) - starting monitor...", data)
+				log.Debugf("sensor: 'start' monitor command (%#v)", data)
 				monitor(monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, data, dirName)
 
 				//target app started by ptmon... (long story :-))
@@ -133,8 +134,18 @@ doneRunning:
 				log.Debugf("sensor: target app started => %v %#v", data.AppName, data.AppArgs)
 				time.Sleep(3 * time.Second)
 
-			case *messages.StopMonitor:
-				log.Debug("sensor: 'stop' command - stopping monitor...")
+			case *command.StopMonitor:
+				log.Debug("sensor: 'stop' monitor command")
+
+				monDoneChan <- true
+				log.Info("sensor: waiting for monitor to finish...")
+				<-monDoneAckChan
+				log.Info("sensor: monitor stopped...")
+
+				ipc.TryPublishEvt(3, event.StopMonitorDoneName)
+
+			case *command.ShutdownSensor:
+				log.Debug("sensor: 'shutdown' sensor command")
 				break doneRunning
 			default:
 				log.Debug("sensor: ignoring unknown command => ", cmd)
@@ -145,11 +156,7 @@ doneRunning:
 		}
 	}
 
-	monDoneChan <- true
-	log.Info("sensor: waiting for monitor to finish...")
-	<-monDoneAckChan
-
-	ipc.TryPublishEvt(3, "monitor.finish.completed")
+	ipc.TryPublishEvt(3, event.ShutdownSensorDoneName)
 
 	log.Info("sensor: done!")
 }

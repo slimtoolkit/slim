@@ -14,7 +14,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/apparmor"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/seccomp"
-	"github.com/docker-slim/docker-slim/pkg/messages"
+	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
@@ -177,7 +177,7 @@ func (i *Inspector) RunContainer() error {
 		return err
 	}
 
-	cmd := &messages.StartMonitor{
+	cmd := &command.StartMonitor{
 		AppName: i.FatContainerCmd[0],
 	}
 
@@ -259,16 +259,17 @@ func (i *Inspector) ShutdownContainer() error {
 
 // FinishMonitoring ends the target container monitoring activities
 func (i *Inspector) FinishMonitoring() {
-	cmdResponse, err := ipc.SendContainerCmd(&messages.StopMonitor{})
+	cmdResponse, err := ipc.SendContainerCmd(&command.StopMonitor{})
 	errutils.WarnOn(err)
-	_ = cmdResponse
+	//_ = cmdResponse
+	log.Debugf("'stop' monitor response => '%v'", cmdResponse)
 
-	log.Debugf("'stop' response => '%v'", cmdResponse)
 	log.Info("docker-slim: waiting for the container to finish its work...")
 
 	//for now there's only one event ("done")
 	//getEvt() should timeout in two minutes (todo: pick a good timeout)
 	evt, err := ipc.GetContainerEvt()
+	log.Debugf("sensor event => '%v'", evt)
 
 	//don't want to expose mangos here... mangos.ErrRecvTimeout = errors.New("receive time out")
 	if err != nil && err.Error() == IpcErrRecvTimeoutStr {
@@ -279,6 +280,10 @@ func (i *Inspector) FinishMonitoring() {
 	errutils.WarnOn(err)
 	_ = evt
 	log.Debugf("docker-slim: sensor event => '%v'", evt)
+
+	cmdResponse, err = ipc.SendContainerCmd(&command.ShutdownSensor{})
+	errutils.WarnOn(err)
+	log.Debugf("'shutdown' sensor response => '%v'", cmdResponse)
 }
 
 func (i *Inspector) initContainerChannels() error {
