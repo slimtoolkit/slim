@@ -304,7 +304,7 @@ It's used to minify the `container-transform` tool. You can get the minified ima
 
 ## CURRENT STATE
 
-It works pretty well with the sample Node.js, Python (2 and 3), Ruby and Java images (built from `examples/apps`). More testing needs to be done to see how it works with other images. Rails/unicorn app images are not fully supported yet (WIP).
+It works pretty well with the sample Node.js, Python (2 and 3), Ruby, Java and Golang images (built from `examples/apps`). More testing needs to be done to see how it works with other images. Rails/unicorn app images are not fully supported yet (WIP).
 
 Sample images (built with the standard Ubuntu 14.04 base image):
 
@@ -318,11 +318,17 @@ Sample images built with Alpine:
 * nodejs app container: 66.4 MB => 34.7 MB
 * python app container: 86 MB   => 22.1 MB
 
+Sample Golang application images:
+
+* from golang:latest: 700MB => 1.55MB
+* from ubuntu:14.04:  529MB => 1.86MB
+* from golang:alpine: 258MB => 1.55MB
+
 You can also run `docker-slim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
 DockerSlim now also generates Seccomp (usable) and AppArmor (WIP) profiles for your container.
 
-Works with Docker 1.8, 1.9, 1.10, 1.11, 1.12, 1.13, 17.03.
+Works with Docker 1.8 - 1.9, 1.10, 1.11, 1.12, 1.13, 17.03, 17.12.
 
 Note:
 
