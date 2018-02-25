@@ -214,7 +214,7 @@ func init() {
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
 
-				commands.OnInfo(statePath, clientConfig, imageRef)
+				commands.OnInfo(ctx.GlobalBool("debug"), statePath, clientConfig, imageRef)
 				return nil
 			},
 		},

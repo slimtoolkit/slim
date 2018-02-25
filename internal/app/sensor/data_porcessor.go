@@ -33,6 +33,8 @@ func processReports(mountPoint string,
 		}
 	}
 
+	log.Debugf("processReports(): len(fanReport.ProcessFiles)=%v / fileCount=%v", len(fanReport.ProcessFiles), fileCount)
+
 	allFilesMap := findSymlinks(fileList, mountPoint)
 	saveResults(fanReport, allFilesMap, ptReport, peReport, cmd)
 }
@@ -71,17 +73,22 @@ func filterFileEvents(fileEvents map[fanotify.Event]bool, targetPidList map[int]
 ///////////////////////////////////////////////////////////////////////////////////////
 
 func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
+	log.Debugf("findSymlinks(%v,%v)", len(files), mp)
+
 	result := make(map[string]*report.ArtifactProps, 0)
 
 	//getting the root device is a leftover from the legacy code (not really necessary anymore)
 	devID, err := getFileDevice(mp)
 	if err != nil {
+		log.Debugf("findSymlinks - no device ID (%v)", err)
 		return result
 	}
 
 	log.Debugf("findSymlinks - deviceId=%v", devID)
 
 	inodes, devices := filesToInodesNative(files)
+	log.Debugf("findSymlinks - len(inodes)=%v len(devices)=%v", len(inodes), len(devices))
+
 	inodeToFiles := make(map[uint64][]string)
 
 	//native filepath.Walk is a bit slow (compared to the "find" command)
@@ -120,6 +127,8 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 
 		return nil
 	})
+
+	log.Debugf("findSymlinks - len(inodeToFiles)=%v", len(inodeToFiles))
 
 	for inodeID := range inodes {
 		v := inodeToFiles[inodeID]

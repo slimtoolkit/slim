@@ -11,9 +11,10 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container/probes/http"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
+	"github.com/docker-slim/docker-slim/internal/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
-	"github.com/docker-slim/docker-slim/pkg/version"
+	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/dustin/go-humanize"
@@ -38,6 +39,10 @@ func OnProfile(doDebug bool,
 
 	client := dockerclient.New(clientConfig)
 
+	if doDebug {
+		version.Print(client)
+	}
+
 	imageInspector, err := image.NewInspector(client, imageRef)
 	errutils.FailOn(err)
 
@@ -50,7 +55,7 @@ func OnProfile(doDebug bool,
 	err = imageInspector.Inspect()
 	errutils.FailOn(err)
 
-	localVolumePath, artifactLocation := fsutils.PrepareSlimDirs(statePath, imageInspector.ImageInfo.ID)
+	localVolumePath, artifactLocation := fsutils.PrepareStateDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
 	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)",
@@ -119,7 +124,7 @@ func OnProfile(doDebug bool,
 
 	if !containerInspector.HasCollectedData() {
 		imageInspector.ShowFatImageDockerInstructions()
-		fmt.Printf("docker-slim: [profile] no data collected (no minified image generated) - done. (version: %v)\n", version.Current())
+		fmt.Printf("docker-slim: [profile] no data collected (no minified image generated) - done. (version: %v)\n", v.Current())
 		return
 	}
 

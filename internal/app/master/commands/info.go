@@ -6,6 +6,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
+	"github.com/docker-slim/docker-slim/internal/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
 
@@ -14,11 +15,15 @@ import (
 )
 
 // OnInfo implements the 'info' docker-slim command
-func OnInfo(statePath string, clientConfig *config.DockerClient, imageRef string) {
+func OnInfo(doDebug bool, statePath string, clientConfig *config.DockerClient, imageRef string) {
 
 	fmt.Println("docker-slim: [info] image=", imageRef)
 
 	client := dockerclient.New(clientConfig)
+
+	if doDebug {
+		version.Print(client)
+	}
 
 	imageInspector, err := image.NewInspector(client, imageRef)
 	errutils.FailOn(err)
@@ -32,7 +37,7 @@ func OnInfo(statePath string, clientConfig *config.DockerClient, imageRef string
 	err = imageInspector.Inspect()
 	errutils.FailOn(err)
 
-	_, artifactLocation := fsutils.PrepareSlimDirs(statePath, imageInspector.ImageInfo.ID)
+	_, artifactLocation := fsutils.PrepareStateDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
 	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)",

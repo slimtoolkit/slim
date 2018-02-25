@@ -55,6 +55,8 @@ func saveResults(fanMonReport *report.FanMonitorReport,
 	ptMonReport *report.PtMonitorReport,
 	peReport *report.PeMonitorReport,
 	cmd *command.StartMonitor) {
+	log.Debugf("saveResults(%v,...)", len(fileNames))
+
 	artifactDirName := defaultArtifactDirName
 
 	artifactStore := newArtifactStore(artifactDirName, fanMonReport, fileNames, ptMonReport, peReport, cmd)
@@ -179,6 +181,8 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 }
 
 func (p *artifactStore) prepareArtifacts() {
+	log.Debugf("p.prepareArtifacts() p.rawNames=%v", len(p.rawNames))
+
 	for artifactFileName := range p.rawNames {
 		log.Debugf("prepareArtifacts - artifact => %v", artifactFileName)
 		p.prepareArtifact(artifactFileName)
@@ -224,8 +228,8 @@ func (p *artifactStore) saveArtifacts() {
 
 	includePaths = preparePaths(p.cmd.Includes)
 	excludePaths = preparePaths(p.cmd.Excludes)
-	log.Debugf("includePaths: %+v", includePaths)
-	log.Debugf("excludePaths: %+v", excludePaths)
+	log.Debugf("saveArtifacts - includePaths: %+v", includePaths)
+	log.Debugf("saveArtifacts - excludePaths: %+v", excludePaths)
 
 	//TODO: use exludePaths to filter discovered files
 	for fileName := range p.fileMap {

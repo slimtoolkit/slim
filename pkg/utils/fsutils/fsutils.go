@@ -26,6 +26,12 @@ var (
 	ErrUnsupportedFileObjectType = errors.New("unsupported file object type")
 )
 
+const (
+	stateBaseKey        = ".images"
+	stateArtifactsKey   = "artifacts"
+	stateArtifactsPerms = 0777
+)
+
 // Remove removes the artifacts generated during the current application execution
 func Remove(artifactLocation string) error {
 	return os.RemoveAll(artifactLocation)
@@ -33,7 +39,6 @@ func Remove(artifactLocation string) error {
 
 // Exists returns true if the target file system object exists
 func Exists(target string) bool {
-	//if _, err := os.Stat(target); os.IsNotExist(err) {
 	if _, err := os.Stat(target); err != nil {
 		return false
 	}
@@ -73,6 +78,8 @@ func IsSymlink(target string) bool {
 
 // CopyFile copies the source file system object to the desired destination
 func CopyFile(src, dst string, makeDir bool) error {
+	log.Debugf("CopyFile(%v,%v,%v)", src, dst, makeDir)
+
 	info, err := os.Lstat(src)
 	if err != nil {
 		return err
@@ -295,6 +302,8 @@ func copyFileObjectHandler(
 func CopyDir(src, dst string,
 	copyRelPath, skipErrors bool,
 	ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{}) (error, []error) {
+	log.Debugf("CopyDir(%v,%v,%v,%v,...)", src, dst, copyRelPath, skipErrors)
+
 	if src == "" {
 		return ErrNoSrcDir, nil
 	}
@@ -339,23 +348,6 @@ func CopyDir(src, dst string,
 	return nil, errs
 }
 
-/*
-	ignoreFileNames := map[string]struct{}{
-    	".DS_Store": struct{}{},
-    }
-
-    err, errs := CopyDir("./src","./dst/src",true,true,nil,nil,ignoreFileNames)
-
-    if err != nil {
-    	fmt.Println("CopyDir() error:",err)
-    	return
-    }
-
-    if len(errs) > 0 {
-    	fmt.Printf("CopyDir() copy errors: %+v\n",errs)
-    }
-*/
-
 ///////////////////////////////////////////////////////////////////////////////
 
 // ExeDir returns the directory information for the application
@@ -372,28 +364,42 @@ func FileDir(fileName string) string {
 	return dirName
 }
 
-// PrepareSlimDirs ensures that the required application directories exist
-func PrepareSlimDirs(statePath, imageID string) (string, string) {
+// PrepareStateDirs ensures that the required application directories exist
+func PrepareStateDirs(statePrefix, imageID string) (string, string) {
+	log.Debugf("PrepareStateDirs(%v,%v)", statePrefix, imageID)
+
 	//images IDs in Docker 1.9+ are prefixed with a hash type...
 	if strings.Contains(imageID, ":") {
 		parts := strings.Split(imageID, ":")
 		imageID = parts[1]
 	}
 
-	if statePath == "" {
-		statePath = ExeDir()
+	if statePrefix == "" {
+		statePrefix = ExeDir()
 	}
 
-	localVolumePath := filepath.Join(statePath, ".images", imageID)
-	artifactLocation := filepath.Join(localVolumePath, "artifacts")
+	localVolumePath := filepath.Join(statePrefix, stateBaseKey, imageID)
+	artifactLocation := filepath.Join(localVolumePath, stateArtifactsKey)
 	artifactDir, err := os.Stat(artifactLocation)
-	if os.IsNotExist(err) {
-		err = os.MkdirAll(artifactLocation, 0777)
+	if err == nil {
+		log.Debugf("PrepareStateDirs - removing existing state location: %v", artifactLocation)
+		err = Remove(artifactLocation)
+		if err != nil {
+			log.Debugf("PrepareStateDirs - failed to remove existing state location: %v", artifactLocation)
+			errutils.FailOn(err)
+		}
+	} else if os.IsNotExist(err) {
+		log.Debugf("PrepareStateDirs - will create new state location: %v", artifactLocation)
+	} else {
 		errutils.FailOn(err)
-		artifactDir, err = os.Stat(artifactLocation)
-		errutils.FailOn(err)
-		log.Debug("created artifact directory: ", artifactLocation)
 	}
+
+	err = os.MkdirAll(artifactLocation, stateArtifactsPerms)
+	errutils.FailOn(err)
+	artifactDir, err = os.Stat(artifactLocation)
+	errutils.FailOn(err)
+	log.Debug("PrepareStateDirs - created new state location: ", artifactLocation)
+
 	errutils.FailWhen(!artifactDir.IsDir(), "artifact location is not a directory")
 
 	return localVolumePath, artifactLocation
