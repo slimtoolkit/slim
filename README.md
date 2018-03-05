@@ -57,7 +57,7 @@ Creating small containers requires a lot of voodoo magic and it can be pretty pa
 
 ## RECENT UPDATES
 
-Latest version: 1.19 (2/4/2018)
+Latest version: 1.20 (3/4/2018)
 
 * Alpine image support (NEW)
 * New sample apps (NEW)
@@ -74,8 +74,8 @@ Latest version: 1.19 (2/4/2018)
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.19/dist_mac.zip)
-   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.19/dist_linux.tar.gz)
+   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.20/dist_mac.zip)
+   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.20/dist_linux.tar.gz)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -123,7 +123,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://github.com/docker-slim/docker-slim/releases/download/1.19/dist_mac.zip) or [Linux](https://github.com/docker-slim/docker-slim/releases/download/1.19/dist_linux.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://github.com/docker-slim/docker-slim/releases/download/1.20/dist_mac.zip) or [Linux](https://github.com/docker-slim/docker-slim/releases/download/1.20/dist_linux.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
   The extracted directory contains two binaries:
 
@@ -187,7 +187,8 @@ Global options:
 
 * `--version` - print the version
 * `--debug` - enable debug logs
-* `--log-level` - set the format used by logs ('text' (default), or 'json')
+* `--verbose` - enable info logs
+* `--log-level` - set the logging level ('debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')
 * `--log-format` - set the format used by logs ('text' (default), or 'json')
 * `--log` - log file to store logs
 * `--host` - Docker host address
