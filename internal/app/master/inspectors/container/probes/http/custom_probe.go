@@ -13,6 +13,8 @@ import (
 
 // CustomProbe is a custom HTTP probe
 type CustomProbe struct {
+	PrintState         bool
+	PrintPrefix        string
 	Ports              []string
 	Cmds               []config.HTTPProbeCmd
 	ContainerInspector *container.Inspector
@@ -20,11 +22,16 @@ type CustomProbe struct {
 }
 
 // NewCustomProbe creates a new custom HTTP probe
-func NewCustomProbe(inspector *container.Inspector, cmds []config.HTTPProbeCmd) (*CustomProbe, error) {
+func NewCustomProbe(inspector *container.Inspector,
+	cmds []config.HTTPProbeCmd,
+	printState bool,
+	printPrefix string) (*CustomProbe, error) {
 	//add default probe: GET /
 	cmds = append(cmds, config.HTTPProbeCmd{Protocol: "http", Method: "GET", Resource: "/"})
 
 	probe := &CustomProbe{
+		PrintState:         printState,
+		PrintPrefix:        printPrefix,
 		Cmds:               cmds,
 		ContainerInspector: inspector,
 		doneChan:           make(chan struct{}),
@@ -46,6 +53,10 @@ func (p *CustomProbe) Start() {
 	go func() {
 		//TODO: need to do a better job figuring out if the target app is ready to accept connections
 		time.Sleep(4 * time.Second)
+
+		if p.PrintState {
+			fmt.Printf("%s state=http.probe.starting\n", p.PrintPrefix)
+		}
 
 		log.Info("docker-slim: HTTP probe started...")
 		goreq.SetConnectTimeout(10 * time.Second)
@@ -80,6 +91,11 @@ func (p *CustomProbe) Start() {
 		}
 
 		log.Info("docker-slim: HTTP probe done.")
+
+		if p.PrintState {
+			fmt.Printf("%s state=http.probe.done\n", p.PrintPrefix)
+		}
+
 		close(p.doneChan)
 	}()
 }

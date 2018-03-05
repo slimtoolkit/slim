@@ -19,33 +19,40 @@ type syscallEvent struct {
 	retVal  uint64
 }
 
+const (
+	eventBufSize = 500
+)
+
 // Run starts the PTRACE monitor
 func Run(startChan <-chan int,
 	stopChan chan struct{},
 	appName string,
 	appArgs []string,
 	dirName string) <-chan *report.PtMonitorReport {
-	log.Info("ptmon: starting...")
+	log.Info("ptmon: Run")
 
 	sysInfo := system.GetSystemInfo()
 	archName := system.MachineToArchName(sysInfo.Machine)
 	syscallResolver := system.CallNumberResolver(archName)
 
-	reportChan := make(chan *report.PtMonitorReport, 1)
+	resultChan := make(chan *report.PtMonitorReport, 1)
 
 	go func() {
+		log.Debug("ptmon: processor - starting...")
+
 		ptReport := &report.PtMonitorReport{
 			ArchName:     string(archName),
 			SyscallStats: map[string]report.SyscallStatInfo{},
 		}
 
 		syscallStats := map[int16]uint64{}
-		eventChan := make(chan syscallEvent)
-		doneMonitoring := make(chan int)
+		eventChan := make(chan syscallEvent, eventBufSize)
+		collectorDoneChan := make(chan int, 1)
 
 		var app *exec.Cmd
 
 		go func() {
+			log.Debug("ptmon: collector - starting...")
 			//Ptrace is not pretty... and it requires that you do all ptrace calls from the same thread
 			runtime.LockOSThread()
 
@@ -54,25 +61,28 @@ func Run(startChan <-chan int,
 			errutils.FailOn(err)
 			targetPid := app.Process.Pid
 
-			log.Debugf("ptmon: target PID ==> %d", targetPid)
+			log.Debugf("ptmon: collector - target PID ==> %d", targetPid)
 
 			var wstat syscall.WaitStatus
 			_, err = syscall.Wait4(targetPid, &wstat, 0, nil)
 			if err != nil {
-				log.Warnf("ptmon: error waiting for %d: %v", targetPid, err)
-				doneMonitoring <- 1
+				log.Warnf("ptmon: collector - error waiting for %d: %v", targetPid, err)
+				collectorDoneChan <- 1
+				return
 			}
 
 			log.Debugln("ptmon: initial process status =>", wstat)
 
 			if wstat.Exited() {
-				log.Warn("ptmon: app exited (unexpected)")
-				doneMonitoring <- 2
+				log.Warn("ptmon: collector - app exited (unexpected)")
+				collectorDoneChan <- 2
+				return
 			}
 
 			if wstat.Signaled() {
-				log.Warn("ptmon: app signalled (unexpected)")
-				doneMonitoring <- 3
+				log.Warn("ptmon: collector - app signalled (unexpected)")
+				collectorDoneChan <- 3
+				return
 			}
 
 			syscallReturn := false
@@ -86,7 +96,7 @@ func Run(startChan <-chan int,
 				switch syscallReturn {
 				case false:
 					if err := syscall.PtraceGetRegs(targetPid, &regs); err != nil {
-						log.Fatalf("ptmon: PtraceGetRegs(call): %v", err)
+						log.Fatalf("ptmon: collector - PtraceGetRegs(call): %v", err)
 					}
 
 					callNum = regs.Orig_rax
@@ -94,7 +104,7 @@ func Run(startChan <-chan int,
 					gotCallNum = true
 				case true:
 					if err := syscall.PtraceGetRegs(targetPid, &regs); err != nil {
-						log.Fatalf("ptmon: PtraceGetRegs(return): %v", err)
+						log.Fatalf("ptmon: collector - PtraceGetRegs(return): %v", err)
 					}
 
 					retVal = regs.Rax
@@ -104,12 +114,12 @@ func Run(startChan <-chan int,
 
 				err = syscall.PtraceSyscall(targetPid, 0)
 				if err != nil {
-					log.Warnf("ptmon: PtraceSyscall error: %v", err)
+					log.Warnf("ptmon: collector - PtraceSyscall error: %v", err)
 					break
 				}
 				_, err = syscall.Wait4(targetPid, &wstat, 0, nil)
 				if err != nil {
-					log.Warnf("ptmon: error waiting 4 %d: %v", targetPid, err)
+					log.Warnf("ptmon: collector - error waiting 4 %d: %v", targetPid, err)
 					break
 				}
 
@@ -117,30 +127,34 @@ func Run(startChan <-chan int,
 					gotCallNum = false
 					gotRetVal = false
 
-					eventChan <- syscallEvent{
+					select {
+					case eventChan <- syscallEvent{
 						callNum: int16(callNum),
 						retVal:  retVal,
+					}:
+					case <-stopChan:
+						log.Info("ptmon: collector - stopping...")
 					}
 				}
 			}
 
-			log.Infoln("ptmon: monitor is exiting... status=", wstat)
-			doneMonitoring <- 0
+			log.Infoln("ptmon: collector - exiting... status=", wstat)
+			collectorDoneChan <- 0
 		}()
 
 	done:
 		for {
 			select {
-			case rc := <-doneMonitoring:
-				log.Info("ptmon: done =>", rc)
+			case rc := <-collectorDoneChan:
+				log.Info("ptmon: processor - collector finished =>", rc)
 				break done
 			case <-stopChan:
-				log.Info("ptmon: stopping...")
+				log.Info("ptmon: processor - stopping...")
 				//NOTE: need a better way to stop the target app...
 				if err := app.Process.Signal(syscall.SIGTERM); err != nil {
-					log.Warnln("ptmon: error stopping target app =>", err)
+					log.Warnln("ptmon: processor - error stopping target app =>", err)
 					if err := app.Process.Kill(); err != nil {
-						log.Warnln("ptmon: error killing target app =>", err)
+						log.Warnln("ptmon: processor - error killing target app =>", err)
 					}
 				}
 				break done
@@ -155,8 +169,8 @@ func Run(startChan <-chan int,
 			}
 		}
 
-		log.Debugf("ptmon: executed syscall count = %d", ptReport.SyscallCount)
-		log.Debugf("ptmon: number of syscalls: %v", len(syscallStats))
+		log.Debugf("ptmon: processor - executed syscall count = %d", ptReport.SyscallCount)
+		log.Debugf("ptmon: processor - number of syscalls: %v", len(syscallStats))
 		for scNum, scCount := range syscallStats {
 			log.Debugf("[%v] %v = %v", scNum, syscallResolver(scNum), scCount)
 			ptReport.SyscallStats[strconv.FormatInt(int64(scNum), 10)] = report.SyscallStatInfo{
@@ -167,8 +181,8 @@ func Run(startChan <-chan int,
 		}
 
 		ptReport.SyscallNum = uint32(len(ptReport.SyscallStats))
-		reportChan <- ptReport
+		resultChan <- ptReport
 	}()
 
-	return reportChan
+	return resultChan
 }

@@ -1,7 +1,8 @@
 package builder
 
 import (
-	"os"
+	//"os"
+	"bytes"
 	"path/filepath"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
@@ -14,19 +15,21 @@ import (
 
 // ImageBuilder creates new container images
 type ImageBuilder struct {
-	RepoName     string
-	ID           string
-	Entrypoint   []string
-	Cmd          []string
-	WorkingDir   string
-	Env          []string
-	ExposedPorts map[docker.Port]struct{}
-	Volumes      map[string]struct{}
-	OnBuild      []string
-	User         string
-	HasData      bool
-	BuildOptions docker.BuildImageOptions
-	APIClient    *docker.Client
+	ShowBuildLogs bool
+	RepoName      string
+	ID            string
+	Entrypoint    []string
+	Cmd           []string
+	WorkingDir    string
+	Env           []string
+	ExposedPorts  map[docker.Port]struct{}
+	Volumes       map[string]struct{}
+	OnBuild       []string
+	User          string
+	HasData       bool
+	BuildOptions  docker.BuildImageOptions
+	APIClient     *docker.Client
+	BuildLog      bytes.Buffer
 }
 
 // NewImageBuilder creates a new ImageBuilder instances
@@ -34,28 +37,33 @@ func NewImageBuilder(client *docker.Client,
 	imageRepoName string,
 	imageInfo *docker.Image,
 	artifactLocation string,
+	showBuildLogs bool,
 	imageOverrides map[string]bool,
 	overrides *config.ContainerOverrides) (*ImageBuilder, error) {
 	builder := &ImageBuilder{
-		RepoName:     imageRepoName,
-		ID:           imageInfo.ID,
-		Entrypoint:   imageInfo.Config.Entrypoint,
-		Cmd:          imageInfo.Config.Cmd,
-		WorkingDir:   imageInfo.Config.WorkingDir,
-		Env:          imageInfo.Config.Env,
-		ExposedPorts: imageInfo.Config.ExposedPorts,
-		Volumes:      imageInfo.Config.Volumes,
-		OnBuild:      imageInfo.Config.OnBuild,
-		User:         imageInfo.Config.User,
+		ShowBuildLogs: showBuildLogs,
+		RepoName:      imageRepoName,
+		ID:            imageInfo.ID,
+		Entrypoint:    imageInfo.Config.Entrypoint,
+		Cmd:           imageInfo.Config.Cmd,
+		WorkingDir:    imageInfo.Config.WorkingDir,
+		Env:           imageInfo.Config.Env,
+		ExposedPorts:  imageInfo.Config.ExposedPorts,
+		Volumes:       imageInfo.Config.Volumes,
+		OnBuild:       imageInfo.Config.OnBuild,
+		User:          imageInfo.Config.User,
 		BuildOptions: docker.BuildImageOptions{
 			Name:           imageRepoName,
 			RmTmpContainer: true,
 			ContextDir:     artifactLocation,
 			Dockerfile:     "Dockerfile",
-			OutputStream:   os.Stdout,
+			//SuppressOutput: true,
+			//OutputStream:   os.Stdout,
 		},
 		APIClient: client,
 	}
+
+	builder.BuildOptions.OutputStream = &builder.BuildLog
 
 	dataDir := filepath.Join(artifactLocation, "files")
 	builder.HasData = fsutils.IsDir(dataDir)

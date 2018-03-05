@@ -37,6 +37,15 @@ func init() {
 			Name:  "debug",
 			Usage: "enable debug logs",
 		},
+		cli.BoolFlag{
+			Name:  "verbose",
+			Usage: "enable info logs",
+		},
+		cli.StringFlag{
+			Name:  "log-level",
+			Value: "warn",
+			Usage: "set the logging level ('debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')",
+		},
 		cli.StringFlag{
 			Name:  "log",
 			Usage: "log file to store logs",
@@ -74,7 +83,33 @@ func init() {
 	app.Before = func(ctx *cli.Context) error {
 		if ctx.GlobalBool("debug") {
 			log.SetLevel(log.DebugLevel)
+		} else {
+			if ctx.GlobalBool("verbose") {
+				log.SetLevel(log.InfoLevel)
+			} else {
+				logLevel := log.WarnLevel
+				logLevelName := ctx.GlobalString("log-level")
+				switch logLevelName {
+				case "debug":
+					logLevel = log.DebugLevel
+				case "info":
+					logLevel = log.InfoLevel
+				case "warn":
+					logLevel = log.WarnLevel
+				case "error":
+					logLevel = log.ErrorLevel
+				case "fatal":
+					logLevel = log.FatalLevel
+				case "panic":
+					logLevel = log.PanicLevel
+				default:
+					log.Fatalf("unknown log-level %q", logLevelName)
+				}
+
+				log.SetLevel(logLevel)
+			}
 		}
+
 		if path := ctx.GlobalString("log"); path != "" {
 			f, err := os.Create(path)
 			if err != nil {
@@ -82,12 +117,15 @@ func init() {
 			}
 			log.SetOutput(f)
 		}
-		switch ctx.GlobalString("log-format") {
+
+		logFormat := ctx.GlobalString("log-format")
+		switch logFormat {
 		case "text":
+			log.SetFormatter(&log.TextFormatter{DisableColors: true})
 		case "json":
 			log.SetFormatter(new(log.JSONFormatter))
 		default:
-			log.Fatalf("unknown log-format %q", ctx.GlobalString("log-format"))
+			log.Fatalf("unknown log-format %q", logFormat)
 		}
 		return nil
 	}
@@ -116,6 +154,12 @@ func init() {
 		Name:   "show-clogs",
 		Usage:  "Show container logs",
 		EnvVar: "DSLIM_SHOW_CLOGS",
+	}
+
+	doShowBuildLogsFlag := cli.BoolFlag{
+		Name:   "show-blogs",
+		Usage:  "Show build logs",
+		EnvVar: "DSLIM_SHOW_BLOGS",
 	}
 
 	doUseEntrypointFlag := cli.StringFlag{
@@ -227,6 +271,7 @@ func init() {
 				doHTTPProbeCmdFlag,
 				doHTTPProbeCmdFileFlag,
 				doShowContainerLogsFlag,
+				doShowBuildLogsFlag,
 				cli.BoolFlag{
 					Name:   "remove-file-artifacts, r",
 					Usage:  "remove file artifacts when command is done",
@@ -281,6 +326,7 @@ func init() {
 				}
 
 				doShowContainerLogs := ctx.Bool("show-clogs")
+				doShowBuildLogs := ctx.Bool("show-blogs")
 				doTag := ctx.String("tag")
 
 				doImageOverrides := ctx.String("image-overrides")
@@ -322,12 +368,18 @@ func init() {
 				commands.OnBuild(ctx.GlobalBool("debug"),
 					statePath,
 					clientConfig,
-					imageRef, doTag,
-					doHTTPProbe, httpProbeCmds,
-					doRmFileArtifacts, doShowContainerLogs,
+					imageRef,
+					doTag,
+					doHTTPProbe,
+					httpProbeCmds,
+					doRmFileArtifacts,
+					doShowContainerLogs,
+					doShowBuildLogs,
 					parseImageOverrides(doImageOverrides),
 					overrides,
-					volumeMounts, excludePaths, includePaths,
+					volumeMounts,
+					excludePaths,
+					includePaths,
 					confinueAfter)
 
 				return nil

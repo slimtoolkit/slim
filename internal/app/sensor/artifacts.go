@@ -232,6 +232,7 @@ func (p *artifactStore) saveArtifacts() {
 	log.Debugf("saveArtifacts - excludePaths: %+v", excludePaths)
 
 	//TODO: use exludePaths to filter discovered files
+	log.Debugf("saveArtifacts - copy %v files", len(p.fileMap))
 	for fileName := range p.fileMap {
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
 		log.Debug("saveArtifacts - saving file data => ", filePath)
@@ -242,6 +243,7 @@ func (p *artifactStore) saveArtifacts() {
 	}
 
 	//TODO: use exludePaths to filter discovered links
+	log.Debugf("saveArtifacts - copy %v links", len(p.linkMap))
 	for linkName, linkProps := range p.linkMap {
 		linkPath := fmt.Sprintf("%s/files%s", p.storeLocation, linkName)
 		linkDir := fsutils.FileDir(linkPath)

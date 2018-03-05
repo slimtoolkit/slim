@@ -23,9 +23,15 @@ type Event struct {
 	IsWrite bool
 }
 
+const (
+	eventBufSize   = 100
+	procFsFdInfo   = "/proc/self/fd/%d"
+	procFsFilePath = "/proc/%v/%v"
+)
+
 // Run starts the FANOTIFY monitor
 func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorReport {
-	log.Info("fanmon: starting...")
+	log.Info("fanmon: Run")
 
 	nd, err := fanapi.Initialize(fanapi.FAN_CLASS_NOTIF, os.O_RDONLY)
 	//TODO: need to propagate the FANOTIFY init failure back to the master instead of just crashing the sensor!
@@ -34,10 +40,10 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 		fanapi.FAN_MODIFY|fanapi.FAN_ACCESS|fanapi.FAN_OPEN, -1, mountPoint)
 	errutils.FailOn(err)
 
-	eventsChan := make(chan *report.FanMonitorReport, 1)
+	resultChan := make(chan *report.FanMonitorReport, 1)
 
 	go func() {
-		log.Debug("fanmon: fanRunMonitor worker starting")
+		log.Debug("fanmon: processor - starting...")
 
 		fanReport := &report.FanMonitorReport{
 			MonitorPid:       os.Getpid(),
@@ -45,18 +51,19 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 			ProcessFiles:     make(map[string]map[string]*report.FileInfo),
 		}
 
-		eventChan := make(chan Event)
+		eventChan := make(chan Event, eventBufSize)
 		go func() {
-			log.Debug("fanmon: fanRunMonitor worker (monitor) starting")
+			log.Debug("fanmon: collector - starting...")
 			var eventID uint32
 
 			for {
+				//TODO: enhance FA Notify to return the original file handle too
 				data, err := nd.GetEvent()
 				errutils.FailOn(err)
-				log.Debugf("fanmon: data.Mask =>%x", data.Mask)
+				log.Debugf("fanmon: collector - data.Mask =>%x", data.Mask)
 
 				if (data.Mask & fanapi.FAN_Q_OVERFLOW) == fanapi.FAN_Q_OVERFLOW {
-					log.Debug("fanmon: overflow event")
+					log.Debug("fanmon: collector - overflow event")
 					continue
 				}
 
@@ -65,31 +72,36 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 				isWrite := false
 
 				if (data.Mask & fanapi.FAN_OPEN) == fanapi.FAN_OPEN {
-					log.Debug("fanmon: file open")
+					log.Debug("fanmon: collector - file open")
 					doNotify = true
 				}
 
 				if (data.Mask & fanapi.FAN_ACCESS) == fanapi.FAN_ACCESS {
-					log.Debug("fanmon: file read")
+					log.Debug("fanmon: collector - file read")
 					isRead = true
 					doNotify = true
 				}
 
 				if (data.Mask & fanapi.FAN_MODIFY) == fanapi.FAN_MODIFY {
-					log.Debug("fanmon: file write")
+					log.Debug("fanmon: collector - file write")
 					isWrite = true
 					doNotify = true
 				}
 
-				path, err := os.Readlink(fmt.Sprintf("/proc/self/fd/%d", data.File.Fd()))
+				path, err := os.Readlink(fmt.Sprintf(procFsFdInfo, data.File.Fd()))
 				errutils.FailOn(err)
-				log.Debug("fanmon: file path =>", path)
+				log.Debug("fanmon: collector - file path =>", path)
 
 				data.File.Close()
 				if doNotify {
 					eventID++
 					e := Event{ID: eventID, Pid: data.Pid, File: path, IsRead: isRead, IsWrite: isWrite}
-					eventChan <- e
+
+					select {
+					case eventChan <- e:
+					case <-stopChan:
+						log.Info("fanmon: collector - stopping...")
+					}
 				}
 			}
 		}()
@@ -98,11 +110,11 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 		for {
 			select {
 			case <-stopChan:
-				log.Info("fanmon: stopping...")
+				log.Info("fanmon: processor - stopping...")
 				break done
 			case e := <-eventChan:
 				fanReport.EventCount++
-				log.Debug("fanmon: event ", fanReport.EventCount)
+				log.Debugf("fanmon: processor - [%v] handling event %v", fanReport.EventCount, e)
 
 				if e.ID == 1 {
 					//first event represents the main process
@@ -160,15 +172,15 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 			}
 		}
 
-		log.Debugf("fanmon: sending report (processed %v events)...", fanReport.EventCount)
-		eventsChan <- fanReport
+		log.Debugf("fanmon: processor - sending report (processed %v events)...", fanReport.EventCount)
+		resultChan <- fanReport
 	}()
 
-	return eventsChan
+	return resultChan
 }
 
 func procFilePath(pid int, key string) string {
-	return fmt.Sprintf("/proc/%v/%v", pid, key)
+	return fmt.Sprintf(procFsFilePath, pid, key)
 }
 
 func getProcessInfo(pid int32) (*report.ProcessInfo, error) {

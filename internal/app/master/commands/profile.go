@@ -89,7 +89,7 @@ func OnProfile(doDebug bool,
 	}
 
 	if doHTTPProbe {
-		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds)
+		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds, true, "docker-slim[profile]:")
 		errutils.FailOn(err)
 		probe.Start()
 		continueAfter.ContinueChan = probe.DoneChan()
