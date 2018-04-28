@@ -4,12 +4,23 @@
 
 # Minify and Secure Docker containers (free and open source!)
 
+Don't change anything in your Docker container image and minify it by up to 30x making it secure too!
+
+Keep doing what you are doing. No need to change anything. Use the base image you want. Use the package manager you want. Don't worry about hand optimizing your Dockerfile. You shouldn't have to throw away your tools and your workflow to have small container images. 
+
+Don't worry about manually creating Seccomp and AppArmor security profiles. You shouldn't have to become an expert in Linux syscalls, Seccomp and AppArmor to have secure containers. Even if you do know enough about it wasting time reverse engineering your application behavior can be time consuming.
+
+docker-slim will optimize and secure your containers by understanding your application and what it needs using various analysis techniques.
+
+docker-slim has been used with Node.js, Python, Ruby, Java, Golang and PHP running on Ubuntu, Debian and Alpine Linux.
+
+---
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [docker-slim: Lean and Mean Docker containers](#docker-slim-lean-and-mean-docker-containers)
-  - [DESCRIPTION](#description)
   - [RECENT UPDATES](#new)
   - [INSTALLATION](#installation)
   - [BASIC USAGE INFO](#basic-usage-info)
@@ -46,14 +57,6 @@
   - [NOTES](#notes)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
-
-
-## DESCRIPTION
-
-
-Creating small containers requires a lot of voodoo magic and it can be pretty painful. You shouldn't have to throw away your tools and your workflow to have skinny containers. Using Docker should be easy.
-
-`docker-slim` is a magic diet pill for your containers :) It will use static and dynamic analysis to create a skinny container for your app.
 
 ## RECENT UPDATES
 
