@@ -12,7 +12,7 @@ Don't worry about manually creating Seccomp and AppArmor security profiles. You 
 
 docker-slim will optimize and secure your containers by understanding your application and what it needs using various analysis techniques.
 
-docker-slim has been used with Node.js, Python, Ruby, Java, Golang and PHP running on Ubuntu, Debian and Alpine Linux.
+docker-slim has been used with Node.js, Python, Ruby, Java, Golang, Elixir and PHP running on Ubuntu, Debian and Alpine Linux.
 
 [![asciicast](https://asciinema.org/a/czxJahFcUHWCGKVWzT7LDpVdE.png)](https://asciinema.org/a/czxJahFcUHWCGKVWzT7LDpVdE)
 
@@ -337,6 +337,10 @@ Sample Golang application images:
 Sample PHP application images:
 
 * from php:7.0-cli: 368MB => 26.6MB
+
+Sample Elixir application images:
+
+* (Phoenix service) from elixir:1.6: 1.1 GB => 37 MB (minified by 29.25X)
 
 You can also run `docker-slim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
