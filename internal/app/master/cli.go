@@ -20,6 +20,19 @@ const (
 	AppUsage = "optimize and secure your Docker containers!"
 )
 
+// DockerSlim app flag names
+const (
+	FlagDebug       = "debug"
+	FlagVerbose     = "verbose"
+	FlagLogLevel    = "log-level"
+	FlagLog         = "log"
+	FlagLogFormat   = "log-format"
+	FlagUseTLS      = "tls"
+	FlagVerifyTLS   = "tls-verify"
+	FlagTLSCertPath = "tls-cert-path"
+	FlagHost        = "host"
+)
+
 var app *cli.App
 
 func init() {
@@ -34,42 +47,42 @@ func init() {
 
 	app.Flags = []cli.Flag{
 		cli.BoolFlag{
-			Name:  "debug",
+			Name:  FlagDebug,
 			Usage: "enable debug logs",
 		},
 		cli.BoolFlag{
-			Name:  "verbose",
+			Name:  FlagVerbose,
 			Usage: "enable info logs",
 		},
 		cli.StringFlag{
-			Name:  "log-level",
+			Name:  FlagLogLevel,
 			Value: "warn",
 			Usage: "set the logging level ('debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')",
 		},
 		cli.StringFlag{
-			Name:  "log",
+			Name:  FlagLog,
 			Usage: "log file to store logs",
 		},
 		cli.StringFlag{
-			Name:  "log-format",
+			Name:  FlagLogFormat,
 			Value: "text",
 			Usage: "set the format used by logs ('text' (default), or 'json')",
 		},
 		cli.BoolTFlag{
-			Name:  "tls",
+			Name:  FlagUseTLS,
 			Usage: "use TLS",
 		},
 		cli.BoolTFlag{
-			Name:  "tls-verify",
+			Name:  FlagVerifyTLS,
 			Usage: "verify TLS",
 		},
 		cli.StringFlag{
-			Name:  "tls-cert-path",
+			Name:  FlagTLSCertPath,
 			Value: "",
 			Usage: "path to TLS cert files",
 		},
 		cli.StringFlag{
-			Name:  "host",
+			Name:  FlagHost,
 			Value: "",
 			Usage: "Docker host address",
 		},
@@ -81,14 +94,14 @@ func init() {
 	}
 
 	app.Before = func(ctx *cli.Context) error {
-		if ctx.GlobalBool("debug") {
+		if ctx.GlobalBool(FlagDebug) {
 			log.SetLevel(log.DebugLevel)
 		} else {
-			if ctx.GlobalBool("verbose") {
+			if ctx.GlobalBool(FlagVerbose) {
 				log.SetLevel(log.InfoLevel)
 			} else {
 				logLevel := log.WarnLevel
-				logLevelName := ctx.GlobalString("log-level")
+				logLevelName := ctx.GlobalString(FlagLogLevel)
 				switch logLevelName {
 				case "debug":
 					logLevel = log.DebugLevel
@@ -110,7 +123,7 @@ func init() {
 			}
 		}
 
-		if path := ctx.GlobalString("log"); path != "" {
+		if path := ctx.GlobalString(FlagLog); path != "" {
 			f, err := os.Create(path)
 			if err != nil {
 				return err
@@ -118,7 +131,7 @@ func init() {
 			log.SetOutput(f)
 		}
 
-		logFormat := ctx.GlobalString("log-format")
+		logFormat := ctx.GlobalString(FlagLogFormat)
 		switch logFormat {
 		case "text":
 			log.SetFormatter(&log.TextFormatter{DisableColors: true})
@@ -258,7 +271,7 @@ func init() {
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
 
-				commands.OnInfo(ctx.GlobalBool("debug"), statePath, clientConfig, imageRef)
+				commands.OnInfo(ctx.GlobalBool(FlagDebug), statePath, clientConfig, imageRef)
 				return nil
 			},
 		},
@@ -321,6 +334,12 @@ func init() {
 					return err
 				}
 
+				if doHTTPProbe {
+					//add default probe cmd if the "http-probe" flag is explicitly set
+					httpProbeCmds = append(httpProbeCmds,
+						config.HTTPProbeCmd{Protocol: "http", Method: "GET", Resource: "/"})
+				}
+
 				if len(httpProbeCmds) > 0 {
 					doHTTPProbe = true
 				}
@@ -365,7 +384,7 @@ func init() {
 					}
 				}
 
-				commands.OnBuild(ctx.GlobalBool("debug"),
+				commands.OnBuild(ctx.GlobalBool(FlagDebug),
 					statePath,
 					clientConfig,
 					imageRef,
@@ -424,6 +443,12 @@ func init() {
 					return err
 				}
 
+				if doHTTPProbe {
+					//add default probe cmd if the "http-probe" flag is explicitly set
+					httpProbeCmds = append(httpProbeCmds,
+						config.HTTPProbeCmd{Protocol: "http", Method: "GET", Resource: "/"})
+				}
+
 				if len(httpProbeCmds) > 0 {
 					doHTTPProbe = true
 				}
@@ -464,7 +489,7 @@ func init() {
 					}
 				}
 
-				commands.OnProfile(ctx.GlobalBool("debug"),
+				commands.OnProfile(ctx.GlobalBool(FlagDebug),
 					statePath,
 					clientConfig,
 					imageRef,
@@ -564,10 +589,10 @@ func getHTTPProbes(ctx *cli.Context) ([]config.HTTPProbeCmd, error) {
 
 func getDockerClientConfig(ctx *cli.Context) *config.DockerClient {
 	config := &config.DockerClient{
-		UseTLS:      ctx.GlobalBool("tls"),
-		VerifyTLS:   ctx.GlobalBool("tls-verify"),
-		TLSCertPath: ctx.GlobalString("tls-cert-path"),
-		Host:        ctx.GlobalString("host"),
+		UseTLS:      ctx.GlobalBool(FlagUseTLS),
+		VerifyTLS:   ctx.GlobalBool(FlagVerifyTLS),
+		TLSCertPath: ctx.GlobalString(FlagTLSCertPath),
+		Host:        ctx.GlobalString(FlagHost),
 		Env:         map[string]string{},
 	}
 

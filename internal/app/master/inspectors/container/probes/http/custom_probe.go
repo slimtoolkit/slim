@@ -26,8 +26,7 @@ func NewCustomProbe(inspector *container.Inspector,
 	cmds []config.HTTPProbeCmd,
 	printState bool,
 	printPrefix string) (*CustomProbe, error) {
-	//add default probe: GET /
-	cmds = append(cmds, config.HTTPProbeCmd{Protocol: "http", Method: "GET", Resource: "/"})
+	//note: the default probe should already be there if the user asked for it
 
 	probe := &CustomProbe{
 		PrintState:         printState,
