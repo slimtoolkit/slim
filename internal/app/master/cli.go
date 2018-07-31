@@ -20,17 +20,42 @@ const (
 	AppUsage = "optimize and secure your Docker containers!"
 )
 
+// DockerSlim app command names
+const (
+	CmdVersion = "version"
+	CmdInfo    = "info"
+	CmdBuild   = "build"
+	CmdProfile = "profile"
+)
+
 // DockerSlim app flag names
 const (
-	FlagDebug       = "debug"
-	FlagVerbose     = "verbose"
-	FlagLogLevel    = "log-level"
-	FlagLog         = "log"
-	FlagLogFormat   = "log-format"
-	FlagUseTLS      = "tls"
-	FlagVerifyTLS   = "tls-verify"
-	FlagTLSCertPath = "tls-cert-path"
-	FlagHost        = "host"
+	FlagDebug             = "debug"
+	FlagVerbose           = "verbose"
+	FlagLogLevel          = "log-level"
+	FlagLog               = "log"
+	FlagLogFormat         = "log-format"
+	FlagUseTLS            = "tls"
+	FlagVerifyTLS         = "tls-verify"
+	FlagTLSCertPath       = "tls-cert-path"
+	FlagHost              = "host"
+	FlagStatePath         = "state-path"
+	FlagHttpProbeSpec     = "http-probe, p"
+	FlagHttpProbe         = "http-probe"
+	FlagHttpProbeCmd      = "http-probe-cmd"
+	FlagHttpProbeCmdFile  = "http-probe-cmd-file"
+	FlagShowContainerLogs = "show-clogs"
+	FlagShowBuildLogs     = "show-blogs"
+	FlagEntrypoint        = "entrypoint"
+	FlagCmd               = "cmd"
+	FlagWorkdir           = "workdir"
+	FlagEnv               = "env"
+	FlagExpose            = "expose"
+	FlagExludeMounts      = "exclude-mounts"
+	FlagExcludePath       = "exclude-path"
+	FlagIncludePath       = "include-path"
+	FlagMount             = "mount"
+	FlagContinueAfter     = "continue-after"
 )
 
 var app *cli.App
@@ -87,7 +112,7 @@ func init() {
 			Usage: "Docker host address",
 		},
 		cli.StringFlag{
-			Name:  "state-path",
+			Name:  FlagStatePath,
 			Value: "",
 			Usage: "DockerSlim state base path",
 		},
@@ -150,95 +175,95 @@ func init() {
 	}
 
 	doHTTPProbeCmdFlag := cli.StringSliceFlag{
-		Name:   "http-probe-cmd",
+		Name:   FlagHttpProbeCmd,
 		Value:  &cli.StringSlice{},
 		Usage:  "User defined HTTP probes",
 		EnvVar: "DSLIM_HTTP_PROBE_CMD",
 	}
 
 	doHTTPProbeCmdFileFlag := cli.StringFlag{
-		Name:   "http-probe-cmd-file",
+		Name:   FlagHttpProbeCmdFile,
 		Value:  "",
 		Usage:  "File with user defined HTTP probes",
 		EnvVar: "DSLIM_HTTP_PROBE_CMD_FILE",
 	}
 
 	doShowContainerLogsFlag := cli.BoolFlag{
-		Name:   "show-clogs",
+		Name:   FlagShowContainerLogs,
 		Usage:  "Show container logs",
 		EnvVar: "DSLIM_SHOW_CLOGS",
 	}
 
 	doShowBuildLogsFlag := cli.BoolFlag{
-		Name:   "show-blogs",
+		Name:   FlagShowBuildLogs,
 		Usage:  "Show build logs",
 		EnvVar: "DSLIM_SHOW_BLOGS",
 	}
 
 	doUseEntrypointFlag := cli.StringFlag{
-		Name:   "entrypoint",
+		Name:   FlagEntrypoint,
 		Value:  "",
 		Usage:  "Override ENTRYPOINT analyzing image",
 		EnvVar: "DSLIM_ENTRYPOINT",
 	}
 
 	doUseCmdFlag := cli.StringFlag{
-		Name:   "cmd",
+		Name:   FlagCmd,
 		Value:  "",
 		Usage:  "Override CMD analyzing image",
 		EnvVar: "DSLIM_TARGET_CMD",
 	}
 
 	doUseWorkdirFlag := cli.StringFlag{
-		Name:   "workdir",
+		Name:   FlagWorkdir,
 		Value:  "",
 		Usage:  "Override WORKDIR analyzing image",
 		EnvVar: "DSLIM_TARGET_WORKDIR",
 	}
 
 	doUseEnvFlag := cli.StringSliceFlag{
-		Name:   "env",
+		Name:   FlagEnv,
 		Value:  &cli.StringSlice{},
 		Usage:  "Override ENV analyzing image",
 		EnvVar: "DSLIM_TARGET_ENV",
 	}
 
 	doUseExposeFlag := cli.StringSliceFlag{
-		Name:   "expose",
+		Name:   FlagExpose,
 		Value:  &cli.StringSlice{},
 		Usage:  "Use additional EXPOSE instructions analyzing image",
 		EnvVar: "DSLIM_TARGET_EXPOSE",
 	}
 
 	doExcludeMountsFlag := cli.BoolTFlag{
-		Name:   "exclude-mounts",
+		Name:   FlagExludeMounts,
 		Usage:  "Exclude mounted volumes from image",
 		EnvVar: "DSLIM_EXCLUDE_MOUNTS",
 	}
 
 	doExcludePathFlag := cli.StringSliceFlag{
-		Name:   "exclude-path",
+		Name:   FlagExcludePath,
 		Value:  &cli.StringSlice{},
 		Usage:  "Exclude path from image",
 		EnvVar: "DSLIM_EXCLUDE_PATH",
 	}
 
 	doIncludePathFlag := cli.StringSliceFlag{
-		Name:   "include-path",
+		Name:   FlagIncludePath,
 		Value:  &cli.StringSlice{},
 		Usage:  "Include path from image",
 		EnvVar: "DSLIM_INCLUDE_PATH",
 	}
 
 	doUseMountFlag := cli.StringSliceFlag{
-		Name:   "mount",
+		Name:   FlagMount,
 		Value:  &cli.StringSlice{},
 		Usage:  "Mount volume analyzing image",
 		EnvVar: "DSLIM_MOUNT",
 	}
 
 	doConfinueAfterFlag := cli.StringFlag{
-		Name:   "continue-after",
+		Name:   FlagContinueAfter,
 		Value:  "enter",
 		Usage:  "Select continue mode: enter | signal | probe | timeout or numberInSeconds",
 		EnvVar: "DSLIM_CONTINUE_AFTER",
@@ -246,7 +271,7 @@ func init() {
 
 	app.Commands = []cli.Command{
 		{
-			Name:    "version",
+			Name:    CmdVersion,
 			Aliases: []string{"v"},
 			Usage:   "Shows docker-slim and docker version information",
 			Action: func(ctx *cli.Context) error {
@@ -256,17 +281,17 @@ func init() {
 			},
 		},
 		{
-			Name:    "info",
+			Name:    CmdInfo,
 			Aliases: []string{"i"},
 			Usage:   "Collects fat image information and reverse engineers its Dockerfile",
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
 					fmt.Printf("[info] missing image ID/name...\n\n")
-					cli.ShowCommandHelp(ctx, "info")
+					cli.ShowCommandHelp(ctx, CmdInfo)
 					return nil
 				}
 
-				statePath := ctx.GlobalString("state-path")
+				statePath := ctx.GlobalString(FlagStatePath)
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
@@ -276,7 +301,7 @@ func init() {
 			},
 		},
 		{
-			Name:    "build",
+			Name:    CmdBuild,
 			Aliases: []string{"b"},
 			Usage:   "Collects fat image information and builds a slim image from it",
 			Flags: []cli.Flag{
@@ -316,17 +341,17 @@ func init() {
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
 					fmt.Printf("[build] missing image ID/name...\n\n")
-					cli.ShowCommandHelp(ctx, "build")
+					cli.ShowCommandHelp(ctx, CmdBuild)
 					return nil
 				}
 
-				statePath := ctx.GlobalString("state-path")
+				statePath := ctx.GlobalString(FlagStatePath)
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
 				doRmFileArtifacts := ctx.Bool("remove-file-artifacts")
 
-				doHTTPProbe := ctx.Bool("http-probe")
+				doHTTPProbe := ctx.Bool(FlagHttpProbe)
 
 				httpProbeCmds, err := getHTTPProbes(ctx)
 				if err != nil {
@@ -344,8 +369,8 @@ func init() {
 					doHTTPProbe = true
 				}
 
-				doShowContainerLogs := ctx.Bool("show-clogs")
-				doShowBuildLogs := ctx.Bool("show-blogs")
+				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
+				doShowBuildLogs := ctx.Bool(FlagShowBuildLogs)
 				doTag := ctx.String("tag")
 
 				doImageOverrides := ctx.String("image-overrides")
@@ -355,16 +380,16 @@ func init() {
 					return err
 				}
 
-				volumeMounts, err := parseVolumeMounts(ctx.StringSlice("mount"))
+				volumeMounts, err := parseVolumeMounts(ctx.StringSlice(FlagMount))
 				if err != nil {
 					fmt.Printf("[build] invalid volume mounts: %v\n", err)
 					return err
 				}
 
-				excludePaths := parsePaths(ctx.StringSlice("exclude-path"))
-				includePaths := parsePaths(ctx.StringSlice("include-path"))
+				excludePaths := parsePaths(ctx.StringSlice(FlagExcludePath))
+				includePaths := parsePaths(ctx.StringSlice(FlagIncludePath))
 
-				doExcludeMounts := ctx.BoolT("exclude-mounts")
+				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
 						excludePaths[mpath] = true
@@ -405,7 +430,7 @@ func init() {
 			},
 		},
 		{
-			Name:    "profile",
+			Name:    CmdProfile,
 			Aliases: []string{"p"},
 			Usage:   "Collects fat image information and generates a fat container report",
 			Flags: []cli.Flag{
@@ -427,15 +452,15 @@ func init() {
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
 					fmt.Printf("[profile] missing image ID/name...\n\n")
-					cli.ShowCommandHelp(ctx, "profile")
+					cli.ShowCommandHelp(ctx, CmdProfile)
 					return nil
 				}
 
-				statePath := ctx.GlobalString("state-path")
+				statePath := ctx.GlobalString(FlagStatePath)
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
-				doHTTPProbe := ctx.Bool("http-probe")
+				doHTTPProbe := ctx.Bool(FlagHttpProbe)
 
 				httpProbeCmds, err := getHTTPProbes(ctx)
 				if err != nil {
@@ -453,23 +478,23 @@ func init() {
 					doHTTPProbe = true
 				}
 
-				doShowContainerLogs := ctx.Bool("show-clogs")
+				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
 				overrides, err := getContainerOverrides(ctx)
 				if err != nil {
 					fmt.Printf("[profile] invalid container overrides: %v", err)
 					return err
 				}
 
-				volumeMounts, err := parseVolumeMounts(ctx.StringSlice("mount"))
+				volumeMounts, err := parseVolumeMounts(ctx.StringSlice(FlagMount))
 				if err != nil {
 					fmt.Printf("[profile] invalid volume mounts: %v\n", err)
 					return err
 				}
 
-				excludePaths := parsePaths(ctx.StringSlice("exclude-path"))
-				includePaths := parsePaths(ctx.StringSlice("include-path"))
+				excludePaths := parsePaths(ctx.StringSlice(FlagExcludePath))
+				includePaths := parsePaths(ctx.StringSlice(FlagIncludePath))
 
-				doExcludeMounts := ctx.Bool("exclude-mounts")
+				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
 						excludePaths[mpath] = true
@@ -509,7 +534,7 @@ func getContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 		Mode: "enter",
 	}
 
-	doConfinueAfter := ctx.String("continue-after")
+	doConfinueAfter := ctx.String(FlagContinueAfter)
 	switch doConfinueAfter {
 	case "enter":
 		info.Mode = "enter"
@@ -532,13 +557,13 @@ func getContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 }
 
 func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error) {
-	doUseEntrypoint := ctx.String("entrypoint")
-	doUseCmd := ctx.String("cmd")
-	doUseExpose := ctx.StringSlice("expose")
+	doUseEntrypoint := ctx.String(FlagEntrypoint)
+	doUseCmd := ctx.String(FlagCmd)
+	doUseExpose := ctx.StringSlice(FlagExpose)
 
 	overrides := &config.ContainerOverrides{
-		Workdir: ctx.String("workdir"),
-		Env:     ctx.StringSlice("env"),
+		Workdir: ctx.String(FlagWorkdir),
+		Env:     ctx.StringSlice(FlagEnv),
 	}
 
 	var err error
@@ -570,12 +595,12 @@ func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 }
 
 func getHTTPProbes(ctx *cli.Context) ([]config.HTTPProbeCmd, error) {
-	httpProbeCmds, err := parseHTTPProbes(ctx.StringSlice("http-probe-cmd"))
+	httpProbeCmds, err := parseHTTPProbes(ctx.StringSlice(FlagHttpProbeCmd))
 	if err != nil {
 		return nil, err
 	}
 
-	moreHTTPProbeCmds, err := parseHTTPProbesFile(ctx.String("http-probe-cmd-file"))
+	moreHTTPProbeCmds, err := parseHTTPProbesFile(ctx.String(FlagHttpProbeCmdFile))
 	if err != nil {
 		return nil, err
 	}
