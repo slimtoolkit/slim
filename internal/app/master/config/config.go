@@ -14,6 +14,7 @@ type ContainerOverrides struct {
 	ClearCmd        bool
 	Workdir         string
 	Env             []string
+	Network         string
 	ExposedPorts    map[docker.Port]struct{}
 }
 

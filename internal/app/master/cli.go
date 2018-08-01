@@ -56,6 +56,7 @@ const (
 	FlagIncludePath       = "include-path"
 	FlagMount             = "mount"
 	FlagContinueAfter     = "continue-after"
+	FlagNetwork           = "network"
 )
 
 var app *cli.App
@@ -228,6 +229,13 @@ func init() {
 		EnvVar: "DSLIM_TARGET_ENV",
 	}
 
+	doUseNetworkFlag := cli.StringFlag{
+		Name:   FlagNetwork,
+		Value:  "",
+		Usage:  "Override default container network settings analyzing image",
+		EnvVar: "DSLIM_TARGET_NET",
+	}
+
 	doUseExposeFlag := cli.StringSliceFlag{
 		Name:   FlagExpose,
 		Value:  &cli.StringSlice{},
@@ -331,6 +339,7 @@ func init() {
 				doUseCmdFlag,
 				doUseWorkdirFlag,
 				doUseEnvFlag,
+				doUseNetworkFlag,
 				doUseExposeFlag,
 				doExcludeMountsFlag,
 				doExcludePathFlag,
@@ -442,6 +451,7 @@ func init() {
 				doUseCmdFlag,
 				doUseWorkdirFlag,
 				doUseEnvFlag,
+				doUseNetworkFlag,
 				doUseExposeFlag,
 				doExcludeMountsFlag,
 				doExcludePathFlag,
@@ -564,6 +574,7 @@ func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	overrides := &config.ContainerOverrides{
 		Workdir: ctx.String(FlagWorkdir),
 		Env:     ctx.StringSlice(FlagEnv),
+		Network: ctx.String(FlagNetwork),
 	}
 
 	var err error

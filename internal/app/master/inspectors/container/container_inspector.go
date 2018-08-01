@@ -154,6 +154,11 @@ func (i *Inspector) RunContainer() error {
 		},
 	}
 
+	if i.Overrides.Network != "" {
+		containerOptions.HostConfig.NetworkMode = i.Overrides.Network
+		log.Debugf("HostConfig.NetworkMode => %v", i.Overrides.Network)
+	}
+
 	containerInfo, err := i.APIClient.CreateContainer(containerOptions)
 	if err != nil {
 		return err
