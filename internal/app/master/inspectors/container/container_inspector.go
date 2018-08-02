@@ -26,6 +26,18 @@ import (
 // IpcErrRecvTimeoutStr - an IPC receive timeout error
 const IpcErrRecvTimeoutStr = "receive time out"
 
+const (
+	SensorBinPath     = "/opt/dockerslim/bin/sensor"
+	ContainerNamePat  = "dockerslimk_%v_%v"
+	ArtifactsDir      = "artifacts"
+	SensorBinLocal    = "docker-slim-sensor"
+	ArtifactsMountPat = "%s:/opt/dockerslim/artifacts"
+	SensorMountPat    = "%s:/opt/dockerslim/bin/sensor:ro"
+	CmdPortDefault    = "65501/tcp"
+	EvtPortDefault    = "65502/tcp"
+	LabelName         = "dockerslim"
+)
+
 // Inspector is a container execution inspector
 type Inspector struct {
 	ContainerInfo     *dockerapi.Container
@@ -72,8 +84,8 @@ func NewInspector(client *dockerapi.Client,
 
 	inspector := &Inspector{
 		LocalVolumePath:   localVolumePath,
-		CmdPort:           "65501/tcp",
-		EvtPort:           "65502/tcp",
+		CmdPort:           CmdPortDefault,
+		EvtPort:           EvtPortDefault,
 		ImageInspector:    imageInspector,
 		APIClient:         client,
 		Overrides:         overrides,
@@ -111,11 +123,11 @@ func NewInspector(client *dockerapi.Client,
 
 // RunContainer starts the container inspector instance execution
 func (i *Inspector) RunContainer() error {
-	artifactsPath := filepath.Join(i.LocalVolumePath, "artifacts")
-	sensorPath := filepath.Join(fsutils.ExeDir(), "docker-slim-sensor")
+	artifactsPath := filepath.Join(i.LocalVolumePath, ArtifactsDir)
+	sensorPath := filepath.Join(fsutils.ExeDir(), SensorBinLocal)
 
-	artifactsMountInfo := fmt.Sprintf("%s:/opt/dockerslim/artifacts", artifactsPath)
-	sensorMountInfo := fmt.Sprintf("%s:/opt/dockerslim/bin/sensor:ro", sensorPath)
+	artifactsMountInfo := fmt.Sprintf(ArtifactsMountPat, artifactsPath)
+	sensorMountInfo := fmt.Sprintf(SensorMountPat, sensorPath)
 
 	var volumeBinds []string
 	for _, volumeMount := range i.VolumeMounts {
@@ -131,7 +143,7 @@ func (i *Inspector) RunContainer() error {
 		containerCmd = append(containerCmd, "-d")
 	}
 
-	i.ContainerName = fmt.Sprintf("dockerslimk_%v_%v", os.Getpid(), time.Now().UTC().Format("20060102150405"))
+	i.ContainerName = fmt.Sprintf(ContainerNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))
 
 	containerOptions := dockerapi.CreateContainerOptions{
 		Name: i.ContainerName,
@@ -141,10 +153,10 @@ func (i *Inspector) RunContainer() error {
 				i.CmdPort: {},
 				i.EvtPort: {},
 			},
-			Entrypoint: []string{"/opt/dockerslim/bin/sensor"},
+			Entrypoint: []string{SensorBinPath},
 			Cmd:        containerCmd,
 			Env:        i.Overrides.Env,
-			Labels:     map[string]string{"type": "dockerslim"},
+			Labels:     map[string]string{"type": LabelName},
 		},
 		HostConfig: &dockerapi.HostConfig{
 			Binds:           volumeBinds,
@@ -165,7 +177,7 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	i.ContainerID = containerInfo.ID
-	log.Infoln("docker-slim: created container =>", i.ContainerID)
+	log.Infoln("created container =>", i.ContainerID)
 
 	if err := i.APIClient.StartContainer(i.ContainerID, nil); err != nil {
 		return err
@@ -208,7 +220,7 @@ func (i *Inspector) showContainerLogs() {
 	var errData bytes.Buffer
 	errw := bufio.NewWriter(&errData)
 
-	log.Debug("docker-slim: getting container logs => ", i.ContainerID)
+	log.Debug("getting container logs => ", i.ContainerID)
 	logsOptions := dockerapi.LogsOptions{
 		Container:    i.ContainerID,
 		OutputStream: outw,
@@ -219,7 +231,7 @@ func (i *Inspector) showContainerLogs() {
 
 	err := i.APIClient.Logs(logsOptions)
 	if err != nil {
-		log.Infof("docker-slim: error getting container logs => %v - %v", i.ContainerID, err)
+		log.Infof("error getting container logs => %v - %v", i.ContainerID, err)
 	} else {
 		outw.Flush()
 		errw.Flush()
@@ -242,7 +254,7 @@ func (i *Inspector) ShutdownContainer() error {
 	err := i.APIClient.StopContainer(i.ContainerID, 9)
 
 	if _, ok := err.(*dockerapi.ContainerNotRunning); ok {
-		log.Info("docker-slim: can't stop the docker-slim container (container is not running)...")
+		log.Info("can't stop the docker-slim container (container is not running)...")
 
 		//show container logs if they aren't shown yet
 		if !i.ShowContainerLogs {
@@ -269,7 +281,7 @@ func (i *Inspector) FinishMonitoring() {
 	//_ = cmdResponse
 	log.Debugf("'stop' monitor response => '%v'", cmdResponse)
 
-	log.Info("docker-slim: waiting for the container to finish its work...")
+	log.Info("waiting for the container to finish its work...")
 
 	//for now there's only one event ("done")
 	//getEvt() should timeout in two minutes (todo: pick a good timeout)
@@ -278,13 +290,13 @@ func (i *Inspector) FinishMonitoring() {
 
 	//don't want to expose mangos here... mangos.ErrRecvTimeout = errors.New("receive time out")
 	if err != nil && err.Error() == IpcErrRecvTimeoutStr {
-		log.Info("docker-slim: timeout waiting for the docker-slim container to finish its work...")
+		log.Info("timeout waiting for the docker-slim container to finish its work...")
 		return
 	}
 
 	errutils.WarnOn(err)
 	_ = evt
-	log.Debugf("docker-slim: sensor event => '%v'", evt)
+	log.Debugf("sensor event => '%v'", evt)
 
 	cmdResponse, err = ipc.SendContainerCmd(&command.ShutdownSensor{})
 	errutils.WarnOn(err)
@@ -325,7 +337,7 @@ func (i *Inspector) HasCollectedData() bool {
 
 // ProcessCollectedData performs post-processing on the collected container data
 func (i *Inspector) ProcessCollectedData() error {
-	log.Info("docker-slim: generating AppArmor profile...")
+	log.Info("generating AppArmor profile...")
 	err := apparmor.GenProfile(i.ImageInspector.ArtifactLocation, i.ImageInspector.AppArmorProfileName)
 	if err != nil {
 		return err
