@@ -3,10 +3,7 @@ package app
 import (
 	"fmt"
 	"os"
-	"os/exec"
 	"path/filepath"
-	"strconv"
-	"strings"
 	"syscall"
 
 	"github.com/docker-slim/docker-slim/internal/app/sensor/monitors/fanotify"
