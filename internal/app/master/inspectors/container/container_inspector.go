@@ -51,6 +51,7 @@ type Inspector struct {
 	ImageInspector    *image.Inspector
 	APIClient         *dockerapi.Client
 	Overrides         *config.ContainerOverrides
+	Links             []string
 	ShowContainerLogs bool
 	VolumeMounts      map[string]config.VolumeMount
 	ExcludePaths      map[string]bool
@@ -76,6 +77,7 @@ func NewInspector(client *dockerapi.Client,
 	imageInspector *image.Inspector,
 	localVolumePath string,
 	overrides *config.ContainerOverrides,
+	links []string,
 	showContainerLogs bool,
 	volumeMounts map[string]config.VolumeMount,
 	excludePaths map[string]bool,
@@ -89,6 +91,7 @@ func NewInspector(client *dockerapi.Client,
 		ImageInspector:    imageInspector,
 		APIClient:         client,
 		Overrides:         overrides,
+		Links:             links,
 		ShowContainerLogs: showContainerLogs,
 		VolumeMounts:      volumeMounts,
 		ExcludePaths:      excludePaths,
@@ -169,6 +172,11 @@ func (i *Inspector) RunContainer() error {
 	if i.Overrides.Network != "" {
 		containerOptions.HostConfig.NetworkMode = i.Overrides.Network
 		log.Debugf("HostConfig.NetworkMode => %v", i.Overrides.Network)
+	}
+
+	if len(i.Links) > 0 {
+		containerOptions.HostConfig.Links = i.Links
+		log.Debugf("HostConfig.Links => %v", i.Links)
 	}
 
 	containerInfo, err := i.APIClient.CreateContainer(containerOptions)

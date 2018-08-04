@@ -57,6 +57,7 @@ const (
 	FlagMount             = "mount"
 	FlagContinueAfter     = "continue-after"
 	FlagNetwork           = "network"
+	FlagLink              = "link"
 )
 
 var app *cli.App
@@ -229,6 +230,13 @@ func init() {
 		EnvVar: "DSLIM_TARGET_ENV",
 	}
 
+	doUseLinkFlag := cli.StringSliceFlag{
+		Name:   FlagLink,
+		Value:  &cli.StringSlice{},
+		Usage:  "Add link to another container analyzing image",
+		EnvVar: "DSLIM_TARGET_LINK",
+	}
+
 	doUseNetworkFlag := cli.StringFlag{
 		Name:   FlagNetwork,
 		Value:  "",
@@ -339,6 +347,7 @@ func init() {
 				doUseCmdFlag,
 				doUseWorkdirFlag,
 				doUseEnvFlag,
+				doUseLinkFlag,
 				doUseNetworkFlag,
 				doUseExposeFlag,
 				doExcludeMountsFlag,
@@ -430,6 +439,7 @@ func init() {
 					doShowBuildLogs,
 					parseImageOverrides(doImageOverrides),
 					overrides,
+					ctx.StringSlice(FlagLink),
 					volumeMounts,
 					excludePaths,
 					includePaths,
@@ -451,6 +461,7 @@ func init() {
 				doUseCmdFlag,
 				doUseWorkdirFlag,
 				doUseEnvFlag,
+				doUseLinkFlag,
 				doUseNetworkFlag,
 				doUseExposeFlag,
 				doExcludeMountsFlag,
@@ -528,9 +539,14 @@ func init() {
 					statePath,
 					clientConfig,
 					imageRef,
-					doHTTPProbe, httpProbeCmds,
-					doShowContainerLogs, overrides,
-					volumeMounts, excludePaths, includePaths,
+					doHTTPProbe,
+					httpProbeCmds,
+					doShowContainerLogs,
+					overrides,
+					ctx.StringSlice(FlagLink),
+					volumeMounts,
+					excludePaths,
+					includePaths,
 					confinueAfter)
 
 				return nil
