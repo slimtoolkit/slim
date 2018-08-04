@@ -12,14 +12,13 @@ import (
 	"github.com/cloudimmunity/go-dockerclientx"
 )
 
-// Constants
 const (
-	SlimImageRepo          = "slim"
-	AppArmorProfileName    = "apparmor-profile"
-	SeccompProfileName     = "seccomp-profile"
-	FatDockerfileName      = "Dockerfile.fat"
-	AppArmorProfileNamePat = "%s-apparmor-profile"
-	SeccompProfileNamePat  = "%s-seccomp.json"
+	slimImageRepo          = "slim"
+	appArmorProfileName    = "apparmor-profile"
+	seccompProfileName     = "seccomp-profile"
+	fatDockerfileName      = "Dockerfile.fat"
+	appArmorProfileNamePat = "%s-apparmor-profile"
+	seccompProfileNamePat  = "%s-seccomp.json"
 )
 
 // Inspector is a container image inspector
@@ -39,9 +38,9 @@ type Inspector struct {
 func NewInspector(client *docker.Client, imageRef string /*, artifactLocation string*/) (*Inspector, error) {
 	inspector := &Inspector{
 		ImageRef:            imageRef,
-		SlimImageRepo:       SlimImageRepo,
-		AppArmorProfileName: AppArmorProfileName,
-		SeccompProfileName:  SeccompProfileName,
+		SlimImageRepo:       slimImageRepo,
+		AppArmorProfileName: appArmorProfileName,
+		SeccompProfileName:  seccompProfileName,
 		//ArtifactLocation:    artifactLocation,
 		APIClient: client,
 	}
@@ -103,8 +102,8 @@ func (i *Inspector) processImageName() {
 				i.AppArmorProfileName = rtInfo[0]
 				i.SeccompProfileName = rtInfo[0]
 			}
-			i.AppArmorProfileName = fmt.Sprintf(AppArmorProfileNamePat, i.AppArmorProfileName)
-			i.SeccompProfileName = fmt.Sprintf(SeccompProfileNamePat, i.SeccompProfileName)
+			i.AppArmorProfileName = fmt.Sprintf(appArmorProfileNamePat, i.AppArmorProfileName)
+			i.SeccompProfileName = fmt.Sprintf(seccompProfileNamePat, i.SeccompProfileName)
 		}
 	}
 }
@@ -118,7 +117,7 @@ func (i *Inspector) ProcessCollectedData() error {
 	if err != nil {
 		return err
 	}
-	fatImageDockerfileLocation := filepath.Join(i.ArtifactLocation, FatDockerfileName)
+	fatImageDockerfileLocation := filepath.Join(i.ArtifactLocation, fatDockerfileName)
 	err = dockerfile.SaveDockerfileData(fatImageDockerfileLocation, i.fatImageDockerInstructions)
 	errutils.FailOn(err)
 
