@@ -57,7 +57,7 @@ func (p *CustomProbe) Start() {
 			fmt.Printf("%s state=http.probe.starting\n", p.PrintPrefix)
 		}
 
-		log.Info("docker-slim: HTTP probe started...")
+		log.Info("HTTP probe started...")
 		goreq.SetConnectTimeout(10 * time.Second)
 
 		for _, port := range p.Ports {
@@ -80,16 +80,16 @@ func (p *CustomProbe) Start() {
 					}.Do()
 
 					if err == nil {
-						log.Infof("docker-slim: http probe - %v %v => %v", cmd.Method, addr, res.StatusCode)
+						log.Infof("http probe - %v %v => %v", cmd.Method, addr, res.StatusCode)
 						break
 					}
 
-					log.Infof("docker-slim: http probe - %v %v error: %v", cmd.Method, addr, err)
+					log.Infof("http probe - %v %v error: %v", cmd.Method, addr, err)
 				}
 			}
 		}
 
-		log.Info("docker-slim: HTTP probe done.")
+		log.Info("HTTP probe done.")
 
 		if p.PrintState {
 			fmt.Printf("%s state=http.probe.done\n", p.PrintPrefix)

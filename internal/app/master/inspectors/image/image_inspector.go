@@ -12,6 +12,16 @@ import (
 	"github.com/cloudimmunity/go-dockerclientx"
 )
 
+// Constants
+const (
+	SlimImageRepo          = "slim"
+	AppArmorProfileName    = "apparmor-profile"
+	SeccompProfileName     = "seccomp-profile"
+	FatDockerfileName      = "Dockerfile.fat"
+	AppArmorProfileNamePat = "%s-apparmor-profile"
+	SeccompProfileNamePat  = "%s-seccomp.json"
+)
+
 // Inspector is a container image inspector
 type Inspector struct {
 	ImageRef                   string
@@ -29,9 +39,9 @@ type Inspector struct {
 func NewInspector(client *docker.Client, imageRef string /*, artifactLocation string*/) (*Inspector, error) {
 	inspector := &Inspector{
 		ImageRef:            imageRef,
-		SlimImageRepo:       "slim",
-		AppArmorProfileName: "apparmor-profile",
-		SeccompProfileName:  "seccomp-profile",
+		SlimImageRepo:       SlimImageRepo,
+		AppArmorProfileName: AppArmorProfileName,
+		SeccompProfileName:  SeccompProfileName,
 		//ArtifactLocation:    artifactLocation,
 		APIClient: client,
 	}
@@ -57,7 +67,7 @@ func (i *Inspector) Inspect() error {
 	i.ImageInfo, err = i.APIClient.InspectImage(i.ImageRef)
 	if err != nil {
 		if err == docker.ErrNoSuchImage {
-			log.Info("docker-slim: could not find target image")
+			log.Info("could not find target image")
 		}
 		return err
 	}
@@ -75,7 +85,7 @@ func (i *Inspector) Inspect() error {
 	}
 
 	if i.ImageRecordInfo.ID == "" {
-		log.Info("docker-slim: could not find target image in the image list")
+		log.Info("could not find target image in the image list")
 		return docker.ErrNoSuchImage
 	}
 
@@ -93,8 +103,8 @@ func (i *Inspector) processImageName() {
 				i.AppArmorProfileName = rtInfo[0]
 				i.SeccompProfileName = rtInfo[0]
 			}
-			i.AppArmorProfileName = fmt.Sprintf("%s-apparmor-profile", i.AppArmorProfileName)
-			i.SeccompProfileName = fmt.Sprintf("%s-seccomp.json", i.SeccompProfileName)
+			i.AppArmorProfileName = fmt.Sprintf(AppArmorProfileNamePat, i.AppArmorProfileName)
+			i.SeccompProfileName = fmt.Sprintf(SeccompProfileNamePat, i.SeccompProfileName)
 		}
 	}
 }
@@ -108,7 +118,7 @@ func (i *Inspector) ProcessCollectedData() error {
 	if err != nil {
 		return err
 	}
-	fatImageDockerfileLocation := filepath.Join(i.ArtifactLocation, "Dockerfile.fat")
+	fatImageDockerfileLocation := filepath.Join(i.ArtifactLocation, FatDockerfileName)
 	err = dockerfile.SaveDockerfileData(fatImageDockerfileLocation, i.fatImageDockerInstructions)
 	errutils.FailOn(err)
 
