@@ -54,6 +54,7 @@ type Inspector struct {
 	Links             []string
 	EtcHostsMaps      []string
 	DnsServers        []string
+	DnsSearchDomains  []string
 	ShowContainerLogs bool
 	VolumeMounts      map[string]config.VolumeMount
 	ExcludePaths      map[string]bool
@@ -82,6 +83,7 @@ func NewInspector(client *dockerapi.Client,
 	links []string,
 	etcHostsMaps []string,
 	dnsServers []string,
+	dnsSearchDomains []string,
 	showContainerLogs bool,
 	volumeMounts map[string]config.VolumeMount,
 	excludePaths map[string]bool,
@@ -98,6 +100,7 @@ func NewInspector(client *dockerapi.Client,
 		Links:             links,
 		EtcHostsMaps:      etcHostsMaps,
 		DnsServers:        dnsServers,
+		DnsSearchDomains:  dnsSearchDomains,
 		ShowContainerLogs: showContainerLogs,
 		VolumeMounts:      volumeMounts,
 		ExcludePaths:      excludePaths,
@@ -181,6 +184,7 @@ func (i *Inspector) RunContainer() error {
 		log.Debugf("RunContainer: HostConfig.NetworkMode => %v", i.Overrides.Network)
 	}
 
+	// adding this separately for better visibility...
 	if len(i.Links) > 0 {
 		containerOptions.HostConfig.Links = i.Links
 		log.Debugf("RunContainer: HostConfig.Links => %v", i.Links)
@@ -195,6 +199,11 @@ func (i *Inspector) RunContainer() error {
 		containerOptions.HostConfig.DNS = i.DnsServers //for newer versions of Docker
 		containerOptions.Config.DNS = i.DnsServers     //for older versions of Docker
 		log.Debugf("RunContainer: HostConfig.DNS/Config.DNS => %v", i.DnsServers)
+	}
+
+	if len(i.DnsSearchDomains) > 0 {
+		containerOptions.HostConfig.DNSSearch = i.DnsSearchDomains
+		log.Debugf("RunContainer: HostConfig.DNSSearch => %v", i.DnsSearchDomains)
 	}
 
 	containerInfo, err := i.APIClient.CreateContainer(containerOptions)

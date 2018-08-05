@@ -30,37 +30,38 @@ const (
 
 // DockerSlim app flag names
 const (
-	FlagDebug             = "debug"
-	FlagVerbose           = "verbose"
-	FlagLogLevel          = "log-level"
-	FlagLog               = "log"
-	FlagLogFormat         = "log-format"
-	FlagUseTLS            = "tls"
-	FlagVerifyTLS         = "tls-verify"
-	FlagTLSCertPath       = "tls-cert-path"
-	FlagHost              = "host"
-	FlagStatePath         = "state-path"
-	FlagHttpProbeSpec     = "http-probe, p"
-	FlagHttpProbe         = "http-probe"
-	FlagHttpProbeCmd      = "http-probe-cmd"
-	FlagHttpProbeCmdFile  = "http-probe-cmd-file"
-	FlagShowContainerLogs = "show-clogs"
-	FlagShowBuildLogs     = "show-blogs"
-	FlagEntrypoint        = "entrypoint"
-	FlagCmd               = "cmd"
-	FlagWorkdir           = "workdir"
-	FlagEnv               = "env"
-	FlagExpose            = "expose"
-	FlagExludeMounts      = "exclude-mounts"
-	FlagExcludePath       = "exclude-path"
-	FlagIncludePath       = "include-path"
-	FlagMount             = "mount"
-	FlagContinueAfter     = "continue-after"
-	FlagNetwork           = "network"
-	FlagLink              = "link"
-	FlagHostname          = "hostname"
-	FlagEtcHostsMap       = "etc-hosts-map"
-	FlagContainerDns      = "container-dns"
+	FlagDebug              = "debug"
+	FlagVerbose            = "verbose"
+	FlagLogLevel           = "log-level"
+	FlagLog                = "log"
+	FlagLogFormat          = "log-format"
+	FlagUseTLS             = "tls"
+	FlagVerifyTLS          = "tls-verify"
+	FlagTLSCertPath        = "tls-cert-path"
+	FlagHost               = "host"
+	FlagStatePath          = "state-path"
+	FlagHttpProbeSpec      = "http-probe, p"
+	FlagHttpProbe          = "http-probe"
+	FlagHttpProbeCmd       = "http-probe-cmd"
+	FlagHttpProbeCmdFile   = "http-probe-cmd-file"
+	FlagShowContainerLogs  = "show-clogs"
+	FlagShowBuildLogs      = "show-blogs"
+	FlagEntrypoint         = "entrypoint"
+	FlagCmd                = "cmd"
+	FlagWorkdir            = "workdir"
+	FlagEnv                = "env"
+	FlagExpose             = "expose"
+	FlagExludeMounts       = "exclude-mounts"
+	FlagExcludePath        = "exclude-path"
+	FlagIncludePath        = "include-path"
+	FlagMount              = "mount"
+	FlagContinueAfter      = "continue-after"
+	FlagNetwork            = "network"
+	FlagLink               = "link"
+	FlagHostname           = "hostname"
+	FlagEtcHostsMap        = "etc-hosts-map"
+	FlagContainerDns       = "container-dns"
+	FlagContainerDnsSearch = "container-dns-search"
 )
 
 var app *cli.App
@@ -254,6 +255,13 @@ func init() {
 		EnvVar: "DSLIM_TARGET_DNS",
 	}
 
+	doUseContainerDnsSearchFlag := cli.StringSliceFlag{
+		Name:   FlagContainerDnsSearch,
+		Value:  &cli.StringSlice{},
+		Usage:  "Add a dns search domain for unqualified hostnames analyzing image",
+		EnvVar: "DSLIM_TARGET_DNS_SEARCH",
+	}
+
 	doUseHostnameFlag := cli.StringFlag{
 		Name:   FlagHostname,
 		Value:  "",
@@ -374,6 +382,7 @@ func init() {
 				doUseLinkFlag,
 				doUseEtcHostsMapFlag,
 				doUseContainerDnsFlag,
+				doUseContainerDnsSearchFlag,
 				doUseNetworkFlag,
 				doUseHostnameFlag,
 				doUseExposeFlag,
@@ -469,6 +478,7 @@ func init() {
 					ctx.StringSlice(FlagLink),
 					ctx.StringSlice(FlagEtcHostsMap),
 					ctx.StringSlice(FlagContainerDns),
+					ctx.StringSlice(FlagContainerDnsSearch),
 					volumeMounts,
 					excludePaths,
 					includePaths,
@@ -493,6 +503,7 @@ func init() {
 				doUseLinkFlag,
 				doUseEtcHostsMapFlag,
 				doUseContainerDnsFlag,
+				doUseContainerDnsSearchFlag,
 				doUseNetworkFlag,
 				doUseHostnameFlag,
 				doUseExposeFlag,
@@ -578,6 +589,7 @@ func init() {
 					ctx.StringSlice(FlagLink),
 					ctx.StringSlice(FlagEtcHostsMap),
 					ctx.StringSlice(FlagContainerDns),
+					ctx.StringSlice(FlagContainerDnsSearch),
 					volumeMounts,
 					excludePaths,
 					includePaths,
