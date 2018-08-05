@@ -52,6 +52,7 @@ type Inspector struct {
 	APIClient         *dockerapi.Client
 	Overrides         *config.ContainerOverrides
 	Links             []string
+	EtcHostsMaps      []string
 	ShowContainerLogs bool
 	VolumeMounts      map[string]config.VolumeMount
 	ExcludePaths      map[string]bool
@@ -78,6 +79,7 @@ func NewInspector(client *dockerapi.Client,
 	localVolumePath string,
 	overrides *config.ContainerOverrides,
 	links []string,
+	etcHostsMaps []string,
 	showContainerLogs bool,
 	volumeMounts map[string]config.VolumeMount,
 	excludePaths map[string]bool,
@@ -92,6 +94,7 @@ func NewInspector(client *dockerapi.Client,
 		APIClient:         client,
 		Overrides:         overrides,
 		Links:             links,
+		EtcHostsMaps:      etcHostsMaps,
 		ShowContainerLogs: showContainerLogs,
 		VolumeMounts:      volumeMounts,
 		ExcludePaths:      excludePaths,
@@ -172,12 +175,17 @@ func (i *Inspector) RunContainer() error {
 
 	if i.Overrides.Network != "" {
 		containerOptions.HostConfig.NetworkMode = i.Overrides.Network
-		log.Debugf("HostConfig.NetworkMode => %v", i.Overrides.Network)
+		log.Debugf("RunContainer: HostConfig.NetworkMode => %v", i.Overrides.Network)
 	}
 
 	if len(i.Links) > 0 {
 		containerOptions.HostConfig.Links = i.Links
-		log.Debugf("HostConfig.Links => %v", i.Links)
+		log.Debugf("RunContainer: HostConfig.Links => %v", i.Links)
+	}
+
+	if len(i.EtcHostsMaps) > 0 {
+		containerOptions.HostConfig.ExtraHosts = i.EtcHostsMaps
+		log.Debugf("RunContainer: HostConfig.ExtraHosts => %v", i.EtcHostsMaps)
 	}
 
 	containerInfo, err := i.APIClient.CreateContainer(containerOptions)
@@ -186,7 +194,7 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	i.ContainerID = containerInfo.ID
-	log.Infoln("created container =>", i.ContainerID)
+	log.Infoln("RunContainer: created container =>", i.ContainerID)
 
 	if err := i.APIClient.StartContainer(i.ContainerID, nil); err != nil {
 		return err
@@ -197,7 +205,7 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	errutils.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
-	log.Debugf("container NetworkSettings.Ports => %#v", i.ContainerInfo.NetworkSettings.Ports)
+	log.Debugf("RunContainer: container NetworkSettings.Ports => %#v", i.ContainerInfo.NetworkSettings.Ports)
 
 	if err = i.initContainerChannels(); err != nil {
 		return err

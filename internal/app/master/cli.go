@@ -59,6 +59,7 @@ const (
 	FlagNetwork           = "network"
 	FlagLink              = "link"
 	FlagHostname          = "hostname"
+	FlagEtcHostsMap       = "etc-hosts-map"
 )
 
 var app *cli.App
@@ -238,6 +239,13 @@ func init() {
 		EnvVar: "DSLIM_TARGET_LINK",
 	}
 
+	doUseEtcHostsMapFlag := cli.StringSliceFlag{
+		Name:   FlagEtcHostsMap,
+		Value:  &cli.StringSlice{},
+		Usage:  "Add a host to IP mapping to /etc/hosts analyzing image",
+		EnvVar: "DSLIM_TARGET_ETC_HOSTS_MAP",
+	}
+
 	doUseHostnameFlag := cli.StringFlag{
 		Name:   FlagHostname,
 		Value:  "",
@@ -356,6 +364,7 @@ func init() {
 				doUseWorkdirFlag,
 				doUseEnvFlag,
 				doUseLinkFlag,
+				doUseEtcHostsMapFlag,
 				doUseNetworkFlag,
 				doUseHostnameFlag,
 				doUseExposeFlag,
@@ -449,6 +458,7 @@ func init() {
 					parseImageOverrides(doImageOverrides),
 					overrides,
 					ctx.StringSlice(FlagLink),
+					ctx.StringSlice(FlagEtcHostsMap),
 					volumeMounts,
 					excludePaths,
 					includePaths,
@@ -471,6 +481,7 @@ func init() {
 				doUseWorkdirFlag,
 				doUseEnvFlag,
 				doUseLinkFlag,
+				doUseEtcHostsMapFlag,
 				doUseNetworkFlag,
 				doUseHostnameFlag,
 				doUseExposeFlag,
@@ -554,6 +565,7 @@ func init() {
 					doShowContainerLogs,
 					overrides,
 					ctx.StringSlice(FlagLink),
+					ctx.StringSlice(FlagEtcHostsMap),
 					volumeMounts,
 					excludePaths,
 					includePaths,
