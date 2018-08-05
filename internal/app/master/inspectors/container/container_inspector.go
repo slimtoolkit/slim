@@ -160,6 +160,7 @@ func (i *Inspector) RunContainer() error {
 			Cmd:        containerCmd,
 			Env:        i.Overrides.Env,
 			Labels:     map[string]string{"type": LabelName},
+			Hostname:   i.Overrides.Hostname,
 		},
 		HostConfig: &dockerapi.HostConfig{
 			Binds:           volumeBinds,

@@ -58,6 +58,7 @@ const (
 	FlagContinueAfter     = "continue-after"
 	FlagNetwork           = "network"
 	FlagLink              = "link"
+	FlagHostname          = "hostname"
 )
 
 var app *cli.App
@@ -237,6 +238,13 @@ func init() {
 		EnvVar: "DSLIM_TARGET_LINK",
 	}
 
+	doUseHostnameFlag := cli.StringFlag{
+		Name:   FlagHostname,
+		Value:  "",
+		Usage:  "Override default container hostname analyzing image",
+		EnvVar: "DSLIM_TARGET_HOSTNAME",
+	}
+
 	doUseNetworkFlag := cli.StringFlag{
 		Name:   FlagNetwork,
 		Value:  "",
@@ -349,6 +357,7 @@ func init() {
 				doUseEnvFlag,
 				doUseLinkFlag,
 				doUseNetworkFlag,
+				doUseHostnameFlag,
 				doUseExposeFlag,
 				doExcludeMountsFlag,
 				doExcludePathFlag,
@@ -463,6 +472,7 @@ func init() {
 				doUseEnvFlag,
 				doUseLinkFlag,
 				doUseNetworkFlag,
+				doUseHostnameFlag,
 				doUseExposeFlag,
 				doExcludeMountsFlag,
 				doExcludePathFlag,
@@ -588,9 +598,10 @@ func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	doUseExpose := ctx.StringSlice(FlagExpose)
 
 	overrides := &config.ContainerOverrides{
-		Workdir: ctx.String(FlagWorkdir),
-		Env:     ctx.StringSlice(FlagEnv),
-		Network: ctx.String(FlagNetwork),
+		Workdir:  ctx.String(FlagWorkdir),
+		Env:      ctx.StringSlice(FlagEnv),
+		Network:  ctx.String(FlagNetwork),
+		Hostname: ctx.String(FlagHostname),
 	}
 
 	var err error
