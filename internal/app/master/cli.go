@@ -60,6 +60,7 @@ const (
 	FlagLink              = "link"
 	FlagHostname          = "hostname"
 	FlagEtcHostsMap       = "etc-hosts-map"
+	FlagContainerDns      = "container-dns"
 )
 
 var app *cli.App
@@ -246,6 +247,13 @@ func init() {
 		EnvVar: "DSLIM_TARGET_ETC_HOSTS_MAP",
 	}
 
+	doUseContainerDnsFlag := cli.StringSliceFlag{
+		Name:   FlagContainerDns,
+		Value:  &cli.StringSlice{},
+		Usage:  "Add a dns server analyzing image",
+		EnvVar: "DSLIM_TARGET_DNS",
+	}
+
 	doUseHostnameFlag := cli.StringFlag{
 		Name:   FlagHostname,
 		Value:  "",
@@ -365,6 +373,7 @@ func init() {
 				doUseEnvFlag,
 				doUseLinkFlag,
 				doUseEtcHostsMapFlag,
+				doUseContainerDnsFlag,
 				doUseNetworkFlag,
 				doUseHostnameFlag,
 				doUseExposeFlag,
@@ -459,6 +468,7 @@ func init() {
 					overrides,
 					ctx.StringSlice(FlagLink),
 					ctx.StringSlice(FlagEtcHostsMap),
+					ctx.StringSlice(FlagContainerDns),
 					volumeMounts,
 					excludePaths,
 					includePaths,
@@ -482,6 +492,7 @@ func init() {
 				doUseEnvFlag,
 				doUseLinkFlag,
 				doUseEtcHostsMapFlag,
+				doUseContainerDnsFlag,
 				doUseNetworkFlag,
 				doUseHostnameFlag,
 				doUseExposeFlag,
@@ -566,6 +577,7 @@ func init() {
 					overrides,
 					ctx.StringSlice(FlagLink),
 					ctx.StringSlice(FlagEtcHostsMap),
+					ctx.StringSlice(FlagContainerDns),
 					volumeMounts,
 					excludePaths,
 					includePaths,

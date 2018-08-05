@@ -53,6 +53,7 @@ type Inspector struct {
 	Overrides         *config.ContainerOverrides
 	Links             []string
 	EtcHostsMaps      []string
+	DnsServers        []string
 	ShowContainerLogs bool
 	VolumeMounts      map[string]config.VolumeMount
 	ExcludePaths      map[string]bool
@@ -80,6 +81,7 @@ func NewInspector(client *dockerapi.Client,
 	overrides *config.ContainerOverrides,
 	links []string,
 	etcHostsMaps []string,
+	dnsServers []string,
 	showContainerLogs bool,
 	volumeMounts map[string]config.VolumeMount,
 	excludePaths map[string]bool,
@@ -95,6 +97,7 @@ func NewInspector(client *dockerapi.Client,
 		Overrides:         overrides,
 		Links:             links,
 		EtcHostsMaps:      etcHostsMaps,
+		DnsServers:        dnsServers,
 		ShowContainerLogs: showContainerLogs,
 		VolumeMounts:      volumeMounts,
 		ExcludePaths:      excludePaths,
@@ -186,6 +189,12 @@ func (i *Inspector) RunContainer() error {
 	if len(i.EtcHostsMaps) > 0 {
 		containerOptions.HostConfig.ExtraHosts = i.EtcHostsMaps
 		log.Debugf("RunContainer: HostConfig.ExtraHosts => %v", i.EtcHostsMaps)
+	}
+
+	if len(i.DnsServers) > 0 {
+		containerOptions.HostConfig.DNS = i.DnsServers //for newer versions of Docker
+		containerOptions.Config.DNS = i.DnsServers     //for older versions of Docker
+		log.Debugf("RunContainer: HostConfig.DNS/Config.DNS => %v", i.DnsServers)
 	}
 
 	containerInfo, err := i.APIClient.CreateContainer(containerOptions)
