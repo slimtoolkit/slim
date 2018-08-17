@@ -161,10 +161,10 @@ func (i *Inspector) RunContainer() error {
 		Name: i.ContainerName,
 		Config: &dockerapi.Config{
 			Image: i.ImageInspector.ImageRef,
-			ExposedPorts: map[dockerapi.Port]struct{}{
-				i.CmdPort: {},
-				i.EvtPort: {},
-			},
+			//ExposedPorts: map[dockerapi.Port]struct{}{
+			//	i.CmdPort: {},
+			//	i.EvtPort: {},
+			//},
 			Entrypoint: []string{SensorBinPath},
 			Cmd:        containerCmd,
 			Env:        i.Overrides.Env,
@@ -177,6 +177,26 @@ func (i *Inspector) RunContainer() error {
 			CapAdd:          []string{"SYS_ADMIN"},
 			Privileged:      true,
 		},
+	}
+
+	commsExposedPorts := map[dockerapi.Port]struct{}{
+		i.CmdPort: {},
+		i.EvtPort: {},
+	}
+
+	if len(i.Overrides.ExposedPorts) > 0 {
+		containerOptions.Config.ExposedPorts = i.Overrides.ExposedPorts
+		for k, v := range commsExposedPorts {
+			if _, ok := containerOptions.Config.ExposedPorts[k]; ok {
+				log.Warnf("RunContainer: comms port conflict => %v", k)
+			}
+
+			containerOptions.Config.ExposedPorts[k] = v
+		}
+		log.Debugf("RunContainer: Config.ExposedPorts => %v", containerOptions.Config.ExposedPorts)
+	} else {
+		i.Overrides.ExposedPorts = commsExposedPorts
+		log.Debug("RunContainer: default exposed ports")
 	}
 
 	if i.Overrides.Network != "" {
