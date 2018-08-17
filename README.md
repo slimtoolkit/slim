@@ -216,6 +216,14 @@ Global options:
 * `--mount` - mount volume analyzing image (the mount parameter format is identical to the `-v` mount command in Docker) [zero or more]
 * `--include-path` - Include directory or file from image [zero or more]
 * `--env` - override ENV analyzing image [zero or more]
+* `--workdir` - override WORKDIR analyzing image
+* `--network` - override default container network settings analyzing image
+* `--expose` - use additional EXPOSE instructions analyzing image [zero or more]
+* `--link` - add link to another container analyzing image [zero or more]
+* `--hostname` - override default container hostname analyzing image
+* `--etc-hosts-map` - add a host to IP mapping to /etc/hosts analyzing image [zero or more]
+* `--container-dns` - add a dns server analyzing image [zero or more]
+* `--container-dns-search` - add a dns search domain for unqualified hostnames analyzing image [zero or more]
 * `--continue-after` - Select continue mode: enter | signal | probe | timeout or numberInSeconds (default: enter)
 
 The `--include-path` option is useful if you want to customize your minified image adding extra files and directories. Future versions will also include the `--exclude-path` option to have even more control.
