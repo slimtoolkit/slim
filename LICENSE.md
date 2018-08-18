@@ -1,2 +1,0 @@
-Hacker license!
-
