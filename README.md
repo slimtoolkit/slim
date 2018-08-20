@@ -523,9 +523,13 @@ Docker Hub: [dslim](https://hub.docker.com/r/dslim/) (dockerslim is already take
 
 * [`container-transform`](https://hub.docker.com/r/dslim/container-transform.slim/)
 
-## NOTES
+## CONTRIBUTING
 
-If the project sounds interesting or if you found a bug make sure to read `CONTRIBUTING.md` and submit a PR!
+If the project sounds interesting or if you found a bug see [`CONTRIBUTING.md`](https://github.com/docker-slim/docker-slim/blob/master/CONTRIBUTING.md) and submit a PR!
+
+## LICENSE
+
+Apache License v2, see [LICENSE](https://github.com/docker-slim/docker-slim/blob/master/LICENSE) for details.
 
 ---
 
