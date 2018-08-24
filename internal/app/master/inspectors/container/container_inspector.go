@@ -193,10 +193,10 @@ func (i *Inspector) RunContainer() error {
 
 			containerOptions.Config.ExposedPorts[k] = v
 		}
-		log.Debugf("RunContainer: Config.ExposedPorts => %v", containerOptions.Config.ExposedPorts)
+		log.Debugf("RunContainer: Config.ExposedPorts => %#v", containerOptions.Config.ExposedPorts)
 	} else {
-		i.Overrides.ExposedPorts = commsExposedPorts
-		log.Debug("RunContainer: default exposed ports")
+		containerOptions.Config.ExposedPorts = commsExposedPorts
+		log.Debug("RunContainer: default exposed ports => %#v", containerOptions.Config.ExposedPorts)
 	}
 
 	if i.Overrides.Network != "" {
@@ -243,6 +243,7 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	errutils.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
+	errutils.FailWhen(len(i.ContainerInfo.NetworkSettings.Ports) < len(commsExposedPorts), "docker-slim: error => missing comms ports")
 	log.Debugf("RunContainer: container NetworkSettings.Ports => %#v", i.ContainerInfo.NetworkSettings.Ports)
 
 	if err = i.initContainerChannels(); err != nil {
