@@ -15,7 +15,12 @@ func Print(client *docker.Client) {
 	fmt.Println(v.Current())
 
 	fmt.Println("host:")
-	fmt.Printf("%#v\n", system.GetSystemInfo())
+	hostInfo := system.GetSystemInfo()
+	fmt.Printf("OsName=%v\n", hostInfo.OsName)
+	fmt.Printf("OsBuild=%v\n", hostInfo.OsBuild)
+	fmt.Printf("Version=%v\n", hostInfo.Version)
+	fmt.Printf("Release=%v\n", hostInfo.Release)
+	fmt.Printf("Sysname=%v\n", hostInfo.Sysname)
 
 	fmt.Println("docker:")
 	info, err := client.Info()

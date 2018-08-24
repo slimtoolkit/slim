@@ -87,6 +87,9 @@ func Run() {
 		log.SetLevel(log.DebugLevel)
 	}
 
+	log.Debugf("sensor: sysinfo => %#v", system.GetSystemInfo())
+	log.Debugf("sensor: kernel flags => %#v", system.DefaultKernelFeatures.Raw)
+
 	log.Infof("sensor: args => %#v", os.Args)
 
 	dirName, err := os.Getwd()

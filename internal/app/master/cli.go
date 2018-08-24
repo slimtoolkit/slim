@@ -11,6 +11,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/Sirupsen/logrus"
+	"github.com/cloudimmunity/system"
 	"github.com/codegangsta/cli"
 )
 
@@ -171,6 +172,9 @@ func init() {
 		default:
 			log.Fatalf("unknown log-format %q", logFormat)
 		}
+
+		log.Debugf("sysinfo => %#v", system.GetSystemInfo())
+
 		return nil
 	}
 
