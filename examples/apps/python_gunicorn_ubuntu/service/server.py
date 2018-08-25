@@ -3,6 +3,7 @@ import json
 import uuid
 import arrow
 from wsgiref import simple_server
+import platform
 
 class ApiRoot: 
     def on_get(self, req, resp):
@@ -14,7 +15,8 @@ class ApiRoot:
         'info': 'yes!!!',
         'service': 'python',
         'id': uuid.uuid4().hex,
-        'time': now.isoformat()}
+        'time': now.isoformat(),
+        'version': platform.python_version()}
 
         resp.status = falcon.HTTP_200
         resp.body = json.dumps(data)

@@ -1,15 +1,16 @@
 from flask import Flask
-from flask.ext import restful
+from flask_restful import Resource, Api
+import platform
 
-class ApiRoot(restful.Resource):
+class ApiRoot(Resource):
     def get(self):
-      return {'status': 'success', 'info': 'yes!!!', 'service': 'python'}
+      return {'status': 'success', 'info': 'yes!!!', 'service': 'python.alpine', 'version': platform.python_version()}
 
 
 if __name__ == "__main__":
   try:
     app = Flask(__name__)
-    api = restful.Api(app)
+    api = Api(app)
     app.config['DEBUG'] = True
     api.add_resource(ApiRoot, '/')
 

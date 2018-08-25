@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"syscall"
 
 	"github.com/docker-slim/docker-slim/internal/app/sensor/monitors/fanotify"
@@ -91,13 +92,40 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 	//native filepath.Walk is a bit slow (compared to the "find" command)
 	//but it's fast enough for now
 	filepath.Walk(mp, func(fullName string, fileInfo os.FileInfo, err error) error {
+		if strings.HasPrefix(fullName, "/proc/") {
+			log.Debugf("findSymlinks: skipping /proc file system objects...")
+			return filepath.SkipDir
+		}
+
+		if strings.HasPrefix(fullName, "/sys/") {
+			log.Debugf("findSymlinks: skipping /sys file system objects...")
+			return filepath.SkipDir
+		}
+
+		if err != nil {
+			log.Debugf("findSymlinks: error accessing %q: %v\n", fullName, err)
+			//just ignore the error and keep going
+			return nil
+		}
+
+		if fileInfo.Sys() == nil {
+			log.Debugf("findSymlinks: fileInfo.Sys() is nil (ignoring)")
+			return nil
+		}
+
 		sysStatInfo, ok := fileInfo.Sys().(*syscall.Stat_t)
 		if !ok {
 			return fmt.Errorf("findSymlinks - could not convert fileInfo to Stat_t for %s", fullName)
 		}
 
 		if _, ok := devices[uint64(sysStatInfo.Dev)]; !ok {
-			return filepath.SkipDir
+			log.Debugf("findSymlinks: ignoring %v (by device id - %v)", fullName, sysStatInfo.Dev)
+			//NOTE:
+			//don't return filepath.SkipDir for everything
+			//because we might still need other files in the dir
+			//return filepath.SkipDir
+			//example: "/etc/hostname" Docker mounts from another device
+			return nil
 		}
 
 		if fileInfo.Mode()&os.ModeSymlink != 0 {

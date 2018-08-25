@@ -24,7 +24,7 @@ type Event struct {
 }
 
 const (
-	eventBufSize   = 100
+	eventBufSize   = 1000
 	procFsFdInfo   = "/proc/self/fd/%d"
 	procFsFilePath = "/proc/%v/%v"
 )
@@ -100,7 +100,8 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 					select {
 					case eventChan <- e:
 					case <-stopChan:
-						log.Info("fanmon: collector - stopping...")
+						log.Info("fanmon: collector - stopping....")
+						return
 					}
 				}
 			}
@@ -137,8 +138,9 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 
 				if existingFi, ok := fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))][e.File]; !ok {
 					fi := &report.FileInfo{
-						EventCount: 1,
-						Name:       e.File,
+						EventCount:   1,
+						Name:         e.File,
+						FirstEventID: e.ID,
 					}
 
 					if e.IsRead {

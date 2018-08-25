@@ -4,7 +4,7 @@ import platform
 
 class ApiRoot(Resource):
     def get(self):
-      return {'status': 'success', 'info': 'yes!!!', 'service': 'python.ubuntu', 'version': platform.python_version()}
+      return {'status': 'success', 'info': 'yes!!!', 'service': 'python.standard', 'version': platform.python_version()}
 
 
 if __name__ == "__main__":
