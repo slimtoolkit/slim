@@ -1,0 +1,14 @@
+version: '2'
+services:
+  service:
+    build: .
+    image: my/node-compose-service
+    ports:
+      - "8000:8000"
+    depends_on:
+      - redis
+  redis:
+    image: redis:4.0-alpine
+    ports:
+      - "16379:6379"
+

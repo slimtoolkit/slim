@@ -1,0 +1,13 @@
+{
+  "name": "service",
+  "version": "1.0.0",
+  "main": "server.js",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">=8.4.0"
+  },
+  "dependencies": {
+    "hapi": "^17.5.3",
+    "redis": "^2.8.0"
+  }
+}
