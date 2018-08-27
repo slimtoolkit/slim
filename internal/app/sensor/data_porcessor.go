@@ -102,6 +102,11 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 			return filepath.SkipDir
 		}
 
+		if strings.HasPrefix(fullName, "/dev/") {
+			log.Debugf("findSymlinks: skipping /dev file system objects...")
+			return filepath.SkipDir
+		}
+
 		if err != nil {
 			log.Debugf("findSymlinks: error accessing %q: %v\n", fullName, err)
 			//just ignore the error and keep going
@@ -125,6 +130,8 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 			//because we might still need other files in the dir
 			//return filepath.SkipDir
 			//example: "/etc/hostname" Docker mounts from another device
+			//NOTE:
+			//can move the checks for /dev, /sys and /proc here too
 			return nil
 		}
 
