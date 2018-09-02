@@ -16,6 +16,36 @@ docker-slim has been used with Node.js, Python, Ruby, Java, Golang, Elixir and P
 
 [![asciicast](https://asciinema.org/a/czxJahFcUHWCGKVWzT7LDpVdE.png)](https://asciinema.org/a/czxJahFcUHWCGKVWzT7LDpVdE)
 
+## Minification Examples
+
+Ubuntu 14.04 based images:
+
+* nodejs app container - 431.7 MB => 14.22 MB
+* python app container - 433.1 MB => 15.97 MB
+* ruby app container   - 406.2 MB => 13.66 MB
+* java app container   - 743.6 MB => 100.3 MB (yes, it's a bit bigger than others :-))
+
+Alpine-based images:
+
+* nodejs app container - 66.4 MB => 34.7 MB
+* python app container - 86 MB   => 22.1 MB
+
+Golang application images:
+
+* from golang:latest - 700MB => 1.56MB (minified by 448.76X)
+* from ubuntu:14.04  - 531MB => 1.87MB (minified by 284.10X)
+* from golang:alpine - 258MB => 1.56MB (minified by 165.61X)
+* from centos:7      - 615MB => 1.87MB (minified by 329.14X)
+
+PHP application images:
+
+* from php:7.0-cli - 368MB => 26.6MB
+
+Elixir application images:
+
+* (Phoenix service) from elixir:1.6 - 1.1 GB => 37 MB (minified by 29.25X)
+
+
 ---
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
@@ -325,33 +355,6 @@ It's used to minify the `container-transform` tool. You can get the minified ima
 ## CURRENT STATE
 
 It works pretty well with the sample Node.js, Python (2 and 3), Ruby, Java and Golang images (built from `examples/apps`). PHP support is WIP. There's already one PHP example, but more needs to be done to support Apache and Nginx based PHP apps. More testing needs to be done to see how it works with other images. Rails/unicorn app images are not fully supported yet (WIP).
-
-Sample images (built with the standard Ubuntu 14.04 base image):
-
-* nodejs app container - 431.7 MB => 14.22 MB
-* python app container - 433.1 MB => 15.97 MB
-* ruby app container   - 406.2 MB => 13.66 MB
-* java app container   - 743.6 MB => 100.3 MB (yes, it's a bit bigger than others :-))
-
-Sample images built with Alpine:
-
-* nodejs app container - 66.4 MB => 34.7 MB
-* python app container - 86 MB   => 22.1 MB
-
-Sample Golang application images:
-
-* from golang:latest - 700MB => 1.56MB (minified by 448.76X)
-* from ubuntu:14.04  - 531MB => 1.87MB (minified by 284.10X)
-* from golang:alpine - 258MB => 1.56MB (minified by 165.61X)
-* from centos:7      - 615MB => 1.87MB (minified by 329.14X)
-
-Sample PHP application images:
-
-* from php:7.0-cli - 368MB => 26.6MB
-
-Sample Elixir application images:
-
-* (Phoenix service) from elixir:1.6 - 1.1 GB => 37 MB (minified by 29.25X)
 
 You can also run `docker-slim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
