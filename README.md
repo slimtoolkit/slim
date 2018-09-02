@@ -20,26 +20,26 @@ docker-slim has been used with Node.js, Python, Ruby, Java, Golang, Elixir and P
 
 Node.js application images:
 
-* from ubuntu:14.04  - 432MB  => 14MB   (minified by 30.85X)
-* from debian:jessie - 406MB  => 25.1MB (minified by 16.21X)
-* from node:alpine   - 66.7MB => 34.7MB (minified by 1.92X)
+* from ubuntu:14.04  - 432MB  => 14MB   (minified by **30.85X**)
+* from debian:jessie - 406MB  => 25.1MB (minified by **16.21X**)
+* from node:alpine   - 66.7MB => 34.7MB (minified by **1.92X**)
 
 Python application images:
 
-* from ubuntu:14.04      - 438MB  => 16.8MB (minified by 25.99X)
-* from python:2.7-alpine - 84.3MB => 23.1MB (minified by 3.65X)
-* from python:2.7.15     - 916MB => 27.5MB  (minified by 33.29X)
+* from ubuntu:14.04      - 438MB  => 16.8MB (minified by **25.99X**)
+* from python:2.7-alpine - 84.3MB => 23.1MB (minified by **3.65X**)
+* from python:2.7.15     - 916MB => 27.5MB  (minified by **33.29X**)
 
 Ruby application images:
 
-* from ubuntu:14.04 - 433MB => 13.8MB (minified by 31.31X)
+* from ubuntu:14.04 - 433MB => 13.8MB (minified by **31.31X**)
 
 Golang application images:
 
-* from golang:latest - 700MB => 1.56MB (minified by 448.76X)
-* from ubuntu:14.04  - 531MB => 1.87MB (minified by 284.10X)
-* from golang:alpine - 258MB => 1.56MB (minified by 165.61X)
-* from centos:7      - 615MB => 1.87MB (minified by 329.14X)
+* from golang:latest - 700MB => 1.56MB (minified by **448.76X**)
+* from ubuntu:14.04  - 531MB => 1.87MB (minified by **284.10X**)
+* from golang:alpine - 258MB => 1.56MB (minified by **165.61X**)
+* from centos:7      - 615MB => 1.87MB (minified by **329.14X**)
 
 JAVA application images:
 
@@ -47,11 +47,11 @@ JAVA application images:
 
 PHP application images:
 
-* from php:7.0-cli - 368MB => 26.6MB (minified by 13.85X)
+* from php:7.0-cli - 368MB => 26.6MB (minified by **13.85X**)
 
 Elixir application images:
 
-* (Phoenix service) from elixir:1.6 - 1.1 GB => 37 MB (minified by 29.25X)
+* (Phoenix service) from elixir:1.6 - 1.1 GB => 37 MB (minified by **29.25X**)
 
 
 ---
