@@ -1,7 +1,10 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"runtime"
+)
 
 func main() {
-  fmt.Println("Sample golang app (ubuntu)")
+  fmt.Printf("[%v] Sample golang app (ubuntu)\n",runtime.Version())
 }
