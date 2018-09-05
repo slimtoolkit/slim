@@ -32,6 +32,7 @@ const (
 // DockerSlim app flag names
 const (
 	FlagDebug              = "debug"
+	FlagCommandReport      = "report"
 	FlagVerbose            = "verbose"
 	FlagLogLevel           = "log-level"
 	FlagLog                = "log"
@@ -78,6 +79,10 @@ func init() {
 	}
 
 	app.Flags = []cli.Flag{
+		cli.StringFlag{
+			Name:  FlagCommandReport,
+			Usage: "command report location",
+		},
 		cli.BoolFlag{
 			Name:  FlagDebug,
 			Usage: "enable debug logs",
@@ -467,7 +472,9 @@ func init() {
 					}
 				}
 
-				commands.OnBuild(ctx.GlobalBool(FlagDebug),
+				commands.OnBuild(
+					ctx.GlobalString(FlagCommandReport),
+					ctx.GlobalBool(FlagDebug),
 					statePath,
 					clientConfig,
 					imageRef,

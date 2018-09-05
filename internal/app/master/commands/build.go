@@ -23,7 +23,9 @@ import (
 )
 
 // OnBuild implements the 'build' docker-slim command
-func OnBuild(doDebug bool,
+func OnBuild(
+	cmdReportLocation string,
+	doDebug bool,
 	statePath string,
 	clientConfig *config.DockerClient,
 	imageRef string,
@@ -44,6 +46,10 @@ func OnBuild(doDebug bool,
 	includePaths map[string]bool,
 	continueAfter *config.ContinueAfter) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "build"})
+
+	cmdReport := report.NewBuildCommand(cmdReportLocation)
+	cmdReport.State = report.CmdStateStarted
+	cmdReport.OriginalImage = imageRef
 
 	fmt.Println("docker-slim[build]: state=started")
 
@@ -194,6 +200,8 @@ func OnBuild(doDebug bool,
 
 	fmt.Println("docker-slim[build]: state=completed")
 
+	cmdReport.State = report.CmdStateCompleted
+
 	/////////////////////////////
 	newImageInspector, err := image.NewInspector(client, builder.RepoName)
 	errutils.FailOn(err)
@@ -208,26 +216,41 @@ func OnBuild(doDebug bool,
 	errutils.WarnOn(err)
 
 	if err == nil {
-		x := float64(imageInspector.ImageInfo.VirtualSize) / float64(newImageInspector.ImageInfo.VirtualSize)
+		cmdReport.MinifiedBy = float64(imageInspector.ImageInfo.VirtualSize) / float64(newImageInspector.ImageInfo.VirtualSize)
+		cmdReport.OriginalImageSize = imageInspector.ImageInfo.VirtualSize
+		cmdReport.OriginalImageSizeHuman = humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize))
+		cmdReport.MinifiedImageSize = newImageInspector.ImageInfo.VirtualSize
+		cmdReport.MinifiedImageSizeHuman = humanize.Bytes(uint64(newImageInspector.ImageInfo.VirtualSize))
+
 		fmt.Printf("docker-slim[build]: info=results status='MINIFIED BY %.2fX [%v (%v) => %v (%v)]'\n",
-			x,
-			imageInspector.ImageInfo.VirtualSize,
-			humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
-			newImageInspector.ImageInfo.VirtualSize,
-			humanize.Bytes(uint64(newImageInspector.ImageInfo.VirtualSize)))
+			cmdReport.MinifiedBy,
+			cmdReport.OriginalImageSize,
+			cmdReport.OriginalImageSizeHuman,
+			cmdReport.MinifiedImageSize,
+			cmdReport.MinifiedImageSizeHuman)
+	} else {
+		cmdReport.State = report.CmdStateError
+		cmdReport.Error = err.Error()
 	}
 
-	fmt.Printf("docker-slim[build]: info=results  image.name=%v image.size='%v' data=%v\n",
-		builder.RepoName,
-		humanize.Bytes(uint64(newImageInspector.ImageInfo.VirtualSize)),
-		builder.HasData)
+	cmdReport.MinifiedImage = builder.RepoName
+	cmdReport.MinifiedImageHasData = builder.HasData
+	cmdReport.ArtifactLocation = imageInspector.ArtifactLocation
+	cmdReport.ContainerReportName = report.DefaultContainerReportFileName
+	cmdReport.SeccompProfileName = imageInspector.SeccompProfileName
+	cmdReport.AppArmorProfileName = imageInspector.AppArmorProfileName
 
-	fmt.Printf("docker-slim[build]: info=results  artifacts.location='%v'\n", imageInspector.ArtifactLocation)
-	fmt.Printf("docker-slim[build]: info=results  artifacts.report=%v\n", report.DefaultContainerReportFileName)
+	fmt.Printf("docker-slim[build]: info=results  image.name=%v image.size='%v' data=%v\n",
+		cmdReport.MinifiedImage,
+		cmdReport.MinifiedImageSizeHuman,
+		cmdReport.MinifiedImageHasData)
+
+	fmt.Printf("docker-slim[build]: info=results  artifacts.location='%v'\n", cmdReport.ArtifactLocation)
+	fmt.Printf("docker-slim[build]: info=results  artifacts.report=%v\n", cmdReport.ContainerReportName)
 	fmt.Printf("docker-slim[build]: info=results  artifacts.dockerfile.original=Dockerfile.fat\n")
 	fmt.Printf("docker-slim[build]: info=results  artifacts.dockerfile.new=Dockerfile\n")
-	fmt.Printf("docker-slim[build]: info=results  artifacts.seccomp=%v\n", imageInspector.SeccompProfileName)
-	fmt.Printf("docker-slim[build]: info=results  artifacts.apparmor=%v\n", imageInspector.AppArmorProfileName)
+	fmt.Printf("docker-slim[build]: info=results  artifacts.seccomp=%v\n", cmdReport.SeccompProfileName)
+	fmt.Printf("docker-slim[build]: info=results  artifacts.apparmor=%v\n", cmdReport.AppArmorProfileName)
 
 	/////////////////////////////
 
@@ -238,4 +261,6 @@ func OnBuild(doDebug bool,
 	}
 
 	fmt.Println("docker-slim[build]: state=done")
+	cmdReport.State = report.CmdStateDone
+	cmdReport.Save()
 }
