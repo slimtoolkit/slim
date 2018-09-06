@@ -52,7 +52,6 @@ func OnBuild(
 	cmdReport.OriginalImage = imageRef
 
 	fmt.Println("docker-slim[build]: state=started")
-
 	fmt.Printf("docker-slim[build]: info=params target=%v continue.mode=%v\n", imageRef, continueAfter.Mode)
 
 	logger.Infof("image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v",
@@ -191,15 +190,14 @@ func OnBuild(
 	err = builder.Build()
 
 	if doShowBuildLogs {
-		fmt.Println("docker-slim: [build] - build logs ====================")
+		fmt.Println("docker-slim[build]: build logs ====================")
 		fmt.Println("%s", builder.BuildLog.String())
-		fmt.Println("docker-slim: [build] - end of build logs =============")
+		fmt.Println("docker-slim[build]: end of build logs =============")
 	}
 
 	errutils.FailOn(err)
 
 	fmt.Println("docker-slim[build]: state=completed")
-
 	cmdReport.State = report.CmdStateCompleted
 
 	/////////////////////////////

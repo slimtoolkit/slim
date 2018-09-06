@@ -353,7 +353,12 @@ func init() {
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
 
-				commands.OnInfo(ctx.GlobalBool(FlagDebug), statePath, clientConfig, imageRef)
+				commands.OnInfo(
+					ctx.GlobalString(FlagCommandReport),
+					ctx.GlobalBool(FlagDebug),
+					statePath,
+					clientConfig,
+					imageRef)
 				return nil
 			},
 		},
@@ -589,7 +594,9 @@ func init() {
 					}
 				}
 
-				commands.OnProfile(ctx.GlobalBool(FlagDebug),
+				commands.OnProfile(
+					ctx.GlobalString(FlagCommandReport),
+					ctx.GlobalBool(FlagDebug),
 					statePath,
 					clientConfig,
 					imageRef,

@@ -12,6 +12,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container/probes/http"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
+	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
 	v "github.com/docker-slim/docker-slim/pkg/version"
@@ -21,7 +22,9 @@ import (
 )
 
 // OnProfile implements the 'profile' docker-slim command
-func OnProfile(doDebug bool,
+func OnProfile(
+	cmdReportLocation string,
+	doDebug bool,
 	statePath string,
 	clientConfig *config.DockerClient,
 	imageRef string,
@@ -37,8 +40,14 @@ func OnProfile(doDebug bool,
 	excludePaths map[string]bool,
 	includePaths map[string]bool,
 	continueAfter *config.ContinueAfter) {
+	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "profile"})
 
-	fmt.Printf("docker-slim: [profile] image=%v\n", imageRef)
+	cmdReport := report.NewProfileCommand(cmdReportLocation)
+	cmdReport.State = report.CmdStateStarted
+	cmdReport.OriginalImage = imageRef
+
+	fmt.Println("docker-slim[profile]: state=started")
+	fmt.Printf("docker-slim[profile]: info=params target=%v\n", imageRef)
 	doRmFileArtifacts := false
 
 	client := dockerclient.New(clientConfig)
@@ -51,25 +60,30 @@ func OnProfile(doDebug bool,
 	errutils.FailOn(err)
 
 	if imageInspector.NoImage() {
-		fmt.Println("docker-slim: [profile] target image not found -", imageRef)
+		fmt.Println("docker-slim[profile]: target image not found -", imageRef)
+		fmt.Println("docker-slim[profile]: state=exited")
 		return
 	}
 
-	log.Info("docker-slim: inspecting 'fat' image metadata...")
+	fmt.Println("docker-slim[profile]: state=inspecting.image")
+
+	logger.Info("inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
 	errutils.FailOn(err)
 
 	localVolumePath, artifactLocation := fsutils.PrepareStateDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
-	log.Infof("docker-slim: [%v] 'fat' image size => %v (%v)",
+	fmt.Printf("docker-slim[profile]: info=image id=%v size.bytes=%v size.human=%v\n",
 		imageInspector.ImageInfo.ID,
 		imageInspector.ImageInfo.VirtualSize,
 		humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)))
 
-	log.Info("docker-slim: processing 'fat' image info...")
+	logger.Info("processing 'fat' image info...")
 	err = imageInspector.ProcessCollectedData()
 	errutils.FailOn(err)
+
+	fmt.Println("docker-slim[profile]: state=inspecting.container")
 
 	containerInspector, err := container.NewInspector(client,
 		imageInspector,
@@ -86,11 +100,11 @@ func OnProfile(doDebug bool,
 		doDebug)
 	errutils.FailOn(err)
 
-	log.Info("docker-slim: starting instrumented 'fat' container...")
+	logger.Info("starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
 	errutils.FailOn(err)
 
-	log.Info("docker-slim: watching container monitor...")
+	logger.Info("watching container monitor...")
 
 	if "probe" == continueAfter.Mode {
 		doHTTPProbe = true
@@ -105,46 +119,55 @@ func OnProfile(doDebug bool,
 
 	switch continueAfter.Mode {
 	case "enter":
-		fmt.Println("docker-slim: press <enter> when you are done using the container...")
+		fmt.Println("docker-slim[profile]: info=prompt message='press <enter> when you are done using the container'")
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
 	case "signal":
-		fmt.Println("docker-slim: send SIGUSR1 when you are done using the container...")
+		fmt.Println("docker-slim[profile]: info=prompt message='send SIGUSR1 when you are done using the container'")
 		<-continueAfter.ContinueChan
-		fmt.Println("docker-slim: got SIGUSR1...")
+		fmt.Println("docker-slim[profile]: info=event message='got SIGUSR1'")
 	case "timeout":
-		fmt.Printf("docker-slim: waiting for the target container (%v seconds)...\n", int(continueAfter.Timeout))
+		fmt.Printf("docker-slim[profile]: info=prompt message='waiting for the target container (%v seconds)'\n", int(continueAfter.Timeout))
 		<-time.After(time.Second * continueAfter.Timeout)
-		fmt.Printf("docker-slim: done waiting for the target container...")
+		fmt.Printf("docker-slim[profile]: info=event message='done waiting for the target container'")
 	case "probe":
-		fmt.Println("docker-slim: waiting for the HTTP probe to finish...")
+		fmt.Println("docker-slim[profile]: info=prompt message='waiting for the HTTP probe to finish'")
 		<-continueAfter.ContinueChan
-		fmt.Println("docker-slim: HTTP probe is done...")
+		fmt.Println("docker-slim[profile]: info=event message='HTTP probe is done'")
 	default:
 		errutils.Fail("unknown continue-after mode")
 	}
 
 	containerInspector.FinishMonitoring()
 
-	log.Info("docker-slim: shutting down 'fat' container...")
+	logger.Info("shutting down 'fat' container...")
 	err = containerInspector.ShutdownContainer()
 	errutils.WarnOn(err)
 
+	fmt.Println("docker-slim[profile]: state=processing")
+
 	if !containerInspector.HasCollectedData() {
 		imageInspector.ShowFatImageDockerInstructions()
-		fmt.Printf("docker-slim: [profile] no data collected (no minified image generated) - done. (version: %v)\n", v.Current())
+		fmt.Printf("docker-slim[profile]: info=results status='no data collected (no minified image generated). (version: %v)'\n",
+			v.Current())
+		fmt.Println("docker-slim[profile]: state=exited")
 		return
 	}
 
-	log.Info("docker-slim: processing instrumented 'fat' container info...")
+	logger.Info("processing instrumented 'fat' container info...")
 	err = containerInspector.ProcessCollectedData()
 	errutils.FailOn(err)
 
+	fmt.Println("docker-slim[profile]: state=completed")
+	cmdReport.State = report.CmdStateCompleted
+
 	if doRmFileArtifacts {
-		log.Info("docker-slim: removing temporary artifacts...")
+		logger.Info("removing temporary artifacts...")
 		err = fsutils.Remove(artifactLocation) //TODO: remove only the "files" subdirectory
 		errutils.WarnOn(err)
 	}
 
-	fmt.Println("docker-slim: [profile] done.")
+	fmt.Println("docker-slim[profile]: state=done")
+	cmdReport.State = report.CmdStateDone
+	cmdReport.Save()
 }
