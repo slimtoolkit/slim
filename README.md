@@ -231,6 +231,7 @@ Commands:
 
 Global options:
 
+* `--report` - command report location (target location where to save the executed command results)
 * `--version` - print the version
 * `--debug` - enable debug logs
 * `--verbose` - enable info logs
