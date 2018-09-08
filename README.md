@@ -6,11 +6,11 @@
 
 Don't change anything in your Docker container image and minify it by up to 30x making it secure too!
 
-Keep doing what you are doing. No need to change anything. Use the base image you want. Use the package manager you want. Don't worry about hand optimizing your Dockerfile. You shouldn't have to throw away your tools and your workflow to have small container images. 
+Keep doing what you are doing. No need to change anything. Use the base image you want. Use the package manager you want. Don't worry about hand optimizing your Dockerfile. You shouldn't have to throw away your tools and your workflow to have small container images.
 
 Don't worry about manually creating Seccomp and AppArmor security profiles. You shouldn't have to become an expert in Linux syscalls, Seccomp and AppArmor to have secure containers. Even if you do know enough about it wasting time reverse engineering your application behavior can be time consuming.
 
-docker-slim will optimize and secure your containers by understanding your application and what it needs using various analysis techniques.
+docker-slim will optimize and secure your containers by understanding your application and what it needs using various analysis techniques. It will throw away what you don't need reducing the attack surface for your container. What if you need some of those extra things to debug your container? You can use dedicated debugging side-car containers (more details below).
 
 docker-slim has been used with Node.js, Python, Ruby, Java, Golang, Elixir and PHP running on Ubuntu, Debian and Alpine Linux.
 
@@ -71,6 +71,7 @@ Elixir application images:
   - [USAGE DETAILS](#usage-details)
   - [DOCKER CONNECT OPTIONS](#docker-connect-options)
   - [HTTP PROBE COMMANDS](#http-probe-commands)
+  - [DEBUGGING MINIFIED CONTAINERS](#debugging-minified-containers)
   - [MINIFYING COMMAND LINE TOOLS](#minifying-command-line-tools)
   - [CURRENT STATE](#current-state)
   - [FAQ](#faq)
@@ -340,6 +341,30 @@ Commands in `probeCmds.json`:
 ```
 
 The HTTP probe command file path can be a relative path (relative to the current working directory) or it can be an absolute path.
+
+
+## DEBUGGING MINIFIED CONTAINERS
+
+You can create dedicated debugging side-car container images loaded with the tools you need for debugging target containers. This allows you to keep your production container images small. The debugging side-car containers attach to the running target containers.
+
+Assuming you have a running container named `node_app_alpine` you can attach your debugging side-car with a command like this: `docker run --rm -it --pid=container:node_app_alpine --net=container:node_app_alpine --cap-add sys_admin alpine sh`. In this example, the debugging side-car is a regular alphine image. This is exactly what happens with the `node_alpine` app sample (located in the `/examples/apps/node_alpine` directory) and the `run_debug_sidecar.command` helper script.
+
+If you run the `ps` command in the side-car you'll see the application from the target container:
+```
+# ps
+PID   USER     TIME   COMMAND
+    1 root       0:00 node /opt/my/service/server.js
+   13 root       0:00 sh
+   38 root       0:00 ps
+```
+
+You can access the target container file system through `/proc/<TARGET_PID>/root`:
+```
+# ls -lh /proc/1/root/opt/my/service
+total 8
+drwxr-xr-x    3 root     root        4.0K Sep  2 15:51 node_modules
+-rwxr-xr-x    1 root     root         415 Sep  8 00:52 server.js
+```
 
 
 ## MINIFYING COMMAND LINE TOOLS
