@@ -117,10 +117,10 @@
 			"revisionTime": "2016-02-29T17:10:28Z"
 		},
 		{
-			"checksumSHA1": "FJD4uxwucGbuilN/+fzIZ/qBdLc=",
+			"checksumSHA1": "u3xsmqOdFlsEcr0sxJDjX0O/AQU=",
 			"path": "github.com/cloudimmunity/system",
-			"revision": "7cad00c3b254d5bfaec04edb4954cd5153b104ba",
-			"revisionTime": "2017-08-12T20:18:22Z"
+			"revision": "e54b5c8bd73a8f560011111d65f830edbc3cfa4a",
+			"revisionTime": "2018-09-08T00:46:14Z"
 		},
 		{
 			"checksumSHA1": "0f16D95P6TXnvOxFh8b2z2CPzmE=",
@@ -237,5 +237,5 @@
 			"revisionTime": "2017-08-08T05:47:17Z"
 		}
 	],
-	"rootPath": "github.com/docker-slim/docker-slim"
+	"rootPath": "github.com/docker-slim"
 }

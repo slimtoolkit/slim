@@ -79,7 +79,8 @@ func (osr *OsRelease) ParseOsRelease(osReleaseContents []byte) error {
 			continue
 		}
 		if err := osr.setIfPossible(key, val); err != nil {
-			log.Println(err)
+			//log.Printf("Info: %s\n",err)
+			//note: ignore, printing these messages causes more confusion...
 		}
 	}
 	return nil

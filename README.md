@@ -10,7 +10,7 @@ Keep doing what you are doing. No need to change anything. Use the base image yo
 
 Don't worry about manually creating Seccomp and AppArmor security profiles. You shouldn't have to become an expert in Linux syscalls, Seccomp and AppArmor to have secure containers. Even if you do know enough about it wasting time reverse engineering your application behavior can be time consuming.
 
-docker-slim will optimize and secure your containers by understanding your application and what it needs using various analysis techniques. It will throw away what you don't need reducing the attack surface for your container. What if you need some of those extra things to debug your container? You can use dedicated debugging side-car containers (more details below).
+docker-slim will optimize and secure your containers by understanding your application and what it needs using various analysis techniques. It will throw away what you don't need reducing the attack surface for your container. What if you need some of those extra things to debug your container? You can use dedicated debugging side-car containers for that (more details below).
 
 docker-slim has been used with Node.js, Python, Ruby, Java, Golang, Elixir and PHP running on Ubuntu, Debian and Alpine Linux.
 
