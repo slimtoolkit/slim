@@ -101,8 +101,9 @@ Elixir application images:
 
 ## RECENT UPDATES
 
-Latest version: 1.21 (8/25/2018)
+Latest version: 1.22 (9/7/2018)
 
+* Save the docker-slim command results in a JSON file using the `--report` flag (NEW)
 * Better support for applications with dynamic libraries (e.g., python compiled with `--enable-shared`) (NEW)
 * Additional network related Docker parameters (NEW)
 * New sample apps (UPDATES)
@@ -120,8 +121,8 @@ Latest version: 1.21 (8/25/2018)
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.21/dist_mac.zip)
-   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.21/dist_linux.tar.gz)
+   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.22/dist_mac.zip)
+   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.22/dist_linux.tar.gz)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -169,7 +170,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://github.com/docker-slim/docker-slim/releases/download/1.21/dist_mac.zip) or [Linux](https://github.com/docker-slim/docker-slim/releases/download/1.21/dist_linux.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://github.com/docker-slim/docker-slim/releases/download/1.22/dist_mac.zip) or [Linux](https://github.com/docker-slim/docker-slim/releases/download/1.22/dist_linux.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
   The extracted directory contains two binaries:
 
