@@ -368,6 +368,7 @@ drwxr-xr-x    3 root     root        4.0K Sep  2 15:51 node_modules
 -rwxr-xr-x    1 root     root         415 Sep  8 00:52 server.js
 ```
 
+Some of the useful debugging commands include `cat /proc/<TARGET_PID>/cmdline`, `ls -l /proc/<TARGET_PID>/cwd`, `cat /proc/1/environ`, `cat /proc/<TARGET_PID>/limits`, `cat /proc/<TARGET_PID>/status` and `ls -l /proc/<TARGET_PID>/fd`.
 
 ## MINIFYING COMMAND LINE TOOLS
 
