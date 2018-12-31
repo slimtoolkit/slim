@@ -491,8 +491,8 @@ If you don't want to use the helper scripts you can build `docker-slim` using re
 3. `cd $GOPATH/src/github.com/docker-slim`
 4. `git clone https://github.com/docker-slim/docker-slim.git` <- if you decide to use `go get` to pull the `docker-slim` repo make sure to use the `-d` flag, so Go doesn't try to build it
 5. `cd docker-slim`
-6. `go build -v ./apps/docker-slim` <- builds the main app in the repo's root directory
-7. `env GOOS=linux GOARCH=amd64 go build -v ./apps/docker-slim-sensor` <- builds the sensor app (must be built as a linux executable)
+6. `go build -v ./cmd/docker-slim` <- builds the main app in the repo's root directory
+7. `env GOOS=linux GOARCH=amd64 go build -v ./cmd/docker-slim-sensor` <- builds the sensor app (must be built as a linux executable)
 
 #### Builder Image Steps
 
