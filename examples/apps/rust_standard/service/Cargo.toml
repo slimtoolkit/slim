@@ -1,0 +1,19 @@
+[package]
+name = "rust-service"
+version = "0.0.1"
+authors = ["Kyle Quest <kcq.public@gmail.com>"]
+
+[dependencies]
+bytes = "0.4"
+futures = "0.1"
+env_logger = "*"
+rustc_version_runtime = "0.1.*"
+semver = "0.9"
+
+serde = "1.0"
+serde_json = "1.0"
+serde_derive = "1.0"
+json = "*"
+
+actix = "0.7"
+actix-web = "^0.7"
