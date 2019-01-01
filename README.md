@@ -12,7 +12,7 @@ Don't worry about manually creating Seccomp and AppArmor security profiles. You 
 
 docker-slim will optimize and secure your containers by understanding your application and what it needs using various analysis techniques. It will throw away what you don't need reducing the attack surface for your container. What if you need some of those extra things to debug your container? You can use dedicated debugging side-car containers for that (more details below).
 
-docker-slim has been used with Node.js, Python, Ruby, Java, Golang, Elixir and PHP running on Ubuntu, Debian and Alpine Linux.
+docker-slim has been used with Node.js, Python, Ruby, Java, Golang, Rust, Elixir and PHP running on Ubuntu, Debian and Alpine Linux (still exploring CentOS and its gotchas).
 
 [![asciicast](https://asciinema.org/a/czxJahFcUHWCGKVWzT7LDpVdE.png)](https://asciinema.org/a/czxJahFcUHWCGKVWzT7LDpVdE)
 
