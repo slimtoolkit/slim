@@ -41,6 +41,10 @@ Golang application images:
 * from golang:alpine - 258MB => 1.56MB (minified by **165.61X**)
 * from centos:7      - 615MB => 1.87MB (minified by **329.14X**)
 
+Rust application images:
+
+* from rust:1.31 - 2GB => 14MB (minified by **147.16X**) 
+
 JAVA application images:
 
 * from ubuntu:14.04 - 743.6 MB => 100.3 MB
