@@ -19,7 +19,7 @@ var archMap = map[system.ArchName]specs.Arch{
 }
 
 func archNameToSeccompArch(name string) specs.Arch {
-	if arch, ok := archMap[system.ArchName(name)]; ok == true {
+	if arch, ok := archMap[system.ArchName(name)]; ok {
 		return arch
 	}
 	return "unknown"

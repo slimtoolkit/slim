@@ -26,6 +26,7 @@ import (
 // IpcErrRecvTimeoutStr - an IPC receive timeout error
 const IpcErrRecvTimeoutStr = "receive time out"
 
+// Container inspector constants
 const (
 	SensorBinPath     = "/opt/dockerslim/bin/sensor"
 	ContainerNamePat  = "dockerslimk_%v_%v"
@@ -53,8 +54,8 @@ type Inspector struct {
 	Overrides         *config.ContainerOverrides
 	Links             []string
 	EtcHostsMaps      []string
-	DnsServers        []string
-	DnsSearchDomains  []string
+	DNSServers        []string
+	DNSSearchDomains  []string
 	ShowContainerLogs bool
 	VolumeMounts      map[string]config.VolumeMount
 	ExcludePaths      map[string]bool
@@ -99,8 +100,8 @@ func NewInspector(client *dockerapi.Client,
 		Overrides:         overrides,
 		Links:             links,
 		EtcHostsMaps:      etcHostsMaps,
-		DnsServers:        dnsServers,
-		DnsSearchDomains:  dnsSearchDomains,
+		DNSServers:        dnsServers,
+		DNSSearchDomains:  dnsSearchDomains,
 		ShowContainerLogs: showContainerLogs,
 		VolumeMounts:      volumeMounts,
 		ExcludePaths:      excludePaths,
@@ -215,15 +216,15 @@ func (i *Inspector) RunContainer() error {
 		log.Debugf("RunContainer: HostConfig.ExtraHosts => %v", i.EtcHostsMaps)
 	}
 
-	if len(i.DnsServers) > 0 {
-		containerOptions.HostConfig.DNS = i.DnsServers //for newer versions of Docker
-		containerOptions.Config.DNS = i.DnsServers     //for older versions of Docker
-		log.Debugf("RunContainer: HostConfig.DNS/Config.DNS => %v", i.DnsServers)
+	if len(i.DNSServers) > 0 {
+		containerOptions.HostConfig.DNS = i.DNSServers //for newer versions of Docker
+		containerOptions.Config.DNS = i.DNSServers     //for older versions of Docker
+		log.Debugf("RunContainer: HostConfig.DNS/Config.DNS => %v", i.DNSServers)
 	}
 
-	if len(i.DnsSearchDomains) > 0 {
-		containerOptions.HostConfig.DNSSearch = i.DnsSearchDomains
-		log.Debugf("RunContainer: HostConfig.DNSSearch => %v", i.DnsSearchDomains)
+	if len(i.DNSSearchDomains) > 0 {
+		containerOptions.HostConfig.DNSSearch = i.DNSSearchDomains
+		log.Debugf("RunContainer: HostConfig.DNSSearch => %v", i.DNSSearchDomains)
 	}
 
 	containerInfo, err := i.APIClient.CreateContainer(containerOptions)

@@ -10,6 +10,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 )
 
+// Command state constants
 const (
 	CmdStateUnknown   = "unknown"
 	CmdStateError     = "error"
@@ -19,14 +20,17 @@ const (
 	CmdStateDone      = "done"
 )
 
+// Command type constants
 const (
 	CmdTypeBuild   CmdType = "build"
 	CmdTypeProfile CmdType = "profile"
 	CmdTypeInfo    CmdType = "info"
 )
 
+// CmdType is the command name data type
 type CmdType string
 
+// Command is the common command report data
 type Command struct {
 	reportLocation string
 	Type           CmdType `json:"type"`
@@ -34,6 +38,7 @@ type Command struct {
 	Error          string  `json:"error,omitempty"`
 }
 
+// BuildCommand is the 'build' command report data
 type BuildCommand struct {
 	Command
 	OriginalImage          string  `json:"original_image"`
@@ -50,6 +55,7 @@ type BuildCommand struct {
 	AppArmorProfileName    string  `json:"apparmor_profile_name"`
 }
 
+// ProfileCommand is the 'profile' command report data
 type ProfileCommand struct {
 	Command
 	OriginalImage          string  `json:"original_image"`
@@ -66,6 +72,7 @@ type ProfileCommand struct {
 	AppArmorProfileName    string  `json:"apparmor_profile_name"`
 }
 
+// InfoCommand is the 'info' command report data
 type InfoCommand struct {
 	Command
 	OriginalImage          string  `json:"original_image"`
@@ -82,6 +89,7 @@ type InfoCommand struct {
 	AppArmorProfileName    string  `json:"apparmor_profile_name"`
 }
 
+// NewBuildCommand creates a new 'build' command report
 func NewBuildCommand(reportLocation string) *BuildCommand {
 	return &BuildCommand{
 		Command: Command{
@@ -92,6 +100,7 @@ func NewBuildCommand(reportLocation string) *BuildCommand {
 	}
 }
 
+// NewProfileCommand creates a new 'profile' command report
 func NewProfileCommand(reportLocation string) *ProfileCommand {
 	return &ProfileCommand{
 		Command: Command{
@@ -102,6 +111,7 @@ func NewProfileCommand(reportLocation string) *ProfileCommand {
 	}
 }
 
+// NewInfoCommand creates a new 'info' command report
 func NewInfoCommand(reportLocation string) *InfoCommand {
 	return &InfoCommand{
 		Command: Command{
@@ -112,6 +122,7 @@ func NewInfoCommand(reportLocation string) *InfoCommand {
 	}
 }
 
+// Save saves the report data to the configured location
 func (p *Command) Save() {
 	if p.reportLocation != "" {
 		dirName := filepath.Dir(p.reportLocation)

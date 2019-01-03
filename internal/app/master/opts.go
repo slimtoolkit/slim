@@ -22,13 +22,13 @@ func parseDockerExposeOpt(values []string) (map[docker.Port]struct{}, error) {
 
 	for _, raw := range values {
 		if strings.Contains(raw, ":") {
-			return nil, fmt.Errorf("Invalid EXPOSE format: %s", raw)
+			return nil, fmt.Errorf("invalid EXPOSE format: %s", raw)
 		}
 
 		proto, ports := nat.SplitProtoPort(raw)
 		startPort, endPort, err := nat.ParsePortRange(ports)
 		if err != nil {
-			return nil, fmt.Errorf("Invalid port range in EXPOSE: %s / error: %s", raw, err)
+			return nil, fmt.Errorf("invalid port range in EXPOSE: %s / error: %s", raw, err)
 		}
 
 		for i := startPort; i <= endPort; i++ {
@@ -102,7 +102,7 @@ func parseVolumeMounts(values []string) (map[string]config.VolumeMount, error) {
 
 	for _, raw := range values {
 		if !strings.Contains(raw, ":") {
-			return nil, fmt.Errorf("Invalid volume mount format: %s", raw)
+			return nil, fmt.Errorf("invalid volume mount format: %s", raw)
 		}
 
 		parts := strings.Split(raw, ":")
@@ -110,7 +110,7 @@ func parseVolumeMounts(values []string) (map[string]config.VolumeMount, error) {
 			(len(parts[0]) < 1) ||
 			(len(parts[1]) < 1) ||
 			((len(parts) == 3) && (len(parts[2]) < 1)) {
-			return nil, fmt.Errorf("Invalid volume mount format: %s", raw)
+			return nil, fmt.Errorf("invalid volume mount format: %s", raw)
 		}
 
 		mount := config.VolumeMount{
@@ -146,7 +146,7 @@ func parseHTTPProbes(values []string) ([]config.HTTPProbeCmd, error) {
 		switch sepCount {
 		case 0:
 			if raw == "" || !isResource(raw) {
-				return nil, fmt.Errorf("Invalid HTTP probe command resource: %+v", raw)
+				return nil, fmt.Errorf("invalid HTTP probe command resource: %+v", raw)
 			}
 
 			probes = append(probes, config.HTTPProbeCmd{Protocol: "http", Method: "GET", Resource: raw})
@@ -154,11 +154,11 @@ func parseHTTPProbes(values []string) ([]config.HTTPProbeCmd, error) {
 			parts := strings.SplitN(raw, ":", 2)
 
 			if parts[0] != "" && !isMethod(parts[0]) {
-				return nil, fmt.Errorf("Invalid HTTP probe command method: %+v", raw)
+				return nil, fmt.Errorf("invalid HTTP probe command method: %+v", raw)
 			}
 
 			if parts[1] == "" || !isResource(parts[1]) {
-				return nil, fmt.Errorf("Invalid HTTP probe command resource: %+v", raw)
+				return nil, fmt.Errorf("invalid HTTP probe command resource: %+v", raw)
 			}
 
 			probes = append(probes, config.HTTPProbeCmd{Protocol: "http", Method: strings.ToUpper(parts[0]), Resource: parts[1]})
@@ -166,20 +166,20 @@ func parseHTTPProbes(values []string) ([]config.HTTPProbeCmd, error) {
 			parts := strings.SplitN(raw, ":", 3)
 
 			if parts[0] != "" && !isProto(parts[0]) {
-				return nil, fmt.Errorf("Invalid HTTP probe command protocol: %+v", raw)
+				return nil, fmt.Errorf("invalid HTTP probe command protocol: %+v", raw)
 			}
 
 			if parts[1] != "" && !isMethod(parts[1]) {
-				return nil, fmt.Errorf("Invalid HTTP probe command method: %+v", raw)
+				return nil, fmt.Errorf("invalid HTTP probe command method: %+v", raw)
 			}
 
 			if parts[2] == "" || !isResource(parts[2]) {
-				return nil, fmt.Errorf("Invalid HTTP probe command resource: %+v", raw)
+				return nil, fmt.Errorf("invalid HTTP probe command resource: %+v", raw)
 			}
 
 			probes = append(probes, config.HTTPProbeCmd{Protocol: parts[0], Method: strings.ToUpper(parts[1]), Resource: parts[2]})
 		default:
-			return nil, fmt.Errorf("Invalid HTTP probe command: %s", raw)
+			return nil, fmt.Errorf("invalid HTTP probe command: %s", raw)
 		}
 	}
 
@@ -212,11 +212,11 @@ func parseHTTPProbesFile(filePath string) ([]config.HTTPProbeCmd, error) {
 
 		for _, cmd := range configs.Commands {
 			if cmd.Protocol != "" && !isProto(cmd.Protocol) {
-				return nil, fmt.Errorf("Invalid HTTP probe command protocol: %+v", cmd)
+				return nil, fmt.Errorf("invalid HTTP probe command protocol: %+v", cmd)
 			}
 
 			if cmd.Method != "" && !isMethod(cmd.Method) {
-				return nil, fmt.Errorf("Invalid HTTP probe command method: %+v", cmd)
+				return nil, fmt.Errorf("invalid HTTP probe command method: %+v", cmd)
 			}
 
 			if cmd.Method == "" {
@@ -226,11 +226,11 @@ func parseHTTPProbesFile(filePath string) ([]config.HTTPProbeCmd, error) {
 			cmd.Method = strings.ToUpper(cmd.Method)
 
 			if cmd.Resource == "" || !isResource(cmd.Resource) {
-				return nil, fmt.Errorf("Invalid HTTP probe command resource: %+v", cmd)
+				return nil, fmt.Errorf("invalid HTTP probe command resource: %+v", cmd)
 			}
 
 			if cmd.Port != 0 && !isPortNum(cmd.Port) {
-				return nil, fmt.Errorf("Invalid HTTP probe command port: %v", cmd)
+				return nil, fmt.Errorf("invalid HTTP probe command port: %v", cmd)
 			}
 
 			probes = append(probes, cmd)

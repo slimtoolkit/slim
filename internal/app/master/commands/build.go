@@ -191,7 +191,7 @@ func OnBuild(
 
 	if doShowBuildLogs {
 		fmt.Println("docker-slim[build]: build logs ====================")
-		fmt.Println("%s", builder.BuildLog.String())
+		fmt.Println(builder.BuildLog.String())
 		fmt.Println("docker-slim[build]: end of build logs =============")
 	}
 

@@ -42,10 +42,10 @@ const (
 	FlagTLSCertPath        = "tls-cert-path"
 	FlagHost               = "host"
 	FlagStatePath          = "state-path"
-	FlagHttpProbeSpec      = "http-probe, p"
-	FlagHttpProbe          = "http-probe"
-	FlagHttpProbeCmd       = "http-probe-cmd"
-	FlagHttpProbeCmdFile   = "http-probe-cmd-file"
+	FlagHTTPProbeSpec      = "http-probe, p"
+	FlagHTTPProbe          = "http-probe"
+	FlagHTTPProbeCmd       = "http-probe-cmd"
+	FlagHTTPProbeCmdFile   = "http-probe-cmd-file"
 	FlagShowContainerLogs  = "show-clogs"
 	FlagShowBuildLogs      = "show-blogs"
 	FlagEntrypoint         = "entrypoint"
@@ -62,8 +62,8 @@ const (
 	FlagLink               = "link"
 	FlagHostname           = "hostname"
 	FlagEtcHostsMap        = "etc-hosts-map"
-	FlagContainerDns       = "container-dns"
-	FlagContainerDnsSearch = "container-dns-search"
+	FlagContainerDNS       = "container-dns"
+	FlagContainerDNSSearch = "container-dns-search"
 )
 
 var app *cli.App
@@ -190,14 +190,14 @@ func init() {
 	}
 
 	doHTTPProbeCmdFlag := cli.StringSliceFlag{
-		Name:   FlagHttpProbeCmd,
+		Name:   FlagHTTPProbeCmd,
 		Value:  &cli.StringSlice{},
 		Usage:  "User defined HTTP probes",
 		EnvVar: "DSLIM_HTTP_PROBE_CMD",
 	}
 
 	doHTTPProbeCmdFileFlag := cli.StringFlag{
-		Name:   FlagHttpProbeCmdFile,
+		Name:   FlagHTTPProbeCmdFile,
 		Value:  "",
 		Usage:  "File with user defined HTTP probes",
 		EnvVar: "DSLIM_HTTP_PROBE_CMD_FILE",
@@ -257,15 +257,15 @@ func init() {
 		EnvVar: "DSLIM_TARGET_ETC_HOSTS_MAP",
 	}
 
-	doUseContainerDnsFlag := cli.StringSliceFlag{
-		Name:   FlagContainerDns,
+	doUseContainerDNSFlag := cli.StringSliceFlag{
+		Name:   FlagContainerDNS,
 		Value:  &cli.StringSlice{},
 		Usage:  "Add a dns server analyzing image",
 		EnvVar: "DSLIM_TARGET_DNS",
 	}
 
-	doUseContainerDnsSearchFlag := cli.StringSliceFlag{
-		Name:   FlagContainerDnsSearch,
+	doUseContainerDNSSearchFlag := cli.StringSliceFlag{
+		Name:   FlagContainerDNSSearch,
 		Value:  &cli.StringSlice{},
 		Usage:  "Add a dns search domain for unqualified hostnames analyzing image",
 		EnvVar: "DSLIM_TARGET_DNS_SEARCH",
@@ -395,8 +395,8 @@ func init() {
 				doUseEnvFlag,
 				doUseLinkFlag,
 				doUseEtcHostsMapFlag,
-				doUseContainerDnsFlag,
-				doUseContainerDnsSearchFlag,
+				doUseContainerDNSFlag,
+				doUseContainerDNSSearchFlag,
 				doUseNetworkFlag,
 				doUseHostnameFlag,
 				doUseExposeFlag,
@@ -419,7 +419,7 @@ func init() {
 				clientConfig := getDockerClientConfig(ctx)
 				doRmFileArtifacts := ctx.Bool("remove-file-artifacts")
 
-				doHTTPProbe := ctx.Bool(FlagHttpProbe)
+				doHTTPProbe := ctx.Bool(FlagHTTPProbe)
 
 				httpProbeCmds, err := getHTTPProbes(ctx)
 				if err != nil {
@@ -493,8 +493,8 @@ func init() {
 					overrides,
 					ctx.StringSlice(FlagLink),
 					ctx.StringSlice(FlagEtcHostsMap),
-					ctx.StringSlice(FlagContainerDns),
-					ctx.StringSlice(FlagContainerDnsSearch),
+					ctx.StringSlice(FlagContainerDNS),
+					ctx.StringSlice(FlagContainerDNSSearch),
 					volumeMounts,
 					excludePaths,
 					includePaths,
@@ -518,8 +518,8 @@ func init() {
 				doUseEnvFlag,
 				doUseLinkFlag,
 				doUseEtcHostsMapFlag,
-				doUseContainerDnsFlag,
-				doUseContainerDnsSearchFlag,
+				doUseContainerDNSFlag,
+				doUseContainerDNSSearchFlag,
 				doUseNetworkFlag,
 				doUseHostnameFlag,
 				doUseExposeFlag,
@@ -540,7 +540,7 @@ func init() {
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
-				doHTTPProbe := ctx.Bool(FlagHttpProbe)
+				doHTTPProbe := ctx.Bool(FlagHTTPProbe)
 
 				httpProbeCmds, err := getHTTPProbes(ctx)
 				if err != nil {
@@ -606,8 +606,8 @@ func init() {
 					overrides,
 					ctx.StringSlice(FlagLink),
 					ctx.StringSlice(FlagEtcHostsMap),
-					ctx.StringSlice(FlagContainerDns),
-					ctx.StringSlice(FlagContainerDnsSearch),
+					ctx.StringSlice(FlagContainerDNS),
+					ctx.StringSlice(FlagContainerDNSSearch),
 					volumeMounts,
 					excludePaths,
 					includePaths,
@@ -687,12 +687,12 @@ func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 }
 
 func getHTTPProbes(ctx *cli.Context) ([]config.HTTPProbeCmd, error) {
-	httpProbeCmds, err := parseHTTPProbes(ctx.StringSlice(FlagHttpProbeCmd))
+	httpProbeCmds, err := parseHTTPProbes(ctx.StringSlice(FlagHTTPProbeCmd))
 	if err != nil {
 		return nil, err
 	}
 
-	moreHTTPProbeCmds, err := parseHTTPProbesFile(ctx.String(FlagHttpProbeCmdFile))
+	moreHTTPProbeCmds, err := parseHTTPProbesFile(ctx.String(FlagHTTPProbeCmdFile))
 	if err != nil {
 		return nil, err
 	}
