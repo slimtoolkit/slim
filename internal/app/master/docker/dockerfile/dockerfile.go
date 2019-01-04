@@ -44,11 +44,12 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]s
 			rawLine := imageHistory[idx].CreatedBy
 			var inst string
 
-			if len(rawLine) == 0 {
+			switch {
+			case len(rawLine) == 0:
 				inst = "FROM scratch"
-			} else if strings.HasPrefix(rawLine, nopPrefix) {
+			case strings.HasPrefix(rawLine, nopPrefix):
 				inst = strings.TrimPrefix(rawLine, nopPrefix)
-			} else if strings.HasPrefix(rawLine, execPrefix) {
+			case strings.HasPrefix(rawLine, execPrefix):
 				runData := strings.TrimPrefix(rawLine, execPrefix)
 				if strings.Contains(runData, "&&") {
 					parts := strings.Split(runData, "&&")
@@ -64,7 +65,7 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]s
 				} else {
 					inst = "RUN " + runData
 				}
-			} else {
+			default:
 				inst = rawLine
 			}
 

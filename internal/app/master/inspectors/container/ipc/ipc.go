@@ -117,8 +117,7 @@ func sendCmd(channel mangos.Socket, cmd command.Message) (string, error) {
 			}
 		}
 
-		response, err := channel.Recv()
-		if err != nil {
+		if response, err := channel.Recv(); err != nil {
 			switch err {
 			case mangos.ErrRecvTimeout:
 				log.Info("sendCmd(): receive timeout...")
@@ -129,9 +128,9 @@ func sendCmd(channel mangos.Socket, cmd command.Message) (string, error) {
 			default:
 				return "", err
 			}
+		} else {
+			return string(response), nil
 		}
-
-		return string(response), nil
 	}
 }
 

@@ -381,16 +381,18 @@ func PrepareStateDirs(statePrefix, imageID string) (string, string) {
 	localVolumePath := filepath.Join(statePrefix, stateBaseKey, imageID)
 	artifactLocation := filepath.Join(localVolumePath, stateArtifactsKey)
 	artifactDir, err := os.Stat(artifactLocation)
-	if err == nil {
+
+	switch {
+	case err == nil:
 		log.Debugf("PrepareStateDirs - removing existing state location: %v", artifactLocation)
 		err = Remove(artifactLocation)
 		if err != nil {
 			log.Debugf("PrepareStateDirs - failed to remove existing state location: %v", artifactLocation)
 			errutils.FailOn(err)
 		}
-	} else if os.IsNotExist(err) {
+	case os.IsNotExist(err):
 		log.Debugf("PrepareStateDirs - will create new state location: %v", artifactLocation)
-	} else {
+	default:
 		errutils.FailOn(err)
 	}
 

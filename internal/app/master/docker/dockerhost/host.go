@@ -6,25 +6,29 @@ import (
 	"os"
 )
 
+const (
+	localHostIP = "127.0.0.1"
+)
+
 // GetIP returns the Docker host IP address
 func GetIP() string {
 	dockerHost := os.Getenv("DOCKER_HOST")
 	if dockerHost == "" {
-		return "127.0.0.1"
+		return localHostIP
 	}
 
 	u, err := url.Parse(dockerHost)
 	if err != nil {
-		return "127.0.0.1"
+		return localHostIP
 	}
 
 	switch u.Scheme {
 	case "unix":
-		return "127.0.0.1"
+		return localHostIP
 	default:
 		host, _, err := net.SplitHostPort(u.Host)
 		if err != nil {
-			return "127.0.0.1"
+			return localHostIP
 		}
 
 		return host

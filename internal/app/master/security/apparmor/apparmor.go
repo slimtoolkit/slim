@@ -81,31 +81,28 @@ func GenProfile(artifactLocation string, profileName string) error {
 					PermSet:  "r",
 				})
 		} else {
-			if aprops.Flags["X"] {
+			switch {
+			case aprops.Flags["X"]:
 				profileData.ExeFileRules = append(profileData.ExeFileRules,
 					appArmorFileRule{
 						FilePath: aprops.FilePath,
 						PermSet:  report.PermSetFromFlags(aprops.Flags),
 					})
-			} else if aprops.Flags["W"] {
+			case aprops.Flags["W"]:
 				profileData.WriteFileRules = append(profileData.WriteFileRules,
 					appArmorFileRule{
 						FilePath: aprops.FilePath,
 						PermSet:  report.PermSetFromFlags(aprops.Flags),
 					})
-			} else if aprops.Flags["R"] {
+			case aprops.Flags["R"]:
 				profileData.ReadFileRules = append(profileData.ReadFileRules,
 					appArmorFileRule{
 						FilePath: aprops.FilePath,
 						PermSet:  report.PermSetFromFlags(aprops.Flags),
 					})
-			} else {
+			default:
 				//logrus.Printf("docker-slim: genAppArmorProfile - other artifact => %v\n", aprops)
 				//note: most are Symlinks
-				//&{Symlink /lib/x86_64-linux-gnu/libc.so.6 ---------- Lrwxrwxrwx libc-2.19.so map[]  12  }
-				//todo: double check this file:
-				//&{File /etc/ld.so.cache ---------- -rw-r--r--  map[] data 15220 ca4491d92fac4500148a18bd9cada91b49e08701 }
-				//-rw-r--r--  1 user  group    15K Month  1 20:14 ld.so.cache
 			}
 		}
 	}
