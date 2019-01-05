@@ -445,6 +445,7 @@ func py3FileNameFromCache(p string) string {
 	return path.Join(path.Dir(path.Dir(p)), pyFileName)
 }
 
+/* use - TBD
 func createDummyFile(src, dst string) error {
 	_, err := os.Stat(dst)
 	if err != nil && os.IsNotExist(err) {
@@ -491,6 +492,7 @@ func createDummyFile(src, dst string) error {
 
 	return nil
 }
+*/
 
 func fixPy3CacheFile(src, dst string) error {
 	dstPyFilePath := py3FileNameFromCache(dst)

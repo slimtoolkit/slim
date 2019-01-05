@@ -145,20 +145,19 @@ func newEvtChannel(addr string) (mangos.Socket, error) {
 		return nil, err
 	}
 
-	if err := socket.SetOption(mangos.OptionRecvDeadline, time.Second*120); err != nil {
+	if err = socket.SetOption(mangos.OptionRecvDeadline, time.Second*120); err != nil {
 		socket.Close()
 		return nil, err
 	}
 
 	//socket.AddTransport(ipc.NewTransport())
 	socket.AddTransport(tcp.NewTransport())
-	if err := socket.Dial(addr); err != nil {
+	if err = socket.Dial(addr); err != nil {
 		socket.Close()
 		return nil, err
 	}
 
-	err = socket.SetOption(mangos.OptionSubscribe, []byte(""))
-	if err != nil {
+	if err = socket.SetOption(mangos.OptionSubscribe, []byte("")); err != nil {
 		return nil, err
 	}
 

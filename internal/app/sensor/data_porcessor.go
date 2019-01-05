@@ -7,7 +7,7 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/docker-slim/docker-slim/internal/app/sensor/monitors/fanotify"
+	//"github.com/docker-slim/docker-slim/internal/app/sensor/monitors/fanotify"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
 
@@ -46,6 +46,7 @@ func getProcessChildren(pid int, targetPidList map[int]bool, processChildrenMap 
 	}
 }
 
+/* use - TBD
 func findTargetAppProcesses(rootPidList []int, processChildrenMap map[int][]int) map[int]bool {
 	var targetPidList map[int]bool
 
@@ -56,7 +57,9 @@ func findTargetAppProcesses(rootPidList []int, processChildrenMap map[int][]int)
 
 	return targetPidList
 }
+*/
 
+/* use - TBD
 func filterFileEvents(fileEvents map[fanotify.Event]bool, targetPidList map[int]bool) []string {
 	var files []string
 	for evt := range fileEvents {
@@ -67,6 +70,7 @@ func filterFileEvents(fileEvents map[fanotify.Event]bool, targetPidList map[int]
 
 	return files
 }
+*/
 
 ///////////////////////////////////////////////////////////////////////////////////////
 
@@ -214,6 +218,7 @@ func getFileDevice(fullName string) (uint64, error) {
 	return uint64(info.Dev), nil
 }
 
+/* use - TBD
 func getFileInode(fullName string) (uint64, error) {
 	info, err := getFileSysStats(fullName)
 	if err != nil {
@@ -224,3 +229,4 @@ func getFileInode(fullName string) (uint64, error) {
 
 	return info.Ino, nil
 }
+*/
