@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
@@ -41,26 +42,27 @@ const (
 
 // Inspector is a container execution inspector
 type Inspector struct {
-	ContainerInfo     *dockerapi.Container
-	ContainerID       string
-	ContainerName     string
-	FatContainerCmd   []string
-	LocalVolumePath   string
-	CmdPort           dockerapi.Port
-	EvtPort           dockerapi.Port
-	DockerHostIP      string
-	ImageInspector    *image.Inspector
-	APIClient         *dockerapi.Client
-	Overrides         *config.ContainerOverrides
-	Links             []string
-	EtcHostsMaps      []string
-	DNSServers        []string
-	DNSSearchDomains  []string
-	ShowContainerLogs bool
-	VolumeMounts      map[string]config.VolumeMount
-	ExcludePaths      map[string]bool
-	IncludePaths      map[string]bool
-	DoDebug           bool
+	ContainerInfo      *dockerapi.Container
+	ContainerPortsInfo string
+	ContainerID        string
+	ContainerName      string
+	FatContainerCmd    []string
+	LocalVolumePath    string
+	CmdPort            dockerapi.Port
+	EvtPort            dockerapi.Port
+	DockerHostIP       string
+	ImageInspector     *image.Inspector
+	APIClient          *dockerapi.Client
+	Overrides          *config.ContainerOverrides
+	Links              []string
+	EtcHostsMaps       []string
+	DNSServers         []string
+	DNSSearchDomains   []string
+	ShowContainerLogs  bool
+	VolumeMounts       map[string]config.VolumeMount
+	ExcludePaths       map[string]bool
+	IncludePaths       map[string]bool
+	DoDebug            bool
 }
 
 func pathMapKeys(m map[string]bool) []string {
@@ -234,6 +236,17 @@ func (i *Inspector) RunContainer() error {
 
 	i.ContainerID = containerInfo.ID
 	log.Infoln("RunContainer: created container =>", i.ContainerID)
+
+	if len(i.ContainerInfo.NetworkSettings.Ports) > 2 {
+		portKeys := make([]string, 0, len(i.ContainerInfo.NetworkSettings.Ports)-2)
+		for pk := range i.ContainerInfo.NetworkSettings.Ports {
+			if pk != i.CmdPort && pk != i.EvtPort {
+				portKeys = append(portKeys, string(pk))
+			}
+		}
+
+		i.ContainerPortsInfo = strings.Join(portKeys, ",")
+	}
 
 	if err := i.APIClient.StartContainer(i.ContainerID, nil); err != nil {
 		return err
