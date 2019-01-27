@@ -60,7 +60,7 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 				//TODO: enhance FA Notify to return the original file handle too
 				data, err := nd.GetEvent()
 				errutils.FailOn(err)
-				log.Debugf("fanmon: collector - data.Mask =>%x", data.Mask)
+				log.Debugf("fanmon: collector - data.Mask => %x", data.Mask)
 
 				if (data.Mask & fanapi.FAN_Q_OVERFLOW) == fanapi.FAN_Q_OVERFLOW {
 					log.Debug("fanmon: collector - overflow event")
@@ -90,7 +90,8 @@ func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorRep
 
 				path, err := os.Readlink(fmt.Sprintf(procFsFdInfo, data.File.Fd()))
 				errutils.FailOn(err)
-				log.Debug("fanmon: collector - file path =>", path)
+
+				log.Debugf("fanmon: collector - file path => %v", path)
 
 				data.File.Close()
 				if doNotify {

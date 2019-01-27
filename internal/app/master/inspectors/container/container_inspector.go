@@ -199,7 +199,7 @@ func (i *Inspector) RunContainer() error {
 		log.Debugf("RunContainer: Config.ExposedPorts => %#v", containerOptions.Config.ExposedPorts)
 	} else {
 		containerOptions.Config.ExposedPorts = commsExposedPorts
-		log.Debug("RunContainer: default exposed ports => %#v", containerOptions.Config.ExposedPorts)
+		log.Debugf("RunContainer: default exposed ports => %#v", containerOptions.Config.ExposedPorts)
 	}
 
 	if i.Overrides.Network != "" {
@@ -237,17 +237,6 @@ func (i *Inspector) RunContainer() error {
 	i.ContainerID = containerInfo.ID
 	log.Infoln("RunContainer: created container =>", i.ContainerID)
 
-	if len(i.ContainerInfo.NetworkSettings.Ports) > 2 {
-		portKeys := make([]string, 0, len(i.ContainerInfo.NetworkSettings.Ports)-2)
-		for pk := range i.ContainerInfo.NetworkSettings.Ports {
-			if pk != i.CmdPort && pk != i.EvtPort {
-				portKeys = append(portKeys, string(pk))
-			}
-		}
-
-		i.ContainerPortsInfo = strings.Join(portKeys, ",")
-	}
-
 	if err := i.APIClient.StartContainer(i.ContainerID, nil); err != nil {
 		return err
 	}
@@ -259,6 +248,17 @@ func (i *Inspector) RunContainer() error {
 	errutils.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
 	errutils.FailWhen(len(i.ContainerInfo.NetworkSettings.Ports) < len(commsExposedPorts), "docker-slim: error => missing comms ports")
 	log.Debugf("RunContainer: container NetworkSettings.Ports => %#v", i.ContainerInfo.NetworkSettings.Ports)
+
+	if len(i.ContainerInfo.NetworkSettings.Ports) > 2 {
+		portKeys := make([]string, 0, len(i.ContainerInfo.NetworkSettings.Ports)-2)
+		for pk := range i.ContainerInfo.NetworkSettings.Ports {
+			if pk != i.CmdPort && pk != i.EvtPort {
+				portKeys = append(portKeys, string(pk))
+			}
+		}
+
+		i.ContainerPortsInfo = strings.Join(portKeys, ",")
+	}
 
 	if err = i.initContainerChannels(); err != nil {
 		return err

@@ -25,6 +25,12 @@ import (
 )
 
 const (
+	rbGemSpecExt           = ".gemspec"
+	rbGemsSubDir           = "/gems/"
+	rbDefaultSpecSubDir    = "/specifications/default/"
+	rbSpecSubDir           = "/specifications/"
+	rgExtSibDir            = "extensions"
+	rbGemBuildFlag         = "gem.build_complete"
 	pycExt                 = ".pyc"
 	pyoExt                 = ".pyo"
 	pycacheDir             = "/__pycache__/"
@@ -258,12 +264,20 @@ func (p *artifactStore) saveArtifacts() {
 		}
 	}
 
+	log.Debug("saveArtifacts - copy additional files checked at runtime...")
 	for fileName := range p.fileMap {
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
 
-		err := fixPy3CacheFile(fileName, filePath)
-		if err != nil {
-			log.Warn("saveArtifacts - error fixing py3 cache file => ", err)
+		if isRbGemSpecFile(fileName) {
+			err := rbEnsureGemFiles(fileName, p.storeLocation, "/files")
+			if err != nil {
+				log.Warn("saveArtifacts - error ensuring ruby gem files => ", err)
+			}
+		} else {
+			err := fixPy3CacheFile(fileName, filePath)
+			if err != nil {
+				log.Warn("saveArtifacts - error fixing py3 cache file => ", err)
+			}
 		}
 	}
 
@@ -513,4 +527,52 @@ func fixPy3CacheFile(src, dst string) error {
 	}
 
 	return nil
+}
+
+func rbEnsureGemFiles(src, storeLocation, prefix string) error {
+	if strings.Contains(src, rbDefaultSpecSubDir) {
+		return nil
+	}
+
+	dir, file := path.Split(src)
+	base := strings.TrimSuffix(dir, rbSpecSubDir)
+	parts := strings.Split(base, "/")
+	rversion := parts[len(parts)-1]
+	gemName := strings.TrimSuffix(file, rbGemSpecExt)
+
+	extBasePath := filepath.Join(base, rgExtSibDir)
+	foList, err := ioutil.ReadDir(extBasePath)
+	if err != nil {
+		return err
+	}
+
+	for _, fo := range foList {
+		if fo.IsDir() {
+			platform := fo.Name()
+
+			extBuildFlagFilePath := filepath.Join(base, rgExtSibDir, platform, rversion, gemName, rbGemBuildFlag)
+			extBuildFlagFilePathDst := fmt.Sprintf("%s%s%s", storeLocation, prefix, extBuildFlagFilePath)
+
+			if _, err := os.Stat(extBuildFlagFilePathDst); err != nil && os.IsNotExist(err) {
+				if err := cpFile(extBuildFlagFilePath, extBuildFlagFilePathDst); err != nil {
+					log.Warnln("sensor: monitor - rbEnsureGemFiles - error copying file =>", extBuildFlagFilePathDst)
+					return err
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
+func isRbGemSpecFile(filePath string) bool {
+	ext := path.Ext(filePath)
+
+	if ext == rbGemSpecExt &&
+		strings.Contains(filePath, rbGemsSubDir) &&
+		strings.Contains(filePath, rbSpecSubDir) {
+		return true
+	}
+
+	return false
 }
