@@ -134,6 +134,7 @@ func Run(startChan <-chan int,
 					}:
 					case <-stopChan:
 						log.Info("ptmon: collector - stopping...")
+						return
 					}
 				}
 			}

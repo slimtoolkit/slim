@@ -251,9 +251,16 @@ func (i *Inspector) RunContainer() error {
 
 	if len(i.ContainerInfo.NetworkSettings.Ports) > 2 {
 		portKeys := make([]string, 0, len(i.ContainerInfo.NetworkSettings.Ports)-2)
-		for pk := range i.ContainerInfo.NetworkSettings.Ports {
+		for pk, pbinding := range i.ContainerInfo.NetworkSettings.Ports {
 			if pk != i.CmdPort && pk != i.EvtPort {
-				portKeys = append(portKeys, string(pk))
+				var portInfo string
+				if len(pbinding) > 0 {
+					portInfo = fmt.Sprintf("%v => %v:%v", pk, pbinding[0].HostIP, pbinding[0].HostPort)
+				} else {
+					portInfo = string(pk)
+				}
+
+				portKeys = append(portKeys, portInfo)
 			}
 		}
 

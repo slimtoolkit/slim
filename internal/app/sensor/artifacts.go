@@ -238,7 +238,7 @@ func (p *artifactStore) saveArtifacts() {
 	log.Debugf("saveArtifacts - excludePaths: %+v", excludePaths)
 
 	//TODO: use exludePaths to filter discovered files
-	log.Debugf("saveArtifacts - copy %v files", len(p.fileMap))
+	log.Debugf("saveArtifacts - copy files (%v)", len(p.fileMap))
 	for fileName := range p.fileMap {
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
 		log.Debug("saveArtifacts - saving file data => ", filePath)
@@ -249,7 +249,7 @@ func (p *artifactStore) saveArtifacts() {
 	}
 
 	//TODO: use exludePaths to filter discovered links
-	log.Debugf("saveArtifacts - copy %v links", len(p.linkMap))
+	log.Debugf("saveArtifacts - copy links (%v)", len(p.linkMap))
 	for linkName, linkProps := range p.linkMap {
 		linkPath := fmt.Sprintf("%s/files%s", p.storeLocation, linkName)
 		linkDir := fsutils.FileDir(linkPath)
@@ -264,11 +264,12 @@ func (p *artifactStore) saveArtifacts() {
 		}
 	}
 
-	log.Debug("saveArtifacts - copy additional files checked at runtime...")
+	log.Debug("saveArtifacts - copy additional files checked at runtime....")
 	for fileName := range p.fileMap {
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
 
 		if isRbGemSpecFile(fileName) {
+			log.Debug("saveArtifacts - processing ruby gem spec ==>", fileName)
 			err := rbEnsureGemFiles(fileName, p.storeLocation, "/files")
 			if err != nil {
 				log.Warn("saveArtifacts - error ensuring ruby gem files => ", err)
@@ -536,8 +537,6 @@ func rbEnsureGemFiles(src, storeLocation, prefix string) error {
 
 	dir, file := path.Split(src)
 	base := strings.TrimSuffix(dir, rbSpecSubDir)
-	parts := strings.Split(base, "/")
-	rversion := parts[len(parts)-1]
 	gemName := strings.TrimSuffix(file, rbGemSpecExt)
 
 	extBasePath := filepath.Join(base, rgExtSibDir)
@@ -550,13 +549,25 @@ func rbEnsureGemFiles(src, storeLocation, prefix string) error {
 		if fo.IsDir() {
 			platform := fo.Name()
 
-			extBuildFlagFilePath := filepath.Join(base, rgExtSibDir, platform, rversion, gemName, rbGemBuildFlag)
-			extBuildFlagFilePathDst := fmt.Sprintf("%s%s%s", storeLocation, prefix, extBuildFlagFilePath)
+			extPlatformPath := filepath.Join(extBasePath, platform)
+			foVerList, err := ioutil.ReadDir(extPlatformPath)
+			if err != nil {
+				return err
+			}
 
-			if _, err := os.Stat(extBuildFlagFilePathDst); err != nil && os.IsNotExist(err) {
-				if err := cpFile(extBuildFlagFilePath, extBuildFlagFilePathDst); err != nil {
-					log.Warnln("sensor: monitor - rbEnsureGemFiles - error copying file =>", extBuildFlagFilePathDst)
-					return err
+			for _, foVer := range foVerList {
+				if foVer.IsDir() {
+					rversion := foVer.Name()
+
+					extBuildFlagFilePath := filepath.Join(base, rgExtSibDir, platform, rversion, gemName, rbGemBuildFlag)
+					extBuildFlagFilePathDst := fmt.Sprintf("%s%s%s", storeLocation, prefix, extBuildFlagFilePath)
+
+					if _, err := os.Stat(extBuildFlagFilePathDst); err != nil && os.IsNotExist(err) {
+						if err := cpFile(extBuildFlagFilePath, extBuildFlagFilePathDst); err != nil {
+							log.Warnln("sensor: monitor - rbEnsureGemFiles - error copying file =>", extBuildFlagFilePathDst)
+							return err
+						}
+					}
 				}
 			}
 		}
@@ -568,9 +579,7 @@ func rbEnsureGemFiles(src, storeLocation, prefix string) error {
 func isRbGemSpecFile(filePath string) bool {
 	ext := path.Ext(filePath)
 
-	if ext == rbGemSpecExt &&
-		strings.Contains(filePath, rbGemsSubDir) &&
-		strings.Contains(filePath, rbSpecSubDir) {
+	if ext == rbGemSpecExt && strings.Contains(filePath, rbSpecSubDir) {
 		return true
 	}
 
