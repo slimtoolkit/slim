@@ -16,6 +16,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/security/apparmor"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/seccomp"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
+	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
@@ -44,6 +45,7 @@ const (
 type Inspector struct {
 	ContainerInfo      *dockerapi.Container
 	ContainerPortsInfo string
+	ContainerPortList  string
 	ContainerID        string
 	ContainerName      string
 	FatContainerCmd    []string
@@ -251,11 +253,13 @@ func (i *Inspector) RunContainer() error {
 
 	if len(i.ContainerInfo.NetworkSettings.Ports) > 2 {
 		portKeys := make([]string, 0, len(i.ContainerInfo.NetworkSettings.Ports)-2)
+		portList := make([]string, 0, len(i.ContainerInfo.NetworkSettings.Ports)-2)
 		for pk, pbinding := range i.ContainerInfo.NetworkSettings.Ports {
 			if pk != i.CmdPort && pk != i.EvtPort {
 				var portInfo string
 				if len(pbinding) > 0 {
 					portInfo = fmt.Sprintf("%v => %v:%v", pk, pbinding[0].HostIP, pbinding[0].HostPort)
+					portList = append(portList, string(pbinding[0].HostPort))
 				} else {
 					portInfo = string(pk)
 				}
@@ -264,6 +268,7 @@ func (i *Inspector) RunContainer() error {
 			}
 		}
 
+		i.ContainerPortList = strings.Join(portList, ",")
 		i.ContainerPortsInfo = strings.Join(portKeys, ",")
 	}
 
@@ -288,6 +293,22 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	_, err = ipc.SendContainerCmd(cmd)
+	if err != nil {
+		return err
+	}
+
+	evt, err := ipc.GetContainerEvt()
+	log.Info("RunContainer: sensor event =>", evt)
+	if evt != event.StartMonitorDoneName {
+		return event.ErrUnexpectedEvent
+	}
+
+	//don't want to expose mangos here...
+	if err != nil && err.Error() == IpcErrRecvTimeoutStr {
+		log.Info("timeout waiting for the docker-slim container to start...")
+		return err
+	}
+
 	return err
 }
 

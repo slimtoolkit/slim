@@ -114,9 +114,10 @@ func OnBuild(
 	err = containerInspector.RunContainer()
 	errutils.FailOn(err)
 
-	fmt.Printf("docker-slim[build]: info=container name=%v id=%v ports=%v\n",
+	fmt.Printf("docker-slim[build]: info=container name=%v id=%v target.port.list=[%v] target.port.info=[%v]\n",
 		containerInspector.ContainerName,
 		containerInspector.ContainerID,
+		containerInspector.ContainerPortList,
 		containerInspector.ContainerPortsInfo)
 
 	logger.Info("watching container monitor...")

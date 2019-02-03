@@ -1,14 +1,22 @@
 package http
 
 import (
+	"crypto/tls"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/franela/goreq"
+)
+
+const (
+	probeRetryCount = 5
 )
 
 // CustomProbe is a custom HTTP probe
@@ -51,14 +59,22 @@ func NewCustomProbe(inspector *container.Inspector,
 func (p *CustomProbe) Start() {
 	go func() {
 		//TODO: need to do a better job figuring out if the target app is ready to accept connections
-		time.Sleep(4 * time.Second)
+		time.Sleep(9 * time.Second)
 
 		if p.PrintState {
 			fmt.Printf("%s state=http.probe.starting\n", p.PrintPrefix)
 		}
 
+		httpClient := &http.Client{
+			Timeout: time.Second * 30,
+			Transport: &http.Transport{
+				MaxIdleConns:    10,
+				IdleConnTimeout: 30 * time.Second,
+				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+			},
+		}
+
 		log.Info("HTTP probe started...")
-		goreq.SetConnectTimeout(10 * time.Second)
 
 		for _, port := range p.Ports {
 			for _, cmd := range p.Cmds {
@@ -71,20 +87,59 @@ func (p *CustomProbe) Start() {
 
 				for _, proto := range protocols {
 					addr := fmt.Sprintf("%s://%v:%v%v", proto, p.ContainerInspector.DockerHostIP, port, cmd.Resource)
-					res, err := goreq.Request{
-						Method:  cmd.Method,
-						Uri:     addr,
-						Body:    cmd.Body,
-						Timeout: 5 * time.Second,
-						//ShowDebug: true,
-					}.Do()
 
-					if err == nil {
-						log.Infof("http probe - %v %v => %v", cmd.Method, addr, res.StatusCode)
-						break
+					for i := 0; i < probeRetryCount; i++ {
+
+						req, err := http.NewRequest(cmd.Method, addr, nil)
+						for _, hline := range cmd.Headers {
+							hparts := strings.SplitN(hline, ":", 2)
+							if len(hparts) != 2 {
+								log.Debugf("ignoring malformed header (%v)", hline)
+								continue
+							}
+
+							hname := strings.TrimSpace(hparts[0])
+							hvalue := strings.TrimSpace(hparts[1])
+							req.Header.Add(hname, hvalue)
+						}
+
+						if (cmd.Username != "") || (cmd.Password != "") {
+							req.SetBasicAuth(cmd.Username, cmd.Password)
+						}
+
+						res, err := httpClient.Do(req)
+
+						if res != nil {
+							if res.Body != nil {
+								io.Copy(ioutil.Discard, res.Body)
+							}
+
+							defer res.Body.Close()
+						}
+
+						statusCode := 0
+						callErrorStr := "none"
+						if err == nil {
+							statusCode = res.StatusCode
+						} else {
+							callErrorStr = err.Error()
+						}
+
+						if p.PrintState {
+							fmt.Printf("%s info=http.probe.call status=%v method=%v target=%v attempt=%v error=%v\n",
+								p.PrintPrefix, statusCode, cmd.Method, addr, i+1, callErrorStr)
+						}
+
+						if err == nil {
+							break
+						} else {
+							if err == io.EOF {
+								log.Debugf("HTTP probe - target not ready yet (retry again later)...")
+								time.Sleep(11 * time.Second)
+							}
+						}
+
 					}
-
-					log.Infof("http probe - %v %v error: %v", cmd.Method, addr, err)
 				}
 			}
 		}

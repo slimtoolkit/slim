@@ -22,7 +22,8 @@ var doneChan chan struct{}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-func monitor(stopWork chan bool,
+func monitor(startAckChan chan bool,
+	stopWork chan bool,
 	stopWorkAck chan bool,
 	pids chan []int,
 	ptmonStartChan chan int,
@@ -45,7 +46,7 @@ func monitor(stopWork chan bool,
 	}
 
 	fanReportChan := fanotify.Run(mountPoint, stopMonitor) //data.AppName, data.AppArgs
-	ptReportChan := ptrace.Run(ptmonStartChan, stopMonitor, cmd.AppName, cmd.AppArgs, dirName)
+	ptReportChan := ptrace.Run(startAckChan, ptmonStartChan, stopMonitor, cmd.AppName, cmd.AppArgs, dirName)
 
 	go func() {
 		log.Debug("sensor: monitor - waiting to stop monitoring...")
@@ -111,6 +112,7 @@ func Run() {
 	cmdChan, err := ipc.RunCmdServer(doneChan)
 	errutils.FailOn(err)
 
+	monStartAckChan := make(chan bool, 1)
 	monDoneChan := make(chan bool, 1)
 	monDoneAckChan := make(chan bool)
 	pidsChan := make(chan []int, 1)
@@ -130,12 +132,21 @@ doneRunning:
 				}
 
 				log.Debugf("sensor: 'start' monitor command (%#v)", data)
-				monitor(monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, data, dirName)
+				monitor(monStartAckChan, monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, data, dirName)
 
 				//target app started by ptmon... (long story :-))
 				//TODO: need to get the target app pid to pemon, so it can filter process events
-				log.Debugf("sensor: target app started => %v %#v", data.AppName, data.AppArgs)
+				log.Debugf("sensor: starting target app => %v %#v", data.AppName, data.AppArgs)
 				time.Sleep(3 * time.Second)
+
+				log.Info("sensor: waiting for monitor to complete startup...")
+				started := <-monStartAckChan
+				log.Infof("sensor: monitor started (%v)...", started)
+				startEvent := event.StartMonitorDoneName
+				if !started {
+					startEvent = event.StartMonitorFailedName
+				}
+				ipc.TryPublishEvt(3, startEvent)
 
 			case *command.StopMonitor:
 				log.Debug("sensor: 'stop' monitor command")

@@ -560,6 +560,12 @@ func rbEnsureGemFiles(src, storeLocation, prefix string) error {
 					rversion := foVer.Name()
 
 					extBuildFlagFilePath := filepath.Join(base, rgExtSibDir, platform, rversion, gemName, rbGemBuildFlag)
+
+					if _, err := os.Stat(extBuildFlagFilePath); err != nil && os.IsNotExist(err) {
+						log.Debug("sensor: monitor - rbEnsureGemFiles - no native extensions for gem =>", gemName)
+						continue
+					}
+
 					extBuildFlagFilePathDst := fmt.Sprintf("%s%s%s", storeLocation, prefix, extBuildFlagFilePath)
 
 					if _, err := os.Stat(extBuildFlagFilePathDst); err != nil && os.IsNotExist(err) {

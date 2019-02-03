@@ -24,7 +24,9 @@ const (
 )
 
 // Run starts the PTRACE monitor
-func Run(startChan <-chan int,
+func Run(
+	ackChan chan<- bool,
+	startChan <-chan int,
 	stopChan chan struct{},
 	appName string,
 	appArgs []string,
@@ -58,6 +60,12 @@ func Run(startChan <-chan int,
 
 			var err error
 			app, err = target.Start(appName, appArgs, dirName, true)
+			started := true
+			if err != nil {
+				started = false
+			}
+			ackChan <- started
+
 			errutils.FailOn(err)
 			targetPid := app.Process.Pid
 
