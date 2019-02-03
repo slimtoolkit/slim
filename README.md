@@ -33,6 +33,8 @@ Python application images:
 Ruby application images:
 
 * from ubuntu:14.04 - 433MB => 13.8MB (minified by **31.31X**)
+* from ruby:alpine  - TBD (minified by TBD)
+* from ruby:2.5.3   - TBD (minified by TBD)
 
 Golang application images:
 
@@ -301,7 +303,7 @@ If the Docker environment variables are not set and if you don't specify any Doc
 
 ## HTTP PROBE COMMANDS
 
-If you enable the HTTP probe it will default to running `GET /` with HTTP and then HTTPS on every exposed port. You can add additional commands using these two options: `--http-probe-cmd` and `--http-probe-cmd-file`.
+If you enable the HTTP probe it will default to running `GET /` with HTTP and then HTTPS on every exposed port. You can add additional commands using the `--http-probe-cmd` and `--http-probe-cmd-file` options.
 
 The `--http-probe-cmd` option is good when you want to specify a small number of simple commands where you select some or all of these HTTP command options: protocol, method (defaults to GET), resource (path and query string).
 
@@ -347,6 +349,10 @@ Commands in `probeCmds.json`:
 ```
 
 The HTTP probe command file path can be a relative path (relative to the current working directory) or it can be an absolute path.
+
+For each HTTP probe call docker-slim will print the call status. Example: `info=http.probe.call status=200 method=GET target=http://127.0.0.1:32899/ attempt=1 error=none`.
+
+You can execute your own external HTTP requests using the `target.port.list` field in the container info message docker-slim prints when it starts its test container: `docker-slim[build]: info=container name=<your_container_name> id=<your_container_id> target.port.list=[<comma_separated_list_of_port_numbers_to_use>] target.port.info=[<comma_separated_list_of_port_mapping_records>]`. Example: `docker-slim[build]: info=container name=dockerslimk_42861_20190203084955 id=aa44c43bcf4dd0dae78e2a8b3ac011e7beb6f098a65b09c8bce4a91dc2ff8427 target.port.list=[32899] target.port.info=[9000/tcp => 0.0.0.0:32899]`. With this information you can run `curl` or other HTTP request generating tools: `curl http://localhost:32899`.
 
 
 ## DEBUGGING MINIFIED CONTAINERS
