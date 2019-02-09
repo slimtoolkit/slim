@@ -5,7 +5,7 @@ if ! which govendor > /dev/null; then
     go get -u github.com/kardianos/govendor
 fi
 
-if ! which gox > /dev/null; then
+if ! which golint > /dev/null; then
     echo "Tools: No golint. Installing...."
     go get -u github.com/golang/lint/golint
 fi
