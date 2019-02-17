@@ -174,7 +174,7 @@ func shutdownEvtChannel() {
 func getEvt(channel mangos.Socket) (event.Name, error) {
 	log.Debug("getEvt()")
 	evt, err := channel.Recv()
-	log.Debug("getEvt(): channel.Recv() - done")
+	log.Debugf("getEvt(): channel.Recv() - done [evt=%v,err=%v]", evt, err)
 	if err != nil {
 		return "", err
 	}

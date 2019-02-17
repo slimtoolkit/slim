@@ -3,6 +3,7 @@ package container
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -40,6 +41,8 @@ const (
 	EvtPortDefault    = "65502/tcp"
 	LabelName         = "dockerslim"
 )
+
+var ErrStartMonitorTimeout = errors.New("start monitor timeout")
 
 // Inspector is a container execution inspector
 type Inspector struct {
@@ -297,19 +300,34 @@ func (i *Inspector) RunContainer() error {
 		return err
 	}
 
-	evt, err := ipc.GetContainerEvt()
-	log.Info("RunContainer: sensor event =>", evt)
-	if evt != event.StartMonitorDoneName {
-		return event.ErrUnexpectedEvent
+	for i := 0; i < 3; i++ {
+		evt, err := ipc.GetContainerEvt()
+
+		//don't want to expose mangos here...
+		if err != nil {
+			if err.Error() == IpcErrRecvTimeoutStr {
+				log.Debug("timeout waiting for the docker-slim container to start...")
+				continue
+			}
+
+			return err
+		}
+
+		if evt == event.StartMonitorDoneName {
+			return nil
+		}
+
+		if evt == "" {
+			log.Debug("empty event waiting for the docker-slim container to start (trying again)...")
+			continue
+		}
+
+		if evt != event.StartMonitorDoneName {
+			return event.ErrUnexpectedEvent
+		}
 	}
 
-	//don't want to expose mangos here...
-	if err != nil && err.Error() == IpcErrRecvTimeoutStr {
-		log.Info("timeout waiting for the docker-slim container to start...")
-		return err
-	}
-
-	return err
+	return ErrStartMonitorTimeout
 }
 
 func (i *Inspector) showContainerLogs() {
