@@ -14,7 +14,7 @@ docker-slim will optimize and secure your containers by understanding your appli
 
 docker-slim has been used with Node.js, Python, Ruby, Java, Golang, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian and Alpine Linux (still exploring CentOS and its gotchas).
 
-[![asciicast](https://asciinema.org/a/czxJahFcUHWCGKVWzT7LDpVdE.png)](https://asciinema.org/a/czxJahFcUHWCGKVWzT7LDpVdE)
+[![asciicast](https://asciinema.org/a/rHqW8cbr3vXe0WxorHsD36n7V.png)](https://asciinema.org/a/rHqW8cbr3vXe0WxorHsD36n7V)
 
 ## Minification Examples
 
