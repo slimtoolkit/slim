@@ -1,4 +1,0 @@
-gunicorn
-gevent
-falcon
-arrow

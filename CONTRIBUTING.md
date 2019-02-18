@@ -1,6 +1,6 @@
 # Contributing to DockerSlim
 
-DockerSlim is Hacker licensed. You can do whatever you want with the code, but if you want to contribute submit a GitHub pull request or open an issue. Thank you!
+If you want to contribute submit a GitHub pull request or open an issue. Thank you!
 
 ## TL;DR
 
