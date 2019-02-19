@@ -184,15 +184,15 @@ The demo run on Mac OS X, but you can build a linux version. Note that these ste
   * `docker-slim` <- the main application
   * `docker-slim-sensor` <- the sensor application used to collect information from running containers
 
-2. Clone this repo to use the sample apps. You can skip this step if you have your own app.
+2. Clone the `examples` repo to use the sample apps (note: the examples have been moved to a separate repo). You can skip this step if you have your own app.
 
-  `git clone https://github.com/docker-slim/docker-slim.git`
+  `git clone https://github.com/docker-slim/examples.git`
 
-3. Create a Docker image for the sample node.js app in `examples/apps/node_ubuntu`. You can skip this step if you have your own app.
+3. Create a Docker image for the sample node.js app in `examples/node_ubuntu`. You can skip this step if you have your own app.
 
-  `cd docker-slim/examples/apps/node_ubuntu`
+  `cd examples/node_ubuntu`
 
-  `eval "$(docker-machine env default)"` <- optional (depends on how Docker is installed on your machine); if the Docker host is not running you'll need to start it first: `docker-machine start default`; see the `Docker connect options` section for more details.
+  `eval "$(docker-machine env default)"` <- optional (depends on how Docker is installed on your machine and what kind of Docker version you are using); if the Docker host is not running you'll need to start it first: `docker-machine start default`; see the `Docker connect options` section for more details.
 
   `docker build -t my/sample-node-app .`
 
@@ -206,9 +206,9 @@ The demo run on Mac OS X, but you can build a linux version. Note that these ste
 
   `curl http://<YOUR_DOCKER_HOST_IP>:<PORT>`
 
-  This is an optional step to make sure the target app container is doing something. Depending on the application it's an optional step. For some applications it's required if it loads new application resources dynamically based on the requests it's processing.
+  This is an optional step to make sure the target app container is doing something. Depending on the application it's an optional step. For some applications it's required if it loads new application resources dynamically based on the requests it's processing (e.g., Ruby or Python).
 
-  You can get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
+  You'll see the mapped ports printed to the console when `docker-slim` starts the target container. You can also get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
 
   If you set the `http-probe` flag then `docker-slim` will try to call your application using HTTP/HTTPS: `./docker-slim build --http-probe my/sample-node-app`
 
@@ -360,7 +360,7 @@ You can execute your own external HTTP requests using the `target.port.list` fie
 
 You can create dedicated debugging side-car container images loaded with the tools you need for debugging target containers. This allows you to keep your production container images small. The debugging side-car containers attach to the running target containers.
 
-Assuming you have a running container named `node_app_alpine` you can attach your debugging side-car with a command like this: `docker run --rm -it --pid=container:node_app_alpine --net=container:node_app_alpine --cap-add sys_admin alpine sh`. In this example, the debugging side-car is a regular alphine image. This is exactly what happens with the `node_alpine` app sample (located in the `/examples/apps/node_alpine` directory) and the `run_debug_sidecar.command` helper script.
+Assuming you have a running container named `node_app_alpine` you can attach your debugging side-car with a command like this: `docker run --rm -it --pid=container:node_app_alpine --net=container:node_app_alpine --cap-add sys_admin alpine sh`. In this example, the debugging side-car is a regular alphine image. This is exactly what happens with the `node_alpine` app sample (located in the `node_alpine` directory of the `examples` repo) and the `run_debug_sidecar.command` helper script.
 
 If you run the `ps` command in the side-car you'll see the application from the target container:
 ```
@@ -401,13 +401,11 @@ It's used to minify the `container-transform` tool. You can get the minified ima
 
 ## CURRENT STATE
 
-It works pretty well with the sample Node.js, Python (2 and 3), Ruby, Java and Golang images (built from `examples/apps`). PHP support is WIP. There's already one PHP example, but more needs to be done to support Apache and Nginx based PHP apps. More testing needs to be done to see how it works with other images. Rails/unicorn app images are not fully supported yet (WIP).
+It works pretty well with the sample Node.js, Python (2 and 3), Ruby, Java and Golang images (see the sample applications in the `examples` repo). PHP support is WIP. There's already one PHP example, but more needs to be done to support Apache and Nginx based PHP apps. More testing needs to be done to see how it works with other images. Rails/unicorn app images are not fully supported yet (WIP).
 
 You can also run `docker-slim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
 DockerSlim now also generates Seccomp (usable) and AppArmor (WIP) profiles for your container.
-
-Works with Docker 1.8 - 1.9, 1.10, 1.11, 1.12, 1.13, 17.03, 17.12.
 
 Note:
 
