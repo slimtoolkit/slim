@@ -56,6 +56,7 @@ const (
 	FlagExludeMounts       = "exclude-mounts"
 	FlagExcludePath        = "exclude-path"
 	FlagIncludePath        = "include-path"
+	FlagIncludePathFile    = "include-path-file"
 	FlagMount              = "mount"
 	FlagContinueAfter      = "continue-after"
 	FlagNetwork            = "network"
@@ -312,6 +313,13 @@ func init() {
 		EnvVar: "DSLIM_INCLUDE_PATH",
 	}
 
+	doIncludePathFileFlag := cli.StringFlag{
+		Name:   FlagIncludePathFile,
+		Value:  "",
+		Usage:  "File with paths to include from image",
+		EnvVar: "DSLIM_INCLUDE_PATH_FILE",
+	}
+
 	doUseMountFlag := cli.StringSliceFlag{
 		Name:   FlagMount,
 		Value:  &cli.StringSlice{},
@@ -403,6 +411,7 @@ func init() {
 				doExcludeMountsFlag,
 				doExcludePathFlag,
 				doIncludePathFlag,
+				doIncludePathFileFlag,
 				doUseMountFlag,
 				doConfinueAfterFlag,
 			},
@@ -455,7 +464,16 @@ func init() {
 				}
 
 				excludePaths := parsePaths(ctx.StringSlice(FlagExcludePath))
+
 				includePaths := parsePaths(ctx.StringSlice(FlagIncludePath))
+				moreIncludePaths, err := parsePathsFile(ctx.String(FlagIncludePathFile))
+				if err != nil {
+					fmt.Printf("[build] could not read include path file (ignoring): %v\n", err)
+				} else {
+					for k, v := range moreIncludePaths {
+						includePaths[k] = v
+					}
+				}
 
 				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
@@ -526,6 +544,7 @@ func init() {
 				doExcludeMountsFlag,
 				doExcludePathFlag,
 				doIncludePathFlag,
+				doIncludePathFileFlag,
 				doUseMountFlag,
 				doConfinueAfterFlag,
 			},
@@ -572,7 +591,16 @@ func init() {
 				}
 
 				excludePaths := parsePaths(ctx.StringSlice(FlagExcludePath))
+
 				includePaths := parsePaths(ctx.StringSlice(FlagIncludePath))
+				moreIncludePaths, err := parsePathsFile(ctx.String(FlagIncludePathFile))
+				if err != nil {
+					fmt.Printf("[profile] could not read include path file (ignoring): %v\n", err)
+				} else {
+					for k, v := range moreIncludePaths {
+						includePaths[k] = v
+					}
+				}
 
 				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {

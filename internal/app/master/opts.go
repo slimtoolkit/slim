@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -136,6 +137,43 @@ func parsePaths(values []string) map[string]bool {
 	}
 
 	return paths
+}
+
+func parsePathsFile(filePath string) (map[string]bool, error) {
+	paths := map[string]bool{}
+
+	if filePath == "" {
+		return paths, nil
+	}
+
+	fullPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return paths, err
+	}
+
+	if _, err := os.Stat(fullPath); err != nil {
+		return paths, err
+	}
+
+	fileData, err := ioutil.ReadFile(fullPath) //[]byte
+	if err != nil {
+		return paths, err
+	}
+
+	if len(fileData) == 0 {
+		return paths, nil
+	}
+
+	lines := strings.Split(string(fileData), "\n")
+
+	for _, line := range lines {
+		line := strings.TrimSpace(line)
+		if len(line) != 0 {
+			paths[line] = true
+		}
+	}
+
+	return paths, nil
 }
 
 func parseHTTPProbes(values []string) ([]config.HTTPProbeCmd, error) {
