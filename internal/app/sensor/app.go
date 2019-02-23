@@ -88,6 +88,7 @@ func Run() {
 		log.SetLevel(log.DebugLevel)
 	}
 
+	log.Debugf("sensor: uid=%v euid=%v", os.Getuid(), os.Geteuid())
 	log.Debugf("sensor: sysinfo => %#v", system.GetSystemInfo())
 	log.Debugf("sensor: kernel flags => %#v", system.DefaultKernelFeatures.Raw)
 
