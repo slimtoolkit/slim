@@ -21,6 +21,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
+	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/Sirupsen/logrus"
 	dockerapi "github.com/cloudimmunity/go-dockerclientx"
@@ -274,7 +275,7 @@ func (i *Inspector) RunContainer() error {
 						i.showContainerLogs()
 
 						if i.PrintState {
-							fmt.Printf("%s state=exited\n", i.PrintPrefix)
+							fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
 						}
 						os.Exit(-123)
 					}
