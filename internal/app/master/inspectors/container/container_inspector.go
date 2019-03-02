@@ -68,6 +68,10 @@ type Inspector struct {
 	ExcludePaths       map[string]bool
 	IncludePaths       map[string]bool
 	DoDebug            bool
+	PrintState         bool
+	PrintPrefix        string
+	dockerEventCh      chan *dockerapi.APIEvents
+	dockerEventStopCh  chan struct{}
 }
 
 func pathMapKeys(m map[string]bool) []string {
@@ -96,7 +100,9 @@ func NewInspector(client *dockerapi.Client,
 	volumeMounts map[string]config.VolumeMount,
 	excludePaths map[string]bool,
 	includePaths map[string]bool,
-	doDebug bool) (*Inspector, error) {
+	doDebug bool,
+	printState bool,
+	printPrefix string) (*Inspector, error) {
 
 	inspector := &Inspector{
 		LocalVolumePath:   localVolumePath,
@@ -114,6 +120,8 @@ func NewInspector(client *dockerapi.Client,
 		ExcludePaths:      excludePaths,
 		IncludePaths:      includePaths,
 		DoDebug:           doDebug,
+		PrintState:        printState,
+		PrintPrefix:       printPrefix,
 	}
 
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
@@ -137,6 +145,9 @@ func NewInspector(client *dockerapi.Client,
 	} else if len(imageInspector.ImageInfo.Config.Cmd) > 0 {
 		inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Cmd...)
 	}
+
+	inspector.dockerEventCh = make(chan *dockerapi.APIEvents)
+	inspector.dockerEventStopCh = make(chan struct{})
 
 	return inspector, nil
 }
@@ -240,7 +251,41 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	i.ContainerID = containerInfo.ID
-	log.Infoln("RunContainer: created container =>", i.ContainerID)
+
+	if i.PrintState {
+		fmt.Printf("%s info=container status=created id=%v\n", i.PrintPrefix, i.ContainerID)
+	}
+
+	i.APIClient.AddEventListener(i.dockerEventCh)
+	go func() {
+		for {
+			select {
+			case devent := <-i.dockerEventCh:
+				if devent == nil || devent.ID == "" || devent.Status == "" {
+					break
+				}
+
+				if devent.ID == i.ContainerID {
+					if devent.Status == "die" {
+						if i.PrintState {
+							fmt.Printf("%s info=container status=crashed id=%v\n", i.PrintPrefix, i.ContainerID)
+						}
+
+						i.showContainerLogs()
+
+						if i.PrintState {
+							fmt.Printf("%s state=exited\n", i.PrintPrefix)
+						}
+						os.Exit(-123)
+					}
+				}
+
+			case <-i.dockerEventStopCh:
+				log.Debug("RunContainer: Docker event monitor stopped")
+				return
+			}
+		}
+	}()
 
 	if err := i.APIClient.StartContainer(i.ContainerID, nil); err != nil {
 		return err
@@ -300,12 +345,20 @@ func (i *Inspector) RunContainer() error {
 		return err
 	}
 
-	for i := 0; i < 3; i++ {
+	if i.PrintState {
+		fmt.Printf("%s info=cmd.startmonitor status=sent\n", i.PrintPrefix)
+	}
+
+	for idx := 0; idx < 3; idx++ {
 		evt, err := ipc.GetContainerEvt()
 
 		//don't want to expose mangos here...
 		if err != nil {
 			if err.Error() == IpcErrRecvTimeoutStr {
+				if i.PrintState {
+					fmt.Printf("%s info=event.startmonitor.done status=receive.timeout\n", i.PrintPrefix)
+				}
+
 				log.Debug("timeout waiting for the docker-slim container to start...")
 				continue
 			}
@@ -314,6 +367,9 @@ func (i *Inspector) RunContainer() error {
 		}
 
 		if evt == event.StartMonitorDoneName {
+			if i.PrintState {
+				fmt.Printf("%s info=event.startmonitor.done status=received\n", i.PrintPrefix)
+			}
 			return nil
 		}
 
@@ -323,6 +379,9 @@ func (i *Inspector) RunContainer() error {
 		}
 
 		if evt != event.StartMonitorDoneName {
+			if i.PrintState {
+				fmt.Printf("%s info=event.startmonitor.done status=received.unexpected data=%s\n", i.PrintPrefix, evt)
+			}
 			return event.ErrUnexpectedEvent
 		}
 	}
@@ -361,6 +420,8 @@ func (i *Inspector) showContainerLogs() {
 
 // ShutdownContainer terminates the container inspector instance execution
 func (i *Inspector) ShutdownContainer() error {
+	close(i.dockerEventStopCh)
+
 	i.shutdownContainerChannels()
 
 	if i.ShowContainerLogs {

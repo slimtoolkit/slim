@@ -107,7 +107,9 @@ func OnBuild(
 		volumeMounts,
 		excludePaths,
 		includePaths,
-		doDebug)
+		doDebug,
+		true,
+		"docker-slim[build]:")
 	errutils.FailOn(err)
 
 	logger.Info("starting instrumented 'fat' container...")

@@ -97,7 +97,9 @@ func OnProfile(
 		volumeMounts,
 		excludePaths,
 		includePaths,
-		doDebug)
+		doDebug,
+		true,
+		"docker-slim[profile]:")
 	errutils.FailOn(err)
 
 	logger.Info("starting instrumented 'fat' container...")
