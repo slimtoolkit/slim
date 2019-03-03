@@ -16,7 +16,6 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/apparmor"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/seccomp"
-	"github.com/docker-slim/docker-slim/pkg/errors"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/report"
@@ -382,14 +381,7 @@ func (i *Inspector) RunContainer() error {
 
 		if evt.Name == event.Error {
 			if i.PrintState {
-				data := ""
-				if sensorError, ok := evt.Data.(*errors.SensorError); ok {
-					data = sensorError.Error()
-				} else {
-					data = fmt.Sprintf("%s", evt.Data)
-				}
-
-				fmt.Printf("%s info=event.error status=received data=%s\n", i.PrintPrefix, data)
+				fmt.Printf("%s info=event.error status=received data=%s\n", i.PrintPrefix, evt.Data)
 				fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
 			}
 
