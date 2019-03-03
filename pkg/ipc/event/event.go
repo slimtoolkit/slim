@@ -1,22 +1,57 @@
 package event
 
 import (
-	"errors"
+	"encoding/json"
+	goerr "errors"
+
+	"github.com/docker-slim/docker-slim/pkg/errors"
 )
 
 // Event errors
 var (
-	ErrUnknownEvent    = errors.New("unknown event type")
-	ErrUnexpectedEvent = errors.New("unexpected event type")
+	ErrUnknownEvent    = goerr.New("unknown event type")
+	ErrUnexpectedEvent = goerr.New("unexpected event type")
 )
 
-// Name is an event ID type
-type Name string
+// Type is an event ID type
+type Type string
 
 // Supported events
 const (
-	StartMonitorDoneName   Name = "event.monitor.start.done"
-	StartMonitorFailedName Name = "event.monitor.start.failed"
-	StopMonitorDoneName    Name = "event.monitor.stop.done"
-	ShutdownSensorDoneName Name = "event.sensor.shutdown.done"
+	StartMonitorDone   Type = "event.monitor.start.done"
+	StartMonitorFailed Type = "event.monitor.start.failed"
+	StopMonitorDone    Type = "event.monitor.stop.done"
+	ShutdownSensorDone Type = "event.sensor.shutdown.done"
+	Error              Type = "event.error"
 )
+
+type Message struct {
+	Name Type        `json:"name"`
+	Data interface{} `json:"data,omitempty"`
+}
+
+func (m *Message) UnmarshalJSON(data []byte) error {
+	var tmp struct {
+		Name Type            `json:"name"`
+		Data json.RawMessage `json:"data,omitempty"`
+	}
+
+	if err := json.Unmarshal(data, &tmp); err != nil {
+		return err
+	}
+
+	m.Name = tmp.Name
+	switch tmp.Name {
+	case Error:
+		var data errors.SensorError
+		if err := json.Unmarshal(tmp.Data, &data); err != nil {
+			return err
+		}
+
+		m.Data = &data
+	default:
+		return json.Unmarshal(tmp.Data, &m.Data)
+	}
+
+	return nil
+}

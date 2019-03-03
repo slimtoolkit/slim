@@ -1,6 +1,7 @@
 package ipc
 
 import (
+	"encoding/json"
 	"fmt"
 	"time"
 
@@ -150,10 +151,16 @@ func newEvtPublisher(addr string) (mangos.Socket, error) {
 	return socket, nil
 }
 
-func publishEvt(channel mangos.Socket, event event.Name) error {
-	log.Debugf("publishEvt(%v)", event)
-	if err := channel.Send([]byte(event)); err != nil {
-		log.Debugf("fail to publish '%v' event:%v", event, err)
+func publishEvt(channel mangos.Socket, msg *event.Message) error {
+	log.Debugf("publishEvt(%+v)", msg)
+	data, err := json.Marshal(msg)
+	if err != nil {
+		log.Debugf("fail to encoding '%+v' event: %v", msg, err)
+		return err
+	}
+
+	if err := channel.Send(data); err != nil {
+		log.Debugf("fail to publish '%+v' event: %v", msg, err)
 		return err
 	}
 
@@ -161,14 +168,14 @@ func publishEvt(channel mangos.Socket, event event.Name) error {
 }
 
 // TryPublishEvt attempts to publish an event to the master
-func TryPublishEvt(ptry uint, event event.Name) {
-	log.Debugf("TryPublishEvt(%v,%v)", ptry, event)
+func TryPublishEvt(ptry uint, msg *event.Message) {
+	log.Debugf("TryPublishEvt(%v,%+v)", ptry, msg)
 
 	for ptry := 0; ptry < 3; ptry++ {
-		log.Debugf("sensor: trying to publish '%v' event (attempt %v)", event, ptry+1)
-		err := publishEvt(evtChannel, event)
+		log.Debugf("sensor: trying to publish '%+v' event (attempt %v)", msg, ptry+1)
+		err := publishEvt(evtChannel, msg)
 		if err == nil {
-			log.Infof("sensor: published '%v'", event)
+			log.Infof("sensor: published '%+v'", msg)
 			break
 		}
 

@@ -22,13 +22,14 @@ var doneChan chan struct{}
 
 ///////////////////////////////////////////////////////////////////////////////
 
-func monitor(startAckChan chan bool,
+func startMonitor(errorCh chan error,
+	startAckChan chan bool,
 	stopWork chan bool,
 	stopWorkAck chan bool,
 	pids chan []int,
 	ptmonStartChan chan int,
 	cmd *command.StartMonitor,
-	dirName string) {
+	dirName string) bool {
 	log.Info("sensor: monitor starting...")
 	mountPoint := "/"
 
@@ -45,17 +46,27 @@ func monitor(startAckChan chan bool,
 		//ProcEvents are not enabled in the default boot2docker kernel
 	}
 
-	fanReportChan := fanotify.Run(mountPoint, stopMonitor) //data.AppName, data.AppArgs
-	ptReportChan := ptrace.Run(startAckChan, ptmonStartChan, stopMonitor, cmd.AppName, cmd.AppArgs, dirName)
+	fanReportChan := fanotify.Run(errorCh, mountPoint, stopMonitor) //data.AppName, data.AppArgs
+	if fanReportChan == nil {
+		log.Info("sensor: startMonitor - FAN failed to start running...")
+		return false
+	}
+
+	ptReportChan := ptrace.Run(errorCh, startAckChan, ptmonStartChan, stopMonitor, cmd.AppName, cmd.AppArgs, dirName)
+	if ptReportChan == nil {
+		log.Info("sensor: startMonitor - PTAN failed to start running...")
+		close(stopMonitor)
+		return false
+	}
 
 	go func() {
-		log.Debug("sensor: monitor - waiting to stop monitoring...")
+		log.Debug("sensor: monitor.worker - waiting to stop monitoring...")
 		<-stopWork
-		log.Debug("sensor: monitor - stop message...")
+		log.Debug("sensor: monitor.worker - stop message...")
 
 		close(stopMonitor)
 
-		log.Debug("sensor: monitor - processing data...")
+		log.Debug("sensor: monitor.worker - processing data...")
 
 		fanReport := <-fanReportChan
 		ptReport := <-ptReportChan
@@ -68,6 +79,8 @@ func monitor(startAckChan chan bool,
 		processReports(mountPoint, fanReport, ptReport, peReport, cmd)
 		stopWorkAck <- true
 	}()
+
+	return true
 }
 
 /////////
@@ -113,6 +126,21 @@ func Run() {
 	cmdChan, err := ipc.RunCmdServer(doneChan)
 	errutils.FailOn(err)
 
+	errorCh := make(chan error)
+	go func() {
+		for {
+			log.Debug("sensor: error collector - waiting for errors...")
+			select {
+			case <-doneChan:
+				log.Debug("sensor: error collector - done...")
+				return
+			case err := <-errorCh:
+				log.Infof("sensor: error collector - forwarding error = %+v", err)
+				ipc.TryPublishEvt(3, &event.Message{Name: event.Error, Data: err})
+			}
+		}
+	}()
+
 	monStartAckChan := make(chan bool, 1)
 	monDoneChan := make(chan bool, 1)
 	monDoneAckChan := make(chan bool)
@@ -133,7 +161,13 @@ doneRunning:
 				}
 
 				log.Debugf("sensor: 'start' monitor command (%#v)", data)
-				monitor(monStartAckChan, monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, data, dirName)
+				started := startMonitor(errorCh, monStartAckChan, monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, data, dirName)
+				if !started {
+					log.Info("sensor: monitor not started...")
+					time.Sleep(3 * time.Second) //give error event time to get sent
+					ipc.TryPublishEvt(3, &event.Message{Name: event.StartMonitorFailed})
+					break
+				}
 
 				//target app started by ptmon... (long story :-))
 				//TODO: need to get the target app pid to pemon, so it can filter process events
@@ -141,13 +175,13 @@ doneRunning:
 				time.Sleep(3 * time.Second)
 
 				log.Info("sensor: waiting for monitor to complete startup...")
-				started := <-monStartAckChan
+				started = <-monStartAckChan
 				log.Infof("sensor: monitor started (%v)...", started)
-				startEvent := event.StartMonitorDoneName
+				msg := &event.Message{Name: event.StartMonitorDone}
 				if !started {
-					startEvent = event.StartMonitorFailedName
+					msg.Name = event.StartMonitorFailed
 				}
-				ipc.TryPublishEvt(3, startEvent)
+				ipc.TryPublishEvt(3, msg)
 
 			case *command.StopMonitor:
 				log.Debug("sensor: 'stop' monitor command")
@@ -156,11 +190,11 @@ doneRunning:
 				log.Info("sensor: waiting for monitor to finish...")
 				<-monDoneAckChan
 				log.Info("sensor: monitor stopped...")
-
-				ipc.TryPublishEvt(3, event.StopMonitorDoneName)
+				ipc.TryPublishEvt(3, &event.Message{Name: event.StopMonitorDone})
 
 			case *command.ShutdownSensor:
 				log.Debug("sensor: 'shutdown' sensor command")
+				close(doneChan)
 				break doneRunning
 			default:
 				log.Debug("sensor: ignoring unknown command => ", cmd)
@@ -171,7 +205,7 @@ doneRunning:
 		}
 	}
 
-	ipc.TryPublishEvt(3, event.ShutdownSensorDoneName)
+	ipc.TryPublishEvt(3, &event.Message{Name: event.ShutdownSensorDone})
 
 	log.Info("sensor: done!")
 }

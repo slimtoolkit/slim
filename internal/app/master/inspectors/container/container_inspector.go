@@ -3,7 +3,7 @@ package container
 import (
 	"bufio"
 	"bytes"
-	"errors"
+	goerr "errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -16,6 +16,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/apparmor"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/seccomp"
+	"github.com/docker-slim/docker-slim/pkg/errors"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/report"
@@ -43,7 +44,7 @@ const (
 	LabelName         = "dockerslim"
 )
 
-var ErrStartMonitorTimeout = errors.New("start monitor timeout")
+var ErrStartMonitorTimeout = goerr.New("start monitor timeout")
 
 // Inspector is a container execution inspector
 type Inspector struct {
@@ -367,21 +368,37 @@ func (i *Inspector) RunContainer() error {
 			return err
 		}
 
-		if evt == event.StartMonitorDoneName {
+		if evt == nil || evt.Name == "" {
+			log.Debug("empty event waiting for the docker-slim container to start (trying again)...")
+			continue
+		}
+
+		if evt.Name == event.StartMonitorDone {
 			if i.PrintState {
 				fmt.Printf("%s info=event.startmonitor.done status=received\n", i.PrintPrefix)
 			}
 			return nil
 		}
 
-		if evt == "" {
-			log.Debug("empty event waiting for the docker-slim container to start (trying again)...")
-			continue
+		if evt.Name == event.Error {
+			if i.PrintState {
+				data := ""
+				if sensorError, ok := evt.Data.(*errors.SensorError); ok {
+					data = sensorError.Error()
+				} else {
+					data = fmt.Sprintf("%s", evt.Data)
+				}
+
+				fmt.Printf("%s info=event.error status=received data=%s\n", i.PrintPrefix, data)
+				fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
+			}
+
+			os.Exit(-124)
 		}
 
-		if evt != event.StartMonitorDoneName {
+		if evt.Name != event.StartMonitorDone {
 			if i.PrintState {
-				fmt.Printf("%s info=event.startmonitor.done status=received.unexpected data=%s\n", i.PrintPrefix, evt)
+				fmt.Printf("%s info=event.startmonitor.done status=received.unexpected data=%+v\n", i.PrintPrefix, evt)
 			}
 			return event.ErrUnexpectedEvent
 		}

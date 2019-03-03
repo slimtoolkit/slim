@@ -5,8 +5,10 @@ import (
 	"runtime"
 	"strconv"
 	"syscall"
+	"time"
 
 	"github.com/docker-slim/docker-slim/internal/app/sensor/target"
+	"github.com/docker-slim/docker-slim/pkg/errors"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 
@@ -25,6 +27,7 @@ const (
 
 // Run starts the PTRACE monitor
 func Run(
+	errorCh chan error,
 	ackChan chan<- bool,
 	startChan <-chan int,
 	stopChan chan struct{},
@@ -66,7 +69,13 @@ func Run(
 			}
 			ackChan <- started
 
+			if err != nil {
+				sensorErr := errors.SE("sensor.ptrace.Run/target.Start", "call.error", err)
+				errorCh <- sensorErr
+				time.Sleep(3 * time.Second)
+			}
 			errutils.FailOn(err)
+
 			targetPid := app.Process.Pid
 
 			log.Debugf("ptmon: collector - target PID ==> %d", targetPid)

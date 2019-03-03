@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 
+	"github.com/docker-slim/docker-slim/pkg/errors"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 
@@ -30,15 +31,26 @@ const (
 )
 
 // Run starts the FANOTIFY monitor
-func Run(mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorReport {
+func Run(errorCh chan error, mountPoint string, stopChan chan struct{}) <-chan *report.FanMonitorReport {
 	log.Info("fanmon: Run")
 
 	nd, err := fanapi.Initialize(fanapi.FAN_CLASS_NOTIF, os.O_RDONLY)
 	//TODO: need to propagate the FANOTIFY init failure back to the master instead of just crashing the sensor!
-	errutils.FailOn(err)
+	//errutils.FailOn(err)
+	if err != nil {
+		sensorErr := errors.SE("sensor.fanotify.Run/fanapi.Initialize", "call.error", err)
+		errorCh <- sensorErr
+		return nil
+	}
+
 	err = nd.Mark(fanapi.FAN_MARK_ADD|fanapi.FAN_MARK_MOUNT,
 		fanapi.FAN_MODIFY|fanapi.FAN_ACCESS|fanapi.FAN_OPEN, -1, mountPoint)
-	errutils.FailOn(err)
+	//errutils.FailOn(err)
+	if err != nil {
+		sensorErr := errors.SE("sensor.fanotify.Run/nd.Mark", "call.error", err)
+		errorCh <- sensorErr
+		return nil
+	}
 
 	resultChan := make(chan *report.FanMonitorReport, 1)
 
