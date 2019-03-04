@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"time"
+	"strings"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/builder"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
@@ -92,6 +93,21 @@ func OnBuild(
 	logger.Info("processing 'fat' image info...")
 	err = imageInspector.ProcessCollectedData()
 	errutils.FailOn(err)
+
+	if imageInspector.DockerfileInfo != nil { 
+		if imageInspector.DockerfileInfo.ExeUser != "" {
+			fmt.Printf("docker-slim[build]: info=image.users exe='%v' all='%v'\n",
+				imageInspector.DockerfileInfo.ExeUser,
+				strings.Join(imageInspector.DockerfileInfo.AllUsers, ","))
+		}
+
+		if len(imageInspector.DockerfileInfo.Layers) > 0 {
+			for idx, layerInfo := range imageInspector.DockerfileInfo.Layers {
+				fmt.Printf("docker-slim[build]: info=image.layers index=%v name='%v' tags='%v'\n",
+					idx, layerInfo.Name,strings.Join(layerInfo.Tags, ","))
+			}
+		}
+	}
 
 	fmt.Println("docker-slim[build]: state=inspecting.container")
 

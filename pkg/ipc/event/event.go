@@ -50,7 +50,9 @@ func (m *Message) UnmarshalJSON(data []byte) error {
 
 		m.Data = &data
 	default:
-		return json.Unmarshal(tmp.Data, &m.Data)
+		if len(tmp.Data) > 0 {
+			return json.Unmarshal(tmp.Data, &m.Data)
+		}
 	}
 
 	return nil

@@ -12,6 +12,19 @@ import (
 	"github.com/cloudimmunity/go-dockerclientx"
 )
 
+type Layer struct {
+	Name string
+	Tags []string
+}
+
+// Info represents the reverse engineered Dockerfile info
+type Info struct {
+	Lines    []string
+	AllUsers []string
+	ExeUser  string
+	Layers   []Layer
+}
+
 type imageInst struct {
 	instCmd      string
 	instComment  string
@@ -24,12 +37,14 @@ type imageInst struct {
 }
 
 // ReverseDockerfileFromHistory recreates Dockerfile information from container image history
-func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]string, error) {
+func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ( *Info, error) {
 	//NOTE: comment field is missing (TODO: enhance the lib...)
 	imageHistory, err := apiClient.ImageHistory(imageID)
 	if err != nil {
 		return nil, err
 	}
+
+	var out Info
 
 	log.Debugf("\n\nIMAGE HISTORY =>\n%#v\n\n", imageHistory)
 
@@ -68,10 +83,25 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]s
 			default:
 				inst = rawLine
 			}
+			//NOTE: Dockerfile instructions be any case, but the instructions from history are always uppercase
+			cleanInst := strings.TrimSpace(inst)
 
-			if strings.HasPrefix(inst, "ENTRYPOINT ") {
+			if strings.HasPrefix(cleanInst, "ENTRYPOINT ") {
 				inst = strings.Replace(inst, "&{[", "[", -1)
 				inst = strings.Replace(inst, "]}", "]", -1)
+				//TODO: make whitespace separated array comma separated 
+			}
+
+			if strings.HasPrefix(cleanInst,"USER ") {
+				parts := strings.SplitN(cleanInst, " ", 2)
+				if len(parts) == 2 {
+					userName := strings.TrimSpace(parts[1])
+
+					out.AllUsers = append(out.AllUsers,userName)
+					out.ExeUser = userName
+				} else {
+					log.Infof("ReverseDockerfileFromHistory - unexpected number of user parts - %v", len(parts))
+				}
 			}
 
 			instInfo := imageInst{
@@ -100,6 +130,8 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]s
 						instInfo.shortTags = append(instInfo.shortTags, tagInfo[1])
 					}
 				}
+
+				out.Layers = append(out.Layers,Layer{Name: instInfo.imageName, Tags: instInfo.shortTags})
 			}
 
 			instInfo.instType = instType
@@ -108,36 +140,35 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]s
 		}
 	}
 
-	var fatImageDockerfileLines []string
 	for idx, instInfo := range fatImageDockerInstructions {
 		if instInfo.instType == "first" {
-			fatImageDockerfileLines = append(fatImageDockerfileLines, "# new image")
+			out.Lines = append(out.Lines, "# new image")
 		}
 
-		fatImageDockerfileLines = append(fatImageDockerfileLines, instInfo.instCmd)
+		out.Lines = append(out.Lines, instInfo.instCmd)
 		if instInfo.instType == "last" {
 			commentText := fmt.Sprintf("# end of image: %s (id: %s tags: %s)",
 				instInfo.imageName, instInfo.layerImageID, strings.Join(instInfo.shortTags, ","))
-			fatImageDockerfileLines = append(fatImageDockerfileLines, commentText)
-			fatImageDockerfileLines = append(fatImageDockerfileLines, "")
+			out.Lines = append(out.Lines, commentText)
+			out.Lines = append(out.Lines, "")
 			if idx < (len(fatImageDockerInstructions) - 1) {
-				fatImageDockerfileLines = append(fatImageDockerfileLines, "# new image")
+				out.Lines = append(out.Lines, "# new image")
 			}
 		}
 
 		if instInfo.instComment != "" {
-			fatImageDockerfileLines = append(fatImageDockerfileLines, "# "+instInfo.instComment)
+			out.Lines = append(out.Lines, "# "+instInfo.instComment)
 		}
 
 		//TODO: use time diff to separate each instruction
 	}
 
 	log.Debugf("IMAGE INSTRUCTIONS:")
-	for _, iiLine := range fatImageDockerfileLines {
+	for _, iiLine := range out.Lines {
 		log.Debug(iiLine)
 	}
 
-	return fatImageDockerfileLines, nil
+	return &out, nil
 
 	//TODO: try adding comments in the docker file to see if the comments
 	//show up in the 'history' command
@@ -146,6 +177,8 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]s
 	   NOTE:
 	   Usually "MAINTAINER" is the first instruction,
 	   so it can be used to detect a base image.
+	   NOTE2:
+	   "MAINTAINER" is now depricated
 	*/
 
 	/*
@@ -161,9 +194,9 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ([]s
 }
 
 // SaveDockerfileData saves the Dockerfile information to a file
-func SaveDockerfileData(fatImageDockerfileLocation string, fatImageDockerInstructions []string) error {
+func SaveDockerfileData(fatImageDockerfileLocation string, fatImageDockerfileLines []string) error {
 	var data bytes.Buffer
-	data.WriteString(strings.Join(fatImageDockerInstructions, "\n"))
+	data.WriteString(strings.Join(fatImageDockerfileLines, "\n"))
 	return ioutil.WriteFile(fatImageDockerfileLocation, data.Bytes(), 0644)
 }
 

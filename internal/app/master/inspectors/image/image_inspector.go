@@ -31,7 +31,8 @@ type Inspector struct {
 	ImageInfo                  *docker.Image
 	ImageRecordInfo            docker.APIImages
 	APIClient                  *docker.Client
-	fatImageDockerInstructions []string
+	//fatImageDockerInstructions []string
+	DockerfileInfo             *dockerfile.Info
 }
 
 // NewInspector creates a new container image inspector
@@ -113,12 +114,12 @@ func (i *Inspector) ProcessCollectedData() error {
 	i.processImageName()
 
 	var err error
-	i.fatImageDockerInstructions, err = dockerfile.ReverseDockerfileFromHistory(i.APIClient, i.ImageRef)
+	i.DockerfileInfo, err = dockerfile.ReverseDockerfileFromHistory(i.APIClient, i.ImageRef)
 	if err != nil {
 		return err
 	}
 	fatImageDockerfileLocation := filepath.Join(i.ArtifactLocation, fatDockerfileName)
-	err = dockerfile.SaveDockerfileData(fatImageDockerfileLocation, i.fatImageDockerInstructions)
+	err = dockerfile.SaveDockerfileData(fatImageDockerfileLocation, i.DockerfileInfo.Lines)
 	errutils.FailOn(err)
 
 	return nil
@@ -126,9 +127,9 @@ func (i *Inspector) ProcessCollectedData() error {
 
 // ShowFatImageDockerInstructions prints the original target image Dockerfile instructions
 func (i *Inspector) ShowFatImageDockerInstructions() {
-	if i.fatImageDockerInstructions != nil {
+	if i.DockerfileInfo != nil && i.DockerfileInfo.Lines != nil {
 		fmt.Println("docker-slim: Fat image - Dockerfile instructures: start ====")
-		fmt.Println(strings.Join(i.fatImageDockerInstructions, "\n"))
+		fmt.Println(strings.Join(i.DockerfileInfo.Lines, "\n"))
 		fmt.Println("docker-slim: Fat image - Dockerfile instructures: end ======")
 	}
 }
