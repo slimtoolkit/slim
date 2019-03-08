@@ -199,6 +199,9 @@ func (i *Inspector) RunContainer() error {
 		},
 	}
 
+	runAsUser := containerOptions.Config.User
+	containerOptions.Config.User = "0:0"
+
 	commsExposedPorts := map[dockerapi.Port]struct{}{
 		i.CmdPort: {},
 		i.EvtPort: {},
@@ -339,6 +342,10 @@ func (i *Inspector) RunContainer() error {
 
 	if len(i.IncludePaths) > 0 {
 		cmd.Includes = pathMapKeys(i.IncludePaths)
+	}
+
+	if runAsUser != "" {
+		cmd.AppUser = runAsUser
 	}
 
 	_, err = ipc.SendContainerCmd(cmd)

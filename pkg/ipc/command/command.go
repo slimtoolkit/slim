@@ -29,6 +29,7 @@ type Message interface {
 type StartMonitor struct {
 	AppName  string   `json:"app_name"`
 	AppArgs  []string `json:"app_args,omitempty"`
+	AppUser  string   `json:"app_user,omitempty"`
 	Excludes []string `json:"excludes,omitempty"`
 	Includes []string `json:"includes,omitempty"`
 }

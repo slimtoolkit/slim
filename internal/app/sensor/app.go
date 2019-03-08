@@ -161,6 +161,10 @@ doneRunning:
 				}
 
 				log.Debugf("sensor: 'start' monitor command (%#v)", data)
+				if data.AppUser != "" {
+					log.Debugf("sensor: 'start' monitor command - run app as user='%s'", data.AppUser)
+				}
+
 				started := startMonitor(errorCh, monStartAckChan, monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, data, dirName)
 				if !started {
 					log.Info("sensor: monitor not started...")
