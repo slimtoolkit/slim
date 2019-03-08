@@ -199,7 +199,7 @@ func (i *Inspector) RunContainer() error {
 		},
 	}
 
-	runAsUser := containerOptions.Config.User
+	runAsUser := i.ImageInspector.ImageInfo.Config.User
 	containerOptions.Config.User = "0:0"
 
 	commsExposedPorts := map[dockerapi.Port]struct{}{

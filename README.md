@@ -443,13 +443,14 @@ If you'd like to see the artifacts without running `docker-slim` you can take a 
 
 If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `info` command.
 
-### How can I get around the current USER command limitation?
+### What if my Docker images uses the USER command?
 
-If you have a non-root user declared in your Dockerfile you'll need to use this workaround to make sure DockerSlim can minify your image:
+The current version of DockerSlim includes an experimental support for Docker images with USER commands. Please open tickets if it doesn't work for you.
 
-Don't add an explicit USER statement in your Dockerfile.
+For older versions of DockerSlim where you have non-default/non-root user declared in your Dockerfile you can use these workarounds to make sure DockerSlim can minify your image:
 
-Explicitly include /etc/passwd when you minify your image with DockerSlim (using the --include-path docker-slim parameter).
+* Don't add an explicit USER statement in your Dockerfile.
+* Explicitly include /etc/passwd when you minify your image with DockerSlim (using the --include-path docker-slim parameter).
 
 Example: docker-slim --debug build --http-probe --include-path /etc/passwd your-docker-image-name
 

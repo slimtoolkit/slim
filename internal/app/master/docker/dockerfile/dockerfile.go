@@ -37,7 +37,7 @@ type imageInst struct {
 }
 
 // ReverseDockerfileFromHistory recreates Dockerfile information from container image history
-func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ( *Info, error) {
+func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*Info, error) {
 	//NOTE: comment field is missing (TODO: enhance the lib...)
 	imageHistory, err := apiClient.ImageHistory(imageID)
 	if err != nil {
@@ -89,15 +89,15 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ( *I
 			if strings.HasPrefix(cleanInst, "ENTRYPOINT ") {
 				inst = strings.Replace(inst, "&{[", "[", -1)
 				inst = strings.Replace(inst, "]}", "]", -1)
-				//TODO: make whitespace separated array comma separated 
+				//TODO: make whitespace separated array comma separated
 			}
 
-			if strings.HasPrefix(cleanInst,"USER ") {
+			if strings.HasPrefix(cleanInst, "USER ") {
 				parts := strings.SplitN(cleanInst, " ", 2)
 				if len(parts) == 2 {
 					userName := strings.TrimSpace(parts[1])
 
-					out.AllUsers = append(out.AllUsers,userName)
+					out.AllUsers = append(out.AllUsers, userName)
 					out.ExeUser = userName
 				} else {
 					log.Infof("ReverseDockerfileFromHistory - unexpected number of user parts - %v", len(parts))
@@ -131,7 +131,7 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) ( *I
 					}
 				}
 
-				out.Layers = append(out.Layers,Layer{Name: instInfo.imageName, Tags: instInfo.shortTags})
+				out.Layers = append(out.Layers, Layer{Name: instInfo.imageName, Tags: instInfo.shortTags})
 			}
 
 			instInfo.instType = instType
@@ -204,6 +204,7 @@ func SaveDockerfileData(fatImageDockerfileLocation string, fatImageDockerfileLin
 func GenerateFromInfo(location string,
 	workingDir string,
 	env []string,
+	user string,
 	exposedPorts map[docker.Port]struct{},
 	entrypoint []string,
 	cmd []string,
@@ -233,6 +234,12 @@ func GenerateFromInfo(location string,
 				dfData.WriteByte('\n')
 			}
 		}
+	}
+
+	if user != "" {
+		dfData.WriteString("USER ")
+		dfData.WriteString(user)
+		dfData.WriteByte('\n')
 	}
 
 	if len(exposedPorts) > 0 {

@@ -85,6 +85,7 @@ func (b *ImageBuilder) GenerateDockerfile() error {
 	return dockerfile.GenerateFromInfo(b.BuildOptions.ContextDir,
 		b.WorkingDir,
 		b.Env,
+		b.User,
 		b.ExposedPorts,
 		b.Entrypoint,
 		b.Cmd,

@@ -282,6 +282,24 @@ func (p *artifactStore) saveArtifacts() {
 		}
 	}
 
+	if p.cmd.AppUser != "" {
+		//always copy the '/etc/passwd' file when we have a user
+		//later: do it only when AppUser is a name (not UID)
+		passwdFilePath := "/etc/passwd"
+		passwdFileTargetPath := fmt.Sprintf("%s/files%s", p.storeLocation, passwdFilePath)
+		if _, err := os.Stat(passwdFilePath); err == nil {
+			if err := cpFile(passwdFilePath, passwdFileTargetPath); err != nil {
+				log.Warn("sensor: monitor - error copying user info file =>", err)
+			}
+		} else {
+			if os.IsNotExist(err) {
+				log.Debug("sensor: monitor - no user info file")
+			} else {
+				log.Debug("sensor: monitor - could not save user info file =>", err)
+			}
+		}
+	}
+
 	//TODO: use exludePaths to filter included paths
 	for inPath, isDir := range includePaths {
 		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, inPath)

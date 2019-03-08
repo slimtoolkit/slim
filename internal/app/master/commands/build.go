@@ -4,8 +4,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"time"
 	"strings"
+	"time"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/builder"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
@@ -94,7 +94,7 @@ func OnBuild(
 	err = imageInspector.ProcessCollectedData()
 	errutils.FailOn(err)
 
-	if imageInspector.DockerfileInfo != nil { 
+	if imageInspector.DockerfileInfo != nil {
 		if imageInspector.DockerfileInfo.ExeUser != "" {
 			fmt.Printf("docker-slim[build]: info=image.users exe='%v' all='%v'\n",
 				imageInspector.DockerfileInfo.ExeUser,
@@ -104,7 +104,7 @@ func OnBuild(
 		if len(imageInspector.DockerfileInfo.Layers) > 0 {
 			for idx, layerInfo := range imageInspector.DockerfileInfo.Layers {
 				fmt.Printf("docker-slim[build]: info=image.layers index=%v name='%v' tags='%v'\n",
-					idx, layerInfo.Name,strings.Join(layerInfo.Tags, ","))
+					idx, layerInfo.Name, strings.Join(layerInfo.Tags, ","))
 			}
 		}
 	}

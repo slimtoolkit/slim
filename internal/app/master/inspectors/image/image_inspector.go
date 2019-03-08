@@ -23,16 +23,16 @@ const (
 
 // Inspector is a container image inspector
 type Inspector struct {
-	ImageRef                   string
-	ArtifactLocation           string
-	SlimImageRepo              string
-	AppArmorProfileName        string
-	SeccompProfileName         string
-	ImageInfo                  *docker.Image
-	ImageRecordInfo            docker.APIImages
-	APIClient                  *docker.Client
+	ImageRef            string
+	ArtifactLocation    string
+	SlimImageRepo       string
+	AppArmorProfileName string
+	SeccompProfileName  string
+	ImageInfo           *docker.Image
+	ImageRecordInfo     docker.APIImages
+	APIClient           *docker.Client
 	//fatImageDockerInstructions []string
-	DockerfileInfo             *dockerfile.Info
+	DockerfileInfo *dockerfile.Info
 }
 
 // NewInspector creates a new container image inspector
