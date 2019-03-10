@@ -95,7 +95,16 @@ func runCmdServer(channel mangos.Socket, done <-chan struct{}) (<-chan command.M
 
 					if cmd, err := command.Decode(rawCmd); err != nil {
 						log.Println(err)
+						err = channel.Send([]byte("error"))
+						if err != nil {
+							log.Warnln("sensor: cmd server - fail to send command status reply =>", err)
+						}
 					} else {
+						err = channel.Send([]byte("ok"))
+						if err != nil {
+							log.Warnln("sensor: cmd server - fail to send command status reply =>", err)
+						}
+
 						cmdChan <- cmd
 					}
 

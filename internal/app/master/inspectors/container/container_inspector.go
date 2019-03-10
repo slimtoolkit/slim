@@ -448,12 +448,6 @@ func (i *Inspector) ShutdownContainer() error {
 
 	if _, ok := err.(*dockerapi.ContainerNotRunning); ok {
 		log.Info("can't stop the docker-slim container (container is not running)...")
-
-		//show container logs if they aren't shown yet
-		if !i.ShowContainerLogs {
-			i.showContainerLogs()
-		}
-
 	} else {
 		errutils.WarnOn(err)
 	}
@@ -463,7 +457,11 @@ func (i *Inspector) ShutdownContainer() error {
 		RemoveVolumes: true,
 		Force:         true,
 	}
-	_ = i.APIClient.RemoveContainer(removeOption)
+	
+	if err := i.APIClient.RemoveContainer(removeOption); err != nil {
+		log.Info("error removing container =>", err)
+	}
+	
 	return nil
 }
 

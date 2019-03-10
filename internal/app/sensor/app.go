@@ -188,7 +188,7 @@ doneRunning:
 				ipc.TryPublishEvt(3, msg)
 
 			case *command.StopMonitor:
-				log.Debug("sensor: 'stop' monitor command")
+				log.Info("sensor: 'stop' monitor command")
 
 				monDoneChan <- true
 				log.Info("sensor: waiting for monitor to finish...")
@@ -197,12 +197,12 @@ doneRunning:
 				ipc.TryPublishEvt(3, &event.Message{Name: event.StopMonitorDone})
 
 			case *command.ShutdownSensor:
-				log.Debug("sensor: 'shutdown' sensor command")
+				log.Info("sensor: 'shutdown' command")
 				close(doneChan)
 				doneChan = nil
 				break doneRunning
 			default:
-				log.Debug("sensor: ignoring unknown command => ", cmd)
+				log.Info("sensor: ignoring unknown command => ", cmd)
 			}
 
 		case <-time.After(time.Second * 5):
