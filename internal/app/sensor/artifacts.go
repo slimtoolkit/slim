@@ -164,12 +164,17 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 	case (srcLinkFileInfo.Mode() & os.ModeSymlink) != 0:
 		linkRef, err := os.Readlink(artifactFileName)
 		if err != nil {
-			log.Warnf("prepareArtifact - error getting reference for symlink: %v", artifactFileName)
+			log.Warnf("prepareArtifact - error getting reference for symlink (%v) -> %v", err, artifactFileName)
 			return
 		}
 
 		props.FileType = report.SymlinkArtifactType
 		props.LinkRef = linkRef
+		//props.LinkRefAbs, err := filepath.Abs(linkRef)
+		//if err != nil {
+		//	log.Warnf("prepareArtifact - error getting absolute path for symlink reference (%v) -> %v => %v",
+		//		err, artifactFileName, linkRef)
+		//}
 
 		if _, ok := p.rawNames[linkRef]; !ok {
 			p.resolve[linkRef] = struct{}{}

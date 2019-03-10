@@ -199,6 +199,7 @@ doneRunning:
 			case *command.ShutdownSensor:
 				log.Debug("sensor: 'shutdown' sensor command")
 				close(doneChan)
+				doneChan = nil
 				break doneRunning
 			default:
 				log.Debug("sensor: ignoring unknown command => ", cmd)

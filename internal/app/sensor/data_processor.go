@@ -79,6 +79,68 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 
 	result := make(map[string]*report.ArtifactProps, 0)
 
+	checkPathSymlinks := func(symlinkFileName string) {
+		if _, ok := result[symlinkFileName]; ok {
+			log.Debugf("findSymlinks.checkPathSymlinks - symlink already in files -> %v", symlinkFileName)
+			return
+		}
+
+		linkRef, err := os.Readlink(symlinkFileName)
+		if err != nil {
+			log.Warnf("findSymlinks.checkPathSymlinks - error getting reference for symlink (%v) -> %v", err, symlinkFileName)
+			return
+		}
+
+		var absLinkRef string
+		if !filepath.IsAbs(linkRef) {
+			linkDir := filepath.Dir(symlinkFileName)
+			log.Debugf("findSymlinks.checkPathSymlinks - relative linkRef (adding symlink's path) %v / %v -> %v", symlinkFileName, linkDir, linkRef)
+			fullLinkRef := filepath.Join(linkDir, linkRef)
+			var err error
+			absLinkRef, err = filepath.Abs(fullLinkRef)
+			if err != nil {
+				log.Warnf("findSymlinks.checkPathSymlinks - error getting absolute path for symlink ref (1) (%v) -> %v => %v", err, symlinkFileName, fullLinkRef)
+				return
+			}
+		} else {
+			var err error
+			absLinkRef, err = filepath.Abs(linkRef)
+			if err != nil {
+				log.Warnf("findSymlinks.checkPathSymlinks - error getting absolute path for symlink ref (2) (%v) -> %v => %v", err, symlinkFileName, linkRef)
+				return
+			}
+		}
+
+		evalLinkRef, err := filepath.EvalSymlinks(absLinkRef)
+		if err != nil {
+			log.Warnf("findSymlinks.checkPathSymlinks - error evaluating symlink (%v) -> %v => %v", err, symlinkFileName, absLinkRef)
+		}
+
+		absPrefix := fmt.Sprintf("%s/", absLinkRef)
+		evalPrefix := fmt.Sprintf("%s/", evalLinkRef)
+
+		for _, fname := range files {
+			added := false
+			if strings.HasPrefix(fname, absPrefix) {
+				result[symlinkFileName] = nil
+				log.Debugf("findSymlinks.checkPathSymlinks - added path symlink to files -> %v", symlinkFileName)
+				added = true
+			}
+
+			if evalLinkRef != "" &&
+				absPrefix != evalPrefix &&
+				strings.HasPrefix(fname, evalPrefix) {
+				result[symlinkFileName] = nil
+				log.Debugf("findSymlinks.checkPathSymlinks - added path symlink to files (2) -> %v", symlinkFileName)
+				added = true
+			}
+
+			if added {
+				return
+			}
+		}
+	}
+
 	//getting the root device is a leftover from the legacy code (not really necessary anymore)
 	devID, err := getFileDevice(mp)
 	if err != nil {
@@ -140,6 +202,8 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 		}
 
 		if fileInfo.Mode()&os.ModeSymlink != 0 {
+			checkPathSymlinks(fullName)
+
 			if info, err := getFileSysStats(fullName); err == nil {
 
 				if _, ok := inodes[info.Ino]; ok {
@@ -150,7 +214,7 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 				}
 
 			} else {
-				log.Infof("findSymlinks - could not get target stats info for %v", fullName)
+				log.Infof("findSymlinks - could not get target stats info for file (%v) -> %v", err, fullName)
 			}
 
 		} else {
