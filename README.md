@@ -10,9 +10,9 @@ Keep doing what you are doing. No need to change anything. Use the base image yo
 
 Don't worry about manually creating Seccomp and AppArmor security profiles. You shouldn't have to become an expert in Linux syscalls, Seccomp and AppArmor to have secure containers. Even if you do know enough about it wasting time reverse engineering your application behavior can be time consuming.
 
-docker-slim will optimize and secure your containers by understanding your application and what it needs using various analysis techniques. It will throw away what you don't need reducing the attack surface for your container. What if you need some of those extra things to debug your container? You can use dedicated debugging side-car containers for that (more details below).
+`docker-slim` will optimize and secure your containers by understanding your application and what it needs using various analysis techniques. It will throw away what you don't need reducing the attack surface for your container. What if you need some of those extra things to debug your container? You can use dedicated debugging side-car containers for that (more details below).
 
-docker-slim has been used with Node.js, Python, Ruby, Java, Golang, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian and Alpine Linux (still exploring CentOS and its gotchas).
+`docker-slim` has been used with Node.js, Python, Ruby, Java, Golang, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian, CentOS and Alpine Linux.
 
 [![asciicast](https://asciinema.org/a/rHqW8cbr3vXe0WxorHsD36n7V.png)](https://asciinema.org/a/rHqW8cbr3vXe0WxorHsD36n7V)
 
@@ -26,9 +26,11 @@ Node.js application images:
 
 Python application images:
 
-* from ubuntu:14.04      - 438MB  => 16.8MB (minified by **25.99X**)
-* from python:2.7-alpine - 84.3MB => 23.1MB (minified by **3.65X**)
-* from python:2.7.15     - 916MB => 27.5MB  (minified by **33.29X**)
+* from ubuntu:14.04             - 438MB  => 16.8MB (minified by **25.99X**)
+* from python:2.7-alpine        - 84.3MB => 23.1MB (minified by **3.65X**)
+* from python:2.7.15            - 916MB  => 27.5MB (minified by **33.29X**)
+* from centos:7                 - 647 MB => 23 MB  (minified by **28.57X**)
+* from centos/python-27-centos7 - 700 MB => 24 MB  (minified by **29.01X**)
 
 Ruby application images:
 
@@ -107,10 +109,15 @@ Elixir application images:
 
 ## RECENT UPDATES
 
-Latest version: 1.23 (2/3/2019)
+Latest version: 1.24 (3/10/2019)
 
-* HTTP Probing enhancements and fixes (NEW)
-* Enhancements for ruby applications with extensions (NEW)
+* Support for non-default users (NEW)
+* Improved symlink handling (NEW)
+* Better failure monitoring and reporting (NEW)
+* The `--include-path-file` option to make it easier to load extra files you want to keep in your image (NEW)
+* CentOS support (NEW)
+* HTTP Probing enhancements and fixes
+* Enhancements for ruby applications with extensions
 * Save the docker-slim command results in a JSON file using the `--report` flag
 * Better support for applications with dynamic libraries (e.g., python compiled with `--enable-shared`)
 * Additional network related Docker parameters
@@ -128,8 +135,8 @@ Latest version: 1.23 (2/3/2019)
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.23/dist_mac.zip)
-   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.23/dist_linux.tar.gz)
+   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.24/dist_mac.zip)
+   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.24/dist_linux.tar.gz)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -177,7 +184,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://github.com/docker-slim/docker-slim/releases/download/1.23/dist_mac.zip) or [Linux](https://github.com/docker-slim/docker-slim/releases/download/1.23/dist_linux.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://github.com/docker-slim/docker-slim/releases/download/1.24/dist_mac.zip) or [Linux](https://github.com/docker-slim/docker-slim/releases/download/1.24/dist_linux.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
   The extracted directory contains two binaries:
 
