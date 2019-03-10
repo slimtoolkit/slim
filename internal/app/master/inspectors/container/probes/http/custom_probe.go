@@ -6,6 +6,7 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strings"
 	"time"
 
@@ -89,7 +90,6 @@ func (p *CustomProbe) Start() {
 					addr := fmt.Sprintf("%s://%v:%v%v", proto, p.ContainerInspector.DockerHostIP, port, cmd.Resource)
 
 					for i := 0; i < probeRetryCount; i++ {
-
 						req, err := http.NewRequest(cmd.Method, addr, nil)
 						for _, hline := range cmd.Headers {
 							hparts := strings.SplitN(hline, ":", 2)
@@ -126,16 +126,31 @@ func (p *CustomProbe) Start() {
 						}
 
 						if p.PrintState {
-							fmt.Printf("%s info=http.probe.call status=%v method=%v target=%v attempt=%v error=%v\n",
-								p.PrintPrefix, statusCode, cmd.Method, addr, i+1, callErrorStr)
+							fmt.Printf("%s info=http.probe.call status=%v method=%v target=%v attempt=%v error=%v time=%v\n",
+								p.PrintPrefix,
+								statusCode,
+								cmd.Method,
+								addr,
+								i+1,
+								callErrorStr,
+								time.Now().UTC().Format(time.RFC3339))
 						}
 
 						if err == nil {
 							break
 						} else {
-							if err == io.EOF {
-								log.Debugf("HTTP probe - target not ready yet (retry again later)...")
-								time.Sleep(11 * time.Second)
+							if urlErr, ok := err.(*url.Error); ok {
+								if urlErr.Err == io.EOF {
+									log.Debugf("HTTP probe - target not ready yet (retry again later)...")
+									time.Sleep(12 * time.Second)
+								} else {
+									log.Debugf("HTTP probe - web error... retry again later...")
+									time.Sleep(8 * time.Second)
+
+								}
+							} else {
+								log.Debugf("HTTP probe - other error... retry again later...")
+								time.Sleep(3 * time.Second)
 							}
 						}
 
