@@ -495,7 +495,9 @@ func (i *Inspector) FinishMonitoring() {
 	log.Debugf("sensor event => '%v'", evt)
 
 	cmdResponse, err = ipc.SendContainerCmd(&command.ShutdownSensor{})
-	errutils.WarnOn(err)
+	if err != nil {
+		log.Debugf("error sending 'shutdown' => '%v'", err)
+	}
 	log.Debugf("'shutdown' sensor response => '%v'", cmdResponse)
 }
 
