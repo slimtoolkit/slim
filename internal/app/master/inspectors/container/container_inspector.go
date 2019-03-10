@@ -271,6 +271,7 @@ func (i *Inspector) RunContainer() error {
 
 				if devent.ID == i.ContainerID {
 					if devent.Status == "die" {
+						//TODO: update the docker client library to get the exit status to know if it really crashed
 						if i.PrintState {
 							fmt.Printf("%s info=container status=crashed id=%v\n", i.PrintPrefix, i.ContainerID)
 						}
@@ -437,8 +438,6 @@ func (i *Inspector) showContainerLogs() {
 
 // ShutdownContainer terminates the container inspector instance execution
 func (i *Inspector) ShutdownContainer() error {
-	close(i.dockerEventStopCh)
-
 	i.shutdownContainerChannels()
 
 	if i.ShowContainerLogs {
@@ -470,6 +469,9 @@ func (i *Inspector) ShutdownContainer() error {
 
 // FinishMonitoring ends the target container monitoring activities
 func (i *Inspector) FinishMonitoring() {
+	close(i.dockerEventStopCh)
+	i.dockerEventStopCh = nil
+
 	cmdResponse, err := ipc.SendContainerCmd(&command.StopMonitor{})
 	errutils.WarnOn(err)
 	//_ = cmdResponse
