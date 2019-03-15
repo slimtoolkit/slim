@@ -39,5 +39,14 @@ Original issue:
 Original issue:
 * https://github.com/docker-slim/docker-slim/issues/67
 
+## Dockerizing Local Applications (Linux Only)
+
+Dockerizing local applications and creating minified images for them.
+
+## Minifying Local Applications and Saving to Directory (Linux Only)
+
+Original issue:
+https://github.com/docker-slim/docker-slim/issues/60
+
 
 
