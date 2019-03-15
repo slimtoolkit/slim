@@ -7,7 +7,7 @@ This is a list of non-core related enhancements and features. If you want to hel
 Package Managers:
 * Homebrew
 * Mac Ports
-* Apt
+* Apt/Debian
 * ???
 
 ## Classic container image optimizations (aka ability to disable minification based on dynamic/static analysis)
@@ -29,6 +29,15 @@ Original issues:
 * https://github.com/docker-slim/docker-slim/issues/6
 * https://github.com/docker-slim/docker-slim/issues/25
 
+## Native Windows Support
+
+Original issue:
+* https://github.com/docker-slim/docker-slim/issues/57
+
+## Provide an Audit Log for the Removed Files
+
+Original issue:
+* https://github.com/docker-slim/docker-slim/issues/67
 
 
 
