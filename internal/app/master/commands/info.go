@@ -50,7 +50,7 @@ func OnInfo(
 	err = imageInspector.Inspect()
 	errutils.FailOn(err)
 
-	_, artifactLocation := fsutils.PrepareStateDirs(statePath, imageInspector.ImageInfo.ID)
+	_, artifactLocation, statePath := fsutils.PrepareStateDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
 	fmt.Printf("docker-slim[info]: info=image id=%v size.bytes=%v size.human=%v\n",

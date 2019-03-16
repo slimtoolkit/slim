@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -54,6 +55,7 @@ type Inspector struct {
 	ContainerName      string
 	FatContainerCmd    []string
 	LocalVolumePath    string
+	StatePath          string
 	CmdPort            dockerapi.Port
 	EvtPort            dockerapi.Port
 	DockerHostIP       string
@@ -90,6 +92,7 @@ func pathMapKeys(m map[string]bool) []string {
 
 // NewInspector creates a new container execution inspector
 func NewInspector(client *dockerapi.Client,
+	statePath string,
 	imageInspector *image.Inspector,
 	localVolumePath string,
 	overrides *config.ContainerOverrides,
@@ -106,6 +109,7 @@ func NewInspector(client *dockerapi.Client,
 	printPrefix string) (*Inspector, error) {
 
 	inspector := &Inspector{
+		StatePath:         statePath,
 		LocalVolumePath:   localVolumePath,
 		CmdPort:           CmdPortDefault,
 		EvtPort:           EvtPortDefault,
@@ -157,6 +161,13 @@ func NewInspector(client *dockerapi.Client,
 func (i *Inspector) RunContainer() error {
 	artifactsPath := filepath.Join(i.LocalVolumePath, ArtifactsDir)
 	sensorPath := filepath.Join(fsutils.ExeDir(), SensorBinLocal)
+
+	if runtime.GOOS == "darwin" {
+		stateSensorPath := filepath.Join(i.StatePath, SensorBinLocal)
+		if fsutils.Exists(stateSensorPath) {
+			sensorPath = stateSensorPath
+		}
+	}
 
 	artifactsMountInfo := fmt.Sprintf(ArtifactsMountPat, artifactsPath)
 	sensorMountInfo := fmt.Sprintf(SensorMountPat, sensorPath)
@@ -457,11 +468,11 @@ func (i *Inspector) ShutdownContainer() error {
 		RemoveVolumes: true,
 		Force:         true,
 	}
-	
+
 	if err := i.APIClient.RemoveContainer(removeOption); err != nil {
 		log.Info("error removing container =>", err)
 	}
-	
+
 	return nil
 }
 

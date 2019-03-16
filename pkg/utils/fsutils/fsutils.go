@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"syscall"
 
@@ -30,6 +31,21 @@ const (
 	stateBaseKey        = ".images"
 	stateArtifactsKey   = "artifacts"
 	stateArtifactsPerms = 0777
+)
+
+var macBadInstallPaths = [...]string{
+	"/usr/local/bin",
+	"/usr/local/sbin",
+	"/usr/bin",
+	"/usr/sbin",
+	"/bin",
+	"/sbin",
+}
+
+const (
+	tmpPath         = "/tmp"
+	macStateTmpPath = "/tmp/docker-slim-state"
+	sensorFileName  = "docker-slim-sensor"
 )
 
 // Remove removes the artifacts generated during the current application execution
@@ -365,7 +381,7 @@ func FileDir(fileName string) string {
 }
 
 // PrepareStateDirs ensures that the required application directories exist
-func PrepareStateDirs(statePrefix, imageID string) (string, string) {
+func PrepareStateDirs(statePrefix, imageID string) (string, string, string) {
 	log.Debugf("PrepareStateDirs(%v,%v)", statePrefix, imageID)
 
 	//images IDs in Docker 1.9+ are prefixed with a hash type...
@@ -376,6 +392,23 @@ func PrepareStateDirs(statePrefix, imageID string) (string, string) {
 
 	if statePrefix == "" {
 		statePrefix = ExeDir()
+
+		if runtime.GOOS == "darwin" {
+			for _, badPath := range macBadInstallPaths {
+				if statePrefix == badPath {
+					if pinfo, err := os.Stat(tmpPath); err == nil && pinfo.IsDir() {
+						log.Debugf("PrepareStateDirs - overriding state path on Mac OS to %v", macStateTmpPath)
+
+						srcSensorPath := filepath.Join(statePrefix, sensorFileName)
+						dstSensorPath := filepath.Join(macStateTmpPath, sensorFileName)
+						err = CopyRegularFile(srcSensorPath, dstSensorPath, true)
+						errutils.FailOn(err)
+
+						statePrefix = macStateTmpPath
+					}
+				}
+			}
+		}
 	}
 
 	localVolumePath := filepath.Join(statePrefix, stateBaseKey, imageID)
@@ -404,7 +437,7 @@ func PrepareStateDirs(statePrefix, imageID string) (string, string) {
 
 	errutils.FailWhen(!artifactDir.IsDir(), "artifact location is not a directory")
 
-	return localVolumePath, artifactLocation
+	return localVolumePath, artifactLocation, statePrefix
 }
 
 ///////////////////////////////////////////////////////////////////////////////
