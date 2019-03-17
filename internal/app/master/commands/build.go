@@ -67,6 +67,12 @@ func OnBuild(
 		version.Print(client)
 	}
 
+	if !confirmNetwork(logger, client, overrides.Network) {
+		fmt.Printf("docker-slim[build]: info=param.error status=unknown.network value=%s\n", overrides.Network)
+		fmt.Printf("docker-slim[build]: state=exited version=%s\n", v.Current())
+		os.Exit(-111)
+	}
+
 	imageInspector, err := image.NewInspector(client, imageRef)
 	errutils.FailOn(err)
 

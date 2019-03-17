@@ -25,6 +25,9 @@ import (
 )
 
 const (
+	ngxBinName             = "/nginx"
+	ngxSubDir              = "/nginx/"
+	ngxCommonTemp          = "/var/lib/nginx"
 	rbGemSpecExt           = ".gemspec"
 	rbGemsSubDir           = "/gems/"
 	rbDefaultSpecSubDir    = "/specifications/default/"
@@ -270,6 +273,7 @@ func (p *artifactStore) saveArtifacts() {
 	}
 
 	log.Debug("saveArtifacts - copy additional files checked at runtime....")
+	ngxEnsured := false
 	for fileName := range p.fileMap {
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
 
@@ -279,6 +283,10 @@ func (p *artifactStore) saveArtifacts() {
 			if err != nil {
 				log.Warn("saveArtifacts - error ensuring ruby gem files => ", err)
 			}
+		} else if isNgxArtifact(fileName) && !ngxEnsured {
+			log.Debug("saveArtifacts - ensuring ngx artifacts....")
+			ngxEnsure(p.storeLocation)
+			ngxEnsured = true
 		} else {
 			err := fixPy3CacheFile(fileName, filePath)
 			if err != nil {
@@ -613,4 +621,37 @@ func isRbGemSpecFile(filePath string) bool {
 	}
 
 	return false
+}
+
+func isNgxArtifact(filePath string) bool {
+	if strings.Contains(filePath, ngxSubDir) || strings.HasSuffix(filePath, ngxBinName) {
+		return true
+	}
+
+	return false
+}
+
+func ngxEnsure(prefix string) {
+	//ensure common temp paths (note: full implementation needs mkdir syscall info)
+	if info, err := os.Stat(ngxCommonTemp); err == nil {
+		if info.IsDir() {
+			dstPath := fmt.Sprintf("%s/files%s", prefix, ngxCommonTemp)
+			err, errs := fsutils.CopyDir(ngxCommonTemp, dstPath, true, true, nil, nil, nil)
+			if err != nil {
+				log.Warnf("ngxEnsure - CopyDir error: %v", err)
+			}
+			if len(errs) > 0 {
+				log.Warnf("ngxEnsure - CopyDir copy error: %+v", errs)
+			}
+			return
+		}
+
+		log.Debugf("ngxEnsure - %v should be a directory", ngxCommonTemp)
+	} else {
+		if os.IsNotExist(err) {
+			return
+		}
+
+		log.Debugf("ngxEnsure - error checking %v => %v", ngxCommonTemp, err)
+	}
 }
