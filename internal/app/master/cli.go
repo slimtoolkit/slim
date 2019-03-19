@@ -31,40 +31,43 @@ const (
 
 // DockerSlim app flag names
 const (
-	FlagDebug              = "debug"
-	FlagCommandReport      = "report"
-	FlagVerbose            = "verbose"
-	FlagLogLevel           = "log-level"
-	FlagLog                = "log"
-	FlagLogFormat          = "log-format"
-	FlagUseTLS             = "tls"
-	FlagVerifyTLS          = "tls-verify"
-	FlagTLSCertPath        = "tls-cert-path"
-	FlagHost               = "host"
-	FlagStatePath          = "state-path"
-	FlagHTTPProbeSpec      = "http-probe, p"
-	FlagHTTPProbe          = "http-probe"
-	FlagHTTPProbeCmd       = "http-probe-cmd"
-	FlagHTTPProbeCmdFile   = "http-probe-cmd-file"
-	FlagShowContainerLogs  = "show-clogs"
-	FlagShowBuildLogs      = "show-blogs"
-	FlagEntrypoint         = "entrypoint"
-	FlagCmd                = "cmd"
-	FlagWorkdir            = "workdir"
-	FlagEnv                = "env"
-	FlagExpose             = "expose"
-	FlagExludeMounts       = "exclude-mounts"
-	FlagExcludePath        = "exclude-path"
-	FlagIncludePath        = "include-path"
-	FlagIncludePathFile    = "include-path-file"
-	FlagMount              = "mount"
-	FlagContinueAfter      = "continue-after"
-	FlagNetwork            = "network"
-	FlagLink               = "link"
-	FlagHostname           = "hostname"
-	FlagEtcHostsMap        = "etc-hosts-map"
-	FlagContainerDNS       = "container-dns"
-	FlagContainerDNSSearch = "container-dns-search"
+	FlagDebug               = "debug"
+	FlagCommandReport       = "report"
+	FlagVerbose             = "verbose"
+	FlagLogLevel            = "log-level"
+	FlagLog                 = "log"
+	FlagLogFormat           = "log-format"
+	FlagUseTLS              = "tls"
+	FlagVerifyTLS           = "tls-verify"
+	FlagTLSCertPath         = "tls-cert-path"
+	FlagHost                = "host"
+	FlagStatePath           = "state-path"
+	FlagHTTPProbeSpec       = "http-probe, p"
+	FlagHTTPProbe           = "http-probe"
+	FlagHTTPProbeCmd        = "http-probe-cmd"
+	FlagHTTPProbeCmdFile    = "http-probe-cmd-file"
+	FlagHTTPProbeRetryCount = "http-probe-retry-count"
+	FlagHTTPProbeRetryWait  = "http-probe-retry-wait"
+	FlagHTTPProbePorts      = "http-probe-ports"
+	FlagShowContainerLogs   = "show-clogs"
+	FlagShowBuildLogs       = "show-blogs"
+	FlagEntrypoint          = "entrypoint"
+	FlagCmd                 = "cmd"
+	FlagWorkdir             = "workdir"
+	FlagEnv                 = "env"
+	FlagExpose              = "expose"
+	FlagExludeMounts        = "exclude-mounts"
+	FlagExcludePath         = "exclude-path"
+	FlagIncludePath         = "include-path"
+	FlagIncludePathFile     = "include-path-file"
+	FlagMount               = "mount"
+	FlagContinueAfter       = "continue-after"
+	FlagNetwork             = "network"
+	FlagLink                = "link"
+	FlagHostname            = "hostname"
+	FlagEtcHostsMap         = "etc-hosts-map"
+	FlagContainerDNS        = "container-dns"
+	FlagContainerDNSSearch  = "container-dns-search"
 )
 
 var app *cli.App
@@ -185,7 +188,7 @@ func init() {
 	}
 
 	doHTTPProbeFlag := cli.BoolFlag{
-		Name:   "http-probe, p",
+		Name:   FlagHTTPProbeSpec,
 		Usage:  "Enables HTTP probe",
 		EnvVar: "DSLIM_HTTP_PROBE",
 	}
@@ -202,6 +205,27 @@ func init() {
 		Value:  "",
 		Usage:  "File with user defined HTTP probes",
 		EnvVar: "DSLIM_HTTP_PROBE_CMD_FILE",
+	}
+
+	doHTTPProbeRetryCountFlag := cli.IntFlag{
+		Name:   FlagHTTPProbeRetryCount,
+		Value:  5,
+		Usage:  "Number of retries for each HTTP probe",
+		EnvVar: "DSLIM_HTTP_PROBE_RETRY_COUNT",
+	}
+
+	doHTTPProbeRetryWaitFlag := cli.IntFlag{
+		Name:   FlagHTTPProbeRetryWait,
+		Value:  8,
+		Usage:  "Number of seconds to wait before retrying HTTP probe (doubles when target is not ready)",
+		EnvVar: "DSLIM_HTTP_PROBE_RETRY_WAIT",
+	}
+
+	doHTTPProbePortsFlag := cli.StringFlag{
+		Name:   FlagHTTPProbePorts,
+		Value:  "",
+		Usage:  "Explicit list of ports to probe (in the order you want them to be probed)",
+		EnvVar: "DSLIM_HTTP_PROBE_PORTS",
 	}
 
 	doShowContainerLogsFlag := cli.BoolFlag{
@@ -378,6 +402,9 @@ func init() {
 				doHTTPProbeFlag,
 				doHTTPProbeCmdFlag,
 				doHTTPProbeCmdFileFlag,
+				doHTTPProbeRetryCountFlag,
+				doHTTPProbeRetryWaitFlag,
+				doHTTPProbePortsFlag,
 				doShowContainerLogsFlag,
 				doShowBuildLogsFlag,
 				cli.BoolFlag{
@@ -446,6 +473,14 @@ func init() {
 					doHTTPProbe = true
 				}
 
+				httpProbeRetryCount := ctx.Int(FlagHTTPProbeRetryCount)
+				httpProbeRetryWait := ctx.Int(FlagHTTPProbeRetryWait)
+				httpProbePorts, err := parseHTTPProbesPorts(ctx.String(FlagHTTPProbePorts))
+				if err != nil {
+					fmt.Printf("[build] invalid HTTP Probe target ports: %v\n", err)
+					return err
+				}
+
 				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
 				doShowBuildLogs := ctx.Bool(FlagShowBuildLogs)
 				doTag := ctx.String("tag")
@@ -504,6 +539,9 @@ func init() {
 					doTag,
 					doHTTPProbe,
 					httpProbeCmds,
+					httpProbeRetryCount,
+					httpProbeRetryWait,
+					httpProbePorts,
 					doRmFileArtifacts,
 					doShowContainerLogs,
 					doShowBuildLogs,
@@ -529,6 +567,9 @@ func init() {
 				doHTTPProbeFlag,
 				doHTTPProbeCmdFlag,
 				doHTTPProbeCmdFileFlag,
+				doHTTPProbeRetryCountFlag,
+				doHTTPProbeRetryWaitFlag,
+				doHTTPProbePortsFlag,
 				doShowContainerLogsFlag,
 				doUseEntrypointFlag,
 				doUseCmdFlag,
@@ -559,6 +600,7 @@ func init() {
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
+
 				doHTTPProbe := ctx.Bool(FlagHTTPProbe)
 
 				httpProbeCmds, err := getHTTPProbes(ctx)
@@ -575,6 +617,14 @@ func init() {
 
 				if len(httpProbeCmds) > 0 {
 					doHTTPProbe = true
+				}
+
+				httpProbeRetryCount := ctx.Int(FlagHTTPProbeRetryCount)
+				httpProbeRetryWait := ctx.Int(FlagHTTPProbeRetryWait)
+				httpProbePorts, err := parseHTTPProbesPorts(ctx.String(FlagHTTPProbePorts))
+				if err != nil {
+					fmt.Printf("[profile] invalid HTTP Probe target ports: %v\n", err)
+					return err
 				}
 
 				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
@@ -630,6 +680,9 @@ func init() {
 					imageRef,
 					doHTTPProbe,
 					httpProbeCmds,
+					httpProbeRetryCount,
+					httpProbeRetryWait,
+					httpProbePorts,
 					doShowContainerLogs,
 					overrides,
 					ctx.StringSlice(FlagLink),

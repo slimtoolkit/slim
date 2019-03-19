@@ -30,6 +30,9 @@ func OnProfile(
 	imageRef string,
 	doHTTPProbe bool,
 	httpProbeCmds []config.HTTPProbeCmd,
+	httpProbeRetryCount int,
+	httpProbeRetryWait int,
+	httpProbePorts []uint16,
 	doShowContainerLogs bool,
 	overrides *config.ContainerOverrides,
 	links []string,
@@ -120,7 +123,9 @@ func OnProfile(
 	}
 
 	if doHTTPProbe {
-		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds, true, "docker-slim[profile]:")
+		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds,
+			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts,
+			true, "docker-slim[profile]:")
 		errutils.FailOn(err)
 		probe.Start()
 		continueAfter.ContinueChan = probe.DoneChan()

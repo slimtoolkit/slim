@@ -26,6 +26,9 @@ type CustomProbe struct {
 	PrintPrefix        string
 	Ports              []string
 	Cmds               []config.HTTPProbeCmd
+	RetryCount         int
+	RetryWait          int
+	TargetPorts        []uint16
 	ContainerInspector *container.Inspector
 	doneChan           chan struct{}
 }
@@ -33,6 +36,9 @@ type CustomProbe struct {
 // NewCustomProbe creates a new custom HTTP probe
 func NewCustomProbe(inspector *container.Inspector,
 	cmds []config.HTTPProbeCmd,
+	retryCount int,
+	retryWait int,
+	targetPorts []uint16,
 	printState bool,
 	printPrefix string) (*CustomProbe, error) {
 	//note: the default probe should already be there if the user asked for it
@@ -41,16 +47,39 @@ func NewCustomProbe(inspector *container.Inspector,
 		PrintState:         printState,
 		PrintPrefix:        printPrefix,
 		Cmds:               cmds,
+		RetryCount:         retryCount,
+		RetryWait:          retryWait,
+		TargetPorts:        targetPorts,
 		ContainerInspector: inspector,
 		doneChan:           make(chan struct{}),
 	}
 
+	availablePorts := map[string]struct{}{}
 	for nsPortKey, nsPortData := range inspector.ContainerInfo.NetworkSettings.Ports {
 		if (nsPortKey == inspector.CmdPort) || (nsPortKey == inspector.EvtPort) {
 			continue
 		}
 
-		probe.Ports = append(probe.Ports, nsPortData[0].HostPort)
+		//probe.Ports = append(probe.Ports, nsPortData[0].HostPort)
+		availablePorts[nsPortData[0].HostPort] = struct{}{}
+	}
+
+	log.Debugf("HTTP probe - available ports => %+v", availablePorts)
+
+	if len(probe.TargetPorts) > 0 {
+		for _, pnum := range probe.TargetPorts {
+			pstr := fmt.Sprintf("%v", pnum)
+			if _, ok := availablePorts[pstr]; ok {
+				probe.Ports = append(probe.Ports, pstr)
+			} else {
+				log.Debugf("HTTP probe - ignoring port => %v", pstr)
+			}
+		}
+		log.Debugf("HTTP probe - filtered ports => %+v", probe.Ports)
+	} else {
+		for k := range availablePorts {
+			probe.Ports = append(probe.Ports, k)
+		}
 	}
 
 	return probe, nil
@@ -77,6 +106,10 @@ func (p *CustomProbe) Start() {
 
 		log.Info("HTTP probe started...")
 
+		var callCount uint64
+		var errCount uint64
+		var okCount uint64
+
 		for _, port := range p.Ports {
 			for _, cmd := range p.Cmds {
 				var protocols []string
@@ -89,7 +122,21 @@ func (p *CustomProbe) Start() {
 				for _, proto := range protocols {
 					addr := fmt.Sprintf("%s://%v:%v%v", proto, p.ContainerInspector.DockerHostIP, port, cmd.Resource)
 
-					for i := 0; i < probeRetryCount; i++ {
+					maxRetryCount := probeRetryCount
+					if p.RetryCount > 0 {
+						maxRetryCount = p.RetryCount
+					}
+
+					notReadyErrorWait := time.Duration(16)
+					webErrorWait := time.Duration(8)
+					otherErrorWait := time.Duration(4)
+					if p.RetryWait > 0 {
+						webErrorWait = time.Duration(p.RetryWait)
+						notReadyErrorWait = time.Duration(p.RetryWait * 2)
+						otherErrorWait = time.Duration(p.RetryWait / 2)
+					}
+
+					for i := 0; i < maxRetryCount; i++ {
 						req, err := http.NewRequest(cmd.Method, addr, nil)
 						for _, hline := range cmd.Headers {
 							hparts := strings.SplitN(hline, ":", 2)
@@ -108,6 +155,7 @@ func (p *CustomProbe) Start() {
 						}
 
 						res, err := httpClient.Do(req)
+						callCount++
 
 						if res != nil {
 							if res.Body != nil {
@@ -137,20 +185,23 @@ func (p *CustomProbe) Start() {
 						}
 
 						if err == nil {
+							okCount++
 							break
 						} else {
+							errCount++
+
 							if urlErr, ok := err.(*url.Error); ok {
 								if urlErr.Err == io.EOF {
 									log.Debugf("HTTP probe - target not ready yet (retry again later)...")
-									time.Sleep(12 * time.Second)
+									time.Sleep(notReadyErrorWait * time.Second)
 								} else {
 									log.Debugf("HTTP probe - web error... retry again later...")
-									time.Sleep(8 * time.Second)
+									time.Sleep(webErrorWait * time.Second)
 
 								}
 							} else {
 								log.Debugf("HTTP probe - other error... retry again later...")
-								time.Sleep(3 * time.Second)
+								time.Sleep(otherErrorWait * time.Second)
 							}
 						}
 
@@ -162,7 +213,18 @@ func (p *CustomProbe) Start() {
 		log.Info("HTTP probe done.")
 
 		if p.PrintState {
-			fmt.Printf("%s state=http.probe.done\n", p.PrintPrefix)
+			fmt.Printf("%s info=http.probe.summary total=%v failures=%v successful=%v\n",
+				p.PrintPrefix, callCount, errCount, okCount)
+
+			warning := ""
+			switch {
+			case callCount == 0:
+				warning = "warning=no.calls"
+			case okCount == 0:
+				warning = "warning=no.successful.calls"
+			}
+
+			fmt.Printf("%s state=http.probe.done %s\n", p.PrintPrefix, warning)
 		}
 
 		close(p.doneChan)

@@ -311,3 +311,23 @@ func isPortNum(value int) bool {
 
 	return false
 }
+
+func parseHTTPProbesPorts(portList string) ([]uint16, error) {
+	var ports []uint16
+
+	if portList == "" {
+		return ports, nil
+	}
+
+	parts := strings.Split(portList, ",")
+	for _, part := range parts {
+		port, err := strconv.ParseUint(part, 10, 16)
+		if err != nil {
+			return nil, err
+		}
+
+		ports = append(ports, uint16(port))
+	}
+
+	return ports, nil
+}

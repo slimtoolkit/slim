@@ -33,6 +33,9 @@ func OnBuild(
 	customImageTag string,
 	doHTTPProbe bool,
 	httpProbeCmds []config.HTTPProbeCmd,
+	httpProbeRetryCount int,
+	httpProbeRetryWait int,
+	httpProbePorts []uint16,
 	doRmFileArtifacts bool,
 	doShowContainerLogs bool,
 	doShowBuildLogs bool,
@@ -152,7 +155,9 @@ func OnBuild(
 	}
 
 	if doHTTPProbe {
-		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds, true, "docker-slim[build]:")
+		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds,
+			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts,
+			true, "docker-slim[build]:")
 		errutils.FailOn(err)
 		probe.Start()
 		continueAfter.ContinueChan = probe.DoneChan()
