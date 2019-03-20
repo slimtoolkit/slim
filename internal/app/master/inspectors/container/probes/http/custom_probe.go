@@ -77,6 +77,19 @@ func NewCustomProbe(inspector *container.Inspector,
 		}
 		log.Debugf("HTTP probe - filtered ports => %+v", probe.Ports)
 	} else {
+		//order the port list based on the order of the 'EXPOSE' instructions
+		if len(inspector.ImageInspector.DockerfileInfo.ExposedPorts) > 0 {
+			for epi := len(inspector.ImageInspector.DockerfileInfo.ExposedPorts) - 1; epi >= 0; epi-- {
+				portInfo := inspector.ImageInspector.DockerfileInfo.ExposedPorts[epi]
+				probe.Ports = append(probe.Ports, portInfo)
+
+				if _, ok := availablePorts[portInfo]; ok {
+					log.Debugf("HTTP probe - delete exposed port from the available ports => %v", portInfo)
+					delete(availablePorts, portInfo)
+				}
+			}
+		}
+
 		for k := range availablePorts {
 			probe.Ports = append(probe.Ports, k)
 		}

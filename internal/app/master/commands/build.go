@@ -116,6 +116,11 @@ func OnBuild(
 					idx, layerInfo.Name, strings.Join(layerInfo.Tags, ","))
 			}
 		}
+
+		if len(imageInspector.DockerfileInfo.ExposedPorts) > 0 {
+			fmt.Printf("docker-slim[build]: info=image.exposed_ports list='%v'\n",
+				strings.Join(imageInspector.DockerfileInfo.ExposedPorts, ","))
+		}
 	}
 
 	fmt.Println("docker-slim[build]: state=inspecting.container")
@@ -155,6 +160,9 @@ func OnBuild(
 	}
 
 	if doHTTPProbe {
+		//imageInspector.ImageInfo.Config.ExposedPorts
+		//overrides
+
 		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds,
 			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts,
 			true, "docker-slim[build]:")

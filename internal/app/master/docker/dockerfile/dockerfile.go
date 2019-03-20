@@ -19,10 +19,11 @@ type Layer struct {
 
 // Info represents the reverse engineered Dockerfile info
 type Info struct {
-	Lines    []string
-	AllUsers []string
-	ExeUser  string
-	Layers   []Layer
+	Lines        []string
+	AllUsers     []string
+	ExeUser      string
+	ExposedPorts []string
+	Layers       []Layer
 }
 
 type imageInst struct {
@@ -83,7 +84,7 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 			default:
 				inst = rawLine
 			}
-			//NOTE: Dockerfile instructions be any case, but the instructions from history are always uppercase
+			//NOTE: Dockerfile instructions can be any case, but the instructions from history are always uppercase
 			cleanInst := strings.TrimSpace(inst)
 
 			if strings.HasPrefix(cleanInst, "ENTRYPOINT ") {
@@ -101,6 +102,17 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 					out.ExeUser = userName
 				} else {
 					log.Infof("ReverseDockerfileFromHistory - unexpected number of user parts - %v", len(parts))
+				}
+			}
+
+			if strings.HasPrefix(cleanInst, "EXPOSE ") {
+				parts := strings.SplitN(cleanInst, " ", 2)
+				if len(parts) == 2 {
+					portInfo := strings.TrimSpace(parts[1])
+
+					out.ExposedPorts = append(out.ExposedPorts, portInfo)
+				} else {
+					log.Infof("ReverseDockerfileFromHistory - unexpected number of expose parts - %v", len(parts))
 				}
 			}
 
@@ -275,3 +287,7 @@ func GenerateFromInfo(location string,
 
 	return ioutil.WriteFile(dockerfileLocation, dfData.Bytes(), 0644)
 }
+
+//
+// https://docs.docker.com/engine/reference/builder/
+//
