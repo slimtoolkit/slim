@@ -14,6 +14,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container"
 
 	log "github.com/Sirupsen/logrus"
+	dockerapi "github.com/cloudimmunity/go-dockerclientx"
 )
 
 const (
@@ -60,7 +61,6 @@ func NewCustomProbe(inspector *container.Inspector,
 			continue
 		}
 
-		//probe.Ports = append(probe.Ports, nsPortData[0].HostPort)
 		availablePorts[nsPortData[0].HostPort] = struct{}{}
 	}
 
@@ -68,11 +68,11 @@ func NewCustomProbe(inspector *container.Inspector,
 
 	if len(probe.TargetPorts) > 0 {
 		for _, pnum := range probe.TargetPorts {
-			pstr := fmt.Sprintf("%v", pnum)
-			if _, ok := availablePorts[pstr]; ok {
-				probe.Ports = append(probe.Ports, pstr)
+			pspec := dockerapi.Port(fmt.Sprintf("%v/tcp", pnum))
+			if _, ok := inspector.ContainerInfo.NetworkSettings.Ports[pspec]; ok {
+				probe.Ports = append(probe.Ports, inspector.ContainerInfo.NetworkSettings.Ports[pspec][0].HostPort)
 			} else {
-				log.Debugf("HTTP probe - ignoring port => %v", pstr)
+				log.Debugf("HTTP probe - ignoring port => %v", pspec)
 			}
 		}
 		log.Debugf("HTTP probe - filtered ports => %+v", probe.Ports)
@@ -81,11 +81,22 @@ func NewCustomProbe(inspector *container.Inspector,
 		if len(inspector.ImageInspector.DockerfileInfo.ExposedPorts) > 0 {
 			for epi := len(inspector.ImageInspector.DockerfileInfo.ExposedPorts) - 1; epi >= 0; epi-- {
 				portInfo := inspector.ImageInspector.DockerfileInfo.ExposedPorts[epi]
-				probe.Ports = append(probe.Ports, portInfo)
+				if strings.Index(portInfo, "/") == -1 {
+					portInfo = fmt.Sprintf("%v/tcp", portInfo)
+				}
 
-				if _, ok := availablePorts[portInfo]; ok {
-					log.Debugf("HTTP probe - delete exposed port from the available ports => %v", portInfo)
-					delete(availablePorts, portInfo)
+				pspec := dockerapi.Port(portInfo)
+
+				if _, ok := inspector.ContainerInfo.NetworkSettings.Ports[pspec]; ok {
+					hostPort := inspector.ContainerInfo.NetworkSettings.Ports[pspec][0].HostPort
+					probe.Ports = append(probe.Ports, hostPort)
+
+					if _, ok := availablePorts[hostPort]; ok {
+						log.Debugf("HTTP probe - delete exposed port from the available ports => %v (%v)", hostPort, portInfo)
+						delete(availablePorts, hostPort)
+					}
+				} else {
+					log.Debugf("HTTP probe - Unknown exposed port - %v", portInfo)
 				}
 			}
 		}
@@ -93,6 +104,8 @@ func NewCustomProbe(inspector *container.Inspector,
 		for k := range availablePorts {
 			probe.Ports = append(probe.Ports, k)
 		}
+
+		log.Debugf("HTTP probe - probe.Ports => %+v", probe.Ports)
 	}
 
 	return probe, nil
@@ -124,6 +137,13 @@ func (p *CustomProbe) Start() {
 		var okCount uint64
 
 		for _, port := range p.Ports {
+			//todo:
+			//use a flag to decide if all ports need to be probed
+			//or it's ok to stop after the first success
+			if okCount > 0 {
+				break
+			}
+
 			for _, cmd := range p.Cmds {
 				var protocols []string
 				if cmd.Protocol == "" {
