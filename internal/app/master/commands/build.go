@@ -160,9 +160,6 @@ func OnBuild(
 	}
 
 	if doHTTPProbe {
-		//imageInspector.ImageInfo.Config.ExposedPorts
-		//overrides
-
 		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds,
 			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts,
 			true, "docker-slim[build]:")

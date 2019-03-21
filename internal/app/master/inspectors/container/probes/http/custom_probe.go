@@ -187,7 +187,7 @@ func (p *CustomProbe) Start() {
 						}
 
 						if p.PrintState {
-							fmt.Printf("%s info=http.probe.call status=%v method=%v target=%v attempt=%v error=%v time=%v\n",
+							fmt.Printf("%s info=http.probe.call status=%v method=%v target=%v attempt=%v error='%v' time=%v\n",
 								p.PrintPrefix,
 								statusCode,
 								cmd.Method,
