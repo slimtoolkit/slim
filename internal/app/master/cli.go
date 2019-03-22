@@ -49,6 +49,7 @@ const (
 	FlagHTTPProbeRetryCount = "http-probe-retry-count"
 	FlagHTTPProbeRetryWait  = "http-probe-retry-wait"
 	FlagHTTPProbePorts      = "http-probe-ports"
+	FlagHTTPProbeFull       = "http-probe-full"
 	FlagShowContainerLogs   = "show-clogs"
 	FlagShowBuildLogs       = "show-blogs"
 	FlagEntrypoint          = "entrypoint"
@@ -228,6 +229,12 @@ func init() {
 		EnvVar: "DSLIM_HTTP_PROBE_PORTS",
 	}
 
+	doHTTPProbeFullFlag := cli.BoolFlag{
+		Name:   FlagHTTPProbeFull,
+		Usage:  "Do full HTTP probe for all selected ports (if false, finish after first successful scan)",
+		EnvVar: "DSLIM_HTTP_PROBE_FULL",
+	}
+
 	doShowContainerLogsFlag := cli.BoolFlag{
 		Name:   FlagShowContainerLogs,
 		Usage:  "Show container logs",
@@ -405,6 +412,7 @@ func init() {
 				doHTTPProbeRetryCountFlag,
 				doHTTPProbeRetryWaitFlag,
 				doHTTPProbePortsFlag,
+				doHTTPProbeFullFlag,
 				doShowContainerLogsFlag,
 				doShowBuildLogsFlag,
 				cli.BoolFlag{
@@ -481,6 +489,8 @@ func init() {
 					return err
 				}
 
+				doHTTPProbeFull := ctx.Bool(FlagHTTPProbeFull)
+
 				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
 				doShowBuildLogs := ctx.Bool(FlagShowBuildLogs)
 				doTag := ctx.String("tag")
@@ -542,6 +552,7 @@ func init() {
 					httpProbeRetryCount,
 					httpProbeRetryWait,
 					httpProbePorts,
+					doHTTPProbeFull,
 					doRmFileArtifacts,
 					doShowContainerLogs,
 					doShowBuildLogs,
@@ -570,6 +581,7 @@ func init() {
 				doHTTPProbeRetryCountFlag,
 				doHTTPProbeRetryWaitFlag,
 				doHTTPProbePortsFlag,
+				doHTTPProbeFullFlag,
 				doShowContainerLogsFlag,
 				doUseEntrypointFlag,
 				doUseCmdFlag,
@@ -627,6 +639,8 @@ func init() {
 					return err
 				}
 
+				doHTTPProbeFull := ctx.Bool(FlagHTTPProbeFull)
+
 				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
 				overrides, err := getContainerOverrides(ctx)
 				if err != nil {
@@ -683,6 +697,7 @@ func init() {
 					httpProbeRetryCount,
 					httpProbeRetryWait,
 					httpProbePorts,
+					doHTTPProbeFull,
 					doShowContainerLogs,
 					overrides,
 					ctx.StringSlice(FlagLink),

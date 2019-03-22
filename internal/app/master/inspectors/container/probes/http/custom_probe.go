@@ -30,6 +30,7 @@ type CustomProbe struct {
 	RetryCount         int
 	RetryWait          int
 	TargetPorts        []uint16
+	ProbeFull          bool
 	ContainerInspector *container.Inspector
 	doneChan           chan struct{}
 }
@@ -40,6 +41,7 @@ func NewCustomProbe(inspector *container.Inspector,
 	retryCount int,
 	retryWait int,
 	targetPorts []uint16,
+	probeFull bool,
 	printState bool,
 	printPrefix string) (*CustomProbe, error) {
 	//note: the default probe should already be there if the user asked for it
@@ -51,6 +53,7 @@ func NewCustomProbe(inspector *container.Inspector,
 		RetryCount:         retryCount,
 		RetryWait:          retryWait,
 		TargetPorts:        targetPorts,
+		ProbeFull:          probeFull,
 		ContainerInspector: inspector,
 		doneChan:           make(chan struct{}),
 	}
@@ -137,10 +140,8 @@ func (p *CustomProbe) Start() {
 		var okCount uint64
 
 		for _, port := range p.Ports {
-			//todo:
-			//use a flag to decide if all ports need to be probed
-			//or it's ok to stop after the first success
-			if okCount > 0 {
+			//If it's ok stop after the first successful probe pass
+			if okCount > 0 && !p.ProbeFull {
 				break
 			}
 

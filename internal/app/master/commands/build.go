@@ -36,6 +36,7 @@ func OnBuild(
 	httpProbeRetryCount int,
 	httpProbeRetryWait int,
 	httpProbePorts []uint16,
+	doHTTPProbeFull bool,
 	doRmFileArtifacts bool,
 	doShowContainerLogs bool,
 	doShowBuildLogs bool,
@@ -161,7 +162,7 @@ func OnBuild(
 
 	if doHTTPProbe {
 		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds,
-			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts,
+			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts, doHTTPProbeFull,
 			true, "docker-slim[build]:")
 		errutils.FailOn(err)
 		probe.Start()
