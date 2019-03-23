@@ -88,7 +88,9 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
     - [How can I contribute if I don't know Go?](#how-can-i-contribute-if-i-dont-know-go)
     - [What's the best application for DockerSlim?](#whats-the-best-application-for-dockerslim)
     - [Can I use DockerSlim with dockerized command line tools?](#can-i-use-dockerslim-with-dockerized-command-line-tools)
-    - [How can I get around the current USER command limitation?](#how-can-i-get-around-the-current-user-command-limitation)
+    - [What if my Docker images use the USER command?](#what-if-my-docker-images-use-the-user-command)
+    - [Nginx fails in my minified image](#nginx-fails-in-my-minified-image)
+    - [DockerSlim fails with a 'no permission to read from' error](#dockerslim-fails-with-a-no-permission-to-read-from-error)
   - [BUILD PROCESS](#build-process)
       - [Local Build Steps](#local-build-steps)
       - [Traditional Go Way to Build](#traditional-go-way-to-build)
@@ -473,6 +475,16 @@ Example: docker run -d -u "your-user-name" -p 8000:8000 your-minified-docker-ima
 
 Note that you should be able to avoid including /etc/passwd if you are ok with using UIDs instead of text user name in the -u parameter to docker run.
 
+### Nginx fails in my minified image
+
+If you see `nginx: [emerg] mkdir() "/var/lib/nginx/body" failed` it means your nginx setup uses a non-standard temporary directory. Nginx will fail if the base directory for its temporary folders doesn't exist (they won't create the missing intermediate directories). Normally it's `/var/lib/nginx`, but if you have a custom config that points to something else you'll need to add an `--include-path` flag as an extra flag when you run `docker-slim`.
+
+### DockerSlim fails with a 'no permission to read from' error
+
+You can get around this problem by running DockerSlim from a root shell. That way it will have access to all exported files.
+
+DockerSlim copies the relevant image artifacts trying to preserve their permissions. If the permissions are too restrictive the master app might not have sufficient priviledge to access these files when it's building the new minified image.
+
 ## BUILD PROCESS
 
 Go 1.8 or higher is recommended. You can use earlier version of Go, but it can't be lower than Go 1.5.1. Versions prior to 1.5.1 have a Docker/ptrace related bug (Go kills processes if your app is PID 1). When the 'monitor' is separate from the 'launcher' process it will be possible to user older Go versions again.
@@ -574,7 +586,7 @@ Some of the advanced analysis options require a number of Linux kernel features 
 
 ## ORIGINS
 
-DockerSlim was a [Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project. It barely worked at the time :-)
+DockerSlim was a [Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project. It barely worked at the time, but it did get a win in Seattle and it took the second place in the `Plumbing` category overall :-)
 
 ![DHD3](assets/images/dhd/docker_global_hackday3_red.jpeg)
 
