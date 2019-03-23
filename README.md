@@ -61,6 +61,7 @@ Elixir application images:
 
 * (Phoenix service) from elixir:1.6 - 1.1 GB => 37 MB (minified by **29.25X**)
 
+Note: The examples are in a separate repository: [https://github.com/docker-slim/examples](https://github.com/docker-slim/examples)
 
 ---
 
