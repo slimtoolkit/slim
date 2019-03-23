@@ -110,14 +110,16 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 
 ## RECENT UPDATES
 
-Latest version: 1.24 (3/10/2019)
+Latest version: 1.24.2 (3/23/2019)
 
+* Better Mac OS X support - when you install docker-slim to /usr/local/bin or other special/non-shared directories docker-slim will detect it and use the /temp directory to save its artifacts and to mount its sensor (NEW)
+* HTTP Probing enhancements and new flags to control the probing process (NEW)
+* Better Nginx support (NEW)
 * Support for non-default users (NEW)
 * Improved symlink handling (NEW)
 * Better failure monitoring and reporting (NEW)
 * The `--include-path-file` option to make it easier to load extra files you want to keep in your image (NEW)
 * CentOS support (NEW)
-* HTTP Probing enhancements and fixes
 * Enhancements for ruby applications with extensions
 * Save the docker-slim command results in a JSON file using the `--report` flag
 * Better support for applications with dynamic libraries (e.g., python compiled with `--enable-shared`)
@@ -136,8 +138,8 @@ Latest version: 1.24 (3/10/2019)
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.24/dist_mac.zip)
-   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.24/dist_linux.tar.gz)
+   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.24.2/dist_mac.zip)
+   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.24.2/dist_linux.tar.gz)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -185,7 +187,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://github.com/docker-slim/docker-slim/releases/download/1.24/dist_mac.zip) or [Linux](https://github.com/docker-slim/docker-slim/releases/download/1.24/dist_linux.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://github.com/docker-slim/docker-slim/releases/download/1.24.2/dist_mac.zip) or [Linux](https://github.com/docker-slim/docker-slim/releases/download/1.24.2/dist_linux.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
   The extracted directory contains two binaries:
 
