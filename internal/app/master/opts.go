@@ -13,6 +13,7 @@ import (
 
 	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/docker/go-connections/nat"
+	"github.com/google/shlex"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 )
@@ -87,7 +88,7 @@ func parseExec(value string) ([]string, error) {
 	}
 
 	if value[0] != '[' {
-		return strings.Fields(value), nil
+		return shlex.Split(value)
 	}
 
 	var parts []string

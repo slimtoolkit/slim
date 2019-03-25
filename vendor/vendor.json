@@ -235,7 +235,13 @@
 			"path": "github.com/gogo/protobuf/proto",
 			"revision": "1c2b16bc280d6635de6c52fc1471ab962dc36ec9",
 			"revisionTime": "2017-08-08T05:47:17Z"
+		},
+		{
+			"checksumSHA1": "c0Z2sKLKi+IKRVzq0IzNvqvfCrQ=",
+			"path": "github.com/google/shlex",
+			"revision": "c34317bd91bf98fab745d77b03933cf8769299fe",
+			"revisionTime": "2018-11-06T13:46:48Z"
 		}
 	],
-	"rootPath": "github.com/docker-slim"
+	"rootPath": "github.com/docker-slim/docker-slim"
 }
