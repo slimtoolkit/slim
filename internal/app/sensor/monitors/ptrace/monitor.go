@@ -116,7 +116,7 @@ func Run(
 						log.Fatalf("ptmon: collector - PtraceGetRegs(call): %v", err)
 					}
 
-					callNum = regs.Orig_rax
+					callNum = uint64(regs.Uregs[7])
 					syscallReturn = true
 					gotCallNum = true
 				case true:
@@ -124,7 +124,7 @@ func Run(
 						log.Fatalf("ptmon: collector - PtraceGetRegs(return): %v", err)
 					}
 
-					retVal = regs.Rax
+					retVal = uint64(regs.Uregs[0])
 					syscallReturn = false
 					gotRetVal = true
 				}
@@ -178,6 +178,7 @@ func Run(
 				break done
 			case e := <-eventChan:
 				ptReport.SyscallCount++
+				log.Debugf("ptmon: syscall ==> %d", e.callNum)
 
 				if _, ok := syscallStats[e.callNum]; ok {
 					syscallStats[e.callNum]++
@@ -190,6 +191,7 @@ func Run(
 		log.Debugf("ptmon: processor - executed syscall count = %d", ptReport.SyscallCount)
 		log.Debugf("ptmon: processor - number of syscalls: %v", len(syscallStats))
 		for scNum, scCount := range syscallStats {
+			log.Debugf("%v", syscallResolver(scNum))
 			log.Debugf("[%v] %v = %v", scNum, syscallResolver(scNum), scCount)
 			ptReport.SyscallStats[strconv.FormatInt(int64(scNum), 10)] = report.SyscallStatInfo{
 				Number: scNum,

@@ -7,6 +7,7 @@ const (
 	ArchNameUnsupported ArchName = "unsupported"
 	ArchName386         ArchName = "386"
 	ArchNameAmd64       ArchName = "amd64"
+	ArchNameArm32       ArchName = "armhf"
 )
 
 type MachineName string
@@ -16,7 +17,7 @@ const (
 	MachineNameNamei586   MachineName = "i586"
 	MachineNameNamei686   MachineName = "i686"
 	MachineNameNamex86_64 MachineName = "x86_64"
-	MachineNameNameArm    MachineName = "arm"
+	MachineNameNameArm    MachineName = "armv7l"
 	MachineNameNameArm64  MachineName = "arm64"
 )
 
@@ -52,6 +53,12 @@ var x86Family32Arch = ArchInfo{
 	Bits:   ArchBits32,
 }
 
+var ArmFamily32Arch = ArchInfo{
+	Name:   ArchNameArm32,
+	Family: ArchFamilyArm,
+	Bits:   ArchBits32,
+}
+
 var unsupportedArch = ArchInfo{
 	Name: ArchNameUnsupported,
 }
@@ -65,7 +72,7 @@ var archMap = map[MachineName]*ArchInfo{
 	MachineNameNamei586:   &x86Family32Arch,
 	MachineNameNamei686:   &x86Family32Arch,
 	MachineNameNamex86_64: &x86Family64Arch,
-	MachineNameNameArm:    &unsupportedArch,
+	MachineNameNameArm:    &ArmFamily32Arch,
 	MachineNameNameArm64:  &unsupportedArch,
 }
 
