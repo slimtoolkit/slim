@@ -16,6 +16,7 @@ import (
 	"strings"
 	"syscall"
 
+	//"github.com/docker-slim/docker-slim/internal/app/sensor/inspectors/sodeps"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
@@ -331,6 +332,8 @@ func (p *artifactStore) saveArtifacts() {
 			}
 		}
 	}
+
+	//TODO: add includeShell and includeBin code
 }
 
 func (p *artifactStore) saveReport() {
