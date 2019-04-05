@@ -16,7 +16,7 @@ import (
 	"strings"
 	"syscall"
 
-	//"github.com/docker-slim/docker-slim/internal/app/sensor/inspectors/sodeps"
+	"github.com/docker-slim/docker-slim/internal/app/sensor/inspectors/sodeps"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
@@ -241,10 +241,11 @@ func (p *artifactStore) saveArtifacts() {
 		return paths
 	}
 
-	includePaths = preparePaths(p.cmd.Includes)
 	excludePaths = preparePaths(p.cmd.Excludes)
-	log.Debugf("saveArtifacts - includePaths: %+v", includePaths)
 	log.Debugf("saveArtifacts - excludePaths: %+v", excludePaths)
+
+	includePaths = preparePaths(p.cmd.Includes)
+	log.Debugf("saveArtifacts - includePaths: %+v", includePaths)
 
 	//TODO: use exludePaths to filter discovered files
 	log.Debugf("saveArtifacts - copy files (%v)", len(p.fileMap))
@@ -333,7 +334,59 @@ func (p *artifactStore) saveArtifacts() {
 		}
 	}
 
-	//TODO: add includeShell and includeBin code
+	for _, exePath := range p.cmd.IncludeExes {
+		exeArtifacts, err := sodeps.AllExeDependencies(exePath, true)
+		if err != nil {
+			log.Warnf("saveArtifacts - %v - error getting exe artifacts => %v\n", exePath, err)
+			continue
+		}
+
+		log.Debugf("saveArtifacts - include exe [%s]: artifacts (%d):\n%v\n",
+			exePath, len(exeArtifacts), strings.Join(exeArtifacts, "\n"))
+
+		for _, apath := range exeArtifacts {
+			dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, apath)
+			if err := fsutils.CopyFile(apath, dstPath, true); err != nil {
+				log.Warnf("CopyFile(%v,%v) error: %v", apath, dstPath, err)
+			}
+		}
+	}
+
+	for _, binPath := range p.cmd.IncludeBins {
+		binArtifacts, err := sodeps.AllDependencies(binPath)
+		if err != nil {
+			log.Warnf("saveArtifacts - %v - error getting bin artifacts => %v\n", binPath, err)
+			continue
+		}
+
+		log.Debugf("saveArtifacts - include bin [%s]: artifacts (%d):\n%v\n",
+			binPath, len(binArtifacts), strings.Join(binArtifacts, "\n"))
+
+		for _, bpath := range binArtifacts {
+			dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, bpath)
+			if err := fsutils.CopyFile(bpath, dstPath, true); err != nil {
+				log.Warnf("CopyFile(%v,%v) error: %v", bpath, dstPath, err)
+			}
+		}
+	}
+
+	if p.cmd.IncludeShell {
+		shellArtifacts, err := shellDependencies()
+		if err == nil {
+			log.Debugf("saveArtifacts - include shell: artifacts (%d):\n%v\n",
+				len(shellArtifacts), strings.Join(shellArtifacts, "\n"))
+
+			for _, spath := range shellArtifacts {
+				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, spath)
+				if err := fsutils.CopyFile(spath, dstPath, true); err != nil {
+					log.Warnf("CopyFile(%v,%v) error: %v", spath, dstPath, err)
+				}
+			}
+		} else {
+			log.Warnf("saveArtifacts - error getting shell artifacts => %v", err)
+		}
+
+	}
 }
 
 func (p *artifactStore) saveReport() {
@@ -657,4 +710,67 @@ func ngxEnsure(prefix string) {
 
 		log.Debugf("ngxEnsure - error checking %v => %v", ngxCommonTemp, err)
 	}
+}
+
+var shellNames = []string{
+	"bash",
+	"sh",
+}
+
+var shellCommands = []string{
+	"ls",
+	"pwd",
+	"cd",
+	"ps",
+	"head",
+	"tail",
+	"cat",
+	"more",
+	"find",
+	"grep",
+	"awk",
+	"env",
+}
+
+func shellDependencies() ([]string, error) {
+	var allDeps []string
+	for _, name := range shellNames {
+		shellPath, err := exec.LookPath(name)
+		if err != nil {
+			log.Debugf("shellDependencies - checking '%s' shell (not found: %s)", name, err)
+			continue
+		}
+
+		exeArtifacts, err := sodeps.AllExeDependencies(shellPath, true)
+		if err != nil {
+			log.Warnf("shellDependencies - %v - error getting shell artifacts => %v", shellPath, err)
+			return nil, err
+		}
+
+		allDeps = append(allDeps, exeArtifacts...)
+		break
+	}
+
+	if len(allDeps) == 0 {
+		log.Warnf("shellDependencies - no shell found")
+		return nil, nil
+	}
+
+	for _, name := range shellCommands {
+		cmdPath, err := exec.LookPath(name)
+		if err != nil {
+			log.Debugf("shellDependencies - checking '%s' cmd (not found: %s)", name, err)
+			continue
+		}
+
+		cmdArtifacts, err := sodeps.AllExeDependencies(cmdPath, true)
+		if err != nil {
+			log.Warnf("shellDependencies - %v - error getting cmd artifacts => %v", cmdPath, err)
+			return nil, err
+		}
+
+		allDeps = append(allDeps, cmdArtifacts...)
+	}
+
+	return allDeps, nil
 }

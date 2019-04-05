@@ -61,6 +61,9 @@ const (
 	FlagExcludePath         = "exclude-path"
 	FlagIncludePath         = "include-path"
 	FlagIncludePathFile     = "include-path-file"
+	FlagIncludeBin          = "include-bin"
+	FlagIncludeExe          = "include-exe"
+	FlagIncludeShell        = "include-shell"
 	FlagMount               = "mount"
 	FlagContinueAfter       = "continue-after"
 	FlagNetwork             = "network"
@@ -324,6 +327,7 @@ func init() {
 		EnvVar: "DSLIM_TARGET_EXPOSE",
 	}
 
+	//true by default
 	doExcludeMountsFlag := cli.BoolTFlag{
 		Name:   FlagExludeMounts,
 		Usage:  "Exclude mounted volumes from image",
@@ -349,6 +353,26 @@ func init() {
 		Value:  "",
 		Usage:  "File with paths to include from image",
 		EnvVar: "DSLIM_INCLUDE_PATH_FILE",
+	}
+
+	doIncludeBinFlag := cli.StringSliceFlag{
+		Name:   FlagIncludeBin,
+		Value:  &cli.StringSlice{},
+		Usage:  "Include binary from image (executable or shared object using its absolute path)",
+		EnvVar: "DSLIM_INCLUDE_BIN",
+	}
+
+	doIncludeExeFlag := cli.StringSliceFlag{
+		Name:   FlagIncludeExe,
+		Value:  &cli.StringSlice{},
+		Usage:  "Include executable from image (by executable name)",
+		EnvVar: "DSLIM_INCLUDE_EXE",
+	}
+
+	doIncludeShellFlag := cli.BoolFlag{
+		Name:   FlagIncludeShell,
+		Usage:  "Include basic shell functionality",
+		EnvVar: "DSLIM_INCLUDE_SHELL",
 	}
 
 	doUseMountFlag := cli.StringSliceFlag{
@@ -447,6 +471,9 @@ func init() {
 				doExcludePathFlag,
 				doIncludePathFlag,
 				doIncludePathFileFlag,
+				doIncludeBinFlag,
+				doIncludeExeFlag,
+				doIncludeShellFlag,
 				doUseMountFlag,
 				doConfinueAfterFlag,
 			},
@@ -520,6 +547,10 @@ func init() {
 					}
 				}
 
+				includeBins := parsePaths(ctx.StringSlice(FlagIncludeBin))
+				includeExes := parsePaths(ctx.StringSlice(FlagIncludeExe))
+				doIncludeShell := ctx.Bool(FlagIncludeShell)
+
 				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
@@ -565,6 +596,9 @@ func init() {
 					volumeMounts,
 					excludePaths,
 					includePaths,
+					includeBins,
+					includeExes,
+					doIncludeShell,
 					confinueAfter)
 
 				return nil
@@ -598,6 +632,9 @@ func init() {
 				doExcludePathFlag,
 				doIncludePathFlag,
 				doIncludePathFileFlag,
+				doIncludeBinFlag,
+				doIncludeExeFlag,
+				doIncludeShellFlag,
 				doUseMountFlag,
 				doConfinueAfterFlag,
 			},
@@ -666,6 +703,10 @@ func init() {
 					}
 				}
 
+				includeBins := parsePaths(ctx.StringSlice(FlagIncludeBin))
+				includeExes := parsePaths(ctx.StringSlice(FlagIncludeExe))
+				doIncludeShell := ctx.Bool(FlagIncludeShell)
+
 				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
@@ -707,6 +748,9 @@ func init() {
 					volumeMounts,
 					excludePaths,
 					includePaths,
+					includeBins,
+					includeExes,
+					doIncludeShell,
 					confinueAfter)
 
 				return nil

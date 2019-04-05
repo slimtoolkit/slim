@@ -49,6 +49,9 @@ func OnBuild(
 	volumeMounts map[string]config.VolumeMount,
 	excludePaths map[string]bool,
 	includePaths map[string]bool,
+	includeBins map[string]bool,
+	includeExes map[string]bool,
+	doIncludeShell bool,
 	continueAfter *config.ContinueAfter) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "build"})
 
@@ -139,6 +142,9 @@ func OnBuild(
 		volumeMounts,
 		excludePaths,
 		includePaths,
+		includeBins,
+		includeExes,
+		doIncludeShell,
 		doDebug,
 		true,
 		"docker-slim[build]:")

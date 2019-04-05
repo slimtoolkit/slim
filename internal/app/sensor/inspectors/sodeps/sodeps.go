@@ -87,6 +87,7 @@ func AllDependencies(binFilePath string) ([]string, error) {
 	}
 
 	var deps []string
+	deps = append(deps, binFilePath)
 
 	lines := strings.Split(cout.String(), "\n")
 	for _, line := range lines {
@@ -131,7 +132,7 @@ func AllDependencies(binFilePath string) ([]string, error) {
 	var allDeps []string
 	for depth := 0; len(deps) > 0; depth++ {
 		var fileDeps []string
-		fileDeps, deps = findDepArtifacts(deps)
+		fileDeps, deps = resolveDepArtifacts(deps)
 		allDeps = append(allDeps, fileDeps...)
 
 		if depth > 5 {
@@ -143,14 +144,14 @@ func AllDependencies(binFilePath string) ([]string, error) {
 	return allDeps, nil
 }
 
-func findDepArtifacts(names []string) (files, links []string) {
+func resolveDepArtifacts(names []string) (files, links []string) {
 	for _, name := range names {
 		if info, err := os.Lstat(name); err == nil {
 			files = append(files, name)
 			if info.Mode()&os.ModeSymlink != 0 {
 				linkRef, err := os.Readlink(name)
 				if err != nil {
-					log.Debugf("sodeps.findDepArtifacts: %v - error reading link (%v)\n", name, err)
+					log.Debugf("sodeps.resolveDepArtifacts: %v - error reading link (%v)\n", name, err)
 					continue
 				}
 
@@ -161,14 +162,14 @@ func findDepArtifacts(names []string) (files, links []string) {
 					var err error
 					absLinkRef, err = filepath.Abs(fullLinkRef)
 					if err != nil {
-						log.Debugf("sodeps.findDepArtifacts: %v - error getting absolute path for symlink ref (1) %v - (%v)\n", name, fullLinkRef, err)
+						log.Debugf("sodeps.resolveDepArtifacts: %v - error getting absolute path for symlink ref (1) %v - (%v)\n", name, fullLinkRef, err)
 						continue
 					}
 				} else {
 					var err error
 					absLinkRef, err = filepath.Abs(linkRef)
 					if err != nil {
-						log.Debugf("sodeps.findDepArtifacts: %v - error getting absolute path for symlink ref (2) %v - (%v)\n", name, linkRef, err)
+						log.Debugf("sodeps.resolveDepArtifacts: %v - error getting absolute path for symlink ref (2) %v - (%v)\n", name, linkRef, err)
 						continue
 					}
 				}
@@ -177,9 +178,9 @@ func findDepArtifacts(names []string) (files, links []string) {
 			}
 		} else {
 			if os.IsNotExist(err) {
-				log.Debugf("sodeps.findDepArtifacts: %v - missing dep (%v)\n", name, err)
+				log.Debugf("sodeps.resolveDepArtifacts: %v - missing dep (%v)\n", name, err)
 			} else {
-				log.Debugf("sodeps.findDepArtifacts: %v - error checking dep (%v)\n", name, err)
+				log.Debugf("sodeps.resolveDepArtifacts: %v - error checking dep (%v)\n", name, err)
 			}
 		}
 	}
