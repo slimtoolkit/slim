@@ -22,3 +22,7 @@ func init() {
 func Current() string {
 	return currentVersion
 }
+
+func Tag() string {
+	return appVersionTag
+}

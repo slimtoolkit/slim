@@ -34,7 +34,7 @@ func OnInfo(
 	client := dockerclient.New(clientConfig)
 
 	if doDebug {
-		version.Print(client)
+		version.Print(client, false)
 	}
 
 	imageInspector, err := image.NewInspector(client, imageRef)

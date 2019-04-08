@@ -9,5 +9,5 @@ import (
 // OnVersion implements the 'version' docker-slim command
 func OnVersion(clientConfig *config.DockerClient) {
 	client := dockerclient.New(clientConfig)
-	version.Print(client)
+	version.Print(client, true)
 }

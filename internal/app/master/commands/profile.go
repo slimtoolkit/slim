@@ -60,7 +60,7 @@ func OnProfile(
 	client := dockerclient.New(clientConfig)
 
 	if doDebug {
-		version.Print(client)
+		version.Print(client, false)
 	}
 
 	if !confirmNetwork(logger, client, overrides.Network) {
