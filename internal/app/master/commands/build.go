@@ -25,6 +25,7 @@ import (
 
 // OnBuild implements the 'build' docker-slim command
 func OnBuild(
+	doCheckVersion bool,
 	cmdReportLocation string,
 	doDebug bool,
 	statePath string,
@@ -54,6 +55,8 @@ func OnBuild(
 	doIncludeShell bool,
 	continueAfter *config.ContinueAfter) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "build"})
+
+	viChan := version.CheckAsync(doCheckVersion)
 
 	cmdReport := report.NewBuildCommand(cmdReportLocation)
 	cmdReport.State = report.CmdStateStarted
@@ -307,6 +310,10 @@ func OnBuild(
 	}
 
 	fmt.Println("docker-slim[build]: state=done")
+
+	vinfo := <-viChan
+	version.PrintCheckVersion(vinfo)
+
 	cmdReport.State = report.CmdStateDone
 	cmdReport.Save()
 }

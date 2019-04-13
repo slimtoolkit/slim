@@ -32,15 +32,19 @@ type CheckVersionInfo struct {
 	Current  string `json:"current,omitempty"`
 }
 
+// PrintCheckVersion shows if the current version is outdated
+func PrintCheckVersion(info *CheckVersionInfo) {
+	if info != nil && info.Status == "success" && info.Outdated {
+		fmt.Printf("docker-slim[version]: info=version status=OUTDATED version=%s current=%s\n", v.Tag(), info.Current)
+		fmt.Printf("docker-slim[version]: info=message message='Your version of DockerSlim is out of date!'\n")
+	}
+}
+
 // Print shows the master app version information
 func Print(client *docker.Client, checkVersion bool) {
 	fmt.Printf("docker-slim[version]: %s\n", v.Current())
 	if checkVersion {
-		checkInfo := Check()
-		if checkInfo != nil && checkInfo.Status == "success" && checkInfo.Outdated {
-			fmt.Printf("docker-slim[version]: info=version status=OUTDATED version=%s current=%s\n", v.Tag(), checkInfo.Current)
-			fmt.Printf("docker-slim[version]: info=message message='Your version of DockerSlim is out of date!'\n")
-		}
+		PrintCheckVersion(Check())
 	}
 
 	fmt.Println("host:")
@@ -106,7 +110,7 @@ func Check() *CheckVersionInfo {
 	}
 
 	req.Header.Set("Content-Type", jsonContentType)
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s",versionAuthKey))
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", versionAuthKey))
 
 	resp, err := client.Do(req)
 	if resp != nil && resp.Body != nil {
@@ -136,11 +140,23 @@ func Check() *CheckVersionInfo {
 }
 
 // CheckAsync checks the app version without blocking
-func CheckAsync() <-chan *CheckVersionInfo {
+func CheckAsync(doCheckVersion bool) <-chan *CheckVersionInfo {
 	resultCh := make(chan *CheckVersionInfo, 1)
-	go func() {
-		resultCh <- Check()
-	}()
+
+	if doCheckVersion {
+		go func() {
+			resultCh <- Check()
+		}()
+	} else {
+		close(resultCh)
+	}
 
 	return resultCh
+}
+
+// CheckAndPrintAsync check the app version and prints the results
+func CheckAndPrintAsync() {
+	go func() {
+		PrintCheckVersion(Check())
+	}()
 }

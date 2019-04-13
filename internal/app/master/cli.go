@@ -31,6 +31,7 @@ const (
 
 // DockerSlim app flag names
 const (
+	FlagCheckVersion        = "check-version"
 	FlagDebug               = "debug"
 	FlagCommandReport       = "report"
 	FlagVerbose             = "verbose"
@@ -90,6 +91,11 @@ func init() {
 		cli.StringFlag{
 			Name:  FlagCommandReport,
 			Usage: "command report location",
+		},
+		cli.BoolTFlag{
+			Name:   FlagCheckVersion,
+			Usage:  "check if the current version is outdated",
+			EnvVar: "DSLIM_CHECK_VERSION",
 		},
 		cli.BoolFlag{
 			Name:  FlagDebug,
@@ -411,12 +417,15 @@ func init() {
 					return nil
 				}
 
+				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
+
 				statePath := ctx.GlobalString(FlagStatePath)
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
 
 				commands.OnInfo(
+					doCheckVersion,
 					ctx.GlobalString(FlagCommandReport),
 					ctx.GlobalBool(FlagDebug),
 					statePath,
@@ -483,6 +492,8 @@ func init() {
 					cli.ShowCommandHelp(ctx, CmdBuild)
 					return nil
 				}
+
+				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
 
 				statePath := ctx.GlobalString(FlagStatePath)
 
@@ -572,6 +583,7 @@ func init() {
 				}
 
 				commands.OnBuild(
+					doCheckVersion,
 					ctx.GlobalString(FlagCommandReport),
 					ctx.GlobalBool(FlagDebug),
 					statePath,
@@ -644,6 +656,8 @@ func init() {
 					cli.ShowCommandHelp(ctx, CmdProfile)
 					return nil
 				}
+
+				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
 
 				statePath := ctx.GlobalString(FlagStatePath)
 
@@ -728,6 +742,7 @@ func init() {
 				}
 
 				commands.OnProfile(
+					doCheckVersion,
 					ctx.GlobalString(FlagCommandReport),
 					ctx.GlobalBool(FlagDebug),
 					statePath,
