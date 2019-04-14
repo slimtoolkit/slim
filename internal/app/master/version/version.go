@@ -35,8 +35,8 @@ type CheckVersionInfo struct {
 // PrintCheckVersion shows if the current version is outdated
 func PrintCheckVersion(info *CheckVersionInfo) {
 	if info != nil && info.Status == "success" && info.Outdated {
-		fmt.Printf("docker-slim[version]: info=version status=OUTDATED version=%s current=%s\n", v.Tag(), info.Current)
-		fmt.Printf("docker-slim[version]: info=message message='Your version of DockerSlim is out of date!'\n")
+		fmt.Printf("docker-slim[version]: info=version status=OUTDATED local=%s current=%s\n", v.Tag(), info.Current)
+		fmt.Printf("docker-slim[version]: info=message message='Your version of DockerSlim is out of date! Use the \"version update\" command or download the new version from https://dockersl.im/downloads.html'\n")
 	}
 }
 
