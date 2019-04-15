@@ -199,16 +199,16 @@ func (p *CustomProbe) Start() {
 							defer res.Body.Close()
 						}
 
-						statusCode := 0
-						callErrorStr := "none"
+						statusCode := "error"
+						callErrorStr := ""
 						if err == nil {
-							statusCode = res.StatusCode
+							statusCode = fmt.Sprintf("%v", res.StatusCode)
 						} else {
-							callErrorStr = err.Error()
+							callErrorStr = fmt.Sprintf("error='%v'", err.Error())
 						}
 
 						if p.PrintState {
-							fmt.Printf("%s info=http.probe.call status=%v method=%v target=%v attempt=%v error='%v' time=%v\n",
+							fmt.Printf("%s info=http.probe.call status=%v method=%v target=%v attempt=%v %v time=%v\n",
 								p.PrintPrefix,
 								statusCode,
 								cmd.Method,

@@ -23,6 +23,7 @@ import (
 
 // OnProfile implements the 'profile' docker-slim command
 func OnProfile(
+	doCheckVersion bool,
 	cmdReportLocation string,
 	doDebug bool,
 	statePath string,
@@ -43,8 +44,13 @@ func OnProfile(
 	volumeMounts map[string]config.VolumeMount,
 	excludePaths map[string]bool,
 	includePaths map[string]bool,
+	includeBins map[string]bool,
+	includeExes map[string]bool,
+	doIncludeShell bool,
 	continueAfter *config.ContinueAfter) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "profile"})
+
+	viChan := version.CheckAsync(doCheckVersion)
 
 	cmdReport := report.NewProfileCommand(cmdReportLocation)
 	cmdReport.State = report.CmdStateStarted
@@ -57,7 +63,7 @@ func OnProfile(
 	client := dockerclient.New(clientConfig)
 
 	if doDebug {
-		version.Print(client)
+		version.Print(client, false)
 	}
 
 	if !confirmNetwork(logger, client, overrides.Network) {
@@ -108,6 +114,9 @@ func OnProfile(
 		volumeMounts,
 		excludePaths,
 		includePaths,
+		includeBins,
+		includeExes,
+		doIncludeShell,
 		doDebug,
 		true,
 		"docker-slim[profile]:")
@@ -183,6 +192,10 @@ func OnProfile(
 	}
 
 	fmt.Println("docker-slim[profile]: state=done")
+
+	vinfo := <-viChan
+	version.PrintCheckVersion(vinfo)
+
 	cmdReport.State = report.CmdStateDone
 	cmdReport.Save()
 }

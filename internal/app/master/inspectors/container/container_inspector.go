@@ -70,6 +70,9 @@ type Inspector struct {
 	VolumeMounts       map[string]config.VolumeMount
 	ExcludePaths       map[string]bool
 	IncludePaths       map[string]bool
+	IncludeBins        map[string]bool
+	IncludeExes        map[string]bool
+	DoIncludeShell     bool
 	DoDebug            bool
 	PrintState         bool
 	PrintPrefix        string
@@ -104,6 +107,9 @@ func NewInspector(client *dockerapi.Client,
 	volumeMounts map[string]config.VolumeMount,
 	excludePaths map[string]bool,
 	includePaths map[string]bool,
+	includeBins map[string]bool,
+	includeExes map[string]bool,
+	doIncludeShell bool,
 	doDebug bool,
 	printState bool,
 	printPrefix string) (*Inspector, error) {
@@ -124,6 +130,9 @@ func NewInspector(client *dockerapi.Client,
 		VolumeMounts:      volumeMounts,
 		ExcludePaths:      excludePaths,
 		IncludePaths:      includePaths,
+		IncludeBins:       includeBins,
+		IncludeExes:       includeExes,
+		DoIncludeShell:    doIncludeShell,
 		DoDebug:           doDebug,
 		PrintState:        printState,
 		PrintPrefix:       printPrefix,
@@ -355,6 +364,16 @@ func (i *Inspector) RunContainer() error {
 	if len(i.IncludePaths) > 0 {
 		cmd.Includes = pathMapKeys(i.IncludePaths)
 	}
+
+	if len(i.IncludeBins) > 0 {
+		cmd.IncludeBins = pathMapKeys(i.IncludeBins)
+	}
+
+	if len(i.IncludeExes) > 0 {
+		cmd.IncludeExes = pathMapKeys(i.IncludeExes)
+	}
+
+	cmd.IncludeShell = i.DoIncludeShell
 
 	if runAsUser != "" {
 		cmd.AppUser = runAsUser

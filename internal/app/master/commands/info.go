@@ -17,12 +17,15 @@ import (
 
 // OnInfo implements the 'info' docker-slim command
 func OnInfo(
+	doCheckVersion bool,
 	cmdReportLocation string,
 	doDebug bool,
 	statePath string,
 	clientConfig *config.DockerClient,
 	imageRef string) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "info"})
+
+	viChan := version.CheckAsync(doCheckVersion)
 
 	cmdReport := report.NewInfoCommand(cmdReportLocation)
 	cmdReport.State = report.CmdStateStarted
@@ -34,7 +37,7 @@ func OnInfo(
 	client := dockerclient.New(clientConfig)
 
 	if doDebug {
-		version.Print(client)
+		version.Print(client, false)
 	}
 
 	imageInspector, err := image.NewInspector(client, imageRef)
@@ -66,6 +69,10 @@ func OnInfo(
 	cmdReport.State = report.CmdStateCompleted
 
 	fmt.Println("docker-slim[info]: state=done")
+
+	vinfo := <-viChan
+	version.PrintCheckVersion(vinfo)
+
 	cmdReport.State = report.CmdStateDone
 	cmdReport.Save()
 }
