@@ -5,5 +5,5 @@
 /dist_mac/
 /bin/
 /_gopath/
-dist_linux.tar.gz
+dist_linux*.tar.gz
 dist_mac.zip
