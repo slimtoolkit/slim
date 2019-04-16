@@ -24,11 +24,11 @@ LD_FLAGS="-s -w -X github.com/docker-slim/docker-slim/pkg/version.appVersionTag=
 
 gox -osarch="linux/amd64" -ldflags "${LD_FLAGS}" -output "${BDIR_GOPATH}/bin/linux/docker-slim" 
 gox -osarch="darwin/amd64" -ldflags "${LD_FLAGS}" -output "${BDIR_GOPATH}/bin/mac/docker-slim"
-#gox -osarch="linux/arm" -output "$BDIR_GOPATH/bin/linux_arm/docker-slim"
+gox -osarch="linux/arm" -output "$BDIR_GOPATH/bin/linux_arm/docker-slim"
 popd
 pushd ${BDIR_GOPATH}/cmd/docker-slim-sensor
 gox -osarch="linux/amd64" -ldflags "-s -w" -output="${BDIR_GOPATH}/bin/linux/docker-slim-sensor"
-#gox -osarch="linux/arm" -output "$BDIR_GOPATH/bin/linux_arm/docker-slim-sensor"
+gox -osarch="linux/arm" -output "$BDIR_GOPATH/bin/linux_arm/docker-slim-sensor"
 popd
 rm -rfv ${BDIR_GOPATH}/dist_mac
 mkdir ${BDIR_GOPATH}/dist_mac
@@ -41,10 +41,10 @@ rm -rfv ${BDIR_GOPATH}/dist_linux
 mkdir ${BDIR_GOPATH}/dist_linux
 cp ${BDIR_GOPATH}/bin/linux/docker-slim ${BDIR_GOPATH}/dist_linux/docker-slim
 cp ${BDIR_GOPATH}/bin/linux/docker-slim-sensor ${BDIR_GOPATH}/dist_linux/docker-slim-sensor
-#rm -rfv $BDIR_GOPATH/dist_linux_arm
-#mkdir $BDIR_GOPATH/dist_linux_arm
-#cp $BDIR_GOPATH/bin/linux_arm/docker-slim $BDIR_GOPATH/dist_linux_arm/docker-slim
-#cp $BDIR_GOPATH/bin/linux_arm/docker-slim-sensor $BDIR_GOPATH/dist_linux_arm/docker-slim-sensor
+rm -rfv $BDIR_GOPATH/dist_linux_arm
+mkdir $BDIR_GOPATH/dist_linux_arm
+cp $BDIR_GOPATH/bin/linux_arm/docker-slim $BDIR_GOPATH/dist_linux_arm/docker-slim
+cp $BDIR_GOPATH/bin/linux_arm/docker-slim-sensor $BDIR_GOPATH/dist_linux_arm/docker-slim-sensor
 pushd ${BDIR_GOPATH}
 tar -czvf dist_linux.tar.gz dist_linux
 popd
