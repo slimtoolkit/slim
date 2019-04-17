@@ -257,7 +257,6 @@ func (w *Watcher) handleEventAll(data []byte) {
 	}
 }
 
-
 // Bind our netlink socket and
 // send a listen control message to the connector driver.
 func (listener *netlinkListener) bind() error {

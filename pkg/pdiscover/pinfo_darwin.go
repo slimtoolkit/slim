@@ -2,9 +2,9 @@ package pdiscover
 
 import (
 	"os"
-    "path/filepath"
-    "syscall"
-    "unsafe"
+	"path/filepath"
+	"syscall"
+	"unsafe"
 )
 
 const (
@@ -17,12 +17,12 @@ func GetOwnProcPath() (string, error) {
 }
 
 func GetProcPath(pid int) (string, error) {
-nameMib := []int32{CTLKern,KernProcArgs,int32(pid),-1}
+	nameMib := []int32{CTLKern, KernProcArgs, int32(pid), -1}
 
 	procArgsLen := uintptr(0)
 
-	if err := getSysCtlInfo(nameMib,nil,&procArgsLen); err != nil {
-		return "",err
+	if err := getSysCtlInfo(nameMib, nil, &procArgsLen); err != nil {
+		return "", err
 	}
 
 	if procArgsLen == 0 {
@@ -31,8 +31,8 @@ nameMib := []int32{CTLKern,KernProcArgs,int32(pid),-1}
 
 	procArgs := make([]byte, procArgsLen)
 
-	if err := getSysCtlInfo(nameMib,&procArgs[0],&procArgsLen); err != nil {
-		return "",err
+	if err := getSysCtlInfo(nameMib, &procArgs[0], &procArgsLen); err != nil {
+		return "", err
 	}
 
 	if procArgsLen == 0 {
@@ -45,7 +45,7 @@ nameMib := []int32{CTLKern,KernProcArgs,int32(pid),-1}
 	if err != nil {
 		return exePath, err
 	}
-    
+
 	if exePath, err := filepath.EvalSymlinks(exePath); err != nil {
 		return exePath, err
 	}
@@ -53,7 +53,7 @@ nameMib := []int32{CTLKern,KernProcArgs,int32(pid),-1}
 	return exePath, nil
 }
 
-func getSysCtlInfo(name []int32,value *byte,valueLen *uintptr) error {
+func getSysCtlInfo(name []int32, value *byte, valueLen *uintptr) error {
 	_, _, errNum := syscall.Syscall6(syscall.SYS___SYSCTL,
 		uintptr(unsafe.Pointer(&name[0])),
 		uintptr(len(name)),
@@ -77,7 +77,6 @@ func exePathFromProcArgs(raw []byte) string {
 			return string(raw[:i])
 		}
 	}
-	
+
 	return ""
 }
-

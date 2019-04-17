@@ -23,4 +23,3 @@ func (w *Watcher) readAllEvents() {
 func (w *Watcher) isWatching(pid int, event uint32) bool {
 	return false
 }
-

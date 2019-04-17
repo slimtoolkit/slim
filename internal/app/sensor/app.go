@@ -12,10 +12,10 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/report"
+	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudimmunity/system"
 )
 
 var doneChan chan struct{}

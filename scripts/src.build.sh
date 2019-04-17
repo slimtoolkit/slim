@@ -41,11 +41,15 @@ rm -rfv ${BDIR_GOPATH}/dist_linux
 mkdir ${BDIR_GOPATH}/dist_linux
 cp ${BDIR_GOPATH}/bin/linux/docker-slim ${BDIR_GOPATH}/dist_linux/docker-slim
 cp ${BDIR_GOPATH}/bin/linux/docker-slim-sensor ${BDIR_GOPATH}/dist_linux/docker-slim-sensor
+pushd ${BDIR_GOPATH}
+tar -czvf dist_linux.tar.gz dist_linux
+popd
 rm -rfv $BDIR_GOPATH/dist_linux_arm
 mkdir $BDIR_GOPATH/dist_linux_arm
 cp $BDIR_GOPATH/bin/linux_arm/docker-slim $BDIR_GOPATH/dist_linux_arm/docker-slim
 cp $BDIR_GOPATH/bin/linux_arm/docker-slim-sensor $BDIR_GOPATH/dist_linux_arm/docker-slim-sensor
 pushd ${BDIR_GOPATH}
-tar -czvf dist_linux.tar.gz dist_linux
+tar -czvf dist_linux_arm.tar.gz dist_linux_arm
 popd
+
 rm -rfv ${BDIR_GOPATH}/bin

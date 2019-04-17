@@ -10,10 +10,10 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/docker-slim/docker-slim/pkg/pdiscover"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudimmunity/pdiscover"
 )
 
 // Directory and file related errors

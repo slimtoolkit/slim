@@ -3,12 +3,6 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "UfnNvHQNj+YvhtS0/FHstuB9e/M=",
-			"path": "bitbucket.org/madmo/fanotify",
-			"revision": "200ee16b72ad",
-			"revisionTime": "2012-07-06T13:59:21Z"
-		},
-		{
 			"checksumSHA1": "Liv7AJyNinmP3pvwohcXp4R6xY4=",
 			"path": "github.com/Sirupsen/logrus",
 			"revision": "85b1699d505667d13f8ac4478c1debbf85d6c5de",
@@ -109,18 +103,6 @@
 			"path": "github.com/cloudimmunity/go-dockerclientx/external/github.com/opencontainers/runc/libcontainer/user",
 			"revision": "77d597b1ae1d95af5721690ad0de88e70ae89fbc",
 			"revisionTime": "2016-07-30T18:33:17Z"
-		},
-		{
-			"checksumSHA1": "SfcQXj31AZsKpxKnMQer50Q+CeA=",
-			"path": "github.com/cloudimmunity/pdiscover",
-			"revision": "f9d6e4e9b48c8b18879f7cb7f0857db624e04b58",
-			"revisionTime": "2016-02-29T17:10:28Z"
-		},
-		{
-			"checksumSHA1": "u3xsmqOdFlsEcr0sxJDjX0O/AQU=",
-			"path": "github.com/cloudimmunity/system",
-			"revision": "e54b5c8bd73a8f560011111d65f830edbc3cfa4a",
-			"revisionTime": "2018-09-08T00:46:14Z"
 		},
 		{
 			"checksumSHA1": "0f16D95P6TXnvOxFh8b2z2CPzmE=",

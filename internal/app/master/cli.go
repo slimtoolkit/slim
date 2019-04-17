@@ -8,10 +8,10 @@ import (
 
 	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
+	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudimmunity/system"
 	"github.com/codegangsta/cli"
 )
 

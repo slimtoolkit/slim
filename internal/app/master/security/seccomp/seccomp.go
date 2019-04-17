@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 
 	"github.com/docker-slim/docker-slim/pkg/report"
+	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/third_party/opencontainers/specs"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudimmunity/system"
 )
 
 var archMap = map[system.ArchName]specs.Arch{

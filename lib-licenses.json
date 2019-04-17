@@ -21,8 +21,8 @@
 	},
 	{
 		"project": "github.com/docker-slim/docker-slim",
-		"license": "\"Do What The F*ck You Want To Public License\"",
-		"confidence": 0.047
+		"license": "Apache License 2.0",
+		"confidence": 1
 	},
 	{
 		"project": "github.com/docker/go-connections/nat",
@@ -43,16 +43,5 @@
 		"project": "github.com/go-mangos/mangos",
 		"license": "Apache License 2.0",
 		"confidence": 1
-	}
-]
-
-[
-	{
-		"project": "github.com/cloudimmunity/pdiscover",
-		"error": "No license detected"
-	},
-	{
-		"project": "github.com/cloudimmunity/system",
-		"error": "No license detected"
 	}
 ]

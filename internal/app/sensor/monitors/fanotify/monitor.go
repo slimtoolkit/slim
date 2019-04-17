@@ -11,8 +11,8 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 
-	fanapi "bitbucket.org/madmo/fanotify"
 	log "github.com/Sirupsen/logrus"
+	fanapi "github.com/docker-slim/docker-slim/pkg/third_party/madmo/fanotify"
 )
 
 // Event is file operation event

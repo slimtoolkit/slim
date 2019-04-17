@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"github.com/cloudimmunity/go-dockerclientx"
-	"github.com/cloudimmunity/system"
+	"github.com/docker-slim/docker-slim/pkg/system"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/Sirupsen/logrus"

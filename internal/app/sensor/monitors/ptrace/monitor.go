@@ -10,10 +10,10 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/sensor/target"
 	"github.com/docker-slim/docker-slim/pkg/errors"
 	"github.com/docker-slim/docker-slim/pkg/report"
+	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
 
 	log "github.com/Sirupsen/logrus"
-	"github.com/cloudimmunity/system"
 )
 
 type syscallEvent struct {
@@ -116,7 +116,7 @@ func Run(
 						log.Fatalf("ptmon: collector - PtraceGetRegs(call): %v", err)
 					}
 
-					callNum = uint64(regs.Uregs[7])
+					callNum = system.CallNumber(regs)
 					syscallReturn = true
 					gotCallNum = true
 				case true:
@@ -124,7 +124,7 @@ func Run(
 						log.Fatalf("ptmon: collector - PtraceGetRegs(return): %v", err)
 					}
 
-					retVal = uint64(regs.Uregs[0])
+					retVal = system.CallReturnValue(regs)
 					syscallReturn = false
 					gotRetVal = true
 				}

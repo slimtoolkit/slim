@@ -1,9 +1,9 @@
 package pdiscover
 
 import (
+	"io/ioutil"
 	"os"
 	"strconv"
-	"io/ioutil"
 )
 
 func procFileName(pid int, name string) string {
@@ -11,12 +11,12 @@ func procFileName(pid int, name string) string {
 }
 
 func GetProcInfo(pid int) map[string]string {
-	linkFields := []string{"exe","cwd","root"}
-	valFields := []string{"cmdline","environ"}
+	linkFields := []string{"exe", "cwd", "root"}
+	valFields := []string{"cmdline", "environ"}
 
 	fields := map[string]string{}
 
-	for _,name := range linkFields {
+	for _, name := range linkFields {
 		val, err := os.Readlink(procFileName(pid, name))
 
 		if err != nil {
@@ -26,7 +26,7 @@ func GetProcInfo(pid int) map[string]string {
 		fields[name] = val
 	}
 
-	for _,name := range valFields {
+	for _, name := range valFields {
 		val, err := ioutil.ReadFile(procFileName(pid, name))
 
 		if err != nil {
@@ -39,19 +39,16 @@ func GetProcInfo(pid int) map[string]string {
 	return fields
 }
 
-func GetOwnProcPath() (string,error) {
+func GetOwnProcPath() (string, error) {
 	return os.Readlink("/proc/self/exe")
 }
 
-func GetProcPath(pid int) (string,error) {
+func GetProcPath(pid int) (string, error) {
 	procInfo := GetProcInfo(pid)
 
 	if procInfo == nil {
-		return "",ErrInvalidProcInfo
+		return "", ErrInvalidProcInfo
 	}
 
-	return procInfo["exe"],nil
+	return procInfo["exe"], nil
 }
-
-
-
