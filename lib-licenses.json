@@ -35,11 +35,6 @@
 		"confidence": 0.969
 	},
 	{
-		"project": "github.com/franela/goreq",
-		"license": "MIT License",
-		"confidence": 1
-	},
-	{
 		"project": "github.com/go-mangos/mangos",
 		"license": "Apache License 2.0",
 		"confidence": 1

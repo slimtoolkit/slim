@@ -171,12 +171,6 @@
 			"revisionTime": "2017-02-28T07:34:54Z"
 		},
 		{
-			"checksumSHA1": "/Uu9VEStxBNP071IMqe/VX8SJzg=",
-			"path": "github.com/franela/goreq",
-			"revision": "b5b0f5eb2d16f20345cce0a544a75163579c0b00",
-			"revisionTime": "2017-04-18T06:49:16Z"
-		},
-		{
 			"checksumSHA1": "5j9wrY+He0JnKdeO375ngcbPbpE=",
 			"path": "github.com/go-mangos/mangos",
 			"revision": "e3181ec4a2a556d80619da0f841e35c2007733af",
