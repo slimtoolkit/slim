@@ -1,6 +1,7 @@
 ![DSLIM1](assets/images/dslim/DockerSlimLogo1Big.png)
 
 [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?url=&text=Don't%20change%20anything%20in%20your%20Docker%20container%20image%20and%20minify%20it%20by%20up%20to%2030x%20making%20it%20secure%20too!&url=http%3A%2F%2Fdockersl.im&hashtags=docker,small,secure)
+[![Gitter chat](https://badges.gitter.im/docker-slim/docker-slim.png)](https://gitter.im/docker-slim/community)
 
 # Minify and Secure Docker containers (free and open source!)
 
