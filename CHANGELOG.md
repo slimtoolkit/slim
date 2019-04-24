@@ -2,7 +2,7 @@
 
 ### New Features
 
-* Experimental ARM32 support (now you can)
+* Experimental ARM32 support
 * Easy way to keep a shell in your image (just pass `--include-shell` to the `build` command)
 * Easy way to include additional executables (`--include-exe` flag) and binary objects (`--include-bin` flag), which will also include their binary dependencies, so you don't have to explicitly include them all yourself
 * `update` command - now you can update `docker-slim` from `docker-slim`!

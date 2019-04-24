@@ -234,6 +234,7 @@ Commands:
 Global options:
 
 * `--report` - command report location (target location where to save the executed command results)
+* `--check-version` - check if the current version is outdate
 * `--version` - print the version
 * `--debug` - enable debug logs
 * `--verbose` - enable info logs
@@ -247,6 +248,8 @@ Global options:
 * `--state-path value` - DockerSlim state base path (must set it if the DockerSlim binaries are not in a writable directory!)
 
 To get more command line option information run `docker-slim` without any parameters or select one of the top level commands to get the command-specific information.
+
+To disable the version checks set the global `--check-version` flag to `false` (e.g., `--check-version=false`) or you can use the `DSLIM_CHECK_VERSION` environment variable.
 
 ### `BUILD` COMMAND OPTIONS
 
