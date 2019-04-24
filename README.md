@@ -102,7 +102,6 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
     - [SECURITY](#security)
     - [CHALLENGES](#challenges)
   - [DEVELOPMENT PROGRESS](#development-progress)
-    - [PHASE 3 (WIP)](#phase-3-wip)
     - [TODO](#todo)
   - [ORIGINS](#origins)
   - [ONLINE](#online)
@@ -561,15 +560,10 @@ Some of the advanced analysis options require a number of Linux kernel features 
 
 ## DEVELOPMENT PROGRESS
 
-### PHASE 3 (WIP)
-
-* Auto-generate AppArmor profiles (almost usable :-))
-* Option to pause builder execution to allow manual changes to the minified image artifacts.
-* Support additional command line parameters to specify CMD, VOLUME, ENV info.
-* Better support for command line applications
-
 ### TODO
 
+* AppArmor profile improvements
+* Better support for command line applications (e.g., ability to specify multiple executions)
 * Discover HTTP endpoints to make the HTTP probe more intelligent.
 * Scripting language dependency discovery in the "scanner" app.
 * Explore additional dependency discovery methods.
