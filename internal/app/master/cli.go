@@ -24,6 +24,7 @@ const (
 // DockerSlim app command names
 const (
 	CmdVersion = "version"
+	CmdUpdate  = "update"
 	CmdInfo    = "info"
 	CmdBuild   = "build"
 	CmdProfile = "profile"
@@ -403,6 +404,26 @@ func init() {
 			Action: func(ctx *cli.Context) error {
 				clientConfig := getDockerClientConfig(ctx)
 				commands.OnVersion(clientConfig)
+				return nil
+			},
+		},
+		{
+			Name:    CmdUpdate,
+			Aliases: []string{"u"},
+			Usage:   "Update docker-slim",
+			Flags: []cli.Flag{
+				cli.BoolTFlag{
+					Name:   "show-progress",
+					Usage:  "show progress when the release package is downloaded",
+					EnvVar: "DSLIM_UPDATE_SHOW_PROGRESS",
+				},
+			},
+			Action: func(ctx *cli.Context) error {
+				doDebug := ctx.GlobalBool(FlagDebug)
+				statePath := ctx.GlobalString(FlagStatePath)
+				doShowProgress := ctx.Bool("show-progress")
+
+				commands.OnUpdate(doDebug, statePath, doShowProgress)
 				return nil
 			},
 		},

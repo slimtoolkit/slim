@@ -87,7 +87,7 @@ func OnProfile(
 	err = imageInspector.Inspect()
 	errutils.FailOn(err)
 
-	localVolumePath, artifactLocation, statePath := fsutils.PrepareStateDirs(statePath, imageInspector.ImageInfo.ID)
+	localVolumePath, artifactLocation, statePath := fsutils.PrepareImageStateDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
 	fmt.Printf("docker-slim[profile]: info=image id=%v size.bytes=%v size.human=%v\n",

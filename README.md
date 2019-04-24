@@ -113,36 +113,16 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 
 ## RECENT UPDATES
 
-Latest version: 1.24.2 (3/23/2019)
+Latest version: 1.25.0 (4/23/2019)
 
-* Better Mac OS X support - when you install docker-slim to /usr/local/bin or other special/non-shared directories docker-slim will detect it and use the /temp directory to save its artifacts and to mount its sensor (NEW)
-* HTTP Probing enhancements and new flags to control the probing process (NEW)
-* Better Nginx support (NEW)
-* Support for non-default users (NEW)
-* Improved symlink handling (NEW)
-* Better failure monitoring and reporting (NEW)
-* The `--include-path-file` option to make it easier to load extra files you want to keep in your image (NEW)
-* CentOS support (NEW)
-* Enhancements for ruby applications with extensions
-* Save the docker-slim command results in a JSON file using the `--report` flag
-* Better support for applications with dynamic libraries (e.g., python compiled with `--enable-shared`)
-* Additional network related Docker parameters
-* Extended version information
-* Alpine image support
-* Ability to override ENV variables analyzing target image
-* Docker 1.12 support
-* User selected location to store DockerSlim state (global `--state-path` parameter).
-* Auto-generated seccomp profiles for Docker 1.10.
-* Python 3 support
-* Docker connect options
-* HTTP probe commands
-* Include extra directories and files in minified images
+Now there's an easy way to keep a basic shell in your minified container images! For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.24.2/dist_mac.zip)
-   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.24.2/dist_linux.tar.gz)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.25.0/dist_mac.zip)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.25.0/dist_linux.tar.gz)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.25.0/dist_linux_arm.tar.gz)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -190,7 +170,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://github.com/docker-slim/docker-slim/releases/download/1.24.2/dist_mac.zip) or [Linux](https://github.com/docker-slim/docker-slim/releases/download/1.24.2/dist_linux.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.25.0/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.25.0/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.25.0/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
   The extracted directory contains two binaries:
 
@@ -245,10 +225,11 @@ The demo run on Mac OS X, but you can build a linux version. Note that these ste
 
 Commands:
 
-* `build` - Collect fat image information and build a slim image from it
+* `build`   - Collect fat image information and build a slim image from it
 * `profile` - Collect fat image information and generate a fat container report
-* `info` - Collect fat image information and reverse engineers its Dockerfile (no runtime container analysis)
+* `info`    - Collect fat image information and reverse engineers its Dockerfile (no runtime container analysis)
 * `version` - Show docker-slim and docker version information
+* `update`  - Update docker-slim
 
 Global options:
 
@@ -264,6 +245,8 @@ Global options:
 * `--tls-verify` - do TLS verification
 * `--tls-cert-path` - path to TLS cert files
 * `--state-path value` - DockerSlim state base path (must set it if the DockerSlim binaries are not in a writable directory!)
+
+To get more command line option information run `docker-slim` without any parameters or select one of the top level commands to get the command-specific information.
 
 ### `BUILD` COMMAND OPTIONS
 
@@ -283,6 +266,9 @@ Global options:
 * `--mount` - mount volume analyzing image (the mount parameter format is identical to the `-v` mount command in Docker) [zero or more]
 * `--include-path` - Include directory or file from image [zero or more]
 * `--include-path-file` - Load directory or file includes from a file
+* `--include-bin value` - Include binary from image (executable or shared object using its absolute path)
+* `--include-exe value` - Include executable from image (by executable name)
+* `--include-shell` - Include basic shell functionality
 * `--env` - override ENV analyzing image [zero or more]
 * `--workdir` - override WORKDIR analyzing image
 * `--network` - override default container network settings analyzing image
@@ -297,6 +283,8 @@ Global options:
 The `--include-path` option is useful if you want to customize your minified image adding extra files and directories. The `--include-path-file` option allows you to load multiple includes from a newline delimited file. Use this option if you have a lot of includes. The includes from `--include-path` and `--include-path-file` are combined together. Future versions will also include the `--exclude-path` option to have even more control.
 
 The `--continue-after` option is useful if you need to script `docker-slim`. If you pick the `probe` option then `docker-slim` will continue executing the build command after the HTTP probe is done executing. If you pick the `timeout` option `docker-slim` will allow the target container to run for 60 seconds before it will attempt to collect the artifacts. You can specify a custom timeout value by passing a number of seconds you need instead of the `timeout` string. If you pick the `signal` option you'll need to send a USR1 signal to the `docker-slim` process.
+
+The `--include-shell` option provides a simple way to keep a basic shell in the minified container. Not all shell commands are included. To get additional shell commands or other command line utilities use the `--include-exe' and/or `--include-bin' options. Note that the extra apps and binaries might missed some of the non-binary dependencies (which don't get picked up during static analysis). For those additional dependencies use the `--include-path` and `--include-path-file` options.
 
 ## DOCKER CONNECT OPTIONS
 

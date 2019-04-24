@@ -9,6 +9,12 @@
 			"revisionTime": "2017-06-08T22:14:41Z"
 		},
 		{
+			"checksumSHA1": "mxXAw9DQCzBUyfNXb1119GWeFLw=",
+			"path": "github.com/c4milo/unpackit",
+			"revision": "4ed373e9ef1c895fe04468d813cb628902d89a0a",
+			"revisionTime": "2017-07-04T18:11:38Z"
+		},
+		{
 			"checksumSHA1": "KxSOjZ6rySEKgOYbYWZx7wX1f88=",
 			"path": "github.com/cloudimmunity/go-dockerclientx",
 			"revision": "d9cda520535d066ca4eebf631a1f0d373d18f72e",
@@ -111,6 +117,24 @@
 			"revisionTime": "2017-05-06T04:25:29Z"
 		},
 		{
+			"checksumSHA1": "qM4FzqGihzzo4hOhLGT96yS6Hfk=",
+			"path": "github.com/docker-slim/go-update",
+			"revision": "ed40247aff59a6cf2a4313adf70b210e19175698",
+			"revisionTime": "2019-04-22T07:15:57Z"
+		},
+		{
+			"checksumSHA1": "02TdZW/v9sL9vODp4WrZlJpKxL0=",
+			"path": "github.com/docker-slim/go-update/internal/binarydist",
+			"revision": "ed40247aff59a6cf2a4313adf70b210e19175698",
+			"revisionTime": "2019-04-22T07:15:57Z"
+		},
+		{
+			"checksumSHA1": "bRUT3iip6spb1mifDMUMVe5DS+M=",
+			"path": "github.com/docker-slim/go-update/internal/osext",
+			"revision": "ed40247aff59a6cf2a4313adf70b210e19175698",
+			"revisionTime": "2019-04-22T07:15:57Z"
+		},
+		{
 			"checksumSHA1": "jVJDbe0IcyjoKc2xbohwzQr+FF0=",
 			"path": "github.com/docker/docker/api/types/blkiodev",
 			"revision": "f34e4d295d5c17a78c33beb14b65e5d001c16968",
@@ -165,6 +189,42 @@
 			"revisionTime": "2017-01-27T09:51:30Z"
 		},
 		{
+			"checksumSHA1": "7SruRGsW2R7MboujYAK8YKEk/sU=",
+			"path": "github.com/dsnet/compress",
+			"revision": "da652975a8eea9fa0735aba8056747a751db0bd3",
+			"revisionTime": "2019-03-06T21:17:20Z"
+		},
+		{
+			"checksumSHA1": "Q8Y8aBNAuiO4/HVyj9PRyBz50YM=",
+			"path": "github.com/dsnet/compress/bzip2",
+			"revision": "da652975a8eea9fa0735aba8056747a751db0bd3",
+			"revisionTime": "2019-03-06T21:17:20Z"
+		},
+		{
+			"checksumSHA1": "rUK6wJzSweagbKHcRUU1TWkQq/0=",
+			"path": "github.com/dsnet/compress/bzip2/internal/sais",
+			"revision": "da652975a8eea9fa0735aba8056747a751db0bd3",
+			"revisionTime": "2019-03-06T21:17:20Z"
+		},
+		{
+			"checksumSHA1": "u6VJ7jTVulLgPZaXKWCIHc4hbQs=",
+			"path": "github.com/dsnet/compress/internal",
+			"revision": "da652975a8eea9fa0735aba8056747a751db0bd3",
+			"revisionTime": "2019-03-06T21:17:20Z"
+		},
+		{
+			"checksumSHA1": "KDfyyvx86cyY/HUA2SSWRWjn7yI=",
+			"path": "github.com/dsnet/compress/internal/errors",
+			"revision": "da652975a8eea9fa0735aba8056747a751db0bd3",
+			"revisionTime": "2019-03-06T21:17:20Z"
+		},
+		{
+			"checksumSHA1": "Txyi+DYhWRT65KnJokyQWB2xj3A=",
+			"path": "github.com/dsnet/compress/internal/prefix",
+			"revision": "da652975a8eea9fa0735aba8056747a751db0bd3",
+			"revisionTime": "2019-03-06T21:17:20Z"
+		},
+		{
 			"checksumSHA1": "rhLUtXvcmouYuBwOq9X/nYKzvNg=",
 			"path": "github.com/dustin/go-humanize",
 			"revision": "259d2a102b871d17f30e3cd9881a642961a1e486",
@@ -217,6 +277,72 @@
 			"path": "github.com/google/shlex",
 			"revision": "c34317bd91bf98fab745d77b03933cf8769299fe",
 			"revisionTime": "2018-11-06T13:46:48Z"
+		},
+		{
+			"checksumSHA1": "L4Otq0/ZN3l96715D7+gRSAcwFM=",
+			"path": "github.com/gosuri/uilive",
+			"revision": "810653011da975cf3ac54bf7aea22d5c9e49e317",
+			"revisionTime": "2019-04-11T19:32:07Z"
+		},
+		{
+			"checksumSHA1": "zTVV9gr0Qn6mDWQ5ZTiVdIJV3CE=",
+			"path": "github.com/gosuri/uiprogress",
+			"revision": "d0567a9d84a1c40dd7568115ea66f4887bf57b33",
+			"revisionTime": "2017-02-24T06:39:37Z"
+		},
+		{
+			"checksumSHA1": "1dKG7apJl3CGGIrmXMHZp3emYTQ=",
+			"path": "github.com/gosuri/uiprogress/util/strutil",
+			"revision": "d0567a9d84a1c40dd7568115ea66f4887bf57b33",
+			"revisionTime": "2017-02-24T06:39:37Z"
+		},
+		{
+			"checksumSHA1": "kHTr93VYZuhefrA2f+kMQcaRqhw=",
+			"path": "github.com/klauspost/compress/flate",
+			"revision": "ebcaa75844d0c1d7d8da1921b4c3530d19186529",
+			"revisionTime": "2019-04-23T14:17:26Z"
+		},
+		{
+			"checksumSHA1": "rM3pI1JDvb21wOaVjTCXrf+Ce04=",
+			"path": "github.com/klauspost/cpuid",
+			"revision": "05a8198c0f5a27739aec358908d7e12c64ce6eb7",
+			"revisionTime": "2019-04-22T09:51:56Z"
+		},
+		{
+			"checksumSHA1": "Ma+Zdx96uJz8axRrSjH/2MyE7Ts=",
+			"path": "github.com/klauspost/pgzip",
+			"revision": "083b1c3f84dd6486588802e5ce295de3a7f41a8b",
+			"revisionTime": "2018-11-28T19:29:09Z"
+		},
+		{
+			"checksumSHA1": "I7hloldMJZTqUx6hbVDp5nk9fZQ=",
+			"path": "github.com/pkg/errors",
+			"revision": "27936f6d90f9c8e1145f11ed52ffffbfdb9e0af7",
+			"revisionTime": "2019-02-27T00:00:51Z"
+		},
+		{
+			"checksumSHA1": "feVa3uL7qR2quGvkE7IRtxM0YPQ=",
+			"path": "github.com/ulikunitz/xz",
+			"revision": "6f934d456d51e742b4eeab20d925a827ef22320a",
+			"revisionTime": "2019-02-20T20:51:30Z"
+		},
+		{
+			"checksumSHA1": "vjnTkzNrMs5Xj6so/fq0mQ6dT1c=",
+			"path": "github.com/ulikunitz/xz/internal/hash",
+			"revision": "6f934d456d51e742b4eeab20d925a827ef22320a",
+			"revisionTime": "2019-02-20T20:51:30Z"
+		},
+		{
+			"checksumSHA1": "m0pm57ASBK/CTdmC0ppRHO17mBs=",
+			"path": "github.com/ulikunitz/xz/internal/xlog",
+			"revision": "6f934d456d51e742b4eeab20d925a827ef22320a",
+			"revisionTime": "2019-02-20T20:51:30Z"
+		},
+		{
+			"checksumSHA1": "0ePMTpIfQfr9W6N6Va/qaN7ZFYc=",
+			"path": "github.com/ulikunitz/xz/lzma",
+			"revision": "6f934d456d51e742b4eeab20d925a827ef22320a",
+			"revisionTime": "2019-02-20T20:51:30Z"
 		}
 	],
 	"rootPath": "github.com/docker-slim/docker-slim"

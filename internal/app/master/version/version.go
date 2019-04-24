@@ -36,7 +36,7 @@ type CheckVersionInfo struct {
 func PrintCheckVersion(info *CheckVersionInfo) {
 	if info != nil && info.Status == "success" && info.Outdated {
 		fmt.Printf("docker-slim[version]: info=version status=OUTDATED local=%s current=%s\n", v.Tag(), info.Current)
-		fmt.Printf("docker-slim[version]: info=message message='Your version of DockerSlim is out of date! Use the \"version update\" command or download the new version from https://dockersl.im/downloads.html'\n")
+		fmt.Printf("docker-slim[version]: info=message message='Your version of DockerSlim is out of date! Use the \"update\" command or download the new version from https://dockersl.im/downloads.html'\n")
 	}
 }
 
@@ -101,14 +101,13 @@ func Check() *CheckVersionInfo {
 		return nil
 	}
 
-	//resp, err := client.Post(versionCheckEndpoint, jsonContentType, &b)
-	//versionAuthKey
 	req, err := http.NewRequest("POST", versionCheckEndpoint, &b)
 	if err != nil {
 		logger.Info("Check - error creating version check request => %v", err)
 		return nil
 	}
 
+	req.Header.Set("User-Agent", fmt.Sprintf("DockerSlimApp/%s", v.Current()))
 	req.Header.Set("Content-Type", jsonContentType)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", versionAuthKey))
 
