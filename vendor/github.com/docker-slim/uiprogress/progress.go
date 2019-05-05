@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/gosuri/uilive"
+	"github.com/docker-slim/uilive"
 )
 
 // Out is the default writer to render progress bars to
@@ -16,8 +16,8 @@ var Out = os.Stdout
 // RefreshInterval in the default time duration to wait for refreshing the output
 var RefreshInterval = time.Millisecond * 10
 
-// defaultProgress is the default progress
-var defaultProgress = New()
+// defaultProgress is the default progress <- removing
+//var defaultProgress = New()
 
 // Progress represents the container that renders progress bars
 type Progress struct {
@@ -42,6 +42,10 @@ type Progress struct {
 // New returns a new progress bar with defaults
 func New() *Progress {
 	lw := uilive.New()
+	if lw == nil {
+		return nil
+	}
+	
 	lw.Out = Out
 
 	return &Progress{
@@ -56,25 +60,29 @@ func New() *Progress {
 	}
 }
 
+//removing...
 // AddBar creates a new progress bar and adds it to the default progress container
-func AddBar(total int) *Bar {
-	return defaultProgress.AddBar(total)
-}
+//func AddBar(total int) *Bar {
+//	return defaultProgress.AddBar(total)
+//}
 
+//removing...
 // Start starts the rendering the progress of progress bars using the DefaultProgress. It listens for updates using `bar.Set(n)` and new bars when added using `AddBar`
-func Start() {
-	defaultProgress.Start()
-}
+//func Start() {
+//	defaultProgress.Start()
+//}
 
+//removing...
 // Stop stops listening
-func Stop() {
-	defaultProgress.Stop()
-}
+//func Stop() {
+//	defaultProgress.Stop()
+//}
 
+//removing...
 // Listen listens for updates and renders the progress bars
-func Listen() {
-	defaultProgress.Listen()
-}
+//func Listen() {
+//	defaultProgress.Listen()
+//}
 
 func (p *Progress) SetOut(o io.Writer) {
 	p.mtx.Lock()

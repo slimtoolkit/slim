@@ -3,6 +3,7 @@ package app
 import (
 	"fmt"
 	"os"
+	"runtime"
 	"strconv"
 	"time"
 
@@ -396,6 +397,23 @@ func init() {
 		EnvVar: "DSLIM_CONTINUE_AFTER",
 	}
 
+	//enable 'show-progress' by default only on Mac OS X
+	var doShowProgressFlag cli.Flag
+	switch runtime.GOOS {
+	case "darwin":
+		doShowProgressFlag = cli.BoolTFlag{
+			Name:   "show-progress",
+			Usage:  "show progress when the release package is downloaded (default: true)",
+			EnvVar: "DSLIM_UPDATE_SHOW_PROGRESS",
+		}
+	default:
+		doShowProgressFlag = cli.BoolFlag{
+			Name:   "show-progress",
+			Usage:  "show progress when the release package is downloaded (default: false)",
+			EnvVar: "DSLIM_UPDATE_SHOW_PROGRESS",
+		}
+	}
+
 	app.Commands = []cli.Command{
 		{
 			Name:    CmdVersion,
@@ -412,11 +430,7 @@ func init() {
 			Aliases: []string{"u"},
 			Usage:   "Update docker-slim",
 			Flags: []cli.Flag{
-				cli.BoolTFlag{
-					Name:   "show-progress",
-					Usage:  "show progress when the release package is downloaded",
-					EnvVar: "DSLIM_UPDATE_SHOW_PROGRESS",
-				},
+				doShowProgressFlag,
 			},
 			Action: func(ctx *cli.Context) error {
 				doDebug := ctx.GlobalBool(FlagDebug)

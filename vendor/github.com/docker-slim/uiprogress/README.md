@@ -1,4 +1,13 @@
-# uiprogress [![GoDoc](https://godoc.org/github.com/gosuri/uiprogress?status.svg)](https://godoc.org/github.com/gosuri/uiprogress) [![Build Status](https://travis-ci.org/gosuri/uiprogress.svg?branch=master)](https://travis-ci.org/gosuri/uiprogress)
+# uiprogress [![GoDoc](https://godoc.org/github.com/docker-slim/uiprogress?status.svg)](https://godoc.org/github.com/docker-slim/uiprogress) [![Build Status](https://travis-ci.org/docker-slim/uiprogress.svg?branch=master)](https://travis-ci.org/docker-slim/uiprogress)
+
+## Note
+
+Fixing the os.Exit problem in its dependency and a few other things...
+
+Enhancements:
+* No default progress bar
+
+## Original Package Info
 
 A Go library to render progress bars in terminal applications. It provides a set of flexible features with a customizable API.
 
@@ -6,14 +15,14 @@ A Go library to render progress bars in terminal applications. It provides a set
 
 Progress bars improve readability for terminal applications with long outputs by providing a concise feedback loop.
 
-## Features
+### Features
 
 * __Multiple Bars__: uiprogress can render multiple progress bars that can be tracked concurrently
 * __Dynamic Addition__:  Add additional progress bars any time, even after the progress tracking has started
 * __Prepend and Append Functions__: Append or prepend completion percent and time elapsed to the progress bars
 * __Custom Decorator Functions__: Add custom functions around the bar along with helper functions
 
-## Usage
+### Usage
 
 To start listening for progress bars, call `uiprogress.Start()` and add a progress bar using `uiprogress.AddBar(total int)`. Update the progress using `bar.Incr()` or `bar.Set(n int)`. Full source code for the below example is available at [example/simple/simple.go](example/simple/simple.go) 
 
@@ -34,7 +43,7 @@ This will render the below in the terminal
 
 ![example](doc/example_simple.gif)
 
-### Using Custom Decorators
+#### Using Custom Decorators
 
 You can also add a custom decorator function in addition to default `bar.AppendCompleted()` and `bar.PrependElapsed()` decorators. The below example tracks the current step for an application deploy progress. Source code for the below example is available at [example/full/full.go](example/full/full.go) 
 
@@ -52,7 +61,7 @@ for bar.Incr() {
 }
 ```
 
-### Rendering Multiple bars
+#### Rendering Multiple bars
 
 You can add multiple bars using `uiprogress.AddBar(n)`. The below example demonstrates updating multiple bars concurrently and adding a new bar later in the pipeline. Source for this example is available at [example/multi/multi.go](example/multi/multi.go) 
 
@@ -100,9 +109,9 @@ This will produce
 
 ![example](doc/example_multi.gif)
 
-### `Incr` counter
+#### `Incr` counter
 
-[Bar.Incr()](https://godoc.org/github.com/gosuri/uiprogress#Bar.Incr) is an atomic counter and can be used as a general tracker, making it ideal for tracking progress of work fanned out to a lots of go routines. The source code for the below example is available at [example/incr/incr.go](example/incr/incr.go)
+[Bar.Incr()](https://godoc.org/github.com/docker-slim/uiprogress#Bar.Incr) is an atomic counter and can be used as a general tracker, making it ideal for tracking progress of work fanned out to a lots of go routines. The source code for the below example is available at [example/incr/incr.go](example/incr/incr.go)
 
 ```go
 runtime.GOMAXPROCS(runtime.NumCPU()) // use all available cpu cores
@@ -131,16 +140,16 @@ wg.Wait()
 uiprogress.Stop()
 ```
 
-## Installation
+### Installation
 
 ```sh
-$ go get -v github.com/gosuri/uiprogress
+$ go get -v github.com/docker-slim/uiprogress
 ```
-## Todos
+### Todos
 
 - [ ] Resize bars and decorators by auto detecting window's dimensions
 - [ ] Handle more progress bars than vertical screen allows
 
-## License
+### License
 
-uiprogress is released under the MIT License. See [LICENSE](https://github.com/gosuri/uiprogress/blob/master/LICENSE).
+uiprogress is released under the MIT License. See [LICENSE](https://github.com/docker-slim/uiprogress/blob/master/LICENSE).

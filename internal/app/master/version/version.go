@@ -40,11 +40,24 @@ func PrintCheckVersion(info *CheckVersionInfo) {
 	}
 }
 
+// GetCheckVersionVerdict returns the version status of the locally installed package
+func GetCheckVersionVerdict(info *CheckVersionInfo) string {
+	if info != nil && info.Status == "success" {
+		if info.Outdated {
+			return fmt.Sprintf("your installed version is OUTDATED (local=%s current=%s)", v.Tag(), info.Current)
+		} else {
+			return "your have the latest version"
+		}
+	}
+
+	return "version status information is not available"
+}
+
 // Print shows the master app version information
 func Print(client *docker.Client, checkVersion bool) {
 	fmt.Printf("docker-slim[version]: %s\n", v.Current())
 	if checkVersion {
-		PrintCheckVersion(Check())
+		fmt.Printf("Version Status: %v\n", GetCheckVersionVerdict(Check()))
 	}
 
 	fmt.Println("host:")
@@ -97,13 +110,13 @@ func Check() *CheckVersionInfo {
 	encoder := json.NewEncoder(&b)
 	encoder.SetEscapeHTML(false)
 	if err := encoder.Encode(&data); err != nil {
-		logger.Info("Check - error encoding data => %v", err)
+		logger.Debugf("Check - error encoding data => %v", err)
 		return nil
 	}
 
 	req, err := http.NewRequest("POST", versionCheckEndpoint, &b)
 	if err != nil {
-		logger.Info("Check - error creating version check request => %v", err)
+		logger.Debugf("Check - error creating version check request => %v", err)
 		return nil
 	}
 
@@ -120,18 +133,18 @@ func Check() *CheckVersionInfo {
 	}
 
 	if err != nil {
-		logger.Info("Check - error checking version => %v", err)
+		logger.Debugf("Check - error checking version => %v", err)
 		return nil
 	}
 
 	if resp.StatusCode != http.StatusOK {
-		logger.Info("Check - unexpected response status =", resp.Status)
+		logger.Debug("Check - unexpected response status =", resp.Status)
 		return nil
 	}
 
 	var checkInfo CheckVersionInfo
 	if err := json.NewDecoder(resp.Body).Decode(&checkInfo); err != nil {
-		logger.Info("Check - error decoding response => %v", err)
+		logger.Debugf("Check - error decoding response => %v", err)
 		return nil
 	}
 

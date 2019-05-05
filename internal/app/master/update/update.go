@@ -20,7 +20,7 @@ import (
 	log "github.com/Sirupsen/logrus"
 	"github.com/c4milo/unpackit"
 	"github.com/docker-slim/go-update"
-	"github.com/gosuri/uiprogress"
+	"github.com/docker-slim/uiprogress"
 )
 
 const (
@@ -348,11 +348,13 @@ func newProgressReader(size int, rc io.ReadCloser) io.ReadCloser {
 		progress: uiprogress.New(),
 	}
 
-	pr.progress.SetRefreshInterval(time.Millisecond * 100)
-	pr.progress.Start()
+	if pr.progress != nil {
+		pr.progress.SetRefreshInterval(time.Millisecond * 100)
+		pr.progress.Start()
 
-	pr.bar = pr.progress.AddBar(pr.size).AppendCompleted().PrependElapsed()
-	pr.bar.Width = 50
+		pr.bar = pr.progress.AddBar(pr.size).AppendCompleted().PrependElapsed()
+		pr.bar.Width = 50
+	}
 
 	return &pr
 }
@@ -369,14 +371,18 @@ func (pr *progressReader) Read(b []byte) (int, error) {
 	count, err := pr.rc.Read(b)
 	if err == nil {
 		pr.current += count
-		pr.bar.Set(pr.current)
+		if pr.bar != nil {
+			pr.bar.Set(pr.current)
+		}
 	}
 
 	return count, err
 }
 
 func (pr *progressReader) Close() error {
-	pr.progress.Stop()
+	if pr.progress != nil {
+		pr.progress.Stop()
+	}
 	io.Copy(ioutil.Discard, pr.rc)
 	return pr.rc.Close()
 }

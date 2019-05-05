@@ -135,6 +135,24 @@
 			"revisionTime": "2019-04-22T07:15:57Z"
 		},
 		{
+			"checksumSHA1": "Wc4otRZM4OtEugcwhWFMYO7qjc4=",
+			"path": "github.com/docker-slim/uilive",
+			"revision": "c7c9d1c0f8e4eb82b5e6bb63f6054ec0202fc822",
+			"revisionTime": "2019-05-05T19:33:11Z"
+		},
+		{
+			"checksumSHA1": "nuiEbemWHC405+6sPxy/j1BEltY=",
+			"path": "github.com/docker-slim/uiprogress",
+			"revision": "9d4396e6d40b620e70fc49d3a6f5d595d9f872dc",
+			"revisionTime": "2019-05-05T19:32:31Z"
+		},
+		{
+			"checksumSHA1": "IjZgU5qRFx+oWF1qAHbBDv6Drr8=",
+			"path": "github.com/docker-slim/uiprogress/util/strutil",
+			"revision": "9d4396e6d40b620e70fc49d3a6f5d595d9f872dc",
+			"revisionTime": "2019-05-05T19:32:31Z"
+		},
+		{
 			"checksumSHA1": "jVJDbe0IcyjoKc2xbohwzQr+FF0=",
 			"path": "github.com/docker/docker/api/types/blkiodev",
 			"revision": "f34e4d295d5c17a78c33beb14b65e5d001c16968",
@@ -277,24 +295,6 @@
 			"path": "github.com/google/shlex",
 			"revision": "c34317bd91bf98fab745d77b03933cf8769299fe",
 			"revisionTime": "2018-11-06T13:46:48Z"
-		},
-		{
-			"checksumSHA1": "L4Otq0/ZN3l96715D7+gRSAcwFM=",
-			"path": "github.com/gosuri/uilive",
-			"revision": "810653011da975cf3ac54bf7aea22d5c9e49e317",
-			"revisionTime": "2019-04-11T19:32:07Z"
-		},
-		{
-			"checksumSHA1": "zTVV9gr0Qn6mDWQ5ZTiVdIJV3CE=",
-			"path": "github.com/gosuri/uiprogress",
-			"revision": "d0567a9d84a1c40dd7568115ea66f4887bf57b33",
-			"revisionTime": "2017-02-24T06:39:37Z"
-		},
-		{
-			"checksumSHA1": "1dKG7apJl3CGGIrmXMHZp3emYTQ=",
-			"path": "github.com/gosuri/uiprogress/util/strutil",
-			"revision": "d0567a9d84a1c40dd7568115ea66f4887bf57b33",
-			"revisionTime": "2017-02-24T06:39:37Z"
 		},
 		{
 			"checksumSHA1": "kHTr93VYZuhefrA2f+kMQcaRqhw=",
