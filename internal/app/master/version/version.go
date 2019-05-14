@@ -137,8 +137,8 @@ func Check() *CheckVersionInfo {
 		return nil
 	}
 
+	logger.Debug("version.Check: http status = ", resp.Status)
 	if resp.StatusCode != http.StatusOK {
-		logger.Debug("Check - unexpected response status =", resp.Status)
 		return nil
 	}
 

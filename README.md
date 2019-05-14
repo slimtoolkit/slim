@@ -137,6 +137,8 @@ To generate a Dockerfile for your "fat" image without creating a new "slim" imag
 
 Example: `docker-slim info 6f74095b68c9`
 
+See the `USAGE DETAILS` section for more details. You can also get additional information about the parameters running `docker-slim`. Run `docker-slim` without any parameters and you'll get a high level overview of the available commands. Run a `docker-slim` command without any parameters and you'll get more information about that command (e.g., `docker-slim build`).
+
 ## QUICK SECCOMP EXAMPLE
 
 If you want to auto-generate a Seccomp profile AND minify your image use the `build` command. If you only want to auto-generate a Seccomp profile (along with other interesting image metadata) use the `profile` command.
@@ -409,11 +411,11 @@ It's used to minify the `container-transform` tool. You can get the minified ima
 
 ## CURRENT STATE
 
-It works pretty well with the sample Node.js, Python (2 and 3), Ruby, Java and Golang images (see the sample applications in the `examples` repo). PHP support is WIP. There's already one PHP example, but more needs to be done to support Apache and Nginx based PHP apps. More testing needs to be done to see how it works with other images. Rails/unicorn app images are not fully supported yet (WIP).
+It works pretty well with the sample Node.js, Python (2 and 3), Ruby, Java and Golang images (see the sample applications in the `examples` repo). PHP support is WIP. There's already one PHP example, but more needs to be done to support Apache and Nginx based PHP apps. More testing needs to be done to see how it works with other images.
 
 You can also run `docker-slim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
 
-DockerSlim now also generates Seccomp (usable) and AppArmor (WIP) profiles for your container.
+DockerSlim now also generates Seccomp (usable) and AppArmor (WIP, need more testing) profiles for your container.
 
 Note:
 
