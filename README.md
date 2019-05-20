@@ -21,9 +21,10 @@ Don't worry about manually creating Seccomp and AppArmor security profiles. You 
 
 Node.js application images:
 
-* from ubuntu:14.04  - 432MB  => 14MB   (minified by **30.85X**)
-* from debian:jessie - 406MB  => 25.1MB (minified by **16.21X**)
-* from node:alpine   - 66.7MB => 34.7MB (minified by **1.92X**)
+* from ubuntu:14.04    - 432MB  => 14MB   (minified by **30.85X**)
+* from debian:jessie   - 406MB  => 25.1MB (minified by **16.21X**)
+* from node:alpine     - 66.7MB => 34.7MB (minified by **1.92X**)
+* from node:distroless - 72.7MB => 39.7MB (minified by **1.83X**)
 
 Python application images:
 
