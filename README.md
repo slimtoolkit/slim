@@ -31,8 +31,9 @@ Python application images:
 * from ubuntu:14.04             - 438MB  => 16.8MB (minified by **25.99X**)
 * from python:2.7-alpine        - 84.3MB => 23.1MB (minified by **3.65X**)
 * from python:2.7.15            - 916MB  => 27.5MB (minified by **33.29X**)
-* from centos:7                 - 647 MB => 23 MB  (minified by **28.57X**)
-* from centos/python-27-centos7 - 700 MB => 24 MB  (minified by **29.01X**)
+* from centos:7                 - 647MB  => 23MB   (minified by **28.57X**)
+* from centos/python-27-centos7 - 700MB  => 24MB   (minified by **29.01X**)
+* from python2.7:distroless     - 60.7MB => 18.3MB (minified by **3.32X**)
 
 Ruby application images:
 
