@@ -33,19 +33,19 @@ const (
 
 // DockerSlim app flag names
 const (
-	FlagCheckVersion        = "check-version"
-	FlagDebug               = "debug"
-	FlagCommandReport       = "report"
-	FlagVerbose             = "verbose"
-	FlagLogLevel            = "log-level"
-	FlagLog                 = "log"
-	FlagLogFormat           = "log-format"
-	FlagUseTLS              = "tls"
-	FlagVerifyTLS           = "tls-verify"
-	FlagTLSCertPath         = "tls-cert-path"
-	FlagHost                = "host"
-	FlagStatePath           = "state-path"
-	FlagHTTPProbeSpec       = "http-probe, p"
+	FlagCheckVersion  = "check-version"
+	FlagDebug         = "debug"
+	FlagCommandReport = "report"
+	FlagVerbose       = "verbose"
+	FlagLogLevel      = "log-level"
+	FlagLog           = "log"
+	FlagLogFormat     = "log-format"
+	FlagUseTLS        = "tls"
+	FlagVerifyTLS     = "tls-verify"
+	FlagTLSCertPath   = "tls-cert-path"
+	FlagHost          = "host"
+	FlagStatePath     = "state-path"
+	//FlagHTTPProbeSpec       = "http-probe, p"
 	FlagHTTPProbe           = "http-probe"
 	FlagHTTPProbeCmd        = "http-probe-cmd"
 	FlagHTTPProbeCmdFile    = "http-probe-cmd-file"
@@ -199,8 +199,9 @@ func init() {
 		return nil
 	}
 
-	doHTTPProbeFlag := cli.BoolFlag{
-		Name:   FlagHTTPProbeSpec,
+	//true by default
+	doHTTPProbeFlag := cli.BoolTFlag{
+		Name:   FlagHTTPProbe,
 		Usage:  "Enables HTTP probe",
 		EnvVar: "DSLIM_HTTP_PROBE",
 	}
@@ -545,7 +546,8 @@ func init() {
 				}
 
 				if doHTTPProbe {
-					//add default probe cmd if the "http-probe" flag is explicitly set
+					//add default probe cmd if the "http-probe" flag is set
+					fmt.Println("docker-slim[build]: info=http.probe message='using default probe'")
 					httpProbeCmds = append(httpProbeCmds,
 						config.HTTPProbeCmd{Protocol: "http", Method: "GET", Resource: "/"})
 				}
@@ -709,6 +711,7 @@ func init() {
 
 				if doHTTPProbe {
 					//add default probe cmd if the "http-probe" flag is explicitly set
+					fmt.Println("docker-slim[profile]: info=http.probe message='using default probe'")
 					httpProbeCmds = append(httpProbeCmds,
 						config.HTTPProbeCmd{Protocol: "http", Method: "GET", Resource: "/"})
 				}

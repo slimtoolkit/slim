@@ -97,7 +97,7 @@ func sendCmd(channel mangos.Socket, cmd command.Message) (string, error) {
 	sendTimeouts := 0
 	recvTimeouts := 0
 
-	log.Debugf("sendCmd(%s)", cmd)
+	log.Debugf("sendCmd(%+v)", cmd)
 	for {
 		sendData, err := command.Encode(cmd)
 		if err != nil {

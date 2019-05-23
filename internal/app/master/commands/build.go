@@ -174,6 +174,16 @@ func OnBuild(
 			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts, doHTTPProbeFull,
 			true, "docker-slim[build]:")
 		errutils.FailOn(err)
+		if len(probe.Ports) == 0 {
+			fmt.Println("docker-slim[build]: state=http.probe.error error='no exposed ports' message='expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services")
+			logger.Info("shutting down 'fat' container...")
+			containerInspector.FinishMonitoring()
+			_ = containerInspector.ShutdownContainer()
+
+			fmt.Println("docker-slim[build]: state=exited")
+			return
+		}
+
 		probe.Start()
 		continueAfter.ContinueChan = probe.DoneChan()
 	}
