@@ -14,9 +14,17 @@ Don't worry about manually creating Seccomp and AppArmor security profiles. You 
 
 `docker-slim` will optimize and secure your containers by understanding your application and what it needs using various analysis techniques. It will throw away what you don't need reducing the attack surface for your container. What if you need some of those extra things to debug your container? You can use dedicated debugging side-car containers for that (more details below).
 
-`docker-slim` has been used with Node.js, Python, Ruby, Java, Golang, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian, CentOS and Alpine Linux.
+`docker-slim` has been used with Node.js, Python, Ruby, Java, Golang, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian, CentOS, Alpine and even Distroless.
+
+Watch this screencast to see how an application images is minified by more than 30x.
 
 [![asciicast](https://asciinema.org/a/rHqW8cbr3vXe0WxorHsD36n7V.png)](https://asciinema.org/a/rHqW8cbr3vXe0WxorHsD36n7V)
+
+When `docker-slim` runs it gives you an opportunity to interact with the temporary container it creates. By default, it will pause and wait for your input before it continues its execution. You can change this behavior using the `--continue-after` flag.
+
+If your application exposes any web interfaces (e.g., when you have a web server or an HTTP API), you'll see the port numbers on the host machine you will need to use to interact with your application (look for the `port.list` and `target.port.info` messages on the screen). For example, in the screencast above you'll see that the internal application port 8000 is mapped to port 32911 on your host.
+
+Note that `docker-slim` will interact with your application for you if you enable HTTP probing with the `--http-probe` flag or other related HTTP probe flags. Some web applications built with scripting languages like Python or Ruby require service interactions to load everything in the application. Enable HTTP probing unless it gets in your way.
 
 ## Minification Examples
 
@@ -135,10 +143,6 @@ If the directory where you extracted the binaries is not in your PATH then you'l
 `docker-slim [version|info|build|profile] [--http-probe|--remove-file-artifacts] <IMAGE_ID_OR_NAME>`
 
 Example: `docker-slim build --http-probe my/sample-node-app`
-
-To generate a Dockerfile for your "fat" image without creating a new "slim" image use the `info` command.
-
-Example: `docker-slim info 6f74095b68c9`
 
 See the `USAGE DETAILS` section for more details. You can also get additional information about the parameters running `docker-slim`. Run `docker-slim` without any parameters and you'll get a high level overview of the available commands. Run a `docker-slim` command without any parameters and you'll get more information about that command (e.g., `docker-slim build`).
 
