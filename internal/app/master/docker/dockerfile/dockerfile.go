@@ -263,6 +263,7 @@ func GenerateFromInfo(location string,
 	}
 
 	if len(entrypoint) > 0 {
+		//TODO: need to make sure the generated ENTRYPOINT is compatible with the original behavior
 		var quotedEntryPoint []string
 		for idx := range entrypoint {
 			quotedEntryPoint = append(quotedEntryPoint, strconv.Quote(entrypoint[idx]))
@@ -275,6 +276,7 @@ func GenerateFromInfo(location string,
 	}
 
 	if len(cmd) > 0 {
+		//TODO: need to make sure the generated CMD is compatible with the original behavior
 		var quotedCmd []string
 		for idx := range cmd {
 			quotedCmd = append(quotedCmd, strconv.Quote(cmd[idx]))

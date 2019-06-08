@@ -41,8 +41,9 @@ func OnBuild(
 	doRmFileArtifacts bool,
 	doShowContainerLogs bool,
 	doShowBuildLogs bool,
-	imageOverrides map[string]bool,
+	imageOverrideSelectors map[string]bool,
 	overrides *config.ContainerOverrides,
+	instructions *config.ImageNewInstructions,
 	links []string,
 	etcHostsMaps []string,
 	dnsServers []string,
@@ -67,7 +68,7 @@ func OnBuild(
 
 	logger.Infof("image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v",
 		imageRef, doHTTPProbe, doRmFileArtifacts,
-		imageOverrides,
+		imageOverrideSelectors,
 		overrides.Entrypoint, overrides.ClearEntrypoint, overrides.Cmd, overrides.ClearCmd,
 		overrides.Workdir, overrides.Env, overrides.ExposedPorts)
 
@@ -240,9 +241,21 @@ func OnBuild(
 		imageInspector.ImageInfo,
 		artifactLocation,
 		doShowBuildLogs,
-		imageOverrides,
-		overrides)
+		imageOverrideSelectors,
+		overrides,
+		instructions)
 	errutils.FailOn(err)
+
+	/*
+	   func NewImageBuilder(client *docker.Client,
+	   	imageRepoName string,
+	   	imageInfo *docker.Image,
+	   	artifactLocation string,
+	   	showBuildLogs bool,
+	   	imageOverrides map[string]bool,
+	   	overrides *config.ContainerOverrides,
+	   	instructions *config.ImageNewInstructions)
+	*/
 
 	if !builder.HasData {
 		logger.Info("WARNING - no data artifacts")

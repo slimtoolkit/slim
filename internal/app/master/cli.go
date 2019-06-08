@@ -33,19 +33,18 @@ const (
 
 // DockerSlim app flag names
 const (
-	FlagCheckVersion  = "check-version"
-	FlagDebug         = "debug"
-	FlagCommandReport = "report"
-	FlagVerbose       = "verbose"
-	FlagLogLevel      = "log-level"
-	FlagLog           = "log"
-	FlagLogFormat     = "log-format"
-	FlagUseTLS        = "tls"
-	FlagVerifyTLS     = "tls-verify"
-	FlagTLSCertPath   = "tls-cert-path"
-	FlagHost          = "host"
-	FlagStatePath     = "state-path"
-	//FlagHTTPProbeSpec       = "http-probe, p"
+	FlagCheckVersion        = "check-version"
+	FlagDebug               = "debug"
+	FlagCommandReport       = "report"
+	FlagVerbose             = "verbose"
+	FlagLogLevel            = "log-level"
+	FlagLog                 = "log"
+	FlagLogFormat           = "log-format"
+	FlagUseTLS              = "tls"
+	FlagVerifyTLS           = "tls-verify"
+	FlagTLSCertPath         = "tls-cert-path"
+	FlagHost                = "host"
+	FlagStatePath           = "state-path"
 	FlagHTTPProbe           = "http-probe"
 	FlagHTTPProbeCmd        = "http-probe-cmd"
 	FlagHTTPProbeCmdFile    = "http-probe-cmd-file"
@@ -60,6 +59,11 @@ const (
 	FlagWorkdir             = "workdir"
 	FlagEnv                 = "env"
 	FlagExpose              = "expose"
+	FlagNewEntrypoint       = "new-entrypoint"
+	FlagNewCmd              = "new-cmd"
+	FlagNewExpose           = "new-expose"
+	FlagNewWorkdir          = "new-workdir"
+	FlagNewEnv              = "new-env"
 	FlagExludeMounts        = "exclude-mounts"
 	FlagExcludePath         = "exclude-path"
 	FlagIncludePath         = "include-path"
@@ -257,6 +261,41 @@ func init() {
 		Name:   FlagShowBuildLogs,
 		Usage:  "Show build logs",
 		EnvVar: "DSLIM_SHOW_BLOGS",
+	}
+
+	doUseNewEntrypointFlag := cli.StringFlag{
+		Name:   FlagNewEntrypoint,
+		Value:  "",
+		Usage:  "New ENTRYPOINT instruction for the minified image",
+		EnvVar: "DSLIM_NEW_ENTRYPOINT",
+	}
+
+	doUseNewCmdFlag := cli.StringFlag{
+		Name:   FlagNewCmd,
+		Value:  "",
+		Usage:  "New CMD instruction for the minified image",
+		EnvVar: "DSLIM_NEW_CMD",
+	}
+
+	doUseNewExposeFlag := cli.StringSliceFlag{
+		Name:   FlagNewExpose,
+		Value:  &cli.StringSlice{},
+		Usage:  "New EXPOSE instructions for the minified image",
+		EnvVar: "DSLIM_NEW_EXPOSE",
+	}
+
+	doUseNewWorkdirFlag := cli.StringFlag{
+		Name:   FlagNewWorkdir,
+		Value:  "",
+		Usage:  "New WORKDIR instruction for the minified image",
+		EnvVar: "DSLIM_NEW_WORKDIR",
+	}
+
+	doUseNewEnvFlag := cli.StringSliceFlag{
+		Name:   FlagNewEnv,
+		Value:  &cli.StringSlice{},
+		Usage:  "New ENV instructions for the minified image",
+		EnvVar: "DSLIM_NEW_ENV",
 	}
 
 	doUseEntrypointFlag := cli.StringFlag{
@@ -512,6 +551,11 @@ func init() {
 				doUseNetworkFlag,
 				doUseHostnameFlag,
 				doUseExposeFlag,
+				doUseNewEntrypointFlag,
+				doUseNewCmdFlag,
+				doUseNewExposeFlag,
+				doUseNewWorkdirFlag,
+				doUseNewEnvFlag,
 				doExcludeMountsFlag,
 				doExcludePathFlag,
 				doIncludePathFlag,
@@ -577,6 +621,12 @@ func init() {
 					return err
 				}
 
+				instructions, err := getImageInstructions(ctx)
+				if err != nil {
+					fmt.Printf("[build] invalid image instructions: %v\n", err)
+					return err
+				}
+
 				volumeMounts, err := parseVolumeMounts(ctx.StringSlice(FlagMount))
 				if err != nil {
 					fmt.Printf("[build] invalid volume mounts: %v\n", err)
@@ -638,6 +688,7 @@ func init() {
 					doShowBuildLogs,
 					parseImageOverrides(doImageOverrides),
 					overrides,
+					instructions,
 					ctx.StringSlice(FlagLink),
 					ctx.StringSlice(FlagEtcHostsMap),
 					ctx.StringSlice(FlagContainerDNS),
@@ -877,6 +928,48 @@ func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	overrides.ClearCmd = isOneSpace(doUseCmd)
 
 	return overrides, nil
+}
+
+func getImageInstructions(ctx *cli.Context) (*config.ImageNewInstructions, error) {
+	entrypoint := ctx.String(FlagNewEntrypoint)
+	cmd := ctx.String(FlagNewCmd)
+	expose := ctx.StringSlice(FlagNewExpose)
+
+	instructions := &config.ImageNewInstructions{
+		Workdir: ctx.String(FlagNewWorkdir),
+		Env:     ctx.StringSlice(FlagNewEnv),
+	}
+
+	//TODO(future): also load instructions from a file
+
+	var err error
+	if len(expose) > 0 {
+		instructions.ExposedPorts, err = parseDockerExposeOpt(expose)
+		if err != nil {
+			log.Errorf("getImageInstructions(): invalid expose options => %v", err)
+			return nil, err
+		}
+	}
+
+	instructions.Entrypoint, err = parseExec(entrypoint)
+	if err != nil {
+		log.Errorf("getImageInstructions(): invalid entrypoint option => %v", err)
+		return nil, err
+	}
+
+	//one space is a hacky way to indicate that you want to remove this instruction from the image
+	instructions.ClearEntrypoint = isOneSpace(entrypoint)
+
+	instructions.Cmd, err = parseExec(cmd)
+	if err != nil {
+		log.Errorf("getImageInstructions(): invalid cmd option => %v", err)
+		return nil, err
+	}
+
+	//same hack to indicate you want to remove this instruction
+	instructions.ClearCmd = isOneSpace(cmd)
+
+	return instructions, nil
 }
 
 func getHTTPProbes(ctx *cli.Context) ([]config.HTTPProbeCmd, error) {

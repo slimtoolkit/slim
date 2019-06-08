@@ -7,6 +7,8 @@ import (
 )
 
 // ContainerOverrides provides a set of container field overrides
+// It can also be used to update the image instructions when
+// the "image-overrides" flag is provided
 type ContainerOverrides struct {
 	Entrypoint      []string
 	ClearEntrypoint bool
@@ -16,6 +18,17 @@ type ContainerOverrides struct {
 	Env             []string
 	Hostname        string
 	Network         string
+	ExposedPorts    map[docker.Port]struct{}
+}
+
+// ImageNewInstructions provides a set new image instructions
+type ImageNewInstructions struct {
+	Entrypoint      []string
+	ClearEntrypoint bool
+	Cmd             []string
+	ClearCmd        bool
+	Workdir         string
+	Env             []string
 	ExposedPorts    map[docker.Port]struct{}
 }
 

@@ -74,7 +74,8 @@ func parseImageOverrides(value string) map[string]bool {
 		parts := strings.Split(value, ",")
 		overrides := map[string]bool{}
 		for _, part := range parts {
-			if allImageOverrides[part] {
+			part = strings.ToLower(part)
+			if _, ok := allImageOverrides[part]; ok {
 				overrides[part] = true
 			}
 		}
