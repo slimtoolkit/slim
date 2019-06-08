@@ -1,4 +1,3 @@
 here="$(dirname "$BASH_SOURCE")"
-cd $here
-./src.prep.sh
-
+cd $here/..
+./tools.get.sh

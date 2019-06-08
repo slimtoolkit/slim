@@ -1,7 +1,6 @@
 here="$(dirname "$BASH_SOURCE")"
-cd $here
-./src.build.sh
-
+cd $here/..
+./src.inspect.sh
 
 
 

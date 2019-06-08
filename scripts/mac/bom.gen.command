@@ -1,3 +1,3 @@
 here="$(dirname "$BASH_SOURCE")"
-cd $here
-./tools.get.sh
+cd $here/..
+./bom.gen.sh

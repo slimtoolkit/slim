@@ -1,4 +1,4 @@
 here="$(dirname "$BASH_SOURCE")"
-cd $here
+cd $here/..
 ./src.deps.govendor.restore.sh
 
