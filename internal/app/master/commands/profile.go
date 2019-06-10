@@ -13,8 +13,8 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
-	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/Sirupsen/logrus"
@@ -73,7 +73,7 @@ func OnProfile(
 	}
 
 	imageInspector, err := image.NewInspector(client, imageRef)
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 
 	if imageInspector.NoImage() {
 		fmt.Println("docker-slim[profile]: target image not found -", imageRef)
@@ -85,9 +85,9 @@ func OnProfile(
 
 	logger.Info("inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 
-	localVolumePath, artifactLocation, statePath := fsutils.PrepareImageStateDirs(statePath, imageInspector.ImageInfo.ID)
+	localVolumePath, artifactLocation, statePath := fsutil.PrepareImageStateDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 
 	fmt.Printf("docker-slim[profile]: info=image id=%v size.bytes=%v size.human=%v\n",
@@ -97,7 +97,7 @@ func OnProfile(
 
 	logger.Info("processing 'fat' image info...")
 	err = imageInspector.ProcessCollectedData()
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 
 	fmt.Println("docker-slim[profile]: state=inspecting.container")
 
@@ -120,11 +120,11 @@ func OnProfile(
 		doDebug,
 		true,
 		"docker-slim[profile]:")
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 
 	logger.Info("starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 
 	logger.Info("watching container monitor...")
 
@@ -136,7 +136,7 @@ func OnProfile(
 		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds,
 			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts, doHTTPProbeFull,
 			true, "docker-slim[profile]:")
-		errutils.FailOn(err)
+		errutil.FailOn(err)
 		if len(probe.Ports) == 0 {
 			fmt.Println("docker-slim[profile]: state=http.probe.error error='no exposed ports' message='expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services")
 			logger.Info("shutting down 'fat' container...")
@@ -169,14 +169,14 @@ func OnProfile(
 		<-continueAfter.ContinueChan
 		fmt.Println("docker-slim[profile]: info=event message='HTTP probe is done'")
 	default:
-		errutils.Fail("unknown continue-after mode")
+		errutil.Fail("unknown continue-after mode")
 	}
 
 	containerInspector.FinishMonitoring()
 
 	logger.Info("shutting down 'fat' container...")
 	err = containerInspector.ShutdownContainer()
-	errutils.WarnOn(err)
+	errutil.WarnOn(err)
 
 	fmt.Println("docker-slim[profile]: state=processing")
 
@@ -190,15 +190,15 @@ func OnProfile(
 
 	logger.Info("processing instrumented 'fat' container info...")
 	err = containerInspector.ProcessCollectedData()
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 
 	fmt.Println("docker-slim[profile]: state=completed")
 	cmdReport.State = report.CmdStateCompleted
 
 	if doRmFileArtifacts {
 		logger.Info("removing temporary artifacts...")
-		err = fsutils.Remove(artifactLocation) //TODO: remove only the "files" subdirectory
-		errutils.WarnOn(err)
+		err = fsutil.Remove(artifactLocation) //TODO: remove only the "files" subdirectory
+		errutil.WarnOn(err)
 	}
 
 	fmt.Println("docker-slim[profile]: state=done")

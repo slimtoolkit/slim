@@ -13,8 +13,8 @@ import (
 	"time"
 
 	vchecker "github.com/docker-slim/docker-slim/internal/app/master/version"
-	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
-	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	vinfo "github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/Sirupsen/logrus"
@@ -42,7 +42,7 @@ func Run(doDebug bool, statePath string, doShowProgress bool) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "update"})
 
 	appPath, err := os.Executable()
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 	appDirPath := filepath.Dir(appPath)
 
 	vstatus := vchecker.Check()
@@ -63,16 +63,16 @@ func Run(doDebug bool, statePath string, doShowProgress bool) {
 	fmt.Printf("docker-slim[update]: info=version local=%s current=%s\n", vinfo.Tag(), vstatus.Current)
 
 	blobNameBase, blobNameExt := getReleaseBlobInfo()
-	errutils.FailWhen(blobNameBase == "", "could not discover platform-specific release package name")
+	errutil.FailWhen(blobNameBase == "", "could not discover platform-specific release package name")
 
-	releaseDirPath, statePath := fsutils.PrepareReleaseStateDirs(statePath, vstatus.Current)
-	errutils.FailOn(err)
+	releaseDirPath, statePath := fsutil.PrepareReleaseStateDirs(statePath, vstatus.Current)
+	errutil.FailOn(err)
 
 	blobName := fmt.Sprintf("%s.%s", blobNameBase, blobNameExt)
 	blobPath := filepath.Join(releaseDirPath, blobName)
 	logger.Debugf("release package blob: %v", blobPath)
 
-	if fsutils.Exists(blobPath) {
+	if fsutil.Exists(blobPath) {
 		//feature: not removing/replacing the existing release package blob if it's already there
 		fmt.Printf("docker-slim[update]: info=status message='release package already downloaded'\n")
 		fmt.Printf("docker-slim[update]: state=exited version=%s\n", vinfo.Current())
@@ -254,14 +254,14 @@ func unpackRelease(logger *log.Entry, blobPath, releaseRootPath, blobNameBase st
 	unpackedBlobDir := filepath.Join(releaseRootPath, blobNameBase)
 	commonBlobDir := filepath.Join(releaseRootPath, distDirName)
 
-	if fsutils.DirExists(unpackedBlobDir) {
+	if fsutil.DirExists(unpackedBlobDir) {
 		//feature: not removing the unpacked directory if it's already there (todo: revisit the feature later)
 		logger.Debug("unpackRelease: error - unpacked package blob dir already exists")
 		return nil
 	}
 
 	//todo: should check if it exists before we download the release package...
-	if fsutils.DirExists(commonBlobDir) {
+	if fsutil.DirExists(commonBlobDir) {
 		//feature: not removing the unpacked dist directory if it's already there (todo: revisit the feature later)
 		logger.Debug("unpackRelease: error - release package dir already exists")
 		return nil
@@ -303,7 +303,7 @@ func installRelease(logger *log.Entry, appRootPath, statePath, releaseRootPath s
 	}
 
 	//will copy the sensor to the state dir if DS is installed in a bad non-shared location on Macs
-	fsutils.PreparePostUpdateStateDir(statePath)
+	fsutil.PreparePostUpdateStateDir(statePath)
 
 	err = updateFile(logger, newMasterAppPath, "")
 	if err != nil {

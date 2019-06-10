@@ -13,7 +13,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/system"
-	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -108,7 +108,7 @@ func Run() {
 	log.Infof("sensor: args => %#v", os.Args)
 
 	dirName, err := os.Getwd()
-	errutils.WarnOn(err)
+	errutil.WarnOn(err)
 	log.Debugf("sensor: cwd => %#v", dirName)
 
 	initSignalHandlers()
@@ -121,10 +121,10 @@ func Run() {
 	doneChan = make(chan struct{})
 
 	err = ipc.InitChannels()
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 
 	cmdChan, err := ipc.RunCmdServer(doneChan)
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 
 	errorCh := make(chan error)
 	go func() {

@@ -1,4 +1,4 @@
-package fsutils
+package fsutil
 
 import (
 	"errors"
@@ -11,7 +11,7 @@ import (
 	"syscall"
 
 	"github.com/docker-slim/docker-slim/pkg/pdiscover"
-	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -381,14 +381,14 @@ func CopyDir(src, dst string,
 // ExeDir returns the directory information for the application
 func ExeDir() string {
 	exePath, err := pdiscover.GetOwnProcPath()
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 	return filepath.Dir(exePath)
 }
 
 // FileDir returns the directory information for the given file
 func FileDir(fileName string) string {
 	dirName, err := filepath.Abs(filepath.Dir(fileName))
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 	return dirName
 }
 
@@ -417,7 +417,7 @@ func PreparePostUpdateStateDir(statePrefix string) {
 					}
 
 					err = CopyRegularFile(srcSensorPath, dstSensorPath, true)
-					errutils.FailOn(err)
+					errutil.FailOn(err)
 				} else {
 					log.Debugf("PreparePostUpdateStateDir - did not find tmp on Mac OS")
 				}
@@ -464,7 +464,7 @@ func PrepareImageStateDirs(statePrefix, imageID string) (string, string, string)
 					srcSensorPath := filepath.Join(appDir, sensorFileName)
 					dstSensorPath := filepath.Join(statePrefix, sensorFileName)
 					err = CopyRegularFile(srcSensorPath, dstSensorPath, true)
-					errutils.FailOn(err)
+					errutil.FailOn(err)
 				} else {
 					log.Debugf("PrepareImageStateDirs - did not find tmp on Mac OS")
 				}
@@ -482,21 +482,21 @@ func PrepareImageStateDirs(statePrefix, imageID string) (string, string, string)
 		err = Remove(artifactLocation)
 		if err != nil {
 			log.Debugf("PrepareImageStateDirs - failed to remove existing state location: %v", artifactLocation)
-			errutils.FailOn(err)
+			errutil.FailOn(err)
 		}
 	case os.IsNotExist(err):
 		log.Debugf("PrepareImageStateDirs - will create new state location: %v", artifactLocation)
 	default:
-		errutils.FailOn(err)
+		errutil.FailOn(err)
 	}
 
 	err = os.MkdirAll(artifactLocation, stateArtifactsPerms)
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 	artifactDir, err = os.Stat(artifactLocation)
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 	log.Debug("PrepareImageStateDirs - created new image state location: ", artifactLocation)
 
-	errutils.FailWhen(!artifactDir.IsDir(), "artifact location is not a directory")
+	errutil.FailWhen(!artifactDir.IsDir(), "artifact location is not a directory")
 
 	return localVolumePath, artifactLocation, statePrefix
 }
@@ -534,16 +534,16 @@ func PrepareReleaseStateDirs(statePrefix, version string) (string, string) {
 	case os.IsNotExist(err):
 		log.Debugf("PrepareReleaseStateDirs - will create new release state location: %v", releaseDirPath)
 	default:
-		errutils.FailOn(err)
+		errutil.FailOn(err)
 	}
 
 	err = os.MkdirAll(releaseDirPath, releaseArtifactsPerms)
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 	releaseDir, err = os.Stat(releaseDirPath)
-	errutils.FailOn(err)
+	errutil.FailOn(err)
 	log.Debug("PrepareReleaseStateDirs - created new release state location: ", releaseDirPath)
 
-	errutils.FailWhen(!releaseDir.IsDir(), "release state location is not a directory")
+	errutil.FailWhen(!releaseDir.IsDir(), "release state location is not a directory")
 
 	return releaseDirPath, statePrefix
 }

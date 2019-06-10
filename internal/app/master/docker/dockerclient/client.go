@@ -7,7 +7,7 @@ import (
 
 	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
-	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -47,7 +47,7 @@ func New(config *config.DockerClient) *docker.Client {
 		config.VerifyTLS &&
 		config.TLSCertPath != "":
 		client, err = newTLSClient(config.Host, config.TLSCertPath, true)
-		errutils.FailOn(err)
+		errutil.FailOn(err)
 		log.Debug("docker-slim: new Docker client (TLS,verify) [1]")
 
 	case config.Host != "" &&
@@ -55,13 +55,13 @@ func New(config *config.DockerClient) *docker.Client {
 		!config.VerifyTLS &&
 		config.TLSCertPath != "":
 		client, err = newTLSClient(config.Host, config.TLSCertPath, false)
-		errutils.FailOn(err)
+		errutil.FailOn(err)
 		log.Debug("docker-slim: new Docker client (TLS,no verify) [2]")
 
 	case config.Host != "" &&
 		!config.UseTLS:
 		client, err = docker.NewClient(config.Host)
-		errutils.FailOn(err)
+		errutil.FailOn(err)
 		log.Debug("docker-slim: new Docker client [3]")
 
 	case config.Host == "" &&
@@ -70,27 +70,27 @@ func New(config *config.DockerClient) *docker.Client {
 		config.Env["DOCKER_CERT_PATH"] != "" &&
 		config.Env["DOCKER_HOST"] != "":
 		client, err = newTLSClient(config.Env["DOCKER_HOST"], config.Env["DOCKER_CERT_PATH"], false)
-		errutils.FailOn(err)
+		errutil.FailOn(err)
 		log.Debug("docker-slim: new Docker client (TLS,no verify) [4]")
 
 	case config.Env["DOCKER_HOST"] != "":
 		client, err = docker.NewClientFromEnv()
-		errutils.FailOn(err)
+		errutil.FailOn(err)
 		log.Debug("docker-slim: new Docker client (env) [5]")
 
 	case config.Host == "" && config.Env["DOCKER_HOST"] == "":
 		config.Host = "unix:///var/run/docker.sock"
 		client, err = docker.NewClient(config.Host)
-		errutils.FailOn(err)
+		errutil.FailOn(err)
 		log.Debug("docker-slim: new Docker client (default) [6]")
 
 	default:
-		errutils.Fail("no config for Docker client")
+		errutil.Fail("no config for Docker client")
 	}
 
 	if config.Env["DOCKER_HOST"] == "" {
 		if err := os.Setenv("DOCKER_HOST", config.Host); err != nil {
-			errutils.WarnOn(err)
+			errutil.WarnOn(err)
 		}
 
 		log.Debug("docker-slim: configured DOCKER_HOST env var")

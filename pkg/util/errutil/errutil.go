@@ -1,4 +1,4 @@
-package errutils
+package errutil
 
 import (
 	"runtime/debug"

@@ -20,8 +20,8 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
-	"github.com/docker-slim/docker-slim/pkg/utils/fsutils"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/Sirupsen/logrus"
@@ -169,11 +169,11 @@ func NewInspector(client *dockerapi.Client,
 // RunContainer starts the container inspector instance execution
 func (i *Inspector) RunContainer() error {
 	artifactsPath := filepath.Join(i.LocalVolumePath, ArtifactsDir)
-	sensorPath := filepath.Join(fsutils.ExeDir(), SensorBinLocal)
+	sensorPath := filepath.Join(fsutil.ExeDir(), SensorBinLocal)
 
 	if runtime.GOOS == "darwin" {
 		stateSensorPath := filepath.Join(i.StatePath, SensorBinLocal)
-		if fsutils.Exists(stateSensorPath) {
+		if fsutil.Exists(stateSensorPath) {
 			sensorPath = stateSensorPath
 		}
 	}
@@ -320,8 +320,8 @@ func (i *Inspector) RunContainer() error {
 		return err
 	}
 
-	errutils.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
-	errutils.FailWhen(len(i.ContainerInfo.NetworkSettings.Ports) < len(commsExposedPorts), "docker-slim: error => missing comms ports")
+	errutil.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
+	errutil.FailWhen(len(i.ContainerInfo.NetworkSettings.Ports) < len(commsExposedPorts), "docker-slim: error => missing comms ports")
 	log.Debugf("RunContainer: container NetworkSettings.Ports => %#v", i.ContainerInfo.NetworkSettings.Ports)
 
 	if len(i.ContainerInfo.NetworkSettings.Ports) > 2 {
@@ -479,7 +479,7 @@ func (i *Inspector) ShutdownContainer() error {
 	if _, ok := err.(*dockerapi.ContainerNotRunning); ok {
 		log.Info("can't stop the docker-slim container (container is not running)...")
 	} else {
-		errutils.WarnOn(err)
+		errutil.WarnOn(err)
 	}
 
 	removeOption := dockerapi.RemoveContainerOptions{
@@ -501,7 +501,7 @@ func (i *Inspector) FinishMonitoring() {
 	i.dockerEventStopCh = nil
 
 	cmdResponse, err := ipc.SendContainerCmd(&command.StopMonitor{})
-	errutils.WarnOn(err)
+	errutil.WarnOn(err)
 	//_ = cmdResponse
 	log.Debugf("'stop' monitor response => '%v'", cmdResponse)
 
@@ -518,7 +518,7 @@ func (i *Inspector) FinishMonitoring() {
 		return
 	}
 
-	errutils.WarnOn(err)
+	errutil.WarnOn(err)
 	_ = evt
 	log.Debugf("sensor event => '%v'", evt)
 
@@ -537,7 +537,7 @@ func (i *Inspector) initContainerChannels() error {
 		if os.IsNotExist(err) {
 			os.MkdirAll(ipcLocation, 0777)
 			_, err = os.Stat(ipcLocation)
-			errutils.FailOn(err)
+			errutil.FailOn(err)
 		}
 	*/
 
@@ -558,7 +558,7 @@ func (i *Inspector) shutdownContainerChannels() {
 
 // HasCollectedData returns true if any data was produced monitoring the target container
 func (i *Inspector) HasCollectedData() bool {
-	return fsutils.Exists(filepath.Join(i.ImageInspector.ArtifactLocation, report.DefaultContainerReportFileName))
+	return fsutil.Exists(filepath.Join(i.ImageInspector.ArtifactLocation, report.DefaultContainerReportFileName))
 }
 
 // ProcessCollectedData performs post-processing on the collected container data

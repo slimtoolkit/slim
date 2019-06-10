@@ -11,7 +11,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/errors"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/system"
-	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
 	log "github.com/Sirupsen/logrus"
 )
@@ -74,7 +74,7 @@ func Run(
 				errorCh <- sensorErr
 				time.Sleep(3 * time.Second)
 			}
-			errutils.FailOn(err)
+			errutil.FailOn(err)
 
 			targetPid := app.Process.Pid
 

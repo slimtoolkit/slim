@@ -7,7 +7,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
 
 // Command state constants
@@ -138,14 +138,14 @@ func (p *Command) Save() {
 			if os.IsNotExist(err) {
 				os.MkdirAll(dirName, 0777)
 				_, err = os.Stat(dirName)
-				errutils.FailOn(err)
+				errutil.FailOn(err)
 			}
 		}
 
 		reportData, err := json.MarshalIndent(p, "", "  ")
-		errutils.FailOn(err)
+		errutil.FailOn(err)
 
 		err = ioutil.WriteFile(p.reportLocation, reportData, 0644)
-		errutils.FailOn(err)
+		errutil.FailOn(err)
 	}
 }

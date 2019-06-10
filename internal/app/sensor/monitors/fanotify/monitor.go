@@ -9,7 +9,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/errors"
 	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/utils/errutils"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
 	log "github.com/Sirupsen/logrus"
 	fanapi "github.com/docker-slim/docker-slim/pkg/third_party/madmo/fanotify"
@@ -36,7 +36,7 @@ func Run(errorCh chan error, mountPoint string, stopChan chan struct{}) <-chan *
 
 	nd, err := fanapi.Initialize(fanapi.FAN_CLASS_NOTIF, os.O_RDONLY)
 	//TODO: need to propagate the FANOTIFY init failure back to the master instead of just crashing the sensor!
-	//errutils.FailOn(err)
+	//errutil.FailOn(err)
 	if err != nil {
 		sensorErr := errors.SE("sensor.fanotify.Run/fanapi.Initialize", "call.error", err)
 		errorCh <- sensorErr
@@ -45,7 +45,7 @@ func Run(errorCh chan error, mountPoint string, stopChan chan struct{}) <-chan *
 
 	err = nd.Mark(fanapi.FAN_MARK_ADD|fanapi.FAN_MARK_MOUNT,
 		fanapi.FAN_MODIFY|fanapi.FAN_ACCESS|fanapi.FAN_OPEN, -1, mountPoint)
-	//errutils.FailOn(err)
+	//errutil.FailOn(err)
 	if err != nil {
 		sensorErr := errors.SE("sensor.fanotify.Run/nd.Mark", "call.error", err)
 		errorCh <- sensorErr
@@ -71,7 +71,7 @@ func Run(errorCh chan error, mountPoint string, stopChan chan struct{}) <-chan *
 			for {
 				//TODO: enhance FA Notify to return the original file handle too
 				data, err := nd.GetEvent()
-				errutils.FailOn(err)
+				errutil.FailOn(err)
 				log.Debugf("fanmon: collector - data.Mask => %x", data.Mask)
 
 				if (data.Mask & fanapi.FAN_Q_OVERFLOW) == fanapi.FAN_Q_OVERFLOW {
@@ -101,7 +101,7 @@ func Run(errorCh chan error, mountPoint string, stopChan chan struct{}) <-chan *
 				}
 
 				path, err := os.Readlink(fmt.Sprintf(procFsFdInfo, data.File.Fd()))
-				errutils.FailOn(err)
+				errutil.FailOn(err)
 
 				log.Debugf("fanmon: collector - file path => %v", path)
 
