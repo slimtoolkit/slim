@@ -6,7 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io"
+	//"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -14,7 +14,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-	"syscall"
+	//"syscall"
 
 	"github.com/docker-slim/docker-slim/internal/app/sensor/inspectors/sodeps"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
@@ -249,10 +249,11 @@ func (p *artifactStore) saveArtifacts() {
 
 	//TODO: use exludePaths to filter discovered files
 	log.Debugf("saveArtifacts - copy files (%v)", len(p.fileMap))
-	for fileName := range p.fileMap {
-		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
-		log.Debug("saveArtifacts - saving file data => ", filePath)
-		err := cpFile(fileName, filePath)
+	for srcFileName := range p.fileMap {
+		dstFilePath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFileName)
+		log.Debug("saveArtifacts - saving file data => ", dstFilePath)
+		//err := cpFile(fileName, filePath)
+		err := fsutil.CopyRegularFile(true, srcFileName, dstFilePath, true)
 		if err != nil {
 			log.Warn("saveArtifacts - error saving file => ", err)
 		}
@@ -303,7 +304,8 @@ func (p *artifactStore) saveArtifacts() {
 		passwdFilePath := "/etc/passwd"
 		passwdFileTargetPath := fmt.Sprintf("%s/files%s", p.storeLocation, passwdFilePath)
 		if _, err := os.Stat(passwdFilePath); err == nil {
-			if err := cpFile(passwdFilePath, passwdFileTargetPath); err != nil {
+			//if err := cpFile(passwdFilePath, passwdFileTargetPath); err != nil {
+			if err := fsutil.CopyRegularFile(true, passwdFilePath, passwdFileTargetPath, true); err != nil {
 				log.Warn("sensor: monitor - error copying user info file =>", err)
 			}
 		} else {
@@ -319,7 +321,7 @@ func (p *artifactStore) saveArtifacts() {
 	for inPath, isDir := range includePaths {
 		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, inPath)
 		if isDir {
-			err, errs := fsutil.CopyDir(inPath, dstPath, true, true, nil, nil, nil)
+			err, errs := fsutil.CopyDir(true, inPath, dstPath, true, true, nil, nil, nil)
 			if err != nil {
 				log.Warnf("CopyDir(%v,%v) error: %v", inPath, dstPath, err)
 			}
@@ -328,7 +330,7 @@ func (p *artifactStore) saveArtifacts() {
 				log.Warnf("CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
 			}
 		} else {
-			if err := fsutil.CopyFile(inPath, dstPath, true); err != nil {
+			if err := fsutil.CopyFile(true, inPath, dstPath, true); err != nil {
 				log.Warnf("CopyFile(%v,%v) error: %v", inPath, dstPath, err)
 			}
 		}
@@ -346,7 +348,7 @@ func (p *artifactStore) saveArtifacts() {
 
 		for _, apath := range exeArtifacts {
 			dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, apath)
-			if err := fsutil.CopyFile(apath, dstPath, true); err != nil {
+			if err := fsutil.CopyFile(true, apath, dstPath, true); err != nil {
 				log.Warnf("CopyFile(%v,%v) error: %v", apath, dstPath, err)
 			}
 		}
@@ -364,7 +366,7 @@ func (p *artifactStore) saveArtifacts() {
 
 		for _, bpath := range binArtifacts {
 			dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, bpath)
-			if err := fsutil.CopyFile(bpath, dstPath, true); err != nil {
+			if err := fsutil.CopyFile(true, bpath, dstPath, true); err != nil {
 				log.Warnf("CopyFile(%v,%v) error: %v", bpath, dstPath, err)
 			}
 		}
@@ -378,7 +380,7 @@ func (p *artifactStore) saveArtifacts() {
 
 			for _, spath := range shellArtifacts {
 				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, spath)
-				if err := fsutil.CopyFile(spath, dstPath, true); err != nil {
+				if err := fsutil.CopyFile(true, spath, dstPath, true); err != nil {
 					log.Warnf("CopyFile(%v,%v) error: %v", spath, dstPath, err)
 				}
 			}
@@ -458,6 +460,9 @@ func getDataType(artifactFileName string) (string, error) {
 	return "unknown", nil
 }
 
+/*
+
+
 func cpFile(src, dst string) error {
 	s, err := os.Open(src)
 	if err != nil {
@@ -516,6 +521,7 @@ func cpFile(src, dst string) error {
 
 	return nil
 }
+*/
 
 func py3FileNameFromCache(p string) string {
 	ext := path.Ext(p)
@@ -547,55 +553,6 @@ func py3FileNameFromCache(p string) string {
 	return path.Join(path.Dir(path.Dir(p)), pyFileName)
 }
 
-/* use - TBD
-func createDummyFile(src, dst string) error {
-	_, err := os.Stat(dst)
-	if err != nil && os.IsNotExist(err) {
-
-		f, err := os.Create(dst)
-		if err != nil {
-			return err
-		}
-
-		defer f.Close()
-		f.WriteString(" ")
-
-		s, err := os.Open(src)
-		if err != nil {
-			return err
-		}
-		defer s.Close()
-
-		srcFileInfo, err := s.Stat()
-		if err != nil {
-			return err
-		}
-
-		f.Chmod(srcFileInfo.Mode())
-
-		sysStat, ok := srcFileInfo.Sys().(*syscall.Stat_t)
-		if !ok {
-			log.Warnln("sensor: createDummyFile - unable to get Stat_t =>", src)
-			return nil
-		}
-
-		//note: doing it only for regular files
-		if srcFileInfo.Mode()&os.ModeSymlink != 0 {
-			log.Warnln("sensor: createDummyFile - source is a symlink =>", src)
-			return nil
-		}
-
-		//note: need to do the same for symlinks too
-		if err := fsutil.UpdateFileTimes(dst, sysStat.Mtim, sysStat.Atim); err != nil {
-			log.Warnln("sensor: createDummyFile - UpdateFileTimes error =>", dst)
-			return err
-		}
-	}
-
-	return nil
-}
-*/
-
 func fixPy3CacheFile(src, dst string) error {
 	dstPyFilePath := py3FileNameFromCache(dst)
 	if dstPyFilePath == "" {
@@ -608,7 +565,8 @@ func fixPy3CacheFile(src, dst string) error {
 	}
 
 	if _, err := os.Stat(dstPyFilePath); err != nil && os.IsNotExist(err) {
-		if err := cpFile(srcPyFilePath, dstPyFilePath); err != nil {
+		//if err := cpFile(srcPyFilePath, dstPyFilePath); err != nil {
+		if err := fsutil.CopyRegularFile(true, srcPyFilePath, dstPyFilePath, true); err != nil {
 			log.Warnln("sensor: monitor - fixPy3CacheFile - error copying file =>", dstPyFilePath)
 			return err
 		}
@@ -656,7 +614,8 @@ func rbEnsureGemFiles(src, storeLocation, prefix string) error {
 					extBuildFlagFilePathDst := fmt.Sprintf("%s%s%s", storeLocation, prefix, extBuildFlagFilePath)
 
 					if _, err := os.Stat(extBuildFlagFilePathDst); err != nil && os.IsNotExist(err) {
-						if err := cpFile(extBuildFlagFilePath, extBuildFlagFilePathDst); err != nil {
+						//if err := cpFile(extBuildFlagFilePath, extBuildFlagFilePathDst); err != nil {
+						if err := fsutil.CopyRegularFile(true, extBuildFlagFilePath, extBuildFlagFilePathDst, true); err != nil {
 							log.Warnln("sensor: monitor - rbEnsureGemFiles - error copying file =>", extBuildFlagFilePathDst)
 							return err
 						}
@@ -692,7 +651,7 @@ func ngxEnsure(prefix string) {
 	if info, err := os.Stat(ngxCommonTemp); err == nil {
 		if info.IsDir() {
 			dstPath := fmt.Sprintf("%s/files%s", prefix, ngxCommonTemp)
-			err, errs := fsutil.CopyDir(ngxCommonTemp, dstPath, true, true, nil, nil, nil)
+			err, errs := fsutil.CopyDir(true, ngxCommonTemp, dstPath, true, true, nil, nil, nil)
 			if err != nil {
 				log.Warnf("ngxEnsure - CopyDir error: %v", err)
 			}

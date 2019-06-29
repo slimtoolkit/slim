@@ -17,7 +17,7 @@ import (
 )
 
 type syscallEvent struct {
-	callNum int16
+	callNum uint32
 	retVal  uint64
 }
 
@@ -50,7 +50,7 @@ func Run(
 			SyscallStats: map[string]report.SyscallStatInfo{},
 		}
 
-		syscallStats := map[int16]uint64{}
+		syscallStats := map[uint32]uint64{}
 		eventChan := make(chan syscallEvent, eventBufSize)
 		collectorDoneChan := make(chan int, 1)
 
@@ -146,7 +146,7 @@ func Run(
 
 					select {
 					case eventChan <- syscallEvent{
-						callNum: int16(callNum),
+						callNum: uint32(callNum),
 						retVal:  retVal,
 					}:
 					case <-stopChan:

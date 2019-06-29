@@ -116,12 +116,16 @@ func NewCustomProbe(inspector *container.Inspector,
 
 // Start starts the HTTP probe instance execution
 func (p *CustomProbe) Start() {
+	if p.PrintState {
+		fmt.Printf("%s state=http.probe.starting message='WAIT FOR HTTP PROBE TO FINISH'\n", p.PrintPrefix)
+	}
+
 	go func() {
 		//TODO: need to do a better job figuring out if the target app is ready to accept connections
 		time.Sleep(9 * time.Second)
 
 		if p.PrintState {
-			fmt.Printf("%s state=http.probe.starting\n", p.PrintPrefix)
+			fmt.Printf("%s state=http.probe.running\n", p.PrintPrefix)
 		}
 
 		httpClient := &http.Client{

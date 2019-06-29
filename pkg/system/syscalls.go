@@ -23,7 +23,7 @@ const (
 	SyscallArmLastName32  = "process_vm_writev"
 )
 
-type NumberResolverFunc func(int16) string
+type NumberResolverFunc func(uint32) string
 
 func CallNumberResolver(arch ArchName) NumberResolverFunc {
 	switch arch {
@@ -364,7 +364,7 @@ var syscallNumTableX86Family64 = [...]string{
 	"execveat",
 }
 
-func callNameX86Family64(num int16) string {
+func callNameX86Family64(num uint32) string {
 	if num > SyscallX86MaxNum64 {
 		return SyscallX86UnknownName
 	}
@@ -743,7 +743,7 @@ var syscallNumTableX86Family32 = [...]string{
 	"execveat",
 }
 
-func callNameX86Family32(num int16) string {
+func callNameX86Family32(num uint32) string {
 	if num > SyscallX86MaxNum32 {
 		return SyscallX86UnknownName
 	}
@@ -760,7 +760,7 @@ func callNumTableIsOkX86Family32() bool {
 	return false
 }
 
-var syscallNumTableArmFamily32 = map[int16]string{
+var syscallNumTableArmFamily32 = map[uint32]string{
 	0:   "restart_syscall",
 	1:   "exit",
 	2:   "fork",
@@ -1108,7 +1108,7 @@ var syscallNumTableArmFamily32 = map[int16]string{
 	377: "process_vm_writev",
 }
 
-func callNameArmFamily32(num int16) string {
+func callNameArmFamily32(num uint32) string {
 	if num > SyscallArmMaxNum32 {
 		return SyscallArmUnknownName
 	}

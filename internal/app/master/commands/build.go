@@ -93,7 +93,7 @@ func OnBuild(
 		return
 	}
 
-	fmt.Println("docker-slim[build]: state=inspecting.image")
+	fmt.Println("docker-slim[build]: state=image.inspection.start")
 
 	logger.Info("inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
@@ -131,7 +131,8 @@ func OnBuild(
 		}
 	}
 
-	fmt.Println("docker-slim[build]: state=inspecting.container")
+	fmt.Println("docker-slim[build]: state=image.inspection.done")
+	fmt.Println("docker-slim[build]: state=container.inspection.start")
 
 	containerInspector, err := container.NewInspector(client,
 		statePath,
@@ -158,7 +159,7 @@ func OnBuild(
 	err = containerInspector.RunContainer()
 	errutil.FailOn(err)
 
-	fmt.Printf("docker-slim[build]: info=container name=%v id=%v target.port.list=[%v] target.port.info=[%v]\n",
+	fmt.Printf("docker-slim[build]: info=container name=%v id=%v target.port.list=[%v] target.port.info=[%v] message='YOU CAN USE THESE PORTS TO INTERACT WITH THE CONTAINER'\n",
 		containerInspector.ContainerName,
 		containerInspector.ContainerID,
 		containerInspector.ContainerPortList,
@@ -191,7 +192,7 @@ func OnBuild(
 
 	switch continueAfter.Mode {
 	case "enter":
-		fmt.Println("docker-slim[build]: info=prompt message='press <enter> when you are done using the container'")
+		fmt.Println("docker-slim[build]: info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'")
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
 	case "signal":
@@ -210,13 +211,15 @@ func OnBuild(
 		errutil.Fail("unknown continue-after mode")
 	}
 
+	fmt.Println("docker-slim[build]: state=container.inspection.finishing")
+
 	containerInspector.FinishMonitoring()
 
 	logger.Info("shutting down 'fat' container...")
 	err = containerInspector.ShutdownContainer()
 	errutil.WarnOn(err)
 
-	fmt.Println("docker-slim[build]: state=processing")
+	fmt.Println("docker-slim[build]: state=container.inspection.artifact.processing")
 
 	if !containerInspector.HasCollectedData() {
 		imageInspector.ShowFatImageDockerInstructions()
@@ -234,6 +237,7 @@ func OnBuild(
 		customImageTag = imageInspector.SlimImageRepo
 	}
 
+	fmt.Println("docker-slim[build]: state=container.inspection.done")
 	fmt.Println("docker-slim[build]: state=building message='building minified image'")
 
 	builder, err := builder.NewImageBuilder(client,

@@ -343,6 +343,12 @@
 			"path": "github.com/ulikunitz/xz/lzma",
 			"revision": "6f934d456d51e742b4eeab20d925a827ef22320a",
 			"revisionTime": "2019-02-20T20:51:30Z"
+		},
+		{
+			"checksumSHA1": "8gJjRi/3ZyVZlVp0YEjUm/+aLSU=",
+			"path": "golang.org/x/sys/unix",
+			"revision": "93c9922d18aeb82498a065f07aec7ad7fa60dfb7",
+			"revisionTime": "2019-06-10T16:23:19Z"
 		}
 	],
 	"rootPath": "github.com/docker-slim/docker-slim"

@@ -81,7 +81,7 @@ func OnProfile(
 		return
 	}
 
-	fmt.Println("docker-slim[profile]: state=inspecting.image")
+	fmt.Println("docker-slim[profile]: state=image.inspection.start")
 
 	logger.Info("inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
@@ -99,7 +99,8 @@ func OnProfile(
 	err = imageInspector.ProcessCollectedData()
 	errutil.FailOn(err)
 
-	fmt.Println("docker-slim[profile]: state=inspecting.container")
+	fmt.Println("docker-slim[profile]: state=image.inspection.done")
+	fmt.Println("docker-slim[profile]: state=container.inspection.start")
 
 	containerInspector, err := container.NewInspector(client,
 		statePath,
@@ -125,6 +126,12 @@ func OnProfile(
 	logger.Info("starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
 	errutil.FailOn(err)
+
+	fmt.Printf("docker-slim[build]: info=container name=%v id=%v target.port.list=[%v] target.port.info=[%v] message='YOU CAN USE THESE PORTS TO INTERACT WITH THE CONTAINER'\n",
+		containerInspector.ContainerName,
+		containerInspector.ContainerID,
+		containerInspector.ContainerPortList,
+		containerInspector.ContainerPortsInfo)
 
 	logger.Info("watching container monitor...")
 
@@ -153,7 +160,7 @@ func OnProfile(
 
 	switch continueAfter.Mode {
 	case "enter":
-		fmt.Println("docker-slim[profile]: info=prompt message='press <enter> when you are done using the container'")
+		fmt.Println("docker-slim[profile]: info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'")
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
 	case "signal":
@@ -172,13 +179,15 @@ func OnProfile(
 		errutil.Fail("unknown continue-after mode")
 	}
 
+	fmt.Println("docker-slim[profile]: state=container.inspection.finishing")
+
 	containerInspector.FinishMonitoring()
 
 	logger.Info("shutting down 'fat' container...")
 	err = containerInspector.ShutdownContainer()
 	errutil.WarnOn(err)
 
-	fmt.Println("docker-slim[profile]: state=processing")
+	fmt.Println("docker-slim[profile]: state=container.inspection.artifact.processing")
 
 	if !containerInspector.HasCollectedData() {
 		imageInspector.ShowFatImageDockerInstructions()
@@ -192,6 +201,7 @@ func OnProfile(
 	err = containerInspector.ProcessCollectedData()
 	errutil.FailOn(err)
 
+	fmt.Println("docker-slim[profile]: state=container.inspection.done")
 	fmt.Println("docker-slim[profile]: state=completed")
 	cmdReport.State = report.CmdStateCompleted
 

@@ -83,7 +83,7 @@ type PeMonitorReport struct {
 
 // SyscallStatInfo contains various system call activity metadata
 type SyscallStatInfo struct {
-	Number int16  `json:"num"`
+	Number uint32 `json:"num"`
 	Name   string `json:"name"`
 	Count  uint64 `json:"count"`
 }

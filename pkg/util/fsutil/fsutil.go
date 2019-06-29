@@ -3,6 +3,7 @@ package fsutil
 import (
 	"errors"
 	"fmt"
+	"golang.org/x/sys/unix"
 	"io"
 	"os"
 	"path/filepath"
@@ -105,8 +106,8 @@ func IsSymlink(target string) bool {
 }
 
 // CopyFile copies the source file system object to the desired destination
-func CopyFile(src, dst string, makeDir bool) error {
-	log.Debugf("CopyFile(%v,%v,%v)", src, dst, makeDir)
+func CopyFile(clone bool, src, dst string, makeDir bool) error {
+	log.Debugf("CopyFile(%v,%v,%v,%v)", clone, src, dst, makeDir)
 
 	info, err := os.Lstat(src)
 	if err != nil {
@@ -115,17 +116,45 @@ func CopyFile(src, dst string, makeDir bool) error {
 
 	switch {
 	case info.Mode().IsRegular():
-		return CopyRegularFile(src, dst, makeDir)
+		return CopyRegularFile(clone, src, dst, makeDir)
 	case (info.Mode() & os.ModeSymlink) == os.ModeSymlink:
-		return CopySymlinkFile(src, dst, makeDir)
+		return CopySymlinkFile(clone, src, dst, makeDir)
 	default:
 		return ErrUnsupportedFileObjectType
 	}
 }
 
 // CopySymlinkFile copies a symlink file
-func CopySymlinkFile(src, dst string, makeDir bool) error {
+func CopySymlinkFile(clone bool, src, dst string, makeDir bool) error {
 	log.Debugf("CopySymlinkFile(%v,%v,%v)", src, dst, makeDir)
+
+	if makeDir {
+		//srcDirName := FileDir(src)
+		dstDirName := FileDir(dst)
+
+		if _, err := os.Stat(dstDirName); err != nil {
+			if os.IsNotExist(err) {
+				var dirMode os.FileMode = 0777
+				//need to make it work for non-default user use cases
+				//if clone {
+				//	srcDirInfo, err := os.Stat(srcDirName)
+				//	if err != nil {
+				//		return err
+				//	}
+				//
+				//	dirMode = srcDirInfo.Mode()
+				//}
+
+				err = os.MkdirAll(dstDirName, dirMode)
+				if err != nil {
+					return err
+				}
+
+			} else {
+				return err
+			}
+		}
+	}
 
 	linkRef, err := os.Readlink(src)
 	if err != nil {
@@ -137,11 +166,32 @@ func CopySymlinkFile(src, dst string, makeDir bool) error {
 		return err
 	}
 
+	if clone {
+		srcInfo, err := os.Lstat(src)
+		if err != nil {
+			return err
+		}
+
+		if sysStat, ok := srcInfo.Sys().(*syscall.Stat_t); ok {
+			ssi := SysStatInfo(sysStat)
+			if err := UpdateSymlinkTimes(dst, ssi.Atime, ssi.Mtime); err != nil {
+				log.Warnln("CopySymlinkFile(%v,%v) - UpdateSymlinkTimes error", src, dst)
+			}
+
+			//todo: later
+			//if err := os.Lchown(dst, int(ssi.Uid),int(ssi.Gid)); err != nil {
+			//	log.Warnln("CopySymlinkFile(%v,%v)- unable to change owner", src, dst)
+			//}
+		} else {
+			log.Warnln("CopySymlinkFile(%v,%v)- unable to get Stat_t", src, dst)
+		}
+	}
+
 	return nil
 }
 
 // CopyRegularFile copies a regular file
-func CopyRegularFile(src, dst string, makeDir bool) error {
+func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 	log.Debugf("CopyRegularFile(%v,%v,%v)", src, dst, makeDir)
 
 	s, err := os.Open(src)
@@ -160,26 +210,23 @@ func CopyRegularFile(src, dst string, makeDir bool) error {
 	}
 
 	if makeDir {
-		srcDirName, err := filepath.Abs(filepath.Dir(src))
-		if err != nil {
-			return err
-		}
-
-		dstDirName, err := filepath.Abs(filepath.Dir(dst))
-		if err != nil {
-			return err
-		}
+		//srcDirName := FileDir(src)
+		dstDirName := FileDir(dst)
 
 		if _, err := os.Stat(dstDirName); err != nil {
-
 			if os.IsNotExist(err) {
+				var dirMode os.FileMode = 0777
+				//need to make it work for non-default user use cases
+				//if clone {
+				//	srcDirInfo, err := os.Stat(srcDirName)
+				//	if err != nil {
+				//		return err
+				//	}
+				//
+				//	dirMode = srcDirInfo.Mode()
+				//}
 
-				srcDirInfo, err := os.Stat(srcDirName)
-				if err != nil {
-					return err
-				}
-
-				err = os.MkdirAll(dstDirName, srcDirInfo.Mode())
+				err = os.MkdirAll(dstDirName, dirMode)
 				if err != nil {
 					return err
 				}
@@ -211,11 +258,31 @@ func CopyRegularFile(src, dst string, makeDir bool) error {
 		}
 	}
 
-	d.Chmod(srcFileInfo.Mode())
+	if clone {
+		if err := d.Chmod(srcFileInfo.Mode()); err != nil {
+			log.Warnln("CopyRegularFile(%v,%v) - unable to set mode", src, dst)
+		}
+
+		if sysStat, ok := srcFileInfo.Sys().(*syscall.Stat_t); ok {
+			ssi := SysStatInfo(sysStat)
+			if err := UpdateFileTimes(dst, ssi.Atime, ssi.Mtime); err != nil {
+				log.Warnln("CopyRegularFile(%v,%v) - UpdateFileTimes error", src, dst)
+			}
+
+			//todo: later
+			//if err := d.Chown(int(ssi.Uid),int(ssi.Gid)); err != nil {
+			//	log.Warnln("CopyRegularFile(%v,%v)- unable to change owner", src, dst)
+			//}
+		} else {
+			log.Warnln("CopyRegularFile(%v,%v)- unable to get Stat_t", src, dst)
+		}
+	}
+
 	return d.Close()
 }
 
 func copyFileObjectHandler(
+	clone bool,
 	srcBase, dstBase string,
 	copyRelPath, skipErrors bool,
 	ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{},
@@ -256,7 +323,11 @@ func copyFileObjectHandler(
 				return filepath.SkipDir
 			}
 
-			err = os.MkdirAll(targetPath, info.Mode())
+			//TODO: should have a better 'clone' support...
+
+			//need to make it work for non-default user use cases
+			//err = os.MkdirAll(targetPath, info.Mode())
+			err = os.MkdirAll(targetPath, 0777)
 			if err != nil {
 				if skipErrors {
 					*errs = append(*errs, err)
@@ -276,7 +347,7 @@ func copyFileObjectHandler(
 				return nil
 			}
 
-			err = CopyRegularFile(path, targetPath, true)
+			err = CopyRegularFile(clone, path, targetPath, true)
 			if err != nil {
 				if skipErrors {
 					*errs = append(*errs, err)
@@ -295,6 +366,8 @@ func copyFileObjectHandler(
 				log.Debug("link file name in ignoreDirNames list (skipping file)...")
 				return nil
 			}
+
+			//TODO: should call CopySymlinkFile() here (instead of using os.Readlink/os.Symlink directly)
 
 			//TODO: (add a flag)
 			//to make it more generic need to support absolute path link rewriting
@@ -327,7 +400,8 @@ func copyFileObjectHandler(
 }
 
 // CopyDir copies a directory
-func CopyDir(src, dst string,
+func CopyDir(clone bool,
+	src, dst string,
 	copyRelPath, skipErrors bool,
 	ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{}) (error, []error) {
 	log.Debugf("CopyDir(%v,%v,%v,%v,...)", src, dst, copyRelPath, skipErrors)
@@ -353,6 +427,9 @@ func CopyDir(src, dst string,
 		return ErrSameDir, nil
 	}
 
+	//TODO: better symlink support
+	//when 'src' is a directory (need to better define the expected behavior)
+	//should use Lstat() first
 	srcInfo, err := os.Stat(src)
 	if err != nil {
 		if os.IsNotExist(err) {
@@ -366,9 +443,11 @@ func CopyDir(src, dst string,
 		return ErrSrcNotDir, nil
 	}
 
+	//TODO: should clone directory permission, ownership and timestamps info
+
 	var errs []error
 	err = filepath.Walk(src, copyFileObjectHandler(
-		src, dst, copyRelPath, skipErrors, ignorePaths, ignoreDirNames, ignoreFileNames, &errs))
+		clone, src, dst, copyRelPath, skipErrors, ignorePaths, ignoreDirNames, ignoreFileNames, &errs))
 	if err != nil {
 		return err, nil
 	}
@@ -416,7 +495,7 @@ func PreparePostUpdateStateDir(statePrefix string) {
 						}
 					}
 
-					err = CopyRegularFile(srcSensorPath, dstSensorPath, true)
+					err = CopyRegularFile(true, srcSensorPath, dstSensorPath, true)
 					errutil.FailOn(err)
 				} else {
 					log.Debugf("PreparePostUpdateStateDir - did not find tmp on Mac OS")
@@ -463,7 +542,7 @@ func PrepareImageStateDirs(statePrefix, imageID string) (string, string, string)
 
 					srcSensorPath := filepath.Join(appDir, sensorFileName)
 					dstSensorPath := filepath.Join(statePrefix, sensorFileName)
-					err = CopyRegularFile(srcSensorPath, dstSensorPath, true)
+					err = CopyRegularFile(true, srcSensorPath, dstSensorPath, true)
 					errutil.FailOn(err)
 				} else {
 					log.Debugf("PrepareImageStateDirs - did not find tmp on Mac OS")
@@ -548,6 +627,55 @@ func PrepareReleaseStateDirs(statePrefix, version string) (string, string) {
 	return releaseDirPath, statePrefix
 }
 
+/* use - TBD
+func createDummyFile(src, dst string) error {
+	_, err := os.Stat(dst)
+	if err != nil && os.IsNotExist(err) {
+
+		f, err := os.Create(dst)
+		if err != nil {
+			return err
+		}
+
+		defer f.Close()
+		f.WriteString(" ")
+
+		s, err := os.Open(src)
+		if err != nil {
+			return err
+		}
+		defer s.Close()
+
+		srcFileInfo, err := s.Stat()
+		if err != nil {
+			return err
+		}
+
+		f.Chmod(srcFileInfo.Mode())
+
+		sysStat, ok := srcFileInfo.Sys().(*syscall.Stat_t)
+		if !ok {
+			log.Warnln("sensor: createDummyFile - unable to get Stat_t =>", src)
+			return nil
+		}
+
+		//note: doing it only for regular files
+		if srcFileInfo.Mode()&os.ModeSymlink != 0 {
+			log.Warnln("sensor: createDummyFile - source is a symlink =>", src)
+			return nil
+		}
+
+		//note: need to do the same for symlinks too
+		if err := fsutil.UpdateFileTimes(dst, sysStat.Mtim, sysStat.Atim); err != nil {
+			log.Warnln("sensor: createDummyFile - UpdateFileTimes error =>", dst)
+			return err
+		}
+	}
+
+	return nil
+}
+*/
+
 ///////////////////////////////////////////////////////////////////////////////
 
 // UpdateFileTimes updates the atime and mtime timestamps on the target file
@@ -556,4 +684,8 @@ func UpdateFileTimes(target string, atime, mtime syscall.Timespec) error {
 	return syscall.UtimesNano(target, ts)
 }
 
-//todo: UpdateSymlinkTimes()
+//UpdateSymlinkTimes updates the atime and mtime timestamps on the target symlink
+func UpdateSymlinkTimes(target string, atime, mtime syscall.Timespec) error {
+	ts := []unix.Timespec{unix.Timespec(atime), unix.Timespec(mtime)}
+	return unix.UtimesNanoAt(unix.AT_FDCWD, target, ts, unix.AT_SYMLINK_NOFOLLOW)
+}
