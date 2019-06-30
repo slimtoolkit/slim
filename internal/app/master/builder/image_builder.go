@@ -151,6 +151,7 @@ func (b *ImageBuilder) Build() error {
 // GenerateDockerfile creates a Dockerfile file
 func (b *ImageBuilder) GenerateDockerfile() error {
 	return dockerfile.GenerateFromInfo(b.BuildOptions.ContextDir,
+		b.Volumes,
 		b.WorkingDir,
 		b.Env,
 		b.User,

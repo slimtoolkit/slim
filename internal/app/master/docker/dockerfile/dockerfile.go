@@ -214,6 +214,7 @@ func SaveDockerfileData(fatImageDockerfileLocation string, fatImageDockerfileLin
 
 // GenerateFromInfo builds and saves a Dockerfile file object
 func GenerateFromInfo(location string,
+	volumes map[string]struct{},
 	workingDir string,
 	env []string,
 	user string,
@@ -226,6 +227,17 @@ func GenerateFromInfo(location string,
 
 	var dfData bytes.Buffer
 	dfData.WriteString("FROM scratch\n")
+
+	if len(volumes) > 0 {
+		var volumeList []string
+		for volumeName := range volumes {
+			volumeList = append(volumeList, strconv.Quote(volumeName))
+		}
+
+		volumeInst := fmt.Sprintf("VOLUME [%s]", strings.Join(volumeList, ","))
+		dfData.WriteString(volumeInst)
+		dfData.WriteByte('\n')
+	}
 
 	if hasData {
 		dfData.WriteString("COPY files /\n")
