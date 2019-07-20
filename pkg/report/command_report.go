@@ -122,8 +122,7 @@ func NewInfoCommand(reportLocation string) *InfoCommand {
 	}
 }
 
-// Save saves the report data to the configured location
-func (p *Command) Save() {
+func (p *Command) saveInfo(info interface{}) {
 	if p.reportLocation != "" {
 		dirName := filepath.Dir(p.reportLocation)
 		baseName := filepath.Base(p.reportLocation)
@@ -142,10 +141,30 @@ func (p *Command) Save() {
 			}
 		}
 
-		reportData, err := json.MarshalIndent(p, "", "  ")
+		reportData, err := json.MarshalIndent(info, "", "  ")
 		errutil.FailOn(err)
 
 		err = ioutil.WriteFile(p.reportLocation, reportData, 0644)
 		errutil.FailOn(err)
 	}
+}
+
+// Save saves the report data to the configured location
+func (p *Command) Save() {
+	p.saveInfo(p)
+}
+
+// Save saves the Build command report data to the configured location
+func (p *BuildCommand) Save() {
+	p.saveInfo(p)
+}
+
+// Save saves the Profile command report data to the configured location
+func (p *ProfileCommand) Save() {
+	p.saveInfo(p)
+}
+
+// Save saves the Info command report data to the configured location
+func (p *InfoCommand) Save() {
+	p.saveInfo(p)
 }

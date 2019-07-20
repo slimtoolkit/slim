@@ -250,17 +250,6 @@ func OnBuild(
 		instructions)
 	errutil.FailOn(err)
 
-	/*
-	   func NewImageBuilder(client *docker.Client,
-	   	imageRepoName string,
-	   	imageInfo *docker.Image,
-	   	artifactLocation string,
-	   	showBuildLogs bool,
-	   	imageOverrides map[string]bool,
-	   	overrides *config.ContainerOverrides,
-	   	instructions *config.ImageNewInstructions)
-	*/
-
 	if !builder.HasData {
 		logger.Info("WARNING - no data artifacts")
 	}
