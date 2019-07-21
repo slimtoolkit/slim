@@ -1,3 +1,20 @@
+## 1.25.2 (7/21/2019)
+
+### New Features
+
+* Enhanced build command reports with additional container image metadata (using the global `--report` flag)
+* Ability to update the minified image Dockerfile instructions (using the --new-cmd, --new-entrypoint, --new-expose, --new-workdir, --new-env and --image-overrides flags)
+* Dockerfile volume support
+
+### Improvements
+
+* HTTP probes by default (you will have to disable HTTP probes if you don't need them)
+* Various UX enhancements to provide better CLI feedback and to avoid generating minified images that might not work
+
+### Bug Fixes
+
+* TTY bug fix caused by an external dependency (used to track update download progress)
+
 ## 1.25.0 (4/23/2019)
 
 ### New Features
