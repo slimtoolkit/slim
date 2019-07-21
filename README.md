@@ -129,7 +129,7 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 
 Latest version: 1.25.2 (7/21/2019)
 
-Now there's an easy way to keep a basic shell in your minified container images! For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
+Now you can generate enhanced build reports with additional container image metadata and rewrite some of the generated Docker image instructions! For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
 ## INSTALLATION
 
