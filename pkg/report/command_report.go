@@ -1,12 +1,14 @@
 package report
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
+	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerfile"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
 
@@ -38,21 +40,37 @@ type Command struct {
 	Error          string  `json:"error,omitempty"`
 }
 
+type ImageMetadata struct {
+	ID            string   `json:"id"`
+	Name          string   `json:"name"`
+	Size          int64    `json:"size"`
+	SizeHuman     string   `json:"size_human"`
+	CreateTime    string   `json:"create_time"`
+	AllNames      []string `json:"all_names"`
+	Author        string   `json:"Author,omitempty"`
+	DockerVersion string   `json:"docker_version"`
+	Architecture  string   `json:"architecture"`
+	User          string   `json:"user,omitempty"`
+	ExposedPorts  []string `json:"exposed_ports,omitempty"`
+}
+
 // BuildCommand is the 'build' command report data
 type BuildCommand struct {
 	Command
-	OriginalImage          string  `json:"original_image"`
-	OriginalImageSize      int64   `json:"original_image_size"`
-	OriginalImageSizeHuman string  `json:"original_image_size_human"`
-	MinifiedImageSize      int64   `json:"minified_image_size"`
-	MinifiedImageSizeHuman string  `json:"minified_image_size_human"`
-	MinifiedImage          string  `json:"minified_image"`
-	MinifiedImageHasData   bool    `json:"minified_image_has_data"`
-	MinifiedBy             float64 `json:"minified_by"`
-	ArtifactLocation       string  `json:"artifact_location"`
-	ContainerReportName    string  `json:"container_report_name"`
-	SeccompProfileName     string  `json:"seccomp_profile_name"`
-	AppArmorProfileName    string  `json:"apparmor_profile_name"`
+	ImageReference string        `json:"image_reference"`
+	SourceImage    ImageMetadata `json:"source_image"`
+	//OriginalImageSize      int64   `json:"original_image_size"`
+	//OriginalImageSizeHuman string  `json:"original_image_size_human"`
+	MinifiedImageSize      int64                   `json:"minified_image_size"`
+	MinifiedImageSizeHuman string                  `json:"minified_image_size_human"`
+	MinifiedImage          string                  `json:"minified_image"`
+	MinifiedImageHasData   bool                    `json:"minified_image_has_data"`
+	MinifiedBy             float64                 `json:"minified_by"`
+	ArtifactLocation       string                  `json:"artifact_location"`
+	ContainerReportName    string                  `json:"container_report_name"`
+	SeccompProfileName     string                  `json:"seccomp_profile_name"`
+	AppArmorProfileName    string                  `json:"apparmor_profile_name"`
+	ImageStack             []*dockerfile.ImageInfo `json:"image_stack"`
 }
 
 // ProfileCommand is the 'profile' command report data
@@ -141,10 +159,14 @@ func (p *Command) saveInfo(info interface{}) {
 			}
 		}
 
-		reportData, err := json.MarshalIndent(info, "", "  ")
+		var reportData bytes.Buffer
+		encoder := json.NewEncoder(&reportData)
+		encoder.SetEscapeHTML(false)
+		encoder.SetIndent("", "  ")
+		err := encoder.Encode(info)
 		errutil.FailOn(err)
 
-		err = ioutil.WriteFile(p.reportLocation, reportData, 0644)
+		err = ioutil.WriteFile(p.reportLocation, reportData.Bytes(), 0644)
 		errutil.FailOn(err)
 	}
 }

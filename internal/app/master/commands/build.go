@@ -61,7 +61,7 @@ func OnBuild(
 
 	cmdReport := report.NewBuildCommand(cmdReportLocation)
 	cmdReport.State = report.CmdStateStarted
-	cmdReport.OriginalImage = imageRef
+	cmdReport.ImageReference = imageRef
 
 	fmt.Println("docker-slim[build]: state=started")
 	fmt.Printf("docker-slim[build]: info=params target=%v continue.mode=%v\n", imageRef, continueAfter.Mode)
@@ -118,10 +118,12 @@ func OnBuild(
 				strings.Join(imageInspector.DockerfileInfo.AllUsers, ","))
 		}
 
-		if len(imageInspector.DockerfileInfo.Layers) > 0 {
-			for idx, layerInfo := range imageInspector.DockerfileInfo.Layers {
-				fmt.Printf("docker-slim[build]: info=image.layers index=%v name='%v' tags='%v'\n",
-					idx, layerInfo.Name, strings.Join(layerInfo.Tags, ","))
+		if len(imageInspector.DockerfileInfo.ImageStack) > 0 {
+			cmdReport.ImageStack = imageInspector.DockerfileInfo.ImageStack
+
+			for idx, layerInfo := range imageInspector.DockerfileInfo.ImageStack {
+				fmt.Printf("docker-slim[build]: info=image.stack index=%v name='%v' id='%v'\n",
+					idx, layerInfo.FullName, layerInfo.ID)
 			}
 		}
 
@@ -282,15 +284,36 @@ func OnBuild(
 
 	if err == nil {
 		cmdReport.MinifiedBy = float64(imageInspector.ImageInfo.VirtualSize) / float64(newImageInspector.ImageInfo.VirtualSize)
-		cmdReport.OriginalImageSize = imageInspector.ImageInfo.VirtualSize
-		cmdReport.OriginalImageSizeHuman = humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize))
+
+		cmdReport.SourceImage = report.ImageMetadata{
+			AllNames:      imageInspector.ImageRecordInfo.RepoTags,
+			ID:            imageInspector.ImageRecordInfo.ID,
+			Size:          imageInspector.ImageInfo.VirtualSize,
+			SizeHuman:     humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
+			CreateTime:    imageInspector.ImageInfo.Created.UTC().Format(time.RFC3339),
+			Author:        imageInspector.ImageInfo.Author,
+			DockerVersion: imageInspector.ImageInfo.DockerVersion,
+			Architecture:  imageInspector.ImageInfo.Architecture,
+			User:          imageInspector.ImageInfo.Config.User,
+		}
+
+		if len(imageInspector.ImageRecordInfo.RepoTags) > 0 {
+			cmdReport.SourceImage.Name = imageInspector.ImageRecordInfo.RepoTags[0]
+		}
+
+		if len(imageInspector.ImageInfo.Config.ExposedPorts) > 0 {
+			for k := range imageInspector.ImageInfo.Config.ExposedPorts {
+				cmdReport.SourceImage.ExposedPorts = append(cmdReport.SourceImage.ExposedPorts, string(k))
+			}
+		}
+
 		cmdReport.MinifiedImageSize = newImageInspector.ImageInfo.VirtualSize
 		cmdReport.MinifiedImageSizeHuman = humanize.Bytes(uint64(newImageInspector.ImageInfo.VirtualSize))
 
 		fmt.Printf("docker-slim[build]: info=results status='MINIFIED BY %.2fX [%v (%v) => %v (%v)]'\n",
 			cmdReport.MinifiedBy,
-			cmdReport.OriginalImageSize,
-			cmdReport.OriginalImageSizeHuman,
+			cmdReport.SourceImage.Size,
+			cmdReport.SourceImage.SizeHuman,
 			cmdReport.MinifiedImageSize,
 			cmdReport.MinifiedImageSizeHuman)
 	} else {

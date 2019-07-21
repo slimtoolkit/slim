@@ -15,7 +15,7 @@ var (
 )
 
 func init() {
-	currentVersion = fmt.Sprintf("%v|%v|%v|%v|%v (%v)", runtime.GOOS, consts.AppVersionName, appVersionTag, appVersionRev, appVersionTime, runtime.Version())
+	currentVersion = fmt.Sprintf("%v|%v|%v|%v|%v", runtime.GOOS, consts.AppVersionName, appVersionTag, appVersionRev, appVersionTime)
 }
 
 // Current returns the current version information

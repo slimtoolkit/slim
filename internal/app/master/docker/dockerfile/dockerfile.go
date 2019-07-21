@@ -7,15 +7,14 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/cloudimmunity/go-dockerclientx"
-)
+	"github.com/dustin/go-humanize"
 
-type Layer struct {
-	Name string
-	Tags []string
-}
+	v "github.com/docker-slim/docker-slim/pkg/version"
+)
 
 // Info represents the reverse engineered Dockerfile info
 type Info struct {
@@ -23,18 +22,38 @@ type Info struct {
 	AllUsers     []string
 	ExeUser      string
 	ExposedPorts []string
-	Layers       []Layer
+	ImageStack   []*ImageInfo
 }
 
-type imageInst struct {
-	instCmd      string
-	instComment  string
-	instType     string
-	instTime     int64
-	layerImageID string
-	imageName    string
-	shortTags    []string
-	fullTags     []string
+type ImageInfo struct {
+	IsTopImage   bool               `json:"is_top_image"`
+	ID           string             `json:"id"`
+	FullName     string             `json:"full_name"`
+	RepoName     string             `json:"repo_name"`
+	VersionTag   string             `json:"version_tag"`
+	RawTags      []string           `json:"raw_tags,omitempty"`
+	CreateTime   string             `json:"create_time"`
+	NewSize      int64              `json:"new_size"`
+	NewSizeHuman string             `json:"new_size_human"`
+	BaseImageID  string             `json:"base_image_id,omitempty"`
+	Instructions []*InstructionInfo `json:"instructions"`
+}
+
+type InstructionInfo struct {
+	Type                string `json:"type"`
+	Time                string `json:"time"`
+	IsNop               bool   `json:"is_nop"`
+	IsLocal             bool   `json:"is_local"`
+	IntermediateImageID string `json:"intermediate_image_id,omitempty"`
+	Size                int64  `json:"size"`
+	SizeHuman           string `json:"size_human,omitempty"`
+	CommandSnippet      string `json:"command_snippet"`
+	command             string
+	SystemCommands      []string `json:"system_commands,omitempty"`
+	Comment             string   `json:"comment,omitempty"`
+	instPosition        string
+	imageFullName       string
+	RawTags             []string `json:"raw_tags,omitempty"`
 }
 
 // ReverseDockerfileFromHistory recreates Dockerfile information from container image history
@@ -49,16 +68,25 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 
 	log.Debugf("\n\nIMAGE HISTORY =>\n%#v\n\n", imageHistory)
 
-	var fatImageDockerInstructions []imageInst
+	var fatImageDockerInstructions []InstructionInfo
+	var currentImageInfo *ImageInfo
+	var prevImageID string
 
 	imageLayerCount := len(imageHistory)
 	imageLayerStart := imageLayerCount - 1
+	startNewImage := true
 	if imageLayerCount > 0 {
 		for idx := imageLayerStart; idx >= 0; idx-- {
+			isNop := false
+
 			nopPrefix := "/bin/sh -c #(nop) "
 			execPrefix := "/bin/sh -c "
 			rawLine := imageHistory[idx].CreatedBy
 			var inst string
+
+			if strings.Contains(rawLine, "(nop)") {
+				isNop = true
+			}
 
 			switch {
 			case len(rawLine) == 0:
@@ -116,51 +144,115 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 				}
 			}
 
-			instInfo := imageInst{
-				instCmd:      inst,
-				instTime:     imageHistory[idx].Created,
-				layerImageID: imageHistory[idx].ID,
-				instComment:  imageHistory[idx].Comment,
+			instInfo := InstructionInfo{
+				IsNop:   isNop,
+				command: cleanInst,
+				Time:    time.Unix(imageHistory[idx].Created, 0).UTC().Format(time.RFC3339),
+				Comment: imageHistory[idx].Comment,
+				RawTags: imageHistory[idx].Tags,
+				Size:    imageHistory[idx].Size,
 			}
 
-			instType := "intermediate"
+			instParts := strings.SplitN(cleanInst, " ", 2)
+			if len(instParts) == 2 {
+				instInfo.Type = instParts[0]
+			}
+
+			if instInfo.Type == "RUN" {
+				var cmdParts []string
+				cmds := strings.Replace(instParts[1], "\\", "", -1)
+				if strings.Contains(cmds, "&&") {
+					cmdParts = strings.Split(cmds, "&&")
+				} else {
+					cmdParts = strings.Split(cmds, ";")
+				}
+
+				for _, cmd := range cmdParts {
+					cmd = strings.TrimSpace(cmd)
+					cmd = strings.Replace(cmd, "\t", "", -1)
+					cmd = strings.Replace(cmd, "\n", "", -1)
+					instInfo.SystemCommands = append(instInfo.SystemCommands, cmd)
+				}
+			}
+
+			if instInfo.Type == "WORKDIR" {
+				instInfo.SystemCommands = append(instInfo.SystemCommands, fmt.Sprintf("mkdir -p %s", instParts[1]))
+			}
+
+			if len(instInfo.command) > 44 {
+				instInfo.CommandSnippet = fmt.Sprintf("%s...", instInfo.command[0:44])
+			} else {
+				instInfo.CommandSnippet = instInfo.command
+			}
+
+			if instInfo.Size > 0 {
+				instInfo.SizeHuman = humanize.Bytes(uint64(instInfo.Size))
+			}
+
+			if imageHistory[idx].ID != "<missing>" {
+				instInfo.IsLocal = true
+				instInfo.IntermediateImageID = imageHistory[idx].ID
+			}
+
+			if startNewImage {
+				startNewImage = false
+				currentImageInfo = &ImageInfo{
+					BaseImageID: prevImageID,
+					NewSize:     0,
+				}
+			}
+
+			currentImageInfo.NewSize += imageHistory[idx].Size
+			currentImageInfo.Instructions = append(currentImageInfo.Instructions, &instInfo)
+
+			instPosition := "intermediate"
 			if idx == imageLayerStart {
-				instType = "first"
+				instPosition = "first" //first instruction in the list
 			}
 
 			if len(imageHistory[idx].Tags) > 0 {
-				instType = "last"
+				instPosition = "last" //last in an image
+
+				currentImageInfo.ID = imageHistory[idx].ID
+				prevImageID = currentImageInfo.ID
+
+				currentImageInfo.CreateTime = instInfo.Time
+				currentImageInfo.RawTags = imageHistory[idx].Tags
+
+				instInfo.imageFullName = imageHistory[idx].Tags[0]
+				currentImageInfo.FullName = imageHistory[idx].Tags[0]
 
 				if tagInfo := strings.Split(imageHistory[idx].Tags[0], ":"); len(tagInfo) > 1 {
-					instInfo.imageName = tagInfo[0]
+					currentImageInfo.RepoName = tagInfo[0]
+					currentImageInfo.VersionTag = tagInfo[1]
 				}
 
-				instInfo.fullTags = imageHistory[idx].Tags
+				currentImageInfo.NewSizeHuman = humanize.Bytes(uint64(currentImageInfo.NewSize))
 
-				for _, fullTag := range instInfo.fullTags {
-					if tagInfo := strings.Split(fullTag, ":"); len(tagInfo) > 1 {
-						instInfo.shortTags = append(instInfo.shortTags, tagInfo[1])
-					}
-				}
-
-				out.Layers = append(out.Layers, Layer{Name: instInfo.imageName, Tags: instInfo.shortTags})
+				out.ImageStack = append(out.ImageStack, currentImageInfo)
+				startNewImage = true
 			}
 
-			instInfo.instType = instType
+			instInfo.instPosition = instPosition
 
 			fatImageDockerInstructions = append(fatImageDockerInstructions, instInfo)
+		}
+
+		if currentImageInfo != nil {
+			currentImageInfo.IsTopImage = true
 		}
 	}
 
 	for idx, instInfo := range fatImageDockerInstructions {
-		if instInfo.instType == "first" {
+		if instInfo.instPosition == "first" {
 			out.Lines = append(out.Lines, "# new image")
 		}
 
-		out.Lines = append(out.Lines, instInfo.instCmd)
-		if instInfo.instType == "last" {
+		out.Lines = append(out.Lines, instInfo.command)
+		if instInfo.instPosition == "last" {
 			commentText := fmt.Sprintf("# end of image: %s (id: %s tags: %s)",
-				instInfo.imageName, instInfo.layerImageID, strings.Join(instInfo.shortTags, ","))
+				instInfo.imageFullName, instInfo.IntermediateImageID, strings.Join(instInfo.RawTags, ","))
+
 			out.Lines = append(out.Lines, commentText)
 			out.Lines = append(out.Lines, "")
 			if idx < (len(fatImageDockerInstructions) - 1) {
@@ -168,8 +260,8 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 			}
 		}
 
-		if instInfo.instComment != "" {
-			out.Lines = append(out.Lines, "# "+instInfo.instComment)
+		if instInfo.Comment != "" {
+			out.Lines = append(out.Lines, "# "+instInfo.Comment)
 		}
 
 		//TODO: use time diff to separate each instruction
@@ -227,6 +319,9 @@ func GenerateFromInfo(location string,
 
 	var dfData bytes.Buffer
 	dfData.WriteString("FROM scratch\n")
+
+	dsInfoLabel := fmt.Sprintf("LABEL docker-slim.version=\"%s\"\n", v.Current())
+	dfData.WriteString(dsInfoLabel)
 
 	if len(volumes) > 0 {
 		var volumeList []string
