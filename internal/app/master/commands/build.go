@@ -2,8 +2,11 @@ package commands
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -339,6 +342,25 @@ func OnBuild(
 	fmt.Printf("docker-slim[build]: info=results  artifacts.dockerfile.new=Dockerfile\n")
 	fmt.Printf("docker-slim[build]: info=results  artifacts.seccomp=%v\n", cmdReport.SeccompProfileName)
 	fmt.Printf("docker-slim[build]: info=results  artifacts.apparmor=%v\n", cmdReport.AppArmorProfileName)
+
+	if cmdReport.ArtifactLocation != "" {
+		creportPath := filepath.Join(cmdReport.ArtifactLocation, cmdReport.ContainerReportName)
+		if creportData, err := ioutil.ReadFile(creportPath); err == nil {
+			var creport report.ContainerReport
+			if err := json.Unmarshal(creportData, &creport); err == nil {
+				cmdReport.System = report.SystemMetadata{
+					Type:    creport.System.Type,
+					Release: creport.System.Release,
+					OS:      creport.System.OS,
+				}
+			} else {
+				logger.Infof("could not read container report - json parsing error - %v", err)
+			}
+		} else {
+			logger.Infof("could not read container report - %v", err)
+		}
+
+	}
 
 	/////////////////////////////
 

@@ -19,6 +19,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/sensor/inspectors/sodeps"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
+	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 
@@ -399,6 +400,13 @@ func (p *artifactStore) saveReport() {
 			Pt:  p.ptMonReport,
 			Fan: p.fanMonReport,
 		},
+	}
+
+	sinfo := system.GetSystemInfo()
+	creport.System = report.SystemReport{
+		Type:    sinfo.Sysname,
+		Release: sinfo.Release,
+		OS:      sinfo.OsName,
 	}
 
 	for _, fname := range p.nameList {

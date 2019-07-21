@@ -152,8 +152,16 @@ type MonitorReports struct {
 	Pt  *PtMonitorReport  `json:"pt"`
 }
 
+// SystemReport provides a basic system report for the container environment
+type SystemReport struct {
+	Type    string `json:"type"`
+	Release string `json:"release"`
+	OS      string `json:"os"`
+}
+
 // ContainerReport contains container report fields
 type ContainerReport struct {
+	System   SystemReport   `json:"system"`
 	Monitors MonitorReports `json:"monitors"`
 	Image    ImageReport    `json:"image"`
 }

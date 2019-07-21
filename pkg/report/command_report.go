@@ -40,6 +40,7 @@ type Command struct {
 	Error          string  `json:"error,omitempty"`
 }
 
+// ImageMetadata provides basic image metadata
 type ImageMetadata struct {
 	ID            string   `json:"id"`
 	Name          string   `json:"name"`
@@ -54,13 +55,19 @@ type ImageMetadata struct {
 	ExposedPorts  []string `json:"exposed_ports,omitempty"`
 }
 
+// SystemMetadata provides basic system metadata
+type SystemMetadata struct {
+	Type    string `json:"type"`
+	Release string `json:"release"`
+	OS      string `json:"os"`
+}
+
 // BuildCommand is the 'build' command report data
 type BuildCommand struct {
 	Command
-	ImageReference string        `json:"image_reference"`
-	SourceImage    ImageMetadata `json:"source_image"`
-	//OriginalImageSize      int64   `json:"original_image_size"`
-	//OriginalImageSizeHuman string  `json:"original_image_size_human"`
+	ImageReference         string                  `json:"image_reference"`
+	System                 SystemMetadata          `json:"system"`
+	SourceImage            ImageMetadata           `json:"source_image"`
 	MinifiedImageSize      int64                   `json:"minified_image_size"`
 	MinifiedImageSizeHuman string                  `json:"minified_image_size_human"`
 	MinifiedImage          string                  `json:"minified_image"`
