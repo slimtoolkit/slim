@@ -150,6 +150,8 @@ func (p *CustomProbe) Start() {
 			}
 
 			for _, cmd := range p.Cmds {
+				reqBody := strings.NewReader(cmd.Body)
+
 				var protocols []string
 				if cmd.Protocol == "" {
 					protocols = []string{"http", "https"}
@@ -175,7 +177,7 @@ func (p *CustomProbe) Start() {
 					}
 
 					for i := 0; i < maxRetryCount; i++ {
-						req, err := http.NewRequest(cmd.Method, addr, nil)
+						req, err := http.NewRequest(cmd.Method, addr, reqBody)
 						for _, hline := range cmd.Headers {
 							hparts := strings.SplitN(hline, ":", 2)
 							if len(hparts) != 2 {
@@ -194,6 +196,7 @@ func (p *CustomProbe) Start() {
 
 						res, err := httpClient.Do(req)
 						callCount++
+						reqBody.Seek(0, 0)
 
 						if res != nil {
 							if res.Body != nil {
