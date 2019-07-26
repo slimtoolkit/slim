@@ -265,7 +265,7 @@ To disable the version checks set the global `--check-version` flag to `false` (
 
 ### `BUILD` COMMAND OPTIONS
 
-* `--http-probe` - enables HTTP probing (disabled by default)
+* `--http-probe` - enables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it)
 * `--http-probe-cmd` - additional HTTP probe command [zero or more]
 * `--http-probe-cmd-file` - file with user defined HTTP probe commands
 * `--http-probe-retry-count` - number of retries for each HTTP probe (default: 5)
@@ -325,9 +325,11 @@ If the Docker environment variables are not set and if you don't specify any Doc
 
 ## HTTP PROBE COMMANDS
 
-If you enable the HTTP probe it will default to running `GET /` with HTTP and then HTTPS on every exposed port. You can add additional commands using the `--http-probe-cmd` and `--http-probe-cmd-file` options.
+If the HTTP probe is enabled (note: it is enabled by default) it will default to running `GET /` with HTTP and then HTTPS on every exposed port. You can add additional commands using the `--http-probe-cmd` and `--http-probe-cmd-file` options.
 
 The `--http-probe-cmd` option is good when you want to specify a small number of simple commands where you select some or all of these HTTP command options: protocol, method (defaults to GET), resource (path and query string).
+
+If you only want to use custom HTTP probe command and you don't want the default `GET /` command added to the command list you explicitly provided you'll need to set `--http-probe` to false when you specify your custom HTTP probe command. Note that this inconsistency will be addressed in the future releases to make it less confusing.
 
 Here are a couple of examples:
 
