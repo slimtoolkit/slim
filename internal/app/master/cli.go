@@ -79,6 +79,8 @@ const (
 	FlagEtcHostsMap         = "etc-hosts-map"
 	FlagContainerDNS        = "container-dns"
 	FlagContainerDNSSearch  = "container-dns-search"
+	FlagBuildFromDockerfile = "from-dockerfile"
+	FlagBuildFromContext    = "from-dockerfile-context"
 )
 
 var app *cli.App
@@ -510,10 +512,30 @@ func init() {
 			},
 		},
 		{
+			/*
+						doUseWorkdirFlag := cli.StringFlag{
+					Name:   FlagWorkdir,
+					Value:  "",
+					Usage:  "Override WORKDIR analyzing image",
+					EnvVar: "DSLIM_TARGET_WORKDIR",
+				}
+			*/
 			Name:    CmdBuild,
 			Aliases: []string{"b"},
 			Usage:   "Collects fat image information and builds a slim image from it",
 			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:   FlagBuildFromDockerfile,
+					Value:  "",
+					Usage:  "The source Dockerfile name to build the fat image before it's minified",
+					EnvVar: "DSLIM_BUILD_FROM_DOCKERFILE",
+				},
+				cli.StringFlag{
+					Name:   FlagBuildFromContext,
+					Value:  "",
+					Usage:  "The build context (local directory or URL) for the fat image to build",
+					EnvVar: "DSLIM_BUILD_FROM_CONTEXT",
+				},
 				doHTTPProbeFlag,
 				doHTTPProbeCmdFlag,
 				doHTTPProbeCmdFileFlag,
