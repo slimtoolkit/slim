@@ -97,6 +97,8 @@ func OnBuild(
 				os.Getpid(), time.Now().UTC().Format("20060102150405"))
 		}
 
+		fmt.Printf("docker-slim[build]: info=basic.image.name value=%s\n", fatImageRepoNameTag)
+
 		fatBuilder, err := builder.NewBasicImageBuilder(client,
 			fatImageRepoNameTag,
 			buildFromDockerfile,

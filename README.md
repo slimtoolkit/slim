@@ -127,16 +127,16 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 
 ## RECENT UPDATES
 
-Latest version: 1.25.2 (7/21/2019)
+Latest version: 1.25.3 (8/4/2019)
 
-Now you can generate enhanced build reports with additional container image metadata and rewrite some of the generated Docker image instructions! For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
+Now you can build minified images from the original Dockerfile (no need to create a separate fat container first). For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.25.2/dist_mac.zip)
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.25.2/dist_linux.tar.gz)
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.25.2/dist_linux_arm.tar.gz)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.25.3/dist_mac.zip)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.25.3/dist_linux.tar.gz)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.25.3/dist_linux_arm.tar.gz)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -182,7 +182,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.25.2/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.25.2/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.25.2/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.25.3/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.25.3/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.25.3/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
   The extracted directory contains two binaries:
 
@@ -294,12 +294,15 @@ To disable the version checks set the global `--check-version` flag to `false` (
 * `--container-dns` - add a dns server analyzing image [zero or more]
 * `--container-dns-search` - add a dns search domain for unqualified hostnames analyzing image [zero or more]
 * `--continue-after` - Select continue mode: enter | signal | probe | timeout or numberInSeconds (default: enter)
+* `--from-dockerfile` - The source Dockerfile name to build the fat image before it's minified. 
 
 The `--include-path` option is useful if you want to customize your minified image adding extra files and directories. The `--include-path-file` option allows you to load multiple includes from a newline delimited file. Use this option if you have a lot of includes. The includes from `--include-path` and `--include-path-file` are combined together. Future versions will also include the `--exclude-path` option to have even more control.
 
 The `--continue-after` option is useful if you need to script `docker-slim`. If you pick the `probe` option then `docker-slim` will continue executing the build command after the HTTP probe is done executing. If you pick the `timeout` option `docker-slim` will allow the target container to run for 60 seconds before it will attempt to collect the artifacts. You can specify a custom timeout value by passing a number of seconds you need instead of the `timeout` string. If you pick the `signal` option you'll need to send a USR1 signal to the `docker-slim` process.
 
 The `--include-shell` option provides a simple way to keep a basic shell in the minified container. Not all shell commands are included. To get additional shell commands or other command line utilities use the `--include-exe' and/or `--include-bin' options. Note that the extra apps and binaries might missed some of the non-binary dependencies (which don't get picked up during static analysis). For those additional dependencies use the `--include-path` and `--include-path-file` options.
+
+The `--from-dockerfile` option makes it possible to build a new minified image directly from source Dockerfile. Pass the Dockerfile name as the value for this flag and pass the build context directory or URL instead of the docker image name as the last parameter for the `docker-slim` build command: `docker-slim build --from-dockerfile Dockerfile --tag my/custom_minified_image_name .` If you want to see the console output from the build stages (when the fat and slim images are built) add the `--show-blogs` build flag. Note that the build console output is not interactive and it's printed only after the corresponding build step is done. The fat image created during the build process has the `.fat` suffix in its name. If you specify a custom image tag (with the `--tag` flag) the `.fat` suffix is added to the name part of the tag. If you don't provide a custom tag the generated fat image name will have the following format: `docker-slim-tmp-fat-image.<pid_of_docker-slim>.<current_timestamp>`. The minified image name will have the `.slim` suffix added to that auto-generated container image name (`docker-slim-tmp-fat-image.<pid_of_docker-slim>.<current_timestamp>.slim`). Take a look at this [python examples](https://github.com/docker-slim/examples/tree/master/python_ubuntu_18_py27_from_dockerfile) to see how it's using the `--from-dockerfile` flag.
 
 ## DOCKER CONNECT OPTIONS
 

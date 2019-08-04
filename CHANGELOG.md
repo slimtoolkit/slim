@@ -1,3 +1,13 @@
+## 1.25.3 (8/4/2019)
+
+### New Features
+
+* Build minified images from `source` using the new `--from-dockerfile` build flag (see `README.md` for details).
+
+### Improvements
+
+* Custom HTTP POST probes support request bodies 
+
 ## 1.25.2 (7/21/2019)
 
 ### New Features
