@@ -64,6 +64,7 @@ const (
 	FlagNewExpose           = "new-expose"
 	FlagNewWorkdir          = "new-workdir"
 	FlagNewEnv              = "new-env"
+	FlagImageOverrides      = "image-overrides"
 	FlagExludeMounts        = "exclude-mounts"
 	FlagExcludePath         = "exclude-path"
 	FlagIncludePath         = "include-path"
@@ -80,7 +81,6 @@ const (
 	FlagContainerDNS        = "container-dns"
 	FlagContainerDNSSearch  = "container-dns-search"
 	FlagBuildFromDockerfile = "from-dockerfile"
-	FlagBuildFromContext    = "from-dockerfile-context"
 )
 
 var app *cli.App
@@ -512,14 +512,6 @@ func init() {
 			},
 		},
 		{
-			/*
-						doUseWorkdirFlag := cli.StringFlag{
-					Name:   FlagWorkdir,
-					Value:  "",
-					Usage:  "Override WORKDIR analyzing image",
-					EnvVar: "DSLIM_TARGET_WORKDIR",
-				}
-			*/
 			Name:    CmdBuild,
 			Aliases: []string{"b"},
 			Usage:   "Collects fat image information and builds a slim image from it",
@@ -529,12 +521,6 @@ func init() {
 					Value:  "",
 					Usage:  "The source Dockerfile name to build the fat image before it's minified",
 					EnvVar: "DSLIM_BUILD_FROM_DOCKERFILE",
-				},
-				cli.StringFlag{
-					Name:   FlagBuildFromContext,
-					Value:  "",
-					Usage:  "The build context (local directory or URL) for the fat image to build",
-					EnvVar: "DSLIM_BUILD_FROM_CONTEXT",
 				},
 				doHTTPProbeFlag,
 				doHTTPProbeCmdFlag,
@@ -557,7 +543,7 @@ func init() {
 					EnvVar: "DSLIM_TARGET_TAG",
 				},
 				cli.StringFlag{
-					Name:   "image-overrides",
+					Name:   FlagImageOverrides,
 					Value:  "",
 					Usage:  "Use overrides in generated image",
 					EnvVar: "DSLIM_TARGET_OVERRIDES",
@@ -603,6 +589,8 @@ func init() {
 				clientConfig := getDockerClientConfig(ctx)
 				doRmFileArtifacts := ctx.Bool("remove-file-artifacts")
 
+				buildFromDockerfile := ctx.String(FlagBuildFromDockerfile)
+
 				doHTTPProbe := ctx.Bool(FlagHTTPProbe)
 
 				httpProbeCmds, err := getHTTPProbes(ctx)
@@ -636,7 +624,7 @@ func init() {
 				doShowBuildLogs := ctx.Bool(FlagShowBuildLogs)
 				doTag := ctx.String("tag")
 
-				doImageOverrides := ctx.String("image-overrides")
+				doImageOverrides := ctx.String(FlagImageOverrides)
 				overrides, err := getContainerOverrides(ctx)
 				if err != nil {
 					fmt.Printf("[build] invalid container overrides: %v\n", err)
@@ -697,6 +685,7 @@ func init() {
 					ctx.GlobalBool(FlagDebug),
 					statePath,
 					clientConfig,
+					buildFromDockerfile,
 					imageRef,
 					doTag,
 					doHTTPProbe,

@@ -33,6 +33,7 @@ func OnBuild(
 	doDebug bool,
 	statePath string,
 	clientConfig *config.DockerClient,
+	buildFromDockerfile string,
 	imageRef string,
 	customImageTag string,
 	doHTTPProbe bool,
@@ -66,16 +67,64 @@ func OnBuild(
 	cmdReport.State = report.CmdStateStarted
 	cmdReport.ImageReference = imageRef
 
+	client := dockerclient.New(clientConfig)
+
 	fmt.Println("docker-slim[build]: state=started")
-	fmt.Printf("docker-slim[build]: info=params target=%v continue.mode=%v\n", imageRef, continueAfter.Mode)
+	if buildFromDockerfile == "" {
+		fmt.Printf("docker-slim[build]: info=params target=%v continue.mode=%v\n", imageRef, continueAfter.Mode)
+	} else {
+		fmt.Printf("docker-slim[build]: info=params context=%v/file=%v continue.mode=%v\n", imageRef, buildFromDockerfile, continueAfter.Mode)
+	}
+
+	if buildFromDockerfile != "" {
+		fmt.Println("docker-slim[build]: state=building message='building basic image'")
+		//create a fat image name based on the user provided custom tag if it's available
+		var fatImageRepoNameTag string
+		if customImageTag != "" {
+			citParts := strings.Split(customImageTag, ":")
+			switch len(citParts) {
+			case 1:
+				fatImageRepoNameTag = fmt.Sprintf("%s.fat", customImageTag)
+			case 2:
+				fatImageRepoNameTag = fmt.Sprintf("%s.fat:%s", citParts[0], citParts[1])
+			default:
+				fmt.Printf("docker-slim[build]: info=param.error status=malformed.custom.image.tag value=%s\n", customImageTag)
+				fmt.Printf("docker-slim[build]: state=exited version=%s\n", v.Current())
+				os.Exit(-1)
+			}
+		} else {
+			fatImageRepoNameTag = fmt.Sprintf("docker-slim-tmp-fat-image.%v.%v",
+				os.Getpid(), time.Now().UTC().Format("20060102150405"))
+		}
+
+		fatBuilder, err := builder.NewBasicImageBuilder(client,
+			fatImageRepoNameTag,
+			buildFromDockerfile,
+			imageRef,
+			doShowBuildLogs)
+		errutil.FailOn(err)
+
+		err = fatBuilder.Build()
+
+		if doShowBuildLogs {
+			fmt.Println("docker-slim[build]: build logs (basic image) ====================")
+			fmt.Println(fatBuilder.BuildLog.String())
+			fmt.Println("docker-slim[build]: end of build logs (basic image) =============")
+		}
+
+		errutil.FailOn(err)
+
+		fmt.Println("docker-slim[build]: state=basic.image.build.completed")
+
+		imageRef = fatImageRepoNameTag
+		//todo: remove the temporary fat image (should have a flag for it in case users want the fat image too)
+	}
 
 	logger.Infof("image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v",
 		imageRef, doHTTPProbe, doRmFileArtifacts,
 		imageOverrideSelectors,
 		overrides.Entrypoint, overrides.ClearEntrypoint, overrides.Cmd, overrides.ClearCmd,
 		overrides.Workdir, overrides.Env, overrides.ExposedPorts)
-
-	client := dockerclient.New(clientConfig)
 
 	if doDebug {
 		version.Print(client, false)

@@ -2,7 +2,9 @@ package builder
 
 import (
 	"bytes"
+	"errors"
 	"path/filepath"
+	"strings"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerfile"
@@ -12,28 +14,88 @@ import (
 	"github.com/cloudimmunity/go-dockerclientx"
 )
 
-// ImageBuilder creates new container images
-type ImageBuilder struct {
+var (
+	ErrInvalidContextDir = errors.New("invalid context directory")
+)
+
+// BasicImageBuilder creates regular container images
+type BasicImageBuilder struct {
 	ShowBuildLogs bool
-	RepoName      string
-	ID            string
-	Entrypoint    []string
-	Cmd           []string
-	WorkingDir    string
-	Env           []string
-	ExposedPorts  map[docker.Port]struct{}
-	Volumes       map[string]struct{}
-	OnBuild       []string
-	User          string
-	HasData       bool
 	BuildOptions  docker.BuildImageOptions
 	APIClient     *docker.Client
 	BuildLog      bytes.Buffer
 }
 
+// ImageBuilder creates new optimized container images
+type ImageBuilder struct {
+	BasicImageBuilder
+	//ShowBuildLogs bool
+	RepoName     string
+	ID           string
+	Entrypoint   []string
+	Cmd          []string
+	WorkingDir   string
+	Env          []string
+	ExposedPorts map[docker.Port]struct{}
+	Volumes      map[string]struct{}
+	OnBuild      []string
+	User         string
+	HasData      bool
+	//BuildOptions  docker.BuildImageOptions
+	//APIClient     *docker.Client
+	//BuildLog      bytes.Buffer
+}
+
+// NewImageBuilder creates a new BasicImageBuilder instances
+func NewBasicImageBuilder(client *docker.Client,
+	imageRepoNameTag string,
+	dockerfileName string,
+	buildContext string,
+	showBuildLogs bool) (*BasicImageBuilder, error) {
+	builder := BasicImageBuilder{
+		ShowBuildLogs: showBuildLogs,
+		BuildOptions: docker.BuildImageOptions{
+			Name:           imageRepoNameTag,
+			RmTmpContainer: true,
+			Dockerfile:     dockerfileName,
+		},
+		APIClient: client,
+	}
+
+	if strings.HasPrefix(buildContext, "http://") || strings.HasPrefix(buildContext, "https://") {
+		builder.BuildOptions.Remote = buildContext
+	} else {
+		if exists := fsutil.DirExists(buildContext); exists {
+			builder.BuildOptions.ContextDir = buildContext
+		} else {
+			return nil, ErrInvalidContextDir
+		}
+	}
+
+	builder.BuildOptions.OutputStream = &builder.BuildLog
+	return &builder, nil
+}
+
+// Build creates a new container image
+func (b *BasicImageBuilder) Build() error {
+	return b.APIClient.BuildImage(b.BuildOptions)
+}
+
+// Remove deletes the configured container image
+func (b *BasicImageBuilder) Remove() error {
+	return nil
+}
+
+/*
+type BasicImageBuilder struct {
+	BuildOptions  docker.BuildImageOptions
+	APIClient     *docker.Client
+}
+*/
+
 // NewImageBuilder creates a new ImageBuilder instances
 func NewImageBuilder(client *docker.Client,
-	imageRepoName string,
+	imageRepoNameTag string,
 	imageInfo *docker.Image,
 	artifactLocation string,
 	showBuildLogs bool,
@@ -41,26 +103,27 @@ func NewImageBuilder(client *docker.Client,
 	overrides *config.ContainerOverrides,
 	instructions *config.ImageNewInstructions) (*ImageBuilder, error) {
 	builder := &ImageBuilder{
-		ShowBuildLogs: showBuildLogs,
-		RepoName:      imageRepoName,
-		ID:            imageInfo.ID,
-		Entrypoint:    imageInfo.Config.Entrypoint,
-		Cmd:           imageInfo.Config.Cmd,
-		WorkingDir:    imageInfo.Config.WorkingDir,
-		Env:           imageInfo.Config.Env,
-		ExposedPorts:  imageInfo.Config.ExposedPorts,
-		Volumes:       imageInfo.Config.Volumes,
-		OnBuild:       imageInfo.Config.OnBuild,
-		User:          imageInfo.Config.User,
-		BuildOptions: docker.BuildImageOptions{
-			Name:           imageRepoName,
-			RmTmpContainer: true,
-			ContextDir:     artifactLocation,
-			Dockerfile:     "Dockerfile",
-			//SuppressOutput: true,
-			//OutputStream:   os.Stdout,
+		BasicImageBuilder: BasicImageBuilder{
+			ShowBuildLogs: showBuildLogs,
+			APIClient:     client,
+			BuildOptions: docker.BuildImageOptions{
+				Name:           imageRepoNameTag,
+				RmTmpContainer: true,
+				ContextDir:     artifactLocation,
+				Dockerfile:     "Dockerfile",
+				//SuppressOutput: true,
+			},
 		},
-		APIClient: client,
+		RepoName:     imageRepoNameTag,
+		ID:           imageInfo.ID,
+		Entrypoint:   imageInfo.Config.Entrypoint,
+		Cmd:          imageInfo.Config.Cmd,
+		WorkingDir:   imageInfo.Config.WorkingDir,
+		Env:          imageInfo.Config.Env,
+		ExposedPorts: imageInfo.Config.ExposedPorts,
+		Volumes:      imageInfo.Config.Volumes,
+		OnBuild:      imageInfo.Config.OnBuild,
+		User:         imageInfo.Config.User,
 	}
 
 	if overrides != nil && len(overrideSelectors) > 0 {
