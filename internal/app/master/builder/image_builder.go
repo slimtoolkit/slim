@@ -29,7 +29,6 @@ type BasicImageBuilder struct {
 // ImageBuilder creates new optimized container images
 type ImageBuilder struct {
 	BasicImageBuilder
-	//ShowBuildLogs bool
 	RepoName     string
 	ID           string
 	Entrypoint   []string
@@ -41,9 +40,6 @@ type ImageBuilder struct {
 	OnBuild      []string
 	User         string
 	HasData      bool
-	//BuildOptions  docker.BuildImageOptions
-	//APIClient     *docker.Client
-	//BuildLog      bytes.Buffer
 }
 
 // NewImageBuilder creates a new BasicImageBuilder instances
@@ -85,13 +81,6 @@ func (b *BasicImageBuilder) Build() error {
 func (b *BasicImageBuilder) Remove() error {
 	return nil
 }
-
-/*
-type BasicImageBuilder struct {
-	BuildOptions  docker.BuildImageOptions
-	APIClient     *docker.Client
-}
-*/
 
 // NewImageBuilder creates a new ImageBuilder instances
 func NewImageBuilder(client *docker.Client,
