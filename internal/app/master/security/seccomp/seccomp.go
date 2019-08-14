@@ -40,6 +40,9 @@ var extraCalls = []string{
 	"getpid",
 	"getuid",
 	"getgid",
+	"epoll_pwait",
+	"newfstatat",
+	"exit",
 }
 
 // GenProfile creates a SecComp profile
