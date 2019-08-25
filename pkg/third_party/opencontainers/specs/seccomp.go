@@ -2,9 +2,17 @@ package specs
 
 // Seccomp represents syscall restrictions
 type Seccomp struct {
-	DefaultAction Action     `json:"defaultAction"`
-	Architectures []Arch     `json:"architectures"`
-	Syscalls      []*Syscall `json:"syscalls"`
+	DefaultAction Action         `json:"defaultAction"`
+	Architectures []Arch         `json:"architectures,omitempty"`
+	ArchMap       []Architecture `json:"archMap,omitempty"`
+	Syscalls      []*Syscall     `json:"syscalls,omitempty"`
+}
+
+//ArchMap - in Docker, but not in the Opencontainers spec (yet)
+
+type Architecture struct {
+	Arch      Arch   `json:"architecture"`
+	SubArches []Arch `json:"subArchitectures"`
 }
 
 // Arch - architecture type
@@ -14,17 +22,11 @@ type Arch string
 
 // Architecture types
 const (
-	ArchX86         Arch = "SCMP_ARCH_X86"
-	ArchX86_64      Arch = "SCMP_ARCH_X86_64"
-	ArchX32         Arch = "SCMP_ARCH_X32"
-	ArchARM         Arch = "SCMP_ARCH_ARM"
-	ArchAARCH64     Arch = "SCMP_ARCH_AARCH64"
-	ArchMIPS        Arch = "SCMP_ARCH_MIPS"
-	ArchMIPS64      Arch = "SCMP_ARCH_MIPS64"
-	ArchMIPS64N32   Arch = "SCMP_ARCH_MIPS64N32"
-	ArchMIPSEL      Arch = "SCMP_ARCH_MIPSEL"
-	ArchMIPSEL64    Arch = "SCMP_ARCH_MIPSEL64"
-	ArchMIPSEL64N32 Arch = "SCMP_ARCH_MIPSEL64N32"
+	ArchX86     Arch = "SCMP_ARCH_X86"
+	ArchX86_64  Arch = "SCMP_ARCH_X86_64"
+	ArchX32     Arch = "SCMP_ARCH_X32"
+	ArchARM     Arch = "SCMP_ARCH_ARM"
+	ArchAARCH64 Arch = "SCMP_ARCH_AARCH64"
 )
 
 // Action taken upon Seccomp rule match
@@ -57,13 +59,28 @@ const (
 type Arg struct {
 	Index    uint     `json:"index"`
 	Value    uint64   `json:"value"`
-	ValueTwo uint64   `json:"valueTwo"`
+	ValueTwo uint64   `json:"valueTwo,omitempty"`
 	Op       Operator `json:"op"`
 }
 
 // Syscall is used to match a syscall in Seccomp
 type Syscall struct {
-	Name   string `json:"name"`
-	Action Action `json:"action"`
-	Args   []*Arg `json:"args,omitempty"`
+	Name     string   `json:"name,omitempty"`
+	Names    []string `json:"names,omitempty"`
+	Action   Action   `json:"action"`
+	Args     []*Arg   `json:"args,omitempty"`
+	Comment  string   `json:"comment,omitempty"`
+	Includes Filter   `json:"includes,omitempty"`
+	Excludes Filter   `json:"excludes,omitempty"`
+}
+
+//Opencontainers spec only includes the 'Names' field
+//Docker also includes the old/original 'Name' field
+//Docker only: Comment, Includes, Excludes
+
+// Filter is used to conditionally apply Seccomp rules
+type Filter struct {
+	Caps      []string `json:"caps,omitempty"`
+	Arches    []string `json:"arches,omitempty"`
+	MinKernel string   `json:"minKernel,omitempty"`
 }

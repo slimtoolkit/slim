@@ -47,6 +47,7 @@ var extraCalls = []string{
 	"lstat",
 	"write",
 	"futex",
+	"execve", //always detected, but it's still one of the syscalls Docker itself needs
 }
 
 // GenProfile creates a SecComp profile
@@ -81,12 +82,15 @@ func GenProfile(artifactLocation string, profileName string) error {
 		}
 	}
 
-	for _, scInfo := range creport.Monitors.Pt.SyscallStats {
-		profile.Syscalls = append(profile.Syscalls, &specs.Syscall{
-			Name:   scInfo.Name,
-			Action: specs.ActAllow,
-		})
+	scSpec := specs.Syscall{
+		Action: specs.ActAllow,
 	}
+
+	for _, scInfo := range creport.Monitors.Pt.SyscallStats {
+		scSpec.Names = append(scSpec.Names, scInfo.Name)
+	}
+
+	profile.Syscalls = append(profile.Syscalls, &scSpec)
 
 	profileData, err := json.MarshalIndent(profile, "", "  ")
 	if err != nil {
