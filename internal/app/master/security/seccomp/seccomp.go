@@ -43,6 +43,10 @@ var extraCalls = []string{
 	"epoll_pwait",
 	"newfstatat",
 	"exit",
+	"stat",
+	"lstat",
+	"write",
+	"futex",
 }
 
 // GenProfile creates a SecComp profile
