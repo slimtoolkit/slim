@@ -372,3 +372,18 @@ func callNumTableIsOkArmFamily32() bool {
 
 	return false
 }
+
+func callNumberArmFamily32(name string) (uint32, bool) {
+	num, ok := syscallNameTableArmFamily32[name]
+	return num, ok
+}
+
+var syscallNameTableArmFamily32 map[string]uint32
+
+func init() {
+	syscallNameTableArmFamily32 = make(map[string]uint32, len(syscallNumTableArmFamily32))
+
+	for callNum, callName := range syscallNumTableArmFamily32 {
+		syscallNameTableArmFamily32[callName] = uint32(callNum)
+	}
+}

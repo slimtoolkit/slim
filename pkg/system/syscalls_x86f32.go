@@ -5,7 +5,7 @@ const (
 	SyscallX86LastName32 = "execveat"
 )
 
-// line number are aligned with the syscall number (-10)
+// line numbers are aligned with the syscall number (-10)
 var syscallNumTableX86Family32 = [...]string{
 	"restart_syscall",
 	"_exit",
@@ -383,4 +383,19 @@ func callNumTableIsOkX86Family32() bool {
 	}
 
 	return false
+}
+
+func callNumberX86Family32(name string) (uint32, bool) {
+	num, ok := syscallNameTableX86Family32[name]
+	return num, ok
+}
+
+var syscallNameTableX86Family32 map[string]uint32
+
+func init() {
+	syscallNameTableX86Family32 = make(map[string]uint32, len(syscallNumTableX86Family32))
+
+	for callNum, callName := range syscallNumTableX86Family32 {
+		syscallNameTableX86Family32[callName] = uint32(callNum)
+	}
 }

@@ -2,6 +2,7 @@ package seccomp
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 var archMap = map[system.ArchName]specs.Arch{
 	system.ArchName386:   specs.ArchX86,
 	system.ArchNameAmd64: specs.ArchX86_64,
+	system.ArchNameArm32: specs.ArchARM,
 }
 
 func archNameToSeccompArch(name string) specs.Arch {
@@ -48,6 +50,9 @@ var extraCalls = []string{
 	"write",
 	"futex",
 	"execve", //always detected, but it's still one of the syscalls Docker itself needs
+	"rt_sigreturn",
+	"rt_sigsuspend",
+	"exit_group",
 }
 
 // GenProfile creates a SecComp profile
@@ -73,12 +78,20 @@ func GenProfile(artifactLocation string, profileName string) error {
 
 	profile := &specs.Seccomp{
 		DefaultAction: specs.ActErrno,
-		Architectures: []specs.Arch{archNameToSeccompArch(creport.Monitors.Pt.ArchName)},
+		Architectures: []specs.Arch{
+			archNameToSeccompArch(creport.Monitors.Pt.ArchName),
+		},
 	}
 
-	for _, xcall := range extraCalls {
-		if _, ok := creport.Monitors.Pt.SyscallStats[xcall]; !ok {
-			creport.Monitors.Pt.SyscallStats[xcall] = report.SyscallStatInfo{Name: xcall}
+	nameResolver := system.CallNameResolver(system.ArchName(creport.Monitors.Pt.ArchName))
+	if nameResolver != nil {
+		for _, xcall := range extraCalls {
+			if cnum, ok := nameResolver(xcall); ok {
+				cnKey := fmt.Sprintf("%d", cnum)
+				if _, ok := creport.Monitors.Pt.SyscallStats[cnKey]; !ok {
+					creport.Monitors.Pt.SyscallStats[cnKey] = report.SyscallStatInfo{Name: xcall}
+				}
+			}
 		}
 	}
 

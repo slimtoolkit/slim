@@ -12,6 +12,7 @@ const (
 )
 
 type NumberResolverFunc func(uint32) string
+type NameResolverFunc func(string) (uint32, bool)
 
 func CallNumberResolver(arch ArchName) NumberResolverFunc {
 	switch arch {
@@ -21,6 +22,19 @@ func CallNumberResolver(arch ArchName) NumberResolverFunc {
 		return callNameX86Family64
 	case ArchNameArm32:
 		return callNameArmFamily32
+	default:
+		return nil
+	}
+}
+
+func CallNameResolver(arch ArchName) NameResolverFunc {
+	switch arch {
+	case ArchName386:
+		return callNumberX86Family32
+	case ArchNameAmd64:
+		return callNumberX86Family64
+	case ArchNameArm32:
+		return callNumberArmFamily32
 	default:
 		return nil
 	}
