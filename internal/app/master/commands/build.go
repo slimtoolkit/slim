@@ -43,6 +43,7 @@ func OnBuild(
 	httpProbePorts []uint16,
 	doHTTPProbeFull bool,
 	doRmFileArtifacts bool,
+	copyMetaArtifactsLocation string,
 	doShowContainerLogs bool,
 	doShowBuildLogs bool,
 	imageOverrideSelectors map[string]bool,
@@ -414,6 +415,18 @@ func OnBuild(
 	}
 
 	/////////////////////////////
+	if copyMetaArtifactsLocation != "" {
+		toCopy := []string{
+			report.DefaultContainerReportFileName,
+			imageInspector.SeccompProfileName,
+			imageInspector.AppArmorProfileName,
+		}
+		if !copyMetaArtifacts(logger,
+			toCopy,
+			imageInspector.ArtifactLocation, copyMetaArtifactsLocation) {
+			fmt.Println("docker-slim[build]: info=artifacts message='could not copy meta artifacts'")
+		}
+	}
 
 	if doRmFileArtifacts {
 		logger.Info("removing temporary artifacts...")

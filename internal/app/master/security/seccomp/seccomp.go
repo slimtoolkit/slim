@@ -53,6 +53,11 @@ var extraCalls = []string{
 	"rt_sigreturn",
 	"rt_sigsuspend",
 	"exit_group",
+	"kill", //extra calls
+	"sendmsg",
+	"wait4",
+	"setitimer",
+	"unlink",
 }
 
 // GenProfile creates a SecComp profile

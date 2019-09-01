@@ -45,6 +45,8 @@ const (
 	FlagTLSCertPath         = "tls-cert-path"
 	FlagHost                = "host"
 	FlagStatePath           = "state-path"
+	FlagRemoveFileArtifacts = "remove-file-artifacts"
+	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
 	FlagHTTPProbe           = "http-probe"
 	FlagHTTPProbeCmd        = "http-probe-cmd"
 	FlagHTTPProbeCmdFile    = "http-probe-cmd-file"
@@ -203,6 +205,18 @@ func init() {
 		log.Debugf("sysinfo => %#v", system.GetSystemInfo())
 
 		return nil
+	}
+
+	doRemoveFileArtifactsFlag := cli.BoolFlag{
+		Name:   FlagRemoveFileArtifacts,
+		Usage:  "remove file artifacts when command is done",
+		EnvVar: "DSLIM_RM_FILE_ARTIFACTS",
+	}
+
+	doCopyMetaArtifactsFlag := cli.StringFlag{
+		Name:   FlagCopyMetaArtifacts,
+		Usage:  "copy metadata artifacts to the selected location when command is done",
+		EnvVar: "DSLIM_CP_META_ARTIFACTS",
 	}
 
 	//true by default
@@ -531,11 +545,8 @@ func init() {
 				doHTTPProbeFullFlag,
 				doShowContainerLogsFlag,
 				doShowBuildLogsFlag,
-				cli.BoolFlag{
-					Name:   "remove-file-artifacts, r",
-					Usage:  "remove file artifacts when command is done",
-					EnvVar: "DSLIM_RM_FILE_ARTIFACTS",
-				},
+				doCopyMetaArtifactsFlag,
+				doRemoveFileArtifactsFlag,
 				cli.StringFlag{
 					Name:   "tag",
 					Value:  "",
@@ -587,7 +598,9 @@ func init() {
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
-				doRmFileArtifacts := ctx.Bool("remove-file-artifacts")
+
+				doRmFileArtifacts := ctx.Bool(FlagRemoveFileArtifacts)
+				doCopyMetaArtifacts := ctx.String(FlagCopyMetaArtifacts)
 
 				buildFromDockerfile := ctx.String(FlagBuildFromDockerfile)
 
@@ -695,6 +708,7 @@ func init() {
 					httpProbePorts,
 					doHTTPProbeFull,
 					doRmFileArtifacts,
+					doCopyMetaArtifacts,
 					doShowContainerLogs,
 					doShowBuildLogs,
 					parseImageOverrides(doImageOverrides),
@@ -728,6 +742,7 @@ func init() {
 				doHTTPProbePortsFlag,
 				doHTTPProbeFullFlag,
 				doShowContainerLogsFlag,
+				doCopyMetaArtifactsFlag,
 				doUseEntrypointFlag,
 				doUseCmdFlag,
 				doUseWorkdirFlag,
@@ -762,6 +777,8 @@ func init() {
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
+
+				doCopyMetaArtifacts := ctx.String(FlagCopyMetaArtifacts)
 
 				doHTTPProbe := ctx.Bool(FlagHTTPProbe)
 
@@ -854,6 +871,7 @@ func init() {
 					httpProbeRetryWait,
 					httpProbePorts,
 					doHTTPProbeFull,
+					doCopyMetaArtifacts,
 					doShowContainerLogs,
 					overrides,
 					ctx.StringSlice(FlagLink),

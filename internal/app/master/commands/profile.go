@@ -35,6 +35,7 @@ func OnProfile(
 	httpProbeRetryWait int,
 	httpProbePorts []uint16,
 	doHTTPProbeFull bool,
+	copyMetaArtifactsLocation string,
 	doShowContainerLogs bool,
 	overrides *config.ContainerOverrides,
 	links []string,
@@ -204,6 +205,19 @@ func OnProfile(
 	fmt.Println("docker-slim[profile]: state=container.inspection.done")
 	fmt.Println("docker-slim[profile]: state=completed")
 	cmdReport.State = report.CmdStateCompleted
+
+	if copyMetaArtifactsLocation != "" {
+		toCopy := []string{
+			report.DefaultContainerReportFileName,
+			imageInspector.SeccompProfileName,
+			imageInspector.AppArmorProfileName,
+		}
+		if !copyMetaArtifacts(logger,
+			toCopy,
+			imageInspector.ArtifactLocation, copyMetaArtifactsLocation) {
+			fmt.Println("docker-slim[profile]: info=artifacts message='could not copy meta artifacts'")
+		}
+	}
 
 	if doRmFileArtifacts {
 		logger.Info("removing temporary artifacts...")

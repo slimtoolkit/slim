@@ -23,7 +23,20 @@ type syscallEvent struct {
 
 const (
 	eventBufSize = 500
+	ptOptions    = syscall.PTRACE_O_TRACECLONE | syscall.PTRACE_O_TRACEFORK | syscall.PTRACE_O_TRACEVFORK
 )
+
+/*
+	unix.PTRACE_O_EXITKILL|
+	unix.PTRACE_O_TRACESECCOMP|
+	syscall.PTRACE_O_TRACESYSGOOD|
+	syscall.PTRACE_O_TRACEEXEC|
+	syscall.PTRACE_O_TRACECLONE|
+	syscall.PTRACE_O_TRACEFORK|
+	syscall.PTRACE_O_TRACEVFORK
+
+	syscall.PTRACE_O_TRACECLONE|syscall.PTRACE_O_TRACEEXIT
+*/
 
 // Run starts the PTRACE monitor
 func Run(
@@ -78,13 +91,28 @@ func Run(
 
 			targetPid := app.Process.Pid
 
+			//pgid, err := syscall.Getpgid(targetPid)
+			//if err != nil {
+			//	log.Warnf("ptmon: collector - getpgid error %d: %v", targetPid, err)
+			//	collectorDoneChan <- 1
+			//	return
+			//}
+
 			log.Debugf("ptmon: collector - target PID ==> %d", targetPid)
 
 			var wstat syscall.WaitStatus
-			_, err = syscall.Wait4(targetPid, &wstat, 0, nil)
+
+			pid, err := syscall.Wait4(-1, &wstat, syscall.WALL, nil) // -1 * targetPid
 			if err != nil {
 				log.Warnf("ptmon: collector - error waiting for %d: %v", targetPid, err)
-				collectorDoneChan <- 1
+				collectorDoneChan <- 2
+				return
+			}
+
+			err = syscall.PtraceSetOptions(targetPid, ptOptions)
+			if err != nil {
+				log.Warnf("ptmon: collector - error setting trace options %d: %v", targetPid, err)
+				collectorDoneChan <- 3
 				return
 			}
 
@@ -92,13 +120,13 @@ func Run(
 
 			if wstat.Exited() {
 				log.Warn("ptmon: collector - app exited (unexpected)")
-				collectorDoneChan <- 2
+				collectorDoneChan <- 4
 				return
 			}
 
 			if wstat.Signaled() {
 				log.Warn("ptmon: collector - app signalled (unexpected)")
-				collectorDoneChan <- 3
+				collectorDoneChan <- 5
 				return
 			}
 
@@ -112,29 +140,34 @@ func Run(
 
 				switch syscallReturn {
 				case false:
-					if err := syscall.PtraceGetRegs(targetPid, &regs); err != nil {
+					//if err := syscall.PtraceGetRegs(targetPid, &regs); err != nil {
+					if err := syscall.PtraceGetRegs(pid, &regs); err != nil {
 						log.Fatalf("ptmon: collector - PtraceGetRegs(call): %v", err)
 					}
 
 					callNum = system.CallNumber(regs)
 					syscallReturn = true
 					gotCallNum = true
+
 				case true:
-					if err := syscall.PtraceGetRegs(targetPid, &regs); err != nil {
+					//if err := syscall.PtraceGetRegs(targetPid, &regs); err != nil {
+					if err := syscall.PtraceGetRegs(pid, &regs); err != nil {
 						log.Fatalf("ptmon: collector - PtraceGetRegs(return): %v", err)
 					}
 
 					retVal = system.CallReturnValue(regs)
 					syscallReturn = false
 					gotRetVal = true
+
 				}
 
-				err = syscall.PtraceSyscall(targetPid, 0)
+				err = syscall.PtraceSyscall(pid, 0)
 				if err != nil {
 					log.Warnf("ptmon: collector - PtraceSyscall error: %v", err)
 					break
 				}
-				_, err = syscall.Wait4(targetPid, &wstat, 0, nil)
+
+				pid, err = syscall.Wait4(-1, &wstat, syscall.WALL, nil) // -1 * targetPid
 				if err != nil {
 					log.Warnf("ptmon: collector - error waiting 4 %d: %v", targetPid, err)
 					break

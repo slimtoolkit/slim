@@ -6,6 +6,7 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
+
 	//"io"
 	"io/ioutil"
 	"os"
@@ -14,6 +15,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+
 	//"syscall"
 
 	"github.com/docker-slim/docker-slim/internal/app/sensor/inspectors/sodeps"
@@ -30,6 +32,8 @@ const (
 	ngxBinName             = "/nginx"
 	ngxSubDir              = "/nginx/"
 	ngxCommonTemp          = "/var/lib/nginx"
+	ngxLogTemp             = "/var/log/nginx"
+	ngxCacheTemp           = "/var/cache/nginx"
 	rbGemSpecExt           = ".gemspec"
 	rbGemsSubDir           = "/gems/"
 	rbDefaultSpecSubDir    = "/specifications/default/"
@@ -659,23 +663,59 @@ func ngxEnsure(prefix string) {
 	if info, err := os.Stat(ngxCommonTemp); err == nil {
 		if info.IsDir() {
 			dstPath := fmt.Sprintf("%s/files%s", prefix, ngxCommonTemp)
-			err, errs := fsutil.CopyDir(true, ngxCommonTemp, dstPath, true, true, nil, nil, nil)
-			if err != nil {
-				log.Warnf("ngxEnsure - CopyDir error: %v", err)
+			if !fsutil.DirExists(dstPath) {
+				err := os.MkdirAll(dstPath, 0777)
+				//err, errs := fsutil.CopyDir(true, ngxCommonTemp, dstPath, true, true, nil, nil, nil)
+				if err != nil {
+					log.Warnf("ngxEnsure - MkdirAll(%v) error: %v", dstPath, err)
+				}
+				//if len(errs) > 0 {
+				//	log.Warnf("ngxEnsure - CopyDir copy error: %+v", errs)
+				//}
 			}
-			if len(errs) > 0 {
-				log.Warnf("ngxEnsure - CopyDir copy error: %+v", errs)
-			}
-			return
+		} else {
+			log.Debugf("ngxEnsure - %v should be a directory", ngxCommonTemp)
 		}
-
-		log.Debugf("ngxEnsure - %v should be a directory", ngxCommonTemp)
 	} else {
-		if os.IsNotExist(err) {
-			return
+		if !os.IsNotExist(err) {
+			log.Debugf("ngxEnsure - error checking %v => %v", ngxCommonTemp, err)
 		}
+	}
 
-		log.Debugf("ngxEnsure - error checking %v => %v", ngxCommonTemp, err)
+	if info, err := os.Stat(ngxLogTemp); err == nil {
+		if info.IsDir() {
+			dstPath := fmt.Sprintf("%s/files%s", prefix, ngxLogTemp)
+			if !fsutil.DirExists(dstPath) {
+				err := os.MkdirAll(dstPath, 0777)
+				if err != nil {
+					log.Warnf("ngxEnsure -  MkdirAll(%v) error: %v", dstPath, err)
+				}
+			}
+		} else {
+			log.Debugf("ngxEnsure - %v should be a directory", ngxLogTemp)
+		}
+	} else {
+		if !os.IsNotExist(err) {
+			log.Debugf("ngxEnsure - error checking %v => %v", ngxLogTemp, err)
+		}
+	}
+
+	if info, err := os.Stat(ngxCacheTemp); err == nil {
+		if info.IsDir() {
+			dstPath := fmt.Sprintf("%s/files%s", prefix, ngxCacheTemp)
+			if !fsutil.DirExists(dstPath) {
+				err := os.MkdirAll(dstPath, 0777)
+				if err != nil {
+					log.Warnf("ngxEnsure -  MkdirAll(%v) error: %v", dstPath, err)
+				}
+			}
+		} else {
+			log.Debugf("ngxEnsure - %v should be a directory", ngxCacheTemp)
+		}
+	} else {
+		if !os.IsNotExist(err) {
+			log.Debugf("ngxEnsure - error checking %v => %v", ngxCacheTemp, err)
+		}
 	}
 }
 
