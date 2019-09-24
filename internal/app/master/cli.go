@@ -448,7 +448,7 @@ func init() {
 
 	doConfinueAfterFlag := cli.StringFlag{
 		Name:   FlagContinueAfter,
-		Value:  "enter",
+		Value:  "probe",
 		Usage:  "Select continue mode: enter | signal | probe | timeout or numberInSeconds",
 		EnvVar: "DSLIM_CONTINUE_AFTER",
 	}
