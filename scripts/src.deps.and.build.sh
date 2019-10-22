@@ -4,24 +4,11 @@ set -e
 
 SOURCE="${BASH_SOURCE[0]}"
 while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
-#SDIR="$( cd -P "$( dirname "$SOURCE" )" && pwd )"
 BDIR="$( cd -P "$( dirname "$SOURCE" )/.." && pwd )"
 
 export CGO_ENABLED=0
 
-#source $SDIR/env.sh
-#BDIR_GOPATH=$BDIR/_gopath/src/github.com/docker-slim/docker-slim
-#BDIR_GOPATH=$BDIR
-
 pushd $BDIR
-
-#used only in the builder container, so the link trick is not really necessary
-#rm -rf _gopath
-#mkdir _gopath
-#pushd $BDIR/_gopath
-#mkdir -p src/github.com/docker-slim
-#ln -sf $BDIR src/github.com/docker-slim/docker-slim
-#popd
 
 BUILD_TIME="$(date -u '+%Y-%m-%d_%I:%M:%S%p')"
 TAG="current"
