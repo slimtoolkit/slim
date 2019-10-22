@@ -503,7 +503,6 @@ Before you build `docker-slim` you need to install `gox`. Additional tools to in
 
 Tools:
 
-* `gox` - Must install it if you want to use the build scripts (not required if you want to do native builds). See `https://github.com/mitchellh/gox` for more details.
 * `govendor` - Should install if you intend to add/change dependencies (you can still manage dependencies manually if want). See `https://github.com/kardianos/govendor` for more details.
 * `golint` - Optional tool for code analysis.  See `https://github.com/golang/lint` for more details.
 

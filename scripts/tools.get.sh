@@ -10,8 +10,4 @@ if ! which golint > /dev/null; then
     go get -u github.com/golang/lint/golint
 fi
 
-if ! which gox > /dev/null; then
-    echo "Tools: No gox. Installing..."
-    go get -u github.com/mitchellh/gox
-fi
 
