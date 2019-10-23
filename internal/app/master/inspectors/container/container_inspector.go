@@ -178,6 +178,15 @@ func (i *Inspector) RunContainer() error {
 		}
 	}
 
+	if !fsutil.Exists(sensorPath) {
+		if i.PrintState {
+			fmt.Printf("%s info=sensor.error message='sensor binary not found' location='%s'\n", i.PrintPrefix, sensorPath)
+			fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
+		}
+
+		os.Exit(-125)
+	}
+
 	artifactsMountInfo := fmt.Sprintf(ArtifactsMountPat, artifactsPath)
 	sensorMountInfo := fmt.Sprintf(SensorMountPat, sensorPath)
 
