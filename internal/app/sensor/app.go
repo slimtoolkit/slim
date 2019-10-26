@@ -122,11 +122,9 @@ func Run() {
 	log.Debug("sensor: setting up channels...")
 	doneChan = make(chan struct{})
 
-	//err = ipc.InitChannels()
 	ipcServer, err := ipc.NewServer(doneChan)
 	errutil.FailOn(err)
 
-	//cmdChan, err := ipc.RunCmdServer(doneChan)
 	err = ipcServer.Run()
 	errutil.FailOn(err)
 
@@ -142,7 +140,6 @@ func Run() {
 				return
 			case err := <-errorCh:
 				log.Infof("sensor: error collector - forwarding error = %+v", err)
-				//ipc.TryPublishEvt(3, &event.Message{Name: event.Error, Data: err})
 				ipcServer.TryPublishEvt(&event.Message{Name: event.Error, Data: err}, 3)
 			}
 		}
@@ -176,7 +173,6 @@ doneRunning:
 				if !started {
 					log.Info("sensor: monitor not started...")
 					time.Sleep(3 * time.Second) //give error event time to get sent
-					//ipc.TryPublishEvt(3, &event.Message{Name: event.StartMonitorFailed})
 					ipcServer.TryPublishEvt(&event.Message{Name: event.StartMonitorFailed}, 3)
 					break
 				}
@@ -193,7 +189,7 @@ doneRunning:
 				if !started {
 					msg.Name = event.StartMonitorFailed
 				}
-				//ipc.TryPublishEvt(3, msg)
+
 				ipcServer.TryPublishEvt(msg, 3)
 
 			case *command.StopMonitor:
@@ -203,7 +199,6 @@ doneRunning:
 				log.Info("sensor: waiting for monitor to finish...")
 				<-monDoneAckChan
 				log.Info("sensor: monitor stopped...")
-				//ipc.TryPublishEvt(3, &event.Message{Name: event.StopMonitorDone})
 				ipcServer.TryPublishEvt(&event.Message{Name: event.StopMonitorDone}, 3)
 
 			case *command.ShutdownSensor:
@@ -220,7 +215,6 @@ doneRunning:
 		}
 	}
 
-	//ipc.TryPublishEvt(3, &event.Message{Name: event.ShutdownSensorDone})
 	ipcServer.TryPublishEvt(&event.Message{Name: event.ShutdownSensorDone}, 3)
 
 	log.Info("sensor: done!")
