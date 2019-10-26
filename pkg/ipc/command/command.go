@@ -10,6 +10,16 @@ var (
 	ErrUnknownMessage = errors.New("unknown command type")
 )
 
+const (
+	ResponseStatusOk    = "ok"
+	ResponseStatusError = "error"
+)
+
+// Response contains the command response status information
+type Response struct {
+	Status string `json:"status"`
+}
+
 // MessageName is a message ID type
 type MessageName string
 
@@ -51,11 +61,10 @@ func (m *StopMonitor) GetName() MessageName {
 	return StopMonitorName
 }
 
-// ShutdownSensor contains the shutdown sensor command fields
-type ShutdownSensor struct {
-}
+// ShutdownSensor contains the 'shutdown sensor' command fields
+type ShutdownSensor struct{}
 
-// GetName returns the command message ID for the shutdown sensor command
+// GetName returns the command message ID for the 'shutdown sensor' command
 func (m *ShutdownSensor) GetName() MessageName {
 	return ShutdownSensorName
 }

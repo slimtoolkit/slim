@@ -17,6 +17,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/apparmor"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/seccomp"
+	"github.com/docker-slim/docker-slim/pkg/ipc/channel"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/report"
@@ -27,9 +28,6 @@ import (
 	log "github.com/Sirupsen/logrus"
 	dockerapi "github.com/cloudimmunity/go-dockerclientx"
 )
-
-// IpcErrRecvTimeoutStr - an IPC receive timeout error
-const IpcErrRecvTimeoutStr = "receive time out"
 
 // Container inspector constants
 const (
@@ -45,6 +43,10 @@ const (
 )
 
 var ErrStartMonitorTimeout = goerr.New("start monitor timeout")
+
+const (
+	defaultConnectWait = 60
+)
 
 // Inspector is a container execution inspector
 type Inspector struct {
@@ -78,6 +80,7 @@ type Inspector struct {
 	PrintPrefix        string
 	dockerEventCh      chan *dockerapi.APIEvents
 	dockerEventStopCh  chan struct{}
+	ipcClient          *ipc.Client
 }
 
 func pathMapKeys(m map[string]bool) []string {
@@ -388,7 +391,7 @@ func (i *Inspector) RunContainer() error {
 		cmd.AppUser = runAsUser
 	}
 
-	_, err = ipc.SendContainerCmd(cmd)
+	_, err = i.ipcClient.SendCommand(cmd)
 	if err != nil {
 		return err
 	}
@@ -398,11 +401,11 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	for idx := 0; idx < 3; idx++ {
-		evt, err := ipc.GetContainerEvt()
+		evt, err := i.ipcClient.GetEvent()
 
 		//don't want to expose mangos here...
 		if err != nil {
-			if err.Error() == IpcErrRecvTimeoutStr {
+			if os.IsTimeout(err) || err == channel.ErrWaitTimeout {
 				if i.PrintState {
 					fmt.Printf("%s info=event.startmonitor.done status=receive.timeout\n", i.PrintPrefix)
 				}
@@ -509,29 +512,21 @@ func (i *Inspector) FinishMonitoring() {
 	close(i.dockerEventStopCh)
 	i.dockerEventStopCh = nil
 
-	cmdResponse, err := ipc.SendContainerCmd(&command.StopMonitor{})
+	cmdResponse, err := i.ipcClient.SendCommand(&command.StopMonitor{})
 	errutil.WarnOn(err)
 	//_ = cmdResponse
 	log.Debugf("'stop' monitor response => '%v'", cmdResponse)
 
 	log.Info("waiting for the container to finish its work...")
 
-	//for now there's only one event ("done")
-	//getEvt() should timeout in two minutes (todo: pick a good timeout)
-	evt, err := ipc.GetContainerEvt()
+	evt, err := i.ipcClient.GetEvent()
 	log.Debugf("sensor event => '%v'", evt)
-
-	//don't want to expose mangos here... mangos.ErrRecvTimeout = errors.New("receive time out")
-	if err != nil && err.Error() == IpcErrRecvTimeoutStr {
-		log.Info("timeout waiting for the docker-slim container to finish its work...")
-		return
-	}
 
 	errutil.WarnOn(err)
 	_ = evt
 	log.Debugf("sensor event => '%v'", evt)
 
-	cmdResponse, err = ipc.SendContainerCmd(&command.ShutdownSensor{})
+	cmdResponse, err = i.ipcClient.SendCommand(&command.ShutdownSensor{})
 	if err != nil {
 		log.Debugf("error sending 'shutdown' => '%v'", err)
 	}
@@ -554,15 +549,20 @@ func (i *Inspector) initContainerChannels() error {
 	evtPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.EvtPort]
 	i.DockerHostIP = dockerhost.GetIP()
 
-	if err := ipc.InitContainerChannels(i.DockerHostIP, cmdPortBindings[0].HostPort, evtPortBindings[0].HostPort); err != nil {
+	ipcClient, err := ipc.NewClient(i.DockerHostIP, cmdPortBindings[0].HostPort, evtPortBindings[0].HostPort, defaultConnectWait)
+	if err != nil {
 		return err
 	}
 
+	i.ipcClient = ipcClient
 	return nil
 }
 
 func (i *Inspector) shutdownContainerChannels() {
-	ipc.ShutdownContainerChannels()
+	if i.ipcClient != nil {
+		i.ipcClient.Stop()
+		i.ipcClient = nil
+	}
 }
 
 // HasCollectedData returns true if any data was produced monitoring the target container
