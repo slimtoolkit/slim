@@ -17,8 +17,8 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/dustin/go-humanize"
+	log "github.com/sirupsen/logrus"
 )
 
 // OnProfile implements the 'profile' docker-slim command

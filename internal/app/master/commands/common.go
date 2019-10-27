@@ -3,8 +3,8 @@ package commands
 import (
 	"path/filepath"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/cloudimmunity/go-dockerclientx"
+	"github.com/fsouza/go-dockerclient"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )

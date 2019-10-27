@@ -9,9 +9,9 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/dustin/go-humanize"
+	"github.com/fsouza/go-dockerclient"
+	log "github.com/sirupsen/logrus"
 
 	v "github.com/docker-slim/docker-slim/pkg/version"
 )

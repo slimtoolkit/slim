@@ -27,7 +27,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

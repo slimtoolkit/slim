@@ -13,8 +13,8 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container"
 
-	log "github.com/Sirupsen/logrus"
-	dockerapi "github.com/cloudimmunity/go-dockerclientx"
+	dockerapi "github.com/fsouza/go-dockerclient"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

@@ -10,7 +10,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/internal/app/sensor/detectors/binfile"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 // Inspector errors

@@ -25,8 +25,8 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
-	log "github.com/Sirupsen/logrus"
-	dockerapi "github.com/cloudimmunity/go-dockerclientx"
+	dockerapi "github.com/fsouza/go-dockerclient"
+	log "github.com/sirupsen/logrus"
 )
 
 // Container inspector constants

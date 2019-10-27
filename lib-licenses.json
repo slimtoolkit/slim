@@ -1,42 +1,321 @@
 [
 	{
-		"project": "github.com/Sirupsen/logrus",
-		"license": "MIT License",
-		"confidence": 1
+		"project": "github.com/c4milo/unpackit",
+		"licenses": [
+			{
+				"type": "Mozilla Public License 2.0",
+				"confidence": 1
+			}
+		]
 	},
 	{
-		"project": "github.com/cloudimmunity/go-dockerclientx",
-		"license": "BSD 2-clause \"Simplified\" License",
-		"confidence": 1
+		"project": "github.com/containerd/containerd/errdefs",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 0.9635535307517085
+			}
+		]
 	},
 	{
-		"project": "github.com/cloudimmunity/go-dockerclientx/external/github.com/Sirupsen/logrus",
-		"license": "MIT License",
-		"confidence": 1
-	},
-	{
-		"project": "github.com/codegangsta/cli",
-		"license": "MIT License",
-		"confidence": 1
+		"project": "github.com/cpuguy83/go-md2man/v2/md2man",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
 	},
 	{
 		"project": "github.com/docker-slim/docker-slim",
-		"license": "Apache License 2.0",
-		"confidence": 1
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 0.9657534246575342
+			}
+		]
+	},
+	{
+		"project": "github.com/docker-slim/go-update",
+		"licenses": [
+			{
+				"type": "The Unlicense",
+				"confidence": 0.35294117647058826
+			}
+		]
+	},
+	{
+		"project": "github.com/docker-slim/go-update/internal/binarydist",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 0.9891304347826086
+			}
+		]
+	},
+	{
+		"project": "github.com/docker-slim/go-update/internal/osext",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.9663865546218487
+			}
+		]
+	},
+	{
+		"project": "github.com/docker-slim/uilive",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/docker-slim/uiprogress",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/docker/distribution/registry/api/errcode",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/docker/docker",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 0.9657534246575342
+			}
+		]
 	},
 	{
 		"project": "github.com/docker/go-connections/nat",
-		"license": "Apache License 2.0",
-		"confidence": 0.966
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 0.9657534246575342
+			}
+		]
+	},
+	{
+		"project": "github.com/docker/go-units",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 0.9657534246575342
+			}
+		]
+	},
+	{
+		"project": "github.com/dsnet/compress",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.9787234042553191
+			}
+		]
 	},
 	{
 		"project": "github.com/dustin/go-humanize",
-		"license": "MIT License",
-		"confidence": 0.969
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 0.96875
+			}
+		]
 	},
 	{
-		"project": "github.com/go-mangos/mangos",
-		"license": "Apache License 2.0",
-		"confidence": 1
+		"project": "github.com/fsouza/go-dockerclient",
+		"licenses": [
+			{
+				"type": "BSD 2-clause \"Simplified\" License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/gogo/protobuf/proto",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.9163346613545816
+			}
+		]
+	},
+	{
+		"project": "github.com/golang/protobuf",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.9663865546218487
+			}
+		]
+	},
+	{
+		"project": "github.com/google/shlex",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/klauspost/compress/flate",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.9663865546218487
+			}
+		]
+	},
+	{
+		"project": "github.com/klauspost/cpuid",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/klauspost/pgzip",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/morikuni/aec",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/opencontainers/go-digest",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 0.9657534246575342
+			},
+			{
+				"type": "Open Software License 3.0",
+				"confidence": 0.4606413994169096
+			}
+		]
+	},
+	{
+		"project": "github.com/opencontainers/image-spec/specs-go",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 0.9680365296803652
+			}
+		]
+	},
+	{
+		"project": "github.com/opencontainers/runc/libcontainer",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 0.9680365296803652
+			}
+		]
+	},
+	{
+		"project": "github.com/pkg/errors",
+		"licenses": [
+			{
+				"type": "BSD 2-clause \"Simplified\" License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/russross/blackfriday/v2",
+		"licenses": [
+			{
+				"type": "BSD 2-clause \"Simplified\" License",
+				"confidence": 0.9626168224299065
+			}
+		]
+	},
+	{
+		"project": "github.com/shurcooL/sanitized_anchor_name",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/sirupsen/logrus",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/ulikunitz/xz",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.9663865546218487
+			}
+		]
+	},
+	{
+		"project": "github.com/urfave/cli",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "golang.org/x/sys/unix",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.9663865546218487
+			}
+		]
+	},
+	{
+		"project": "google.golang.org/genproto/googleapis/rpc/status",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "google.golang.org/grpc",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 1
+			}
+		]
 	}
 ]

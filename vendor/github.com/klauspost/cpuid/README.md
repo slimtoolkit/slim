@@ -83,8 +83,6 @@ Package home: https://github.com/klauspost/cpuid
 * **MSVM** (Microsoft Hyper-V or Windows Virtual PC)
 * **VMware**
 * **XenHVM**
-* **Bhyve**
-* **Hygon**
 
 # installing
 

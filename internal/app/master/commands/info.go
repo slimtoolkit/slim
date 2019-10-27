@@ -11,8 +11,8 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/dustin/go-humanize"
+	log "github.com/sirupsen/logrus"
 )
 
 // OnInfo implements the 'info' docker-slim command

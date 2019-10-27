@@ -17,10 +17,10 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	vinfo "github.com/docker-slim/docker-slim/pkg/version"
 
-	log "github.com/Sirupsen/logrus"
 	"github.com/c4milo/unpackit"
 	"github.com/docker-slim/go-update"
 	"github.com/docker-slim/uiprogress"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

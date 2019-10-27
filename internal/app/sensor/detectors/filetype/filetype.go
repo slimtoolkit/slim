@@ -1,11 +1,12 @@
 package filetype
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

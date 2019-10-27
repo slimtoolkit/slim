@@ -8,8 +8,8 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerfile"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/cloudimmunity/go-dockerclientx"
+	"github.com/fsouza/go-dockerclient"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

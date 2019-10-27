@@ -9,11 +9,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	v "github.com/docker-slim/docker-slim/pkg/version"
+	"github.com/fsouza/go-dockerclient"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 const (

@@ -1,14 +1,8 @@
-# uilive [![GoDoc](https://godoc.org/github.com/docker-slim/uilive?status.svg)](https://godoc.org/github.com/docker-slim/uilive) [![Build Status](https://travis-ci.org/docker-slim/uilive.svg?branch=master)](https://travis-ci.org/docker-slim/uilive)
+# uilive [![GoDoc](https://godoc.org/github.com/gosuri/uilive?status.svg)](https://godoc.org/github.com/gosuri/uilive) [![Build Status](https://travis-ci.org/gosuri/uilive.svg?branch=master)](https://travis-ci.org/gosuri/uilive)
 
-## Note
+uilive is a go library for updating terminal output in realtime. It provides a buffered [io.Writer](https://golang.org/pkg/io/#Writer) that is flushed at a timed interval. uilive powers [uiprogress](https://github.com/gosuri/uiprogress).
 
-Fixing the os.Exit problem and a few other things...
-
-## Original Package Info
-
-uilive is a go library for updating terminal output in realtime. It provides a buffered [io.Writer](https://golang.org/pkg/io/#Writer) that is flushed at a timed interval. uilive powers [uiprogress](https://github.com/docker-slim/uiprogress).
-
-### Usage Example
+## Usage Example
 
 Calling `uilive.New()` will create a new writer. To start rendering, simply call `writer.Start()` and update the ui by writing to the `writer`. Full source for the below example is in [example/main.go](example/main.go).
 
@@ -30,8 +24,8 @@ The above will render
 
 ![example](doc/example.gif)
 
-### Installation
+## Installation
 
 ```sh
-$ go get -v github.com/docker-slim/uilive
+$ go get -v github.com/gosuri/uilive
 ```

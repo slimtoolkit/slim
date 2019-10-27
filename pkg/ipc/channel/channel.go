@@ -13,7 +13,7 @@ import (
 	"os"
 	"time"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -344,8 +344,6 @@ func (c *Client) Write(frame *Frame, retries uint) (n int, err error) {
 			return
 		}
 	}
-
-	return
 }
 
 func (c *Client) Read(retries uint) (*Frame, error) {
@@ -475,8 +473,6 @@ func NewCommandClient(addr string, connectWait, connectTimeout, readTimeout, wri
 			time.Sleep(5 * time.Second)
 		}
 	}
-
-	return nil, ErrWaitTimeout
 }
 
 func verifyCommandChannel(client *Client, retries uint) error {

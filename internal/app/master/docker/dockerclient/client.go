@@ -5,11 +5,11 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/fsouza/go-dockerclient"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 // New creates a new Docker client instance

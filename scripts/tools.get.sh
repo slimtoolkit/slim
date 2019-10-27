@@ -1,13 +1,16 @@
 #!/usr/bin/env bash
 
-if ! which govendor > /dev/null; then
-    echo "Tools: No govendor. Installing..."
-    go get -u github.com/kardianos/govendor
-fi
+#tmp until Go has better support for installing tools with modules
+export GO111MODULE=off
+
+go get -u golang.org/x/tools/go/analysis/passes/shadow/cmd/shadow
 
 if ! which golint > /dev/null; then
-    echo "Tools: No golint. Installing...."
-    go get -u github.com/golang/lint/golint
+    echo "Tools - Installing golint..."
+    go get -u golang.org/x/lint/golint
 fi
 
-
+if ! which license-bill-of-materials > /dev/null; then
+    echo "Tools - Installing bom tool..."
+	go get -v -u github.com/cloudimmunity/license-bill-of-materials
+fi

@@ -14,7 +14,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/pdiscover"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 // Directory and file related errors
@@ -175,7 +175,7 @@ func CopySymlinkFile(clone bool, src, dst string, makeDir bool) error {
 		if sysStat, ok := srcInfo.Sys().(*syscall.Stat_t); ok {
 			ssi := SysStatInfo(sysStat)
 			if err := UpdateSymlinkTimes(dst, ssi.Atime, ssi.Mtime); err != nil {
-				log.Warnln("CopySymlinkFile(%v,%v) - UpdateSymlinkTimes error", src, dst)
+				log.Warnf("CopySymlinkFile(%v,%v) - UpdateSymlinkTimes error", src, dst)
 			}
 
 			//todo: later
@@ -183,7 +183,7 @@ func CopySymlinkFile(clone bool, src, dst string, makeDir bool) error {
 			//	log.Warnln("CopySymlinkFile(%v,%v)- unable to change owner", src, dst)
 			//}
 		} else {
-			log.Warnln("CopySymlinkFile(%v,%v)- unable to get Stat_t", src, dst)
+			log.Warnf("CopySymlinkFile(%v,%v)- unable to get Stat_t", src, dst)
 		}
 	}
 
@@ -260,13 +260,13 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 
 	if clone {
 		if err := d.Chmod(srcFileInfo.Mode()); err != nil {
-			log.Warnln("CopyRegularFile(%v,%v) - unable to set mode", src, dst)
+			log.Warnf("CopyRegularFile(%v,%v) - unable to set mode", src, dst)
 		}
 
 		if sysStat, ok := srcFileInfo.Sys().(*syscall.Stat_t); ok {
 			ssi := SysStatInfo(sysStat)
 			if err := UpdateFileTimes(dst, ssi.Atime, ssi.Mtime); err != nil {
-				log.Warnln("CopyRegularFile(%v,%v) - UpdateFileTimes error", src, dst)
+				log.Warnf("CopyRegularFile(%v,%v) - UpdateFileTimes error", src, dst)
 			}
 
 			//todo: later
@@ -274,7 +274,7 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 			//	log.Warnln("CopyRegularFile(%v,%v)- unable to change owner", src, dst)
 			//}
 		} else {
-			log.Warnln("CopyRegularFile(%v,%v)- unable to get Stat_t", src, dst)
+			log.Warnf("CopyRegularFile(%v,%v)- unable to get Stat_t", src, dst)
 		}
 	}
 

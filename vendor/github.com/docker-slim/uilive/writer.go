@@ -57,12 +57,7 @@ type newline struct {
 
 // New returns a new Writer with defaults
 func New() *Writer {
-	var err error
-	termWidth, _, err = getTermSize()
-	if err != nil {
-		return nil
-	}
-	
+	termWidth, _ = getTermSize()
 	if termWidth != 0 {
 		overFlowHandled = true
 	}

@@ -5,7 +5,7 @@ import (
 	"os/signal"
 	"syscall"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 var appContinueChan = make(chan struct{})

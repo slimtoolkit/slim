@@ -12,8 +12,8 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/version"
 
-	log "github.com/Sirupsen/logrus"
-	"github.com/codegangsta/cli"
+	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli"
 )
 
 // DockerSlim app CLI constants

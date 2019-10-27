@@ -7,7 +7,7 @@ import (
 	"os/exec"
 	"syscall"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 // Start starts the target application in the container

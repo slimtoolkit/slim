@@ -11,8 +11,8 @@ import (
 	"unicode"
 	"unicode/utf8"
 
-	"github.com/cloudimmunity/go-dockerclientx"
 	"github.com/docker/go-connections/nat"
+	"github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
@@ -153,7 +153,8 @@ func parsePathsFile(filePath string) (map[string]bool, error) {
 		return paths, err
 	}
 
-	if _, err := os.Stat(fullPath); err != nil {
+	_, err = os.Stat(fullPath)
+	if err != nil {
 		return paths, err
 	}
 
@@ -169,7 +170,7 @@ func parsePathsFile(filePath string) (map[string]bool, error) {
 	lines := strings.Split(string(fileData), "\n")
 
 	for _, line := range lines {
-		line := strings.TrimSpace(line)
+		line = strings.TrimSpace(line)
 		if len(line) != 0 {
 			paths[line] = true
 		}
@@ -235,7 +236,8 @@ func parseHTTPProbesFile(filePath string) ([]config.HTTPProbeCmd, error) {
 			return nil, err
 		}
 
-		if _, err := os.Stat(fullPath); err != nil {
+		_, err = os.Stat(fullPath)
+		if err != nil {
 			return nil, err
 		}
 

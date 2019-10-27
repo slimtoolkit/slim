@@ -11,7 +11,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/third_party/opencontainers/specs"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 var archMap = map[system.ArchName]specs.Arch{

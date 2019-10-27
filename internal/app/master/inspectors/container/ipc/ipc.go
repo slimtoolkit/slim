@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/ipc/channel"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"

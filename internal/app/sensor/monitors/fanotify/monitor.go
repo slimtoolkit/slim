@@ -13,8 +13,8 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
-	log "github.com/Sirupsen/logrus"
 	fanapi "github.com/docker-slim/docker-slim/pkg/third_party/madmo/fanotify"
+	log "github.com/sirupsen/logrus"
 )
 
 // Event is file operation event

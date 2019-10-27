@@ -1,0 +1,19 @@
+module github.com/docker-slim/docker-slim
+
+go 1.13
+
+require (
+	github.com/c4milo/unpackit v0.0.0-20170704181138-4ed373e9ef1c
+	github.com/docker-slim/go-update v0.0.0-20190422071557-ed40247aff59
+	github.com/docker-slim/uilive v0.0.2 // indirect
+	github.com/docker-slim/uiprogress v0.0.0-20190505193231-9d4396e6d40b
+	github.com/docker/go-connections v0.4.0
+	github.com/dsnet/compress v0.0.1 // indirect
+	github.com/dustin/go-humanize v1.0.0
+	github.com/fsouza/go-dockerclient v1.5.0
+	github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf
+	github.com/klauspost/pgzip v1.2.1 // indirect
+	github.com/sirupsen/logrus v1.4.2
+	github.com/urfave/cli v1.22.1
+	golang.org/x/sys v0.0.0-20191026070338-33540a1f6037
+)

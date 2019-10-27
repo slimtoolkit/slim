@@ -4,7 +4,7 @@ import (
 	"debug/elf"
 	"strings"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 func Detected(filePath string) (bool, error) {
@@ -21,7 +21,7 @@ func Detected(filePath string) (bool, error) {
 			return false, nil
 		}
 
-		log.Debug("binfile.Detected(%v) - malformed binary file", filePath)
+		log.Debugf("binfile.Detected(%v) - malformed binary file", filePath)
 		return true, err
 	}
 

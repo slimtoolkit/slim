@@ -3,7 +3,7 @@ package config
 import (
 	"time"
 
-	"github.com/cloudimmunity/go-dockerclientx"
+	"github.com/fsouza/go-dockerclient"
 )
 
 // ContainerOverrides provides a set of container field overrides

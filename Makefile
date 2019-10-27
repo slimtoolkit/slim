@@ -1,13 +1,10 @@
-default: build_in_container
+default: build_in_docker
 
-build_in_container:
+build_in_docker:
 	rm -rfv bin
-	'$(CURDIR)/scripts/docker-slim-builder.run.sh'
+	'$(CURDIR)/scripts/docker-builder.run.sh'
 
-build_prep:
-	'$(CURDIR)/scripts/src.prep.sh'
-
-build_run:
+build:
 	'$(CURDIR)/scripts/src.build.sh'
 
 fmt:
@@ -22,4 +19,4 @@ tools:
 clean:
 	'$(CURDIR)/scripts/src.cleanup.sh'
 
-.PHONY: default build_in_container build_prep build_run fmt inspect tools clean
+.PHONY: default build_in_docker build fmt inspect tools clean

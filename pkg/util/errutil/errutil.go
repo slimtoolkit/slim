@@ -5,7 +5,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/version"
 
-	log "github.com/Sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 )
 
 // FailOn logs the error information and terminates the application if there's an error
