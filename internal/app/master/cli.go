@@ -446,7 +446,7 @@ func init() {
 		EnvVar: "DSLIM_MOUNT",
 	}
 
-	doConfinueAfterFlag := cli.StringFlag{
+	doContinueAfterFlag := cli.StringFlag{
 		Name:   FlagContinueAfter,
 		Value:  "probe",
 		Usage:  "Select continue mode: enter | signal | probe | timeout or numberInSeconds",
@@ -503,7 +503,7 @@ func init() {
 			Usage:   "Collects fat image information and reverse engineers its Dockerfile",
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
-					fmt.Printf("[info] missing image ID/name...\n\n")
+					fmt.Printf("docker-slim[info]: missing image ID/name...\n\n")
 					cli.ShowCommandHelp(ctx, CmdInfo)
 					return nil
 				}
@@ -583,11 +583,11 @@ func init() {
 				doIncludeExeFlag,
 				doIncludeShellFlag,
 				doUseMountFlag,
-				doConfinueAfterFlag,
+				doContinueAfterFlag,
 			},
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
-					fmt.Printf("[build] missing image ID/name...\n\n")
+					fmt.Printf("docker-slim[build]: missing image ID/name...\n\n")
 					cli.ShowCommandHelp(ctx, CmdBuild)
 					return nil
 				}
@@ -608,7 +608,7 @@ func init() {
 
 				httpProbeCmds, err := getHTTPProbes(ctx)
 				if err != nil {
-					fmt.Printf("[build] invalid HTTP probes: %v\n", err)
+					fmt.Printf("docker-slim[build]: invalid HTTP probes: %v\n", err)
 					return err
 				}
 
@@ -627,7 +627,7 @@ func init() {
 				httpProbeRetryWait := ctx.Int(FlagHTTPProbeRetryWait)
 				httpProbePorts, err := parseHTTPProbesPorts(ctx.String(FlagHTTPProbePorts))
 				if err != nil {
-					fmt.Printf("[build] invalid HTTP Probe target ports: %v\n", err)
+					fmt.Printf("docker-slim[build]: invalid HTTP Probe target ports: %v\n", err)
 					return err
 				}
 
@@ -640,19 +640,19 @@ func init() {
 				doImageOverrides := ctx.String(FlagImageOverrides)
 				overrides, err := getContainerOverrides(ctx)
 				if err != nil {
-					fmt.Printf("[build] invalid container overrides: %v\n", err)
+					fmt.Printf("docker-slim[build]: invalid container overrides: %v\n", err)
 					return err
 				}
 
 				instructions, err := getImageInstructions(ctx)
 				if err != nil {
-					fmt.Printf("[build] invalid image instructions: %v\n", err)
+					fmt.Printf("docker-slim[build]: invalid image instructions: %v\n", err)
 					return err
 				}
 
 				volumeMounts, err := parseVolumeMounts(ctx.StringSlice(FlagMount))
 				if err != nil {
-					fmt.Printf("[build] invalid volume mounts: %v\n", err)
+					fmt.Printf("docker-slim[build]: invalid volume mounts: %v\n", err)
 					return err
 				}
 
@@ -661,7 +661,7 @@ func init() {
 				includePaths := parsePaths(ctx.StringSlice(FlagIncludePath))
 				moreIncludePaths, err := parsePathsFile(ctx.String(FlagIncludePathFile))
 				if err != nil {
-					fmt.Printf("[build] could not read include path file (ignoring): %v\n", err)
+					fmt.Printf("docker-slim[build]: could not read include path file (ignoring): %v\n", err)
 				} else {
 					for k, v := range moreIncludePaths {
 						includePaths[k] = v
@@ -679,15 +679,20 @@ func init() {
 					}
 				}
 
-				confinueAfter, err := getContinueAfter(ctx)
+				continueAfter, err := getContinueAfter(ctx)
 				if err != nil {
-					fmt.Printf("[build] invalid continue-after mode: %v\n", err)
+					fmt.Printf("docker-slim[build]: invalid continue-after mode: %v\n", err)
 					return err
+				}
+
+				if !doHTTPProbe && continueAfter.Mode == "probe" {
+					fmt.Printf("docker-slim[build]: info=probe message='changing continue-after from probe to enter because http-probe is disabled'\n")
+					continueAfter.Mode = "enter"
 				}
 
 				for ipath := range includePaths {
 					if excludePaths[ipath] {
-						fmt.Printf("[build] include and exclude path conflict: %v\n", err)
+						fmt.Printf("docker-slim[build]: include and exclude path conflict: %v\n", err)
 						return nil
 					}
 				}
@@ -724,7 +729,7 @@ func init() {
 					includeBins,
 					includeExes,
 					doIncludeShell,
-					confinueAfter)
+					continueAfter)
 
 				return nil
 			},
@@ -762,11 +767,11 @@ func init() {
 				doIncludeExeFlag,
 				doIncludeShellFlag,
 				doUseMountFlag,
-				doConfinueAfterFlag,
+				doContinueAfterFlag,
 			},
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
-					fmt.Printf("[profile] missing image ID/name...\n\n")
+					fmt.Printf("docker-slim[profile]: missing image ID/name...\n\n")
 					cli.ShowCommandHelp(ctx, CmdProfile)
 					return nil
 				}
@@ -784,7 +789,7 @@ func init() {
 
 				httpProbeCmds, err := getHTTPProbes(ctx)
 				if err != nil {
-					fmt.Printf("[profile] invalid HTTP probes: %v\n", err)
+					fmt.Printf("docker-slim[profile]: invalid HTTP probes: %v\n", err)
 					return err
 				}
 
@@ -803,7 +808,7 @@ func init() {
 				httpProbeRetryWait := ctx.Int(FlagHTTPProbeRetryWait)
 				httpProbePorts, err := parseHTTPProbesPorts(ctx.String(FlagHTTPProbePorts))
 				if err != nil {
-					fmt.Printf("[profile] invalid HTTP Probe target ports: %v\n", err)
+					fmt.Printf("docker-slim[profile]: invalid HTTP Probe target ports: %v\n", err)
 					return err
 				}
 
@@ -812,13 +817,13 @@ func init() {
 				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
 				overrides, err := getContainerOverrides(ctx)
 				if err != nil {
-					fmt.Printf("[profile] invalid container overrides: %v", err)
+					fmt.Printf("docker-slim[profile]: invalid container overrides: %v", err)
 					return err
 				}
 
 				volumeMounts, err := parseVolumeMounts(ctx.StringSlice(FlagMount))
 				if err != nil {
-					fmt.Printf("[profile] invalid volume mounts: %v\n", err)
+					fmt.Printf("docker-slim[profile]: invalid volume mounts: %v\n", err)
 					return err
 				}
 
@@ -827,7 +832,7 @@ func init() {
 				includePaths := parsePaths(ctx.StringSlice(FlagIncludePath))
 				moreIncludePaths, err := parsePathsFile(ctx.String(FlagIncludePathFile))
 				if err != nil {
-					fmt.Printf("[profile] could not read include path file (ignoring): %v\n", err)
+					fmt.Printf("docker-slim[profile]: could not read include path file (ignoring): %v\n", err)
 				} else {
 					for k, v := range moreIncludePaths {
 						includePaths[k] = v
@@ -845,15 +850,20 @@ func init() {
 					}
 				}
 
-				confinueAfter, err := getContinueAfter(ctx)
+				continueAfter, err := getContinueAfter(ctx)
 				if err != nil {
-					fmt.Printf("[profile] invalid continue-after mode: %v\n", err)
+					fmt.Printf("docker-slim[profile]: invalid continue-after mode: %v\n", err)
 					return err
+				}
+
+				if !doHTTPProbe && continueAfter.Mode == "probe" {
+					fmt.Printf("docker-slim[profile]: info=probe message='changing continue-after from probe to enter because http-probe is disabled'\n")
+					continueAfter.Mode = "enter"
 				}
 
 				for ipath := range includePaths {
 					if excludePaths[ipath] {
-						fmt.Printf("[profile] include and exclude path conflict: %v\n", err)
+						fmt.Printf("docker-slim[profile]: include and exclude path conflict: %v\n", err)
 						return nil
 					}
 				}
@@ -884,7 +894,7 @@ func init() {
 					includeBins,
 					includeExes,
 					doIncludeShell,
-					confinueAfter)
+					continueAfter)
 
 				return nil
 			},
@@ -897,8 +907,8 @@ func getContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 		Mode: "enter",
 	}
 
-	doConfinueAfter := ctx.String(FlagContinueAfter)
-	switch doConfinueAfter {
+	doContinueAfter := ctx.String(FlagContinueAfter)
+	switch doContinueAfter {
 	case "enter":
 		info.Mode = "enter"
 	case "signal":
@@ -910,7 +920,7 @@ func getContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 		info.Mode = "timeout"
 		info.Timeout = 60
 	default:
-		if waitTime, err := strconv.Atoi(doConfinueAfter); err == nil && waitTime > 0 {
+		if waitTime, err := strconv.Atoi(doContinueAfter); err == nil && waitTime > 0 {
 			info.Mode = "timeout"
 			info.Timeout = time.Duration(waitTime)
 		}
