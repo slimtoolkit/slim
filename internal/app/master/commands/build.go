@@ -59,6 +59,8 @@ func OnBuild(
 	includeBins map[string]bool,
 	includeExes map[string]bool,
 	doIncludeShell bool,
+	doUseLocalMounts bool,
+	doUseSensorVolume string,
 	continueAfter *config.ContinueAfter) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "build"})
 

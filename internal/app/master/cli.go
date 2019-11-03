@@ -83,6 +83,8 @@ const (
 	FlagContainerDNS        = "container-dns"
 	FlagContainerDNSSearch  = "container-dns-search"
 	FlagBuildFromDockerfile = "from-dockerfile"
+	FlagUseLocalMounts      = "use-local-mounts"
+	FlagUseSensorVolume     = "use-sensor-volume"
 )
 
 var app *cli.App
@@ -439,6 +441,19 @@ func init() {
 		EnvVar: "DSLIM_INCLUDE_SHELL",
 	}
 
+	doUseLocalMountsFlag := cli.BoolFlag{
+		Name:   FlagUseLocalMounts,
+		Usage:  "Mount local paths for target container artifact input and output",
+		EnvVar: "DSLIM_USE_LOCAL_MOUNTS",
+	}
+
+	doUseSensorVolumeFlag := cli.StringFlag{
+		Name:   FlagUseSensorVolume,
+		Value:  "",
+		Usage:  "Sensor volume name to use",
+		EnvVar: "DSLIM_USE_SENSOR_VOLUME",
+	}
+
 	doUseMountFlag := cli.StringSliceFlag{
 		Name:   FlagMount,
 		Value:  &cli.StringSlice{},
@@ -584,6 +599,8 @@ func init() {
 				doIncludeShellFlag,
 				doUseMountFlag,
 				doContinueAfterFlag,
+				doUseLocalMountsFlag,
+				doUseSensorVolumeFlag,
 			},
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
@@ -672,6 +689,9 @@ func init() {
 				includeExes := parsePaths(ctx.StringSlice(FlagIncludeExe))
 				doIncludeShell := ctx.Bool(FlagIncludeShell)
 
+				doUseLocalMounts := ctx.Bool(FlagUseLocalMounts)
+				doUseSensorVolume := ctx.String(FlagUseSensorVolume)
+
 				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
@@ -729,6 +749,8 @@ func init() {
 					includeBins,
 					includeExes,
 					doIncludeShell,
+					doUseLocalMounts,
+					doUseSensorVolume,
 					continueAfter)
 
 				return nil
@@ -768,6 +790,8 @@ func init() {
 				doIncludeShellFlag,
 				doUseMountFlag,
 				doContinueAfterFlag,
+				doUseLocalMountsFlag,
+				doUseSensorVolumeFlag,
 			},
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
@@ -843,6 +867,9 @@ func init() {
 				includeExes := parsePaths(ctx.StringSlice(FlagIncludeExe))
 				doIncludeShell := ctx.Bool(FlagIncludeShell)
 
+				doUseLocalMounts := ctx.Bool(FlagUseLocalMounts)
+				doUseSensorVolume := ctx.String(FlagUseSensorVolume)
+
 				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
@@ -894,6 +921,8 @@ func init() {
 					includeBins,
 					includeExes,
 					doIncludeShell,
+					doUseLocalMounts,
+					doUseSensorVolume,
 					continueAfter)
 
 				return nil
