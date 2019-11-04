@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/docker/docker/pkg/archive"
 	dockerapi "github.com/fsouza/go-dockerclient"
@@ -170,14 +171,11 @@ func CreateVolumeWithData(source, name string, labels map[string]string) error {
 		Labels: labels,
 	}
 
-	log.Info("CreateVolumeWithData: creating volume...")
 	volumeInfo, err := dclient.CreateVolume(volumeOptions)
 	if err != nil {
 		log.Errorf("CreateVolumeWithData: dclient.CreateVolume() error = %v", err)
 		return err
 	}
-
-	log.Infof("CreateVolumeWithData: volumeInfo = %#v", volumeInfo)
 
 	volumeBinds := []string{fmt.Sprintf(volumeMountPat, name)}
 
@@ -192,7 +190,6 @@ func CreateVolumeWithData(source, name string, labels map[string]string) error {
 		},
 	}
 
-	log.Info("CreateVolumeWithData: creating container...")
 	containerInfo, err := dclient.CreateContainer(containerOptions)
 	if err != nil {
 		log.Errorf("dclient.CreateContainer() error = %v", err)
@@ -208,14 +205,12 @@ func CreateVolumeWithData(source, name string, labels map[string]string) error {
 			Force: true,
 		}
 
-		log.Info("CreateVolumeWithData: removing container (from defer)...")
 		err = dclient.RemoveContainer(removeOptions)
 		if err != nil {
 			fmt.Printf("CreateVolumeWithData: dclient.RemoveContainer() error = %v\n", err)
 		}
 	}()
 
-	log.Info("CreateVolumeWithData: creating tar data for volume...")
 	tarData, err := archive.Tar(source, archive.Uncompressed)
 	if err != nil {
 		log.Errorf("archive.Tar() error = %v", err)
@@ -229,7 +224,6 @@ func CreateVolumeWithData(source, name string, labels map[string]string) error {
 		Path:        "/data",
 	}
 
-	log.Info("CreateVolumeWithData: uploading data...")
 	err = dclient.UploadToContainer(containerID, uploadOptions)
 	if err != nil {
 		log.Errorf("dclient.UploadToContainer() error = %v", err)
@@ -239,6 +233,35 @@ func CreateVolumeWithData(source, name string, labels map[string]string) error {
 	return nil
 }
 
-func CopyFromContainer(remove, local string) error {
+func CopyFromContainer(containerID, remote, local string) error {
+	if containerID == "" || remote == "" || local == "" {
+		return ErrBadParam
+	}
+
+	dclient, err := dockerapi.NewClient(dockerHost)
+	if err != nil {
+		log.Errorf("CopyFromContainer: dockerapi.NewClient() error = %v", err)
+		return err
+	}
+
+	dfile, err := os.Create(local)
+	if err != nil {
+		return err
+	}
+
+	defer dfile.Close()
+
+	downloadOptions := dockerapi.DownloadFromContainerOptions{
+		Path:              remote,
+		OutputStream:      dfile,
+		InactivityTimeout: 20 * time.Second,
+	}
+
+	err = dclient.DownloadFromContainer(containerID, downloadOptions)
+	if err != nil {
+		log.Errorf("dclient.DownloadFromContainer() error = %v", err)
+		return err
+	}
+
 	return nil
 }
