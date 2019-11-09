@@ -12,10 +12,10 @@ pushd $BDIR
 
 BUILD_TIME="$(date -u '+%Y-%m-%d_%I:%M:%S%p')"
 TAG="current"
-revision="current"
+REVISION="current"
 if hash git 2>/dev/null && [ -e $BDIR/.git ]; then
   TAG="$(git describe --tags)"
-  revision="$(git rev-parse HEAD)"
+  REVISION="$(git rev-parse HEAD)"
 fi
 
 LD_FLAGS="-s -w -X github.com/docker-slim/docker-slim/pkg/version.appVersionTag=${TAG} -X github.com/docker-slim/docker-slim/pkg/version.appVersionRev=${REVISION} -X github.com/docker-slim/docker-slim/pkg/version.appVersionTime=${BUILD_TIME}"

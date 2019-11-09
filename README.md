@@ -141,9 +141,9 @@ If the directory where you extracted the binaries is not in your PATH then you'l
 
 ## BASIC USAGE INFO
 
-`docker-slim [version|info|build|profile] [--http-probe|--remove-file-artifacts] <IMAGE_ID_OR_NAME>`
+`docker-slim [version|info|build|profile|update|version] [--http-probe|--remove-file-artifacts] <IMAGE_ID_OR_NAME>`
 
-Example: `docker-slim build --http-probe my/sample-node-app`
+Example: `docker-slim build my/sample-app`
 
 See the `USAGE DETAILS` section for more details. You can also get additional information about the parameters running `docker-slim`. Run `docker-slim` without any parameters and you'll get a high level overview of the available commands. Run a `docker-slim` command without any parameters and you'll get more information about that command (e.g., `docker-slim build`).
 
@@ -153,7 +153,7 @@ If you want to auto-generate a Seccomp profile AND minify your image use the `bu
 
 Step one: run DockerSlim
 
-`docker-slim build --http-probe your-name/your-app`
+`docker-slim build your-name/your-app`
 
 Step two: use the generated Seccomp profile
 
@@ -200,9 +200,11 @@ The demo run on Mac OS X, but you can build a linux version. Note that these ste
 
 4. Run `docker-slim`:
 
-  `./docker-slim build --http-probe my/sample-node-app` <- run it from the location where you extraced the docker-slim binaries (or update your PATH env var to include the `docker-slim` bin directory)
+  `./docker-slim build my/sample-node-app` <- run it from the location where you extraced the docker-slim binaries (or update your PATH env var to include the `docker-slim` bin directory)
 
   DockerSlim creates a special container based on the target image you provided. It also creates a resource directory where it stores the information it discovers about your image: `<docker-slim directory>/.images/<TARGET_IMAGE_ID>`.
+
+  By default, `docker-slim` will run its http probe against the temporary container. If you are minifying a command line tool that doesn't expose any web service interface you'll need to explicitly disable http probing (by setting `--http-probe=false`).
 
 5. Use curl (or other tools) to call the sample app (optional)
 
@@ -212,11 +214,11 @@ The demo run on Mac OS X, but you can build a linux version. Note that these ste
 
   You'll see the mapped ports printed to the console when `docker-slim` starts the target container. You can also get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
 
-  If you set the `http-probe` flag then `docker-slim` will try to call your application using HTTP/HTTPS: `./docker-slim build --http-probe my/sample-node-app`
-
 6. Press <enter> and wait until `docker-slim` says it's done
+  
+  By default or when http probing is enabled explicitly `docker-slim` will continue its execution once the http probe is done running. If you explicitly picked a different `continue-after` option follow the expected steps. For example, for the `enter` `continue-after` option you must press the `enter` button on your keyboard.
 
-  If you set the `http-probe` flag and you press <enter> before the HTTP probe is done the probe might produce an EOF error because DockerSlim will shut down the target container before all probe commands are done executing. It's ok to ignore it unless you really need the probe to finish.
+  If http probing is enabled (when `http-probe` is set) and if `continue-after` is set to `enter` and you press the `enter` key before the built-in HTTP probe is done the probe might produce an EOF error because `docker-slim` will shut down the target container before all probe commands are done executing. It's ok to ignore it unless you really need the probe to finish.
 
 7. Once DockerSlim is done check that the new minified image is there
 
@@ -262,7 +264,7 @@ To disable the version checks set the global `--check-version` flag to `false` (
 
 ### `BUILD` COMMAND OPTIONS
 
-* `--http-probe` - enables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it)
+* `--http-probe` - enables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`)
 * `--http-probe-cmd` - additional HTTP probe command [zero or more]
 * `--http-probe-cmd-file` - file with user defined HTTP probe commands
 * `--http-probe-retry-count` - number of retries for each HTTP probe (default: 5)
@@ -292,7 +294,10 @@ To disable the version checks set the global `--check-version` flag to `false` (
 * `--container-dns` - add a dns server analyzing image [zero or more]
 * `--container-dns-search` - add a dns search domain for unqualified hostnames analyzing image [zero or more]
 * `--continue-after` - Select continue mode: enter | signal | probe | timeout or numberInSeconds (default: enter)
-* `--from-dockerfile` - The source Dockerfile name to build the fat image before it's minified. 
+* `--from-dockerfile` - The source Dockerfile name to build the fat image before it's minified.
+* `--use-local-mounts` - Mount local paths for target container artifact input and output (off, by default).
+* `--use-sensor-volume` - Sensor volume name to use (set it to your Docker volume name if you manage your own `docker-slim` sensor volume).
+* `--keep-tmp-artifacts` - Keep temporary artifacts when command is done (off, by default).
 
 The `--include-path` option is useful if you want to customize your minified image adding extra files and directories. The `--include-path-file` option allows you to load multiple includes from a newline delimited file. Use this option if you have a lot of includes. The includes from `--include-path` and `--include-path-file` are combined together. Future versions will also include the `--exclude-path` option to have even more control.
 
@@ -301,6 +306,8 @@ The `--continue-after` option is useful if you need to script `docker-slim`. If 
 The `--include-shell` option provides a simple way to keep a basic shell in the minified container. Not all shell commands are included. To get additional shell commands or other command line utilities use the `--include-exe' and/or `--include-bin' options. Note that the extra apps and binaries might missed some of the non-binary dependencies (which don't get picked up during static analysis). For those additional dependencies use the `--include-path` and `--include-path-file` options.
 
 The `--from-dockerfile` option makes it possible to build a new minified image directly from source Dockerfile. Pass the Dockerfile name as the value for this flag and pass the build context directory or URL instead of the docker image name as the last parameter for the `docker-slim` build command: `docker-slim build --from-dockerfile Dockerfile --tag my/custom_minified_image_name .` If you want to see the console output from the build stages (when the fat and slim images are built) add the `--show-blogs` build flag. Note that the build console output is not interactive and it's printed only after the corresponding build step is done. The fat image created during the build process has the `.fat` suffix in its name. If you specify a custom image tag (with the `--tag` flag) the `.fat` suffix is added to the name part of the tag. If you don't provide a custom tag the generated fat image name will have the following format: `docker-slim-tmp-fat-image.<pid_of_docker-slim>.<current_timestamp>`. The minified image name will have the `.slim` suffix added to that auto-generated container image name (`docker-slim-tmp-fat-image.<pid_of_docker-slim>.<current_timestamp>.slim`). Take a look at this [python examples](https://github.com/docker-slim/examples/tree/master/python_ubuntu_18_py27_from_dockerfile) to see how it's using the `--from-dockerfile` flag.
+
+The `--use-local-mounts` option is used to choose how the `docker-slim` sensor is added to the target container and how the sensor artifacts are delivered back to the master. If you enable this option you'll get the original `docker-slim` behavior where it uses local file system volume mounts to add the sensor executable and to extract the artifacts from the target container. This option doesn't always work as expected in the dockerized environment where `docker-slim` itself is running in a Docker container. When this option is disabled (default behavior) then a separate Docker volume is used to mount the sensor and the sensor artifacts are explicitly copied from the target container.
 
 ## DOCKER CONNECT OPTIONS
 

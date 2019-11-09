@@ -21,6 +21,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/report"
+	"github.com/docker-slim/docker-slim/pkg/util/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
@@ -31,21 +32,30 @@ import (
 
 // Container inspector constants
 const (
-	SensorBinPath     = "/opt/dockerslim/bin/sensor"
-	ContainerNamePat  = "dockerslimk_%v_%v"
-	ArtifactsDir      = "artifacts"
-	SensorBinLocal    = "docker-slim-sensor"
-	ArtifactsMountPat = "%s:/opt/dockerslim/artifacts"
-	SensorMountPat    = "%s:/opt/dockerslim/bin/sensor:ro"
-	CmdPortDefault    = "65501/tcp"
-	EvtPortDefault    = "65502/tcp"
-	LabelName         = "dockerslim"
+	SensorBinPath        = "/opt/dockerslim/bin/docker-slim-sensor"
+	ContainerNamePat     = "dockerslimk_%v_%v"
+	ArtifactsDir         = "artifacts"
+	ReportArtifactTar    = "creport.tar"
+	ReportFileName       = "creport.json"
+	FileArtifactsTar     = "files.tar"
+	FileArtifactsOutTar  = "files_out.tar"
+	FileArtifactsDirName = "files"
+	FileArtifactsPrefix  = "files/"
+	SensorBinLocal       = "docker-slim-sensor"
+	ArtifactsMountPat    = "%s:/opt/dockerslim/artifacts"
+	ArtifactsVolumePath  = "/opt/dockerslim/artifacts"
+	SensorMountPat       = "%s:/opt/dockerslim/bin/docker-slim-sensor:ro"
+	VolumeSensorMountPat = "%s:/opt/dockerslim/bin:ro"
+	CmdPortDefault       = "65501/tcp"
+	EvtPortDefault       = "65502/tcp"
+	LabelName            = "dockerslim"
 )
 
 var ErrStartMonitorTimeout = goerr.New("start monitor timeout")
 
 const (
-	defaultConnectWait = 60
+	defaultConnectWait   = 60
+	sensorVolumeBaseName = "docker-slim-sensor"
 )
 
 // Inspector is a container execution inspector
@@ -57,6 +67,9 @@ type Inspector struct {
 	ContainerName      string
 	FatContainerCmd    []string
 	LocalVolumePath    string
+	DoUseLocalMounts   bool
+	SensorVolumeName   string
+	DoKeepTmpArtifacts bool
 	StatePath          string
 	CmdPort            dockerapi.Port
 	EvtPort            dockerapi.Port
@@ -81,6 +94,7 @@ type Inspector struct {
 	dockerEventCh      chan *dockerapi.APIEvents
 	dockerEventStopCh  chan struct{}
 	ipcClient          *ipc.Client
+	logger             *log.Entry
 }
 
 func pathMapKeys(m map[string]bool) []string {
@@ -97,10 +111,15 @@ func pathMapKeys(m map[string]bool) []string {
 }
 
 // NewInspector creates a new container execution inspector
-func NewInspector(client *dockerapi.Client,
+func NewInspector(
+	logger *log.Entry,
+	client *dockerapi.Client,
 	statePath string,
 	imageInspector *image.Inspector,
 	localVolumePath string,
+	doUseLocalMounts bool,
+	sensorVolumeName string,
+	doKeepTmpArtifacts bool,
 	overrides *config.ContainerOverrides,
 	links []string,
 	etcHostsMaps []string,
@@ -117,32 +136,37 @@ func NewInspector(client *dockerapi.Client,
 	printState bool,
 	printPrefix string) (*Inspector, error) {
 
+	logger = logger.WithFields(log.Fields{"component": "container.inspector"})
 	inspector := &Inspector{
-		StatePath:         statePath,
-		LocalVolumePath:   localVolumePath,
-		CmdPort:           CmdPortDefault,
-		EvtPort:           EvtPortDefault,
-		ImageInspector:    imageInspector,
-		APIClient:         client,
-		Overrides:         overrides,
-		Links:             links,
-		EtcHostsMaps:      etcHostsMaps,
-		DNSServers:        dnsServers,
-		DNSSearchDomains:  dnsSearchDomains,
-		ShowContainerLogs: showContainerLogs,
-		VolumeMounts:      volumeMounts,
-		ExcludePaths:      excludePaths,
-		IncludePaths:      includePaths,
-		IncludeBins:       includeBins,
-		IncludeExes:       includeExes,
-		DoIncludeShell:    doIncludeShell,
-		DoDebug:           doDebug,
-		PrintState:        printState,
-		PrintPrefix:       printPrefix,
+		logger:             logger,
+		StatePath:          statePath,
+		LocalVolumePath:    localVolumePath,
+		DoUseLocalMounts:   doUseLocalMounts,
+		SensorVolumeName:   sensorVolumeName,
+		DoKeepTmpArtifacts: doKeepTmpArtifacts,
+		CmdPort:            CmdPortDefault,
+		EvtPort:            EvtPortDefault,
+		ImageInspector:     imageInspector,
+		APIClient:          client,
+		Overrides:          overrides,
+		Links:              links,
+		EtcHostsMaps:       etcHostsMaps,
+		DNSServers:         dnsServers,
+		DNSSearchDomains:   dnsSearchDomains,
+		ShowContainerLogs:  showContainerLogs,
+		VolumeMounts:       volumeMounts,
+		ExcludePaths:       excludePaths,
+		IncludePaths:       includePaths,
+		IncludeBins:        includeBins,
+		IncludeExes:        includeExes,
+		DoIncludeShell:     doIncludeShell,
+		DoDebug:            doDebug,
+		PrintState:         printState,
+		PrintPrefix:        printPrefix,
 	}
 
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
-		log.Debugf("overriding Entrypoint %+v => %+v (%v)",
+		logger.Debugf("overriding Entrypoint %+v => %+v (%v)",
 			imageInspector.ImageInfo.Config.Entrypoint, overrides.Entrypoint, overrides.ClearEntrypoint)
 		if len(overrides.Entrypoint) > 0 {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Entrypoint...)
@@ -153,7 +177,7 @@ func NewInspector(client *dockerapi.Client,
 	}
 
 	if overrides != nil && ((len(overrides.Cmd) > 0) || overrides.ClearCmd) {
-		log.Debugf("overriding Cmd %+v => %+v (%v)",
+		logger.Debugf("overriding Cmd %+v => %+v (%v)",
 			imageInspector.ImageInfo.Config.Cmd, overrides.Cmd, overrides.ClearCmd)
 		if len(overrides.Cmd) > 0 {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
@@ -190,17 +214,38 @@ func (i *Inspector) RunContainer() error {
 		os.Exit(-125)
 	}
 
-	artifactsMountInfo := fmt.Sprintf(ArtifactsMountPat, artifactsPath)
-	sensorMountInfo := fmt.Sprintf(SensorMountPat, sensorPath)
-
 	var volumeBinds []string
+	configVolumes := map[string]struct{}{}
+
+	var err error
+	var volumeName string
+	if !i.DoUseLocalMounts {
+		volumeName, err = ensureSensorVolume(i.logger, i.APIClient, sensorPath, i.SensorVolumeName)
+		errutil.FailOn(err)
+	}
+
+	var artifactsMountInfo string
+	if i.DoUseLocalMounts {
+		artifactsMountInfo = fmt.Sprintf(ArtifactsMountPat, artifactsPath)
+		volumeBinds = append(volumeBinds, artifactsMountInfo)
+	} else {
+		artifactsMountInfo = ArtifactsVolumePath
+		configVolumes[artifactsMountInfo] = struct{}{}
+	}
+
+	var sensorMountInfo string
+	if i.DoUseLocalMounts {
+		sensorMountInfo = fmt.Sprintf(SensorMountPat, sensorPath)
+	} else {
+		sensorMountInfo = fmt.Sprintf(VolumeSensorMountPat, volumeName)
+	}
+
+	volumeBinds = append(volumeBinds, sensorMountInfo)
+
 	for _, volumeMount := range i.VolumeMounts {
 		mountInfo := fmt.Sprintf("%s:%s:%s", volumeMount.Source, volumeMount.Destination, volumeMount.Options)
 		volumeBinds = append(volumeBinds, mountInfo)
 	}
-
-	volumeBinds = append(volumeBinds, artifactsMountInfo)
-	volumeBinds = append(volumeBinds, sensorMountInfo)
 
 	var containerCmd []string
 	if i.DoDebug {
@@ -231,6 +276,10 @@ func (i *Inspector) RunContainer() error {
 		},
 	}
 
+	if len(configVolumes) > 0 {
+		containerOptions.Config.Volumes = configVolumes
+	}
+
 	runAsUser := i.ImageInspector.ImageInfo.Config.User
 	containerOptions.Config.User = "0:0"
 
@@ -243,42 +292,42 @@ func (i *Inspector) RunContainer() error {
 		containerOptions.Config.ExposedPorts = i.Overrides.ExposedPorts
 		for k, v := range commsExposedPorts {
 			if _, ok := containerOptions.Config.ExposedPorts[k]; ok {
-				log.Warnf("RunContainer: comms port conflict => %v", k)
+				i.logger.Warnf("RunContainer: comms port conflict => %v", k)
 			}
 
 			containerOptions.Config.ExposedPorts[k] = v
 		}
-		log.Debugf("RunContainer: Config.ExposedPorts => %#v", containerOptions.Config.ExposedPorts)
+		i.logger.Debugf("RunContainer: Config.ExposedPorts => %#v", containerOptions.Config.ExposedPorts)
 	} else {
 		containerOptions.Config.ExposedPorts = commsExposedPorts
-		log.Debugf("RunContainer: default exposed ports => %#v", containerOptions.Config.ExposedPorts)
+		i.logger.Debugf("RunContainer: default exposed ports => %#v", containerOptions.Config.ExposedPorts)
 	}
 
 	if i.Overrides.Network != "" {
 		containerOptions.HostConfig.NetworkMode = i.Overrides.Network
-		log.Debugf("RunContainer: HostConfig.NetworkMode => %v", i.Overrides.Network)
+		i.logger.Debugf("RunContainer: HostConfig.NetworkMode => %v", i.Overrides.Network)
 	}
 
 	// adding this separately for better visibility...
 	if len(i.Links) > 0 {
 		containerOptions.HostConfig.Links = i.Links
-		log.Debugf("RunContainer: HostConfig.Links => %v", i.Links)
+		i.logger.Debugf("RunContainer: HostConfig.Links => %v", i.Links)
 	}
 
 	if len(i.EtcHostsMaps) > 0 {
 		containerOptions.HostConfig.ExtraHosts = i.EtcHostsMaps
-		log.Debugf("RunContainer: HostConfig.ExtraHosts => %v", i.EtcHostsMaps)
+		i.logger.Debugf("RunContainer: HostConfig.ExtraHosts => %v", i.EtcHostsMaps)
 	}
 
 	if len(i.DNSServers) > 0 {
 		containerOptions.HostConfig.DNS = i.DNSServers //for newer versions of Docker
 		containerOptions.Config.DNS = i.DNSServers     //for older versions of Docker
-		log.Debugf("RunContainer: HostConfig.DNS/Config.DNS => %v", i.DNSServers)
+		i.logger.Debugf("RunContainer: HostConfig.DNS/Config.DNS => %v", i.DNSServers)
 	}
 
 	if len(i.DNSSearchDomains) > 0 {
 		containerOptions.HostConfig.DNSSearch = i.DNSSearchDomains
-		log.Debugf("RunContainer: HostConfig.DNSSearch => %v", i.DNSSearchDomains)
+		i.logger.Debugf("RunContainer: HostConfig.DNSSearch => %v", i.DNSSearchDomains)
 	}
 
 	containerInfo, err := i.APIClient.CreateContainer(containerOptions)
@@ -318,7 +367,7 @@ func (i *Inspector) RunContainer() error {
 				}
 
 			case <-i.dockerEventStopCh:
-				log.Debug("RunContainer: Docker event monitor stopped")
+				i.logger.Debug("RunContainer: Docker event monitor stopped")
 				return
 			}
 		}
@@ -334,7 +383,7 @@ func (i *Inspector) RunContainer() error {
 
 	errutil.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
 	errutil.FailWhen(len(i.ContainerInfo.NetworkSettings.Ports) < len(commsExposedPorts), "docker-slim: error => missing comms ports")
-	log.Debugf("RunContainer: container NetworkSettings.Ports => %#v", i.ContainerInfo.NetworkSettings.Ports)
+	i.logger.Debugf("RunContainer: container NetworkSettings.Ports => %#v", i.ContainerInfo.NetworkSettings.Ports)
 
 	if len(i.ContainerInfo.NetworkSettings.Ports) > 2 {
 		portKeys := make([]string, 0, len(i.ContainerInfo.NetworkSettings.Ports)-2)
@@ -410,7 +459,7 @@ func (i *Inspector) RunContainer() error {
 					fmt.Printf("%s info=event.startmonitor.done status=receive.timeout\n", i.PrintPrefix)
 				}
 
-				log.Debug("timeout waiting for the docker-slim container to start...")
+				i.logger.Debug("timeout waiting for the docker-slim container to start...")
 				continue
 			}
 
@@ -418,7 +467,7 @@ func (i *Inspector) RunContainer() error {
 		}
 
 		if evt == nil || evt.Name == "" {
-			log.Debug("empty event waiting for the docker-slim container to start (trying again)...")
+			i.logger.Debug("empty event waiting for the docker-slim container to start (trying again)...")
 			continue
 		}
 
@@ -455,7 +504,7 @@ func (i *Inspector) showContainerLogs() {
 	var errData bytes.Buffer
 	errw := bufio.NewWriter(&errData)
 
-	log.Debug("getting container logs => ", i.ContainerID)
+	i.logger.Debug("getting container logs => ", i.ContainerID)
 	logsOptions := dockerapi.LogsOptions{
 		Container:    i.ContainerID,
 		OutputStream: outw,
@@ -466,7 +515,7 @@ func (i *Inspector) showContainerLogs() {
 
 	err := i.APIClient.Logs(logsOptions)
 	if err != nil {
-		log.Infof("error getting container logs => %v - %v", i.ContainerID, err)
+		i.logger.Infof("error getting container logs => %v - %v", i.ContainerID, err)
 	} else {
 		outw.Flush()
 		errw.Flush()
@@ -480,6 +529,32 @@ func (i *Inspector) showContainerLogs() {
 
 // ShutdownContainer terminates the container inspector instance execution
 func (i *Inspector) ShutdownContainer() error {
+	if !i.DoUseLocalMounts {
+		deleteOrig := true
+		if i.DoKeepTmpArtifacts {
+			deleteOrig = false
+		}
+
+		reportLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, ReportArtifactTar)
+		reportRemotePath := filepath.Join(ArtifactsVolumePath, ReportFileName)
+		err := dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, reportRemotePath, reportLocalPath, true, deleteOrig)
+		if err != nil {
+			errutil.FailOn(err)
+		}
+
+		filesOutLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, FileArtifactsOutTar)
+		filesRemotePath := filepath.Join(ArtifactsVolumePath, FileArtifactsDirName)
+		err = dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, filesRemotePath, filesOutLocalPath, false, false)
+		if err != nil {
+			errutil.FailOn(err)
+		}
+
+		err = dockerutil.PrepareContainerDataArchive(filesOutLocalPath, FileArtifactsTar, FileArtifactsPrefix, deleteOrig)
+		if err != nil {
+			errutil.FailOn(err)
+		}
+	}
+
 	i.shutdownContainerChannels()
 
 	if i.ShowContainerLogs {
@@ -489,7 +564,7 @@ func (i *Inspector) ShutdownContainer() error {
 	err := i.APIClient.StopContainer(i.ContainerID, 9)
 
 	if _, ok := err.(*dockerapi.ContainerNotRunning); ok {
-		log.Info("can't stop the docker-slim container (container is not running)...")
+		i.logger.Info("can't stop the docker-slim container (container is not running)...")
 	} else {
 		errutil.WarnOn(err)
 	}
@@ -501,7 +576,7 @@ func (i *Inspector) ShutdownContainer() error {
 	}
 
 	if err := i.APIClient.RemoveContainer(removeOption); err != nil {
-		log.Info("error removing container =>", err)
+		i.logger.Info("error removing container =>", err)
 	}
 
 	return nil
@@ -515,36 +590,25 @@ func (i *Inspector) FinishMonitoring() {
 	cmdResponse, err := i.ipcClient.SendCommand(&command.StopMonitor{})
 	errutil.WarnOn(err)
 	//_ = cmdResponse
-	log.Debugf("'stop' monitor response => '%v'", cmdResponse)
+	i.logger.Debugf("'stop' monitor response => '%v'", cmdResponse)
 
-	log.Info("waiting for the container to finish its work...")
+	i.logger.Info("waiting for the container to finish its work...")
 
 	evt, err := i.ipcClient.GetEvent()
-	log.Debugf("sensor event => '%v'", evt)
+	i.logger.Debugf("sensor event => '%v'", evt)
 
 	errutil.WarnOn(err)
 	_ = evt
-	log.Debugf("sensor event => '%v'", evt)
+	i.logger.Debugf("sensor event => '%v'", evt)
 
 	cmdResponse, err = i.ipcClient.SendCommand(&command.ShutdownSensor{})
 	if err != nil {
-		log.Debugf("error sending 'shutdown' => '%v'", err)
+		i.logger.Debugf("error sending 'shutdown' => '%v'", err)
 	}
-	log.Debugf("'shutdown' sensor response => '%v'", cmdResponse)
+	i.logger.Debugf("'shutdown' sensor response => '%v'", cmdResponse)
 }
 
 func (i *Inspector) initContainerChannels() error {
-	/*
-		NOTE: not using IPC for now... (future option for regular Docker deployments)
-		ipcLocation := filepath.Join(localVolumePath,"ipc")
-		_, err = os.Stat(ipcLocation)
-		if os.IsNotExist(err) {
-			os.MkdirAll(ipcLocation, 0777)
-			_, err = os.Stat(ipcLocation)
-			errutil.FailOn(err)
-		}
-	*/
-
 	cmdPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.CmdPort]
 	evtPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.EvtPort]
 	i.DockerHostIP = dockerhost.GetIP()
@@ -572,11 +636,49 @@ func (i *Inspector) HasCollectedData() bool {
 
 // ProcessCollectedData performs post-processing on the collected container data
 func (i *Inspector) ProcessCollectedData() error {
-	log.Info("generating AppArmor profile...")
+	i.logger.Info("generating AppArmor profile...")
 	err := apparmor.GenProfile(i.ImageInspector.ArtifactLocation, i.ImageInspector.AppArmorProfileName)
 	if err != nil {
 		return err
 	}
 
 	return seccomp.GenProfile(i.ImageInspector.ArtifactLocation, i.ImageInspector.SeccompProfileName)
+}
+
+/////////////////////////////////////////////////////////////////////////////////
+
+func sensorVolumeName() string {
+	return fmt.Sprintf("%s.%s", sensorVolumeBaseName, v.Tag())
+}
+
+func ensureSensorVolume(logger *log.Entry, client *dockerapi.Client, localSensorPath, volumeName string) (string, error) {
+	if volumeName == "" {
+		volumeName = sensorVolumeName()
+	}
+
+	err := dockerutil.HasVolume(client, volumeName)
+	switch {
+	case err == nil:
+		logger.Debugf("ensureSensorVolume: already have volume = %v", volumeName)
+	case err == dockerutil.ErrNotFound:
+		logger.Debugf("ensureSensorVolume: no volume yet = %v", volumeName)
+		if dockerutil.HasEmptyImage(client) == dockerutil.ErrNotFound {
+			err := dockerutil.BuildEmptyImage(client)
+			if err != nil {
+				logger.Debugf("ensureSensorVolume: dockerutil.BuildEmptyImage() - error = %v", err)
+				return "", err
+			}
+		}
+
+		err = dockerutil.CreateVolumeWithData(client, localSensorPath, volumeName, nil)
+		if err != nil {
+			logger.Debugf("ensureSensorVolume: dockerutil.CreateVolumeWithData() - error = %v", err)
+			return "", err
+		}
+	default:
+		logger.Debugf("ensureSensorVolume: dockerutil.HasVolume() - error = %v", err)
+		return "", err
+	}
+
+	return volumeName, nil
 }

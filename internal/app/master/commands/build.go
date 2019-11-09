@@ -61,6 +61,7 @@ func OnBuild(
 	doIncludeShell bool,
 	doUseLocalMounts bool,
 	doUseSensorVolume string,
+	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "build"})
 
@@ -73,6 +74,7 @@ func OnBuild(
 	client := dockerclient.New(clientConfig)
 
 	fmt.Println("docker-slim[build]: state=started")
+
 	if buildFromDockerfile == "" {
 		fmt.Printf("docker-slim[build]: info=params target=%v continue.mode=%v\n", imageRef, continueAfter.Mode)
 	} else {
@@ -193,10 +195,15 @@ func OnBuild(
 	fmt.Println("docker-slim[build]: state=image.inspection.done")
 	fmt.Println("docker-slim[build]: state=container.inspection.start")
 
-	containerInspector, err := container.NewInspector(client,
+	containerInspector, err := container.NewInspector(
+		logger,
+		client,
 		statePath,
 		imageInspector,
 		localVolumePath,
+		doUseLocalMounts,
+		doUseSensorVolume,
+		doKeepTmpArtifacts,
 		overrides,
 		links,
 		etcHostsMaps,

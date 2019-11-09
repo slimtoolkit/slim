@@ -85,6 +85,7 @@ const (
 	FlagBuildFromDockerfile = "from-dockerfile"
 	FlagUseLocalMounts      = "use-local-mounts"
 	FlagUseSensorVolume     = "use-sensor-volume"
+	FlagKeepTmpArtifacts    = "keep-tmp-artifacts"
 )
 
 var app *cli.App
@@ -441,6 +442,12 @@ func init() {
 		EnvVar: "DSLIM_INCLUDE_SHELL",
 	}
 
+	doKeepTmpArtifactsFlag := cli.BoolFlag{
+		Name:   FlagKeepTmpArtifacts,
+		Usage:  "keep temporary artifacts when command is done",
+		EnvVar: "DSLIM_KEEP_TMP_ARTIFACTS",
+	}
+
 	doUseLocalMountsFlag := cli.BoolFlag{
 		Name:   FlagUseLocalMounts,
 		Usage:  "Mount local paths for target container artifact input and output",
@@ -601,6 +608,7 @@ func init() {
 				doContinueAfterFlag,
 				doUseLocalMountsFlag,
 				doUseSensorVolumeFlag,
+				doKeepTmpArtifactsFlag,
 			},
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
@@ -692,6 +700,8 @@ func init() {
 				doUseLocalMounts := ctx.Bool(FlagUseLocalMounts)
 				doUseSensorVolume := ctx.String(FlagUseSensorVolume)
 
+				doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
+
 				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
@@ -751,6 +761,7 @@ func init() {
 					doIncludeShell,
 					doUseLocalMounts,
 					doUseSensorVolume,
+					doKeepTmpArtifacts,
 					continueAfter)
 
 				return nil
@@ -792,6 +803,7 @@ func init() {
 				doContinueAfterFlag,
 				doUseLocalMountsFlag,
 				doUseSensorVolumeFlag,
+				doKeepTmpArtifactsFlag,
 			},
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
@@ -870,6 +882,8 @@ func init() {
 				doUseLocalMounts := ctx.Bool(FlagUseLocalMounts)
 				doUseSensorVolume := ctx.String(FlagUseSensorVolume)
 
+				doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
+
 				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
@@ -923,6 +937,7 @@ func init() {
 					doIncludeShell,
 					doUseLocalMounts,
 					doUseSensorVolume,
+					doKeepTmpArtifacts,
 					continueAfter)
 
 				return nil

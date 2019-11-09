@@ -50,6 +50,7 @@ func OnProfile(
 	doIncludeShell bool,
 	doUseLocalMounts bool,
 	doUseSensorVolume string,
+	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "profile"})
 
@@ -105,10 +106,15 @@ func OnProfile(
 	fmt.Println("docker-slim[profile]: state=image.inspection.done")
 	fmt.Println("docker-slim[profile]: state=container.inspection.start")
 
-	containerInspector, err := container.NewInspector(client,
+	containerInspector, err := container.NewInspector(
+		logger,
+		client,
 		statePath,
 		imageInspector,
 		localVolumePath,
+		doUseLocalMounts,
+		doUseSensorVolume,
+		doKeepTmpArtifacts,
 		overrides,
 		links,
 		etcHostsMaps,

@@ -40,6 +40,7 @@ type ImageBuilder struct {
 	OnBuild      []string
 	User         string
 	HasData      bool
+	TarData      bool
 }
 
 // NewImageBuilder creates a new BasicImageBuilder instances
@@ -185,8 +186,14 @@ func NewImageBuilder(client *docker.Client,
 
 	builder.BuildOptions.OutputStream = &builder.BuildLog
 
-	dataDir := filepath.Join(artifactLocation, "files")
-	builder.HasData = fsutil.IsDir(dataDir)
+	dataTar := filepath.Join(artifactLocation, "files.tar")
+	builder.TarData = fsutil.IsRegularFile(dataTar)
+	if builder.TarData {
+		builder.HasData = true
+	} else {
+		dataDir := filepath.Join(artifactLocation, "files")
+		builder.HasData = fsutil.IsDir(dataDir)
+	}
 
 	return builder, nil
 }
@@ -210,5 +217,6 @@ func (b *ImageBuilder) GenerateDockerfile() error {
 		b.ExposedPorts,
 		b.Entrypoint,
 		b.Cmd,
-		b.HasData)
+		b.HasData,
+		b.TarData)
 }

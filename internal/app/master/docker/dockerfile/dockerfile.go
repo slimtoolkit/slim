@@ -313,7 +313,8 @@ func GenerateFromInfo(location string,
 	exposedPorts map[docker.Port]struct{},
 	entrypoint []string,
 	cmd []string,
-	hasData bool) error {
+	hasData bool,
+	tarData bool) error {
 
 	dockerfileLocation := filepath.Join(location, "Dockerfile")
 
@@ -335,7 +336,12 @@ func GenerateFromInfo(location string,
 	}
 
 	if hasData {
-		dfData.WriteString("COPY files /\n")
+		addData := "COPY files /\n"
+		if tarData {
+			addData = "ADD files.tar /\n"
+		}
+
+		dfData.WriteString(addData)
 	}
 
 	if workingDir != "" {

@@ -5,7 +5,10 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/docker/docker/pkg/archive"
@@ -25,11 +28,14 @@ const (
 	emptyImageDockerfile = "FROM scratch\nCMD\n"
 )
 
-func HasEmptyImage() error {
-	dclient, err := dockerapi.NewClient(dockerHost)
-	if err != nil {
-		log.Errorf("HasEmptyImage: dockerapi.NewClient() error = %v", err)
-		return err
+func HasEmptyImage(dclient *dockerapi.Client) error {
+	var err error
+	if dclient == nil {
+		dclient, err = dockerapi.NewClient(dockerHost)
+		if err != nil {
+			log.Errorf("HasEmptyImage: dockerapi.NewClient() error = %v", err)
+			return err
+		}
 	}
 
 	listOptions := dockerapi.ListImagesOptions{
@@ -51,11 +57,14 @@ func HasEmptyImage() error {
 	return nil
 }
 
-func BuildEmptyImage() error {
-	dclient, err := dockerapi.NewClient(dockerHost)
-	if err != nil {
-		log.Errorf("BuildEmptyImage: dockerapi.NewClient() error = %v", err)
-		return err
+func BuildEmptyImage(dclient *dockerapi.Client) error {
+	var err error
+	if dclient == nil {
+		dclient, err = dockerapi.NewClient(dockerHost)
+		if err != nil {
+			log.Errorf("BuildEmptyImage: dockerapi.NewClient() error = %v", err)
+			return err
+		}
 	}
 
 	var input bytes.Buffer
@@ -93,15 +102,18 @@ func BuildEmptyImage() error {
 	return nil
 }
 
-func HasVolume(name string) error {
+func HasVolume(dclient *dockerapi.Client, name string) error {
 	if name == "" {
 		return ErrBadParam
 	}
 
-	dclient, err := dockerapi.NewClient(dockerHost)
-	if err != nil {
-		log.Errorf("HasVolume: dockerapi.NewClient() error = %v", err)
-		return err
+	var err error
+	if dclient == nil {
+		dclient, err = dockerapi.NewClient(dockerHost)
+		if err != nil {
+			log.Errorf("HasVolume: dockerapi.NewClient() error = %v", err)
+			return err
+		}
 	}
 
 	listOptions := dockerapi.ListVolumesOptions{
@@ -122,18 +134,21 @@ func HasVolume(name string) error {
 	return nil
 }
 
-func DeleteVolume(name string) error {
+func DeleteVolume(dclient *dockerapi.Client, name string) error {
 	if name == "" {
 		return ErrBadParam
 	}
 
-	if err := HasVolume(name); err == nil {
-		dclient, err := dockerapi.NewClient(dockerHost)
+	var err error
+	if dclient == nil {
+		dclient, err = dockerapi.NewClient(dockerHost)
 		if err != nil {
 			log.Errorf("DeleteVolume: dockerapi.NewClient() error = %v", err)
 			return err
 		}
+	}
 
+	if err := HasVolume(dclient, name); err == nil {
 		removeOptions := dockerapi.RemoveVolumeOptions{
 			Name:  name,
 			Force: true,
@@ -150,7 +165,7 @@ func DeleteVolume(name string) error {
 	return nil
 }
 
-func CreateVolumeWithData(source, name string, labels map[string]string) error {
+func CreateVolumeWithData(dclient *dockerapi.Client, source, name string, labels map[string]string) error {
 	if source == "" || name == "" {
 		return ErrBadParam
 	}
@@ -160,10 +175,13 @@ func CreateVolumeWithData(source, name string, labels map[string]string) error {
 		return err
 	}
 
-	dclient, err := dockerapi.NewClient(dockerHost)
-	if err != nil {
-		log.Errorf("CreateVolumeWithData: dockerapi.NewClient() error = %v", err)
-		return err
+	var err error
+	if dclient == nil {
+		dclient, err = dockerapi.NewClient(dockerHost)
+		if err != nil {
+			log.Errorf("CreateVolumeWithData: dockerapi.NewClient() error = %v", err)
+			return err
+		}
 	}
 
 	volumeOptions := dockerapi.CreateVolumeOptions{
@@ -176,6 +194,8 @@ func CreateVolumeWithData(source, name string, labels map[string]string) error {
 		log.Errorf("CreateVolumeWithData: dclient.CreateVolume() error = %v", err)
 		return err
 	}
+
+	log.Debugf("CreateVolumeWithData: volumeInfo = %+v", volumeInfo)
 
 	volumeBinds := []string{fmt.Sprintf(volumeMountPat, name)}
 
@@ -233,23 +253,24 @@ func CreateVolumeWithData(source, name string, labels map[string]string) error {
 	return nil
 }
 
-func CopyFromContainer(containerID, remote, local string) error {
+func CopyFromContainer(dclient *dockerapi.Client, containerID, remote, local string, extract, removeOrig bool) error {
 	if containerID == "" || remote == "" || local == "" {
 		return ErrBadParam
 	}
 
-	dclient, err := dockerapi.NewClient(dockerHost)
-	if err != nil {
-		log.Errorf("CopyFromContainer: dockerapi.NewClient() error = %v", err)
-		return err
+	var err error
+	if dclient == nil {
+		dclient, err = dockerapi.NewClient(dockerHost)
+		if err != nil {
+			log.Errorf("CopyFromContainer: dockerapi.NewClient() error = %v", err)
+			return err
+		}
 	}
 
 	dfile, err := os.Create(local)
 	if err != nil {
 		return err
 	}
-
-	defer dfile.Close()
 
 	downloadOptions := dockerapi.DownloadFromContainerOptions{
 		Path:              remote,
@@ -260,7 +281,117 @@ func CopyFromContainer(containerID, remote, local string) error {
 	err = dclient.DownloadFromContainer(containerID, downloadOptions)
 	if err != nil {
 		log.Errorf("dclient.DownloadFromContainer() error = %v", err)
+		dfile.Close()
 		return err
+	}
+
+	dfile.Close()
+
+	if extract {
+		dstDir := filepath.Dir(local)
+		arc := archive.NewDefaultArchiver()
+
+		afile, err := os.Open(local)
+		if err != nil {
+			log.Errorf("os.Open error - %v", err)
+			return err
+		}
+
+		tarOptions := &archive.TarOptions{
+			NoLchown: true,
+			UIDMaps:  arc.IDMapping.UIDs(),
+			GIDMaps:  arc.IDMapping.GIDs(),
+		}
+		err = arc.Untar(afile, dstDir, tarOptions)
+		if err != nil {
+			log.Errorf("error unpacking tar - %v", err)
+			afile.Close()
+			return err
+		}
+
+		afile.Close()
+
+		if removeOrig {
+			os.Remove(local)
+		}
+	}
+
+	return nil
+}
+
+func PrepareContainerDataArchive(fullPath, newName, removePrefix string, removeOrig bool) error {
+	if fullPath == "" || newName == "" || removePrefix == "" {
+		return ErrBadParam
+	}
+
+	dirName := filepath.Dir(fullPath)
+	dstPath := filepath.Join(dirName, newName)
+
+	inFile, err := os.Open(fullPath)
+	if err != nil {
+		log.Errorf("os.Open error - %v", err)
+		return err
+	}
+
+	outFile, err := os.Create(dstPath)
+	if err != nil {
+		log.Errorf("os.Open error - %v", err)
+		inFile.Close()
+		return err
+	}
+
+	tw := tar.NewWriter(outFile)
+	tr := tar.NewReader(inFile)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break
+		}
+
+		if err != nil {
+			log.Errorf("error reading archive(%v) - %v", fullPath, err)
+			inFile.Close()
+			return err
+		}
+
+		if hdr == nil || hdr.Name == "" {
+			log.Debugf("ignoring bad tar header")
+			continue
+		}
+
+		if hdr.Name == removePrefix {
+			log.Debugf("ignoring tar object: %v", hdr.Name)
+			continue
+		}
+
+		if hdr.Name != "" && strings.HasPrefix(hdr.Name, removePrefix) {
+			hdr.Name = strings.TrimPrefix(hdr.Name, removePrefix)
+		}
+
+		if err := tw.WriteHeader(hdr); err != nil {
+			log.Errorf("error writing header to archive(%v) - %v", dstPath, err)
+			inFile.Close()
+			outFile.Close()
+			return err
+		}
+
+		if _, err := io.Copy(tw, tr); err != nil {
+			log.Errorf("error copying data to archive(%v) - %v", dstPath, err)
+			inFile.Close()
+			outFile.Close()
+			return err
+		}
+	}
+
+	if err := tw.Close(); err != nil {
+		log.Errorf("error closing archive(%v) - %v", dstPath, err)
+	}
+
+	outFile.Close()
+	inFile.Close()
+
+	if removeOrig {
+		os.Remove(fullPath)
 	}
 
 	return nil
