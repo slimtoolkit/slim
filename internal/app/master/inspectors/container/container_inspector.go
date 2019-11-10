@@ -17,6 +17,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/apparmor"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/seccomp"
+	"github.com/docker-slim/docker-slim/pkg/env"
 	"github.com/docker-slim/docker-slim/pkg/ipc/channel"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
@@ -46,9 +47,14 @@ const (
 	ArtifactsVolumePath  = "/opt/dockerslim/artifacts"
 	SensorMountPat       = "%s:/opt/dockerslim/bin/docker-slim-sensor:ro"
 	VolumeSensorMountPat = "%s:/opt/dockerslim/bin:ro"
-	CmdPortDefault       = "65501/tcp"
-	EvtPortDefault       = "65502/tcp"
 	LabelName            = "dockerslim"
+)
+
+var (
+	cmdPortStrDefault  = fmt.Sprintf("%d", channel.CmdPort)
+	cmdPortSpecDefault = dockerapi.Port(fmt.Sprintf("%d/tcp", channel.CmdPort))
+	evtPortStrDefault  = fmt.Sprintf("%d", channel.EvtPort)
+	evtPortSpecDefault = dockerapi.Port(fmt.Sprintf("%d/tcp", channel.EvtPort))
 )
 
 var ErrStartMonitorTimeout = goerr.New("start monitor timeout")
@@ -91,6 +97,7 @@ type Inspector struct {
 	DoDebug            bool
 	PrintState         bool
 	PrintPrefix        string
+	InContainer        bool
 	dockerEventCh      chan *dockerapi.APIEvents
 	dockerEventStopCh  chan struct{}
 	ipcClient          *ipc.Client
@@ -144,8 +151,8 @@ func NewInspector(
 		DoUseLocalMounts:   doUseLocalMounts,
 		SensorVolumeName:   sensorVolumeName,
 		DoKeepTmpArtifacts: doKeepTmpArtifacts,
-		CmdPort:            CmdPortDefault,
-		EvtPort:            EvtPortDefault,
+		CmdPort:            cmdPortSpecDefault,
+		EvtPort:            evtPortSpecDefault,
 		ImageInspector:     imageInspector,
 		APIClient:          client,
 		Overrides:          overrides,
@@ -164,6 +171,8 @@ func NewInspector(
 		PrintState:         printState,
 		PrintPrefix:        printPrefix,
 	}
+
+	inspector.InContainer = env.InContainer()
 
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
 		logger.Debugf("overriding Entrypoint %+v => %+v (%v)",
@@ -270,7 +279,7 @@ func (i *Inspector) RunContainer() error {
 		},
 		HostConfig: &dockerapi.HostConfig{
 			Binds:           volumeBinds,
-			PublishAllPorts: true,
+			PublishAllPorts: true, //TODO: need a command flag for this option
 			CapAdd:          []string{"SYS_ADMIN"},
 			Privileged:      true,
 		},
@@ -288,11 +297,12 @@ func (i *Inspector) RunContainer() error {
 		i.EvtPort: {},
 	}
 
+	//add comms ports to the exposed ports in the container
 	if len(i.Overrides.ExposedPorts) > 0 {
 		containerOptions.Config.ExposedPorts = i.Overrides.ExposedPorts
 		for k, v := range commsExposedPorts {
 			if _, ok := containerOptions.Config.ExposedPorts[k]; ok {
-				i.logger.Warnf("RunContainer: comms port conflict => %v", k)
+				i.logger.Errorf("RunContainer: comms port conflict => %v", k)
 			}
 
 			containerOptions.Config.ExposedPorts[k] = v
@@ -352,17 +362,23 @@ func (i *Inspector) RunContainer() error {
 
 				if devent.ID == i.ContainerID {
 					if devent.Status == "die" {
-						//TODO: update the docker client library to get the exit status to know if it really crashed
-						if i.PrintState {
-							fmt.Printf("%s info=container status=crashed id=%v\n", i.PrintPrefix, i.ContainerID)
+						nonZeroExitCode := false
+						if exitCodeStr, ok := devent.Actor.Attributes["exitCode"]; ok && exitCodeStr != "" && exitCodeStr != "0" {
+							nonZeroExitCode = true
 						}
 
-						i.showContainerLogs()
+						if nonZeroExitCode {
+							if i.PrintState {
+								fmt.Printf("%s info=container status=crashed id=%v\n", i.PrintPrefix, i.ContainerID)
+							}
 
-						if i.PrintState {
-							fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
+							i.showContainerLogs()
+
+							if i.PrintState {
+								fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
+							}
+							os.Exit(-123)
 						}
-						os.Exit(-123)
 					}
 				}
 
@@ -609,11 +625,25 @@ func (i *Inspector) FinishMonitoring() {
 }
 
 func (i *Inspector) initContainerChannels() error {
-	cmdPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.CmdPort]
-	evtPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.EvtPort]
-	i.DockerHostIP = dockerhost.GetIP()
+	var targetHost string
+	var cmdPort string
+	var evtPort string
 
-	ipcClient, err := ipc.NewClient(i.DockerHostIP, cmdPortBindings[0].HostPort, evtPortBindings[0].HostPort, defaultConnectWait)
+	if i.InContainer {
+		targetHost = i.ContainerInfo.NetworkSettings.IPAddress
+		cmdPort = cmdPortStrDefault
+		evtPort = evtPortStrDefault
+	} else {
+		cmdPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.CmdPort]
+		evtPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.EvtPort]
+		i.DockerHostIP = dockerhost.GetIP()
+
+		targetHost = i.DockerHostIP
+		cmdPort = cmdPortBindings[0].HostPort
+		evtPort = evtPortBindings[0].HostPort
+	}
+
+	ipcClient, err := ipc.NewClient(targetHost, cmdPort, evtPort, defaultConnectWait)
 	if err != nil {
 		return err
 	}

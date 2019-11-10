@@ -58,22 +58,34 @@ func NewCustomProbe(inspector *container.Inspector,
 		doneChan:           make(chan struct{}),
 	}
 
-	availablePorts := map[string]struct{}{}
+	availableHostPorts := map[string]string{}
+
 	for nsPortKey, nsPortData := range inspector.ContainerInfo.NetworkSettings.Ports {
+		//skip IPC ports
 		if (nsPortKey == inspector.CmdPort) || (nsPortKey == inspector.EvtPort) {
 			continue
 		}
 
-		availablePorts[nsPortData[0].HostPort] = struct{}{}
+		parts := strings.Split(string(nsPortKey), "/")
+		if len(parts) == 2 && parts[1] != "tcp" {
+			log.Debugf("HTTP probe - skipping non-tcp port => %v", nsPortKey)
+			continue
+		}
+
+		availableHostPorts[nsPortData[0].HostPort] = parts[0]
 	}
 
-	log.Debugf("HTTP probe - available ports => %+v", availablePorts)
+	log.Debugf("HTTP probe - available host ports => %+v", availableHostPorts)
 
 	if len(probe.TargetPorts) > 0 {
 		for _, pnum := range probe.TargetPorts {
 			pspec := dockerapi.Port(fmt.Sprintf("%v/tcp", pnum))
 			if _, ok := inspector.ContainerInfo.NetworkSettings.Ports[pspec]; ok {
-				probe.Ports = append(probe.Ports, inspector.ContainerInfo.NetworkSettings.Ports[pspec][0].HostPort)
+				if inspector.InContainer {
+					probe.Ports = append(probe.Ports, fmt.Sprintf("%s", pnum))
+				} else {
+					probe.Ports = append(probe.Ports, inspector.ContainerInfo.NetworkSettings.Ports[pspec][0].HostPort)
+				}
 			} else {
 				log.Debugf("HTTP probe - ignoring port => %v", pspec)
 			}
@@ -92,11 +104,19 @@ func NewCustomProbe(inspector *container.Inspector,
 
 				if _, ok := inspector.ContainerInfo.NetworkSettings.Ports[pspec]; ok {
 					hostPort := inspector.ContainerInfo.NetworkSettings.Ports[pspec][0].HostPort
-					probe.Ports = append(probe.Ports, hostPort)
+					if inspector.InContainer {
+						if containerPort := availableHostPorts[hostPort]; containerPort != "" {
+							probe.Ports = append(probe.Ports, containerPort)
+						} else {
+							log.Debugf("HTTP probe - could not find container port from host port => %v", hostPort)
+						}
+					} else {
+						probe.Ports = append(probe.Ports, hostPort)
+					}
 
-					if _, ok := availablePorts[hostPort]; ok {
-						log.Debugf("HTTP probe - delete exposed port from the available ports => %v (%v)", hostPort, portInfo)
-						delete(availablePorts, hostPort)
+					if _, ok := availableHostPorts[hostPort]; ok {
+						log.Debugf("HTTP probe - delete exposed port from the available host ports => %v (%v)", hostPort, portInfo)
+						delete(availableHostPorts, hostPort)
 					}
 				} else {
 					log.Debugf("HTTP probe - Unknown exposed port - %v", portInfo)
@@ -104,8 +124,12 @@ func NewCustomProbe(inspector *container.Inspector,
 			}
 		}
 
-		for k := range availablePorts {
-			probe.Ports = append(probe.Ports, k)
+		for hostPort, containerPort := range availableHostPorts {
+			if inspector.InContainer {
+				probe.Ports = append(probe.Ports, containerPort)
+			} else {
+				probe.Ports = append(probe.Ports, hostPort)
+			}
 		}
 
 		log.Debugf("HTTP probe - probe.Ports => %+v", probe.Ports)
@@ -160,7 +184,14 @@ func (p *CustomProbe) Start() {
 				}
 
 				for _, proto := range protocols {
-					addr := fmt.Sprintf("%s://%v:%v%v", proto, p.ContainerInspector.DockerHostIP, port, cmd.Resource)
+					var targetHost string
+					if p.ContainerInspector.InContainer {
+						targetHost = p.ContainerInspector.ContainerInfo.NetworkSettings.IPAddress
+					} else {
+						targetHost = p.ContainerInspector.DockerHostIP
+					}
+
+					addr := fmt.Sprintf("%s://%v:%v%v", proto, targetHost, port, cmd.Resource)
 
 					maxRetryCount := probeRetryCount
 					if p.RetryCount > 0 {
