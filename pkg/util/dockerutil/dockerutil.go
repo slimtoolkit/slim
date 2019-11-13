@@ -24,6 +24,7 @@ var (
 const (
 	dockerHost           = "unix:///var/run/docker.sock"
 	volumeMountPat       = "%s:/data"
+	volumeBasePath       = "/data"
 	emptyImageName       = "docker-slim-empty-image"
 	emptyImageDockerfile = "FROM scratch\nCMD\n"
 )
@@ -157,7 +158,7 @@ func DeleteVolume(dclient *dockerapi.Client, name string) error {
 		//ok to call remove even if the volume isn't there
 		err = dclient.RemoveVolumeWithOptions(removeOptions)
 		if err != nil {
-			fmt.Printf("CreateVolumeWithData: dclient.RemoveVolumeWithOptions() error = %v\n", err)
+			fmt.Printf("DeleteVolume: dclient.RemoveVolumeWithOptions() error = %v\n", err)
 			return err
 		}
 	}
@@ -165,14 +166,148 @@ func DeleteVolume(dclient *dockerapi.Client, name string) error {
 	return nil
 }
 
+func CopyToVolume(dclient *dockerapi.Client, volumeName, source, dstRootDir, dstTargetDir string) error {
+	var err error
+	if dclient == nil {
+		dclient, err = dockerapi.NewClient(dockerHost)
+		if err != nil {
+			log.Errorf("CopyToVolume: dockerapi.NewClient() error = %v", err)
+			return err
+		}
+	}
+
+	volumeBinds := []string{fmt.Sprintf(volumeMountPat, volumeName)}
+
+	containerOptions := dockerapi.CreateContainerOptions{
+		Name: volumeName, //todo: might be good to make it unique (to support concurrent copy op)
+		Config: &dockerapi.Config{
+			Image:  emptyImageName,
+			Labels: map[string]string{"owner": "docker-slim"},
+		},
+		HostConfig: &dockerapi.HostConfig{
+			Binds: volumeBinds,
+		},
+	}
+
+	containerInfo, err := dclient.CreateContainer(containerOptions)
+	if err != nil {
+		log.Errorf("CopyToVolume: dclient.CreateContainer() error = %v", err)
+		return err
+	}
+
+	containerID := containerInfo.ID
+	log.Debugf("CopyToVolume: containerID - %v", containerID)
+
+	rmContainer := func() {
+		removeOptions := dockerapi.RemoveContainerOptions{
+			ID:    containerID,
+			Force: true,
+		}
+
+		err = dclient.RemoveContainer(removeOptions)
+		if err != nil {
+			fmt.Printf("CopyToVolume: dclient.RemoveContainer() error = %v\n", err)
+		}
+	}
+
+	tarData, err := archive.Tar(source, archive.Uncompressed)
+	if err != nil {
+		log.Errorf("CopyToVolume: archive.Tar() error = %v", err)
+		rmContainer()
+		return err
+	}
+
+	targetPath := volumeBasePath
+	if dstRootDir != "" {
+		dirData, err := GenStateDirsTar(dstRootDir, dstTargetDir)
+		if err != nil {
+			log.Errorf("CopyToVolume: GenStateDirsTar() error = %v", err)
+			rmContainer()
+			return err
+		}
+
+		dirUploadOptions := dockerapi.UploadToContainerOptions{
+			InputStream: dirData,
+			Path:        targetPath,
+		}
+
+		err = dclient.UploadToContainer(containerID, dirUploadOptions)
+		if err != nil {
+			log.Errorf("CopyToVolume: copy dirs - dclient.UploadToContainer() error = %v", err)
+			rmContainer()
+			return err
+		}
+
+		targetPath = filepath.Join(volumeBasePath, dstRootDir, dstTargetDir)
+	}
+
+	uploadOptions := dockerapi.UploadToContainerOptions{
+		InputStream: tarData,
+		Path:        targetPath,
+	}
+
+	err = dclient.UploadToContainer(containerID, uploadOptions)
+	if err != nil {
+		log.Errorf("CopyToVolume: dclient.UploadToContainer() error = %v", err)
+		tarData.Close()
+		rmContainer()
+		return err
+	}
+
+	tarData.Close()
+	rmContainer()
+
+	return nil
+}
+
+func GenStateDirsTar(rootDir, stateDir string) (io.Reader, error) {
+	if rootDir == "" || stateDir == "" {
+		return nil, ErrBadParam
+	}
+
+	var b bytes.Buffer
+	tw := tar.NewWriter(&b)
+
+	baseDirHdr := tar.Header{
+		Typeflag: tar.TypeDir,
+		Name:     fmt.Sprintf("%s/", rootDir),
+		Mode:     16877,
+	}
+
+	if err := tw.WriteHeader(&baseDirHdr); err != nil {
+		log.Errorf("error writing base dir header to archive - %v", err)
+		return nil, err
+	}
+
+	stateDirHdr := tar.Header{
+		Typeflag: tar.TypeDir,
+		Name:     fmt.Sprintf("%s/%s/", rootDir, stateDir),
+		Mode:     16877,
+	}
+
+	if err := tw.WriteHeader(&stateDirHdr); err != nil {
+		log.Errorf("error writing state dir header to archive - %v", err)
+		return nil, err
+	}
+
+	if err := tw.Close(); err != nil {
+		log.Errorf("error closing archive - %v", err)
+		return nil, err
+	}
+
+	return &b, nil
+}
+
 func CreateVolumeWithData(dclient *dockerapi.Client, source, name string, labels map[string]string) error {
-	if source == "" || name == "" {
+	if name == "" {
 		return ErrBadParam
 	}
 
-	if _, err := os.Stat(source); err != nil {
-		log.Errorf("CreateVolumeWithData: bad source = %v", err)
-		return err
+	if source != "" {
+		if _, err := os.Stat(source); err != nil {
+			log.Errorf("CreateVolumeWithData: bad source (%v) = %v", source, err)
+			return err
+		}
 	}
 
 	var err error
@@ -197,57 +332,8 @@ func CreateVolumeWithData(dclient *dockerapi.Client, source, name string, labels
 
 	log.Debugf("CreateVolumeWithData: volumeInfo = %+v", volumeInfo)
 
-	volumeBinds := []string{fmt.Sprintf(volumeMountPat, name)}
-
-	containerOptions := dockerapi.CreateContainerOptions{
-		Name: name,
-		Config: &dockerapi.Config{
-			Image:  emptyImageName,
-			Labels: map[string]string{"owner": "docker-slim"},
-		},
-		HostConfig: &dockerapi.HostConfig{
-			Binds: volumeBinds,
-		},
-	}
-
-	containerInfo, err := dclient.CreateContainer(containerOptions)
-	if err != nil {
-		log.Errorf("dclient.CreateContainer() error = %v", err)
-		return err
-	}
-
-	containerID := containerInfo.ID
-	log.Debugf("CreateVolumeWithData: containerID - %v", containerID)
-
-	defer func() {
-		removeOptions := dockerapi.RemoveContainerOptions{
-			ID:    containerID,
-			Force: true,
-		}
-
-		err = dclient.RemoveContainer(removeOptions)
-		if err != nil {
-			fmt.Printf("CreateVolumeWithData: dclient.RemoveContainer() error = %v\n", err)
-		}
-	}()
-
-	tarData, err := archive.Tar(source, archive.Uncompressed)
-	if err != nil {
-		log.Errorf("archive.Tar() error = %v", err)
-		return err
-	}
-
-	defer tarData.Close()
-
-	uploadOptions := dockerapi.UploadToContainerOptions{
-		InputStream: tarData,
-		Path:        "/data",
-	}
-
-	err = dclient.UploadToContainer(containerID, uploadOptions)
-	if err != nil {
-		log.Errorf("dclient.UploadToContainer() error = %v", err)
-		return err
+	if source != "" {
+		return CopyToVolume(dclient, name, source, "", "")
 	}
 
 	return nil

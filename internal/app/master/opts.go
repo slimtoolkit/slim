@@ -16,7 +16,36 @@ import (
 	"github.com/google/shlex"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
+	"github.com/docker-slim/docker-slim/pkg/env"
 )
+
+const (
+	DefaultStateArchiveVolumeName = "docker-slim-state"
+)
+
+func isInContainer(flag bool) bool {
+	if flag {
+		return true
+	}
+
+	return env.InContainer()
+}
+
+func archiveState(flag string, inContainer bool) string {
+	switch flag {
+	case "":
+		switch inContainer {
+		case true:
+			return DefaultStateArchiveVolumeName
+		default:
+			return ""
+		}
+	case "off":
+		return ""
+	default:
+		return flag //should validate if it can be a Docker volume name
+	}
+}
 
 //based on expose opt parsing in Docker
 func parseDockerExposeOpt(values []string) (map[docker.Port]struct{}, error) {

@@ -5,6 +5,6 @@ import (
 )
 
 // OnUpdate implements the 'update' docker-slim command
-func OnUpdate(doDebug bool, statePath string, doShowProgress bool) {
+func OnUpdate(doDebug bool, statePath, archiveState string, inContainer bool, doShowProgress bool) {
 	update.Run(doDebug, statePath, doShowProgress)
 }

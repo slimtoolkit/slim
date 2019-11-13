@@ -6,8 +6,45 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/pkg/util/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
+
+const (
+	ImagesStateRootPath = "images"
+)
+
+func doArchiveState(logger *log.Entry, client *docker.Client, localStatePath, volumeName, stateKey string) error {
+	if volumeName == "" {
+		return nil
+	}
+
+	err := dockerutil.HasVolume(client, volumeName)
+	switch {
+	case err == nil:
+		logger.Debugf("archiveState: already have volume = %v", volumeName)
+	case err == dockerutil.ErrNotFound:
+		logger.Debugf("archiveState: no volume yet = %v", volumeName)
+		if dockerutil.HasEmptyImage(client) == dockerutil.ErrNotFound {
+			err := dockerutil.BuildEmptyImage(client)
+			if err != nil {
+				logger.Debugf("archiveState: dockerutil.BuildEmptyImage() - error = %v", err)
+				return err
+			}
+		}
+
+		err = dockerutil.CreateVolumeWithData(client, "", volumeName, nil)
+		if err != nil {
+			logger.Debugf("archiveState: dockerutil.CreateVolumeWithData() - error = %v", err)
+			return err
+		}
+	default:
+		logger.Debugf("archiveState: dockerutil.HasVolume() - error = %v", err)
+		return err
+	}
+
+	return dockerutil.CopyToVolume(client, volumeName, localStatePath, ImagesStateRootPath, stateKey)
+}
 
 func copyMetaArtifacts(logger *log.Entry, names []string, artifactLocation, targetLocation string) bool {
 	if targetLocation != "" {

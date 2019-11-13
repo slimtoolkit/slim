@@ -35,6 +35,7 @@ const (
 const (
 	FlagCheckVersion        = "check-version"
 	FlagDebug               = "debug"
+	FlagInContainer         = "in-container"
 	FlagCommandReport       = "report"
 	FlagVerbose             = "verbose"
 	FlagLogLevel            = "log-level"
@@ -45,6 +46,7 @@ const (
 	FlagTLSCertPath         = "tls-cert-path"
 	FlagHost                = "host"
 	FlagStatePath           = "state-path"
+	FlagArchiveState        = "archive-state"
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
 	FlagHTTPProbe           = "http-probe"
@@ -154,6 +156,15 @@ func init() {
 			Name:  FlagStatePath,
 			Value: "",
 			Usage: "DockerSlim state base path",
+		},
+		cli.BoolFlag{
+			Name:  FlagInContainer,
+			Usage: "DockerSlim is running in a container",
+		},
+		cli.StringFlag{
+			Name:  FlagArchiveState,
+			Value: "",
+			Usage: "archive DockerSlim state to the selected Docker volume (default volume - docker-slim-state). By default, enabled when DockerSlim is running in a container (disabled otherwise). Set it to \"off\" to disable explicitly.",
 		},
 	}
 
@@ -498,8 +509,10 @@ func init() {
 			Aliases: []string{"v"},
 			Usage:   "Shows docker-slim and docker version information",
 			Action: func(ctx *cli.Context) error {
+				doDebug := ctx.GlobalBool(FlagDebug)
+				inContainer := isInContainer(ctx.GlobalBool(FlagInContainer))
 				clientConfig := getDockerClientConfig(ctx)
-				commands.OnVersion(clientConfig)
+				commands.OnVersion(doDebug, inContainer, clientConfig)
 				return nil
 			},
 		},
@@ -513,9 +526,11 @@ func init() {
 			Action: func(ctx *cli.Context) error {
 				doDebug := ctx.GlobalBool(FlagDebug)
 				statePath := ctx.GlobalString(FlagStatePath)
+				inContainer := isInContainer(ctx.GlobalBool(FlagInContainer))
+				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
 				doShowProgress := ctx.Bool("show-progress")
 
-				commands.OnUpdate(doDebug, statePath, doShowProgress)
+				commands.OnUpdate(doDebug, statePath, archiveState, inContainer, doShowProgress)
 				return nil
 			},
 		},
@@ -532,7 +547,10 @@ func init() {
 
 				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
 
+				doDebug := ctx.GlobalBool(FlagDebug)
 				statePath := ctx.GlobalString(FlagStatePath)
+				inContainer := isInContainer(ctx.GlobalBool(FlagInContainer))
+				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
@@ -540,8 +558,10 @@ func init() {
 				commands.OnInfo(
 					doCheckVersion,
 					ctx.GlobalString(FlagCommandReport),
-					ctx.GlobalBool(FlagDebug),
+					doDebug,
 					statePath,
+					archiveState,
+					inContainer,
 					clientConfig,
 					imageRef)
 				return nil
@@ -619,7 +639,10 @@ func init() {
 
 				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
 
+				doDebug := ctx.GlobalBool(FlagDebug)
 				statePath := ctx.GlobalString(FlagStatePath)
+				inContainer := isInContainer(ctx.GlobalBool(FlagInContainer))
+				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
@@ -730,8 +753,10 @@ func init() {
 				commands.OnBuild(
 					doCheckVersion,
 					ctx.GlobalString(FlagCommandReport),
-					ctx.GlobalBool(FlagDebug),
+					doDebug,
 					statePath,
+					archiveState,
+					inContainer,
 					clientConfig,
 					buildFromDockerfile,
 					imageRef,
@@ -814,7 +839,10 @@ func init() {
 
 				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
 
+				doDebug := ctx.GlobalBool(FlagDebug)
 				statePath := ctx.GlobalString(FlagStatePath)
+				inContainer := isInContainer(ctx.GlobalBool(FlagInContainer))
+				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
 
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
@@ -912,8 +940,10 @@ func init() {
 				commands.OnProfile(
 					doCheckVersion,
 					ctx.GlobalString(FlagCommandReport),
-					ctx.GlobalBool(FlagDebug),
+					doDebug,
 					statePath,
+					archiveState,
+					inContainer,
 					clientConfig,
 					imageRef,
 					doHTTPProbe,

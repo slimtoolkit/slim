@@ -32,6 +32,8 @@ func OnBuild(
 	cmdReportLocation string,
 	doDebug bool,
 	statePath string,
+	archiveState string,
+	inContainer bool,
 	clientConfig *config.DockerClient,
 	buildFromDockerfile string,
 	imageRef string,
@@ -158,8 +160,9 @@ func OnBuild(
 	err = imageInspector.Inspect()
 	errutil.FailOn(err)
 
-	localVolumePath, artifactLocation, statePath := fsutil.PrepareImageStateDirs(statePath, imageInspector.ImageInfo.ID)
+	localVolumePath, artifactLocation, statePath, stateKey := fsutil.PrepareImageStateDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
+	logger.Debugf("localVolumePath=%v, artifactLocation=%v, statePath=%v, stateKey=%v", localVolumePath, artifactLocation, statePath, stateKey)
 
 	fmt.Printf("docker-slim[build]: info=image id=%v size.bytes=%v size.human=%v\n",
 		imageInspector.ImageInfo.ID,
@@ -217,6 +220,7 @@ func OnBuild(
 		includeExes,
 		doIncludeShell,
 		doDebug,
+		inContainer,
 		true,
 		"docker-slim[build]:")
 	errutil.FailOn(err)
@@ -432,14 +436,19 @@ func OnBuild(
 		}
 		if !copyMetaArtifacts(logger,
 			toCopy,
-			imageInspector.ArtifactLocation, copyMetaArtifactsLocation) {
+			artifactLocation, copyMetaArtifactsLocation) {
 			fmt.Println("docker-slim[build]: info=artifacts message='could not copy meta artifacts'")
 		}
 	}
 
+	if err := doArchiveState(logger, client, artifactLocation, archiveState, stateKey); err != nil {
+		fmt.Println("docker-slim[build]: info=state message='could not archive state'")
+		logger.Errorf("error archiving state - %v", err)
+	}
+
 	if doRmFileArtifacts {
 		logger.Info("removing temporary artifacts...")
-		err = fsutil.Remove(artifactLocation) //TODO: remove only the "files" subdirectory
+		err = fsutil.Remove(artifactLocation)
 		errutil.WarnOn(err)
 	}
 

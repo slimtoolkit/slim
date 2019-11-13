@@ -21,6 +21,8 @@ func OnInfo(
 	cmdReportLocation string,
 	doDebug bool,
 	statePath string,
+	archiveState string,
+	inContainer bool,
 	clientConfig *config.DockerClient,
 	imageRef string) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "info"})
@@ -53,8 +55,9 @@ func OnInfo(
 	err = imageInspector.Inspect()
 	errutil.FailOn(err)
 
-	_, artifactLocation, statePath := fsutil.PrepareImageStateDirs(statePath, imageInspector.ImageInfo.ID)
+	localVolumePath, artifactLocation, statePath, stateKey := fsutil.PrepareImageStateDirs(statePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
+	logger.Debugf("localVolumePath=%v, artifactLocation=%v, statePath=%v, stateKey=%v", localVolumePath, artifactLocation, statePath, stateKey)
 
 	fmt.Printf("docker-slim[info]: info=image id=%v size.bytes=%v size.human=%v\n",
 		imageInspector.ImageInfo.ID,

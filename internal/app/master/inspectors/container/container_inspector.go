@@ -17,7 +17,6 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/apparmor"
 	"github.com/docker-slim/docker-slim/internal/app/master/security/seccomp"
-	"github.com/docker-slim/docker-slim/pkg/env"
 	"github.com/docker-slim/docker-slim/pkg/ipc/channel"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
@@ -140,6 +139,7 @@ func NewInspector(
 	includeExes map[string]bool,
 	doIncludeShell bool,
 	doDebug bool,
+	inContainer bool,
 	printState bool,
 	printPrefix string) (*Inspector, error) {
 
@@ -170,9 +170,8 @@ func NewInspector(
 		DoDebug:            doDebug,
 		PrintState:         printState,
 		PrintPrefix:        printPrefix,
+		InContainer:        inContainer,
 	}
-
-	inspector.InContainer = env.InContainer()
 
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
 		logger.Debugf("overriding Entrypoint %+v => %+v (%v)",

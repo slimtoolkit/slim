@@ -506,15 +506,16 @@ func PreparePostUpdateStateDir(statePrefix string) {
 }
 
 // PrepareImageStateDirs ensures that the required application directories exist
-func PrepareImageStateDirs(statePrefix, imageID string) (string, string, string) {
+func PrepareImageStateDirs(statePrefix, imageID string) (string, string, string, string) {
 	//prepares the image processing directories
 	//creating the root state directory if it doesn't exist
 	log.Debugf("PrepareImageStateDirs(%v,%v)", statePrefix, imageID)
 
+	stateKey := imageID
 	//images IDs in Docker 1.9+ are prefixed with a hash type...
-	if strings.Contains(imageID, ":") {
-		parts := strings.Split(imageID, ":")
-		imageID = parts[1]
+	if strings.Contains(stateKey, ":") {
+		parts := strings.Split(stateKey, ":")
+		stateKey = parts[1]
 	}
 
 	appDir := ExeDir()
@@ -551,7 +552,7 @@ func PrepareImageStateDirs(statePrefix, imageID string) (string, string, string)
 		}
 	}
 
-	localVolumePath := filepath.Join(statePrefix, rootStateKey, imageStateBaseKey, imageID)
+	localVolumePath := filepath.Join(statePrefix, rootStateKey, imageStateBaseKey, stateKey)
 	artifactLocation := filepath.Join(localVolumePath, imageStateArtifactsKey)
 	artifactDir, err := os.Stat(artifactLocation)
 
@@ -577,7 +578,7 @@ func PrepareImageStateDirs(statePrefix, imageID string) (string, string, string)
 
 	errutil.FailWhen(!artifactDir.IsDir(), "artifact location is not a directory")
 
-	return localVolumePath, artifactLocation, statePrefix
+	return localVolumePath, artifactLocation, statePrefix, stateKey
 }
 
 // PrepareReleaseStateDirs ensures that the required app release directories exist
