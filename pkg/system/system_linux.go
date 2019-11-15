@@ -35,8 +35,7 @@ func GetSystemInfo() SystemInfo {
 func osName() string {
 	bdata, err := ioutil.ReadFile("/etc/os-release")
 	if err != nil {
-		fmt.Printf("error reading /etc/os-release: %v\n", err)
-		return "other"
+		return "unknown"
 	}
 
 	if osr, err := NewOsRelease(bdata); err == nil {
