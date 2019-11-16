@@ -88,6 +88,8 @@ const (
 	FlagUseLocalMounts      = "use-local-mounts"
 	FlagUseSensorVolume     = "use-sensor-volume"
 	FlagKeepTmpArtifacts    = "keep-tmp-artifacts"
+	FlagTag                 = "tag"
+	FlagTagFat              = "tag-fat"
 )
 
 var app *cli.App
@@ -590,10 +592,16 @@ func init() {
 				doCopyMetaArtifactsFlag,
 				doRemoveFileArtifactsFlag,
 				cli.StringFlag{
-					Name:   "tag",
+					Name:   FlagTag,
 					Value:  "",
 					Usage:  "Custom tag for the generated image",
 					EnvVar: "DSLIM_TARGET_TAG",
+				},
+				cli.StringFlag{
+					Name:   FlagTagFat,
+					Value:  "",
+					Usage:  "Custom tag for the fat image built from Dockerfile",
+					EnvVar: "DSLIM_TARGET_TAG_FAT",
 				},
 				cli.StringFlag{
 					Name:   FlagImageOverrides,
@@ -683,7 +691,8 @@ func init() {
 
 				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
 				doShowBuildLogs := ctx.Bool(FlagShowBuildLogs)
-				doTag := ctx.String("tag")
+				doTag := ctx.String(FlagTag)
+				doTagFat := ctx.String(FlagTagFat)
 
 				doImageOverrides := ctx.String(FlagImageOverrides)
 				overrides, err := getContainerOverrides(ctx)
@@ -761,6 +770,7 @@ func init() {
 					buildFromDockerfile,
 					imageRef,
 					doTag,
+					doTagFat,
 					doHTTPProbe,
 					httpProbeCmds,
 					httpProbeRetryCount,

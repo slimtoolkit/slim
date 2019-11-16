@@ -38,6 +38,7 @@ func OnBuild(
 	buildFromDockerfile string,
 	imageRef string,
 	customImageTag string,
+	fatImageTag string,
 	doHTTPProbe bool,
 	httpProbeCmds []config.HTTPProbeCmd,
 	httpProbeRetryCount int,
@@ -85,9 +86,14 @@ func OnBuild(
 
 	if buildFromDockerfile != "" {
 		fmt.Println("docker-slim[build]: state=building message='building basic image'")
-		//create a fat image name based on the user provided custom tag if it's available
+		//create a fat image name:
+		//* use the explicit fat image tag if provided
+		//* or create one based on the user provided (slim image) custom tag if it's available
+		//* otherwise auto-generate a name
 		var fatImageRepoNameTag string
-		if customImageTag != "" {
+		if fatImageTag != "" {
+			fatImageRepoNameTag = fatImageTag
+		} else if customImageTag != "" {
 			citParts := strings.Split(customImageTag, ":")
 			switch len(citParts) {
 			case 1:
