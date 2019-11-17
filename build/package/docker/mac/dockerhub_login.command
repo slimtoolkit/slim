@@ -1,5 +1,5 @@
 here="$(dirname "$BASH_SOURCE")"
 cd $here
 
-docker login
+docker login --username dslim
 

@@ -316,14 +316,18 @@ The `--use-local-mounts` option is used to choose how the `docker-slim` sensor i
 
 The current version of `docker-slim` is able to run in containers. It will try to detect if it's running in a containerized environment, but you can also tell `docker-slim` explicitly using the `--in-container` global flag.
 
-You can run `docker-slim` in your container directly or you can use the `docker-slim` container in your containerized environment. If you are using the `docker-slim` container make sure you run it configured with the Docker IPC information, so it can communicate with the Docker daemon. The most common way to do it is by mounting the Docker unix socket to the `docker-slim` container. Some containerized environments (like Gitlab and their `dind` service) might not expose the Docker unix socket to you, so you'll need to make sure the environment variables used to communicate with Docker (e.g., `DOCKER_HOST`) are passed to the `docker-slim` container.
+You can run `docker-slim` in your container directly or you can use the `docker-slim` container in your containerized environment. If you are using the `docker-slim` container make sure you run it configured with the Docker IPC information, so it can communicate with the Docker daemon. The most common way to do it is by mounting the Docker unix socket to the `docker-slim` container. Some containerized environments (like Gitlab and their `dind` service) might not expose the Docker unix socket to you, so you'll need to make sure the environment variables used to communicate with Docker (e.g., `DOCKER_HOST`) are passed to the `docker-slim` container. Note that if those environment variables reference any kind of local host names those names need to be replaced or you need to tell `docker-slim` about them using the `--etc-hosts-map` flag.
 
 When `docker-slim` runs in a container it will attempt to save its execution state in a separate Docker volume. If the volume doesn't exist it will try to create it (`docker-slim-state`, by default). You can pick a different state volume or disable this behavior completely by using the global `--archive-state` flag. If you do want to persist the `docker-slim` execution state (which includes the `seccomp` and `AppArmor` profiles) without using the state archiving feature you can mount your own volume that maps to the `/bin/.docker-slim-state` directory in the `docker-slim` container.
 
 By default, `docker-slim` will try to create a Docker volume for its sensor unless one already exists. If this behavior is not supported by your containerized environment you can create a volume separately and pass its name to `docker-slim` using the `--use-sensor-volume` flag.
 
-Here's an example of how to use the containerized version of `docker-slim`: 
-`docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock dslim/docker-slim build my/sample-python-app-standard`
+Here's a basic example of how to use the containerized version of `docker-slim`:
+`docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock dslim/docker-slim build your-docker-image-name`
+
+Here's a GitLab example for their `dind` `.gitlab-ci.yml` config file:
+`docker run -e DOCKER_HOST=tcp://$(grep docker /etc/hosts | cut -f1):2375 dslim/docker-slim build your-docker-image-name`
+
 
 ## DOCKER CONNECT OPTIONS
 

@@ -2,5 +2,5 @@
 
 set -e
 
-docker build -t docker-slim -f Dockerfile ../../..
+docker build --squash -t docker-slim -f Dockerfile ../../..
 
