@@ -1,3 +1,18 @@
+## 1.26 (11/16/2019)
+
+### New Features
+
+* Run `docker-slim` in containers.
+* New distribution option ([`dslim/docker-slim`](https://hub.docker.com/r/dslim/docker-slim) image available in Docker Hub).
+* Archive `docker-slim` state into a separate Docker volume.
+
+### Improvements
+
+* Default to continuing `docker-slim` execution after the http probing step is done when http probing is enabled.
+* Improved IPC.
+* Improved seccomp and metadata artifact copy option.
+* Improved execution report.
+
 ## 1.25.3 (8/4/2019)
 
 ### New Features
