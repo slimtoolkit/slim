@@ -132,9 +132,9 @@ Now you can run `docker-slim` in containers. For more info about the latest rele
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.26/dist_mac.zip)
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.26/dist_linux.tar.gz)
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.26/dist_linux_arm.tar.gz)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.26.0/dist_mac.zip)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.26.0/dist_linux.tar.gz)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.26.0/dist_linux_arm.tar.gz)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -182,7 +182,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.26/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.26/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.26/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.26.0/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.26.0/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.26.0/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
   The extracted directory contains two binaries:
 

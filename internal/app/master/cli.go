@@ -512,9 +512,9 @@ func init() {
 			Usage:   "Shows docker-slim and docker version information",
 			Action: func(ctx *cli.Context) error {
 				doDebug := ctx.GlobalBool(FlagDebug)
-				inContainer := isInContainer(ctx.GlobalBool(FlagInContainer))
+				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
 				clientConfig := getDockerClientConfig(ctx)
-				commands.OnVersion(doDebug, inContainer, clientConfig)
+				commands.OnVersion(doDebug, inContainer, isDSImage, clientConfig)
 				return nil
 			},
 		},
@@ -528,11 +528,11 @@ func init() {
 			Action: func(ctx *cli.Context) error {
 				doDebug := ctx.GlobalBool(FlagDebug)
 				statePath := ctx.GlobalString(FlagStatePath)
-				inContainer := isInContainer(ctx.GlobalBool(FlagInContainer))
+				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
 				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
 				doShowProgress := ctx.Bool("show-progress")
 
-				commands.OnUpdate(doDebug, statePath, archiveState, inContainer, doShowProgress)
+				commands.OnUpdate(doDebug, statePath, archiveState, inContainer, isDSImage, doShowProgress)
 				return nil
 			},
 		},
@@ -551,7 +551,7 @@ func init() {
 
 				doDebug := ctx.GlobalBool(FlagDebug)
 				statePath := ctx.GlobalString(FlagStatePath)
-				inContainer := isInContainer(ctx.GlobalBool(FlagInContainer))
+				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
 				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
 
 				imageRef := ctx.Args().First()
@@ -564,6 +564,7 @@ func init() {
 					statePath,
 					archiveState,
 					inContainer,
+					isDSImage,
 					clientConfig,
 					imageRef)
 				return nil
@@ -649,7 +650,7 @@ func init() {
 
 				doDebug := ctx.GlobalBool(FlagDebug)
 				statePath := ctx.GlobalString(FlagStatePath)
-				inContainer := isInContainer(ctx.GlobalBool(FlagInContainer))
+				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
 				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
 
 				imageRef := ctx.Args().First()
@@ -766,6 +767,7 @@ func init() {
 					statePath,
 					archiveState,
 					inContainer,
+					isDSImage,
 					clientConfig,
 					buildFromDockerfile,
 					imageRef,
@@ -851,7 +853,7 @@ func init() {
 
 				doDebug := ctx.GlobalBool(FlagDebug)
 				statePath := ctx.GlobalString(FlagStatePath)
-				inContainer := isInContainer(ctx.GlobalBool(FlagInContainer))
+				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
 				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
 
 				imageRef := ctx.Args().First()
@@ -954,6 +956,7 @@ func init() {
 					statePath,
 					archiveState,
 					inContainer,
+					isDSImage,
 					clientConfig,
 					imageRef,
 					doHTTPProbe,

@@ -23,11 +23,12 @@ func OnInfo(
 	statePath string,
 	archiveState string,
 	inContainer bool,
+	isDSImage bool,
 	clientConfig *config.DockerClient,
 	imageRef string) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "info"})
 
-	viChan := version.CheckAsync(doCheckVersion)
+	viChan := version.CheckAsync(doCheckVersion, inContainer, isDSImage)
 
 	cmdReport := report.NewInfoCommand(cmdReportLocation)
 	cmdReport.State = report.CmdStateStarted
@@ -39,7 +40,7 @@ func OnInfo(
 	client := dockerclient.New(clientConfig)
 
 	if doDebug {
-		version.Print(client, false)
+		version.Print(client, false, inContainer, isDSImage)
 	}
 
 	imageInspector, err := image.NewInspector(client, imageRef)

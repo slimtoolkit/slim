@@ -38,14 +38,14 @@ var (
 )
 
 // Run checks the current version and updates it if it doesn't match the latest available version
-func Run(doDebug bool, statePath string, doShowProgress bool) {
+func Run(doDebug bool, statePath string, inContainer, isDSImage, doShowProgress bool) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "update"})
 
 	appPath, err := os.Executable()
 	errutil.FailOn(err)
 	appDirPath := filepath.Dir(appPath)
 
-	vstatus := vchecker.Check()
+	vstatus := vchecker.Check(inContainer, isDSImage)
 	logger.Debugf("Version Status => %+v", vstatus)
 
 	if vstatus == nil || vstatus.Status != "success" {

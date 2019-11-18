@@ -34,6 +34,7 @@ func OnBuild(
 	statePath string,
 	archiveState string,
 	inContainer bool,
+	isDSImage bool,
 	clientConfig *config.DockerClient,
 	buildFromDockerfile string,
 	imageRef string,
@@ -68,7 +69,7 @@ func OnBuild(
 	continueAfter *config.ContinueAfter) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "build"})
 
-	viChan := version.CheckAsync(doCheckVersion)
+	viChan := version.CheckAsync(doCheckVersion, inContainer, isDSImage)
 
 	cmdReport := report.NewBuildCommand(cmdReportLocation)
 	cmdReport.State = report.CmdStateStarted
@@ -142,7 +143,7 @@ func OnBuild(
 		overrides.Workdir, overrides.Env, overrides.ExposedPorts)
 
 	if doDebug {
-		version.Print(client, false)
+		version.Print(client, false, inContainer, isDSImage)
 	}
 
 	if !confirmNetwork(logger, client, overrides.Network) {

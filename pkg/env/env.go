@@ -5,8 +5,14 @@ import (
 )
 
 const (
-	dockerEnvPath = "/.dockerenv"
+	dockerEnvPath   = "/.dockerenv"
+	dsImageFlagPath = "/.ds.container.d3e2c84f976743bdb92a7044ef12e381"
 )
+
+func HasDSImageFlag() bool {
+	_, err := os.Stat(dsImageFlagPath)
+	return err == nil
+}
 
 func HasDockerEnvPath() bool {
 	_, err := os.Stat(dockerEnvPath)
@@ -17,14 +23,15 @@ func HasContainerCgroups() bool {
 	return false
 }
 
-func InContainer() bool {
+func InContainer() (bool, bool) {
+	isDSImage := HasDSImageFlag()
 	if HasDockerEnvPath() {
-		return true
+		return true, isDSImage
 	}
 
 	if HasContainerCgroups() {
-		return true
+		return true, isDSImage
 	}
 
-	return false
+	return false, isDSImage
 }

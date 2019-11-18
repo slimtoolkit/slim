@@ -29,6 +29,7 @@ func OnProfile(
 	statePath string,
 	archiveState string,
 	inContainer bool,
+	isDSImage bool,
 	clientConfig *config.DockerClient,
 	imageRef string,
 	doHTTPProbe bool,
@@ -56,7 +57,7 @@ func OnProfile(
 	continueAfter *config.ContinueAfter) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "profile"})
 
-	viChan := version.CheckAsync(doCheckVersion)
+	viChan := version.CheckAsync(doCheckVersion, inContainer, isDSImage)
 
 	cmdReport := report.NewProfileCommand(cmdReportLocation)
 	cmdReport.State = report.CmdStateStarted
@@ -69,7 +70,7 @@ func OnProfile(
 	client := dockerclient.New(clientConfig)
 
 	if doDebug {
-		version.Print(client, false)
+		version.Print(client, false, inContainer, isDSImage)
 	}
 
 	if !confirmNetwork(logger, client, overrides.Network) {

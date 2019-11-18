@@ -7,7 +7,7 @@ import (
 )
 
 // OnVersion implements the 'version' docker-slim command
-func OnVersion(doDebug, inContainer bool, clientConfig *config.DockerClient) {
+func OnVersion(doDebug, inContainer, isDSImage bool, clientConfig *config.DockerClient) {
 	client := dockerclient.New(clientConfig)
-	version.Print(client, true)
+	version.Print(client, true, inContainer, isDSImage)
 }

@@ -54,10 +54,10 @@ func GetCheckVersionVerdict(info *CheckVersionInfo) string {
 }
 
 // Print shows the master app version information
-func Print(client *docker.Client, checkVersion bool) {
-	fmt.Printf("docker-slim[version]: %s\n", v.Current())
+func Print(client *docker.Client, checkVersion, inContainer, isDSImage bool) {
+	fmt.Printf("docker-slim[version]: %s (%v,%v)\n", v.Current(), inContainer, isDSImage)
 	if checkVersion {
-		fmt.Printf("Version Status: %v\n", GetCheckVersionVerdict(Check()))
+		fmt.Printf("Version Status: %v\n", GetCheckVersionVerdict(Check(inContainer, isDSImage)))
 	}
 
 	fmt.Println("host:")
@@ -95,7 +95,7 @@ func Print(client *docker.Client, checkVersion bool) {
 }
 
 // Check checks the app version
-func Check() *CheckVersionInfo {
+func Check(inContainer, isDSImage bool) *CheckVersionInfo {
 	logger := log.WithFields(log.Fields{"app": "docker-slim"})
 
 	client := http.Client{
@@ -119,8 +119,9 @@ func Check() *CheckVersionInfo {
 		logger.Debugf("Check - error creating version check request => %v", err)
 		return nil
 	}
-
-	req.Header.Set("User-Agent", fmt.Sprintf("DockerSlimApp/%s", v.Current()))
+	hinfo := system.GetSystemInfo()
+	req.Header.Set("User-Agent", fmt.Sprintf("DockerSlimApp/%v/%v/%v/%v",
+		v.Current(), inContainer, isDSImage, hinfo.OsName))
 	req.Header.Set("Content-Type", jsonContentType)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", versionAuthKey))
 
@@ -152,12 +153,12 @@ func Check() *CheckVersionInfo {
 }
 
 // CheckAsync checks the app version without blocking
-func CheckAsync(doCheckVersion bool) <-chan *CheckVersionInfo {
+func CheckAsync(doCheckVersion, inContainer, isDSImage bool) <-chan *CheckVersionInfo {
 	resultCh := make(chan *CheckVersionInfo, 1)
 
 	if doCheckVersion {
 		go func() {
-			resultCh <- Check()
+			resultCh <- Check(inContainer, isDSImage)
 		}()
 	} else {
 		close(resultCh)
@@ -167,8 +168,8 @@ func CheckAsync(doCheckVersion bool) <-chan *CheckVersionInfo {
 }
 
 // CheckAndPrintAsync check the app version and prints the results
-func CheckAndPrintAsync() {
+func CheckAndPrintAsync(inContainer, isDSImage bool) {
 	go func() {
-		PrintCheckVersion(Check())
+		PrintCheckVersion(Check(inContainer, isDSImage))
 	}()
 }

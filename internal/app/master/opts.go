@@ -23,9 +23,9 @@ const (
 	DefaultStateArchiveVolumeName = "docker-slim-state"
 )
 
-func isInContainer(flag bool) bool {
+func isInContainer(flag bool) (bool, bool) {
 	if flag {
-		return true
+		return true, env.HasDSImageFlag()
 	}
 
 	return env.InContainer()
