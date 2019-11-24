@@ -333,7 +333,6 @@ Here's a GitLab example for their `dind` `.gitlab-ci.yml` config file:
 Here's a CircleCI example for their `remote docker` `.circleci/config.yml` config file (used after the `setup_remote_docker` step): 
 ```
 docker create -v /dcert_path --name dcert alpine:latest /bin/true
-cat $DOCKER_CERT_PATH/ca.pem
 docker cp $DOCKER_CERT_PATH/. dcert:/dcert_path
 docker run --volumes-from dcert -e DOCKER_HOST=$DOCKER_HOST -e DOCKER_TLS_VERIFY=$DOCKER_TLS_VERIFY -e DOCKER_CERT_PATH=/dcert_path dslim/docker-slim build your-docker-image-name
 ```
