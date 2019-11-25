@@ -344,10 +344,14 @@ func (i *Inspector) RunContainer() error {
 		return err
 	}
 
+	if i.ContainerName != containerInfo.Name {
+		i.logger.Debugf("RunContainer: Container name mismatch expected=%v got=%v", i.ContainerName, containerInfo.Name)
+	}
+
 	i.ContainerID = containerInfo.ID
 
 	if i.PrintState {
-		fmt.Printf("%s info=container status=created id=%v\n", i.PrintPrefix, i.ContainerID)
+		fmt.Printf("%s info=container status=created name=%v id=%v\n", i.PrintPrefix, containerInfo.Name, i.ContainerID)
 	}
 
 	i.APIClient.AddEventListener(i.dockerEventCh)
