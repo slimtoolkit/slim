@@ -172,6 +172,16 @@ func OnProfile(
 		continueAfter.ContinueChan = probe.DoneChan()
 	}
 
+	continueAfterMsg := "provide the expected input to allow the container inspector to continue its execution"
+	switch continueAfter.Mode {
+	case "timeout":
+		continueAfterMsg = "no input required, execution will resume after the timeout"
+	case "probe":
+		continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
+	}
+
+	fmt.Printf("docker-slim[profile]: info=continue.after mode=%v message='%v'\n", continueAfter.Mode, continueAfterMsg)
+
 	switch continueAfter.Mode {
 	case "enter":
 		fmt.Println("docker-slim[profile]: info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'")
@@ -249,5 +259,7 @@ func OnProfile(
 	version.PrintCheckVersion(vinfo)
 
 	cmdReport.State = report.CmdStateDone
-	cmdReport.Save()
+	if cmdReport.Save() {
+		fmt.Printf("docker-slim[profile]: info=report file='%s'\n", cmdReport.ReportLocation())
+	}
 }

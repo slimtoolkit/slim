@@ -78,5 +78,7 @@ func OnInfo(
 	version.PrintCheckVersion(vinfo)
 
 	cmdReport.State = report.CmdStateDone
-	cmdReport.Save()
+	if cmdReport.Save() {
+		fmt.Printf("docker-slim[info]: info=report file='%s'\n", cmdReport.ReportLocation())
+	}
 }

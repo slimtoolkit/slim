@@ -147,14 +147,18 @@ func NewInfoCommand(reportLocation string) *InfoCommand {
 	}
 }
 
-func (p *Command) saveInfo(info interface{}) {
+func (p *Command) ReportLocation() string {
+	return p.reportLocation
+}
+
+func (p *Command) saveInfo(info interface{}) bool {
 	if p.reportLocation != "" {
 		dirName := filepath.Dir(p.reportLocation)
 		baseName := filepath.Base(p.reportLocation)
 
 		if baseName == "." {
 			fmt.Printf("no build command report location: %v\n", p.reportLocation)
-			return
+			return false
 		}
 
 		if dirName != "." {
@@ -175,25 +179,28 @@ func (p *Command) saveInfo(info interface{}) {
 
 		err = ioutil.WriteFile(p.reportLocation, reportData.Bytes(), 0644)
 		errutil.FailOn(err)
+		return true
 	}
+
+	return false
 }
 
 // Save saves the report data to the configured location
-func (p *Command) Save() {
-	p.saveInfo(p)
+func (p *Command) Save() bool {
+	return p.saveInfo(p)
 }
 
 // Save saves the Build command report data to the configured location
-func (p *BuildCommand) Save() {
-	p.saveInfo(p)
+func (p *BuildCommand) Save() bool {
+	return p.saveInfo(p)
 }
 
 // Save saves the Profile command report data to the configured location
-func (p *ProfileCommand) Save() {
-	p.saveInfo(p)
+func (p *ProfileCommand) Save() bool {
+	return p.saveInfo(p)
 }
 
 // Save saves the Info command report data to the configured location
-func (p *InfoCommand) Save() {
-	p.saveInfo(p)
+func (p *InfoCommand) Save() bool {
+	return p.saveInfo(p)
 }

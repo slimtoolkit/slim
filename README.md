@@ -247,7 +247,7 @@ Commands:
 
 Global options:
 
-* `--report` - command report location (target location where to save the executed command results)
+* `--report` - command report location (target location where to save the executed command results; `slim.report.json` by default; set it to `off` to disable)
 * `--check-version` - check if the current version is outdate
 * `--version` - print the version
 * `--debug` - enable debug logs

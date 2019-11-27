@@ -107,7 +107,8 @@ func init() {
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  FlagCommandReport,
-			Usage: "command report location",
+			Value: "slim.report.json",
+			Usage: "command report location (enabled by default; set it to \"off\" to disable it)",
 		},
 		cli.BoolTFlag{
 			Name:   FlagCheckVersion,
@@ -557,9 +558,14 @@ func init() {
 				imageRef := ctx.Args().First()
 				clientConfig := getDockerClientConfig(ctx)
 
+				commandReport := ctx.GlobalString(FlagCommandReport)
+				if commandReport == "off" {
+					commandReport = ""
+				}
+
 				commands.OnInfo(
 					doCheckVersion,
-					ctx.GlobalString(FlagCommandReport),
+					commandReport,
 					doDebug,
 					statePath,
 					archiveState,
@@ -760,9 +766,14 @@ func init() {
 					}
 				}
 
+				commandReport := ctx.GlobalString(FlagCommandReport)
+				if commandReport == "off" {
+					commandReport = ""
+				}
+
 				commands.OnBuild(
 					doCheckVersion,
-					ctx.GlobalString(FlagCommandReport),
+					commandReport,
 					doDebug,
 					statePath,
 					archiveState,
@@ -949,9 +960,14 @@ func init() {
 					}
 				}
 
+				commandReport := ctx.GlobalString(FlagCommandReport)
+				if commandReport == "off" {
+					commandReport = ""
+				}
+
 				commands.OnProfile(
 					doCheckVersion,
-					ctx.GlobalString(FlagCommandReport),
+					commandReport,
 					doDebug,
 					statePath,
 					archiveState,

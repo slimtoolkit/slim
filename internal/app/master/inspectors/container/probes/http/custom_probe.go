@@ -19,6 +19,8 @@ import (
 
 const (
 	probeRetryCount = 5
+	httpPortStr     = "80"
+	httpsPortStr    = "443"
 )
 
 // CustomProbe is a custom HTTP probe
@@ -167,6 +169,43 @@ func (p *CustomProbe) Start() {
 		var errCount uint64
 		var okCount uint64
 
+		findIdx := func(ports []string, target string) int {
+			for idx, val := range ports {
+				if val == target {
+					return idx
+				}
+			}
+			return -1
+		}
+
+		httpIdx := findIdx(p.Ports, httpPortStr)
+		httpsIdx := findIdx(p.Ports, httpsPortStr)
+		if httpIdx != -1 && httpsIdx != -1 && httpsIdx < httpIdx {
+			//want to probe http first
+			log.Debugf("http.probe - swapping http and https ports (http=%v <-> https=%v)",
+				httpIdx, httpsIdx)
+
+			p.Ports[httpIdx], p.Ports[httpsIdx] = p.Ports[httpsIdx], p.Ports[httpIdx]
+		}
+
+		if p.PrintState {
+			fmt.Printf("%s info=http.probe.ports count=%d targets='%s'\n",
+				p.PrintPrefix, len(p.Ports), strings.Join(p.Ports, ","))
+
+			var cmdListPreview []string
+			var cmdListTail string
+			for idx, c := range p.Cmds {
+				cmdListPreview = append(cmdListPreview, fmt.Sprintf("%s %s", c.Method, c.Resource))
+				if idx == 2 {
+					cmdListTail = ",..."
+					break
+				}
+			}
+
+			fmt.Printf("%s info=http.probe.commands count=%d commands='%s%s'\n",
+				p.PrintPrefix, len(p.Cmds), strings.Join(cmdListPreview, ","), cmdListTail)
+		}
+
 		for _, port := range p.Ports {
 			//If it's ok stop after the first successful probe pass
 			if okCount > 0 && !p.ProbeFull {
@@ -178,7 +217,15 @@ func (p *CustomProbe) Start() {
 
 				var protocols []string
 				if cmd.Protocol == "" {
-					protocols = []string{"http", "https"}
+					//need a smarter and more dynamic way to determine the actual protocol type
+					switch port {
+					case httpPortStr:
+						protocols = []string{"http"}
+					case httpsPortStr:
+						protocols = []string{"https"}
+					default:
+						protocols = []string{"http", "https"}
+					}
 				} else {
 					protocols = []string{cmd.Protocol}
 				}
