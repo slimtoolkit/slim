@@ -1,3 +1,15 @@
+## 1.26.1 (11/28/2019)
+
+### Improvements
+
+* Saving command execution report, by default (`slim.report.json`).
+* CLI output UX enhancements.
+* Docker connect info checks.
+
+### Bug Fixes
+
+* Version check fixes when running in containers.
+
 ## 1.26 (11/16/2019)
 
 ### New Features
