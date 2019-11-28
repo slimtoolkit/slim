@@ -67,7 +67,17 @@ func OnProfile(
 	fmt.Printf("docker-slim[profile]: info=params target=%v\n", imageRef)
 	doRmFileArtifacts := false
 
-	client := dockerclient.New(clientConfig)
+	client, err := dockerclient.New(clientConfig)
+	if err == dockerclient.ErrNoDockerInfo {
+		exitMsg := "missing Docker connection info"
+		if inContainer && isDSImage {
+			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
+		}
+		fmt.Printf("docker-slim[profile]: info=docker.connect.error message='%s'\n", exitMsg)
+		fmt.Printf("docker-slim[profile]: state=exited version=%s\n", v.Current())
+		os.Exit(-777)
+	}
+	errutil.FailOn(err)
 
 	if doDebug {
 		version.Print(client, false, inContainer, isDSImage)

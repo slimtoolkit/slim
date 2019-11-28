@@ -1,21 +1,39 @@
 package dockerclient
 
 import (
+	"errors"
 	"io/ioutil"
 	"os"
 	"path/filepath"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	"github.com/fsouza/go-dockerclient"
 
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	EnvDockerHost      = "DOCKER_HOST"
+	EnvDockerTLSVerify = "DOCKER_TLS_VERIFY"
+	EnvDockerCertPath  = "DOCKER_CERT_PATH"
+	UnixSocketPath     = "/var/run/docker.sock"
+	UnixSocketAddr     = "unix:///var/run/docker.sock"
+)
+
+var (
+	ErrNoDockerInfo = errors.New("no docker info")
+)
+
 // New creates a new Docker client instance
-func New(config *config.DockerClient) *docker.Client {
+func New(config *config.DockerClient) (*docker.Client, error) {
 	var client *docker.Client
 	var err error
+
+	if !fsutil.Exists(UnixSocketPath) && config.Env[EnvDockerHost] == "" && config.Host == "" {
+		return nil, ErrNoDockerInfo
+	}
 
 	newTLSClient := func(host string, certPath string, verify bool) (*docker.Client, error) {
 		var ca []byte
@@ -47,7 +65,10 @@ func New(config *config.DockerClient) *docker.Client {
 		config.VerifyTLS &&
 		config.TLSCertPath != "":
 		client, err = newTLSClient(config.Host, config.TLSCertPath, true)
-		errutil.FailOn(err)
+		if err != nil {
+			return nil, err
+		}
+
 		log.Debug("docker-slim: new Docker client (TLS,verify) [1]")
 
 	case config.Host != "" &&
@@ -55,46 +76,61 @@ func New(config *config.DockerClient) *docker.Client {
 		!config.VerifyTLS &&
 		config.TLSCertPath != "":
 		client, err = newTLSClient(config.Host, config.TLSCertPath, false)
-		errutil.FailOn(err)
+		if err != nil {
+			return nil, err
+		}
+
 		log.Debug("docker-slim: new Docker client (TLS,no verify) [2]")
 
 	case config.Host != "" &&
 		!config.UseTLS:
 		client, err = docker.NewClient(config.Host)
-		errutil.FailOn(err)
+		if err != nil {
+			return nil, err
+		}
+
 		log.Debug("docker-slim: new Docker client [3]")
 
 	case config.Host == "" &&
 		!config.VerifyTLS &&
-		config.Env["DOCKER_TLS_VERIFY"] == "1" &&
-		config.Env["DOCKER_CERT_PATH"] != "" &&
-		config.Env["DOCKER_HOST"] != "":
-		client, err = newTLSClient(config.Env["DOCKER_HOST"], config.Env["DOCKER_CERT_PATH"], false)
-		errutil.FailOn(err)
+		config.Env[EnvDockerTLSVerify] == "1" &&
+		config.Env[EnvDockerCertPath] != "" &&
+		config.Env[EnvDockerHost] != "":
+		client, err = newTLSClient(config.Env[EnvDockerHost], config.Env[EnvDockerCertPath], false)
+		if err != nil {
+			return nil, err
+		}
+
 		log.Debug("docker-slim: new Docker client (TLS,no verify) [4]")
 
-	case config.Env["DOCKER_HOST"] != "":
+	case config.Env[EnvDockerHost] != "":
 		client, err = docker.NewClientFromEnv()
-		errutil.FailOn(err)
+		if err != nil {
+			return nil, err
+		}
+
 		log.Debug("docker-slim: new Docker client (env) [5]")
 
-	case config.Host == "" && config.Env["DOCKER_HOST"] == "":
-		config.Host = "unix:///var/run/docker.sock"
+	case config.Host == "" && config.Env[EnvDockerHost] == "":
+		config.Host = UnixSocketAddr
 		client, err = docker.NewClient(config.Host)
-		errutil.FailOn(err)
+		if err != nil {
+			return nil, err
+		}
+
 		log.Debug("docker-slim: new Docker client (default) [6]")
 
 	default:
-		errutil.Fail("no config for Docker client")
+		return nil, ErrNoDockerInfo
 	}
 
-	if config.Env["DOCKER_HOST"] == "" {
-		if err := os.Setenv("DOCKER_HOST", config.Host); err != nil {
+	if config.Env[EnvDockerHost] == "" {
+		if err := os.Setenv(EnvDockerHost, config.Host); err != nil {
 			errutil.WarnOn(err)
 		}
 
 		log.Debug("docker-slim: configured DOCKER_HOST env var")
 	}
 
-	return client
+	return client, nil
 }

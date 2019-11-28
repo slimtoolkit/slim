@@ -75,7 +75,17 @@ func OnBuild(
 	cmdReport.State = report.CmdStateStarted
 	cmdReport.ImageReference = imageRef
 
-	client := dockerclient.New(clientConfig)
+	client, err := dockerclient.New(clientConfig)
+	if err == dockerclient.ErrNoDockerInfo {
+		exitMsg := "missing Docker connection info"
+		if inContainer && isDSImage {
+			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
+		}
+		fmt.Printf("docker-slim[build]: info=docker.connect.error message='%s'\n", exitMsg)
+		fmt.Printf("docker-slim[build]: state=exited version=%s\n", v.Current())
+		os.Exit(-777)
+	}
+	errutil.FailOn(err)
 
 	fmt.Println("docker-slim[build]: state=started")
 

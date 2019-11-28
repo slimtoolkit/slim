@@ -9,6 +9,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
+	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/version"
 
@@ -1147,9 +1148,9 @@ func getDockerClientConfig(ctx *cli.Context) *config.DockerClient {
 		}
 	}
 
-	getEnv("DOCKER_HOST")
-	getEnv("DOCKER_TLS_VERIFY")
-	getEnv("DOCKER_CERT_PATH")
+	getEnv(dockerclient.EnvDockerHost)
+	getEnv(dockerclient.EnvDockerTLSVerify)
+	getEnv(dockerclient.EnvDockerCertPath)
 
 	return config
 }

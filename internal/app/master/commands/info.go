@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"os"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
@@ -10,6 +11,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
+	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
@@ -37,7 +39,17 @@ func OnInfo(
 	fmt.Println("docker-slim[info]: state=started")
 	fmt.Printf("docker-slim[info]: info=params target=%v\n", imageRef)
 
-	client := dockerclient.New(clientConfig)
+	client, err := dockerclient.New(clientConfig)
+	if err == dockerclient.ErrNoDockerInfo {
+		exitMsg := "missing Docker connection info"
+		if inContainer && isDSImage {
+			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
+		}
+		fmt.Printf("docker-slim[info]: info=docker.connect.error message='%s'\n", exitMsg)
+		fmt.Printf("docker-slim[info]: state=exited version=%s\n", v.Current())
+		os.Exit(-777)
+	}
+	errutil.FailOn(err)
 
 	if doDebug {
 		version.Print(client, false, inContainer, isDSImage)
