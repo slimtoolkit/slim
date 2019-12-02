@@ -93,7 +93,7 @@ func OnProfile(
 	errutil.FailOn(err)
 
 	if imageInspector.NoImage() {
-		fmt.Println("docker-slim[profile]: target image not found -", imageRef)
+		fmt.Printf("docker-slim[profile]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", imageRef)
 		fmt.Println("docker-slim[profile]: state=exited")
 		return
 	}

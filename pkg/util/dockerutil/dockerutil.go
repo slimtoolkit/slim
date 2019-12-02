@@ -30,28 +30,38 @@ const (
 )
 
 func HasEmptyImage(dclient *dockerapi.Client) error {
+	return HasImage(dclient, emptyImageName)
+}
+
+func HasImage(dclient *dockerapi.Client, imageRef string) error {
+	if imageRef == "" || imageRef == "." || imageRef == ".." {
+		return ErrBadParam
+	}
+
 	var err error
 	if dclient == nil {
 		dclient, err = dockerapi.NewClient(dockerHost)
 		if err != nil {
-			log.Errorf("HasEmptyImage: dockerapi.NewClient() error = %v", err)
+			log.Errorf("HasImage(%s): dockerapi.NewClient() error = %v", imageRef, err)
 			return err
 		}
 	}
 
 	listOptions := dockerapi.ListImagesOptions{
-		Filter: emptyImageName, // works with "docker-slim-empty-image:latest" too
+		Filter: imageRef,
 		All:    false,
 	}
 
 	imageList, err := dclient.ListImages(listOptions)
 	if err != nil {
-		log.Errorf("HasEmptyImage: dockerapi.ListImages() error = %v", err)
+		log.Errorf("HasImage(%s): dockerapi.ListImages() error = %v", imageRef, err)
 		return err
 	}
 
+	log.Debugf("HasImage(%s): matching images - %+v", imageRef, imageList)
+
 	if len(imageList) == 0 {
-		log.Debug("HasEmptyImage: empty image not found")
+		log.Debugf("HasImage(%s): empty image not found", imageRef)
 		return ErrNotFound
 	}
 

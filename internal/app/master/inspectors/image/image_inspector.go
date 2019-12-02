@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerfile"
+	"github.com/docker-slim/docker-slim/pkg/util/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
 	"github.com/fsouza/go-dockerclient"
@@ -51,14 +52,13 @@ func NewInspector(client *docker.Client, imageRef string /*, artifactLocation st
 
 // NoImage returns true if the target image doesn't exist
 func (i *Inspector) NoImage() bool {
-	_, err := i.APIClient.InspectImage(i.ImageRef)
-	if err != nil {
-		if err == docker.ErrNoSuchImage {
-			return true
-		}
+	err := dockerutil.HasImage(i.APIClient, i.ImageRef)
+	if err == nil {
+		return false
 	}
 
-	return false
+	log.Debugf("image.inspector.NoImage: err=%v", err)
+	return true
 }
 
 // Inspect starts the target image inspection
