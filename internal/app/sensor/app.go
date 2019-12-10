@@ -54,7 +54,7 @@ func startMonitor(errorCh chan error,
 		return false
 	}
 
-	ptReportChan := ptrace.Run(errorCh, startAckChan, ptmonStartChan, stopMonitor, cmd.AppName, cmd.AppArgs, dirName)
+	ptReportChan := ptrace.Run(errorCh, startAckChan, ptmonStartChan, stopMonitor, cmd.AppName, cmd.AppArgs, dirName, cmd.AppUser)
 	if ptReportChan == nil {
 		log.Info("sensor: startMonitor - PTAN failed to start running...")
 		close(stopMonitor)
