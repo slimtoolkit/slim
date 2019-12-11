@@ -10,9 +10,9 @@ Don't change anything in your Docker container image and minify it by up to 30x 
 
 Keep doing what you are doing. No need to change anything. Use the base image you want. Use the package manager you want. Don't worry about hand optimizing your Dockerfile. You shouldn't have to throw away your tools and your workflow to have small container images.
 
-Don't worry about manually creating Seccomp and AppArmor security profiles. You shouldn't have to become an expert in Linux syscalls, Seccomp and AppArmor to have secure containers. Even if you do know enough about it wasting time reverse engineering your application behavior can be time consuming.
+Don't worry about manually creating Seccomp and AppArmor security profiles. You shouldn't have to become an expert in Linux syscalls, Seccomp and AppArmor to have secure containers. Even if you do know enough about it wasting time reverse engineering your application behavior can be time-consuming.
 
-`docker-slim` will optimize and secure your containers by understanding your application and what it needs using various analysis techniques. It will throw away what you don't need reducing the attack surface for your container. What if you need some of those extra things to debug your container? You can use dedicated debugging side-car containers for that (more details below).
+`docker-slim` will optimize and secure your containers by understanding your application and what it needs using various analysis techniques. It will throw away what you don't need, reducing the attack surface of your container. What if you need some of those extra things to debug your container? You can use dedicated debugging side-car containers for that (more details below).
 
 `docker-slim` has been used with Node.js, Python, Ruby, Java, Golang, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian, CentOS, Alpine and even Distroless.
 
@@ -127,7 +127,7 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 
 Latest version: 1.26.1 (11/28/2019)
 
-Now you can run `docker-slim` in containers and you get more convinient reporting defaults. For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
+Now you can run `docker-slim` in containers and you get more convenient reporting defaults. For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
 ## INSTALLATION
 
@@ -180,7 +180,7 @@ You can use the generated profile with your original image or with the minified 
 
 ## DEMO STEPS
 
-The demo run on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
+The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
 1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.26.1/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.26.1/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.26.1/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
