@@ -595,7 +595,7 @@ Some of the advanced analysis options require a number of Linux kernel features 
 
 DockerSlim was a [Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project. It barely worked at the time, but it did get a win in Seattle and it took the second place in the `Plumbing` category overall :-)
 
-![DHD3](assets/images/dhd/docker_global_hackday3_red.jpeg)
+![DHD3](assets/images/dhd/docker_global_hackday3_red.png)
 
 Since then it's been improved and it works pretty well for its core use cases. It can be better though. That's why the project needs your help! You don't need to know much about Docker and you don't need to know anything about Go. You can contribute in many different ways. For example, use DockerSlim on your images and open a Github issue documenting your experience even if it worked just fine :-)
 
