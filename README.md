@@ -85,41 +85,42 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
-- [docker-slim: Lean and Mean Docker containers](#docker-slim-lean-and-mean-docker-containers)
-  - [RECENT UPDATES](#new)
-  - [INSTALLATION](#installation)
-  - [BASIC USAGE INFO](#basic-usage-info)
-  - [QUICK SECCOMP EXAMPLE](#quick-seccomp-example)
-  - [USING AUTO-GENERATED SECCOMP PROFILES](#using-auto-generated-seccomp-profiles)
-  - [ORIGINAL DEMO VIDEO](#original-demo-video)
-  - [DEMO STEPS](#demo-steps)
-  - [USAGE DETAILS](#usage-details)
-  - [RUNNING CONTAINERIZED](#running-containerized)
-  - [DOCKER CONNECT OPTIONS](#docker-connect-options)
-  - [HTTP PROBE COMMANDS](#http-probe-commands)
-  - [DEBUGGING MINIFIED CONTAINERS](#debugging-minified-containers)
-  - [MINIFYING COMMAND LINE TOOLS](#minifying-command-line-tools)
-  - [CURRENT STATE](#current-state)
-  - [FAQ](#faq)
-    - [Is it safe for production use?](#is-it-safe-for-production-use)
-    - [How can I contribute if I don't know Go?](#how-can-i-contribute-if-i-dont-know-go)
-    - [What's the best application for DockerSlim?](#whats-the-best-application-for-dockerslim)
-    - [Can I use DockerSlim with dockerized command line tools?](#can-i-use-dockerslim-with-dockerized-command-line-tools)
-    - [What if my Docker images use the USER command?](#what-if-my-docker-images-use-the-user-command)
-    - [Nginx fails in my minified image](#nginx-fails-in-my-minified-image)
-    - [DockerSlim fails with a 'no permission to read from' error](#dockerslim-fails-with-a-no-permission-to-read-from-error)
-  - [BUILD PROCESS](#build-process)
-  - [DESIGN](#design)
-    - [CORE CONCEPTS](#core-concepts)
-    - [DYNAMIC ANALYSIS OPTIONS](#dynamic-analysis-options)
-    - [SECURITY](#security)
-    - [CHALLENGES](#challenges)
-  - [DEVELOPMENT PROGRESS](#development-progress)
-    - [TODO](#todo)
-  - [ORIGINS](#origins)
-  - [ONLINE](#online)
-  - [MINIFIED DOCKER HUB IMAGES](#minified-docker-hub-images)
-  - [NOTES](#notes)
+- [RECENT UPDATES](#recent-updates)
+- [INSTALLATION](#installation)
+- [BASIC USAGE INFO](#basic-usage-info)
+- [QUICK SECCOMP EXAMPLE](#quick-seccomp-example)
+- [USING AUTO-GENERATED SECCOMP PROFILES](#using-auto-generated-seccomp-profiles)
+- [ORIGINAL DEMO VIDEO](#original-demo-video)
+- [DEMO STEPS](#demo-steps)
+- [USAGE DETAILS](#usage-details)
+  - [`BUILD` COMMAND OPTIONS](#build-command-options)
+- [RUNNING CONTAINERIZED](#running-containerized)
+- [DOCKER CONNECT OPTIONS](#docker-connect-options)
+- [HTTP PROBE COMMANDS](#http-probe-commands)
+- [DEBUGGING MINIFIED CONTAINERS](#debugging-minified-containers)
+- [MINIFYING COMMAND LINE TOOLS](#minifying-command-line-tools)
+- [FAQ](#faq)
+  - [Is it safe for production use?](#is-it-safe-for-production-use)
+  - [How can I contribute if I don't know Go?](#how-can-i-contribute-if-i-dont-know-go)
+  - [What's the best application for DockerSlim?](#whats-the-best-application-for-dockerslim)
+  - [Can I use DockerSlim with dockerized command line tools?](#can-i-use-dockerslim-with-dockerized-command-line-tools)
+  - [What if my Docker images uses the USER command?](#what-if-my-docker-images-uses-the-user-command)
+  - [Nginx fails in my minified image](#nginx-fails-in-my-minified-image)
+  - [DockerSlim fails with a 'no permission to read from' error](#dockerslim-fails-with-a-no-permission-to-read-from-error)
+- [BUILD PROCESS](#build-process)
+    - [Build Steps](#build-steps)
+- [DESIGN](#design)
+  - [CORE CONCEPTS](#core-concepts)
+  - [DYNAMIC ANALYSIS OPTIONS](#dynamic-analysis-options)
+  - [SECURITY](#security)
+  - [CHALLENGES](#challenges)
+- [DEVELOPMENT PROGRESS](#development-progress)
+  - [TODO](#todo)
+- [ORIGINS](#origins)
+- [ONLINE](#online)
+- [MINIFIED DOCKER HUB IMAGES](#minified-docker-hub-images)
+- [CONTRIBUTING](#contributing)
+- [LICENSE](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
@@ -458,18 +459,6 @@ Here's a sample `build` command:
 `docker-slim build --show-clogs=true --cmd docker-compose.yml --mount $(pwd)/data/:/data/ dslim/container-transform`
 
 It's used to minify the `container-transform` tool. You can get the minified image from [`Docker Hub`](https://hub.docker.com/r/dslim/container-transform.slim/).
-
-## CURRENT STATE
-
-It works pretty well with the sample Node.js, Python (2 and 3), Ruby, Java and Golang images (see the sample applications in the `examples` repo). PHP support is WIP. There's already one PHP example, but more needs to be done to support Apache and Nginx based PHP apps. More testing needs to be done to see how it works with other images.
-
-You can also run `docker-slim` in the `info` mode and it'll generate useful image information including a "reverse engineered" Dockerfile.
-
-DockerSlim now also generates Seccomp (usable) and AppArmor (WIP, need more testing) profiles for your container.
-
-Note:
-
-You don't need Docker 1.10 or above to generate Seccomp profiles, but you do need it if you want to use the generated profiles.
 
 ## FAQ
 
