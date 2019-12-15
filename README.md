@@ -582,7 +582,7 @@ Some of the advanced analysis options require a number of Linux kernel features 
 
 ## ORIGINS
 
-DockerSlim was a [Docker Global Hack Day \#dockerhackday](https://www.docker.com/community/hackathon) project. It barely worked at the time, but it did get a win in Seattle and it took the second place in the `Plumbing` category overall :-)
+DockerSlim was a `Docker Global Hack Day` \#`dockerhackday` project. It barely worked at the time, but it did get a win in Seattle and it took the second place in the `Plumbing` category overall :-)
 
 ![DHD3](assets/images/dhd/docker_global_hackday3_red.png)
 
