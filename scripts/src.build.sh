@@ -29,6 +29,8 @@ popd
 pushd ${BDIR}/cmd/docker-slim-sensor
 GOOS=linux GOARCH=amd64 go build -mod=vendor -trimpath -ldflags="${LD_FLAGS}" -a -tags 'netgo osusergo' -o "${BDIR}/bin/linux/docker-slim-sensor"
 GOOS=linux GOARCH=arm go build -mod=vendor -trimpath -ldflags="${LD_FLAGS}" -a -tags 'netgo osusergo' -o "$BDIR/bin/linux_arm/docker-slim-sensor"
+chmod a+x "${BDIR}/bin/linux/docker-slim-sensor"
+chmod a+x "$BDIR/bin/linux_arm/docker-slim-sensor"
 popd
 
 rm -rfv ${BDIR}/dist_mac

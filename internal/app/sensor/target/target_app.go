@@ -16,7 +16,7 @@ import (
 func Start(appName string, appArgs []string, appDir, appUser string, doPtrace bool) (*exec.Cmd, error) {
 	log.Debugf("sensor.startTargetApp(%v,%v,%v,%v)", appName, appArgs, appDir, appUser)
 	appUser = "" //tmp
-	
+
 	app := exec.Command(appName, appArgs...)
 
 	if doPtrace {

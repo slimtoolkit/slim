@@ -17,6 +17,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// File permission bits (execute bits only)
+const (
+	FilePermUserExe  = 0100
+	FilePermGroupExe = 0010
+	FilePermOtherExe = 0001
+)
+
 // Directory and file related errors
 var (
 	ErrNoSrcDir                  = errors.New("no source directory path")

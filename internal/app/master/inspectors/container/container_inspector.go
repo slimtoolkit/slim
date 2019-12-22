@@ -222,6 +222,20 @@ func (i *Inspector) RunContainer() error {
 		os.Exit(-125)
 	}
 
+	if finfo, err := os.Lstat(sensorPath); err == nil {
+		i.logger.Debugf("RunContainer: sensor (%s) perms => %#o", sensorPath, finfo.Mode().Perm())
+		if finfo.Mode().Perm()&fsutil.FilePermUserExe == 0 {
+			i.logger.Debugf("RunContainer: sensor (%s) missing execute permission", sensorPath)
+			updatedMode := finfo.Mode() | fsutil.FilePermUserExe | fsutil.FilePermGroupExe | fsutil.FilePermOtherExe
+			if err = os.Chmod(sensorPath, updatedMode); err != nil {
+				i.logger.Errorf("RunContainer: error updating sensor (%s) perms (%#o -> %#o) => %v",
+					sensorPath, finfo.Mode().Perm(), updatedMode.Perm(), err)
+			}
+		}
+	} else {
+		i.logger.Errorf("RunContainer: error getting sensor (%s) info => %#v", sensorPath, err)
+	}
+
 	var volumeBinds []string
 	configVolumes := map[string]struct{}{}
 
