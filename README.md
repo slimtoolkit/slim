@@ -476,7 +476,7 @@ DockerSlim will work for any dockerized application; however, DockerSlim automat
 
 ### Can I use DockerSlim with dockerized command line tools?
 
-Yes. The --cmd, --entrypoint, and --mount options will help you minify your image. The `container-transform` tool is a good example.
+Yes. The `--cmd`, `--entrypoint`, and `--mount` options will help you minify your image. The `container-transform` tool is a good example.
 
 Notes:
 
@@ -498,14 +498,14 @@ The current version of DockerSlim includes an experimental support for Docker im
 For older versions of DockerSlim where you have non-default/non-root user declared in your Dockerfile you can use these workarounds to make sure DockerSlim can minify your image:
 
 * Don't add an explicit USER statement in your Dockerfile.
-* Explicitly include /etc/passwd when you minify your image with DockerSlim (using the --include-path docker-slim parameter).
+* Explicitly include `/etc/passwd` when you minify your image with DockerSlim (using the `--include-path` docker-slim parameter).
 
-Example: docker-slim --debug build --http-probe --include-path /etc/passwd your-docker-image-name
+Example: `docker-slim --debug build --http-probe --include-path /etc/passwd your-docker-image-name`
 
-Use an explicit -u parameter in docker run.
-Example: docker run -d -u "your-user-name" -p 8000:8000 your-minified-docker-image-name
+Use an explicit `-u` parameter in docker run.
+Example: `docker run -d -u "your-user-name" -p 8000:8000 your-minified-docker-image-name`
 
-Note that you should be able to avoid including /etc/passwd if you are ok with using UIDs instead of text user name in the -u parameter to docker run.
+Note that you should be able to avoid including `/etc/passwd` if you are ok with using UIDs instead of text user name in the `-u` parameter to docker run.
 
 ### Nginx fails in my minified image
 
