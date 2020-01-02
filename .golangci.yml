@@ -1,0 +1,5 @@
+---
+linters:
+  enable:
+  - gosimple
+  disable-all: true

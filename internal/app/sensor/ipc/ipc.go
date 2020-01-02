@@ -104,12 +104,10 @@ func (s *Server) Run() error {
 	go func() {
 		for {
 			log.Debug("sensor: ipc.Server.Run - waiting for done signal...")
-			select {
-			case <-s.doneChan:
-				log.Debug("sensor: ipc.Server.Run - done...")
-				s.Stop()
-				return
-			}
+			<-s.doneChan
+			log.Debug("sensor: ipc.Server.Run - done...")
+			s.Stop()
+			return
 		}
 	}()
 

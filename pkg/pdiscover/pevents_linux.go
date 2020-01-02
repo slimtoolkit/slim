@@ -199,7 +199,7 @@ func (w *Watcher) handleEvent(data []byte) {
 
 		if w.isWatching(ppid, PROC_EVENT_EXEC) {
 			// follow forks
-			watch, _ := w.watches[ppid]
+			watch := w.watches[ppid]
 			w.Watch(pid, watch.flags)
 		}
 

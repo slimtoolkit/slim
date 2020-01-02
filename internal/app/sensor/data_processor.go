@@ -79,7 +79,7 @@ func filterFileEvents(fileEvents map[fanotify.Event]bool, targetPidList map[int]
 func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 	log.Debugf("findSymlinks(%v,%v)", len(files), mp)
 
-	result := make(map[string]*report.ArtifactProps, 0)
+	result := make(map[string]*report.ArtifactProps)
 
 	checkPathSymlinks := func(symlinkFileName string) {
 		if _, ok := result[symlinkFileName]; ok {

@@ -98,7 +98,7 @@ func NewCustomProbe(inspector *container.Inspector,
 		if len(inspector.ImageInspector.DockerfileInfo.ExposedPorts) > 0 {
 			for epi := len(inspector.ImageInspector.DockerfileInfo.ExposedPorts) - 1; epi >= 0; epi-- {
 				portInfo := inspector.ImageInspector.DockerfileInfo.ExposedPorts[epi]
-				if strings.Index(portInfo, "/") == -1 {
+				if !strings.Contains(portInfo, "/") {
 					portInfo = fmt.Sprintf("%v/tcp", portInfo)
 				}
 
