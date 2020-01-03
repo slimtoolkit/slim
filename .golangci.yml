@@ -1,5 +1,11 @@
 ---
 linters:
   enable:
+  - gofmt
   - gosimple
+  - govet
+  - interfacer
+  - misspell
+  - nakedret
+  - structcheck
   disable-all: true
