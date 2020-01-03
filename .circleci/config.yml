@@ -1,0 +1,17 @@
+version: 2
+workflows:
+  version: 2
+  build:
+    jobs:
+      - build
+jobs:
+  build:
+    docker:
+      - image: golang:1.13.5
+    steps:
+      - checkout
+      - run:
+          name: golangci-lint
+          command: |
+            wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b /usr/local/bin v1.22.2
+            golangci-lint run
