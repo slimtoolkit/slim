@@ -26,13 +26,13 @@ const (
 // CustomProbe is a custom HTTP probe
 type CustomProbe struct {
 	PrintState         bool
+	ProbeFull          bool
 	PrintPrefix        string
 	Ports              []string
 	Cmds               []config.HTTPProbeCmd
 	RetryCount         int
 	RetryWait          int
 	TargetPorts        []uint16
-	ProbeFull          bool
 	ContainerInspector *container.Inspector
 	doneChan           chan struct{}
 }

@@ -5,6 +5,7 @@ linters:
   - gosimple
   - govet
   - interfacer
+  - maligned
   - misspell
   - nakedret
   - structcheck

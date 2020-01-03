@@ -72,9 +72,7 @@ type Inspector struct {
 	ContainerName      string
 	FatContainerCmd    []string
 	LocalVolumePath    string
-	DoUseLocalMounts   bool
 	SensorVolumeName   string
-	DoKeepTmpArtifacts bool
 	StatePath          string
 	CmdPort            dockerapi.Port
 	EvtPort            dockerapi.Port
@@ -86,21 +84,23 @@ type Inspector struct {
 	EtcHostsMaps       []string
 	DNSServers         []string
 	DNSSearchDomains   []string
-	ShowContainerLogs  bool
 	VolumeMounts       map[string]config.VolumeMount
 	ExcludePaths       map[string]bool
 	IncludePaths       map[string]bool
 	IncludeBins        map[string]bool
 	IncludeExes        map[string]bool
-	DoIncludeShell     bool
-	DoDebug            bool
-	PrintState         bool
 	PrintPrefix        string
-	InContainer        bool
 	dockerEventCh      chan *dockerapi.APIEvents
 	dockerEventStopCh  chan struct{}
 	ipcClient          *ipc.Client
 	logger             *log.Entry
+	DoUseLocalMounts   bool
+	DoKeepTmpArtifacts bool
+	ShowContainerLogs  bool
+	DoIncludeShell     bool
+	DoDebug            bool
+	PrintState         bool
+	InContainer        bool
 }
 
 func pathMapKeys(m map[string]bool) []string {

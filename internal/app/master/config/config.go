@@ -10,10 +10,10 @@ import (
 // It can also be used to update the image instructions when
 // the "image-overrides" flag is provided
 type ContainerOverrides struct {
-	Entrypoint      []string
 	ClearEntrypoint bool
-	Cmd             []string
 	ClearCmd        bool
+	Entrypoint      []string
+	Cmd             []string
 	Workdir         string
 	Env             []string
 	Hostname        string
@@ -23,10 +23,10 @@ type ContainerOverrides struct {
 
 // ImageNewInstructions provides a set new image instructions
 type ImageNewInstructions struct {
-	Entrypoint      []string
 	ClearEntrypoint bool
-	Cmd             []string
 	ClearCmd        bool
+	Entrypoint      []string
+	Cmd             []string
 	Workdir         string
 	Env             []string
 	ExposedPorts    map[docker.Port]struct{}

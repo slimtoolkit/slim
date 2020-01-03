@@ -47,12 +47,12 @@ func GetArtifactTypeValue(s string) ArtifactType {
 // ProcessInfo contains various process object metadata
 type ProcessInfo struct {
 	Pid       int32  `json:"pid"`
+	ParentPid int32  `json:"ppid"`
 	Name      string `json:"name"`
 	Path      string `json:"path"`
 	Cmd       string `json:"cmd"`
 	Cwd       string `json:"cwd"`
 	Root      string `json:"root"`
-	ParentPid int32  `json:"ppid"`
 }
 
 // FileInfo contains various file object and activity metadata

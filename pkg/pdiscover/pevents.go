@@ -30,6 +30,7 @@ type eventListener interface {
 
 type Watcher struct {
 	allFlags uint32
+	isClosed bool                // Set to true when Close() is first called
 	listener eventListener       // OS specifics (kqueue or netlink)
 	watches  map[int]*watch      // Map of watched process ids
 	Error    chan error          // Errors are sent on this channel
@@ -37,7 +38,6 @@ type Watcher struct {
 	Exec     chan *ProcEventExec // Exec events are sent on this channel
 	Exit     chan *ProcEventExit // Exit events are sent on this channel
 	done     chan bool           // Used to stop the readEvents() goroutine
-	isClosed bool                // Set to true when Close() is first called
 }
 
 func NewAllWatcher(flags uint32) (*Watcher, error) {
