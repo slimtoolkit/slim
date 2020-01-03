@@ -426,7 +426,7 @@ func (i *Inspector) RunContainer() error {
 				var portInfo string
 				if len(pbinding) > 0 {
 					portInfo = fmt.Sprintf("%v => %v:%v", pk, pbinding[0].HostIP, pbinding[0].HostPort)
-					portList = append(portList, string(pbinding[0].HostPort))
+					portList = append(portList, pbinding[0].HostPort)
 				} else {
 					portInfo = string(pk)
 				}

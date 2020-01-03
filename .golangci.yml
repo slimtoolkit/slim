@@ -8,4 +8,5 @@ linters:
   - misspell
   - nakedret
   - structcheck
+  - unconvert
   disable-all: true

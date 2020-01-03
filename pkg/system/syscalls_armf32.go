@@ -384,6 +384,6 @@ func init() {
 	syscallNameTableArmFamily32 = make(map[string]uint32, len(syscallNumTableArmFamily32))
 
 	for callNum, callName := range syscallNumTableArmFamily32 {
-		syscallNameTableArmFamily32[callName] = uint32(callNum)
+		syscallNameTableArmFamily32[callName] = callNum
 	}
 }

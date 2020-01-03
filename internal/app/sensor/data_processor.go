@@ -191,7 +191,7 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 			return fmt.Errorf("findSymlinks - could not convert fileInfo to Stat_t for %s", fullName)
 		}
 
-		if _, ok := devices[uint64(sysStatInfo.Dev)]; !ok {
+		if _, ok := devices[sysStatInfo.Dev]; !ok {
 			log.Debugf("findSymlinks: ignoring %v (by device id - %v)", fullName, sysStatInfo.Dev)
 			//NOTE:
 			//don't return filepath.SkipDir for everything
@@ -255,7 +255,7 @@ func filesToInodesNative(files []string) (map[uint64]struct{}, map[uint64]struct
 		}
 
 		inodes[info.Ino] = struct{}{}
-		devices[uint64(info.Dev)] = struct{}{}
+		devices[info.Dev] = struct{}{}
 	}
 
 	return inodes, devices
@@ -281,7 +281,7 @@ func getFileDevice(fullName string) (uint64, error) {
 		return 0, err
 	}
 
-	return uint64(info.Dev), nil
+	return info.Dev, nil
 }
 
 /* use - TBD
