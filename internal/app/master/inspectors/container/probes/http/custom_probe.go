@@ -84,7 +84,7 @@ func NewCustomProbe(inspector *container.Inspector,
 			pspec := dockerapi.Port(fmt.Sprintf("%v/tcp", pnum))
 			if _, ok := inspector.ContainerInfo.NetworkSettings.Ports[pspec]; ok {
 				if inspector.InContainer {
-					probe.Ports = append(probe.Ports, fmt.Sprintf("%s", pnum))
+					probe.Ports = append(probe.Ports, fmt.Sprintf("%d", pnum))
 				} else {
 					probe.Ports = append(probe.Ports, inspector.ContainerInfo.NetworkSettings.Ports[pspec][0].HostPort)
 				}
