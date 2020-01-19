@@ -133,9 +133,9 @@ Now you can run `docker-slim` in containers and you get more convenient reportin
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.26.1/dist_mac.zip)
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.26.1/dist_linux.tar.gz)
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.26.1/dist_linux_arm.tar.gz)
+   - [Latest Mac binaries](https://github.com/docker-slim/docker-slim/releases/download/1.26.1/dist_mac.zip)
+   - [Latest Linux binaries](https://github.com/docker-slim/docker-slim/releases/download/1.26.1/dist_linux.tar.gz)
+   - [Latest Linux ARM binaries](https://github.com/docker-slim/docker-slim/releases/download/1.26.1/dist_linux_arm.tar.gz)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
