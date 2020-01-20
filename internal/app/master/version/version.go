@@ -33,10 +33,10 @@ type CheckVersionInfo struct {
 }
 
 // PrintCheckVersion shows if the current version is outdated
-func PrintCheckVersion(info *CheckVersionInfo) {
+func PrintCheckVersion(printPrefix string, info *CheckVersionInfo) {
 	if info != nil && info.Status == "success" && info.Outdated {
-		fmt.Printf("docker-slim[version]: info=version status=OUTDATED local=%s current=%s\n", v.Tag(), info.Current)
-		fmt.Printf("docker-slim[version]: info=message message='Your version of DockerSlim is out of date! Use the \"update\" command or download the new version from https://dockersl.im/downloads.html'\n")
+		fmt.Printf("%s info=version status=OUTDATED local=%s current=%s\n", printPrefix, v.Tag(), info.Current)
+		fmt.Printf("%s info=message message='Your version of DockerSlim is out of date! Use the \"update\" command or download the new version from https://dockersl.im/downloads.html'\n", printPrefix)
 	}
 }
 
@@ -54,44 +54,52 @@ func GetCheckVersionVerdict(info *CheckVersionInfo) string {
 }
 
 // Print shows the master app version information
-func Print(client *docker.Client, checkVersion, inContainer, isDSImage bool) {
-	fmt.Printf("docker-slim[version]: %s (%v,%v)\n", v.Current(), inContainer, isDSImage)
+func Print(printPrefix string, logger *log.Entry, client *docker.Client, checkVersion, inContainer, isDSImage bool) {
+	fmt.Printf("%s info=app version='%s' container=%v dsimage=%v\n", printPrefix, v.Current(), inContainer, isDSImage)
 	if checkVersion {
-		fmt.Printf("Version Status: %v\n", GetCheckVersionVerdict(Check(inContainer, isDSImage)))
+		vinfo := Check(inContainer, isDSImage)
+		outdated := "unknown"
+		current := "unknown"
+		if vinfo != nil && vinfo.Status == "success" {
+			outdated = fmt.Sprintf("%v", vinfo.Outdated)
+			current = vinfo.Current
+		}
+		fmt.Printf("%s info=app outdated=%v current=%v verdict='%v'\n", 
+			printPrefix, outdated, current, GetCheckVersionVerdict(vinfo))
 	}
-
-	fmt.Println("host:")
+	
 	hostInfo := system.GetSystemInfo()
-	fmt.Printf("OsName=%v\n", hostInfo.OsName)
-	fmt.Printf("OsBuild=%v\n", hostInfo.OsBuild)
-	fmt.Printf("Version=%v\n", hostInfo.Version)
-	fmt.Printf("Release=%v\n", hostInfo.Release)
-	fmt.Printf("Sysname=%v\n", hostInfo.Sysname)
+	fmt.Printf("%s info=host osname='%v'\n", printPrefix, hostInfo.OsName)
+	fmt.Printf("%s info=host osbuild=%v\n", printPrefix, hostInfo.OsBuild)
+	fmt.Printf("%s info=host version='%v'\n", printPrefix, hostInfo.Version)
+	fmt.Printf("%s info=host release=%v\n", printPrefix, hostInfo.Release)
+	fmt.Printf("%s info=host sysname=%v\n", printPrefix, hostInfo.Sysname)
 
-	fmt.Println("docker:")
 	info, err := client.Info()
 	if err != nil {
-		fmt.Println("error getting docker info")
+		fmt.Printf("%s error='error getting docker info'\n", printPrefix)
+		logger.Debugf("Error getting docker info => %v", err)
 		return
 	}
 
-	fmt.Printf("Name=%v\n", info.Name)
-	fmt.Printf("KernelVersion=%v\n", info.KernelVersion)
-	fmt.Printf("OperatingSystem=%v\n", info.OperatingSystem)
-	fmt.Printf("OSType=%v\n", info.OSType)
-	fmt.Printf("ServerVersion=%v\n", info.ServerVersion)
-	fmt.Printf("Architecture=%v\n", info.Architecture)
+	fmt.Printf("%s info=docker name=%v\n", printPrefix, info.Name)
+	fmt.Printf("%s info=docker kernel_version=%v\n", printPrefix, info.KernelVersion)
+	fmt.Printf("%s info=docker operating_system=%v\n", printPrefix, info.OperatingSystem)
+	fmt.Printf("%s info=docker ostype=%v\n", printPrefix, info.OSType)
+	fmt.Printf("%s info=docker server_version=%v\n", printPrefix, info.ServerVersion)
+	fmt.Printf("%s info=docker architecture=%v\n", printPrefix, info.Architecture)
 
 	ver, err := client.Version()
 	if err != nil {
-		fmt.Println("error getting docker version")
+		fmt.Printf("%s error='error getting docker client version'\n", printPrefix)
+		logger.Debugf("Error getting docker client version => %v", err)
 		return
 	}
 
-	fmt.Printf("ApiVersion=%v\n", ver.Get("ApiVersion"))
-	fmt.Printf("MinAPIVersion=%v\n", ver.Get("MinAPIVersion"))
-	fmt.Printf("BuildTime=%v\n", ver.Get("BuildTime"))
-	fmt.Printf("GitCommit=%v\n", ver.Get("GitCommit"))
+	fmt.Printf("%s info=dclient api_version=%v\n", printPrefix, ver.Get("ApiVersion"))
+	fmt.Printf("%s info=dclient min_api_version=%v\n", printPrefix, ver.Get("MinAPIVersion"))
+	fmt.Printf("%s info=dclient build_time=%v\n", printPrefix, ver.Get("BuildTime"))
+	fmt.Printf("%s info=dclient git_commit=%v\n", printPrefix, ver.Get("GitCommit"))
 }
 
 // Check checks the app version
@@ -168,8 +176,8 @@ func CheckAsync(doCheckVersion, inContainer, isDSImage bool) <-chan *CheckVersio
 }
 
 // CheckAndPrintAsync check the app version and prints the results
-func CheckAndPrintAsync(inContainer, isDSImage bool) {
+func CheckAndPrintAsync(printPrefix string, inContainer, isDSImage bool) {
 	go func() {
-		PrintCheckVersion(Check(inContainer, isDSImage))
+		PrintCheckVersion(printPrefix, Check(inContainer, isDSImage))
 	}()
 }

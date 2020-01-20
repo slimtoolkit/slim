@@ -52,7 +52,7 @@ func OnInfo(
 	errutil.FailOn(err)
 
 	if doDebug {
-		version.Print(client, false, inContainer, isDSImage)
+		version.Print("docker-slim[info]:", logger, client, false, inContainer, isDSImage)
 	}
 
 	imageInspector, err := image.NewInspector(client, imageRef)
@@ -87,7 +87,7 @@ func OnInfo(
 	fmt.Println("docker-slim[info]: state=done")
 
 	vinfo := <-viChan
-	version.PrintCheckVersion(vinfo)
+	version.PrintCheckVersion("docker-slim[info]:", vinfo)
 
 	cmdReport.State = report.CmdStateDone
 	if cmdReport.Save() {

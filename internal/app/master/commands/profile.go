@@ -80,7 +80,7 @@ func OnProfile(
 	errutil.FailOn(err)
 
 	if doDebug {
-		version.Print(client, false, inContainer, isDSImage)
+		version.Print("docker-slim[profile]:", logger, client, false, inContainer, isDSImage)
 	}
 
 	if !confirmNetwork(logger, client, overrides.Network) {
@@ -266,7 +266,7 @@ func OnProfile(
 	fmt.Println("docker-slim[profile]: state=done")
 
 	vinfo := <-viChan
-	version.PrintCheckVersion(vinfo)
+	version.PrintCheckVersion("docker-slim[profile]:", vinfo)
 
 	cmdReport.State = report.CmdStateDone
 	if cmdReport.Save() {

@@ -153,7 +153,7 @@ func OnBuild(
 		overrides.Workdir, overrides.Env, overrides.ExposedPorts)
 
 	if doDebug {
-		version.Print(client, false, inContainer, isDSImage)
+		version.Print("docker-slim[build]:", logger, client, false, inContainer, isDSImage)
 	}
 
 	if !confirmNetwork(logger, client, overrides.Network) {
@@ -482,7 +482,7 @@ func OnBuild(
 	fmt.Println("docker-slim[build]: state=done")
 
 	vinfo := <-viChan
-	version.PrintCheckVersion(vinfo)
+	version.PrintCheckVersion("docker-slim[build]:", vinfo)
 
 	cmdReport.State = report.CmdStateDone
 	if cmdReport.Save() {

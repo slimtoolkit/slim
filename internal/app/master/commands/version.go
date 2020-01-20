@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	log "github.com/sirupsen/logrus"
+	
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
@@ -13,6 +15,8 @@ import (
 
 // OnVersion implements the 'version' docker-slim command
 func OnVersion(doDebug, inContainer, isDSImage bool, clientConfig *config.DockerClient) {
+	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "version"})
+
 	client, err := dockerclient.New(clientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
 		exitMsg := "missing Docker connection info"
@@ -25,5 +29,5 @@ func OnVersion(doDebug, inContainer, isDSImage bool, clientConfig *config.Docker
 	}
 	errutil.FailOn(err)
 
-	version.Print(client, true, inContainer, isDSImage)
+	version.Print("docker-slim[version]:", logger, client, true, inContainer, isDSImage)
 }
