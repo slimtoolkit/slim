@@ -46,7 +46,7 @@ func OnInfo(
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 		fmt.Printf("docker-slim[info]: info=docker.connect.error message='%s'\n", exitMsg)
-		fmt.Printf("docker-slim[info]: state=exited version=%s\n", v.Current())
+		fmt.Printf("docker-slim[info]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
 		os.Exit(-777)
 	}
 	errutil.FailOn(err)

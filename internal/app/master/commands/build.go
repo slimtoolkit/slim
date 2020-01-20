@@ -82,7 +82,7 @@ func OnBuild(
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 		fmt.Printf("docker-slim[build]: info=docker.connect.error message='%s'\n", exitMsg)
-		fmt.Printf("docker-slim[build]: state=exited version=%s\n", v.Current())
+		fmt.Printf("docker-slim[build]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
 		os.Exit(-777)
 	}
 	errutil.FailOn(err)
@@ -113,7 +113,7 @@ func OnBuild(
 				fatImageRepoNameTag = fmt.Sprintf("%s.fat:%s", citParts[0], citParts[1])
 			default:
 				fmt.Printf("docker-slim[build]: info=param.error status=malformed.custom.image.tag value=%s\n", customImageTag)
-				fmt.Printf("docker-slim[build]: state=exited version=%s\n", v.Current())
+				fmt.Printf("docker-slim[build]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
 				os.Exit(-1)
 			}
 		} else {
@@ -158,7 +158,7 @@ func OnBuild(
 
 	if !confirmNetwork(logger, client, overrides.Network) {
 		fmt.Printf("docker-slim[build]: info=param.error status=unknown.network value=%s\n", overrides.Network)
-		fmt.Printf("docker-slim[build]: state=exited version=%s\n", v.Current())
+		fmt.Printf("docker-slim[build]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
 		os.Exit(-111)
 	}
 
@@ -320,8 +320,8 @@ func OnBuild(
 
 	if !containerInspector.HasCollectedData() {
 		imageInspector.ShowFatImageDockerInstructions()
-		fmt.Printf("docker-slim[build]: info=results status='no data collected (no minified image generated). (version: %v)'\n",
-			v.Current())
+		fmt.Printf("docker-slim[build]: info=results status='no data collected (no minified image generated). (version=%v location='%s')'\n",
+			v.Current(), fsutil.ExeDir())
 		fmt.Println("docker-slim[build]: state=exited")
 		return
 	}

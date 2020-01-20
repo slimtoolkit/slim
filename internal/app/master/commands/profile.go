@@ -74,7 +74,7 @@ func OnProfile(
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 		fmt.Printf("docker-slim[profile]: info=docker.connect.error message='%s'\n", exitMsg)
-		fmt.Printf("docker-slim[profile]: state=exited version=%s\n", v.Current())
+		fmt.Printf("docker-slim[profile]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
 		os.Exit(-777)
 	}
 	errutil.FailOn(err)
@@ -85,7 +85,7 @@ func OnProfile(
 
 	if !confirmNetwork(logger, client, overrides.Network) {
 		fmt.Printf("docker-slim[profile]: info=param.error status=unknown.network value=%s\n", overrides.Network)
-		fmt.Printf("docker-slim[profile]: state=exited version=%s\n", v.Current())
+		fmt.Printf("docker-slim[profile]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
 		os.Exit(-111)
 	}
 
@@ -225,8 +225,8 @@ func OnProfile(
 
 	if !containerInspector.HasCollectedData() {
 		imageInspector.ShowFatImageDockerInstructions()
-		fmt.Printf("docker-slim[profile]: info=results status='no data collected (no minified image generated). (version: %v)'\n",
-			v.Current())
+		fmt.Printf("docker-slim[profile]: info=results status='no data collected (no minified image generated). (version=%v location='%v')'\n",
+			v.Current(), fsutil.ExeDir())
 		fmt.Println("docker-slim[profile]: state=exited")
 		return
 	}
