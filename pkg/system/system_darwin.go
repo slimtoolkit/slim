@@ -73,10 +73,12 @@ var osNames = map[uint64]struct {
 	9:  {"Leopard", "10.5."},
 	10: {"Snow Leopard", "10.6."},
 	11: {"Lion", "10.7."},
-	12: {"Mountain", "Lion 10.8."},
+	12: {"Mountain Lion", "10.8."},
 	13: {"Mavericks", "10.9."},
 	14: {"Yosemite", "10.10."},
 	15: {"El Capitan", "10.11."},
 	16: {"Sierra", "10.12."},
 	17: {"High Sierra", "10.13."},
+	18: {"Mojave", "10.14."},
+	19: {"Catalina", "10.15."},
 }
