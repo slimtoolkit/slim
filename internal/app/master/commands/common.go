@@ -14,6 +14,10 @@ const (
 	ImagesStateRootPath = "images"
 )
 
+const (
+	appName = "docker-slim"
+)
+
 func doArchiveState(logger *log.Entry, client *docker.Client, localStatePath, volumeName, stateKey string) error {
 	if volumeName == "" {
 		return nil

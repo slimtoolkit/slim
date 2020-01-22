@@ -12,8 +12,8 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	"github.com/docker-slim/docker-slim/pkg/system"
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 )
 
@@ -65,12 +65,12 @@ func Print(printPrefix string, logger *log.Entry, client *docker.Client, checkVe
 			outdated = fmt.Sprintf("%v", vinfo.Outdated)
 			current = vinfo.Current
 		}
-		fmt.Printf("%s info=app outdated=%v current=%v verdict='%v'\n", 
+		fmt.Printf("%s info=app outdated=%v current=%v verdict='%v'\n",
 			printPrefix, outdated, current, GetCheckVersionVerdict(vinfo))
 	}
 
 	fmt.Printf("%s info=app location='%v'\n", printPrefix, fsutil.ExeDir())
-	
+
 	hostInfo := system.GetSystemInfo()
 	fmt.Printf("%s info=host osname='%v'\n", printPrefix, hostInfo.OsName)
 	fmt.Printf("%s info=host osbuild=%v\n", printPrefix, hostInfo.OsBuild)

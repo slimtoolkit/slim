@@ -67,7 +67,9 @@ func OnBuild(
 	doUseSensorVolume string,
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter) {
-	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "build"})
+	const cmdName = "build"
+	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
+	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 
 	viChan := version.CheckAsync(doCheckVersion, inContainer, isDSImage)
 
@@ -81,22 +83,22 @@ func OnBuild(
 		if inContainer && isDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
-		fmt.Printf("docker-slim[build]: info=docker.connect.error message='%s'\n", exitMsg)
-		fmt.Printf("docker-slim[build]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
+		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
+		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
 		os.Exit(-777)
 	}
 	errutil.FailOn(err)
 
-	fmt.Println("docker-slim[build]: state=started")
+	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
 
 	if buildFromDockerfile == "" {
-		fmt.Printf("docker-slim[build]: info=params target=%v continue.mode=%v\n", imageRef, continueAfter.Mode)
+		fmt.Printf("%s[%s]: info=params target=%v continue.mode=%v\n", appName, cmdName, imageRef, continueAfter.Mode)
 	} else {
-		fmt.Printf("docker-slim[build]: info=params context=%v/file=%v continue.mode=%v\n", imageRef, buildFromDockerfile, continueAfter.Mode)
+		fmt.Printf("%s[%s]: info=params context=%v/file=%v continue.mode=%v\n", appName, cmdName, imageRef, buildFromDockerfile, continueAfter.Mode)
 	}
 
 	if buildFromDockerfile != "" {
-		fmt.Println("docker-slim[build]: state=building message='building basic image'")
+		fmt.Printf("%s[%s]: state=building message='building basic image'\n", appName, cmdName)
 		//create a fat image name:
 		//* use the explicit fat image tag if provided
 		//* or create one based on the user provided (slim image) custom tag if it's available
@@ -112,8 +114,8 @@ func OnBuild(
 			case 2:
 				fatImageRepoNameTag = fmt.Sprintf("%s.fat:%s", citParts[0], citParts[1])
 			default:
-				fmt.Printf("docker-slim[build]: info=param.error status=malformed.custom.image.tag value=%s\n", customImageTag)
-				fmt.Printf("docker-slim[build]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
+				fmt.Printf("%s[%s]: info=param.error status=malformed.custom.image.tag value=%s\n", appName, cmdName, customImageTag)
+				fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
 				os.Exit(-1)
 			}
 		} else {
@@ -121,7 +123,7 @@ func OnBuild(
 				os.Getpid(), time.Now().UTC().Format("20060102150405"))
 		}
 
-		fmt.Printf("docker-slim[build]: info=basic.image.name value=%s\n", fatImageRepoNameTag)
+		fmt.Printf("%s[%s]: info=basic.image.name value=%s\n", appName, cmdName, fatImageRepoNameTag)
 
 		fatBuilder, err := builder.NewBasicImageBuilder(client,
 			fatImageRepoNameTag,
@@ -133,14 +135,14 @@ func OnBuild(
 		err = fatBuilder.Build()
 
 		if doShowBuildLogs {
-			fmt.Println("docker-slim[build]: build logs (basic image) ====================")
+			fmt.Printf("%s[%s]: build logs (basic image) ====================\n", appName, cmdName)
 			fmt.Println(fatBuilder.BuildLog.String())
-			fmt.Println("docker-slim[build]: end of build logs (basic image) =============")
+			fmt.Printf("%s[%s]: end of build logs (basic image) =============\n", appName, cmdName)
 		}
 
 		errutil.FailOn(err)
 
-		fmt.Println("docker-slim[build]: state=basic.image.build.completed")
+		fmt.Printf("%s[%s]: state=basic.image.build.completed\n", appName, cmdName)
 
 		imageRef = fatImageRepoNameTag
 		//todo: remove the temporary fat image (should have a flag for it in case users want the fat image too)
@@ -153,12 +155,12 @@ func OnBuild(
 		overrides.Workdir, overrides.Env, overrides.ExposedPorts)
 
 	if doDebug {
-		version.Print("docker-slim[build]:", logger, client, false, inContainer, isDSImage)
+		version.Print(prefix, logger, client, false, inContainer, isDSImage)
 	}
 
 	if !confirmNetwork(logger, client, overrides.Network) {
-		fmt.Printf("docker-slim[build]: info=param.error status=unknown.network value=%s\n", overrides.Network)
-		fmt.Printf("docker-slim[build]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
+		fmt.Printf("%s[%s]: info=param.error status=unknown.network value=%s\n", appName, cmdName, overrides.Network)
+		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
 		os.Exit(-111)
 	}
 
@@ -166,12 +168,12 @@ func OnBuild(
 	errutil.FailOn(err)
 
 	if imageInspector.NoImage() {
-		fmt.Printf("docker-slim[build]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", imageRef)
-		fmt.Println("docker-slim[build]: state=exited")
+		fmt.Printf("%s[%s]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", appName, cmdName, imageRef)
+		fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
 		return
 	}
 
-	fmt.Println("docker-slim[build]: state=image.inspection.start")
+	fmt.Printf("%s[%s]: state=image.inspection.start\n", appName, cmdName)
 
 	logger.Info("inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
@@ -181,7 +183,8 @@ func OnBuild(
 	imageInspector.ArtifactLocation = artifactLocation
 	logger.Debugf("localVolumePath=%v, artifactLocation=%v, statePath=%v, stateKey=%v", localVolumePath, artifactLocation, statePath, stateKey)
 
-	fmt.Printf("docker-slim[build]: info=image id=%v size.bytes=%v size.human=%v\n",
+	fmt.Printf("%s[%s]: info=image id=%v size.bytes=%v size.human=%v\n",
+		appName, cmdName,
 		imageInspector.ImageInfo.ID,
 		imageInspector.ImageInfo.VirtualSize,
 		humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)))
@@ -192,7 +195,8 @@ func OnBuild(
 
 	if imageInspector.DockerfileInfo != nil {
 		if imageInspector.DockerfileInfo.ExeUser != "" {
-			fmt.Printf("docker-slim[build]: info=image.users exe='%v' all='%v'\n",
+			fmt.Printf("%s[%s]: info=image.users exe='%v' all='%v'\n",
+				appName, cmdName,
 				imageInspector.DockerfileInfo.ExeUser,
 				strings.Join(imageInspector.DockerfileInfo.AllUsers, ","))
 		}
@@ -201,19 +205,19 @@ func OnBuild(
 			cmdReport.ImageStack = imageInspector.DockerfileInfo.ImageStack
 
 			for idx, layerInfo := range imageInspector.DockerfileInfo.ImageStack {
-				fmt.Printf("docker-slim[build]: info=image.stack index=%v name='%v' id='%v'\n",
-					idx, layerInfo.FullName, layerInfo.ID)
+				fmt.Printf("%s[%s]: info=image.stack index=%v name='%v' id='%v'\n",
+					appName, cmdName, idx, layerInfo.FullName, layerInfo.ID)
 			}
 		}
 
 		if len(imageInspector.DockerfileInfo.ExposedPorts) > 0 {
-			fmt.Printf("docker-slim[build]: info=image.exposed_ports list='%v'\n",
+			fmt.Printf("%s[%s]: info=image.exposed_ports list='%v'\n", appName, cmdName,
 				strings.Join(imageInspector.DockerfileInfo.ExposedPorts, ","))
 		}
 	}
 
-	fmt.Println("docker-slim[build]: state=image.inspection.done")
-	fmt.Println("docker-slim[build]: state=container.inspection.start")
+	fmt.Printf("%s[%s]: state=image.inspection.done\n", appName, cmdName)
+	fmt.Printf("%s[%s]: state=container.inspection.start\n", appName, cmdName)
 
 	containerInspector, err := container.NewInspector(
 		logger,
@@ -239,14 +243,15 @@ func OnBuild(
 		doDebug,
 		inContainer,
 		true,
-		"docker-slim[build]:")
+		prefix)
 	errutil.FailOn(err)
 
 	logger.Info("starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
 	errutil.FailOn(err)
 
-	fmt.Printf("docker-slim[build]: info=container name=%v id=%v target.port.list=[%v] target.port.info=[%v] message='YOU CAN USE THESE PORTS TO INTERACT WITH THE CONTAINER'\n",
+	fmt.Printf("%s[%s]: info=container name=%v id=%v target.port.list=[%v] target.port.info=[%v] message='YOU CAN USE THESE PORTS TO INTERACT WITH THE CONTAINER'\n",
+		appName, cmdName,
 		containerInspector.ContainerName,
 		containerInspector.ContainerID,
 		containerInspector.ContainerPortList,
@@ -261,15 +266,15 @@ func OnBuild(
 	if doHTTPProbe {
 		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds,
 			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts, doHTTPProbeFull,
-			true, "docker-slim[build]:")
+			true, prefix)
 		errutil.FailOn(err)
 		if len(probe.Ports) == 0 {
-			fmt.Println("docker-slim[build]: state=http.probe.error error='no exposed ports' message='expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services")
+			fmt.Printf("%s[%s]: state=http.probe.error error='no exposed ports' message='expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services\n", appName, cmdName)
 			logger.Info("shutting down 'fat' container...")
 			containerInspector.FinishMonitoring()
 			_ = containerInspector.ShutdownContainer()
 
-			fmt.Println("docker-slim[build]: state=exited")
+			fmt.Println("%s[%s]: state=exited\n", appName, cmdName)
 			return
 		}
 
@@ -285,30 +290,30 @@ func OnBuild(
 		continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
 	}
 
-	fmt.Printf("docker-slim[build]: info=continue.after mode=%v message='%v'\n", continueAfter.Mode, continueAfterMsg)
+	fmt.Printf("%s[%s]: info=continue.after mode=%v message='%v'\n", appName, cmdName, continueAfter.Mode, continueAfterMsg)
 
 	switch continueAfter.Mode {
 	case "enter":
-		fmt.Println("docker-slim[build]: info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'")
+		fmt.Println("%s[%s]: info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'")
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
 	case "signal":
-		fmt.Println("docker-slim[build]: info=prompt message='send SIGUSR1 when you are done using the container'")
+		fmt.Printf("%s[%s]: info=prompt message='send SIGUSR1 when you are done using the container'\n", appName, cmdName)
 		<-continueAfter.ContinueChan
-		fmt.Println("docker-slim[build]: info=event message='got SIGUSR1'")
+		fmt.Printf("%s[%s]: info=event message='got SIGUSR1'\n", appName, cmdName)
 	case "timeout":
-		fmt.Printf("docker-slim[build]: info=prompt message='waiting for the target container (%v seconds)'\n", int(continueAfter.Timeout))
+		fmt.Printf("%s[%s]: info=prompt message='waiting for the target container (%v seconds)'\n", appName, cmdName, int(continueAfter.Timeout))
 		<-time.After(time.Second * continueAfter.Timeout)
-		fmt.Printf("docker-slim[build]: info=event message='done waiting for the target container'")
+		fmt.Printf("%s[%s]: info=event message='done waiting for the target container'\n", appName, cmdName)
 	case "probe":
-		fmt.Println("docker-slim[build]: info=prompt message='waiting for the HTTP probe to finish'")
+		fmt.Printf("%s[%s]: info=prompt message='waiting for the HTTP probe to finish'\n", appName, cmdName)
 		<-continueAfter.ContinueChan
-		fmt.Println("docker-slim[build]: info=event message='HTTP probe is done'")
+		fmt.Printf("%s[%s]: info=event message='HTTP probe is done'\n", appName, cmdName)
 	default:
 		errutil.Fail("unknown continue-after mode")
 	}
 
-	fmt.Println("docker-slim[build]: state=container.inspection.finishing")
+	fmt.Printf("%s[%s]: state=container.inspection.finishing\n", appName, cmdName)
 
 	containerInspector.FinishMonitoring()
 
@@ -316,13 +321,14 @@ func OnBuild(
 	err = containerInspector.ShutdownContainer()
 	errutil.WarnOn(err)
 
-	fmt.Println("docker-slim[build]: state=container.inspection.artifact.processing")
+	fmt.Printf("%s[%s]: state=container.inspection.artifact.processing\n", appName, cmdName)
 
 	if !containerInspector.HasCollectedData() {
 		imageInspector.ShowFatImageDockerInstructions()
-		fmt.Printf("docker-slim[build]: info=results status='no data collected (no minified image generated). (version=%v location='%s')'\n",
+		fmt.Printf("%s[%s]: info=results status='no data collected (no minified image generated). (version=%v location='%s')'\n",
+			appName, cmdName,
 			v.Current(), fsutil.ExeDir())
-		fmt.Println("docker-slim[build]: state=exited")
+		fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
 		return
 	}
 
@@ -334,8 +340,8 @@ func OnBuild(
 		customImageTag = imageInspector.SlimImageRepo
 	}
 
-	fmt.Println("docker-slim[build]: state=container.inspection.done")
-	fmt.Println("docker-slim[build]: state=building message='building minified image'")
+	fmt.Printf("%s[%s]: state=container.inspection.done\n", appName, cmdName)
+	fmt.Printf("%s[%s]: state=building message='building minified image'\n", appName, cmdName)
 
 	builder, err := builder.NewImageBuilder(client,
 		customImageTag,
@@ -354,14 +360,14 @@ func OnBuild(
 	err = builder.Build()
 
 	if doShowBuildLogs {
-		fmt.Println("docker-slim[build]: build logs ====================")
+		fmt.Printf("%s[%s]: build logs ====================\n", appName, cmdName)
 		fmt.Println(builder.BuildLog.String())
-		fmt.Println("docker-slim[build]: end of build logs =============")
+		fmt.Printf("%s[%s]: end of build logs =============\n", appName, cmdName)
 	}
 
 	errutil.FailOn(err)
 
-	fmt.Println("docker-slim[build]: state=completed")
+	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
 	cmdReport.State = report.CmdStateCompleted
 
 	/////////////////////////////
@@ -369,8 +375,8 @@ func OnBuild(
 	errutil.FailOn(err)
 
 	if newImageInspector.NoImage() {
-		fmt.Printf("docker-slim[build]: info=results message='minified image not found - %s'\n", builder.RepoName)
-		fmt.Println("docker-slim[build]: state=exited")
+		fmt.Printf("%s[%s]: info=results message='minified image not found - %s'\n", appName, cmdName, builder.RepoName)
+		fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
 		return
 	}
 
@@ -405,7 +411,8 @@ func OnBuild(
 		cmdReport.MinifiedImageSize = newImageInspector.ImageInfo.VirtualSize
 		cmdReport.MinifiedImageSizeHuman = humanize.Bytes(uint64(newImageInspector.ImageInfo.VirtualSize))
 
-		fmt.Printf("docker-slim[build]: info=results status='MINIFIED BY %.2fX [%v (%v) => %v (%v)]'\n",
+		fmt.Printf("%s[%s]: info=results status='MINIFIED BY %.2fX [%v (%v) => %v (%v)]'\n",
+			appName, cmdName,
 			cmdReport.MinifiedBy,
 			cmdReport.SourceImage.Size,
 			cmdReport.SourceImage.SizeHuman,
@@ -423,17 +430,18 @@ func OnBuild(
 	cmdReport.SeccompProfileName = imageInspector.SeccompProfileName
 	cmdReport.AppArmorProfileName = imageInspector.AppArmorProfileName
 
-	fmt.Printf("docker-slim[build]: info=results  image.name=%v image.size='%v' data=%v\n",
+	fmt.Printf("%s[%s]: info=results  image.name=%v image.size='%v' data=%v\n",
+		appName, cmdName,
 		cmdReport.MinifiedImage,
 		cmdReport.MinifiedImageSizeHuman,
 		cmdReport.MinifiedImageHasData)
 
-	fmt.Printf("docker-slim[build]: info=results  artifacts.location='%v'\n", cmdReport.ArtifactLocation)
-	fmt.Printf("docker-slim[build]: info=results  artifacts.report=%v\n", cmdReport.ContainerReportName)
-	fmt.Printf("docker-slim[build]: info=results  artifacts.dockerfile.original=Dockerfile.fat\n")
-	fmt.Printf("docker-slim[build]: info=results  artifacts.dockerfile.new=Dockerfile\n")
-	fmt.Printf("docker-slim[build]: info=results  artifacts.seccomp=%v\n", cmdReport.SeccompProfileName)
-	fmt.Printf("docker-slim[build]: info=results  artifacts.apparmor=%v\n", cmdReport.AppArmorProfileName)
+	fmt.Printf("%s[%s]: info=results  artifacts.location='%v'\n", appName, cmdName, cmdReport.ArtifactLocation)
+	fmt.Printf("%s[%s]: info=results  artifacts.report=%v\n", appName, cmdName, cmdReport.ContainerReportName)
+	fmt.Printf("%s[%s]: info=results  artifacts.dockerfile.original=Dockerfile.fat\n", appName, cmdName)
+	fmt.Printf("%s[%s]: info=results  artifacts.dockerfile.new=Dockerfile\n", appName, cmdName)
+	fmt.Printf("%s[%s]: info=results  artifacts.seccomp=%v\n", appName, cmdName, cmdReport.SeccompProfileName)
+	fmt.Printf("%s[%s]: info=results  artifacts.apparmor=%v\n", appName, cmdName, cmdReport.AppArmorProfileName)
 
 	if cmdReport.ArtifactLocation != "" {
 		creportPath := filepath.Join(cmdReport.ArtifactLocation, cmdReport.ContainerReportName)
@@ -464,12 +472,12 @@ func OnBuild(
 		if !copyMetaArtifacts(logger,
 			toCopy,
 			artifactLocation, copyMetaArtifactsLocation) {
-			fmt.Println("docker-slim[build]: info=artifacts message='could not copy meta artifacts'")
+			fmt.Printf("%s[%s]: info=artifacts message='could not copy meta artifacts'\n", appName, cmdName)
 		}
 	}
 
 	if err := doArchiveState(logger, client, artifactLocation, archiveState, stateKey); err != nil {
-		fmt.Println("docker-slim[build]: info=state message='could not archive state'")
+		fmt.Printf("%s[%s]: info=state message='could not archive state'\n", appName, cmdName)
 		logger.Errorf("error archiving state - %v", err)
 	}
 
@@ -479,14 +487,14 @@ func OnBuild(
 		errutil.WarnOn(err)
 	}
 
-	fmt.Println("docker-slim[build]: state=done")
+	fmt.Printf("%s[%s]: state=done\n", appName, cmdName)
 
 	vinfo := <-viChan
-	version.PrintCheckVersion("docker-slim[build]:", vinfo)
+	version.PrintCheckVersion(prefix, vinfo)
 
 	cmdReport.State = report.CmdStateDone
 	if cmdReport.Save() {
-		fmt.Printf("docker-slim[build]: info=report file='%s'\n", cmdReport.ReportLocation())
+		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
 	}
 
 }

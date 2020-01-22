@@ -5,7 +5,7 @@ import (
 	"os"
 
 	log "github.com/sirupsen/logrus"
-	
+
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
