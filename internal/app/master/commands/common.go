@@ -14,6 +14,15 @@ const (
 	ImagesStateRootPath = "images"
 )
 
+// Exit Code Types
+const (
+	ectBuild   = 0x01000000
+	ectProfile = 0x02000000
+	ectInfo    = 0x03000000
+	ectUpdate  = 0x04000000
+	ectVersion = 0x05000000
+)
+
 const (
 	appName = "docker-slim"
 )

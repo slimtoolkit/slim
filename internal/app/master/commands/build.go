@@ -26,6 +26,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Build command exit codes
+const (
+	ecOther = iota + 1
+	ecNoDockerConnectInfo
+	ecBadNetworkName
+	ecBadCustomImageTag
+)
+
 // OnBuild implements the 'build' docker-slim command
 func OnBuild(
 	doCheckVersion bool,
@@ -85,7 +93,7 @@ func OnBuild(
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		os.Exit(-777)
+		os.Exit(ectBuild | ecNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
 
@@ -116,7 +124,7 @@ func OnBuild(
 			default:
 				fmt.Printf("%s[%s]: info=param.error status=malformed.custom.image.tag value=%s\n", appName, cmdName, customImageTag)
 				fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-				os.Exit(-1)
+				os.Exit(ectBuild | ecBadCustomImageTag)
 			}
 		} else {
 			fatImageRepoNameTag = fmt.Sprintf("docker-slim-tmp-fat-image.%v.%v",
@@ -161,7 +169,7 @@ func OnBuild(
 	if !confirmNetwork(logger, client, overrides.Network) {
 		fmt.Printf("%s[%s]: info=param.error status=unknown.network value=%s\n", appName, cmdName, overrides.Network)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		os.Exit(-111)
+		os.Exit(ectBuild | ecBadNetworkName)
 	}
 
 	imageInspector, err := image.NewInspector(client, imageRef)
