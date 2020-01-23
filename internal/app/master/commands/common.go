@@ -16,11 +16,19 @@ const (
 
 // Exit Code Types
 const (
-	ectBuild   = 0x01000000
-	ectProfile = 0x02000000
-	ectInfo    = 0x03000000
-	ectUpdate  = 0x04000000
-	ectVersion = 0x05000000
+	ectCommon  = 0x01000000
+	ectBuild   = 0x02000000
+	ectProfile = 0x03000000
+	ectInfo    = 0x04000000
+	ectUpdate  = 0x05000000
+	ectVersion = 0x06000000
+)
+
+// Build command exit codes
+const (
+	ecOther = iota + 1
+	ecNoDockerConnectInfo
+	ecBadNetworkName
 )
 
 const (

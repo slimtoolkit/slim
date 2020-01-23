@@ -28,10 +28,8 @@ import (
 
 // Build command exit codes
 const (
-	ecOther = iota + 1
-	ecNoDockerConnectInfo
-	ecBadNetworkName
-	ecBadCustomImageTag
+	ecbOther = iota + 1
+	ecbBadCustomImageTag
 )
 
 // OnBuild implements the 'build' docker-slim command
@@ -93,7 +91,7 @@ func OnBuild(
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		os.Exit(ectBuild | ecNoDockerConnectInfo)
+		os.Exit(ectCommon | ecNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
 
@@ -124,7 +122,7 @@ func OnBuild(
 			default:
 				fmt.Printf("%s[%s]: info=param.error status=malformed.custom.image.tag value=%s\n", appName, cmdName, customImageTag)
 				fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-				os.Exit(ectBuild | ecBadCustomImageTag)
+				os.Exit(ectBuild | ecbBadCustomImageTag)
 			}
 		} else {
 			fatImageRepoNameTag = fmt.Sprintf("docker-slim-tmp-fat-image.%v.%v",
@@ -169,7 +167,7 @@ func OnBuild(
 	if !confirmNetwork(logger, client, overrides.Network) {
 		fmt.Printf("%s[%s]: info=param.error status=unknown.network value=%s\n", appName, cmdName, overrides.Network)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		os.Exit(ectBuild | ecBadNetworkName)
+		os.Exit(ectCommon | ecBadNetworkName)
 	}
 
 	imageInspector, err := image.NewInspector(client, imageRef)
@@ -282,7 +280,7 @@ func OnBuild(
 			containerInspector.FinishMonitoring()
 			_ = containerInspector.ShutdownContainer()
 
-			fmt.Println("%s[%s]: state=exited\n", appName, cmdName)
+			fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
 			return
 		}
 
@@ -302,7 +300,7 @@ func OnBuild(
 
 	switch continueAfter.Mode {
 	case "enter":
-		fmt.Println("%s[%s]: info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'")
+		fmt.Printf("%s[%s]: info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'\n", appName, cmdName)
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
 	case "signal":

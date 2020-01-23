@@ -21,6 +21,11 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+// Profile command exit codes
+const (
+	ecpOther = iota + 1
+)
+
 // OnProfile implements the 'profile' docker-slim command
 func OnProfile(
 	doCheckVersion bool,
@@ -55,7 +60,9 @@ func OnProfile(
 	doUseSensorVolume string,
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter) {
-	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "profile"})
+	const cmdName = "profile"
+	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
+	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 
 	viChan := version.CheckAsync(doCheckVersion, inContainer, isDSImage)
 
@@ -63,8 +70,8 @@ func OnProfile(
 	cmdReport.State = report.CmdStateStarted
 	cmdReport.OriginalImage = imageRef
 
-	fmt.Println("docker-slim[profile]: state=started")
-	fmt.Printf("docker-slim[profile]: info=params target=%v\n", imageRef)
+	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
+	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, imageRef)
 	doRmFileArtifacts := false
 
 	client, err := dockerclient.New(clientConfig)
@@ -73,32 +80,32 @@ func OnProfile(
 		if inContainer && isDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
-		fmt.Printf("docker-slim[profile]: info=docker.connect.error message='%s'\n", exitMsg)
-		fmt.Printf("docker-slim[profile]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
-		os.Exit(-777)
+		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
+		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
+		os.Exit(ectCommon | ecNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
 
 	if doDebug {
-		version.Print("docker-slim[profile]:", logger, client, false, inContainer, isDSImage)
+		version.Print(prefix, logger, client, false, inContainer, isDSImage)
 	}
 
 	if !confirmNetwork(logger, client, overrides.Network) {
-		fmt.Printf("docker-slim[profile]: info=param.error status=unknown.network value=%s\n", overrides.Network)
-		fmt.Printf("docker-slim[profile]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
-		os.Exit(-111)
+		fmt.Printf("%s[%s]: info=param.error status=unknown.network value=%s\n", appName, cmdName, overrides.Network)
+		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
+		os.Exit(ectCommon | ecBadNetworkName)
 	}
 
 	imageInspector, err := image.NewInspector(client, imageRef)
 	errutil.FailOn(err)
 
 	if imageInspector.NoImage() {
-		fmt.Printf("docker-slim[profile]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", imageRef)
-		fmt.Println("docker-slim[profile]: state=exited")
+		fmt.Printf("%s[%s]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", appName, cmdName, imageRef)
+		fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
 		return
 	}
 
-	fmt.Println("docker-slim[profile]: state=image.inspection.start")
+	fmt.Printf("%s[%s]: state=image.inspection.start\n", appName, cmdName)
 
 	logger.Info("inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
@@ -108,7 +115,8 @@ func OnProfile(
 	imageInspector.ArtifactLocation = artifactLocation
 	logger.Debugf("localVolumePath=%v, artifactLocation=%v, statePath=%v, stateKey=%v", localVolumePath, artifactLocation, statePath, stateKey)
 
-	fmt.Printf("docker-slim[profile]: info=image id=%v size.bytes=%v size.human=%v\n",
+	fmt.Printf("%s[%s]: info=image id=%v size.bytes=%v size.human=%v\n",
+		appName, cmdName,
 		imageInspector.ImageInfo.ID,
 		imageInspector.ImageInfo.VirtualSize,
 		humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)))
@@ -117,8 +125,8 @@ func OnProfile(
 	err = imageInspector.ProcessCollectedData()
 	errutil.FailOn(err)
 
-	fmt.Println("docker-slim[profile]: state=image.inspection.done")
-	fmt.Println("docker-slim[profile]: state=container.inspection.start")
+	fmt.Printf("%s[%s]: state=image.inspection.done\n", appName, cmdName)
+	fmt.Printf("%s[%s]: state=container.inspection.start\n", appName, cmdName)
 
 	containerInspector, err := container.NewInspector(
 		logger,
@@ -144,14 +152,15 @@ func OnProfile(
 		doDebug,
 		inContainer,
 		true,
-		"docker-slim[profile]:")
+		prefix)
 	errutil.FailOn(err)
 
 	logger.Info("starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
 	errutil.FailOn(err)
 
-	fmt.Printf("docker-slim[build]: info=container name=%v id=%v target.port.list=[%v] target.port.info=[%v] message='YOU CAN USE THESE PORTS TO INTERACT WITH THE CONTAINER'\n",
+	fmt.Printf("%s[%s]: info=container name=%v id=%v target.port.list=[%v] target.port.info=[%v] message='YOU CAN USE THESE PORTS TO INTERACT WITH THE CONTAINER'\n",
+		appName, cmdName,
 		containerInspector.ContainerName,
 		containerInspector.ContainerID,
 		containerInspector.ContainerPortList,
@@ -166,15 +175,15 @@ func OnProfile(
 	if doHTTPProbe {
 		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds,
 			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts, doHTTPProbeFull,
-			true, "docker-slim[profile]:")
+			true, prefix)
 		errutil.FailOn(err)
 		if len(probe.Ports) == 0 {
-			fmt.Println("docker-slim[profile]: state=http.probe.error error='no exposed ports' message='expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services")
+			fmt.Printf("%s[%s]: state=http.probe.error error='no exposed ports' message='expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services\n", appName, cmdName)
 			logger.Info("shutting down 'fat' container...")
 			containerInspector.FinishMonitoring()
 			_ = containerInspector.ShutdownContainer()
 
-			fmt.Println("docker-slim[profile]: state=exited")
+			fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
 			return
 		}
 
@@ -190,30 +199,30 @@ func OnProfile(
 		continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
 	}
 
-	fmt.Printf("docker-slim[profile]: info=continue.after mode=%v message='%v'\n", continueAfter.Mode, continueAfterMsg)
+	fmt.Printf("%s[%s]: info=continue.after mode=%v message='%v'\n", appName, cmdName, continueAfter.Mode, continueAfterMsg)
 
 	switch continueAfter.Mode {
 	case "enter":
-		fmt.Println("docker-slim[profile]: info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'")
+		fmt.Printf("%s[%s]: info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'\n", appName, cmdName)
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
 	case "signal":
-		fmt.Println("docker-slim[profile]: info=prompt message='send SIGUSR1 when you are done using the container'")
+		fmt.Printf("%s[%s]: info=prompt message='send SIGUSR1 when you are done using the container'\n", appName, cmdName)
 		<-continueAfter.ContinueChan
-		fmt.Println("docker-slim[profile]: info=event message='got SIGUSR1'")
+		fmt.Printf("%s[%s]: info=event message='got SIGUSR1'\n", appName, cmdName)
 	case "timeout":
-		fmt.Printf("docker-slim[profile]: info=prompt message='waiting for the target container (%v seconds)'\n", int(continueAfter.Timeout))
+		fmt.Printf("%s[%s]: info=prompt message='waiting for the target container (%v seconds)'\n", appName, cmdName, int(continueAfter.Timeout))
 		<-time.After(time.Second * continueAfter.Timeout)
-		fmt.Printf("docker-slim[profile]: info=event message='done waiting for the target container'")
+		fmt.Printf("%s[%s]: info=event message='done waiting for the target container'\n", appName, cmdName)
 	case "probe":
-		fmt.Println("docker-slim[profile]: info=prompt message='waiting for the HTTP probe to finish'")
+		fmt.Printf("%s[%s]: info=prompt message='waiting for the HTTP probe to finish'\n", appName, cmdName)
 		<-continueAfter.ContinueChan
-		fmt.Println("docker-slim[profile]: info=event message='HTTP probe is done'")
+		fmt.Printf("%s[%s]: info=event message='HTTP probe is done'\n", appName, cmdName)
 	default:
 		errutil.Fail("unknown continue-after mode")
 	}
 
-	fmt.Println("docker-slim[profile]: state=container.inspection.finishing")
+	fmt.Printf("%s[%s]: state=container.inspection.finishing\n", appName, cmdName)
 
 	containerInspector.FinishMonitoring()
 
@@ -221,13 +230,14 @@ func OnProfile(
 	err = containerInspector.ShutdownContainer()
 	errutil.WarnOn(err)
 
-	fmt.Println("docker-slim[profile]: state=container.inspection.artifact.processing")
+	fmt.Printf("%s[%s]: state=container.inspection.artifact.processing\n", appName, cmdName)
 
 	if !containerInspector.HasCollectedData() {
 		imageInspector.ShowFatImageDockerInstructions()
-		fmt.Printf("docker-slim[profile]: info=results status='no data collected (no minified image generated). (version=%v location='%v')'\n",
+		fmt.Printf("%s[%s]: info=results status='no data collected (no minified image generated). (version=%v location='%v')'\n",
+			appName, cmdName,
 			v.Current(), fsutil.ExeDir())
-		fmt.Println("docker-slim[profile]: state=exited")
+		fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
 		return
 	}
 
@@ -235,8 +245,8 @@ func OnProfile(
 	err = containerInspector.ProcessCollectedData()
 	errutil.FailOn(err)
 
-	fmt.Println("docker-slim[profile]: state=container.inspection.done")
-	fmt.Println("docker-slim[profile]: state=completed")
+	fmt.Printf("%s[%s]: state=container.inspection.done\n", appName, cmdName)
+	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
 	cmdReport.State = report.CmdStateCompleted
 
 	if copyMetaArtifactsLocation != "" {
@@ -248,12 +258,12 @@ func OnProfile(
 		if !copyMetaArtifacts(logger,
 			toCopy,
 			artifactLocation, copyMetaArtifactsLocation) {
-			fmt.Println("docker-slim[profile]: info=artifacts message='could not copy meta artifacts'")
+			fmt.Printf("%s[%s]: info=artifacts message='could not copy meta artifacts'\n", appName, cmdName)
 		}
 	}
 
 	if err := doArchiveState(logger, client, artifactLocation, archiveState, stateKey); err != nil {
-		fmt.Println("docker-slim[profile]: info=state message='could not archive state'")
+		fmt.Printf("%s[%s]: info=state message='could not archive state'\n", appName, cmdName)
 		logger.Errorf("error archiving state - %v", err)
 	}
 
@@ -263,13 +273,13 @@ func OnProfile(
 		errutil.WarnOn(err)
 	}
 
-	fmt.Println("docker-slim[profile]: state=done")
+	fmt.Printf("%s[%s]: state=done\n", appName, cmdName)
 
 	vinfo := <-viChan
-	version.PrintCheckVersion("docker-slim[profile]:", vinfo)
+	version.PrintCheckVersion(prefix, vinfo)
 
 	cmdReport.State = report.CmdStateDone
 	if cmdReport.Save() {
-		fmt.Printf("docker-slim[profile]: info=report file='%s'\n", cmdReport.ReportLocation())
+		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
 	}
 }
