@@ -59,7 +59,8 @@ func OnProfile(
 	doUseLocalMounts bool,
 	doUseSensorVolume string,
 	doKeepTmpArtifacts bool,
-	continueAfter *config.ContinueAfter) {
+	continueAfter *config.ContinueAfter,
+	ec *ExecutionContext) {
 	const cmdName = "profile"
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)

@@ -564,6 +564,8 @@ func init() {
 					commandReport = ""
 				}
 
+				ec := &commands.ExecutionContext{}
+
 				commands.OnInfo(
 					doCheckVersion,
 					commandReport,
@@ -573,7 +575,8 @@ func init() {
 					inContainer,
 					isDSImage,
 					clientConfig,
-					imageRef)
+					imageRef,
+					ec)
 				return nil
 			},
 		},
@@ -772,6 +775,8 @@ func init() {
 					commandReport = ""
 				}
 
+				ec := &commands.ExecutionContext{}
+
 				commands.OnBuild(
 					doCheckVersion,
 					commandReport,
@@ -811,7 +816,8 @@ func init() {
 					doUseLocalMounts,
 					doUseSensorVolume,
 					doKeepTmpArtifacts,
-					continueAfter)
+					continueAfter,
+					ec)
 
 				return nil
 			},
@@ -966,6 +972,8 @@ func init() {
 					commandReport = ""
 				}
 
+				ec := &commands.ExecutionContext{}
+
 				commands.OnProfile(
 					doCheckVersion,
 					commandReport,
@@ -998,7 +1006,8 @@ func init() {
 					doUseLocalMounts,
 					doUseSensorVolume,
 					doKeepTmpArtifacts,
-					continueAfter)
+					continueAfter,
+					ec)
 
 				return nil
 			},

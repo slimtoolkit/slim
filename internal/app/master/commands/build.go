@@ -72,7 +72,8 @@ func OnBuild(
 	doUseLocalMounts bool,
 	doUseSensorVolume string,
 	doKeepTmpArtifacts bool,
-	continueAfter *config.ContinueAfter) {
+	continueAfter *config.ContinueAfter,
+	ec *ExecutionContext) {
 	const cmdName = "build"
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)

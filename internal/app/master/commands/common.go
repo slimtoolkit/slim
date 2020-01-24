@@ -14,6 +14,9 @@ const (
 	ImagesStateRootPath = "images"
 )
 
+type ExecutionContext struct {
+}
+
 // Exit Code Types
 const (
 	ectCommon  = 0x01000000

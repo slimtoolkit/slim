@@ -32,7 +32,8 @@ func OnInfo(
 	inContainer bool,
 	isDSImage bool,
 	clientConfig *config.DockerClient,
-	imageRef string) {
+	imageRef string,
+	ec *ExecutionContext) {
 	const cmdName = "info"
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
