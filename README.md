@@ -1,6 +1,6 @@
 ![DSLIM1](assets/images/dslim/DockerSlimLogo1Big.png)
 
-[![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?url=https%3A%2F%2Fdockersl.im%2F&text=Don%27t%20change%20anything%20in%20your%20Docker%20container%20image%20and%20minify%20it%20by%20up%20to%2030x%20making%20it%20secure%20too%21&hashtags=docker%2Csmall%2Csecure)
+[![Financial Contributors on Open Collective](https://opencollective.com/docker-slim/all/badge.svg?label=financial+contributors)](https://opencollective.com/docker-slim) [![Tweet](https://img.shields.io/twitter/url/http/shields.io.svg?style=social)](https://twitter.com/intent/tweet?url=https%3A%2F%2Fdockersl.im%2F&text=Don%27t%20change%20anything%20in%20your%20Docker%20container%20image%20and%20minify%20it%20by%20up%20to%2030x%20making%20it%20secure%20too%21&hashtags=docker%2Csmall%2Csecure)
 [![Gitter chat](https://badges.gitter.im/docker-slim/docker-slim.svg)](https://gitter.im/docker-slim/community)
 [![Discord chat](https://img.shields.io/static/v1.svg?label=chat&message=on%20discord&color=7389D8)](https://discord.gg/9tDyxYS)
 
@@ -601,6 +601,36 @@ Docker Hub: [dslim](https://hub.docker.com/r/dslim/) (dockerslim is already take
 ## CONTRIBUTING
 
 If the project sounds interesting or if you found a bug see [`CONTRIBUTING.md`](https://github.com/docker-slim/docker-slim/blob/master/CONTRIBUTING.md) and submit a PR!
+
+## Contributors
+
+### Code Contributors
+
+This project exists thanks to all the people who contribute. [[Contribute](CONTRIBUTING.md)].
+<a href="https://github.com/docker-slim/docker-slim/graphs/contributors"><img src="https://opencollective.com/docker-slim/contributors.svg?width=890&button=false" /></a>
+
+### Financial Contributors
+
+Become a financial contributor and help us sustain our community. [[Contribute](https://opencollective.com/docker-slim/contribute)]
+
+#### Individuals
+
+<a href="https://opencollective.com/docker-slim"><img src="https://opencollective.com/docker-slim/individuals.svg?width=890"></a>
+
+#### Organizations
+
+Support this project with your organization. Your logo will show up here with a link to your website. [[Contribute](https://opencollective.com/docker-slim/contribute)]
+
+<a href="https://opencollective.com/docker-slim/organization/0/website"><img src="https://opencollective.com/docker-slim/organization/0/avatar.svg"></a>
+<a href="https://opencollective.com/docker-slim/organization/1/website"><img src="https://opencollective.com/docker-slim/organization/1/avatar.svg"></a>
+<a href="https://opencollective.com/docker-slim/organization/2/website"><img src="https://opencollective.com/docker-slim/organization/2/avatar.svg"></a>
+<a href="https://opencollective.com/docker-slim/organization/3/website"><img src="https://opencollective.com/docker-slim/organization/3/avatar.svg"></a>
+<a href="https://opencollective.com/docker-slim/organization/4/website"><img src="https://opencollective.com/docker-slim/organization/4/avatar.svg"></a>
+<a href="https://opencollective.com/docker-slim/organization/5/website"><img src="https://opencollective.com/docker-slim/organization/5/avatar.svg"></a>
+<a href="https://opencollective.com/docker-slim/organization/6/website"><img src="https://opencollective.com/docker-slim/organization/6/avatar.svg"></a>
+<a href="https://opencollective.com/docker-slim/organization/7/website"><img src="https://opencollective.com/docker-slim/organization/7/avatar.svg"></a>
+<a href="https://opencollective.com/docker-slim/organization/8/website"><img src="https://opencollective.com/docker-slim/organization/8/avatar.svg"></a>
+<a href="https://opencollective.com/docker-slim/organization/9/website"><img src="https://opencollective.com/docker-slim/organization/9/avatar.svg"></a>
 
 ## LICENSE
 
