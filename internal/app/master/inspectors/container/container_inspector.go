@@ -305,6 +305,11 @@ func (i *Inspector) RunContainer() error {
 	runAsUser := i.ImageInspector.ImageInfo.Config.User
 	containerOptions.Config.User = "0:0"
 
+	if runAsUser != "" && strings.ToLower(runAsUser) != "root" {
+		containerOptions.Config.Tty = true
+		containerOptions.Config.OpenStdin = true
+	}
+
 	commsExposedPorts := map[dockerapi.Port]struct{}{
 		i.CmdPort: {},
 		i.EvtPort: {},
