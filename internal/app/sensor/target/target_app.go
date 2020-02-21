@@ -3,16 +3,17 @@
 package target
 
 import (
+	"golang.org/x/sys/unix"
 	"os"
 	"os/exec"
 	"os/user"
 	"strconv"
 	"syscall"
-	"golang.org/x/sys/unix"
 
 	log "github.com/sirupsen/logrus"
 )
 
+//copied from libcontainer
 func fixStdioPermissions(uid int) error {
 	var null unix.Stat_t
 	if err := unix.Stat("/dev/null", &null); err != nil {
@@ -42,13 +43,41 @@ func fixStdioPermissions(uid int) error {
 	return nil
 }
 
+func fixStdioPermissionsAlt(uid int) error {
+	var null unix.Stat_t
+	if err := unix.Stat("/dev/null", &null); err != nil {
+		return err
+	}
+	for _, fd := range []uintptr{
+		os.Stdin.Fd(),
+		os.Stderr.Fd(),
+		os.Stdout.Fd(),
+	} {
+		var s unix.Stat_t
+		if err := unix.Fstat(int(fd), &s); err != nil {
+			return err
+		}
+
+		if s.Rdev == null.Rdev {
+			continue
+		}
+
+		if err := unix.Fchmod(int(fd), 0777); err != nil {
+			if err == unix.EINVAL || err == unix.EPERM {
+				continue
+			}
+			return err
+		}
+	}
+	return nil
+}
+
 // Start starts the target application in the container
-func Start(appName string, appArgs []string, appDir, appUser string, doPtrace bool) (*exec.Cmd, error) {
+func Start(appName string, appArgs []string, appDir, appUser string, runTargetAsUser, doPtrace bool) (*exec.Cmd, error) {
 	log.Debugf("sensor.startTargetApp(%v,%v,%v,%v)", appName, appArgs, appDir, appUser)
-	//TODO: need a flag to not run the target as user 
-	//(even if the image Dockerfile is using the USER instruction)
-	//to have the original behavior
-	//appUser = "" //tmp
+	if !runTargetAsUser {
+		appUser = ""
+	}
 
 	app := exec.Command(appName, appArgs...)
 

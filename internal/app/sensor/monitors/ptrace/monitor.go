@@ -49,7 +49,8 @@ func Run(
 	appName string,
 	appArgs []string,
 	dirName string,
-	appUser string) <-chan *report.PtMonitorReport {
+	appUser string,
+	runTargetAsUser bool) <-chan *report.PtMonitorReport {
 	log.Info("ptmon: Run")
 
 	sysInfo := system.GetSystemInfo()
@@ -78,7 +79,7 @@ func Run(
 			runtime.LockOSThread()
 
 			var err error
-			app, err = target.Start(appName, appArgs, dirName, appUser, true)
+			app, err = target.Start(appName, appArgs, dirName, appUser, runTargetAsUser, true)
 			started := true
 			if err != nil {
 				started = false

@@ -87,6 +87,7 @@ type Inspector struct {
 	DNSServers         []string
 	DNSSearchDomains   []string
 	ShowContainerLogs  bool
+	RunTargetAsUser    bool
 	VolumeMounts       map[string]config.VolumeMount
 	ExcludePaths       map[string]bool
 	IncludePaths       map[string]bool
@@ -131,6 +132,7 @@ func NewInspector(
 	etcHostsMaps []string,
 	dnsServers []string,
 	dnsSearchDomains []string,
+	runTargetAsUser bool,
 	showContainerLogs bool,
 	volumeMounts map[string]config.VolumeMount,
 	excludePaths map[string]bool,
@@ -161,6 +163,7 @@ func NewInspector(
 		DNSServers:         dnsServers,
 		DNSSearchDomains:   dnsSearchDomains,
 		ShowContainerLogs:  showContainerLogs,
+		RunTargetAsUser:    runTargetAsUser,
 		VolumeMounts:       volumeMounts,
 		ExcludePaths:       excludePaths,
 		IncludePaths:       includePaths,
@@ -476,6 +479,10 @@ func (i *Inspector) RunContainer() error {
 
 	if runAsUser != "" {
 		cmd.AppUser = runAsUser
+
+		if strings.ToLower(runAsUser) != "root" {
+			cmd.RunTargetAsUser = i.RunTargetAsUser
+		}
 	}
 
 	_, err = i.ipcClient.SendCommand(cmd)

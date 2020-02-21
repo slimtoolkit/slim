@@ -91,6 +91,7 @@ const (
 	FlagKeepTmpArtifacts    = "keep-tmp-artifacts"
 	FlagTag                 = "tag"
 	FlagTagFat              = "tag-fat"
+	FlagRunTargetAsUser     = "run-target-as-user"
 )
 
 var app *cli.App
@@ -283,6 +284,12 @@ func init() {
 		Name:   FlagHTTPProbeFull,
 		Usage:  "Do full HTTP probe for all selected ports (if false, finish after first successful scan)",
 		EnvVar: "DSLIM_HTTP_PROBE_FULL",
+	}
+
+	doRunTargetAsUserFlag := cli.BoolFlag{
+		Name:   FlagRunTargetAsUser,
+		Usage:  "Run target app as USER",
+		EnvVar: "DSLIM_RUN_TAS_USER",
 	}
 
 	doShowContainerLogsFlag := cli.BoolFlag{
@@ -598,6 +605,7 @@ func init() {
 				doHTTPProbeRetryWaitFlag,
 				doHTTPProbePortsFlag,
 				doHTTPProbeFullFlag,
+				doRunTargetAsUserFlag,
 				doShowContainerLogsFlag,
 				doShowBuildLogsFlag,
 				doCopyMetaArtifactsFlag,
@@ -700,6 +708,8 @@ func init() {
 
 				doHTTPProbeFull := ctx.Bool(FlagHTTPProbeFull)
 
+				doRunTargetAsUser := ctx.Bool(FlagRunTargetAsUser)
+
 				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
 				doShowBuildLogs := ctx.Bool(FlagShowBuildLogs)
 				doTag := ctx.String(FlagTag)
@@ -798,6 +808,7 @@ func init() {
 					doHTTPProbeFull,
 					doRmFileArtifacts,
 					doCopyMetaArtifacts,
+					doRunTargetAsUser,
 					doShowContainerLogs,
 					doShowBuildLogs,
 					parseImageOverrides(doImageOverrides),
@@ -834,6 +845,7 @@ func init() {
 				doHTTPProbeRetryWaitFlag,
 				doHTTPProbePortsFlag,
 				doHTTPProbeFullFlag,
+				doRunTargetAsUserFlag,
 				doShowContainerLogsFlag,
 				doCopyMetaArtifactsFlag,
 				doUseEntrypointFlag,
@@ -907,6 +919,8 @@ func init() {
 				}
 
 				doHTTPProbeFull := ctx.Bool(FlagHTTPProbeFull)
+
+				doRunTargetAsUser := ctx.Bool(FlagRunTargetAsUser)
 
 				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
 				overrides, err := getContainerOverrides(ctx)
@@ -991,6 +1005,7 @@ func init() {
 					httpProbePorts,
 					doHTTPProbeFull,
 					doCopyMetaArtifacts,
+					doRunTargetAsUser,
 					doShowContainerLogs,
 					overrides,
 					ctx.StringSlice(FlagLink),
