@@ -27,7 +27,7 @@ const (
 const (
 	CmdVersion = "version"
 	CmdUpdate  = "update"
-	CmdInfo    = "info"
+	CmdXray    = "xray"
 	CmdBuild   = "build"
 	CmdProfile = "profile"
 )
@@ -93,6 +93,40 @@ const (
 	FlagTagFat              = "tag-fat"
 	FlagRunTargetAsUser     = "run-target-as-user"
 )
+
+type cmdSpec struct {
+	name  string
+	alias string
+	usage string
+}
+
+var cmdSpecs = map[string]cmdSpec{
+	CmdVersion: {
+		name:  CmdVersion,
+		alias: "v",
+		usage: "Shows docker-slim and docker version information",
+	},
+	CmdUpdate: {
+		name:  CmdUpdate,
+		alias: "u",
+		usage: "Updates docker-slim",
+	},
+	CmdXray: {
+		name:  CmdXray,
+		alias: "x",
+		usage: "Collects fat image information and reverse engineers its Dockerfile",
+	},
+	CmdBuild: {
+		name:  CmdBuild,
+		alias: "b",
+		usage: "Collects fat image information and builds a slim image from it",
+	},
+	CmdProfile: {
+		name:  CmdProfile,
+		alias: "p",
+		usage: "Collects fat image information and generates a fat container report",
+	},
+}
 
 var app *cli.App
 
@@ -516,9 +550,9 @@ func init() {
 
 	app.Commands = []cli.Command{
 		{
-			Name:    CmdVersion,
-			Aliases: []string{"v"},
-			Usage:   "Shows docker-slim and docker version information",
+			Name:    cmdSpecs[CmdVersion].name,
+			Aliases: []string{cmdSpecs[CmdVersion].alias},
+			Usage:   cmdSpecs[CmdVersion].usage,
 			Action: func(ctx *cli.Context) error {
 				doDebug := ctx.GlobalBool(FlagDebug)
 				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
@@ -528,9 +562,9 @@ func init() {
 			},
 		},
 		{
-			Name:    CmdUpdate,
-			Aliases: []string{"u"},
-			Usage:   "Update docker-slim",
+			Name:    cmdSpecs[CmdUpdate].name,
+			Aliases: []string{cmdSpecs[CmdUpdate].alias},
+			Usage:   cmdSpecs[CmdUpdate].usage,
 			Flags: []cli.Flag{
 				doShowProgressFlag,
 			},
@@ -546,13 +580,13 @@ func init() {
 			},
 		},
 		{
-			Name:    CmdInfo,
-			Aliases: []string{"i"},
-			Usage:   "Collects fat image information and reverse engineers its Dockerfile",
+			Name:    cmdSpecs[CmdXray].name,
+			Aliases: []string{cmdSpecs[CmdXray].alias},
+			Usage:   cmdSpecs[CmdXray].usage,
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
 					fmt.Printf("docker-slim[info]: missing image ID/name...\n\n")
-					cli.ShowCommandHelp(ctx, CmdInfo)
+					cli.ShowCommandHelp(ctx, CmdXray)
 					return nil
 				}
 
@@ -588,9 +622,9 @@ func init() {
 			},
 		},
 		{
-			Name:    CmdBuild,
-			Aliases: []string{"b"},
-			Usage:   "Collects fat image information and builds a slim image from it",
+			Name:    cmdSpecs[CmdBuild].name,
+			Aliases: []string{cmdSpecs[CmdBuild].alias},
+			Usage:   cmdSpecs[CmdBuild].usage,
 			Flags: []cli.Flag{
 				cli.StringFlag{
 					Name:   FlagBuildFromDockerfile,
@@ -834,9 +868,9 @@ func init() {
 			},
 		},
 		{
-			Name:    CmdProfile,
-			Aliases: []string{"p"},
-			Usage:   "Collects fat image information and generates a fat container report",
+			Name:    cmdSpecs[CmdProfile].name,
+			Aliases: []string{cmdSpecs[CmdProfile].alias},
+			Usage:   cmdSpecs[CmdProfile].usage,
 			Flags: []cli.Flag{
 				doHTTPProbeFlag,
 				doHTTPProbeCmdFlag,

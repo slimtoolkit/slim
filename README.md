@@ -143,9 +143,19 @@ If the directory where you extracted the binaries is not in your PATH then you'l
 
 To use the Docker image distribution just start using the `dslim/docker-slim` container image.
 
+The OS-specific installers for `docker-slim` will be available soon (there's already a couple of community `Homebrew` formulas for Mac and Linux, but they need to be enhanced to work properly). 
+
 ## BASIC USAGE INFO
 
-`docker-slim [version|info|build|profile|update|version] [--http-probe|--remove-file-artifacts] <IMAGE_ID_OR_NAME>`
+`docker-slim [global flags] [xray|build|profile|update|version] [command-specific flags] <IMAGE_ID_OR_NAME>`
+
+### COMMANDS
+
+* `xray` - do static analysis for the target container image (including 'reverse engineering' the Dockerfile for the image)
+* `profile` - do `xray` plus dynamic container analysis
+* `build` - do `profile` plus an ability to create a new optimized image along with the security profiles
+* `version` - show the version information
+* `update` - update `docker-slim` to the latest version
 
 Example: `docker-slim build my/sample-app`
 
