@@ -7,7 +7,6 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
 
@@ -44,7 +43,7 @@ const (
 	releaseArtifactsPerms  = 0740
 )
 
-var macBadInstallPaths = [...]string{
+var badInstallPaths = [...]string{
 	"/usr/local/bin",
 	"/usr/local/sbin",
 	"/usr/bin",
@@ -54,9 +53,9 @@ var macBadInstallPaths = [...]string{
 }
 
 const (
-	tmpPath         = "/tmp"
-	macStateTmpPath = "/tmp/docker-slim-state"
-	sensorFileName  = "docker-slim-sensor"
+	tmpPath        = "/tmp"
+	stateTmpPath   = "/tmp/docker-slim-state"
+	sensorFileName = "docker-slim-sensor"
 )
 
 // Remove removes the artifacts generated during the current application execution
@@ -487,26 +486,24 @@ func PreparePostUpdateStateDir(statePrefix string) {
 		statePrefix = appDir
 	}
 
-	if runtime.GOOS == "darwin" {
-		for _, badPath := range macBadInstallPaths {
-			if appDir == badPath {
-				if pinfo, err := os.Stat(tmpPath); err == nil && pinfo.IsDir() {
-					log.Debugf("PreparePostUpdateStateDir - overriding state path on Mac OS to %v", macStateTmpPath)
+	for _, badPath := range badInstallPaths {
+		if appDir == badPath {
+			if pinfo, err := os.Stat(tmpPath); err == nil && pinfo.IsDir() {
+				log.Debugf("PreparePostUpdateStateDir - overriding state path to %v", stateTmpPath)
 
-					srcSensorPath := filepath.Join(appDir, sensorFileName)
-					dstSensorPath := filepath.Join(macStateTmpPath, sensorFileName)
-					if Exists(dstSensorPath) {
-						log.Debugf("PreparePostUpdateStateDir - remove existing sensor binary - %v", dstSensorPath)
-						if err := Remove(dstSensorPath); err != nil {
-							log.Debugf("PreparePostUpdateStateDir - error removing existing sensor binary - %v", err)
-						}
+				srcSensorPath := filepath.Join(appDir, sensorFileName)
+				dstSensorPath := filepath.Join(stateTmpPath, sensorFileName)
+				if Exists(dstSensorPath) {
+					log.Debugf("PreparePostUpdateStateDir - remove existing sensor binary - %v", dstSensorPath)
+					if err := Remove(dstSensorPath); err != nil {
+						log.Debugf("PreparePostUpdateStateDir - error removing existing sensor binary - %v", err)
 					}
-
-					err = CopyRegularFile(true, srcSensorPath, dstSensorPath, true)
-					errutil.FailOn(err)
-				} else {
-					log.Debugf("PreparePostUpdateStateDir - did not find tmp on Mac OS")
 				}
+
+				err = CopyRegularFile(true, srcSensorPath, dstSensorPath, true)
+				errutil.FailOn(err)
+			} else {
+				log.Debugf("PreparePostUpdateStateDir - did not find tmp")
 			}
 		}
 	}
@@ -530,31 +527,29 @@ func PrepareImageStateDirs(statePrefix, imageID string) (string, string, string,
 		statePrefix = appDir
 	}
 
-	if runtime.GOOS == "darwin" {
-		for _, badPath := range macBadInstallPaths {
-			//Note:
-			//Should be a prefix check ideally
-			//and should check if it's actually one of the 'shared' directories in Docker for Mac
-			if statePrefix == badPath {
-				if pinfo, err := os.Stat(tmpPath); err == nil && pinfo.IsDir() {
-					log.Debugf("PrepareImageStateDirs - overriding state path on Mac OS to %v", macStateTmpPath)
-					statePrefix = macStateTmpPath
-				} else {
-					log.Debugf("PrepareImageStateDirs - did not find tmp on Mac OS")
-				}
+	for _, badPath := range badInstallPaths {
+		//Note:
+		//Should be a prefix check ideally
+		//and should check if it's actually one of the 'shared' directories in Docker for Mac (on Macs)
+		if statePrefix == badPath {
+			if pinfo, err := os.Stat(tmpPath); err == nil && pinfo.IsDir() {
+				log.Debugf("PrepareImageStateDirs - overriding state path to %v", stateTmpPath)
+				statePrefix = stateTmpPath
+			} else {
+				log.Debugf("PrepareImageStateDirs - did not find tmp")
 			}
+		}
 
-			if appDir == badPath {
-				if pinfo, err := os.Stat(tmpPath); err == nil && pinfo.IsDir() {
-					log.Debugf("PrepareImageStateDirs - copying sensor to state path on Mac OS (to %v)", macStateTmpPath)
+		if appDir == badPath {
+			if pinfo, err := os.Stat(tmpPath); err == nil && pinfo.IsDir() {
+				log.Debugf("PrepareImageStateDirs - copying sensor to state path (to %v)", stateTmpPath)
 
-					srcSensorPath := filepath.Join(appDir, sensorFileName)
-					dstSensorPath := filepath.Join(statePrefix, sensorFileName)
-					err = CopyRegularFile(true, srcSensorPath, dstSensorPath, true)
-					errutil.FailOn(err)
-				} else {
-					log.Debugf("PrepareImageStateDirs - did not find tmp on Mac OS")
-				}
+				srcSensorPath := filepath.Join(appDir, sensorFileName)
+				dstSensorPath := filepath.Join(statePrefix, sensorFileName)
+				err = CopyRegularFile(true, srcSensorPath, dstSensorPath, true)
+				errutil.FailOn(err)
+			} else {
+				log.Debugf("PrepareImageStateDirs - did not find tmp")
 			}
 		}
 	}
@@ -598,15 +593,13 @@ func PrepareReleaseStateDirs(statePrefix, version string) (string, string) {
 		statePrefix = ExeDir()
 	}
 
-	if runtime.GOOS == "darwin" {
-		for _, badPath := range macBadInstallPaths {
-			if statePrefix == badPath {
-				if pinfo, err := os.Stat(tmpPath); err == nil && pinfo.IsDir() {
-					log.Debugf("PrepareReleaseStateDirs - overriding state path on Mac OS to %v", macStateTmpPath)
-					statePrefix = macStateTmpPath
-				} else {
-					log.Debugf("PrepareReleaseStateDirs - did not find tmp on Mac OS")
-				}
+	for _, badPath := range badInstallPaths {
+		if statePrefix == badPath {
+			if pinfo, err := os.Stat(tmpPath); err == nil && pinfo.IsDir() {
+				log.Debugf("PrepareReleaseStateDirs - overriding state path to %v", stateTmpPath)
+				statePrefix = stateTmpPath
+			} else {
+				log.Debugf("PrepareReleaseStateDirs - did not find tmp")
 			}
 		}
 	}
