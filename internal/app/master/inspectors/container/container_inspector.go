@@ -309,8 +309,12 @@ func (i *Inspector) RunContainer() error {
 	containerOptions.Config.User = "0:0"
 
 	if runAsUser != "" && strings.ToLower(runAsUser) != "root" {
-		containerOptions.Config.Tty = true
-		containerOptions.Config.OpenStdin = true
+		//containerOptions.Config.Tty = true
+		//containerOptions.Config.OpenStdin = true
+		//NOTE:
+		//when enabling TTY need to add extra params getting logs
+		//or the client.Logs() call will fail with an
+		//"Unrecognized input header" error
 	}
 
 	commsExposedPorts := map[dockerapi.Port]struct{}{

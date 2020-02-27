@@ -18,7 +18,7 @@ import (
 	"sort"
 	"strings"
 
-	//"syscall"
+	"syscall"
 
 	"github.com/docker-slim/docker-slim/internal/app/sensor/inspectors/sodeps"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
@@ -248,6 +248,8 @@ func (p *artifactStore) saveArtifacts() {
 		return paths
 	}
 
+	syscall.Umask(0)
+
 	excludePaths = preparePaths(p.cmd.Excludes)
 	log.Debugf("saveArtifacts - excludePaths: %+v", excludePaths)
 
@@ -395,6 +397,19 @@ func (p *artifactStore) saveArtifacts() {
 			log.Warnf("saveArtifacts - error getting shell artifacts => %v", err)
 		}
 
+	}
+
+	if fsutil.DirExists("/tmp") {
+		tdTargetPath := fmt.Sprintf("%s/files/tmp", p.storeLocation)
+		if !fsutil.DirExists(tdTargetPath) {
+			if err := os.MkdirAll(tdTargetPath, os.ModeSticky|os.ModeDir|0777); err != nil {
+				log.Warn("saveArtifacts - error creating tmp directory => ", err)
+			}
+		} else {
+			if err := os.Chmod(tdTargetPath, os.ModeSticky|os.ModeDir|0777); err != nil {
+				log.Warn("saveArtifacts - error setting tmp directory permission ==> ", err)
+			}
+		}
 	}
 }
 

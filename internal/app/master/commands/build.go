@@ -100,9 +100,9 @@ func OnBuild(
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
 
 	if buildFromDockerfile == "" {
-		fmt.Printf("%s[%s]: info=params target=%v continue.mode=%v\n", appName, cmdName, imageRef, continueAfter.Mode)
+		fmt.Printf("%s[%s]: info=params target=%v continue.mode=%v rt.as.user=%v\n", appName, cmdName, imageRef, continueAfter.Mode, doRunTargetAsUser)
 	} else {
-		fmt.Printf("%s[%s]: info=params context=%v/file=%v continue.mode=%v\n", appName, cmdName, imageRef, buildFromDockerfile, continueAfter.Mode)
+		fmt.Printf("%s[%s]: info=params context=%v/file=%v continue.mode=%v rt.as.user=%v\n", appName, cmdName, imageRef, buildFromDockerfile, continueAfter.Mode, doRunTargetAsUser)
 	}
 
 	if buildFromDockerfile != "" {

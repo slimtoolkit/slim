@@ -275,10 +275,9 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 				log.Warnf("CopyRegularFile(%v,%v) - UpdateFileTimes error", src, dst)
 			}
 
-			//todo: later
-			//if err := d.Chown(int(ssi.Uid),int(ssi.Gid)); err != nil {
-			//	log.Warnln("CopyRegularFile(%v,%v)- unable to change owner", src, dst)
-			//}
+			if err := d.Chown(int(ssi.Uid), int(ssi.Gid)); err != nil {
+				log.Warnln("CopyRegularFile(%v,%v)- unable to change owner", src, dst)
+			}
 		} else {
 			log.Warnf("CopyRegularFile(%v,%v)- unable to get Stat_t", src, dst)
 		}

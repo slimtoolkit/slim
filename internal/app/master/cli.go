@@ -320,7 +320,7 @@ func init() {
 		EnvVar: "DSLIM_HTTP_PROBE_FULL",
 	}
 
-	doRunTargetAsUserFlag := cli.BoolFlag{
+	doRunTargetAsUserFlag := cli.BoolTFlag{
 		Name:   FlagRunTargetAsUser,
 		Usage:  "Run target app as USER",
 		EnvVar: "DSLIM_RUN_TAS_USER",
