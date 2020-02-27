@@ -30,6 +30,7 @@ import (
 const (
 	ecbOther = iota + 1
 	ecbBadCustomImageTag
+	ecbImageBuildError
 )
 
 // OnBuild implements the 'build' docker-slim command
@@ -142,13 +143,17 @@ func OnBuild(
 
 		err = fatBuilder.Build()
 
-		if doShowBuildLogs {
-			fmt.Printf("%s[%s]: build logs (basic image) ====================\n", appName, cmdName)
+		if doShowBuildLogs || err != nil {
+			fmt.Printf("%s[%s]: build logs (standard image) ====================\n", appName, cmdName)
 			fmt.Println(fatBuilder.BuildLog.String())
-			fmt.Printf("%s[%s]: end of build logs (basic image) =============\n", appName, cmdName)
+			fmt.Printf("%s[%s]: end of build logs (standard image) =============\n", appName, cmdName)
 		}
 
-		errutil.FailOn(err)
+		if err != nil {
+			fmt.Printf("%s[%s]: info=build.error status=standard.image.build.error value='%v'\n", appName, cmdName, err)
+			fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
+			os.Exit(ectBuild | ecbImageBuildError)
+		}
 
 		fmt.Printf("%s[%s]: state=basic.image.build.completed\n", appName, cmdName)
 
@@ -350,7 +355,7 @@ func OnBuild(
 	}
 
 	fmt.Printf("%s[%s]: state=container.inspection.done\n", appName, cmdName)
-	fmt.Printf("%s[%s]: state=building message='building minified image'\n", appName, cmdName)
+	fmt.Printf("%s[%s]: state=building message='building optimized image'\n", appName, cmdName)
 
 	builder, err := builder.NewImageBuilder(client,
 		customImageTag,
@@ -368,13 +373,17 @@ func OnBuild(
 
 	err = builder.Build()
 
-	if doShowBuildLogs {
-		fmt.Printf("%s[%s]: build logs ====================\n", appName, cmdName)
+	if doShowBuildLogs || err != nil {
+		fmt.Printf("%s[%s]: build logs (optimized image) ====================\n", appName, cmdName)
 		fmt.Println(builder.BuildLog.String())
-		fmt.Printf("%s[%s]: end of build logs =============\n", appName, cmdName)
+		fmt.Printf("%s[%s]: end of build logs (optimized image) =============\n", appName, cmdName)
 	}
 
-	errutil.FailOn(err)
+	if err != nil {
+		fmt.Printf("%s[%s]: info=build.error status=optimized.image.build.error value='%v'\n", appName, cmdName, err)
+		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
+		os.Exit(ectBuild | ecbImageBuildError)
+	}
 
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
 	cmdReport.State = report.CmdStateCompleted

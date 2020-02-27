@@ -85,7 +85,7 @@ const (
 	FlagEtcHostsMap         = "etc-hosts-map"
 	FlagContainerDNS        = "container-dns"
 	FlagContainerDNSSearch  = "container-dns-search"
-	FlagBuildFromDockerfile = "from-dockerfile"
+	FlagBuildFromDockerfile = "dockerfile"
 	FlagUseLocalMounts      = "use-local-mounts"
 	FlagUseSensorVolume     = "use-sensor-volume"
 	FlagKeepTmpArtifacts    = "keep-tmp-artifacts"
@@ -630,7 +630,7 @@ func init() {
 					Name:   FlagBuildFromDockerfile,
 					Value:  "",
 					Usage:  "The source Dockerfile name to build the fat image before it's minified",
-					EnvVar: "DSLIM_BUILD_FROM_DOCKERFILE",
+					EnvVar: "DSLIM_BUILD_DOCKERFILE",
 				},
 				doHTTPProbeFlag,
 				doHTTPProbeCmdFlag,
