@@ -31,6 +31,8 @@ import (
 )
 
 const (
+	pidFileSuffix          = ".pid"
+	varRunDir              = "/var/run/"
 	ngxBinName             = "/nginx"
 	ngxSubDir              = "/nginx/"
 	ngxCommonTemp          = "/var/lib/nginx"
@@ -297,9 +299,25 @@ func (p *artifactStore) saveArtifacts() {
 	}
 	log.Debugf("saveArtifacts - merged newPerms(%v): %+v", len(newPerms), newPerms)
 
+	dstRootPath := fmt.Sprintf("%s/files", p.storeLocation)
+	log.Debugf("saveArtifacts - prep file artifacts root dir - %v", dstRootPath)
+	err := os.MkdirAll(dstRootPath, 0777)
+	errutil.FailOn(err)
+
 	//TODO: use exludePaths to filter discovered files
 	log.Debugf("saveArtifacts - copy files (%v)", len(p.fileMap))
 	for srcFileName := range p.fileMap {
+		//filter out pid files (todo: have a flag to enable/disable these capabilities)
+		if isKnownPidFilePath(srcFileName) {
+			log.Debugf("saveArtifacts - copy files - skipping known pid file (%v)", srcFileName)
+			continue
+		}
+
+		if hasPidFileSuffix(srcFileName) {
+			log.Debugf("saveArtifacts - copy files - skipping a pid file (%v)", srcFileName)
+			continue
+		}
+
 		dstFilePath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFileName)
 		log.Debug("saveArtifacts - saving file data => ", dstFilePath)
 		//err := cpFile(fileName, filePath)
@@ -711,6 +729,29 @@ func isRbGemSpecFile(filePath string) bool {
 	ext := path.Ext(filePath)
 
 	if ext == rbGemSpecExt && strings.Contains(filePath, rbSpecSubDir) {
+		return true
+	}
+
+	return false
+}
+
+var pidFilePathSuffixes = []string{
+	"/tmp/nginx.pid",
+	"/tmp/pids/server.pid",
+}
+
+func isKnownPidFilePath(filePath string) bool {
+	for _, suffix := range pidFilePathSuffixes {
+		if strings.HasSuffix(filePath, suffix) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func hasPidFileSuffix(filePath string) bool {
+	if strings.HasSuffix(filePath, pidFileSuffix) {
 		return true
 	}
 

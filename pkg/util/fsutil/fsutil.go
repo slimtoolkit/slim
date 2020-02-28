@@ -216,12 +216,14 @@ func CopySymlinkFile(clone bool, src, dst string, makeDir bool) error {
 
 		if sysStat, ok := srcInfo.Sys().(*syscall.Stat_t); ok {
 			ssi := SysStatInfo(sysStat)
-			if err := UpdateSymlinkTimes(dst, ssi.Atime, ssi.Mtime); err != nil {
-				log.Warnf("CopySymlinkFile(%v,%v) - UpdateSymlinkTimes error", src, dst)
-			}
+			if ssi.Ok {
+				if err := UpdateSymlinkTimes(dst, ssi.Atime, ssi.Mtime); err != nil {
+					log.Warnf("CopySymlinkFile(%v,%v) - UpdateSymlinkTimes error", src, dst)
+				}
 
-			if err := os.Lchown(dst, int(ssi.Uid), int(ssi.Gid)); err != nil {
-				log.Warnln("CopySymlinkFile(%v,%v)- unable to change owner", src, dst)
+				if err := os.Lchown(dst, int(ssi.Uid), int(ssi.Gid)); err != nil {
+					log.Warnln("CopySymlinkFile(%v,%v)- unable to change owner", src, dst)
+				}
 			}
 		} else {
 			log.Warnf("CopySymlinkFile(%v,%v)- unable to get Stat_t", src, dst)
@@ -302,12 +304,14 @@ func cloneDirPath(src, dst string) {
 			log.Warnf("cloneDirPath() - unable to set perms (%v) - %v", dir.dst, err)
 		}
 
-		if err := UpdateFileTimes(dir.dst, dir.sys.Atime, dir.sys.Mtime); err != nil {
-			log.Warnf("cloneDirPath() - UpdateFileTimes error (%v) - %v", dir.dst, err)
-		}
+		if dir.sys.Ok {
+			if err := UpdateFileTimes(dir.dst, dir.sys.Atime, dir.sys.Mtime); err != nil {
+				log.Warnf("cloneDirPath() - UpdateFileTimes error (%v) - %v", dir.dst, err)
+			}
 
-		if err := os.Chown(dir.dst, int(dir.sys.Uid), int(dir.sys.Gid)); err != nil {
-			log.Warnln("cloneDirPath()- unable to change owner (%v) - %v", dir.dst, err)
+			if err := os.Chown(dir.dst, int(dir.sys.Uid), int(dir.sys.Gid)); err != nil {
+				log.Warnln("cloneDirPath()- unable to change owner (%v) - %v", dir.dst, err)
+			}
 		}
 	}
 }
@@ -351,8 +355,10 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 					if err == nil {
 						if sysStat, ok := srcDirInfo.Sys().(*syscall.Stat_t); ok {
 							ssi := SysStatInfo(sysStat)
-							if err := UpdateFileTimes(dstDirPath, ssi.Atime, ssi.Mtime); err != nil {
-								log.Warnf("CopyRegularFile() - UpdateFileTimes(%v) error - %v", dstDirPath, err)
+							if ssi.Ok {
+								if err := UpdateFileTimes(dstDirPath, ssi.Atime, ssi.Mtime); err != nil {
+									log.Warnf("CopyRegularFile() - UpdateFileTimes(%v) error - %v", dstDirPath, err)
+								}
 							}
 						}
 					} else {
@@ -393,12 +399,14 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 
 		if sysStat, ok := srcFileInfo.Sys().(*syscall.Stat_t); ok {
 			ssi := SysStatInfo(sysStat)
-			if err := UpdateFileTimes(dst, ssi.Atime, ssi.Mtime); err != nil {
-				log.Warnf("CopyRegularFile(%v,%v) - UpdateFileTimes error", src, dst)
-			}
+			if ssi.Ok {
+				if err := UpdateFileTimes(dst, ssi.Atime, ssi.Mtime); err != nil {
+					log.Warnf("CopyRegularFile(%v,%v) - UpdateFileTimes error", src, dst)
+				}
 
-			if err := d.Chown(int(ssi.Uid), int(ssi.Gid)); err != nil {
-				log.Warnln("CopyRegularFile(%v,%v)- unable to change owner", src, dst)
+				if err := d.Chown(int(ssi.Uid), int(ssi.Gid)); err != nil {
+					log.Warnln("CopyRegularFile(%v,%v)- unable to change owner", src, dst)
+				}
 			}
 		} else {
 			log.Warnf("CopyRegularFile(%v,%v)- unable to get Stat_t", src, dst)
@@ -410,8 +418,10 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 
 		if sysStat, ok := srcFileInfo.Sys().(*syscall.Stat_t); ok {
 			ssi := SysStatInfo(sysStat)
-			if err := UpdateFileTimes(dst, ssi.Atime, ssi.Mtime); err != nil {
-				log.Warnf("CopyRegularFile(%v,%v) - UpdateFileTimes error", src, dst)
+			if ssi.Ok {
+				if err := UpdateFileTimes(dst, ssi.Atime, ssi.Mtime); err != nil {
+					log.Warnf("CopyRegularFile(%v,%v) - UpdateFileTimes error", src, dst)
+				}
 			}
 		} else {
 			log.Warnf("CopyRegularFile(%v,%v)- unable to get Stat_t", src, dst)
@@ -495,8 +505,10 @@ func copyFileObjectHandler(
 						if err == nil {
 							if sysStat, ok := srcDirInfo.Sys().(*syscall.Stat_t); ok {
 								ssi := SysStatInfo(sysStat)
-								if err := UpdateFileTimes(targetPath, ssi.Atime, ssi.Mtime); err != nil {
-									log.Warnf("copyFileObjectHandler() - UpdateFileTimes(%v) error - %v", targetPath, err)
+								if ssi.Ok {
+									if err := UpdateFileTimes(targetPath, ssi.Atime, ssi.Mtime); err != nil {
+										log.Warnf("copyFileObjectHandler() - UpdateFileTimes(%v) error - %v", targetPath, err)
+									}
 								}
 							}
 						} else {

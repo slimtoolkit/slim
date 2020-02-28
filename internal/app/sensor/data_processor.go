@@ -113,6 +113,7 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 			}
 		}
 
+		//todo: skip "/proc/..." references
 		evalLinkRef, err := filepath.EvalSymlinks(absLinkRef)
 		if err != nil {
 			log.Warnf("findSymlinks.checkPathSymlinks - error evaluating symlink (%v) -> %v => %v", err, symlinkFileName, absLinkRef)
