@@ -5,6 +5,7 @@ import (
 )
 
 type SysStat struct {
+	Ok    bool
 	Uid   uint32
 	Gid   uint32
 	Atime syscall.Timespec

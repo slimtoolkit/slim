@@ -89,10 +89,12 @@ type Inspector struct {
 	ShowContainerLogs  bool
 	RunTargetAsUser    bool
 	VolumeMounts       map[string]config.VolumeMount
-	ExcludePaths       map[string]bool
-	IncludePaths       map[string]bool
-	IncludeBins        map[string]bool
-	IncludeExes        map[string]bool
+	KeepPerms          bool
+	PathPerms          map[string]*fsutil.AccessInfo
+	ExcludePaths       map[string]*fsutil.AccessInfo
+	IncludePaths       map[string]*fsutil.AccessInfo
+	IncludeBins        map[string]*fsutil.AccessInfo
+	IncludeExes        map[string]*fsutil.AccessInfo
 	DoIncludeShell     bool
 	DoDebug            bool
 	PrintState         bool
@@ -104,7 +106,7 @@ type Inspector struct {
 	logger             *log.Entry
 }
 
-func pathMapKeys(m map[string]bool) []string {
+func pathMapKeys(m map[string]*fsutil.AccessInfo) []string {
 	if len(m) == 0 {
 		return nil
 	}
@@ -135,10 +137,12 @@ func NewInspector(
 	runTargetAsUser bool,
 	showContainerLogs bool,
 	volumeMounts map[string]config.VolumeMount,
-	excludePaths map[string]bool,
-	includePaths map[string]bool,
-	includeBins map[string]bool,
-	includeExes map[string]bool,
+	keepPerms bool,
+	pathPerms map[string]*fsutil.AccessInfo,
+	excludePaths map[string]*fsutil.AccessInfo,
+	includePaths map[string]*fsutil.AccessInfo,
+	includeBins map[string]*fsutil.AccessInfo,
+	includeExes map[string]*fsutil.AccessInfo,
 	doIncludeShell bool,
 	doDebug bool,
 	inContainer bool,
@@ -165,6 +169,8 @@ func NewInspector(
 		ShowContainerLogs:  showContainerLogs,
 		RunTargetAsUser:    runTargetAsUser,
 		VolumeMounts:       volumeMounts,
+		KeepPerms:          keepPerms,
+		PathPerms:          pathPerms,
 		ExcludePaths:       excludePaths,
 		IncludePaths:       includePaths,
 		IncludeBins:        includeBins,
@@ -468,7 +474,13 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	if len(i.IncludePaths) > 0 {
-		cmd.Includes = pathMapKeys(i.IncludePaths)
+		cmd.Includes = i.IncludePaths
+	}
+
+	cmd.KeepPerms = i.KeepPerms
+
+	if len(i.PathPerms) > 0 {
+		cmd.Perms = i.PathPerms
 	}
 
 	if len(i.IncludeBins) > 0 {

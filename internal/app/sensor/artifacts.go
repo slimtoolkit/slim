@@ -224,6 +224,15 @@ func (p *artifactStore) resolveLinks() {
 func (p *artifactStore) saveArtifacts() {
 	var excludePaths map[string]bool
 	var includePaths map[string]bool
+	var newPerms map[string]*fsutil.AccessInfo
+
+	ignorePrefixes := map[string]struct{}{
+		"/opt/dockerslim/": {},
+	}
+
+	ignorePaths := map[string]struct{}{
+		"/opt/dockerslim": {},
+	}
 
 	preparePaths := func(pathList []string) map[string]bool {
 		if len(pathList) < 1 {
@@ -248,13 +257,45 @@ func (p *artifactStore) saveArtifacts() {
 		return paths
 	}
 
+	getKeys := func(m map[string]*fsutil.AccessInfo) []string {
+		if len(m) == 0 {
+			return nil
+		}
+
+		keys := make([]string, 0, len(m))
+		for k := range m {
+			keys = append(keys, k)
+		}
+
+		return keys
+	}
+
+	getRecordsWithPerms := func(m map[string]*fsutil.AccessInfo) map[string]*fsutil.AccessInfo {
+		perms := map[string]*fsutil.AccessInfo{}
+		for k, v := range m {
+			if v != nil {
+				perms[k] = v
+			}
+		}
+
+		return perms
+	}
+
 	syscall.Umask(0)
 
 	excludePaths = preparePaths(p.cmd.Excludes)
-	log.Debugf("saveArtifacts - excludePaths: %+v", excludePaths)
+	log.Debugf("saveArtifacts - excludePaths(%v): %+v", len(excludePaths), excludePaths)
 
-	includePaths = preparePaths(p.cmd.Includes)
-	log.Debugf("saveArtifacts - includePaths: %+v", includePaths)
+	includePaths = preparePaths(getKeys(p.cmd.Includes))
+	log.Debugf("saveArtifacts - includePaths(%v): %+v", len(includePaths), includePaths)
+
+	newPerms = getRecordsWithPerms(p.cmd.Includes)
+	log.Debugf("saveArtifacts - newPerms(%v): %+v", len(newPerms), newPerms)
+
+	for pk, pv := range p.cmd.Perms {
+		newPerms[pk] = pv
+	}
+	log.Debugf("saveArtifacts - merged newPerms(%v): %+v", len(newPerms), newPerms)
 
 	//TODO: use exludePaths to filter discovered files
 	log.Debugf("saveArtifacts - copy files (%v)", len(p.fileMap))
@@ -262,7 +303,7 @@ func (p *artifactStore) saveArtifacts() {
 		dstFilePath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFileName)
 		log.Debug("saveArtifacts - saving file data => ", dstFilePath)
 		//err := cpFile(fileName, filePath)
-		err := fsutil.CopyRegularFile(true, srcFileName, dstFilePath, true)
+		err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, dstFilePath, true)
 		if err != nil {
 			log.Warn("saveArtifacts - error saving file => ", err)
 		}
@@ -314,7 +355,7 @@ func (p *artifactStore) saveArtifacts() {
 		passwdFileTargetPath := fmt.Sprintf("%s/files%s", p.storeLocation, passwdFilePath)
 		if _, err := os.Stat(passwdFilePath); err == nil {
 			//if err := cpFile(passwdFilePath, passwdFileTargetPath); err != nil {
-			if err := fsutil.CopyRegularFile(true, passwdFilePath, passwdFileTargetPath, true); err != nil {
+			if err := fsutil.CopyRegularFile(p.cmd.KeepPerms, passwdFilePath, passwdFileTargetPath, true); err != nil {
 				log.Warn("sensor: monitor - error copying user info file =>", err)
 			}
 		} else {
@@ -330,7 +371,7 @@ func (p *artifactStore) saveArtifacts() {
 	for inPath, isDir := range includePaths {
 		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, inPath)
 		if isDir {
-			err, errs := fsutil.CopyDir(true, inPath, dstPath, true, true, nil, nil, nil)
+			err, errs := fsutil.CopyDir(p.cmd.KeepPerms, inPath, dstPath, true, true, ignorePrefixes, ignorePaths, nil, nil)
 			if err != nil {
 				log.Warnf("CopyDir(%v,%v) error: %v", inPath, dstPath, err)
 			}
@@ -339,7 +380,7 @@ func (p *artifactStore) saveArtifacts() {
 				log.Warnf("CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
 			}
 		} else {
-			if err := fsutil.CopyFile(true, inPath, dstPath, true); err != nil {
+			if err := fsutil.CopyFile(p.cmd.KeepPerms, inPath, dstPath, true); err != nil {
 				log.Warnf("CopyFile(%v,%v) error: %v", inPath, dstPath, err)
 			}
 		}
@@ -357,7 +398,7 @@ func (p *artifactStore) saveArtifacts() {
 
 		for _, apath := range exeArtifacts {
 			dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, apath)
-			if err := fsutil.CopyFile(true, apath, dstPath, true); err != nil {
+			if err := fsutil.CopyFile(p.cmd.KeepPerms, apath, dstPath, true); err != nil {
 				log.Warnf("CopyFile(%v,%v) error: %v", apath, dstPath, err)
 			}
 		}
@@ -375,7 +416,7 @@ func (p *artifactStore) saveArtifacts() {
 
 		for _, bpath := range binArtifacts {
 			dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, bpath)
-			if err := fsutil.CopyFile(true, bpath, dstPath, true); err != nil {
+			if err := fsutil.CopyFile(p.cmd.KeepPerms, bpath, dstPath, true); err != nil {
 				log.Warnf("CopyFile(%v,%v) error: %v", bpath, dstPath, err)
 			}
 		}
@@ -389,7 +430,7 @@ func (p *artifactStore) saveArtifacts() {
 
 			for _, spath := range shellArtifacts {
 				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, spath)
-				if err := fsutil.CopyFile(true, spath, dstPath, true); err != nil {
+				if err := fsutil.CopyFile(p.cmd.KeepPerms, spath, dstPath, true); err != nil {
 					log.Warnf("CopyFile(%v,%v) error: %v", spath, dstPath, err)
 				}
 			}
@@ -408,6 +449,15 @@ func (p *artifactStore) saveArtifacts() {
 		} else {
 			if err := os.Chmod(tdTargetPath, os.ModeSticky|os.ModeDir|0777); err != nil {
 				log.Warn("saveArtifacts - error setting tmp directory permission ==> ", err)
+			}
+		}
+	}
+
+	for inPath, perms := range newPerms {
+		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, inPath)
+		if fsutil.Exists(dstPath) {
+			if err := fsutil.SetAccess(dstPath, perms); err != nil {
+				log.Warnf("SetPerms(%v,%v) error: %v", dstPath, perms, err)
 			}
 		}
 	}

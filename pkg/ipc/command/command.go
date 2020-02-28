@@ -3,6 +3,8 @@ package command
 import (
 	"encoding/json"
 	"errors"
+
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
 
 // Message errors
@@ -37,15 +39,17 @@ type Message interface {
 
 // StartMonitor contains the start monitor command fields
 type StartMonitor struct {
-	AppName         string   `json:"app_name"`
-	AppArgs         []string `json:"app_args,omitempty"`
-	AppUser         string   `json:"app_user,omitempty"`
-	RunTargetAsUser bool     `json:"run_tas_user,omitempty"`
-	Excludes        []string `json:"excludes,omitempty"`
-	Includes        []string `json:"includes,omitempty"`
-	IncludeBins     []string `json:"include_bins,omitempty"`
-	IncludeExes     []string `json:"include_exes,omitempty"`
-	IncludeShell    bool     `json:"include_shell,omitempty"`
+	AppName         string                        `json:"app_name"`
+	AppArgs         []string                      `json:"app_args,omitempty"`
+	AppUser         string                        `json:"app_user,omitempty"`
+	RunTargetAsUser bool                          `json:"run_tas_user,omitempty"`
+	KeepPerms       bool                          `json:"keep_perms,omitempty"`
+	Perms           map[string]*fsutil.AccessInfo `json:"perms,omitempty"`
+	Excludes        []string                      `json:"excludes,omitempty"`
+	Includes        map[string]*fsutil.AccessInfo `json:"includes,omitempty"`
+	IncludeBins     []string                      `json:"include_bins,omitempty"`
+	IncludeExes     []string                      `json:"include_exes,omitempty"`
+	IncludeShell    bool                          `json:"include_shell,omitempty"`
 }
 
 // GetName returns the command message ID for the start monitor command

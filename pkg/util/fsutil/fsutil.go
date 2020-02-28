@@ -58,6 +58,21 @@ const (
 	sensorFileName = "docker-slim-sensor"
 )
 
+// AccessInfo provides the file object access properties
+type AccessInfo struct {
+	Flags os.FileMode
+	UID   int
+	GID   int
+}
+
+func NewAccessInfo() *AccessInfo {
+	return &AccessInfo{
+		Flags: 0,
+		UID:   -1,
+		GID:   -1,
+	}
+}
+
 // Remove removes the artifacts generated during the current application execution
 func Remove(artifactLocation string) error {
 	return os.RemoveAll(artifactLocation)
@@ -109,6 +124,27 @@ func IsSymlink(target string) bool {
 	}
 
 	return (info.Mode() & os.ModeSymlink) == os.ModeSymlink
+}
+
+// SetAccess updates the access permissions on the destination
+func SetAccess(dst string, access *AccessInfo) error {
+	if dst == "" || access == nil {
+		return nil
+	}
+
+	if access.Flags != 0 {
+		if err := os.Chmod(dst, access.Flags); err != nil {
+			return err
+		}
+	}
+
+	if access.UID > -1 || access.GID > -1 {
+		if err := os.Chown(dst, access.UID, access.GID); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 // CopyFile copies the source file system object to the desired destination
@@ -184,16 +220,96 @@ func CopySymlinkFile(clone bool, src, dst string, makeDir bool) error {
 				log.Warnf("CopySymlinkFile(%v,%v) - UpdateSymlinkTimes error", src, dst)
 			}
 
-			//todo: later
-			//if err := os.Lchown(dst, int(ssi.Uid),int(ssi.Gid)); err != nil {
-			//	log.Warnln("CopySymlinkFile(%v,%v)- unable to change owner", src, dst)
-			//}
+			if err := os.Lchown(dst, int(ssi.Uid), int(ssi.Gid)); err != nil {
+				log.Warnln("CopySymlinkFile(%v,%v)- unable to change owner", src, dst)
+			}
 		} else {
 			log.Warnf("CopySymlinkFile(%v,%v)- unable to get Stat_t", src, dst)
 		}
 	}
 
 	return nil
+}
+
+type dirInfo struct {
+	src   string
+	dst   string
+	perms os.FileMode
+	sys   SysStat
+}
+
+func cloneDirPath(src, dst string) {
+	src, err := filepath.Abs(src)
+	if err != nil {
+		errutil.FailOn(err)
+	}
+	dst, err = filepath.Abs(dst)
+	if err != nil {
+		errutil.FailOn(err)
+	}
+
+	var dirs []dirInfo
+	for {
+		if src == "/" {
+			break
+		}
+
+		srcDirName := filepath.Base(src)
+		dstDirName := filepath.Base(dst)
+
+		if srcDirName != dstDirName {
+			break
+		}
+
+		srcInfo, err := os.Stat(src)
+		if err != nil {
+			errutil.FailOn(err)
+		}
+
+		if !srcInfo.IsDir() {
+			errutil.Fail("not a directory")
+		}
+
+		if Exists(dst) {
+			break
+		}
+
+		di := dirInfo{
+			src:   src,
+			dst:   dst,
+			perms: srcInfo.Mode(),
+		}
+
+		if sysStat, ok := srcInfo.Sys().(*syscall.Stat_t); ok {
+			di.sys = SysStatInfo(sysStat)
+		}
+
+		dirs = append([]dirInfo{di}, dirs...)
+
+		src = FileDir(src)
+		dst = FileDir(dst)
+	}
+
+	for _, dir := range dirs {
+		fmt.Printf("cloning dir path = %#v\n", dir)
+
+		err = os.Mkdir(dir.dst, 0777)
+		if err != nil {
+			errutil.FailOn(err)
+		}
+
+		if err := os.Chmod(dir.dst, dir.perms); err != nil {
+			log.Warnf("cloneDirPath() - unable to set perms (%v) - %v", dir.dst, err)
+		}
+
+		if err := UpdateFileTimes(dir.dst, dir.sys.Atime, dir.sys.Mtime); err != nil {
+			log.Warnf("cloneDirPath() - UpdateFileTimes error (%v) - %v", dir.dst, err)
+		}
+
+		if err := os.Chown(dir.dst, int(dir.sys.Uid), int(dir.sys.Gid)); err != nil {
+			log.Warnln("cloneDirPath()- unable to change owner (%v) - %v", dir.dst, err)
+		}
+	}
 }
 
 // CopyRegularFile copies a regular file
@@ -216,27 +332,33 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 	}
 
 	if makeDir {
-		//srcDirName := FileDir(src)
-		dstDirName := FileDir(dst)
-
-		if _, err := os.Stat(dstDirName); err != nil {
+		dstDirPath := FileDir(dst)
+		if _, err := os.Stat(dstDirPath); err != nil {
 			if os.IsNotExist(err) {
-				var dirMode os.FileMode = 0777
-				//need to make it work for non-default user use cases
-				//if clone {
-				//	srcDirInfo, err := os.Stat(srcDirName)
-				//	if err != nil {
-				//		return err
-				//	}
-				//
-				//	dirMode = srcDirInfo.Mode()
-				//}
+				srcDirPath := FileDir(src)
 
-				err = os.MkdirAll(dstDirName, dirMode)
-				if err != nil {
-					return err
+				if clone {
+					cloneDirPath(srcDirPath, dstDirPath)
+				} else {
+					var dirMode os.FileMode = 0777
+					err = os.MkdirAll(dstDirPath, dirMode)
+					if err != nil {
+						return err
+					}
+
+					//try copying the timestamps too (even without cloning)
+					srcDirInfo, err := os.Stat(srcDirPath)
+					if err == nil {
+						if sysStat, ok := srcDirInfo.Sys().(*syscall.Stat_t); ok {
+							ssi := SysStatInfo(sysStat)
+							if err := UpdateFileTimes(dstDirPath, ssi.Atime, ssi.Mtime); err != nil {
+								log.Warnf("CopyRegularFile() - UpdateFileTimes(%v) error - %v", dstDirPath, err)
+							}
+						}
+					} else {
+						log.Warnf("CopyRegularFile() - os.Stat(%v) error - %v", srcDirPath, err)
+					}
 				}
-
 			} else {
 				return err
 			}
@@ -281,6 +403,19 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 		} else {
 			log.Warnf("CopyRegularFile(%v,%v)- unable to get Stat_t", src, dst)
 		}
+	} else {
+		if err := d.Chmod(0777); err != nil {
+			log.Warnf("CopyRegularFile(%v,%v) - unable to set mode", src, dst)
+		}
+
+		if sysStat, ok := srcFileInfo.Sys().(*syscall.Stat_t); ok {
+			ssi := SysStatInfo(sysStat)
+			if err := UpdateFileTimes(dst, ssi.Atime, ssi.Mtime); err != nil {
+				log.Warnf("CopyRegularFile(%v,%v) - UpdateFileTimes error", src, dst)
+			}
+		} else {
+			log.Warnf("CopyRegularFile(%v,%v)- unable to get Stat_t", src, dst)
+		}
 	}
 
 	return d.Close()
@@ -290,7 +425,7 @@ func copyFileObjectHandler(
 	clone bool,
 	srcBase, dstBase string,
 	copyRelPath, skipErrors bool,
-	ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{},
+	ignorePrefixes, ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{},
 	errs *[]error) filepath.WalkFunc {
 	var foCount uint64
 
@@ -307,6 +442,20 @@ func copyFileObjectHandler(
 			return err
 		}
 
+		foBase := filepath.Base(path)
+
+		var isIgnored bool
+		if _, ok := ignorePaths[path]; ok {
+			isIgnored = true
+		}
+
+		for prefix := range ignorePrefixes {
+			if strings.HasPrefix(path, prefix) {
+				isIgnored = true
+				break
+			}
+		}
+
 		var targetPath string
 		if copyRelPath {
 			targetPath = filepath.Join(dstBase, strings.TrimPrefix(path, srcBase))
@@ -314,41 +463,60 @@ func copyFileObjectHandler(
 			targetPath = filepath.Join(dstBase, path)
 		}
 
-		foBase := filepath.Base(path)
-
 		switch {
 		case info.Mode().IsDir():
-			if _, ok := ignorePaths[path]; ok {
-				log.Debug("dir path in ignorePath list (skipping dir)...")
+			if isIgnored {
+				log.Debugf("dir path (%v) is ignored (skipping dir)...", path)
 				return filepath.SkipDir
 			}
 
+			//todo: refactor
 			if _, ok := ignoreDirNames[foBase]; ok {
-				log.Debug("dir name in ignoreDirNames list (skipping dir)...")
+				log.Debugf("dir name (%v) in ignoreDirNames list (skipping dir)...", foBase)
 				return filepath.SkipDir
 			}
 
-			//TODO: should have a better 'clone' support...
+			if _, err := os.Stat(targetPath); err != nil {
+				if os.IsNotExist(err) {
+					if clone {
+						cloneDirPath(path, targetPath)
+					} else {
+						err = os.MkdirAll(targetPath, 0777)
+						if err != nil {
+							if skipErrors {
+								*errs = append(*errs, err)
+								return nil
+							}
 
-			//need to make it work for non-default user use cases
-			//err = os.MkdirAll(targetPath, info.Mode())
-			err = os.MkdirAll(targetPath, 0777)
-			if err != nil {
-				if skipErrors {
-					*errs = append(*errs, err)
-					return nil
+							return err
+						}
+
+						srcDirInfo, err := os.Stat(path)
+						if err == nil {
+							if sysStat, ok := srcDirInfo.Sys().(*syscall.Stat_t); ok {
+								ssi := SysStatInfo(sysStat)
+								if err := UpdateFileTimes(targetPath, ssi.Atime, ssi.Mtime); err != nil {
+									log.Warnf("copyFileObjectHandler() - UpdateFileTimes(%v) error - %v", targetPath, err)
+								}
+							}
+						} else {
+							log.Warnf("copyFileObjectHandler() - os.Stat(%v) error - %v", path, err)
+						}
+					}
+				} else {
+					log.Warnf("copyFileObjectHandler() - os.Stat(%v) error - %v", targetPath, err)
 				}
-
-				return err
 			}
+
 		case info.Mode().IsRegular():
-			if _, ok := ignorePaths[path]; ok {
-				log.Debug("file path in ignorePath list (skipping file)...")
+			if isIgnored {
+				log.Debugf("file path (%v) is ignored (skipping file)...", path)
 				return nil
 			}
 
+			//todo: refactor
 			if _, ok := ignoreFileNames[foBase]; ok {
-				log.Debug("file name in ignoreDirNames list (skipping file)...")
+				log.Debugf("file name (%v) in ignoreFileNames list (skipping file)...", foBase)
 				return nil
 			}
 
@@ -362,13 +530,14 @@ func copyFileObjectHandler(
 				return err
 			}
 		case (info.Mode() & os.ModeSymlink) == os.ModeSymlink:
-			if _, ok := ignorePaths[path]; ok {
-				log.Debug("link file path in ignorePath list (skipping file)...")
+			if isIgnored {
+				log.Debugf("link path (%v) is ignored (skipping file)...", path)
 				return nil
 			}
 
+			//todo: refactor
 			if _, ok := ignoreFileNames[foBase]; ok {
-				log.Debug("link file name in ignoreDirNames list (skipping file)...")
+				log.Debugf("link file name (%v) in ignoreFileNames list (skipping file)...", foBase)
 				return nil
 			}
 
@@ -408,8 +577,8 @@ func copyFileObjectHandler(
 func CopyDir(clone bool,
 	src, dst string,
 	copyRelPath, skipErrors bool,
-	ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{}) (error, []error) {
-	log.Debugf("CopyDir(%v,%v,%v,%v,...)", src, dst, copyRelPath, skipErrors)
+	ignorePrefixes, ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{}) (error, []error) {
+	log.Debugf("CopyDir(%v,%v,%v,%v,%#v,...)", src, dst, copyRelPath, skipErrors, ignorePrefixes)
 
 	if src == "" {
 		return ErrNoSrcDir, nil
@@ -452,7 +621,7 @@ func CopyDir(clone bool,
 
 	var errs []error
 	err = filepath.Walk(src, copyFileObjectHandler(
-		clone, src, dst, copyRelPath, skipErrors, ignorePaths, ignoreDirNames, ignoreFileNames, &errs))
+		clone, src, dst, copyRelPath, skipErrors, ignorePrefixes, ignorePaths, ignoreDirNames, ignoreFileNames, &errs))
 	if err != nil {
 		return err, nil
 	}
@@ -471,9 +640,9 @@ func ExeDir() string {
 
 // FileDir returns the directory information for the given file
 func FileDir(fileName string) string {
-	dirName, err := filepath.Abs(filepath.Dir(fileName))
+	abs, err := filepath.Abs(fileName)
 	errutil.FailOn(err)
-	return dirName
+	return filepath.Dir(abs)
 }
 
 // PreparePostUpdateStateDir ensures that the updated sensor is copied to the state directory if necessary

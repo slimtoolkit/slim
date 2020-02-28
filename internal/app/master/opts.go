@@ -17,6 +17,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/env"
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
 
 const (
@@ -160,18 +161,61 @@ func parseVolumeMounts(values []string) (map[string]config.VolumeMount, error) {
 	return volumeMounts, nil
 }
 
-func parsePaths(values []string) map[string]bool {
-	paths := map[string]bool{}
+func parsePathPerms(raw string) (string, *fsutil.AccessInfo, error) {
+	access := fsutil.NewAccessInfo()
+	//note: will work for ASCII (todo: make it work for unicode)
+	sepIdx := strings.LastIndex(raw, ":")
+	if sepIdx == -1 || sepIdx == (len(raw)-1) {
+		return raw, nil, nil
+	}
 
-	for _, value := range values {
-		paths[value] = true
+	pathStr := raw[0:sepIdx]
+	permsStr := raw[sepIdx+1:]
+
+	permsParts := strings.Split(permsStr, "#")
+
+	permsNum, err := strconv.ParseUint(permsParts[0], 8, 32)
+	if err != nil {
+		return "", nil, err
+	}
+
+	access.Flags = os.FileMode(permsNum)
+
+	if len(permsParts) > 1 {
+		uidNum, err := strconv.ParseInt(permsParts[1], 10, 32)
+		if err == nil && uidNum > -1 {
+			access.UID = int(uidNum)
+		}
+	}
+
+	if len(permsParts) > 2 {
+		gidNum, err := strconv.ParseInt(permsParts[2], 10, 32)
+		if err == nil && gidNum > -1 {
+			access.GID = int(gidNum)
+		}
+	}
+
+	return pathStr, access, nil
+}
+
+func parsePaths(values []string) map[string]*fsutil.AccessInfo {
+	paths := map[string]*fsutil.AccessInfo{}
+
+	for _, raw := range values {
+		pathStr, access, err := parsePathPerms(raw)
+		if err != nil {
+			fmt.Printf("parsePaths() - skipping %v (error=%v)\n", raw, err)
+			continue
+		}
+
+		paths[pathStr] = access
 	}
 
 	return paths
 }
 
-func parsePathsFile(filePath string) (map[string]bool, error) {
-	paths := map[string]bool{}
+func parsePathsFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
+	paths := map[string]*fsutil.AccessInfo{}
 
 	if filePath == "" {
 		return paths, nil
@@ -201,7 +245,13 @@ func parsePathsFile(filePath string) (map[string]bool, error) {
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if len(line) != 0 {
-			paths[line] = true
+			pathStr, access, err := parsePathPerms(line)
+			if err != nil {
+				fmt.Printf("parsePathsFile() - skipping %v (error=%v)\n", line, err)
+				continue
+			}
+
+			paths[pathStr] = access
 		}
 	}
 

@@ -72,6 +72,8 @@ const (
 	FlagImageOverrides      = "image-overrides"
 	FlagExludeMounts        = "exclude-mounts"
 	FlagExcludePath         = "exclude-path"
+	FlagPathPerms           = "path-perms"
+	FlagPathPermsFile       = "path-perms-file"
 	FlagIncludePath         = "include-path"
 	FlagIncludePathFile     = "include-path-file"
 	FlagIncludeBin          = "include-bin"
@@ -92,6 +94,7 @@ const (
 	FlagTag                 = "tag"
 	FlagTagFat              = "tag-fat"
 	FlagRunTargetAsUser     = "run-target-as-user"
+	FlagKeepPerms           = "keep-perms"
 )
 
 type cmdSpec struct {
@@ -320,6 +323,12 @@ func init() {
 		EnvVar: "DSLIM_HTTP_PROBE_FULL",
 	}
 
+	doKeepPermsFlag := cli.BoolTFlag{
+		Name:   FlagKeepPerms,
+		Usage:  "Keep artifact permissions as-is",
+		EnvVar: "DSLIM_KEEP_PERMS",
+	}
+
 	doRunTargetAsUserFlag := cli.BoolTFlag{
 		Name:   FlagRunTargetAsUser,
 		Usage:  "Run target app as USER",
@@ -462,6 +471,20 @@ func init() {
 		Value:  &cli.StringSlice{},
 		Usage:  "Exclude path from image",
 		EnvVar: "DSLIM_EXCLUDE_PATH",
+	}
+
+	doSetPathPermsFlag := cli.StringSliceFlag{
+		Name:   FlagPathPerms,
+		Value:  &cli.StringSlice{},
+		Usage:  "Set path permissions in optimized image",
+		EnvVar: "DSLIM_PATH_PERMS",
+	}
+
+	doSetPathPermsFileFlag := cli.StringFlag{
+		Name:   FlagPathPermsFile,
+		Value:  "",
+		Usage:  "File with path permissions to set",
+		EnvVar: "DSLIM_PATH_PERMS_FILE",
 	}
 
 	doIncludePathFlag := cli.StringSliceFlag{
@@ -639,6 +662,7 @@ func init() {
 				doHTTPProbeRetryWaitFlag,
 				doHTTPProbePortsFlag,
 				doHTTPProbeFullFlag,
+				doKeepPermsFlag,
 				doRunTargetAsUserFlag,
 				doShowContainerLogsFlag,
 				doShowBuildLogsFlag,
@@ -680,6 +704,8 @@ func init() {
 				doUseNewEnvFlag,
 				doExcludeMountsFlag,
 				doExcludePathFlag,
+				doSetPathPermsFlag,
+				doSetPathPermsFileFlag,
 				doIncludePathFlag,
 				doIncludePathFileFlag,
 				doIncludeBinFlag,
@@ -742,6 +768,8 @@ func init() {
 
 				doHTTPProbeFull := ctx.Bool(FlagHTTPProbeFull)
 
+				doKeepPerms := ctx.Bool(FlagKeepPerms)
+
 				doRunTargetAsUser := ctx.Bool(FlagRunTargetAsUser)
 
 				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
@@ -780,6 +808,16 @@ func init() {
 					}
 				}
 
+				pathPerms := parsePaths(ctx.StringSlice(FlagPathPerms))
+				morePathPerms, err := parsePathsFile(ctx.String(FlagPathPermsFile))
+				if err != nil {
+					fmt.Printf("docker-slim[build]: could not read path perms file (ignoring): %v\n", err)
+				} else {
+					for k, v := range morePathPerms {
+						pathPerms[k] = v
+					}
+				}
+
 				includeBins := parsePaths(ctx.StringSlice(FlagIncludeBin))
 				includeExes := parsePaths(ctx.StringSlice(FlagIncludeExe))
 				doIncludeShell := ctx.Bool(FlagIncludeShell)
@@ -792,7 +830,7 @@ func init() {
 				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
-						excludePaths[mpath] = true
+						excludePaths[mpath] = nil
 					}
 				}
 
@@ -808,7 +846,7 @@ func init() {
 				}
 
 				for ipath := range includePaths {
-					if excludePaths[ipath] {
+					if _, ok := excludePaths[ipath]; ok {
 						fmt.Printf("docker-slim[build]: include and exclude path conflict: %v\n", err)
 						return nil
 					}
@@ -853,6 +891,8 @@ func init() {
 					ctx.StringSlice(FlagContainerDNS),
 					ctx.StringSlice(FlagContainerDNSSearch),
 					volumeMounts,
+					doKeepPerms,
+					pathPerms,
 					excludePaths,
 					includePaths,
 					includeBins,
@@ -879,6 +919,7 @@ func init() {
 				doHTTPProbeRetryWaitFlag,
 				doHTTPProbePortsFlag,
 				doHTTPProbeFullFlag,
+				doKeepPermsFlag,
 				doRunTargetAsUserFlag,
 				doShowContainerLogsFlag,
 				doCopyMetaArtifactsFlag,
@@ -895,6 +936,8 @@ func init() {
 				doUseExposeFlag,
 				doExcludeMountsFlag,
 				doExcludePathFlag,
+				doSetPathPermsFlag,
+				doSetPathPermsFileFlag,
 				doIncludePathFlag,
 				doIncludePathFileFlag,
 				doIncludeBinFlag,
@@ -954,6 +997,8 @@ func init() {
 
 				doHTTPProbeFull := ctx.Bool(FlagHTTPProbeFull)
 
+				doKeepPerms := ctx.Bool(FlagKeepPerms)
+
 				doRunTargetAsUser := ctx.Bool(FlagRunTargetAsUser)
 
 				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
@@ -981,6 +1026,16 @@ func init() {
 					}
 				}
 
+				pathPerms := parsePaths(ctx.StringSlice(FlagPathPerms))
+				morePathPerms, err := parsePathsFile(ctx.String(FlagPathPermsFile))
+				if err != nil {
+					fmt.Printf("docker-slim[profile]: could not read path perms file (ignoring): %v\n", err)
+				} else {
+					for k, v := range morePathPerms {
+						pathPerms[k] = v
+					}
+				}
+
 				includeBins := parsePaths(ctx.StringSlice(FlagIncludeBin))
 				includeExes := parsePaths(ctx.StringSlice(FlagIncludeExe))
 				doIncludeShell := ctx.Bool(FlagIncludeShell)
@@ -993,7 +1048,7 @@ func init() {
 				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
-						excludePaths[mpath] = true
+						excludePaths[mpath] = nil
 					}
 				}
 
@@ -1009,7 +1064,7 @@ func init() {
 				}
 
 				for ipath := range includePaths {
-					if excludePaths[ipath] {
+					if _, ok := excludePaths[ipath]; ok {
 						fmt.Printf("docker-slim[profile]: include and exclude path conflict: %v\n", err)
 						return nil
 					}
@@ -1047,6 +1102,8 @@ func init() {
 					ctx.StringSlice(FlagContainerDNS),
 					ctx.StringSlice(FlagContainerDNSSearch),
 					volumeMounts,
+					doKeepPerms,
+					pathPerms,
 					excludePaths,
 					includePaths,
 					includeBins,

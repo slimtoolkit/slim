@@ -66,10 +66,12 @@ func OnBuild(
 	dnsServers []string,
 	dnsSearchDomains []string,
 	volumeMounts map[string]config.VolumeMount,
-	excludePaths map[string]bool,
-	includePaths map[string]bool,
-	includeBins map[string]bool,
-	includeExes map[string]bool,
+	doKeepPerms bool,
+	pathPerms map[string]*fsutil.AccessInfo,
+	excludePaths map[string]*fsutil.AccessInfo,
+	includePaths map[string]*fsutil.AccessInfo,
+	includeBins map[string]*fsutil.AccessInfo,
+	includeExes map[string]*fsutil.AccessInfo,
 	doIncludeShell bool,
 	doUseLocalMounts bool,
 	doUseSensorVolume string,
@@ -101,9 +103,11 @@ func OnBuild(
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
 
 	if buildFromDockerfile == "" {
-		fmt.Printf("%s[%s]: info=params target=%v continue.mode=%v rt.as.user=%v\n", appName, cmdName, imageRef, continueAfter.Mode, doRunTargetAsUser)
+		fmt.Printf("%s[%s]: info=params target=%v continue.mode=%v rt.as.user=%v keep.perms=%v\n",
+			appName, cmdName, imageRef, continueAfter.Mode, doRunTargetAsUser, doKeepPerms)
 	} else {
-		fmt.Printf("%s[%s]: info=params context=%v/file=%v continue.mode=%v rt.as.user=%v\n", appName, cmdName, imageRef, buildFromDockerfile, continueAfter.Mode, doRunTargetAsUser)
+		fmt.Printf("%s[%s]: info=params context=%v/file=%v continue.mode=%v rt.as.user=%v keep.perms=%v\n",
+			appName, cmdName, imageRef, buildFromDockerfile, continueAfter.Mode, doRunTargetAsUser, doKeepPerms)
 	}
 
 	if buildFromDockerfile != "" {
@@ -249,6 +253,8 @@ func OnBuild(
 		doRunTargetAsUser,
 		doShowContainerLogs,
 		volumeMounts,
+		doKeepPerms,
+		pathPerms,
 		excludePaths,
 		includePaths,
 		includeBins,
