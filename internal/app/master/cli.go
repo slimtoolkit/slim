@@ -350,35 +350,35 @@ func init() {
 	doUseNewEntrypointFlag := cli.StringFlag{
 		Name:   FlagNewEntrypoint,
 		Value:  "",
-		Usage:  "New ENTRYPOINT instruction for the minified image",
+		Usage:  "New ENTRYPOINT instruction for the optimized image",
 		EnvVar: "DSLIM_NEW_ENTRYPOINT",
 	}
 
 	doUseNewCmdFlag := cli.StringFlag{
 		Name:   FlagNewCmd,
 		Value:  "",
-		Usage:  "New CMD instruction for the minified image",
+		Usage:  "New CMD instruction for the optimized image",
 		EnvVar: "DSLIM_NEW_CMD",
 	}
 
 	doUseNewExposeFlag := cli.StringSliceFlag{
 		Name:   FlagNewExpose,
 		Value:  &cli.StringSlice{},
-		Usage:  "New EXPOSE instructions for the minified image",
+		Usage:  "New EXPOSE instructions for the optimized image",
 		EnvVar: "DSLIM_NEW_EXPOSE",
 	}
 
 	doUseNewWorkdirFlag := cli.StringFlag{
 		Name:   FlagNewWorkdir,
 		Value:  "",
-		Usage:  "New WORKDIR instruction for the minified image",
+		Usage:  "New WORKDIR instruction for the optimized image",
 		EnvVar: "DSLIM_NEW_WORKDIR",
 	}
 
 	doUseNewEnvFlag := cli.StringSliceFlag{
 		Name:   FlagNewEnv,
 		Value:  &cli.StringSlice{},
-		Usage:  "New ENV instructions for the minified image",
+		Usage:  "New ENV instructions for the optimized image",
 		EnvVar: "DSLIM_NEW_ENV",
 	}
 
@@ -652,7 +652,7 @@ func init() {
 				cli.StringFlag{
 					Name:   FlagBuildFromDockerfile,
 					Value:  "",
-					Usage:  "The source Dockerfile name to build the fat image before it's minified",
+					Usage:  "The source Dockerfile name to build the fat image before it's optimized",
 					EnvVar: "DSLIM_BUILD_DOCKERFILE",
 				},
 				doHTTPProbeFlag,

@@ -72,6 +72,7 @@ PHP application images:
 Haskell application images:
 
 * (Scotty service) from haskell:8 - 2.09GB => 16.6MB (minified by **125.32X**)
+* (Scotty service) from haskell:7 - 1.5GB => 21MB (minified by 71X)
 
 Elixir application images:
 
@@ -126,16 +127,16 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 
 ## RECENT UPDATES
 
-Latest version: 1.26.1 (11/28/2019)
+Latest version: 1.27.0 (2/28/2020)
 
-Now you can run `docker-slim` in containers and you get more convenient reporting defaults. For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
+This release has better support for non-default users, an ability to retain the original artifact permissions and to overwrite the container artifact permissions and ownership. For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.26.1/dist_mac.zip)
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.26.1/dist_linux.tar.gz)
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.26.1/dist_linux_arm.tar.gz)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.27.0/dist_mac.zip)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.27.0/dist_linux.tar.gz)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.27.0/dist_linux_arm.tar.gz)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -193,7 +194,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.26.1/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.26.1/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.26.1/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.27.0/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.27.0/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.27.0/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
   The extracted directory contains two binaries:
 
@@ -295,11 +296,13 @@ To disable the version checks set the global `--check-version` flag to `false` (
 * `--entrypoint` - override ENTRYPOINT analyzing image
 * `--cmd` - override CMD analyzing image
 * `--mount` - mount volume analyzing image (the mount parameter format is identical to the `-v` mount command in Docker) [zero or more]
-* `--include-path` - Include directory or file from image [zero or more]
-* `--include-path-file` - Load directory or file includes from a file
+* `--include-path` - Include directory or file from image [zero or more] (optionally overwriting the artifact's permissions, user and group information; format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
+* `--include-path-file` - Load directory or file includes from a file (optionally overwriting the artifact's permissions, user and group information; format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 * `--include-bin value` - Include binary from image (executable or shared object using its absolute path)
 * `--include-exe value` - Include executable from image (by executable name)
 * `--include-shell` - Include basic shell functionality
+* `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
+* `--path-perms-file` - File with path permissions to set (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 * `--env` - override ENV analyzing image [zero or more]
 * `--workdir` - override WORKDIR analyzing image
 * `--network` - override default container network settings analyzing image
@@ -311,9 +314,16 @@ To disable the version checks set the global `--check-version` flag to `false` (
 * `--container-dns-search` - add a dns search domain for unqualified hostnames analyzing image [zero or more]
 * `--continue-after` - Select continue mode: enter | signal | probe | timeout or numberInSeconds (default: enter)
 * `--dockerfile` - The source Dockerfile name to build the fat image before it's minified.
-* `--use-local-mounts` - Mount local paths for target container artifact input and output (off, by default).
+* `--use-local-mounts` - Mount local paths for target container artifact input and output (off, by default)
 * `--use-sensor-volume` - Sensor volume name to use (set it to your Docker volume name if you manage your own `docker-slim` sensor volume).
 * `--keep-tmp-artifacts` - Keep temporary artifacts when command is done (off, by default).
+* `--keep-perms` - Keep artifact permissions as-is (true, by default)
+* `--run-target-as-user` - Run target app (in the temporary container) as USER from Dockerfile (true, by default)
+* `--new-entrypoint` - New ENTRYPOINT instruction for the optimized image
+* `--new-cmd` - New CMD instruction for the optimized image
+* `--new-expose` - New EXPOSE instructions for the optimized image
+* `--new-workdir` - New WORKDIR instruction for the optimized image
+* `--new-env` - New ENV instructions for the optimized image
 
 The `--include-path` option is useful if you want to customize your minified image adding extra files and directories. The `--include-path-file` option allows you to load multiple includes from a newline delimited file. Use this option if you have a lot of includes. The includes from `--include-path` and `--include-path-file` are combined together. Future versions will also include the `--exclude-path` option to have even more control.
 
@@ -503,19 +513,37 @@ If you don't want to create a minified image and only want to "reverse engineer"
 
 ### What if my Docker images uses the USER command?
 
-The current version of DockerSlim includes an experimental support for Docker images with USER commands. Please open tickets if it doesn't work for you.
+The current version of DockerSlim does include support for non-default users (take a look at the non-default user examples (including the ElasticSearch example located in the `3rdparty` directory) in the [`examples`](https://github.com/docker-slim/examples) repo. Please open tickets if something doesn't work for you.
 
-For older versions of DockerSlim where you have non-default/non-root user declared in your Dockerfile you can use these workarounds to make sure DockerSlim can minify your image:
+Everything should work as-is, but for the special cases where the current behavior don't work as expected you can adjust what DockerSlim does using various `build` command parameters: `--run-target-as-user`, `--keep-perms`, `--path-perms`, `--path-perms-file` (along with the `--include-*` parameters).
 
-* Don't add an explicit USER statement in your Dockerfile.
-* Explicitly include `/etc/passwd` when you minify your image with DockerSlim (using the `--include-path` docker-slim parameter).
+The `--run-target-as-user` parameter is enabled by default and it controls if the application in the temporary container is started using the identity from the USER instruction in the container's Dockerfile.
 
-Example: `docker-slim --debug build --http-probe --include-path /etc/passwd your-docker-image-name`
+The `--keep-perms` parameter is also enabled by default. It tells DockerSlim to retain the permissions and the ownership information for the files and directories copied to the optimized container image.
 
-Use an explicit `-u` parameter in docker run.
-Example: `docker run -d -u "your-user-name" -p 8000:8000 your-minified-docker-image-name`
+The `--path-perms` and `--path-perms-file` parameters are similar to the `--include-path` and `--include-path-file` parameters. They are used to overwrite the permission and the user/group information for the target files and directories. Note that the target files/directories are expected to be in the optimized container image. If you don't know if the target files/directories will be in the optimized container you'll need to use one of the `--include-*` parameters (e.g., `--include-path-file`) to explicitly require those artifacts to be included. You can specify the permissions and the ownership information in the `--include-*` parameters too (so you don't need to have the `--path-*` parameters just to set the permissions).
 
-Note that you should be able to avoid including `/etc/passwd` if you are ok with using UIDs instead of text user name in the `-u` parameter to docker run.
+The `--path-*` and `--include-*` params use the same format to communicate the permission/owernship info: `TARGET_PATH_OR_NAME:PERMS_IN_OCTAL_FORMAT#USER_ID#GROUP_ID`.
+
+You don't have to specify the user and group IDs if you don't want to change them.
+
+Here's an example using these parameters to minify the standard `nginx` image adding extra artifacts and changing their permissions: `docker-slim build --include-path='/opt:770#104#107' --include-path='/bin/uname:710' --path-perms='/tmp:700' nginx`.
+
+This is what you'll see in the optimized container image:
+
+```
+drwx------  0 0      0           0 Feb 28 22:15 tmp/
+-rwx--x---  0 0      0       31240 Mar 14  2015 bin/uname
+drwxrwx---  0 104    107         0 Feb 28 22:13 opt/
+```
+
+The `uname` binary isn't used by nginx, so the `--include-path` parameter is used to keep it in the optimized image changing its permissions to `710`.
+
+The `/tmp` directory will be included in the optimized image on its own, so the `--path-perms` parameter is used to change its permissions to `700`.
+
+When you set permissions/user/group on a directory the settings are only applied to that directory and not to the artifacts inside. The future versions will allow you to apply the same settings to everything inside the target directory too.
+
+Also note that for now you have to use numeric user and group IDs. The future versions will allow you to use user and group names too.
 
 ### Nginx fails in my minified image
 

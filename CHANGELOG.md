@@ -1,3 +1,21 @@
+## 1.27.0 (2/28/2020)
+
+### New Features
+
+* Option to set permissions, user and group information for the artifacts included with the `--include-*` parameters.
+* Option to overwrite the permissions and ownership info in the optimized image using the new `--path-perms` and `path-perms-file` parameters.
+
+### Improvements
+
+* Option to run the containerized application using user and group information from the USER instruction.
+* Filter leftover PID files.
+* UX enhancements for the containers created using Dockerfiles.
+* Additional debugging information.
+
+### Bug Fixes
+
+* Support for special install directories on Linux (to prevent failures when `docker-slim` is trying to save its state).
+
 ## 1.26.1 (11/28/2019)
 
 ### Improvements
