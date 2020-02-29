@@ -6,11 +6,12 @@ import (
 	"golang.org/x/sys/unix"
 	"os"
 	"os/exec"
-	"os/user"
-	"strconv"
+	"strings"
 	"syscall"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/docker-slim/docker-slim/pkg/system"
 )
 
 //copied from libcontainer
@@ -93,33 +94,34 @@ func Start(appName string, appArgs []string, appDir, appUser string, runTargetAs
 			app.SysProcAttr = &syscall.SysProcAttr{}
 		}
 
-		userInfo, err := user.Lookup(appUser)
-		if err == nil {
-			var gid int64
-			uid, err := strconv.ParseInt(userInfo.Uid, 0, 32)
+		appUserParts := strings.Split(appUser, ":")
+		if len(appUserParts) > 0 {
+			uid, gid, err := system.ResolveUser(appUserParts[0])
 			if err == nil {
-				gid, err = strconv.ParseInt(userInfo.Gid, 0, 32)
-				if err == nil {
-					app.SysProcAttr.Credential = &syscall.Credential{
-						Uid: uint32(uid),
-						Gid: uint32(gid),
+				if len(appUserParts) > 1 {
+					xgid, err := system.ResolveGroup(appUserParts[1])
+					if err == nil {
+						gid = xgid
+					} else {
+						log.Errorf("sensor.startTargetApp: error resolving group identity (%v/%v) - %v", appUser, appUserParts[1], err)
 					}
-
-					log.Debugf("sensor.startTargetApp: start target as user (%s) - (uid=%d,gid=%d)", appUser, uid, gid)
-
-					if err = fixStdioPermissions(int(uid)); err != nil {
-						log.Errorf("sensor.startTargetApp: error fixing i/o perms for user (%v/%v) - %v", appUser, uid, err)
-					}
-				} else {
-					log.Errorf("sensor.startTargetApp: error converting user gid (%v) - %v", appUser, err)
 				}
-			} else {
-				log.Errorf("sensor.startTargetApp: error converting user uid (%v) - %v", appUser, err)
-			}
-		} else {
-			log.Errorf("sensor.startTargetApp: error getting user info (%v) - %v", appUser, err)
-		}
 
+				app.SysProcAttr.Credential = &syscall.Credential{
+					Uid: uid,
+					Gid: gid,
+				}
+
+				log.Debugf("sensor.startTargetApp: start target as user (%s) - (uid=%d,gid=%d)", appUser, uid, gid)
+
+				if err = fixStdioPermissions(int(uid)); err != nil {
+					log.Errorf("sensor.startTargetApp: error fixing i/o perms for user (%v/%v) - %v", appUser, uid, err)
+				}
+
+			} else {
+				log.Errorf("sensor.startTargetApp: error resolving user identity (%v/%v) - %v", appUser, appUserParts[0], err)
+			}
+		}
 	}
 
 	app.Dir = appDir
