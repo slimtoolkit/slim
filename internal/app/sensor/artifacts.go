@@ -9,7 +9,6 @@ import (
 	"encoding/json"
 	"fmt"
 
-	//"io"
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -27,6 +26,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 
+	"github.com/bmatcuk/doublestar"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -224,17 +224,8 @@ func (p *artifactStore) resolveLinks() {
 }
 
 func (p *artifactStore) saveArtifacts() {
-	var excludePaths map[string]bool
 	var includePaths map[string]bool
 	var newPerms map[string]*fsutil.AccessInfo
-
-	ignorePrefixes := map[string]struct{}{
-		"/opt/dockerslim/": {},
-	}
-
-	ignorePaths := map[string]struct{}{
-		"/opt/dockerslim": {},
-	}
 
 	preparePaths := func(pathList []string) map[string]bool {
 		if len(pathList) < 1 {
@@ -285,8 +276,10 @@ func (p *artifactStore) saveArtifacts() {
 
 	syscall.Umask(0)
 
-	excludePaths = preparePaths(p.cmd.Excludes)
-	log.Debugf("saveArtifacts - excludePaths(%v): %+v", len(excludePaths), excludePaths)
+	excludePatterns := p.cmd.Excludes
+	excludePatterns = append(excludePatterns, "/opt/dockerslim")
+	excludePatterns = append(excludePatterns, "/opt/dockerslim/**")
+	log.Debugf("saveArtifacts - excludePatterns(%v): %+v", len(excludePatterns), excludePatterns)
 
 	includePaths = preparePaths(getKeys(p.cmd.Includes))
 	log.Debugf("saveArtifacts - includePaths(%v): %+v", len(includePaths), includePaths)
@@ -304,9 +297,22 @@ func (p *artifactStore) saveArtifacts() {
 	err := os.MkdirAll(dstRootPath, 0777)
 	errutil.FailOn(err)
 
-	//TODO: use exludePaths to filter discovered files
 	log.Debugf("saveArtifacts - copy files (%v)", len(p.fileMap))
+copyFiles:
 	for srcFileName := range p.fileMap {
+		for _, xpattern := range excludePatterns {
+			found, err := doublestar.Match(xpattern, srcFileName)
+			if err != nil {
+				log.Warnf("saveArtifacts - copy files - [%v] excludePatterns Match error - %v\n", srcFileName, err)
+				//should only happen when the pattern is malformed
+				continue
+			}
+			if found {
+				log.Debugf("saveArtifacts - copy files - [%v] - excluding (%s) ", srcFileName, xpattern)
+				continue copyFiles
+			}
+		}
+
 		//filter out pid files (todo: have a flag to enable/disable these capabilities)
 		if isKnownPidFilePath(srcFileName) {
 			log.Debugf("saveArtifacts - copy files - skipping known pid file (%v)", srcFileName)
@@ -327,9 +333,22 @@ func (p *artifactStore) saveArtifacts() {
 		}
 	}
 
-	//TODO: use exludePaths to filter discovered links
 	log.Debugf("saveArtifacts - copy links (%v)", len(p.linkMap))
+copyLinks:
 	for linkName, linkProps := range p.linkMap {
+		for _, xpattern := range excludePatterns {
+			found, err := doublestar.Match(xpattern, linkName)
+			if err != nil {
+				log.Warnf("saveArtifacts - copy links - [%v] excludePatterns Match error - %v\n", linkName, err)
+				//should only happen when the pattern is malformed
+				continue
+			}
+			if found {
+				log.Debugf("saveArtifacts - copy links - [%v] - excluding (%s) ", linkName, xpattern)
+				continue copyLinks
+			}
+		}
+
 		linkPath := fmt.Sprintf("%s/files%s", p.storeLocation, linkName)
 		linkDir := fsutil.FileDir(linkPath)
 		err := os.MkdirAll(linkDir, 0777)
@@ -385,11 +404,11 @@ func (p *artifactStore) saveArtifacts() {
 		}
 	}
 
-	//TODO: use exludePaths to filter included paths
+copyIncludes:
 	for inPath, isDir := range includePaths {
 		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, inPath)
 		if isDir {
-			err, errs := fsutil.CopyDir(p.cmd.KeepPerms, inPath, dstPath, true, true, ignorePrefixes, ignorePaths, nil, nil)
+			err, errs := fsutil.CopyDir(p.cmd.KeepPerms, inPath, dstPath, true, true, excludePatterns, nil, nil)
 			if err != nil {
 				log.Warnf("CopyDir(%v,%v) error: %v", inPath, dstPath, err)
 			}
@@ -398,6 +417,19 @@ func (p *artifactStore) saveArtifacts() {
 				log.Warnf("CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
 			}
 		} else {
+			for _, xpattern := range excludePatterns {
+				found, err := doublestar.Match(xpattern, inPath)
+				if err != nil {
+					log.Warnf("saveArtifacts - copy includes - [%v] excludePatterns Match error - %v\n", inPath, err)
+					//should only happen when the pattern is malformed
+					continue
+				}
+				if found {
+					log.Debugf("saveArtifacts - copy includes - [%v] - excluding (%s) ", inPath, xpattern)
+					continue copyIncludes
+				}
+			}
+
 			if err := fsutil.CopyFile(p.cmd.KeepPerms, inPath, dstPath, true); err != nil {
 				log.Warnf("CopyFile(%v,%v) error: %v", inPath, dstPath, err)
 			}

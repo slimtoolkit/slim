@@ -6,6 +6,8 @@ github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
 # github.com/Microsoft/hcsshim v0.8.6
 github.com/Microsoft/hcsshim/osversion
+# github.com/bmatcuk/doublestar v1.2.2
+github.com/bmatcuk/doublestar
 # github.com/c4milo/unpackit v0.0.0-20170704181138-4ed373e9ef1c
 github.com/c4milo/unpackit
 # github.com/containerd/containerd v1.3.0

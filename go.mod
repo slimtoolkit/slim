@@ -3,6 +3,7 @@ module github.com/docker-slim/docker-slim
 go 1.13
 
 require (
+	github.com/bmatcuk/doublestar v1.2.2
 	github.com/bradfitz/iter v0.0.0-20191230175014-e8f45d346db8 // indirect
 	github.com/c4milo/unpackit v0.0.0-20170704181138-4ed373e9ef1c
 	github.com/docker-slim/go-update v0.0.0-20190422071557-ed40247aff59

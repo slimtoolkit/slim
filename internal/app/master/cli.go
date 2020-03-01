@@ -71,7 +71,7 @@ const (
 	FlagNewEnv              = "new-env"
 	FlagImageOverrides      = "image-overrides"
 	FlagExludeMounts        = "exclude-mounts"
-	FlagExcludePath         = "exclude-path"
+	FlagExcludePattern      = "exclude-pattern"
 	FlagPathPerms           = "path-perms"
 	FlagPathPermsFile       = "path-perms-file"
 	FlagIncludePath         = "include-path"
@@ -466,11 +466,11 @@ func init() {
 		EnvVar: "DSLIM_EXCLUDE_MOUNTS",
 	}
 
-	doExcludePathFlag := cli.StringSliceFlag{
-		Name:   FlagExcludePath,
+	doExcludePatternFlag := cli.StringSliceFlag{
+		Name:   FlagExcludePattern,
 		Value:  &cli.StringSlice{},
-		Usage:  "Exclude path from image",
-		EnvVar: "DSLIM_EXCLUDE_PATH",
+		Usage:  "Exclude path pattern (Glob/Match in Go and **) from image",
+		EnvVar: "DSLIM_EXCLUDE_PATTERN",
 	}
 
 	doSetPathPermsFlag := cli.StringSliceFlag{
@@ -703,7 +703,7 @@ func init() {
 				doUseNewWorkdirFlag,
 				doUseNewEnvFlag,
 				doExcludeMountsFlag,
-				doExcludePathFlag,
+				doExcludePatternFlag,
 				doSetPathPermsFlag,
 				doSetPathPermsFileFlag,
 				doIncludePathFlag,
@@ -796,7 +796,7 @@ func init() {
 					return err
 				}
 
-				excludePaths := parsePaths(ctx.StringSlice(FlagExcludePath))
+				excludePatterns := parsePaths(ctx.StringSlice(FlagExcludePattern))
 
 				includePaths := parsePaths(ctx.StringSlice(FlagIncludePath))
 				moreIncludePaths, err := parsePathsFile(ctx.String(FlagIncludePathFile))
@@ -830,7 +830,9 @@ func init() {
 				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
-						excludePaths[mpath] = nil
+						excludePatterns[mpath] = nil
+						mpattern := fmt.Sprintf("%s/**", mpath)
+						excludePatterns[mpattern] = nil
 					}
 				}
 
@@ -843,13 +845,6 @@ func init() {
 				if !doHTTPProbe && continueAfter.Mode == "probe" {
 					fmt.Printf("docker-slim[build]: info=probe message='changing continue-after from probe to enter because http-probe is disabled'\n")
 					continueAfter.Mode = "enter"
-				}
-
-				for ipath := range includePaths {
-					if _, ok := excludePaths[ipath]; ok {
-						fmt.Printf("docker-slim[build]: include and exclude path conflict: %v\n", err)
-						return nil
-					}
 				}
 
 				commandReport := ctx.GlobalString(FlagCommandReport)
@@ -893,7 +888,7 @@ func init() {
 					volumeMounts,
 					doKeepPerms,
 					pathPerms,
-					excludePaths,
+					excludePatterns,
 					includePaths,
 					includeBins,
 					includeExes,
@@ -935,7 +930,7 @@ func init() {
 				doUseHostnameFlag,
 				doUseExposeFlag,
 				doExcludeMountsFlag,
-				doExcludePathFlag,
+				doExcludePatternFlag,
 				doSetPathPermsFlag,
 				doSetPathPermsFileFlag,
 				doIncludePathFlag,
@@ -1014,7 +1009,7 @@ func init() {
 					return err
 				}
 
-				excludePaths := parsePaths(ctx.StringSlice(FlagExcludePath))
+				excludePatterns := parsePaths(ctx.StringSlice(FlagExcludePattern))
 
 				includePaths := parsePaths(ctx.StringSlice(FlagIncludePath))
 				moreIncludePaths, err := parsePathsFile(ctx.String(FlagIncludePathFile))
@@ -1048,7 +1043,9 @@ func init() {
 				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
-						excludePaths[mpath] = nil
+						excludePatterns[mpath] = nil
+						mpattern := fmt.Sprintf("%s/**", mpath)
+						excludePatterns[mpattern] = nil
 					}
 				}
 
@@ -1061,13 +1058,6 @@ func init() {
 				if !doHTTPProbe && continueAfter.Mode == "probe" {
 					fmt.Printf("docker-slim[profile]: info=probe message='changing continue-after from probe to enter because http-probe is disabled'\n")
 					continueAfter.Mode = "enter"
-				}
-
-				for ipath := range includePaths {
-					if _, ok := excludePaths[ipath]; ok {
-						fmt.Printf("docker-slim[profile]: include and exclude path conflict: %v\n", err)
-						return nil
-					}
 				}
 
 				commandReport := ctx.GlobalString(FlagCommandReport)
@@ -1104,7 +1094,7 @@ func init() {
 					volumeMounts,
 					doKeepPerms,
 					pathPerms,
-					excludePaths,
+					excludePatterns,
 					includePaths,
 					includeBins,
 					includeExes,

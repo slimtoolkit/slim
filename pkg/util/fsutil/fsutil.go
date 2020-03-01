@@ -13,6 +13,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/pdiscover"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
+	"github.com/bmatcuk/doublestar"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -435,7 +436,7 @@ func copyFileObjectHandler(
 	clone bool,
 	srcBase, dstBase string,
 	copyRelPath, skipErrors bool,
-	ignorePrefixes, ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{},
+	excludePatterns []string, ignoreDirNames, ignoreFileNames map[string]struct{},
 	errs *[]error) filepath.WalkFunc {
 	var foCount uint64
 
@@ -455,16 +456,30 @@ func copyFileObjectHandler(
 		foBase := filepath.Base(path)
 
 		var isIgnored bool
-		if _, ok := ignorePaths[path]; ok {
-			isIgnored = true
-		}
-
-		for prefix := range ignorePrefixes {
-			if strings.HasPrefix(path, prefix) {
+		for _, xpattern := range excludePatterns {
+			found, err := doublestar.Match(xpattern, path)
+			if err != nil {
+				log.Warnf("copyFileObjectHandler - [%v] excludePatterns Match error - %v\n", path, err)
+				//should only happen when the pattern is malformed
+				continue
+			}
+			if found {
 				isIgnored = true
 				break
 			}
 		}
+		/*
+			if _, ok := ignorePaths[path]; ok {
+				isIgnored = true
+			}
+
+			for prefix := range ignorePrefixes {
+				if strings.HasPrefix(path, prefix) {
+					isIgnored = true
+					break
+				}
+			}
+		*/
 
 		var targetPath string
 		if copyRelPath {
@@ -589,8 +604,8 @@ func copyFileObjectHandler(
 func CopyDir(clone bool,
 	src, dst string,
 	copyRelPath, skipErrors bool,
-	ignorePrefixes, ignorePaths, ignoreDirNames, ignoreFileNames map[string]struct{}) (error, []error) {
-	log.Debugf("CopyDir(%v,%v,%v,%v,%#v,...)", src, dst, copyRelPath, skipErrors, ignorePrefixes)
+	excludePatterns []string, ignoreDirNames, ignoreFileNames map[string]struct{}) (error, []error) {
+	log.Debugf("CopyDir(%v,%v,%v,%v,%#v,...)", src, dst, copyRelPath, skipErrors, excludePatterns)
 
 	if src == "" {
 		return ErrNoSrcDir, nil
@@ -633,7 +648,7 @@ func CopyDir(clone bool,
 
 	var errs []error
 	err = filepath.Walk(src, copyFileObjectHandler(
-		clone, src, dst, copyRelPath, skipErrors, ignorePrefixes, ignorePaths, ignoreDirNames, ignoreFileNames, &errs))
+		clone, src, dst, copyRelPath, skipErrors, excludePatterns, ignoreDirNames, ignoreFileNames, &errs))
 	if err != nil {
 		return err, nil
 	}

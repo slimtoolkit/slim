@@ -91,7 +91,7 @@ type Inspector struct {
 	VolumeMounts       map[string]config.VolumeMount
 	KeepPerms          bool
 	PathPerms          map[string]*fsutil.AccessInfo
-	ExcludePaths       map[string]*fsutil.AccessInfo
+	ExcludePatterns    map[string]*fsutil.AccessInfo
 	IncludePaths       map[string]*fsutil.AccessInfo
 	IncludeBins        map[string]*fsutil.AccessInfo
 	IncludeExes        map[string]*fsutil.AccessInfo
@@ -139,7 +139,7 @@ func NewInspector(
 	volumeMounts map[string]config.VolumeMount,
 	keepPerms bool,
 	pathPerms map[string]*fsutil.AccessInfo,
-	excludePaths map[string]*fsutil.AccessInfo,
+	excludePatterns map[string]*fsutil.AccessInfo,
 	includePaths map[string]*fsutil.AccessInfo,
 	includeBins map[string]*fsutil.AccessInfo,
 	includeExes map[string]*fsutil.AccessInfo,
@@ -171,7 +171,7 @@ func NewInspector(
 		VolumeMounts:       volumeMounts,
 		KeepPerms:          keepPerms,
 		PathPerms:          pathPerms,
-		ExcludePaths:       excludePaths,
+		ExcludePatterns:    excludePatterns,
 		IncludePaths:       includePaths,
 		IncludeBins:        includeBins,
 		IncludeExes:        includeExes,
@@ -469,8 +469,8 @@ func (i *Inspector) RunContainer() error {
 		cmd.AppArgs = i.FatContainerCmd[1:]
 	}
 
-	if len(i.ExcludePaths) > 0 {
-		cmd.Excludes = pathMapKeys(i.ExcludePaths)
+	if len(i.ExcludePatterns) > 0 {
+		cmd.Excludes = pathMapKeys(i.ExcludePatterns)
 	}
 
 	if len(i.IncludePaths) > 0 {
