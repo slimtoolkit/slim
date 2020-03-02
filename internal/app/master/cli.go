@@ -25,11 +25,13 @@ const (
 
 // DockerSlim app command names
 const (
-	CmdVersion = "version"
-	CmdUpdate  = "update"
-	CmdXray    = "xray"
-	CmdBuild   = "build"
-	CmdProfile = "profile"
+	CmdLint         = "lint"
+	CmdXray         = "xray"
+	CmdProfile      = "profile"
+	CmdBuild        = "build"
+	CmdContainerize = "containerize"
+	CmdVersion      = "version"
+	CmdUpdate       = "update"
 )
 
 // DockerSlim app flag names
