@@ -28,15 +28,8 @@ const (
 
 // OnProfile implements the 'profile' docker-slim command
 func OnProfile(
-	doCheckVersion bool,
-	cmdReportLocation string,
-	doDebug bool,
-	statePath string,
-	archiveState string,
-	inContainer bool,
-	isDSImage bool,
-	clientConfig *config.DockerClient,
-	imageRef string,
+	gparams *GenericParams,
+	targetRef string,
 	doHTTPProbe bool,
 	httpProbeCmds []config.HTTPProbeCmd,
 	httpProbeRetryCount int,
@@ -68,20 +61,20 @@ func OnProfile(
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 
-	viChan := version.CheckAsync(doCheckVersion, inContainer, isDSImage)
+	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewProfileCommand(cmdReportLocation)
+	cmdReport := report.NewProfileCommand(gparams.ReportLocation)
 	cmdReport.State = report.CmdStateStarted
-	cmdReport.OriginalImage = imageRef
+	cmdReport.OriginalImage = targetRef
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
-	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, imageRef)
+	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, targetRef)
 	doRmFileArtifacts := false
 
-	client, err := dockerclient.New(clientConfig)
+	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
 		exitMsg := "missing Docker connection info"
-		if inContainer && isDSImage {
+		if gparams.InContainer && gparams.IsDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
@@ -90,8 +83,8 @@ func OnProfile(
 	}
 	errutil.FailOn(err)
 
-	if doDebug {
-		version.Print(prefix, logger, client, false, inContainer, isDSImage)
+	if gparams.Debug {
+		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	if !confirmNetwork(logger, client, overrides.Network) {
@@ -100,11 +93,11 @@ func OnProfile(
 		os.Exit(ectCommon | ecBadNetworkName)
 	}
 
-	imageInspector, err := image.NewInspector(client, imageRef)
+	imageInspector, err := image.NewInspector(client, targetRef)
 	errutil.FailOn(err)
 
 	if imageInspector.NoImage() {
-		fmt.Printf("%s[%s]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", appName, cmdName, imageRef)
+		fmt.Printf("%s[%s]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", appName, cmdName, targetRef)
 		fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
 		return
 	}
@@ -115,7 +108,7 @@ func OnProfile(
 	err = imageInspector.Inspect()
 	errutil.FailOn(err)
 
-	localVolumePath, artifactLocation, statePath, stateKey := fsutil.PrepareImageStateDirs(statePath, imageInspector.ImageInfo.ID)
+	localVolumePath, artifactLocation, statePath, stateKey := fsutil.PrepareImageStateDirs(gparams.StatePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 	logger.Debugf("localVolumePath=%v, artifactLocation=%v, statePath=%v, stateKey=%v", localVolumePath, artifactLocation, statePath, stateKey)
 
@@ -156,8 +149,8 @@ func OnProfile(
 		includeBins,
 		includeExes,
 		doIncludeShell,
-		doDebug,
-		inContainer,
+		gparams.Debug,
+		gparams.InContainer,
 		true,
 		prefix)
 	errutil.FailOn(err)
@@ -269,7 +262,7 @@ func OnProfile(
 		}
 	}
 
-	if err := doArchiveState(logger, client, artifactLocation, archiveState, stateKey); err != nil {
+	if err := doArchiveState(logger, client, artifactLocation, gparams.ArchiveState, stateKey); err != nil {
 		fmt.Printf("%s[%s]: info=state message='could not archive state'\n", appName, cmdName)
 		logger.Errorf("error archiving state - %v", err)
 	}

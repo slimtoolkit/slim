@@ -35,16 +35,9 @@ const (
 
 // OnBuild implements the 'build' docker-slim command
 func OnBuild(
-	doCheckVersion bool,
-	cmdReportLocation string,
-	doDebug bool,
-	statePath string,
-	archiveState string,
-	inContainer bool,
-	isDSImage bool,
-	clientConfig *config.DockerClient,
+	gparams *GenericParams,
+	targetRef string,
 	buildFromDockerfile string,
-	imageRef string,
 	customImageTag string,
 	fatImageTag string,
 	doHTTPProbe bool,
@@ -82,16 +75,16 @@ func OnBuild(
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 
-	viChan := version.CheckAsync(doCheckVersion, inContainer, isDSImage)
+	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewBuildCommand(cmdReportLocation)
+	cmdReport := report.NewBuildCommand(gparams.ReportLocation)
 	cmdReport.State = report.CmdStateStarted
-	cmdReport.ImageReference = imageRef
+	cmdReport.ImageReference = targetRef
 
-	client, err := dockerclient.New(clientConfig)
+	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
 		exitMsg := "missing Docker connection info"
-		if inContainer && isDSImage {
+		if gparams.InContainer && gparams.IsDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
@@ -104,10 +97,10 @@ func OnBuild(
 
 	if buildFromDockerfile == "" {
 		fmt.Printf("%s[%s]: info=params target=%v continue.mode=%v rt.as.user=%v keep.perms=%v\n",
-			appName, cmdName, imageRef, continueAfter.Mode, doRunTargetAsUser, doKeepPerms)
+			appName, cmdName, targetRef, continueAfter.Mode, doRunTargetAsUser, doKeepPerms)
 	} else {
 		fmt.Printf("%s[%s]: info=params context=%v/file=%v continue.mode=%v rt.as.user=%v keep.perms=%v\n",
-			appName, cmdName, imageRef, buildFromDockerfile, continueAfter.Mode, doRunTargetAsUser, doKeepPerms)
+			appName, cmdName, targetRef, buildFromDockerfile, continueAfter.Mode, doRunTargetAsUser, doKeepPerms)
 	}
 
 	if buildFromDockerfile != "" {
@@ -141,7 +134,7 @@ func OnBuild(
 		fatBuilder, err := builder.NewBasicImageBuilder(client,
 			fatImageRepoNameTag,
 			buildFromDockerfile,
-			imageRef,
+			targetRef,
 			doShowBuildLogs)
 		errutil.FailOn(err)
 
@@ -161,18 +154,18 @@ func OnBuild(
 
 		fmt.Printf("%s[%s]: state=basic.image.build.completed\n", appName, cmdName)
 
-		imageRef = fatImageRepoNameTag
+		targetRef = fatImageRepoNameTag
 		//todo: remove the temporary fat image (should have a flag for it in case users want the fat image too)
 	}
 
 	logger.Infof("image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v",
-		imageRef, doHTTPProbe, doRmFileArtifacts,
+		targetRef, doHTTPProbe, doRmFileArtifacts,
 		imageOverrideSelectors,
 		overrides.Entrypoint, overrides.ClearEntrypoint, overrides.Cmd, overrides.ClearCmd,
 		overrides.Workdir, overrides.Env, overrides.ExposedPorts)
 
-	if doDebug {
-		version.Print(prefix, logger, client, false, inContainer, isDSImage)
+	if gparams.Debug {
+		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	if !confirmNetwork(logger, client, overrides.Network) {
@@ -181,11 +174,11 @@ func OnBuild(
 		os.Exit(ectCommon | ecBadNetworkName)
 	}
 
-	imageInspector, err := image.NewInspector(client, imageRef)
+	imageInspector, err := image.NewInspector(client, targetRef)
 	errutil.FailOn(err)
 
 	if imageInspector.NoImage() {
-		fmt.Printf("%s[%s]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", appName, cmdName, imageRef)
+		fmt.Printf("%s[%s]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", appName, cmdName, targetRef)
 		fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
 		return
 	}
@@ -196,7 +189,7 @@ func OnBuild(
 	err = imageInspector.Inspect()
 	errutil.FailOn(err)
 
-	localVolumePath, artifactLocation, statePath, stateKey := fsutil.PrepareImageStateDirs(statePath, imageInspector.ImageInfo.ID)
+	localVolumePath, artifactLocation, statePath, stateKey := fsutil.PrepareImageStateDirs(gparams.StatePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 	logger.Debugf("localVolumePath=%v, artifactLocation=%v, statePath=%v, stateKey=%v", localVolumePath, artifactLocation, statePath, stateKey)
 
@@ -260,8 +253,8 @@ func OnBuild(
 		includeBins,
 		includeExes,
 		doIncludeShell,
-		doDebug,
-		inContainer,
+		gparams.Debug,
+		gparams.InContainer,
 		true,
 		prefix)
 	errutil.FailOn(err)
@@ -500,7 +493,7 @@ func OnBuild(
 		}
 	}
 
-	if err := doArchiveState(logger, client, artifactLocation, archiveState, stateKey); err != nil {
+	if err := doArchiveState(logger, client, artifactLocation, gparams.ArchiveState, stateKey); err != nil {
 		fmt.Printf("%s[%s]: info=state message='could not archive state'\n", appName, cmdName)
 		logger.Errorf("error archiving state - %v", err)
 	}

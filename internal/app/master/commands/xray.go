@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/docker-slim/docker-slim/internal/app/master/config"
+	//"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
@@ -24,33 +24,26 @@ const (
 
 // OnXray implements the 'xray' docker-slim command
 func OnXray(
-	doCheckVersion bool,
-	cmdReportLocation string,
-	doDebug bool,
-	statePath string,
-	archiveState string,
-	inContainer bool,
-	isDSImage bool,
-	clientConfig *config.DockerClient,
-	imageRef string,
+	gparams *GenericParams,
+	targetRef string,
 	ec *ExecutionContext) {
 	const cmdName = "xray"
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 
-	viChan := version.CheckAsync(doCheckVersion, inContainer, isDSImage)
+	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewXrayCommand(cmdReportLocation)
+	cmdReport := report.NewXrayCommand(gparams.ReportLocation)
 	cmdReport.State = report.CmdStateStarted
-	cmdReport.OriginalImage = imageRef
+	cmdReport.OriginalImage = targetRef
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
-	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, imageRef)
+	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, targetRef)
 
-	client, err := dockerclient.New(clientConfig)
+	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
 		exitMsg := "missing Docker connection info"
-		if inContainer && isDSImage {
+		if gparams.InContainer && gparams.IsDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
@@ -59,15 +52,15 @@ func OnXray(
 	}
 	errutil.FailOn(err)
 
-	if doDebug {
-		version.Print(prefix, logger, client, false, inContainer, isDSImage)
+	if gparams.Debug {
+		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
-	imageInspector, err := image.NewInspector(client, imageRef)
+	imageInspector, err := image.NewInspector(client, targetRef)
 	errutil.FailOn(err)
 
 	if imageInspector.NoImage() {
-		fmt.Printf("%s[%s]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", appName, cmdName, imageRef)
+		fmt.Printf("%s[%s]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", appName, cmdName, targetRef)
 		fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
 		return
 	}
@@ -76,7 +69,7 @@ func OnXray(
 	err = imageInspector.Inspect()
 	errutil.FailOn(err)
 
-	localVolumePath, artifactLocation, statePath, stateKey := fsutil.PrepareImageStateDirs(statePath, imageInspector.ImageInfo.ID)
+	localVolumePath, artifactLocation, statePath, stateKey := fsutil.PrepareImageStateDirs(gparams.StatePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
 	logger.Debugf("localVolumePath=%v, artifactLocation=%v, statePath=%v, stateKey=%v", localVolumePath, artifactLocation, statePath, stateKey)
 

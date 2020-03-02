@@ -6,6 +6,7 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/util/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
@@ -13,6 +14,17 @@ import (
 const (
 	ImagesStateRootPath = "images"
 )
+
+type GenericParams struct {
+	CheckVersion   bool
+	Debug          bool
+	StatePath      string
+	ReportLocation string
+	InContainer    bool
+	IsDSImage      bool
+	ArchiveState   string
+	ClientConfig   *config.DockerClient
+}
 
 type ExecutionContext struct {
 }

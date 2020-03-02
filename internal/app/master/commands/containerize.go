@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/report"
@@ -17,32 +16,25 @@ import (
 
 // OnContainerize implements the 'containerize' docker-slim command
 func OnContainerize(
-	doCheckVersion bool,
-	cmdReportLocation string,
-	doDebug bool,
-	statePath string,
-	archiveState string,
-	inContainer bool,
-	isDSImage bool,
-	clientConfig *config.DockerClient,
+	gparams *GenericParams,
 	targetRef string,
 	ec *ExecutionContext) {
 	const cmdName = "containerize"
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 
-	viChan := version.CheckAsync(doCheckVersion, inContainer, isDSImage)
+	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewContainerizeCommand(cmdReportLocation)
+	cmdReport := report.NewContainerizeCommand(gparams.ReportLocation)
 	cmdReport.State = report.CmdStateStarted
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
 	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, targetRef)
 
-	client, err := dockerclient.New(clientConfig)
+	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
 		exitMsg := "missing Docker connection info"
-		if inContainer && isDSImage {
+		if gparams.InContainer && gparams.IsDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
@@ -51,8 +43,8 @@ func OnContainerize(
 	}
 	errutil.FailOn(err)
 
-	if doDebug {
-		version.Print(prefix, logger, client, false, inContainer, isDSImage)
+	if gparams.Debug {
+		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)

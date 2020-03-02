@@ -145,17 +145,8 @@ var cmdSpecs = map[string]cmdSpec{
 
 var app *cli.App
 
-func init() {
-	app = cli.NewApp()
-	app.Version = version.Current()
-	app.Name = AppName
-	app.Usage = AppUsage
-	app.CommandNotFound = func(ctx *cli.Context, command string) {
-		fmt.Printf("unknown command - %v \n\n", command)
-		cli.ShowAppHelp(ctx)
-	}
-
-	app.Flags = []cli.Flag{
+func globalFlags() []cli.Flag {
+	return []cli.Flag{
 		cli.StringFlag{
 			Name:  FlagCommandReport,
 			Value: "slim.report.json",
@@ -221,6 +212,39 @@ func init() {
 			Usage: "archive DockerSlim state to the selected Docker volume (default volume - docker-slim-state). By default, enabled when DockerSlim is running in a container (disabled otherwise). Set it to \"off\" to disable explicitly.",
 		},
 	}
+}
+
+func globalCommandFlagValues(ctx *cli.Context) (*commands.GenericParams, error) {
+	values := commands.GenericParams{
+		CheckVersion:   ctx.GlobalBool(FlagCheckVersion),
+		Debug:          ctx.GlobalBool(FlagDebug),
+		StatePath:      ctx.GlobalString(FlagStatePath),
+		ReportLocation: ctx.GlobalString(FlagCommandReport),
+	}
+
+	if values.ReportLocation == "off" {
+		values.ReportLocation = ""
+	}
+
+	values.InContainer, values.IsDSImage = isInContainer(ctx.GlobalBool(FlagInContainer))
+	values.ArchiveState = archiveState(ctx.GlobalString(FlagArchiveState), values.InContainer)
+
+	values.ClientConfig = getDockerClientConfig(ctx)
+
+	return &values, nil
+}
+
+func init() {
+	app = cli.NewApp()
+	app.Version = version.Current()
+	app.Name = AppName
+	app.Usage = AppUsage
+	app.CommandNotFound = func(ctx *cli.Context, command string) {
+		fmt.Printf("unknown command - %v \n\n", command)
+		cli.ShowAppHelp(ctx)
+	}
+
+	app.Flags = globalFlags()
 
 	app.Before = func(ctx *cli.Context) error {
 		if ctx.GlobalBool(FlagDebug) {
@@ -625,32 +649,17 @@ func init() {
 					return nil
 				}
 
-				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
-
-				doDebug := ctx.GlobalBool(FlagDebug)
-				statePath := ctx.GlobalString(FlagStatePath)
-				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
-				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
+				gcvalues, err := globalCommandFlagValues(ctx)
+				if err != nil {
+					return err
+				}
 
 				targetRef := ctx.Args().First()
-				clientConfig := getDockerClientConfig(ctx)
-
-				commandReport := ctx.GlobalString(FlagCommandReport)
-				if commandReport == "off" {
-					commandReport = ""
-				}
 
 				ec := &commands.ExecutionContext{}
 
 				commands.OnContainerize(
-					doCheckVersion,
-					commandReport,
-					doDebug,
-					statePath,
-					archiveState,
-					inContainer,
-					isDSImage,
-					clientConfig,
+					gcvalues,
 					targetRef,
 					ec)
 				return nil
@@ -667,34 +676,20 @@ func init() {
 					return nil
 				}
 
-				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
-
-				doDebug := ctx.GlobalBool(FlagDebug)
-				statePath := ctx.GlobalString(FlagStatePath)
-				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
-				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
+				gcvalues, err := globalCommandFlagValues(ctx)
+				if err != nil {
+					return err
+				}
 
 				targetRef := ctx.Args().First()
-				clientConfig := getDockerClientConfig(ctx)
-
-				commandReport := ctx.GlobalString(FlagCommandReport)
-				if commandReport == "off" {
-					commandReport = ""
-				}
 
 				ec := &commands.ExecutionContext{}
 
 				commands.OnLint(
-					doCheckVersion,
-					commandReport,
-					doDebug,
-					statePath,
-					archiveState,
-					inContainer,
-					isDSImage,
-					clientConfig,
+					gcvalues,
 					targetRef,
 					ec)
+
 				return nil
 			},
 		},
@@ -710,33 +705,18 @@ func init() {
 					return nil
 				}
 
-				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
-
-				doDebug := ctx.GlobalBool(FlagDebug)
-				statePath := ctx.GlobalString(FlagStatePath)
-				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
-				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
-
-				imageRef := ctx.Args().First()
-				clientConfig := getDockerClientConfig(ctx)
-
-				commandReport := ctx.GlobalString(FlagCommandReport)
-				if commandReport == "off" {
-					commandReport = ""
+				gcvalues, err := globalCommandFlagValues(ctx)
+				if err != nil {
+					return err
 				}
+
+				targetRef := ctx.Args().First()
 
 				ec := &commands.ExecutionContext{}
 
 				commands.OnXray(
-					doCheckVersion,
-					commandReport,
-					doDebug,
-					statePath,
-					archiveState,
-					inContainer,
-					isDSImage,
-					clientConfig,
-					imageRef,
+					gcvalues,
+					targetRef,
 					ec)
 				return nil
 			},
@@ -821,15 +801,12 @@ func init() {
 					return nil
 				}
 
-				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
+				gcvalues, err := globalCommandFlagValues(ctx)
+				if err != nil {
+					return err
+				}
 
-				doDebug := ctx.GlobalBool(FlagDebug)
-				statePath := ctx.GlobalString(FlagStatePath)
-				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
-				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
-
-				imageRef := ctx.Args().First()
-				clientConfig := getDockerClientConfig(ctx)
+				targetRef := ctx.Args().First()
 
 				doRmFileArtifacts := ctx.Bool(FlagRemoveFileArtifacts)
 				doCopyMetaArtifacts := ctx.String(FlagCopyMetaArtifacts)
@@ -952,16 +929,9 @@ func init() {
 				ec := &commands.ExecutionContext{}
 
 				commands.OnBuild(
-					doCheckVersion,
-					commandReport,
-					doDebug,
-					statePath,
-					archiveState,
-					inContainer,
-					isDSImage,
-					clientConfig,
+					gcvalues,
+					targetRef,
 					buildFromDockerfile,
-					imageRef,
 					doTag,
 					doTagFat,
 					doHTTPProbe,
@@ -1048,15 +1018,12 @@ func init() {
 					return nil
 				}
 
-				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
+				gcvalues, err := globalCommandFlagValues(ctx)
+				if err != nil {
+					return err
+				}
 
-				doDebug := ctx.GlobalBool(FlagDebug)
-				statePath := ctx.GlobalString(FlagStatePath)
-				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
-				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
-
-				imageRef := ctx.Args().First()
-				clientConfig := getDockerClientConfig(ctx)
+				targetRef := ctx.Args().First()
 
 				doCopyMetaArtifacts := ctx.String(FlagCopyMetaArtifacts)
 
@@ -1165,15 +1132,8 @@ func init() {
 				ec := &commands.ExecutionContext{}
 
 				commands.OnProfile(
-					doCheckVersion,
-					commandReport,
-					doDebug,
-					statePath,
-					archiveState,
-					inContainer,
-					isDSImage,
-					clientConfig,
-					imageRef,
+					gcvalues,
+					targetRef,
 					doHTTPProbe,
 					httpProbeCmds,
 					httpProbeRetryCount,
