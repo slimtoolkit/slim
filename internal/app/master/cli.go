@@ -106,6 +106,31 @@ type cmdSpec struct {
 }
 
 var cmdSpecs = map[string]cmdSpec{
+	CmdLint: {
+		name:  CmdXray,
+		alias: "l",
+		usage: "Lint the target Dockerfile or image",
+	},
+	CmdXray: {
+		name:  CmdXray,
+		alias: "x",
+		usage: "Collects fat image information and reverse engineers its Dockerfile",
+	},
+	CmdProfile: {
+		name:  CmdProfile,
+		alias: "p",
+		usage: "Collects fat image information and generates a fat container report",
+	},
+	CmdBuild: {
+		name:  CmdBuild,
+		alias: "b",
+		usage: "Collects fat image information and builds a slim image from it",
+	},
+	CmdContainerize: {
+		name:  CmdContainerize,
+		alias: "c",
+		usage: "Containerize the target artifacts",
+	},
 	CmdVersion: {
 		name:  CmdVersion,
 		alias: "v",
@@ -115,21 +140,6 @@ var cmdSpecs = map[string]cmdSpec{
 		name:  CmdUpdate,
 		alias: "u",
 		usage: "Updates docker-slim",
-	},
-	CmdXray: {
-		name:  CmdXray,
-		alias: "x",
-		usage: "Collects fat image information and reverse engineers its Dockerfile",
-	},
-	CmdBuild: {
-		name:  CmdBuild,
-		alias: "b",
-		usage: "Collects fat image information and builds a slim image from it",
-	},
-	CmdProfile: {
-		name:  CmdProfile,
-		alias: "p",
-		usage: "Collects fat image information and generates a fat container report",
 	},
 }
 
@@ -605,12 +615,97 @@ func init() {
 			},
 		},
 		{
+			Name:    cmdSpecs[CmdContainerize].name,
+			Aliases: []string{cmdSpecs[CmdContainerize].alias},
+			Usage:   cmdSpecs[CmdContainerize].usage,
+			Action: func(ctx *cli.Context) error {
+				if len(ctx.Args()) < 1 {
+					fmt.Printf("docker-slim[containerize]: missing target info...\n\n")
+					cli.ShowCommandHelp(ctx, CmdContainerize)
+					return nil
+				}
+
+				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
+
+				doDebug := ctx.GlobalBool(FlagDebug)
+				statePath := ctx.GlobalString(FlagStatePath)
+				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
+				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
+
+				targetRef := ctx.Args().First()
+				clientConfig := getDockerClientConfig(ctx)
+
+				commandReport := ctx.GlobalString(FlagCommandReport)
+				if commandReport == "off" {
+					commandReport = ""
+				}
+
+				ec := &commands.ExecutionContext{}
+
+				commands.OnContainerize(
+					doCheckVersion,
+					commandReport,
+					doDebug,
+					statePath,
+					archiveState,
+					inContainer,
+					isDSImage,
+					clientConfig,
+					targetRef,
+					ec)
+				return nil
+			},
+		},
+		{
+			Name:    cmdSpecs[CmdLint].name,
+			Aliases: []string{cmdSpecs[CmdLint].alias},
+			Usage:   cmdSpecs[CmdLint].usage,
+			Action: func(ctx *cli.Context) error {
+				if len(ctx.Args()) < 1 {
+					fmt.Printf("docker-slim[lint]: missing target image/Dockerfile...\n\n")
+					cli.ShowCommandHelp(ctx, CmdLint)
+					return nil
+				}
+
+				doCheckVersion := ctx.GlobalBool(FlagCheckVersion)
+
+				doDebug := ctx.GlobalBool(FlagDebug)
+				statePath := ctx.GlobalString(FlagStatePath)
+				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
+				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
+
+				targetRef := ctx.Args().First()
+				clientConfig := getDockerClientConfig(ctx)
+
+				commandReport := ctx.GlobalString(FlagCommandReport)
+				if commandReport == "off" {
+					commandReport = ""
+				}
+
+				ec := &commands.ExecutionContext{}
+
+				commands.OnLint(
+					doCheckVersion,
+					commandReport,
+					doDebug,
+					statePath,
+					archiveState,
+					inContainer,
+					isDSImage,
+					clientConfig,
+					targetRef,
+					ec)
+				return nil
+			},
+		},
+
+		{
 			Name:    cmdSpecs[CmdXray].name,
 			Aliases: []string{cmdSpecs[CmdXray].alias},
 			Usage:   cmdSpecs[CmdXray].usage,
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
-					fmt.Printf("docker-slim[info]: missing image ID/name...\n\n")
+					fmt.Printf("docker-slim[xray]: missing image ID/name...\n\n")
 					cli.ShowCommandHelp(ctx, CmdXray)
 					return nil
 				}
@@ -632,7 +727,7 @@ func init() {
 
 				ec := &commands.ExecutionContext{}
 
-				commands.OnInfo(
+				commands.OnXray(
 					doCheckVersion,
 					commandReport,
 					doDebug,

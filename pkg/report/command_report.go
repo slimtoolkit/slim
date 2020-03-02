@@ -97,8 +97,8 @@ type ProfileCommand struct {
 	AppArmorProfileName    string  `json:"apparmor_profile_name"`
 }
 
-// InfoCommand is the 'info' command report data
-type InfoCommand struct {
+// XrayCommand is the 'xray' command report data
+type XrayCommand struct {
 	Command
 	OriginalImage          string  `json:"original_image"`
 	OriginalImageSize      int64   `json:"original_image_size"`
@@ -112,6 +112,16 @@ type InfoCommand struct {
 	ContainerReportName    string  `json:"container_report_name"`
 	SeccompProfileName     string  `json:"seccomp_profile_name"`
 	AppArmorProfileName    string  `json:"apparmor_profile_name"`
+}
+
+// LintCommand is the 'lint' command report data
+type LintCommand struct {
+	Command
+}
+
+// ContainerizeCommand is the 'lint' command report data
+type ContainerizeCommand struct {
+	Command
 }
 
 // NewBuildCommand creates a new 'build' command report
@@ -136,9 +146,31 @@ func NewProfileCommand(reportLocation string) *ProfileCommand {
 	}
 }
 
-// NewInfoCommand creates a new 'info' command report
-func NewInfoCommand(reportLocation string) *InfoCommand {
-	return &InfoCommand{
+// NewXrayCommand creates a new 'xray' command report
+func NewXrayCommand(reportLocation string) *XrayCommand {
+	return &XrayCommand{
+		Command: Command{
+			reportLocation: reportLocation,
+			Type:           CmdTypeInfo,
+			State:          CmdStateUnknown,
+		},
+	}
+}
+
+// NewLintCommand creates a new 'lint' command report
+func NewLintCommand(reportLocation string) *LintCommand {
+	return &LintCommand{
+		Command: Command{
+			reportLocation: reportLocation,
+			Type:           CmdTypeInfo,
+			State:          CmdStateUnknown,
+		},
+	}
+}
+
+// NewContainerizeCommand creates a new 'containerize' command report
+func NewContainerizeCommand(reportLocation string) *ContainerizeCommand {
+	return &ContainerizeCommand{
 		Command: Command{
 			reportLocation: reportLocation,
 			Type:           CmdTypeInfo,
@@ -201,6 +233,6 @@ func (p *ProfileCommand) Save() bool {
 }
 
 // Save saves the Info command report data to the configured location
-func (p *InfoCommand) Save() bool {
+func (p *XrayCommand) Save() bool {
 	return p.saveInfo(p)
 }

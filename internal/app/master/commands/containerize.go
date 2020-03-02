@@ -6,24 +6,17 @@ import (
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
-	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
-	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 )
 
-// Info command exit codes
-const (
-	eciOther = iota + 1
-)
-
-// OnInfo implements the 'info' docker-slim command
-func OnInfo(
+// OnContainerize implements the 'containerize' docker-slim command
+func OnContainerize(
 	doCheckVersion bool,
 	cmdReportLocation string,
 	doDebug bool,
@@ -32,20 +25,19 @@ func OnInfo(
 	inContainer bool,
 	isDSImage bool,
 	clientConfig *config.DockerClient,
-	imageRef string,
+	targetRef string,
 	ec *ExecutionContext) {
-	const cmdName = "info"
+	const cmdName = "containerize"
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 
 	viChan := version.CheckAsync(doCheckVersion, inContainer, isDSImage)
 
-	cmdReport := report.NewInfoCommand(cmdReportLocation)
+	cmdReport := report.NewContainerizeCommand(cmdReportLocation)
 	cmdReport.State = report.CmdStateStarted
-	cmdReport.OriginalImage = imageRef
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
-	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, imageRef)
+	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, targetRef)
 
 	client, err := dockerclient.New(clientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
@@ -62,33 +54,6 @@ func OnInfo(
 	if doDebug {
 		version.Print(prefix, logger, client, false, inContainer, isDSImage)
 	}
-
-	imageInspector, err := image.NewInspector(client, imageRef)
-	errutil.FailOn(err)
-
-	if imageInspector.NoImage() {
-		fmt.Printf("%s[%s]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", appName, cmdName, imageRef)
-		fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
-		return
-	}
-
-	logger.Info("inspecting 'fat' image metadata...")
-	err = imageInspector.Inspect()
-	errutil.FailOn(err)
-
-	localVolumePath, artifactLocation, statePath, stateKey := fsutil.PrepareImageStateDirs(statePath, imageInspector.ImageInfo.ID)
-	imageInspector.ArtifactLocation = artifactLocation
-	logger.Debugf("localVolumePath=%v, artifactLocation=%v, statePath=%v, stateKey=%v", localVolumePath, artifactLocation, statePath, stateKey)
-
-	fmt.Printf("%s[%s]: info=image id=%v size.bytes=%v size.human=%v\n",
-		appName, cmdName,
-		imageInspector.ImageInfo.ID,
-		imageInspector.ImageInfo.VirtualSize,
-		humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)))
-
-	logger.Info("processing 'fat' image info...")
-	err = imageInspector.ProcessCollectedData()
-	errutil.FailOn(err)
 
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
 	cmdReport.State = report.CmdStateCompleted
