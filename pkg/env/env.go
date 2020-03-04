@@ -1,10 +1,13 @@
 package env
 
 import (
+	"io/ioutil"
 	"os"
+	"strings"
 )
 
 const (
+	procSelfCgroup  = "/proc/self/cgroup"
 	dockerEnvPath   = "/.dockerenv"
 	dsImageFlagPath = "/.ds.container.d3e2c84f976743bdb92a7044ef12e381"
 )
@@ -20,6 +23,10 @@ func HasDockerEnvPath() bool {
 }
 
 func HasContainerCgroups() bool {
+	if bdata, err := ioutil.ReadFile(procSelfCgroup); err == nil {
+		return strings.Contains(string(bdata), ":/docker/")
+	}
+
 	return false
 }
 
