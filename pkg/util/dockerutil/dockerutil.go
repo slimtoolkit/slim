@@ -113,6 +113,77 @@ func BuildEmptyImage(dclient *dockerapi.Client) error {
 	return nil
 }
 
+func SaveImage(dclient *dockerapi.Client, imageRef, local string, extract, removeOrig bool) error {
+	if local == "" {
+		return ErrBadParam
+	}
+
+	var err error
+	if dclient == nil {
+		dclient, err = dockerapi.NewClient(dockerHost)
+		if err != nil {
+			log.Errorf("SaveImage: dockerapi.NewClient() error = %v", err)
+			return err
+		}
+	}
+
+	//todo: 'pull' the image if it's not available locally yet
+	if err := HasImage(dclient, imageRef); err != nil {
+		return err
+	}
+
+	dfile, err := os.Create(local)
+	if err != nil {
+		return err
+	}
+
+	options := dockerapi.ExportImageOptions{
+		Name:              imageRef,
+		OutputStream:      dfile,
+		InactivityTimeout: 20 * time.Second,
+	}
+
+	err = dclient.ExportImage(options)
+	if err != nil {
+		log.Errorf("SaveImage: dclient.ExportImage() error = %v", err)
+		dfile.Close()
+		return err
+	}
+
+	dfile.Close()
+
+	if extract {
+		dstDir := filepath.Dir(local)
+		arc := archive.NewDefaultArchiver()
+
+		afile, err := os.Open(local)
+		if err != nil {
+			log.Errorf("SaveImage: os.Open error - %v", err)
+			return err
+		}
+
+		tarOptions := &archive.TarOptions{
+			NoLchown: true,
+			UIDMaps:  arc.IDMapping.UIDs(),
+			GIDMaps:  arc.IDMapping.GIDs(),
+		}
+		err = arc.Untar(afile, dstDir, tarOptions)
+		if err != nil {
+			log.Errorf("SaveImage: error unpacking tar - %v", err)
+			afile.Close()
+			return err
+		}
+
+		afile.Close()
+
+		if removeOrig {
+			os.Remove(local)
+		}
+	}
+
+	return nil
+}
+
 func HasVolume(dclient *dockerapi.Client, name string) error {
 	if name == "" {
 		return ErrBadParam
