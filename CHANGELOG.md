@@ -1,3 +1,13 @@
+## 1.28.0 (3/6/2020)
+
+### New Features
+
+* `xray` command enhancements to show the detailed container image information including its layers and their files and directories (initial version).
+
+### Improvements
+
+* The `--exclude-pattern` `build` parameter to filter/exclude the artifacts in the optimized container.
+
 ## 1.27.0 (2/28/2020)
 
 ### New Features

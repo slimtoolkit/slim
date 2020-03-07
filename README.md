@@ -127,16 +127,16 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 
 ## RECENT UPDATES
 
-Latest version: 1.27.0 (2/28/2020)
+Latest version: 1.28.0 (3/6/2020)
 
-This release has better support for non-default users, an ability to retain the original artifact permissions and to overwrite the container artifact permissions and ownership. For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
+This release enhances the `xray` command to show the detailed container image information including its layers and their files and directories. For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.27.0/dist_mac.zip)
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.27.0/dist_linux.tar.gz)
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.27.0/dist_linux_arm.tar.gz)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.28.0/dist_mac.zip)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.28.0/dist_linux.tar.gz)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.28.0/dist_linux_arm.tar.gz)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -194,7 +194,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.27.0/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.27.0/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.27.0/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.28.0/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.28.0/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.28.0/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
   The extracted directory contains two binaries:
 
