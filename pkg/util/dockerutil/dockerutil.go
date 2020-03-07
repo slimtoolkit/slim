@@ -31,6 +31,14 @@ const (
 	emptyImageDockerfile = "FROM scratch\nCMD\n"
 )
 
+func CleanImageID(id string) string {
+	if strings.HasPrefix(id, "sha256:") {
+		id = id[len("sha256:"):]
+	}
+
+	return id
+}
+
 func HasEmptyImage(dclient *dockerapi.Client) error {
 	return HasImage(dclient, emptyImageName)
 }
@@ -44,7 +52,7 @@ func HasImage(dclient *dockerapi.Client, imageRef string) error {
 	if dclient == nil {
 		dclient, err = dockerapi.NewClient(dockerHost)
 		if err != nil {
-			log.Errorf("HasImage(%s): dockerapi.NewClient() error = %v", imageRef, err)
+			log.Errorf("dockerutil.HasImage(%s): dockerapi.NewClient() error = %v", imageRef, err)
 			return err
 		}
 	}
@@ -56,14 +64,14 @@ func HasImage(dclient *dockerapi.Client, imageRef string) error {
 
 	imageList, err := dclient.ListImages(listOptions)
 	if err != nil {
-		log.Errorf("HasImage(%s): dockerapi.ListImages() error = %v", imageRef, err)
+		log.Errorf("dockerutil.HasImage(%s): dockerapi.ListImages() error = %v", imageRef, err)
 		return err
 	}
 
-	log.Debugf("HasImage(%s): matching images - %+v", imageRef, imageList)
+	log.Debugf("dockerutil.HasImage(%s): matching images - %+v", imageRef, imageList)
 
 	if len(imageList) == 0 {
-		log.Debugf("HasImage(%s): empty image not found", imageRef)
+		log.Debugf("dockerutil.HasImage(%s): image not found", imageRef)
 		return ErrNotFound
 	}
 
@@ -75,7 +83,7 @@ func BuildEmptyImage(dclient *dockerapi.Client) error {
 	if dclient == nil {
 		dclient, err = dockerapi.NewClient(dockerHost)
 		if err != nil {
-			log.Errorf("BuildEmptyImage: dockerapi.NewClient() error = %v", err)
+			log.Errorf("dockerutil.BuildEmptyImage: dockerapi.NewClient() error = %v", err)
 			return err
 		}
 	}
@@ -108,7 +116,7 @@ func BuildEmptyImage(dclient *dockerapi.Client) error {
 		ForceRmTmpContainer: true,
 	}
 	if err := dclient.BuildImage(buildOptions); err != nil {
-		log.Errorf("CreateEmptyImage: dockerapi.BuildImage() error = %v", err)
+		log.Errorf("dockerutil.BuildEmptyImage: dockerapi.BuildImage() error = %v", err)
 		return err
 	}
 
@@ -124,15 +132,15 @@ func SaveImage(dclient *dockerapi.Client, imageRef, local string, extract, remov
 	if dclient == nil {
 		dclient, err = dockerapi.NewClient(dockerHost)
 		if err != nil {
-			log.Errorf("SaveImage: dockerapi.NewClient() error = %v", err)
+			log.Errorf("dockerutil.SaveImage: dockerapi.NewClient() error = %v", err)
 			return err
 		}
 	}
 
+	imageRef = CleanImageID(imageRef)
+
 	//todo: 'pull' the image if it's not available locally yet
-	if err := HasImage(dclient, imageRef); err != nil {
-		return err
-	}
+	//note: HasImage() doesn't work with image IDs
 
 	dir := fsutil.FileDir(local)
 	if !fsutil.DirExists(dir) {
@@ -155,7 +163,7 @@ func SaveImage(dclient *dockerapi.Client, imageRef, local string, extract, remov
 
 	err = dclient.ExportImage(options)
 	if err != nil {
-		log.Errorf("SaveImage: dclient.ExportImage() error = %v", err)
+		log.Errorf("dockerutil.SaveImage: dclient.ExportImage() error = %v", err)
 		dfile.Close()
 		return err
 	}
@@ -168,7 +176,7 @@ func SaveImage(dclient *dockerapi.Client, imageRef, local string, extract, remov
 
 		afile, err := os.Open(local)
 		if err != nil {
-			log.Errorf("SaveImage: os.Open error - %v", err)
+			log.Errorf("dockerutil.SaveImage: os.Open error - %v", err)
 			return err
 		}
 
@@ -179,7 +187,7 @@ func SaveImage(dclient *dockerapi.Client, imageRef, local string, extract, remov
 		}
 		err = arc.Untar(afile, dstDir, tarOptions)
 		if err != nil {
-			log.Errorf("SaveImage: error unpacking tar - %v", err)
+			log.Errorf("dockerutil.SaveImage: error unpacking tar - %v", err)
 			afile.Close()
 			return err
 		}
@@ -203,7 +211,7 @@ func HasVolume(dclient *dockerapi.Client, name string) error {
 	if dclient == nil {
 		dclient, err = dockerapi.NewClient(dockerHost)
 		if err != nil {
-			log.Errorf("HasVolume: dockerapi.NewClient() error = %v", err)
+			log.Errorf("dockerutil.HasVolume: dockerapi.NewClient() error = %v", err)
 			return err
 		}
 	}
@@ -214,12 +222,12 @@ func HasVolume(dclient *dockerapi.Client, name string) error {
 
 	volumes, err := dclient.ListVolumes(listOptions)
 	if err != nil {
-		log.Errorf("HasVolume: dclient.ListVolumes() error = %v", err)
+		log.Errorf("dockerutil.HasVolume: dclient.ListVolumes() error = %v", err)
 		return err
 	}
 
 	if len(volumes) == 0 {
-		log.Debugf("HasVolume: volume not found - %v", name)
+		log.Debugf("dockerutil.HasVolume: volume not found - %v", name)
 		return ErrNotFound
 	}
 
@@ -235,7 +243,7 @@ func DeleteVolume(dclient *dockerapi.Client, name string) error {
 	if dclient == nil {
 		dclient, err = dockerapi.NewClient(dockerHost)
 		if err != nil {
-			log.Errorf("DeleteVolume: dockerapi.NewClient() error = %v", err)
+			log.Errorf("dockerutil.DeleteVolume: dockerapi.NewClient() error = %v", err)
 			return err
 		}
 	}
@@ -249,7 +257,7 @@ func DeleteVolume(dclient *dockerapi.Client, name string) error {
 		//ok to call remove even if the volume isn't there
 		err = dclient.RemoveVolumeWithOptions(removeOptions)
 		if err != nil {
-			fmt.Printf("DeleteVolume: dclient.RemoveVolumeWithOptions() error = %v\n", err)
+			fmt.Printf("dockerutil.DeleteVolume: dclient.RemoveVolumeWithOptions() error = %v\n", err)
 			return err
 		}
 	}
@@ -262,7 +270,7 @@ func CopyToVolume(dclient *dockerapi.Client, volumeName, source, dstRootDir, dst
 	if dclient == nil {
 		dclient, err = dockerapi.NewClient(dockerHost)
 		if err != nil {
-			log.Errorf("CopyToVolume: dockerapi.NewClient() error = %v", err)
+			log.Errorf("dockerutil.CopyToVolume: dockerapi.NewClient() error = %v", err)
 			return err
 		}
 	}
@@ -282,12 +290,12 @@ func CopyToVolume(dclient *dockerapi.Client, volumeName, source, dstRootDir, dst
 
 	containerInfo, err := dclient.CreateContainer(containerOptions)
 	if err != nil {
-		log.Errorf("CopyToVolume: dclient.CreateContainer() error = %v", err)
+		log.Errorf("dockerutil.CopyToVolume: dclient.CreateContainer() error = %v", err)
 		return err
 	}
 
 	containerID := containerInfo.ID
-	log.Debugf("CopyToVolume: containerID - %v", containerID)
+	log.Debugf("dockerutil.CopyToVolume: containerID - %v", containerID)
 
 	rmContainer := func() {
 		removeOptions := dockerapi.RemoveContainerOptions{
@@ -297,13 +305,13 @@ func CopyToVolume(dclient *dockerapi.Client, volumeName, source, dstRootDir, dst
 
 		err = dclient.RemoveContainer(removeOptions)
 		if err != nil {
-			fmt.Printf("CopyToVolume: dclient.RemoveContainer() error = %v\n", err)
+			fmt.Printf("dockerutil.CopyToVolume: dclient.RemoveContainer() error = %v\n", err)
 		}
 	}
 
 	tarData, err := archive.Tar(source, archive.Uncompressed)
 	if err != nil {
-		log.Errorf("CopyToVolume: archive.Tar() error = %v", err)
+		log.Errorf("dockerutil.CopyToVolume: archive.Tar() error = %v", err)
 		rmContainer()
 		return err
 	}
@@ -312,7 +320,7 @@ func CopyToVolume(dclient *dockerapi.Client, volumeName, source, dstRootDir, dst
 	if dstRootDir != "" {
 		dirData, err := GenStateDirsTar(dstRootDir, dstTargetDir)
 		if err != nil {
-			log.Errorf("CopyToVolume: GenStateDirsTar() error = %v", err)
+			log.Errorf("dockerutil.CopyToVolume: GenStateDirsTar() error = %v", err)
 			rmContainer()
 			return err
 		}
@@ -324,7 +332,7 @@ func CopyToVolume(dclient *dockerapi.Client, volumeName, source, dstRootDir, dst
 
 		err = dclient.UploadToContainer(containerID, dirUploadOptions)
 		if err != nil {
-			log.Errorf("CopyToVolume: copy dirs - dclient.UploadToContainer() error = %v", err)
+			log.Errorf("dockerutil.CopyToVolume: copy dirs - dclient.UploadToContainer() error = %v", err)
 			rmContainer()
 			return err
 		}
@@ -339,7 +347,7 @@ func CopyToVolume(dclient *dockerapi.Client, volumeName, source, dstRootDir, dst
 
 	err = dclient.UploadToContainer(containerID, uploadOptions)
 	if err != nil {
-		log.Errorf("CopyToVolume: dclient.UploadToContainer() error = %v", err)
+		log.Errorf("dockerutil.CopyToVolume: dclient.UploadToContainer() error = %v", err)
 		tarData.Close()
 		rmContainer()
 		return err
@@ -366,7 +374,7 @@ func GenStateDirsTar(rootDir, stateDir string) (io.Reader, error) {
 	}
 
 	if err := tw.WriteHeader(&baseDirHdr); err != nil {
-		log.Errorf("error writing base dir header to archive - %v", err)
+		log.Errorf("dockerutil.GenStateDirsTar: error writing base dir header to archive - %v", err)
 		return nil, err
 	}
 
@@ -377,12 +385,12 @@ func GenStateDirsTar(rootDir, stateDir string) (io.Reader, error) {
 	}
 
 	if err := tw.WriteHeader(&stateDirHdr); err != nil {
-		log.Errorf("error writing state dir header to archive - %v", err)
+		log.Errorf("dockerutil.GenStateDirsTar: error writing state dir header to archive - %v", err)
 		return nil, err
 	}
 
 	if err := tw.Close(); err != nil {
-		log.Errorf("error closing archive - %v", err)
+		log.Errorf("dockerutil.GenStateDirsTar: error closing archive - %v", err)
 		return nil, err
 	}
 
@@ -396,7 +404,7 @@ func CreateVolumeWithData(dclient *dockerapi.Client, source, name string, labels
 
 	if source != "" {
 		if _, err := os.Stat(source); err != nil {
-			log.Errorf("CreateVolumeWithData: bad source (%v) = %v", source, err)
+			log.Errorf("dockerutil.CreateVolumeWithData: bad source (%v) = %v", source, err)
 			return err
 		}
 	}
@@ -405,7 +413,7 @@ func CreateVolumeWithData(dclient *dockerapi.Client, source, name string, labels
 	if dclient == nil {
 		dclient, err = dockerapi.NewClient(dockerHost)
 		if err != nil {
-			log.Errorf("CreateVolumeWithData: dockerapi.NewClient() error = %v", err)
+			log.Errorf("dockerutil.CreateVolumeWithData: dockerapi.NewClient() error = %v", err)
 			return err
 		}
 	}
@@ -417,11 +425,11 @@ func CreateVolumeWithData(dclient *dockerapi.Client, source, name string, labels
 
 	volumeInfo, err := dclient.CreateVolume(volumeOptions)
 	if err != nil {
-		log.Errorf("CreateVolumeWithData: dclient.CreateVolume() error = %v", err)
+		log.Errorf("dockerutil.CreateVolumeWithData: dclient.CreateVolume() error = %v", err)
 		return err
 	}
 
-	log.Debugf("CreateVolumeWithData: volumeInfo = %+v", volumeInfo)
+	log.Debugf("dockerutil.CreateVolumeWithData: volumeInfo = %+v", volumeInfo)
 
 	if source != "" {
 		return CopyToVolume(dclient, name, source, "", "")
@@ -439,7 +447,7 @@ func CopyFromContainer(dclient *dockerapi.Client, containerID, remote, local str
 	if dclient == nil {
 		dclient, err = dockerapi.NewClient(dockerHost)
 		if err != nil {
-			log.Errorf("CopyFromContainer: dockerapi.NewClient() error = %v", err)
+			log.Errorf("dockerutil.CopyFromContainer: dockerapi.NewClient() error = %v", err)
 			return err
 		}
 	}
@@ -457,7 +465,7 @@ func CopyFromContainer(dclient *dockerapi.Client, containerID, remote, local str
 
 	err = dclient.DownloadFromContainer(containerID, downloadOptions)
 	if err != nil {
-		log.Errorf("dclient.DownloadFromContainer() error = %v", err)
+		log.Errorf("dockerutil.CopyFromContainer: dclient.DownloadFromContainer() error = %v", err)
 		dfile.Close()
 		return err
 	}
@@ -470,7 +478,7 @@ func CopyFromContainer(dclient *dockerapi.Client, containerID, remote, local str
 
 		afile, err := os.Open(local)
 		if err != nil {
-			log.Errorf("os.Open error - %v", err)
+			log.Errorf("dockerutil.CopyFromContainer: os.Open error - %v", err)
 			return err
 		}
 
@@ -481,7 +489,7 @@ func CopyFromContainer(dclient *dockerapi.Client, containerID, remote, local str
 		}
 		err = arc.Untar(afile, dstDir, tarOptions)
 		if err != nil {
-			log.Errorf("error unpacking tar - %v", err)
+			log.Errorf("dockerutil.CopyFromContainer: error unpacking tar - %v", err)
 			afile.Close()
 			return err
 		}
@@ -506,13 +514,13 @@ func PrepareContainerDataArchive(fullPath, newName, removePrefix string, removeO
 
 	inFile, err := os.Open(fullPath)
 	if err != nil {
-		log.Errorf("os.Open error - %v", err)
+		log.Errorf("dockerutil.PrepareContainerDataArchive: os.Open(%s) error - %v", fullPath, err)
 		return err
 	}
 
 	outFile, err := os.Create(dstPath)
 	if err != nil {
-		log.Errorf("os.Open error - %v", err)
+		log.Errorf("dockerutil.PrepareContainerDataArchive: os.Open(%s) error - %v", dstPath, err)
 		inFile.Close()
 		return err
 	}
@@ -526,18 +534,18 @@ func PrepareContainerDataArchive(fullPath, newName, removePrefix string, removeO
 		}
 
 		if err != nil {
-			log.Errorf("error reading archive(%v) - %v", fullPath, err)
+			log.Errorf("dockerutil.PrepareContainerDataArchive: error reading archive(%v) - %v", fullPath, err)
 			inFile.Close()
 			return err
 		}
 
 		if hdr == nil || hdr.Name == "" {
-			log.Debugf("ignoring bad tar header")
+			log.Debugf("dockerutil.PrepareContainerDataArchive: ignoring bad tar header")
 			continue
 		}
 
 		if hdr.Name == removePrefix {
-			log.Debugf("ignoring tar object: %v", hdr.Name)
+			log.Debugf("dockerutil.PrepareContainerDataArchive: ignoring tar object: %v", hdr.Name)
 			continue
 		}
 
@@ -546,14 +554,14 @@ func PrepareContainerDataArchive(fullPath, newName, removePrefix string, removeO
 		}
 
 		if err := tw.WriteHeader(hdr); err != nil {
-			log.Errorf("error writing header to archive(%v) - %v", dstPath, err)
+			log.Errorf("dockerutil.PrepareContainerDataArchive: error writing header to archive(%v) - %v", dstPath, err)
 			inFile.Close()
 			outFile.Close()
 			return err
 		}
 
 		if _, err := io.Copy(tw, tr); err != nil {
-			log.Errorf("error copying data to archive(%v) - %v", dstPath, err)
+			log.Errorf("dockerutil.PrepareContainerDataArchive: error copying data to archive(%v) - %v", dstPath, err)
 			inFile.Close()
 			outFile.Close()
 			return err
@@ -561,7 +569,7 @@ func PrepareContainerDataArchive(fullPath, newName, removePrefix string, removeO
 	}
 
 	if err := tw.Close(); err != nil {
-		log.Errorf("error closing archive(%v) - %v", dstPath, err)
+		log.Errorf("dockerutil.PrepareContainerDataArchive: error closing archive(%v) - %v", dstPath, err)
 	}
 
 	outFile.Close()

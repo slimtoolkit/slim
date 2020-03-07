@@ -107,7 +107,7 @@ type cmdSpec struct {
 
 var cmdSpecs = map[string]cmdSpec{
 	CmdLint: {
-		name:  CmdXray,
+		name:  CmdLint,
 		alias: "l",
 		usage: "Lint the target Dockerfile or image",
 	},

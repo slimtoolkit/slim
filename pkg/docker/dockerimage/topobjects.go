@@ -1,10 +1,8 @@
 package dockerimage
 
 import (
-//"container/heap"
+	"container/heap"
 )
-
-//WIP
 
 type TopObjects []*ObjectMetadata
 
@@ -38,4 +36,14 @@ func (to *TopObjects) Pop() interface{} {
 	old[n-1] = nil
 	*to = old[0 : n-1]
 	return item
+}
+
+func (to TopObjects) List() []*ObjectMetadata {
+	list := []*ObjectMetadata{}
+	for len(to) > 0 {
+		item := heap.Pop(&to).(*ObjectMetadata)
+		list = append([]*ObjectMetadata{item}, list...)
+	}
+
+	return list
 }

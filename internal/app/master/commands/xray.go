@@ -86,12 +86,13 @@ func OnXray(
 	err = imageInspector.ProcessCollectedData()
 	errutil.FailOn(err)
 
-	iaName := fmt.Sprintf("%s.tar", imageInspector.ImageInfo.ID)
+	imageID := dockerutil.CleanImageID(imageInspector.ImageInfo.ID)
+	iaName := fmt.Sprintf("%s.tar", imageID)
 	iaPath := filepath.Join(localVolumePath, "image", iaName)
-	err = dockerutil.SaveImage(client, imageInspector.ImageInfo.ID, iaPath, false, false)
+	err = dockerutil.SaveImage(client, imageID, iaPath, false, false)
 	errutil.FailOn(err)
 
-	imagePkg, err := dockerimage.LoadPackage(iaPath, imageInspector.ImageInfo.ID, false)
+	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false)
 	errutil.FailOn(err)
 
 	printImagePackage(imagePkg, appName, cmdName)
@@ -125,6 +126,13 @@ func printImagePackage(pkg *dockerimage.Package, appName, cmdName string) {
 
 		fmt.Printf("%s[%s]: info=layer.objects.count data=%d\n", appName, cmdName, len(layer.Objects))
 
+		topList := layer.Top.List()
+		fmt.Printf("%s[%s]: info=layer.objects.top:\n", appName, cmdName)
+		for _, object := range topList {
+			printObject(object)
+		}
+		fmt.Printf("\n")
+
 		fmt.Printf("%s[%s]: info=layer.objects.deleted:\n", appName, cmdName)
 		for _, objectIdx := range layer.Changes.Deleted {
 			printObject(layer.Objects[objectIdx])
@@ -143,8 +151,8 @@ func printImagePackage(pkg *dockerimage.Package, appName, cmdName string) {
 }
 
 func printObject(object *dockerimage.ObjectMetadata) {
-	fmt.Printf("O: change=%d mode=%s size=%d uid=%d gid=%d mtime=%s %s",
-		object.Change, object.Mode, object.Size, object.UID, object.GID,
+	fmt.Printf("O: change=%d mode=%s size=%v(%d) uid=%d gid=%d mtime=%s %s",
+		object.Change, object.Mode, humanize.Bytes(uint64(object.Size)), object.Size, object.UID, object.GID,
 		object.ModTime, object.Name)
 
 	if object.LinkTarget != "" {

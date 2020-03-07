@@ -2,6 +2,7 @@ package dockerimage
 
 import (
 	"archive/tar"
+	"container/heap"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -12,6 +13,8 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+
+	"github.com/docker-slim/docker-slim/pkg/util/dockerutil"
 )
 
 const (
@@ -101,10 +104,14 @@ func newLayer(id string) *Layer {
 		Top:        NewTopObjects(topObjectMax),
 	}
 
+	heap.Init(&(layer.Top))
+
 	return &layer
 }
 
 func LoadPackage(archivePath, imageID string, skipObjects bool) (*Package, error) {
+	imageID = dockerutil.CleanImageID(imageID)
+
 	configObjectFileName := fmt.Sprintf("%s.json", imageID)
 	afile, err := os.Open(archivePath)
 	if err != nil {
@@ -278,6 +285,11 @@ func layerFromStream(tr *tar.Reader, layerID string) (*Layer, error) {
 
 		layer.Objects = append(layer.Objects, object)
 		layer.References[object.Name] = object
+
+		heap.Push(&(layer.Top), object)
+		if layer.Top.Len() > topObjectMax {
+			_ = heap.Pop(&(layer.Top))
+		}
 
 		layer.Stats.AllSize += uint64(object.Size)
 		layer.Stats.ObjectCount++
