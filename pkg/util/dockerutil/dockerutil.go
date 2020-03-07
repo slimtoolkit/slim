@@ -14,6 +14,8 @@ import (
 	"github.com/docker/docker/pkg/archive"
 	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
 
 var (
@@ -130,6 +132,14 @@ func SaveImage(dclient *dockerapi.Client, imageRef, local string, extract, remov
 	//todo: 'pull' the image if it's not available locally yet
 	if err := HasImage(dclient, imageRef); err != nil {
 		return err
+	}
+
+	dir := fsutil.FileDir(local)
+	if !fsutil.DirExists(dir) {
+		err := os.MkdirAll(dir, 0755)
+		if err != nil {
+			return err
+		}
 	}
 
 	dfile, err := os.Create(local)

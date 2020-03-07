@@ -3,12 +3,15 @@ package commands
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	//"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
+	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
 	"github.com/docker-slim/docker-slim/pkg/report"
+	"github.com/docker-slim/docker-slim/pkg/util/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
@@ -17,9 +20,9 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// Info command exit codes
+// Xray command exit codes
 const (
-	eciOther = iota + 1
+	ecxOther = iota + 1
 )
 
 // OnXray implements the 'xray' docker-slim command
@@ -83,6 +86,16 @@ func OnXray(
 	err = imageInspector.ProcessCollectedData()
 	errutil.FailOn(err)
 
+	iaName := fmt.Sprintf("%s.tar", imageInspector.ImageInfo.ID)
+	iaPath := filepath.Join(localVolumePath, "image", iaName)
+	err = dockerutil.SaveImage(client, imageInspector.ImageInfo.ID, iaPath, false, false)
+	errutil.FailOn(err)
+
+	imagePkg, err := dockerimage.LoadPackage(iaPath, imageInspector.ImageInfo.ID, false)
+	errutil.FailOn(err)
+
+	printImagePackage(imagePkg, appName, cmdName)
+
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
 	cmdReport.State = report.CmdStateCompleted
 
@@ -94,5 +107,49 @@ func OnXray(
 	cmdReport.State = report.CmdStateDone
 	if cmdReport.Save() {
 		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
+	}
+}
+
+func printImagePackage(pkg *dockerimage.Package, appName, cmdName string) {
+	fmt.Printf("%s[%s]: info=image.package.details\n", appName, cmdName)
+
+	fmt.Printf("%s[%s]: info=layers.count: %v\n", appName, cmdName, len(pkg.Layers))
+	for _, layer := range pkg.Layers {
+		fmt.Printf("%s[%s]: info=layer index=%d id=%s path=%s\n", appName, cmdName, layer.Index, layer.ID, layer.Path)
+		fmt.Printf("%s[%s]: info=layer.stats data=%#v\n", appName, cmdName, layer.Stats)
+		changeCount := len(layer.Changes.Deleted) + len(layer.Changes.Modified) + len(layer.Changes.Added)
+
+		fmt.Printf("%s[%s]: info=layer.change.summary deleted=%d modified=%d added=%d all=%d\n",
+			appName, cmdName, len(layer.Changes.Deleted), len(layer.Changes.Modified),
+			len(layer.Changes.Added), changeCount)
+
+		fmt.Printf("%s[%s]: info=layer.objects.count data=%d\n", appName, cmdName, len(layer.Objects))
+
+		fmt.Printf("%s[%s]: info=layer.objects.deleted:\n", appName, cmdName)
+		for _, objectIdx := range layer.Changes.Deleted {
+			printObject(layer.Objects[objectIdx])
+		}
+		fmt.Printf("\n")
+		fmt.Printf("%s[%s]: info=layer.objects.modified:\n", appName, cmdName)
+		for _, objectIdx := range layer.Changes.Modified {
+			printObject(layer.Objects[objectIdx])
+		}
+		fmt.Printf("\n")
+		fmt.Printf("%s[%s]: info=layer.objects.added:\n", appName, cmdName)
+		for _, objectIdx := range layer.Changes.Added {
+			printObject(layer.Objects[objectIdx])
+		}
+	}
+}
+
+func printObject(object *dockerimage.ObjectMetadata) {
+	fmt.Printf("O: change=%d mode=%s size=%d uid=%d gid=%d mtime=%s %s",
+		object.Change, object.Mode, object.Size, object.UID, object.GID,
+		object.ModTime, object.Name)
+
+	if object.LinkTarget != "" {
+		fmt.Printf(" -> %s\n", object.LinkTarget)
+	} else {
+		fmt.Printf("\n")
 	}
 }
