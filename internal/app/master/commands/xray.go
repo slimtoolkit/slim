@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"time"
 
 	//"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
@@ -38,7 +39,7 @@ func OnXray(
 
 	cmdReport := report.NewXrayCommand(gparams.ReportLocation)
 	cmdReport.State = report.CmdStateStarted
-	cmdReport.OriginalImage = targetRef
+	cmdReport.ImageReference = targetRef
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
 	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, targetRef)
@@ -86,6 +87,28 @@ func OnXray(
 	err = imageInspector.ProcessCollectedData()
 	errutil.FailOn(err)
 
+	cmdReport.SourceImage = report.ImageMetadata{
+		AllNames:      imageInspector.ImageRecordInfo.RepoTags,
+		ID:            imageInspector.ImageRecordInfo.ID,
+		Size:          imageInspector.ImageInfo.VirtualSize,
+		SizeHuman:     humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
+		CreateTime:    imageInspector.ImageInfo.Created.UTC().Format(time.RFC3339),
+		Author:        imageInspector.ImageInfo.Author,
+		DockerVersion: imageInspector.ImageInfo.DockerVersion,
+		Architecture:  imageInspector.ImageInfo.Architecture,
+		User:          imageInspector.ImageInfo.Config.User,
+	}
+
+	if len(imageInspector.ImageRecordInfo.RepoTags) > 0 {
+		cmdReport.SourceImage.Name = imageInspector.ImageRecordInfo.RepoTags[0]
+	}
+
+	if len(imageInspector.ImageInfo.Config.ExposedPorts) > 0 {
+		for k := range imageInspector.ImageInfo.Config.ExposedPorts {
+			cmdReport.SourceImage.ExposedPorts = append(cmdReport.SourceImage.ExposedPorts, string(k))
+		}
+	}
+
 	imageID := dockerutil.CleanImageID(imageInspector.ImageInfo.ID)
 	iaName := fmt.Sprintf("%s.tar", imageID)
 	iaPath := filepath.Join(localVolumePath, "image", iaName)
@@ -101,6 +124,8 @@ func OnXray(
 	cmdReport.State = report.CmdStateCompleted
 
 	fmt.Printf("%s[%s]: state=done\n", appName, cmdName)
+
+	cmdReport.ImageArchiveLocation = iaPath
 
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)

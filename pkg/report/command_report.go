@@ -100,18 +100,9 @@ type ProfileCommand struct {
 // XrayCommand is the 'xray' command report data
 type XrayCommand struct {
 	Command
-	OriginalImage          string  `json:"original_image"`
-	OriginalImageSize      int64   `json:"original_image_size"`
-	OriginalImageSizeHuman string  `json:"original_image_size_human"`
-	MinifiedImageSize      int64   `json:"minified_image_size"`
-	MinifiedImageSizeHuman string  `json:"minified_image_size_human"`
-	MinifiedImage          string  `json:"minified_image"`
-	MinifiedImageHasData   bool    `json:"minified_image_has_data"`
-	MinifiedBy             float64 `json:"minified_by"`
-	ArtifactLocation       string  `json:"artifact_location"`
-	ContainerReportName    string  `json:"container_report_name"`
-	SeccompProfileName     string  `json:"seccomp_profile_name"`
-	AppArmorProfileName    string  `json:"apparmor_profile_name"`
+	ImageReference       string        `json:"image_reference"`
+	SourceImage          ImageMetadata `json:"source_image"`
+	ImageArchiveLocation string        `json:"image_archive_location"`
 }
 
 // LintCommand is the 'lint' command report data
