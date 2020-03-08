@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	//"github.com/docker-slim/docker-slim/internal/app/master/config"
@@ -69,6 +70,8 @@ func OnXray(
 		return
 	}
 
+	fmt.Printf("%s[%s]: state=image.api.inspection.start\n", appName, cmdName)
+
 	logger.Info("inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
 	errutil.FailOn(err)
@@ -86,6 +89,29 @@ func OnXray(
 	logger.Info("processing 'fat' image info...")
 	err = imageInspector.ProcessCollectedData()
 	errutil.FailOn(err)
+
+	if imageInspector.DockerfileInfo != nil {
+		if imageInspector.DockerfileInfo.ExeUser != "" {
+			fmt.Printf("%s[%s]: info=image.users exe='%v' all='%v'\n",
+				appName, cmdName,
+				imageInspector.DockerfileInfo.ExeUser,
+				strings.Join(imageInspector.DockerfileInfo.AllUsers, ","))
+		}
+
+		if len(imageInspector.DockerfileInfo.ImageStack) > 0 {
+			cmdReport.ImageStack = imageInspector.DockerfileInfo.ImageStack
+
+			for idx, layerInfo := range imageInspector.DockerfileInfo.ImageStack {
+				fmt.Printf("%s[%s]: info=image.stack index=%v name='%v' id='%v'\n",
+					appName, cmdName, idx, layerInfo.FullName, layerInfo.ID)
+			}
+		}
+
+		if len(imageInspector.DockerfileInfo.ExposedPorts) > 0 {
+			fmt.Printf("%s[%s]: info=image.exposed_ports list='%v'\n", appName, cmdName,
+				strings.Join(imageInspector.DockerfileInfo.ExposedPorts, ","))
+		}
+	}
 
 	cmdReport.SourceImage = report.ImageMetadata{
 		AllNames:      imageInspector.ImageRecordInfo.RepoTags,
@@ -109,6 +135,9 @@ func OnXray(
 		}
 	}
 
+	fmt.Printf("%s[%s]: state=image.api.inspection.done\n", appName, cmdName)
+	fmt.Printf("%s[%s]: state=image.data.inspection.start\n", appName, cmdName)
+
 	imageID := dockerutil.CleanImageID(imageInspector.ImageInfo.ID)
 	iaName := fmt.Sprintf("%s.tar", imageID)
 	iaPath := filepath.Join(localVolumePath, "image", iaName)
@@ -117,6 +146,8 @@ func OnXray(
 
 	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false)
 	errutil.FailOn(err)
+
+	fmt.Printf("%s[%s]: state=image.data.inspection.done\n", appName, cmdName)
 
 	printImagePackage(imagePkg, appName, cmdName)
 
