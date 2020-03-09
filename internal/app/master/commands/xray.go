@@ -31,6 +31,9 @@ const (
 func OnXray(
 	gparams *GenericParams,
 	targetRef string,
+	changes map[string]struct{},
+	layers map[string]struct{},
+	doRmFileArtifacts bool,
 	ec *ExecutionContext) {
 	const cmdName = "xray"
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
@@ -149,14 +152,20 @@ func OnXray(
 
 	fmt.Printf("%s[%s]: state=image.data.inspection.done\n", appName, cmdName)
 
-	printImagePackage(imagePkg, appName, cmdName)
+	printImagePackage(imagePkg, appName, cmdName, changes, layers)
 
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
 	cmdReport.State = report.CmdStateCompleted
 
-	fmt.Printf("%s[%s]: state=done\n", appName, cmdName)
+	if doRmFileArtifacts {
+		logger.Info("removing temporary artifacts...")
+		err = fsutil.Remove(iaPath)
+		errutil.WarnOn(err)
+	} else {
+		cmdReport.ImageArchiveLocation = iaPath
+	}
 
-	cmdReport.ImageArchiveLocation = iaPath
+	fmt.Printf("%s[%s]: state=done\n", appName, cmdName)
 
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)
@@ -167,7 +176,10 @@ func OnXray(
 	}
 }
 
-func printImagePackage(pkg *dockerimage.Package, appName, cmdName string) {
+func printImagePackage(pkg *dockerimage.Package,
+	appName, cmdName string,
+	changes map[string]struct{},
+	layers map[string]struct{}) {
 	fmt.Printf("%s[%s]: info=image.package.details\n", appName, cmdName)
 
 	fmt.Printf("%s[%s]: info=layers.count: %v\n", appName, cmdName, len(pkg.Layers))
@@ -189,19 +201,38 @@ func printImagePackage(pkg *dockerimage.Package, appName, cmdName string) {
 		}
 		fmt.Printf("\n")
 
-		fmt.Printf("%s[%s]: info=layer.objects.deleted:\n", appName, cmdName)
-		for _, objectIdx := range layer.Changes.Deleted {
-			printObject(layer.Objects[objectIdx])
+		showLayer := true
+		if len(layers) > 0 {
+			showLayer = false
+			_, hasID := layers[layer.ID]
+			layerIdx := fmt.Sprintf("%v", layer.Index)
+			_, hasIndex := layers[layerIdx]
+			if hasID || hasIndex {
+				showLayer = true
+			}
 		}
-		fmt.Printf("\n")
-		fmt.Printf("%s[%s]: info=layer.objects.modified:\n", appName, cmdName)
-		for _, objectIdx := range layer.Changes.Modified {
-			printObject(layer.Objects[objectIdx])
-		}
-		fmt.Printf("\n")
-		fmt.Printf("%s[%s]: info=layer.objects.added:\n", appName, cmdName)
-		for _, objectIdx := range layer.Changes.Added {
-			printObject(layer.Objects[objectIdx])
+
+		if showLayer {
+			if _, ok := changes["delete"]; ok && len(layer.Changes.Deleted) > 0 {
+				fmt.Printf("%s[%s]: info=layer.objects.deleted:\n", appName, cmdName)
+				for _, objectIdx := range layer.Changes.Deleted {
+					printObject(layer.Objects[objectIdx])
+				}
+				fmt.Printf("\n")
+			}
+			if _, ok := changes["modify"]; ok && len(layer.Changes.Modified) > 0 {
+				fmt.Printf("%s[%s]: info=layer.objects.modified:\n", appName, cmdName)
+				for _, objectIdx := range layer.Changes.Modified {
+					printObject(layer.Objects[objectIdx])
+				}
+				fmt.Printf("\n")
+			}
+			if _, ok := changes["add"]; ok && len(layer.Changes.Added) > 0 {
+				fmt.Printf("%s[%s]: info=layer.objects.added:\n", appName, cmdName)
+				for _, objectIdx := range layer.Changes.Added {
+					printObject(layer.Objects[objectIdx])
+				}
+			}
 		}
 	}
 }

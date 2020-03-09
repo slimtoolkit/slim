@@ -97,6 +97,8 @@ const (
 	FlagTagFat              = "tag-fat"
 	FlagRunTargetAsUser     = "run-target-as-user"
 	FlagKeepPerms           = "keep-perms"
+	FlagChanges             = "changes"
+	FlagLayer               = "layer"
 )
 
 type cmdSpec struct {
@@ -693,11 +695,25 @@ func init() {
 				return nil
 			},
 		},
-
 		{
 			Name:    cmdSpecs[CmdXray].name,
 			Aliases: []string{cmdSpecs[CmdXray].alias},
 			Usage:   cmdSpecs[CmdXray].usage,
+			Flags: []cli.Flag{
+				cli.StringSliceFlag{
+					Name:   FlagChanges,
+					Value:  &cli.StringSlice{""},
+					Usage:  "Show layer change details for the selected change type (values: none, all, delete, modify, add)",
+					EnvVar: "DSLIM_CHANGES",
+				},
+				cli.StringSliceFlag{
+					Name:   FlagLayer,
+					Value:  &cli.StringSlice{},
+					Usage:  "Show details for the selected layer (using layer index or ID)",
+					EnvVar: "DSLIM_LAYER",
+				},
+				doRemoveFileArtifactsFlag,
+			},
 			Action: func(ctx *cli.Context) error {
 				if len(ctx.Args()) < 1 {
 					fmt.Printf("docker-slim[xray]: missing image ID/name...\n\n")
@@ -712,11 +728,28 @@ func init() {
 
 				targetRef := ctx.Args().First()
 
+				changes, err := parseChangeTypes(ctx.StringSlice(FlagChanges))
+				if err != nil {
+					fmt.Printf("docker-slim[xray]: invalid change types: %v\n", err)
+					return err
+				}
+
+				layers, err := parseLayerSelectors(ctx.StringSlice(FlagLayer))
+				if err != nil {
+					fmt.Printf("docker-slim[xray]: invalid layer selectors: %v\n", err)
+					return err
+				}
+
+				doRmFileArtifacts := ctx.Bool(FlagRemoveFileArtifacts)
+
 				ec := &commands.ExecutionContext{}
 
 				commands.OnXray(
 					gcvalues,
 					targetRef,
+					changes,
+					layers,
+					doRmFileArtifacts,
 					ec)
 				return nil
 			},

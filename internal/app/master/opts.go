@@ -130,6 +130,41 @@ func parseExec(value string) ([]string, error) {
 	return parts, nil
 }
 
+func parseChangeTypes(values []string) (map[string]struct{}, error) {
+	changes := map[string]struct{}{}
+	if len(values) == 0 {
+		values = append(values, "all")
+	}
+
+	for _, item := range values {
+		switch item {
+		case "none":
+			return nil, nil
+		case "all":
+			changes["delete"] = struct{}{}
+			changes["modify"] = struct{}{}
+			changes["add"] = struct{}{}
+		case "delete":
+			changes["delete"] = struct{}{}
+		case "modify":
+			changes["modify"] = struct{}{}
+		case "add":
+			changes["add"] = struct{}{}
+		}
+	}
+
+	return changes, nil
+}
+
+func parseLayerSelectors(values []string) (map[string]struct{}, error) {
+	layers := map[string]struct{}{}
+	for _, item := range values {
+		layers[item] = struct{}{}
+	}
+
+	return layers, nil
+}
+
 func parseVolumeMounts(values []string) (map[string]config.VolumeMount, error) {
 	volumeMounts := map[string]config.VolumeMount{}
 
