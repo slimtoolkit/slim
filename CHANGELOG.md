@@ -1,3 +1,10 @@
+## 1.28.1 (3/9/2020)
+
+### Improvements
+
+* New `xray` parameters to control how much to show when it's printing the layer details (`--changes value` and `--layer value`)
+* Image history enhancements and more data saved in the xray command reports
+
 ## 1.28.0 (3/6/2020)
 
 ### New Features

@@ -94,6 +94,7 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 - [ORIGINAL DEMO VIDEO](#original-demo-video)
 - [DEMO STEPS](#demo-steps)
 - [USAGE DETAILS](#usage-details)
+  - [`XRAY` COMMAND OPTIONS](#xray-command-options)
   - [`BUILD` COMMAND OPTIONS](#build-command-options)
 - [RUNNING CONTAINERIZED](#running-containerized)
 - [DOCKER CONNECT OPTIONS](#docker-connect-options)
@@ -127,16 +128,16 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 
 ## RECENT UPDATES
 
-Latest version: 1.28.0 (3/6/2020)
+Latest version: 1.28.1 (3/9/2020)
 
 This release enhances the `xray` command to show the detailed container image information including its layers and their files and directories. For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.28.0/dist_mac.zip)
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.28.0/dist_linux.tar.gz)
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.28.0/dist_linux_arm.tar.gz)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.28.1/dist_mac.zip)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.28.1/dist_linux.tar.gz)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.28.1/dist_linux_arm.tar.gz)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -194,7 +195,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.28.0/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.28.0/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.28.0/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.28.1/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.28.1/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.28.1/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
   The extracted directory contains two binaries:
 
@@ -278,6 +279,12 @@ Global options:
 To get more command line option information run `docker-slim` without any parameters or select one of the top level commands to get the command-specific information.
 
 To disable the version checks set the global `--check-version` flag to `false` (e.g., `--check-version=false`) or you can use the `DSLIM_CHECK_VERSION` environment variable.
+
+### `XRAY` COMMAND OPTIONS
+
+* `--changes value` - show layer change details for the selected change type (values: none, all, delete, modify, add)
+* `--layer value` - show details for the selected layer (using layer index or ID)
+* `--remove-file-artifacts` - remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
 
 ### `BUILD` COMMAND OPTIONS
 
