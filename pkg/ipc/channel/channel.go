@@ -22,6 +22,7 @@ var (
 	ErrFrameUnexpected  = errors.New("unexpected frame type")
 	ErrRemoteError      = errors.New("remote error")
 	ErrWaitTimeout      = errors.New("wait timeout")
+	ErrFrameMalformed   = errors.New("malformed frame")
 )
 
 // Channel ports
@@ -114,7 +115,7 @@ func getFrame(raw []byte) (*Frame, error) {
 		return &frame, nil
 	}
 
-	return nil, nil
+	return nil, ErrFrameMalformed
 }
 
 type ConnectionHandler interface {
@@ -378,14 +379,18 @@ func (c *Client) Read(retries uint) (*Frame, error) {
 		break
 	}
 
-	//todo: need to handle unexpected/malformed frames (e.g., return error codes, etc)
 	frame, err := getFrame([]byte(raw))
 	if err != nil {
+		log.Infof("channel.Client.Read: malformed frame (%v) ='%s'", len(raw), raw)
 		return nil, err
 	}
 
-	log.Debugf("channel.Client.Read: frame data => tid=%s type=%s body='%s'",
-		frame.TID, frame.Type, string(frame.Body))
+	if frame != nil {
+		log.Debugf("channel.Client.Read: frame data => tid=%s type=%s body='%s'",
+			frame.TID, frame.Type, string(frame.Body))
+	} else {
+		log.Infof("channel.Client.Read: malformed frame (%v) ='%s'", len(raw), raw)
+	}
 
 	return frame, nil
 }
@@ -609,7 +614,8 @@ func (s *CommandServer) OnConnection(conn net.Conn) {
 				log.Debugf("channel.CommandServer.OnConnection.worker: raw frame => '%s'", inRaw)
 				inFrame, err := getFrame([]byte(inRaw))
 				if err != nil {
-					log.Errorf("channel.CommandServer.OnConnection.worker: %s -> %s - error getting frame (%v)", conn.RemoteAddr(), conn.LocalAddr(), err)
+					log.Errorf("channel.CommandServer.OnConnection.worker: %s -> %s - error getting frame (%v) [raw(%v)='%s']",
+						conn.RemoteAddr(), conn.LocalAddr(), err, len(inRaw), inRaw)
 					return
 				}
 
