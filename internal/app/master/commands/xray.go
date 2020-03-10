@@ -104,9 +104,9 @@ func OnXray(
 		if len(imageInspector.DockerfileInfo.ImageStack) > 0 {
 			cmdReport.ImageStack = imageInspector.DockerfileInfo.ImageStack
 
-			for idx, layerInfo := range imageInspector.DockerfileInfo.ImageStack {
-				fmt.Printf("%s[%s]: info=image.stack index=%v name='%v' id='%v'\n",
-					appName, cmdName, idx, layerInfo.FullName, layerInfo.ID)
+			for idx, imageInfo := range imageInspector.DockerfileInfo.ImageStack {
+				fmt.Printf("%s[%s]: info=image.stack index=%v name='%v' id='%v' instructions=%v message='see report file for details'\n",
+					appName, cmdName, idx, imageInfo.FullName, imageInfo.ID, len(imageInfo.Instructions))
 			}
 		}
 
@@ -138,6 +138,8 @@ func OnXray(
 		}
 	}
 
+	cmdReport.ArtifactLocation = imageInspector.ArtifactLocation
+
 	fmt.Printf("%s[%s]: state=image.api.inspection.done\n", appName, cmdName)
 	fmt.Printf("%s[%s]: state=image.data.inspection.start\n", appName, cmdName)
 
@@ -152,7 +154,21 @@ func OnXray(
 
 	fmt.Printf("%s[%s]: state=image.data.inspection.done\n", appName, cmdName)
 
-	printImagePackage(imagePkg, appName, cmdName, changes, layers)
+	if len(imageInspector.DockerfileInfo.AllInstructions) == len(imagePkg.Config.History) {
+		for instIdx, instInfo := range imageInspector.DockerfileInfo.AllInstructions {
+			instInfo.Author = imagePkg.Config.History[instIdx].Author
+			instInfo.EmptyLayer = imagePkg.Config.History[instIdx].EmptyLayer
+			instInfo.LayerID = imagePkg.Config.History[instIdx].LayerID
+			instInfo.LayerIndex = imagePkg.Config.History[instIdx].LayerIndex
+			instInfo.LayerFSDiffID = imagePkg.Config.History[instIdx].LayerFSDiffID
+		}
+	} else {
+		logger.Debugf("history instruction set size mismatch - %v/%v ",
+			len(imageInspector.DockerfileInfo.AllInstructions),
+			len(imagePkg.Config.History))
+	}
+
+	printImagePackage(imagePkg, appName, cmdName, changes, layers, cmdReport)
 
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
 	cmdReport.State = report.CmdStateCompleted
@@ -167,6 +183,9 @@ func OnXray(
 
 	fmt.Printf("%s[%s]: state=done\n", appName, cmdName)
 
+	fmt.Printf("%s[%s]: info=results  artifacts.location='%v'\n", appName, cmdName, cmdReport.ArtifactLocation)
+	fmt.Printf("%s[%s]: info=results  artifacts.dockerfile.original=Dockerfile.fat\n", appName, cmdName)
+
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)
 
@@ -179,7 +198,8 @@ func OnXray(
 func printImagePackage(pkg *dockerimage.Package,
 	appName, cmdName string,
 	changes map[string]struct{},
-	layers map[string]struct{}) {
+	layers map[string]struct{},
+	cmdReport *report.XrayCommand) {
 	fmt.Printf("%s[%s]: info=image.package.details\n", appName, cmdName)
 
 	fmt.Printf("%s[%s]: info=layers.count: %v\n", appName, cmdName, len(pkg.Layers))
@@ -199,6 +219,23 @@ func printImagePackage(pkg *dockerimage.Package,
 		for _, object := range topList {
 			printObject(object)
 		}
+
+		layerReport := dockerimage.LayerReport{
+			ID:       layer.ID,
+			Index:    layer.Index,
+			Path:     layer.Path,
+			FSDiffID: layer.FSDiffID,
+			Stats:    layer.Stats,
+		}
+
+		layerReport.Changes.Deleted = uint64(len(layer.Changes.Deleted))
+		layerReport.Changes.Modified = uint64(len(layer.Changes.Modified))
+		layerReport.Changes.Added = uint64(len(layer.Changes.Added))
+
+		layerReport.Top = topList
+
+		cmdReport.ImageLayers = append(cmdReport.ImageLayers, &layerReport)
+
 		fmt.Printf("\n")
 
 		showLayer := true

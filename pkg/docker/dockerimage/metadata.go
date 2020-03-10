@@ -83,11 +83,11 @@ type V1ConfigObject struct {
 
 type ConfigObject struct {
 	V1ConfigObject
-	Parent     string    `json:"parent,omitempty"` //nolint:govet
-	RootFS     *RootFS   `json:"rootfs,omitempty"`
-	History    []History `json:"history,omitempty"`
-	OSVersion  string    `json:"os.version,omitempty"`
-	OSFeatures []string  `json:"os.features,omitempty"`
+	Parent     string     `json:"parent,omitempty"` //nolint:govet
+	RootFS     *RootFS    `json:"rootfs,omitempty"`
+	History    []XHistory `json:"history,omitempty"`
+	OSVersion  string     `json:"os.version,omitempty"`
+	OSFeatures []string   `json:"os.features,omitempty"`
 }
 
 //data structures from https://github.com/moby/moby/blob/master/image/rootfs.go
@@ -101,7 +101,8 @@ type RootFS struct {
 
 //data structures from https://github.com/moby/moby/blob/master/image/image.go
 
-type History struct {
+// XHistory augments the standard History struct with extra layer info
+type XHistory struct {
 	// Created is the timestamp at which the image was created
 	Created time.Time `json:"created"`
 	// Author is the name of the author that was specified when committing the image
@@ -114,6 +115,12 @@ type History struct {
 	// layer. Otherwise, the history item is associated with the next
 	// layer in the RootFS section.
 	EmptyLayer bool `json:"empty_layer,omitempty"`
+
+	//extra fields
+
+	LayerID       string `json:"layer_id,omitempty"`
+	LayerIndex    int    `json:"layer_index"`
+	LayerFSDiffID string `json:"layer_fsdiff_id,omitempty"`
 }
 
 //data structures from https://github.com/moby/moby/blob/master/api/types/container/config.go

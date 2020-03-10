@@ -2,6 +2,7 @@ package dockerfile
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"path/filepath"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/dustin/go-humanize"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
 
 	v "github.com/docker-slim/docker-slim/pkg/version"
@@ -18,11 +20,12 @@ import (
 
 // Info represents the reverse engineered Dockerfile info
 type Info struct {
-	Lines        []string
-	AllUsers     []string
-	ExeUser      string
-	ExposedPorts []string
-	ImageStack   []*ImageInfo
+	Lines           []string
+	AllUsers        []string
+	ExeUser         string
+	ExposedPorts    []string
+	ImageStack      []*ImageInfo
+	AllInstructions []*InstructionInfo
 }
 
 type ImageInfo struct {
@@ -40,25 +43,40 @@ type ImageInfo struct {
 }
 
 type InstructionInfo struct {
-	Type                string `json:"type"`
-	Time                string `json:"time"`
+	Type string `json:"type"`
+	Time string `json:"time"`
+	//Time              time.Time `json:"time"`
+	IsLastInstruction   bool   `json:"is_last_instruction,omitempty"`
 	IsNop               bool   `json:"is_nop"`
-	IsLocal             bool   `json:"is_local"`
+	IsExecForm          bool   `json:"is_exec_form,omitempty"` //is exec/json format (a valid field for RUN, ENTRYPOINT, CMD)
+	LocalImageExits     bool   `json:"local_image_exits"`
 	IntermediateImageID string `json:"intermediate_image_id,omitempty"`
+	LayerIndex          int    `json:"layer_index"` //-1 for an empty layer
+	LayerID             string `json:"layer_id,omitempty"`
+	LayerFSDiffID       string `json:"layer_fsdiff_id,omitempty"`
 	Size                int64  `json:"size"`
 	SizeHuman           string `json:"size_human,omitempty"`
+	Params              string `json:"params,omitempty"`
 	CommandSnippet      string `json:"command_snippet"`
 	command             string
 	SystemCommands      []string `json:"system_commands,omitempty"`
 	Comment             string   `json:"comment,omitempty"`
+	Author              string   `json:"author,omitempty"`
+	EmptyLayer          bool     `json:"empty_layer,omitempty"`
 	instPosition        string
 	imageFullName       string
 	RawTags             []string `json:"raw_tags,omitempty"`
 }
 
+//The 'History' API doesn't expose the 'author' in the records it returns
+//The 'author' field is useful in detecting if it's a Dockerfile instruction
+//or if it's created with something else.
+//One option is to combine the 'History' API data with the history data
+//from the image config JSON embedded in the image.
+//Another option is to rely on '#(nop)'.
+
 // ReverseDockerfileFromHistory recreates Dockerfile information from container image history
 func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*Info, error) {
-	//NOTE: comment field is missing (TODO: enhance the lib...)
 	imageHistory, err := apiClient.ImageHistory(imageID)
 	if err != nil {
 		return nil, err
@@ -79,22 +97,26 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 		for idx := imageLayerStart; idx >= 0; idx-- {
 			isNop := false
 
-			nopPrefix := "/bin/sh -c #(nop) "
-			execPrefix := "/bin/sh -c "
+			notRunInstPrefix := "/bin/sh -c #(nop) "
+			runInstShellPrefix := "/bin/sh -c "
 			rawLine := imageHistory[idx].CreatedBy
 			var inst string
 
-			if strings.Contains(rawLine, "(nop)") {
+			if strings.Contains(rawLine, "#(nop)") {
 				isNop = true
 			}
+
+			isExecForm := false
 
 			switch {
 			case len(rawLine) == 0:
 				inst = "FROM scratch"
-			case strings.HasPrefix(rawLine, nopPrefix):
-				inst = strings.TrimPrefix(rawLine, nopPrefix)
-			case strings.HasPrefix(rawLine, execPrefix):
-				runData := strings.TrimPrefix(rawLine, execPrefix)
+			case strings.HasPrefix(rawLine, notRunInstPrefix):
+				//Instructions that are not RUN
+				inst = strings.TrimPrefix(rawLine, notRunInstPrefix)
+			case strings.HasPrefix(rawLine, runInstShellPrefix):
+				//RUN instruction in shell form
+				runData := strings.TrimPrefix(rawLine, runInstShellPrefix)
 				if strings.Contains(runData, "&&") {
 					parts := strings.Split(runData, "&&")
 					for i := range parts {
@@ -110,15 +132,54 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 					inst = "RUN " + runData
 				}
 			default:
-				inst = rawLine
+				//RUN instruction in exec form
+				isExecForm = true
+				inst = "RUN " + rawLine
+				if outArray, err := shlex.Split(rawLine); err == nil {
+					if outJson, err := json.Marshal(outArray); err == nil {
+						inst = fmt.Sprintf("RUN %s", string(outJson))
+					}
+				}
 			}
+
 			//NOTE: Dockerfile instructions can be any case, but the instructions from history are always uppercase
 			cleanInst := strings.TrimSpace(inst)
 
 			if strings.HasPrefix(cleanInst, "ENTRYPOINT ") {
-				inst = strings.Replace(inst, "&{[", "[", -1)
-				inst = strings.Replace(inst, "]}", "]", -1)
-				//TODO: make whitespace separated array comma separated
+				cleanInst = strings.Replace(cleanInst, "&{[", "[", -1)
+				cleanInst = strings.Replace(cleanInst, "]}", "]", -1)
+
+				entrypointShellFormPrefix := `ENTRYPOINT ["/bin/sh" "-c" "`
+				if strings.HasPrefix(cleanInst, entrypointShellFormPrefix) {
+					fmt.Println("Q TMP: ENTRYPOINT shell form...")
+					instData := strings.TrimPrefix(cleanInst, entrypointShellFormPrefix)
+					instData = strings.TrimSuffix(instData, `"]`)
+					cleanInst = "ENTRYPOINT " + instData
+				} else {
+					isExecForm = true
+					fmt.Println("Q TMP: ENTRYPOINT exec form...")
+
+					instData := strings.TrimPrefix(cleanInst, "ENTRYPOINT ")
+					instData = fixJSONArray(instData)
+					cleanInst = "ENTRYPOINT " + instData
+				}
+			}
+
+			if strings.HasPrefix(cleanInst, "CMD ") {
+				cmdShellFormPrefix := `CMD ["/bin/sh" "-c" "`
+				if strings.HasPrefix(cleanInst, cmdShellFormPrefix) {
+					fmt.Println("Q TMP: CMD shell form...")
+					instData := strings.TrimPrefix(cleanInst, cmdShellFormPrefix)
+					instData = strings.TrimSuffix(instData, `"]`)
+					cleanInst = "CMD " + instData
+				} else {
+					isExecForm = true
+					fmt.Println("Q TMP: CMD exec form...")
+
+					instData := strings.TrimPrefix(cleanInst, "CMD ")
+					instData = fixJSONArray(instData)
+					cleanInst = "CMD " + instData
+				}
 			}
 
 			if strings.HasPrefix(cleanInst, "USER ") {
@@ -145,9 +206,11 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 			}
 
 			instInfo := InstructionInfo{
-				IsNop:   isNop,
-				command: cleanInst,
-				Time:    time.Unix(imageHistory[idx].Created, 0).UTC().Format(time.RFC3339),
+				IsNop:      isNop,
+				IsExecForm: isExecForm,
+				command:    cleanInst,
+				Time:       time.Unix(imageHistory[idx].Created, 0).UTC().Format(time.RFC3339),
+				//Time:    time.Unix(imageHistory[idx].Created, 0),
 				Comment: imageHistory[idx].Comment,
 				RawTags: imageHistory[idx].Tags,
 				Size:    imageHistory[idx].Size,
@@ -173,10 +236,19 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 					cmd = strings.Replace(cmd, "\n", "", -1)
 					instInfo.SystemCommands = append(instInfo.SystemCommands, cmd)
 				}
+			} else {
+				instInfo.Params = instParts[1]
 			}
 
 			if instInfo.Type == "WORKDIR" {
 				instInfo.SystemCommands = append(instInfo.SystemCommands, fmt.Sprintf("mkdir -p %s", instParts[1]))
+			}
+
+			if instInfo.Type == "HEALTHCHECK" {
+				//TODO: restore the HEALTHCHECK instruction
+				//Example:
+				// HEALTHCHECK &{["CMD" "/healthcheck" "8080"] "5s" "10s" "0s" '\x03'}
+				// HEALTHCHECK --interval=5s --timeout=10s --retries=3 CMD [ "/healthcheck", "8080" ]
 			}
 
 			if len(instInfo.command) > 44 {
@@ -190,7 +262,7 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 			}
 
 			if imageHistory[idx].ID != "<missing>" {
-				instInfo.IsLocal = true
+				instInfo.LocalImageExits = true
 				instInfo.IntermediateImageID = imageHistory[idx].ID
 			}
 
@@ -205,6 +277,8 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 			currentImageInfo.NewSize += imageHistory[idx].Size
 			currentImageInfo.Instructions = append(currentImageInfo.Instructions, &instInfo)
 
+			out.AllInstructions = append(out.AllInstructions, &instInfo)
+
 			instPosition := "intermediate"
 			if idx == imageLayerStart {
 				instPosition = "first" //first instruction in the list
@@ -215,6 +289,11 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 
 				currentImageInfo.ID = imageHistory[idx].ID
 				prevImageID = currentImageInfo.ID
+
+				if instInfo.IntermediateImageID == currentImageInfo.ID {
+					instInfo.IntermediateImageID = ""
+					instInfo.IsLastInstruction = true
+				}
 
 				currentImageInfo.CreateTime = instInfo.Time
 				currentImageInfo.RawTags = imageHistory[idx].Tags
@@ -401,6 +480,24 @@ func GenerateFromInfo(location string,
 	}
 
 	return ioutil.WriteFile(dockerfileLocation, dfData.Bytes(), 0644)
+}
+
+func fixJSONArray(in string) string {
+	data := in
+	if data[0] == '[' {
+		data = data[1 : len(data)-1]
+	}
+	outArray, err := shlex.Split(data)
+	if err != nil {
+		return in
+	}
+
+	out, err := json.Marshal(outArray)
+	if err != nil {
+		return in
+	}
+
+	return string(out)
 }
 
 //

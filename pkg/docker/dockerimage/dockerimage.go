@@ -31,10 +31,27 @@ type Package struct {
 	LayerRootFSRefs map[string]*Layer
 }
 
+type LayerReport struct {
+	ID       string            `json:"id"`
+	Index    int               `json:"index"`
+	Path     string            `json:"path,omitempty"`
+	FSDiffID string            `json:"fsdiff_id,omitempty"`
+	Stats    LayerStats        `json:"stats"`
+	Changes  ChangesetSummary  `json:"changes"`
+	Top      []*ObjectMetadata `json:"top"`
+}
+
+type ChangesetSummary struct {
+	Deleted  uint64 `json:"deleted"`
+	Added    uint64 `json:"added"`
+	Modified uint64 `json:"modified"`
+}
+
 type Layer struct {
 	ID         string
 	Index      int
 	Path       string
+	FSDiffID   string
 	Stats      LayerStats
 	Changes    Changeset
 	Objects    []*ObjectMetadata
@@ -43,21 +60,21 @@ type Layer struct {
 }
 
 type LayerStats struct {
-	BlobSize         uint64
-	AllSize          uint64
-	ObjectCount      uint64
-	DirCount         uint64
-	FileCount        uint64
-	LinkCount        uint64
-	MaxFileSize      uint64
-	MaxDirSize       uint64
-	DeletedCount     uint64
-	DeletedDirCount  uint64
-	DeletedFileCount uint64
-	DeletedLinkCount uint64
-	DeletedSize      uint64
-	AddedSize        uint64
-	ModifiedSize     uint64
+	//BlobSize         uint64 `json:"blob_size"`
+	AllSize          uint64 `json:"all_size"`
+	ObjectCount      uint64 `json:"object_count"`
+	DirCount         uint64 `json:"dir_count"`
+	FileCount        uint64 `json:"file_count"`
+	LinkCount        uint64 `json:"link_count"`
+	MaxFileSize      uint64 `json:"max_file_size"`
+	MaxDirSize       uint64 `json:"max_dir_size"`
+	DeletedCount     uint64 `json:"deleted_count"`
+	DeletedDirCount  uint64 `json:"deleted_dir_count"`
+	DeletedFileCount uint64 `json:"deleted_file_count"`
+	DeletedLinkCount uint64 `json:"deleted_link_count"`
+	DeletedSize      uint64 `json:"deleted_size"`
+	AddedSize        uint64 `json:"added_size"`
+	ModifiedSize     uint64 `json:"modified_size"`
 }
 
 type ChangeType int
@@ -70,15 +87,15 @@ const (
 )
 
 type ObjectMetadata struct {
-	Change     ChangeType
-	Name       string
-	Size       int64
-	Mode       os.FileMode
-	UID        int
-	GID        int
-	ModTime    time.Time
-	ChangeTime time.Time
-	LinkTarget string
+	Change     ChangeType  `json:"change,omitempty"`
+	Name       string      `json:"name,omitempty"`
+	Size       int64       `json:"size,omitempty"`
+	Mode       os.FileMode `json:"mode,omitempty"`
+	UID        int         `json:"uid,omitempty"`
+	GID        int         `json:"gid,omitempty"`
+	ModTime    time.Time   `json:"mod_time,omitempty"`
+	ChangeTime time.Time   `json:"change_time,omitempty"`
+	LinkTarget string      `json:"link_target,omitempty"`
 }
 
 type Changeset struct {
@@ -246,7 +263,42 @@ func LoadPackage(archivePath, imageID string, skipObjects bool) (*Package, error
 		}
 
 		pkg.LayerIDRefs[layerID] = layer
-		//pkg.LayerRootFSRefs[diffID] = layer
+
+		if pkg.Config.RootFS != nil && idx < len(pkg.Config.RootFS.DiffIDs) {
+			diffID := pkg.Config.RootFS.DiffIDs[idx]
+			pkg.LayerRootFSRefs[diffID] = layer
+		} else {
+			log.Debugf("dockerimage.LoadPackage: no FS diff for layer index %v", idx)
+		}
+	}
+
+	var didx int
+	for hidx := range pkg.Config.History {
+		var diffID string
+		switch pkg.Config.History[hidx].EmptyLayer {
+		case false:
+			diffID = pkg.Config.RootFS.DiffIDs[didx]
+			didx++
+		case true:
+			if didx == 0 {
+				//no previous layer to reference...
+				pkg.Config.History[hidx].LayerFSDiffID = "none"
+				pkg.Config.History[hidx].LayerID = "none"
+				pkg.Config.History[hidx].LayerIndex = -1
+			} else {
+				diffID = pkg.Config.RootFS.DiffIDs[didx-1]
+			}
+		}
+
+		if diffID != "" {
+			if layer, ok := pkg.LayerRootFSRefs[diffID]; ok {
+				pkg.Config.History[hidx].LayerFSDiffID = diffID
+				pkg.Config.History[hidx].LayerID = layer.ID
+				pkg.Config.History[hidx].LayerIndex = layer.Index
+			} else {
+				log.Debugf("dockerimage.LoadPackage: no layer for FS diff %v", diffID)
+			}
+		}
 	}
 
 	return pkg, nil
@@ -267,7 +319,7 @@ func layerFromStream(tr *tar.Reader, layerID string) (*Layer, error) {
 		}
 
 		if hdr == nil || hdr.Name == "" {
-			log.Debugf("layerFromStream: ignoring bad tar header")
+			log.Debug("layerFromStream: ignoring bad tar header")
 			continue
 		}
 

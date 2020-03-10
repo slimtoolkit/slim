@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerfile"
+	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
 
@@ -100,10 +101,12 @@ type ProfileCommand struct {
 // XrayCommand is the 'xray' command report data
 type XrayCommand struct {
 	Command
-	ImageReference       string                  `json:"image_reference"`
-	SourceImage          ImageMetadata           `json:"source_image"`
-	ImageStack           []*dockerfile.ImageInfo `json:"image_stack"`
-	ImageArchiveLocation string                  `json:"image_archive_location"`
+	ImageReference       string                     `json:"image_reference"`
+	SourceImage          ImageMetadata              `json:"source_image"`
+	ArtifactLocation     string                     `json:"artifact_location"`
+	ImageStack           []*dockerfile.ImageInfo    `json:"image_stack"`
+	ImageLayers          []*dockerimage.LayerReport `json:"image_layers"`
+	ImageArchiveLocation string                     `json:"image_archive_location"`
 }
 
 // LintCommand is the 'lint' command report data
