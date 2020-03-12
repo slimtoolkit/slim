@@ -297,6 +297,8 @@ func (p *artifactStore) saveArtifacts() {
 	err := os.MkdirAll(dstRootPath, 0777)
 	errutil.FailOn(err)
 
+	extraDirs := map[string]struct{}{}
+
 	log.Debugf("saveArtifacts - copy files (%v)", len(p.fileMap))
 copyFiles:
 	for srcFileName := range p.fileMap {
@@ -316,11 +318,13 @@ copyFiles:
 		//filter out pid files (todo: have a flag to enable/disable these capabilities)
 		if isKnownPidFilePath(srcFileName) {
 			log.Debugf("saveArtifacts - copy files - skipping known pid file (%v)", srcFileName)
+			extraDirs[fsutil.FileDir(srcFileName)] = struct{}{}
 			continue
 		}
 
 		if hasPidFileSuffix(srcFileName) {
 			log.Debugf("saveArtifacts - copy files - skipping a pid file (%v)", srcFileName)
+			extraDirs[fsutil.FileDir(srcFileName)] = struct{}{}
 			continue
 		}
 
@@ -499,6 +503,24 @@ copyIncludes:
 		} else {
 			if err := os.Chmod(tdTargetPath, os.ModeSticky|os.ModeDir|0777); err != nil {
 				log.Warn("saveArtifacts - error setting tmp directory permission ==> ", err)
+			}
+		}
+	}
+
+	if fsutil.DirExists("/run") {
+		tdTargetPath := fmt.Sprintf("%s/files/run", p.storeLocation)
+		if !fsutil.DirExists(tdTargetPath) {
+			if err := os.MkdirAll(tdTargetPath, 0755); err != nil {
+				log.Warn("saveArtifacts - error creating run directory => ", err)
+			}
+		}
+	}
+
+	for extraDir := range extraDirs {
+		tdTargetPath := fmt.Sprintf("%s/files%s", p.storeLocation, extraDir)
+		if fsutil.DirExists(extraDir) && !fsutil.DirExists(tdTargetPath) {
+			if err := fsutil.CopyDirOnly(p.cmd.KeepPerms, extraDir, tdTargetPath); err != nil {
+				log.Warnf("CopyDirOnly(%v,%v) error: %v", extraDir, tdTargetPath, err)
 			}
 		}
 	}
@@ -768,6 +790,8 @@ func isRbGemSpecFile(filePath string) bool {
 }
 
 var pidFilePathSuffixes = []string{
+	"/var/run/nginx.pid",
+	"/run/nginx.pid",
 	"/tmp/nginx.pid",
 	"/tmp/pids/server.pid",
 }

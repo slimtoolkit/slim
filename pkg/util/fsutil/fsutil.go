@@ -319,8 +319,8 @@ func cloneDirPath(src, dst string) {
 
 // CopyRegularFile copies a regular file
 func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
-	log.Debugf("CopyRegularFile(%v,%v,%v)", src, dst, makeDir)
-
+	log.Debugf("CopyRegularFile(%v,%v,%v,%v)", clone, src, dst, makeDir)
+	//'clone' should be true only for the dst files that need to clone the dir properties from src
 	s, err := os.Open(src)
 	if err != nil {
 		return err
@@ -600,6 +600,72 @@ func copyFileObjectHandler(
 	}
 }
 
+// CopyDirOnly copies a directory without any files
+func CopyDirOnly(clone bool, src, dst string) error {
+	log.Debugf("CopyDirOnly(%v,%v,%v)", clone, src, dst)
+
+	if src == "" {
+		return ErrNoSrcDir
+	}
+
+	if dst == "" {
+		return ErrNoDstDir
+	}
+
+	var err error
+	if src, err = filepath.Abs(src); err != nil {
+		return err
+	}
+
+	if dst, err = filepath.Abs(dst); err != nil {
+		return err
+	}
+
+	if src == dst {
+		return ErrSameDir
+	}
+
+	//TODO: better symlink support
+	//when 'src' is a directory (need to better define the expected behavior)
+	//should use Lstat() first
+	srcInfo, err := os.Stat(src)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return ErrSrcDirNotExist
+		}
+
+		return err
+	}
+
+	if !srcInfo.IsDir() {
+		return ErrSrcNotDir
+	}
+
+	if !DirExists(dst) {
+		if clone {
+			cloneDirPath(src, dst)
+		} else {
+			var dirMode os.FileMode = 0777
+			err = os.MkdirAll(dst, dirMode)
+			if err != nil {
+				return err
+			}
+
+			//try copying the timestamps too (even without cloning)
+			if sysStat, ok := srcInfo.Sys().(*syscall.Stat_t); ok {
+				ssi := SysStatInfo(sysStat)
+				if ssi.Ok {
+					if err := UpdateFileTimes(dst, ssi.Atime, ssi.Mtime); err != nil {
+						log.Warnf("CopyDirOnly() - UpdateFileTimes(%v) error - %v", dst, err)
+					}
+				}
+			}
+		}
+	}
+
+	return nil
+}
+
 // CopyDir copies a directory
 func CopyDir(clone bool,
 	src, dst string,
@@ -695,7 +761,7 @@ func PreparePostUpdateStateDir(statePrefix string) {
 					}
 				}
 
-				err = CopyRegularFile(true, srcSensorPath, dstSensorPath, true)
+				err = CopyRegularFile(false, srcSensorPath, dstSensorPath, true)
 				errutil.FailOn(err)
 			} else {
 				log.Debugf("PreparePostUpdateStateDir - did not find tmp")
@@ -741,7 +807,7 @@ func PrepareImageStateDirs(statePrefix, imageID string) (string, string, string,
 
 				srcSensorPath := filepath.Join(appDir, sensorFileName)
 				dstSensorPath := filepath.Join(statePrefix, sensorFileName)
-				err = CopyRegularFile(true, srcSensorPath, dstSensorPath, true)
+				err = CopyRegularFile(false, srcSensorPath, dstSensorPath, true)
 				errutil.FailOn(err)
 			} else {
 				log.Debugf("PrepareImageStateDirs - did not find tmp")
