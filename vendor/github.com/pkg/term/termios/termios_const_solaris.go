@@ -1,0 +1,14 @@
+package termios
+
+// #include<termios.h>
+import "C"
+
+const (
+	TCIFLUSH  = C.TCIFLUSH
+	TCOFLUSH  = C.TCOFLUSH
+	TCIOFLUSH = C.TCIOFLUSH
+
+	TCSANOW   = C.TCSANOW
+	TCSADRAIN = C.TCSADRAIN
+	TCSAFLUSH = C.TCSAFLUSH
+)

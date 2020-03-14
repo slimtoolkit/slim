@@ -8,6 +8,8 @@ github.com/Microsoft/go-winio/pkg/guid
 github.com/Microsoft/hcsshim/osversion
 # github.com/bmatcuk/doublestar v1.2.2
 github.com/bmatcuk/doublestar
+# github.com/c-bata/go-prompt v0.2.3
+github.com/c-bata/go-prompt
 # github.com/c4milo/unpackit v0.0.0-20170704181138-4ed373e9ef1c
 github.com/c4milo/unpackit
 # github.com/containerd/containerd v1.3.0
@@ -87,6 +89,14 @@ github.com/klauspost/cpuid
 github.com/klauspost/pgzip
 # github.com/konsorten/go-windows-terminal-sequences v1.0.1
 github.com/konsorten/go-windows-terminal-sequences
+# github.com/mattn/go-colorable v0.1.6
+github.com/mattn/go-colorable
+# github.com/mattn/go-isatty v0.0.12
+github.com/mattn/go-isatty
+# github.com/mattn/go-runewidth v0.0.8
+github.com/mattn/go-runewidth
+# github.com/mattn/go-tty v0.0.3
+github.com/mattn/go-tty
 # github.com/morikuni/aec v0.0.0-20170113033406-39771216ff4c
 github.com/morikuni/aec
 # github.com/opencontainers/go-digest v1.0.0-rc1
@@ -99,6 +109,8 @@ github.com/opencontainers/runc/libcontainer/system
 github.com/opencontainers/runc/libcontainer/user
 # github.com/pkg/errors v0.8.1
 github.com/pkg/errors
+# github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942
+github.com/pkg/term/termios
 # github.com/russross/blackfriday/v2 v2.0.1
 github.com/russross/blackfriday/v2
 # github.com/shurcooL/sanitized_anchor_name v1.0.0
@@ -112,9 +124,9 @@ github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
 # github.com/urfave/cli v1.22.1
 github.com/urfave/cli
-# golang.org/x/sync v0.0.0-20190423024810-112230192c58
+# golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.0.0-20191026070338-33540a1f6037
+# golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # google.golang.org/genproto v0.0.0-20180831171423-11092d34479b

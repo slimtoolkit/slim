@@ -1,0 +1,4 @@
+language: go
+sudo: false
+go:
+  - tip

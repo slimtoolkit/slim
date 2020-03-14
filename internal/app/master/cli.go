@@ -5,14 +5,19 @@ import (
 	"os"
 	"runtime"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/system"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	"github.com/docker-slim/docker-slim/pkg/version"
 
+	"github.com/c-bata/go-prompt"
+	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -23,7 +28,7 @@ const (
 	AppUsage = "optimize and secure your Docker containers!"
 )
 
-// DockerSlim app command names
+// Command names
 const (
 	CmdLint         = "lint"
 	CmdXray         = "xray"
@@ -32,26 +37,62 @@ const (
 	CmdContainerize = "containerize"
 	CmdVersion      = "version"
 	CmdUpdate       = "update"
+	CmdHelp         = "help"
 )
 
-// DockerSlim app flag names
+// Command description / usage info
 const (
-	FlagCheckVersion        = "check-version"
-	FlagDebug               = "debug"
-	FlagInContainer         = "in-container"
-	FlagCommandReport       = "report"
-	FlagVerbose             = "verbose"
-	FlagLogLevel            = "log-level"
-	FlagLog                 = "log"
-	FlagLogFormat           = "log-format"
-	FlagUseTLS              = "tls"
-	FlagVerifyTLS           = "tls-verify"
-	FlagTLSCertPath         = "tls-cert-path"
-	FlagHost                = "host"
-	FlagStatePath           = "state-path"
-	FlagArchiveState        = "archive-state"
+	CmdLintUsage         = "Lint the target Dockerfile or image"
+	CmdXrayUsage         = "Collects fat image information and reverse engineers its Dockerfile"
+	CmdProfileUsage      = "Collects fat image information and generates a fat container report"
+	CmdBuildUsage        = "Collects fat image information and builds a slim image from it"
+	CmdContainerizeUsage = "containerize"
+	CmdVersionUsage      = "Shows docker-slim and docker version information"
+	CmdUpdateUsage       = "Updates docker-slim"
+	CmdHelpUsage         = "Show help info"
+)
+
+// Global flag names
+const (
+	FlagCommandReport = "report"
+	FlagCheckVersion  = "check-version"
+	FlagDebug         = "debug"
+	FlagVerbose       = "verbose"
+	FlagLogLevel      = "log-level"
+	FlagLog           = "log"
+	FlagLogFormat     = "log-format"
+	FlagUseTLS        = "tls"
+	FlagVerifyTLS     = "tls-verify"
+	FlagTLSCertPath   = "tls-cert-path"
+	FlagHost          = "host"
+	FlagStatePath     = "state-path"
+	FlagInContainer   = "in-container"
+	FlagArchiveState  = "archive-state"
+)
+
+// Global flag usage info
+const (
+	FlagCommandReportUsage = "command report location (enabled by default; set it to \"off\" to disable it)"
+	FlagCheckVersionUsage  = "check if the current version is outdated"
+	FlagDebugUsage         = "enable debug logs"
+	FlagVerboseUsage       = "enable info logs"
+	FlagLogLevelUsage      = "set the logging level ('trace', 'debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')"
+	FlagLogUsage           = "log file to store logs"
+	FlagLogFormatUsage     = "set the format used by logs ('text' (default), or 'json')"
+	FlagUseTLSUsage        = "use TLS"
+	FlagVerifyTLSUsage     = "verify TLS"
+	FlagTLSCertPathUsage   = "path to TLS cert files"
+	FlagHostUsage          = "Docker host address"
+	FlagStatePathUsage     = "DockerSlim state base path"
+	FlagInContainerUsage   = "DockerSlim is running in a container"
+	FlagArchiveStateUsage  = "archive DockerSlim state to the selected Docker volume (default volume - docker-slim-state). By default, enabled when DockerSlim is running in a container (disabled otherwise). Set it to \"off\" to disable explicitly."
+)
+
+// Shared command flag names
+const (
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
+
 	FlagHTTPProbe           = "http-probe"
 	FlagHTTPProbeCmd        = "http-probe-cmd"
 	FlagHTTPProbeCmdFile    = "http-probe-cmd-file"
@@ -59,74 +100,391 @@ const (
 	FlagHTTPProbeRetryWait  = "http-probe-retry-wait"
 	FlagHTTPProbePorts      = "http-probe-ports"
 	FlagHTTPProbeFull       = "http-probe-full"
-	FlagShowContainerLogs   = "show-clogs"
-	FlagShowBuildLogs       = "show-blogs"
-	FlagEntrypoint          = "entrypoint"
-	FlagCmd                 = "cmd"
-	FlagWorkdir             = "workdir"
-	FlagEnv                 = "env"
-	FlagExpose              = "expose"
-	FlagNewEntrypoint       = "new-entrypoint"
-	FlagNewCmd              = "new-cmd"
-	FlagNewExpose           = "new-expose"
-	FlagNewWorkdir          = "new-workdir"
-	FlagNewEnv              = "new-env"
-	FlagImageOverrides      = "image-overrides"
-	FlagExludeMounts        = "exclude-mounts"
-	FlagExcludePattern      = "exclude-pattern"
-	FlagPathPerms           = "path-perms"
-	FlagPathPermsFile       = "path-perms-file"
-	FlagIncludePath         = "include-path"
-	FlagIncludePathFile     = "include-path-file"
-	FlagIncludeBin          = "include-bin"
-	FlagIncludeExe          = "include-exe"
-	FlagIncludeShell        = "include-shell"
-	FlagMount               = "mount"
-	FlagContinueAfter       = "continue-after"
-	FlagNetwork             = "network"
-	FlagLink                = "link"
-	FlagHostname            = "hostname"
-	FlagEtcHostsMap         = "etc-hosts-map"
-	FlagContainerDNS        = "container-dns"
-	FlagContainerDNSSearch  = "container-dns-search"
-	FlagBuildFromDockerfile = "dockerfile"
-	FlagUseLocalMounts      = "use-local-mounts"
-	FlagUseSensorVolume     = "use-sensor-volume"
-	FlagKeepTmpArtifacts    = "keep-tmp-artifacts"
-	FlagTag                 = "tag"
-	FlagTagFat              = "tag-fat"
-	FlagRunTargetAsUser     = "run-target-as-user"
-	FlagKeepPerms           = "keep-perms"
-	FlagChanges             = "changes"
-	FlagLayer               = "layer"
+
+	FlagKeepPerms         = "keep-perms"
+	FlagRunTargetAsUser   = "run-target-as-user"
+	FlagShowContainerLogs = "show-clogs"
+
+	FlagEntrypoint = "entrypoint"
+	FlagCmd        = "cmd"
+	FlagWorkdir    = "workdir"
+	FlagEnv        = "env"
+	FlagExpose     = "expose"
+
+	FlagLink    = "link"
+	FlagNetwork = "network"
+
+	FlagHostname           = "hostname"
+	FlagEtcHostsMap        = "etc-hosts-map"
+	FlagContainerDNS       = "container-dns"
+	FlagContainerDNSSearch = "container-dns-search"
+
+	FlagExcludeMounts   = "exclude-mounts"
+	FlagExcludePattern  = "exclude-pattern"
+	FlagUseLocalMounts  = "use-local-mounts"
+	FlagUseSensorVolume = "use-sensor-volume"
+	FlagMount           = "mount"
+	FlagContinueAfter   = "continue-after"
+
+	FlagPathPerms        = "path-perms"         //shared, but shouldn't be; 'profile' doesn't need it
+	FlagPathPermsFile    = "path-perms-file"    //shared, but shouldn't be; 'profile' doesn't need it
+	FlagIncludePath      = "include-path"       //shared, but shouldn't be; 'profile' doesn't need it
+	FlagIncludePathFile  = "include-path-file"  //shared, but shouldn't be; 'profile' doesn't need it
+	FlagIncludeBin       = "include-bin"        //shared, but shouldn't be; 'profile' doesn't need it
+	FlagIncludeExe       = "include-exe"        //shared, but shouldn't be; 'profile' doesn't need it
+	FlagIncludeShell     = "include-shell"      //shared, but shouldn't be; 'profile' doesn't need it
+	FlagKeepTmpArtifacts = "keep-tmp-artifacts" //shared, but shouldn't be; 'profile' doesn't need it
 )
 
+// Shared command flag usage info
+const (
+	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
+	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
+
+	FlagHTTPProbeUsage           = "Enables HTTP probe"
+	FlagHTTPProbeCmdUsage        = "User defined HTTP probes"
+	FlagHTTPProbeCmdFileUsage    = "File with user defined HTTP probes"
+	FlagHTTPProbeRetryCountUsage = "Number of retries for each HTTP probe"
+	FlagHTTPProbeRetryWaitUsage  = "Number of seconds to wait before retrying HTTP probe (doubles when target is not ready)"
+	FlagHTTPProbePortsUsage      = "Explicit list of ports to probe (in the order you want them to be probed)"
+	FlagHTTPProbeFullUsage       = "Do full HTTP probe for all selected ports (if false, finish after first successful scan)"
+
+	FlagKeepPermsUsage         = "Keep artifact permissions as-is"
+	FlagRunTargetAsUserUsage   = "Run target app as USER"
+	FlagShowContainerLogsUsage = "Show container logs"
+
+	FlagEntrypointUsage = "Override ENTRYPOINT analyzing image"
+	FlagCmdUsage        = "Override CMD analyzing image"
+	FlagWorkdirUsage    = "Override WORKDIR analyzing image"
+	FlagEnvUsage        = "Override ENV analyzing image"
+	FlagExposeUsage     = "Use additional EXPOSE instructions analyzing image"
+
+	FlagLinkUsage    = "Add link to another container analyzing image"
+	FlagNetworkUsage = "Override default container network settings analyzing image"
+
+	FlagHostnameUsage           = "Override default container hostname analyzing image"
+	FlagEtcHostsMapUsage        = "Add a host to IP mapping to /etc/hosts analyzing image"
+	FlagContainerDNSUsage       = "Add a dns server analyzing image"
+	FlagContainerDNSSearchUsage = "Add a dns search domain for unqualified hostnames analyzing image"
+
+	FlagExcludeMountsUsage   = "Exclude mounted volumes from image"
+	FlagExcludePatternUsage  = "Exclude path pattern (Glob/Match in Go and **) from image"
+	FlagUseLocalMountsUsage  = "Mount local paths for target container artifact input and output"
+	FlagUseSensorVolumeUsage = "Sensor volume name to use"
+	FlagMountUsage           = "Mount volume analyzing image"
+	FlagContinueAfterUsage   = "Select continue mode: enter | signal | probe | timeout or numberInSeconds"
+
+	FlagPathPermsUsage        = "Set path permissions in optimized image"
+	FlagPathPermsFileUsage    = "File with path permissions to set"
+	FlagIncludePathUsage      = "Include path from image"
+	FlagIncludePathFileUsage  = "File with paths to include from image"
+	FlagIncludeBinUsage       = "Include binary from image (executable or shared object using its absolute path)"
+	FlagIncludeExeUsage       = "Include executable from image (by executable name)"
+	FlagIncludeShellUsage     = "Include basic shell functionality"
+	FlagKeepTmpArtifactsUsage = "keep temporary artifacts when command is done"
+)
+
+// Build command flag names
+const (
+	FlagShowBuildLogs = "show-blogs"
+
+	FlagNewEntrypoint = "new-entrypoint"
+	FlagNewCmd        = "new-cmd"
+	FlagNewExpose     = "new-expose"
+	FlagNewWorkdir    = "new-workdir"
+	FlagNewEnv        = "new-env"
+
+	FlagTag    = "tag"
+	FlagTagFat = "tag-fat"
+
+	FlagImageOverrides = "image-overrides"
+
+	FlagBuildFromDockerfile = "dockerfile"
+)
+
+// Build command flag usage info
+const (
+	FlagShowBuildLogsUsage = "Show build logs"
+
+	FlagNewEntrypointUsage = "New ENTRYPOINT instruction for the optimized image"
+	FlagNewCmdUsage        = "New CMD instruction for the optimized image"
+	FlagNewExposeUsage     = "New EXPOSE instructions for the optimized image"
+	FlagNewWorkdirUsage    = "New WORKDIR instruction for the optimized image"
+	FlagNewEnvUsage        = "New ENV instructions for the optimized image"
+
+	FlagTagUsage    = "Custom tag for the generated image"
+	FlagTagFatUsage = "Custom tag for the fat image built from Dockerfile"
+
+	FlagImageOverridesUsage = "Use overrides in generated image"
+
+	FlagBuildFromDockerfileUsage = "The source Dockerfile name to build the fat image before it's optimized"
+)
+
+// Xray command flag names
+const (
+	FlagChanges = "changes"
+	FlagLayer   = "layer"
+)
+
+// Xray command flag usage info
+const (
+	FlagChangesUsage = "Show layer change details for the selected change type (values: none, all, delete, modify, add)"
+	FlagLayerUsage   = "Show details for the selected layer (using layer index or ID)"
+)
+
+// Update command flag names
+const (
+	FlagShowProgress = "show-progress"
+)
+
+// Update command flag usage info
+const (
+	FlagShowProgressUsage = "show progress when the release package is downloaded"
+)
+
+type InteractiveApp struct {
+	appPrompt *prompt.Prompt
+	app       *cli.App
+	dclient   *dockerapi.Client
+}
+
+func NewInteractiveApp(app *cli.App, gparams *commands.GenericParams) *InteractiveApp {
+	ia := InteractiveApp{
+		app: app,
+	}
+
+	client, err := dockerclient.New(gparams.ClientConfig)
+	if err == dockerclient.ErrNoDockerInfo {
+		exitMsg := "missing Docker connection info"
+		if gparams.InContainer && gparams.IsDSImage {
+			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
+		}
+		fmt.Printf("docker-slim: info=docker.connect.error message='%s'\n", exitMsg)
+		fmt.Printf("docker-slim: state=exited version=%s location='%s'\n", version.Current(), fsutil.ExeDir())
+		os.Exit(-777)
+	}
+	errutil.FailOn(err)
+
+	ia.dclient = client
+
+	ia.appPrompt = prompt.New(
+		ia.execute,
+		ia.complete,
+		prompt.OptionTitle(fmt.Sprintf("%s: interactive cli", AppName)),
+		prompt.OptionPrefix(">>> "),
+		prompt.OptionInputTextColor(prompt.Yellow),
+	)
+
+	return &ia
+}
+
+func (ia *InteractiveApp) execute(command string) {
+	command = strings.TrimSpace(command)
+	parts := strings.Split(command, " ") //todo: use a shell split
+	args := append([]string{AppName}, parts...)
+	fmt.Printf("Q TMP: args = %#v\n", args)
+
+	if err := ia.app.Run(args); err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (ia *InteractiveApp) complete(params prompt.Document) []prompt.Suggest {
+	allParamsLine := params.TextBeforeCursor()
+
+	allParamsLine = strings.TrimSpace(allParamsLine)
+	if allParamsLine == "" {
+		return append(commandSuggestions, globalFlagSuggestions...)
+	}
+
+	currentToken := params.GetWordBeforeCursor()
+
+	allTokens := strings.Split(allParamsLine, " ")
+
+	var prevToken string
+	prevTokenIdx := -1
+	tokenCount := len(allTokens)
+
+	if tokenCount > 0 {
+		if currentToken == "" {
+			//currentToken 'points' past allTokens[last]
+			prevTokenIdx = tokenCount - 1
+			prevToken = allTokens[prevTokenIdx]
+		} else {
+			//currentToken 'points' to allTokens[last]
+			if tokenCount >= 2 {
+				prevTokenIdx = tokenCount - 2
+				prevToken = allTokens[prevTokenIdx]
+			}
+		}
+	}
+
+	if prevToken == "" {
+		suggestions := append(commandSuggestions, globalFlagSuggestions...)
+		return prompt.FilterHasPrefix(suggestions, currentToken, true)
+	}
+
+	commandTokenIdx := -1
+	for i := 0; i <= prevTokenIdx; i++ {
+		if !strings.HasPrefix(allTokens[i], "--") {
+			commandTokenIdx = i
+			break
+		}
+	}
+
+	if commandTokenIdx == -1 {
+		suggestions := append(commandSuggestions, globalFlagSuggestions...)
+		return prompt.FilterHasPrefix(suggestions, currentToken, true)
+	}
+
+	commandToken := allTokens[commandTokenIdx]
+
+	if commandTokenIdx == (tokenCount - 1) {
+		if currentToken != "" {
+			//currentToken still points to the command token
+			return prompt.FilterHasPrefix(commandSuggestions, currentToken, true)
+		} else {
+			//need to return the command flag suggestions
+			if cmdSpec, ok := cmdSpecs[commandToken]; ok {
+				return prompt.FilterHasPrefix(cmdSpec.suggestions.Names, currentToken, true)
+			} else {
+				return []prompt.Suggest{}
+			}
+		}
+	}
+
+	cmdSpec, ok := cmdSpecs[commandToken]
+	if !ok && cmdSpec.suggestions != nil {
+		return []prompt.Suggest{}
+	}
+
+	if strings.HasPrefix(prevToken, "--") {
+		if completeValue, ok := cmdSpec.suggestions.Values[prevToken]; ok && completeValue != nil {
+			return completeValue(ia, currentToken)
+		}
+	} else {
+		return prompt.FilterHasPrefix(cmdSpec.suggestions.Names, currentToken, true)
+	}
+
+	return []prompt.Suggest{}
+}
+
+func (ia *InteractiveApp) Run() {
+	ia.appPrompt.Run()
+}
+
+var commandSuggestions = []prompt.Suggest{
+	{Text: "exit", Description: "Exit app"},
+	{Text: CmdHelp, Description: CmdHelpUsage},
+	{Text: CmdVersion, Description: CmdVersionUsage},
+	{Text: CmdUpdate, Description: CmdUpdateUsage},
+	{Text: CmdXray, Description: CmdXrayUsage},
+	{Text: CmdBuild, Description: CmdBuildUsage},
+	{Text: CmdProfile, Description: CmdProfileUsage},
+	{Text: CmdLint, Description: CmdLintUsage},
+}
+
+var globalFlagSuggestions = []prompt.Suggest{
+	{Text: fullFlagName(FlagStatePath), Description: FlagStatePathUsage},
+	{Text: fullFlagName(FlagCommandReport), Description: FlagCommandReportUsage},
+	{Text: fullFlagName(FlagDebug), Description: FlagDebugUsage},
+	{Text: fullFlagName(FlagVerbose), Description: FlagVerboseUsage},
+	{Text: fullFlagName(FlagLogLevel), Description: FlagLogLevelUsage},
+	{Text: fullFlagName(FlagLog), Description: FlagLogUsage},
+	{Text: fullFlagName(FlagLogFormat), Description: FlagLogFormatUsage},
+	{Text: fullFlagName(FlagUseTLS), Description: FlagUseTLSUsage},
+	{Text: fullFlagName(FlagVerifyTLS), Description: FlagVerifyTLSUsage},
+	{Text: fullFlagName(FlagTLSCertPath), Description: FlagTLSCertPathUsage},
+	{Text: fullFlagName(FlagHost), Description: FlagHostUsage},
+	{Text: fullFlagName(FlagArchiveState), Description: FlagArchiveStateUsage},
+	{Text: fullFlagName(FlagInContainer), Description: FlagInContainerUsage},
+	{Text: fullFlagName(FlagCheckVersion), Description: FlagCheckVersionUsage},
+}
+
+func fullFlagName(name string) string {
+	return fmt.Sprintf("--%s", name)
+}
+
+var boolValues = []prompt.Suggest{
+	{Text: "true"},
+	{Text: "false"},
+}
+
+func completeBool(ia *InteractiveApp, token string) []prompt.Suggest {
+	return prompt.FilterHasPrefix(boolValues, token, true)
+}
+
+type CompleteValue func(ia *InteractiveApp, token string) []prompt.Suggest
+
+type flagSuggestions struct {
+	Names  []prompt.Suggest
+	Values map[string]CompleteValue
+}
+
 type cmdSpec struct {
-	name  string
-	alias string
-	usage string
+	name        string
+	alias       string
+	usage       string
+	suggestions *flagSuggestions
 }
 
 var cmdSpecs = map[string]cmdSpec{
+	CmdHelp: {
+		name:  CmdHelp,
+		alias: "h",
+		usage: CmdHelpUsage,
+	},
 	CmdLint: {
 		name:  CmdLint,
 		alias: "l",
-		usage: "Lint the target Dockerfile or image",
+		usage: CmdLintUsage,
+		suggestions: &flagSuggestions{
+			Names: []prompt.Suggest{
+				{Text: "--bone", Description: "Flag one"},
+			},
+			Values: map[string]CompleteValue{
+				"--bone": completeBool,
+			},
+		},
 	},
 	CmdXray: {
 		name:  CmdXray,
 		alias: "x",
-		usage: "Collects fat image information and reverse engineers its Dockerfile",
+		usage: CmdXrayUsage,
+		suggestions: &flagSuggestions{
+			Names: []prompt.Suggest{
+				{Text: "--bone", Description: "Flag one"},
+			},
+			Values: map[string]CompleteValue{
+				"--bone": completeBool,
+			},
+		},
 	},
 	CmdProfile: {
 		name:  CmdProfile,
 		alias: "p",
-		usage: "Collects fat image information and generates a fat container report",
+		usage: CmdProfileUsage,
+		suggestions: &flagSuggestions{
+			Names: []prompt.Suggest{
+				{Text: "--bone", Description: "Flag one"},
+			},
+			Values: map[string]CompleteValue{
+				"--bone": completeBool,
+			},
+		},
 	},
 	CmdBuild: {
 		name:  CmdBuild,
 		alias: "b",
-		usage: "Collects fat image information and builds a slim image from it",
+		usage: CmdBuildUsage,
+		suggestions: &flagSuggestions{
+			Names: []prompt.Suggest{
+				{Text: "--bone", Description: "Flag one"},
+			},
+			Values: map[string]CompleteValue{
+				"--bone": completeBool,
+			},
+		},
 	},
 	CmdContainerize: {
 		name:  CmdContainerize,
@@ -136,12 +494,12 @@ var cmdSpecs = map[string]cmdSpec{
 	CmdVersion: {
 		name:  CmdVersion,
 		alias: "v",
-		usage: "Shows docker-slim and docker version information",
+		usage: CmdVersionUsage,
 	},
 	CmdUpdate: {
 		name:  CmdUpdate,
 		alias: "u",
-		usage: "Updates docker-slim",
+		usage: CmdUpdateUsage,
 	},
 }
 
@@ -258,6 +616,8 @@ func init() {
 				logLevel := log.WarnLevel
 				logLevelName := ctx.GlobalString(FlagLogLevel)
 				switch logLevelName {
+				case "trace":
+					logLevel = log.TraceLevel
 				case "debug":
 					logLevel = log.DebugLevel
 				case "info":
@@ -303,292 +663,292 @@ func init() {
 
 	doRemoveFileArtifactsFlag := cli.BoolFlag{
 		Name:   FlagRemoveFileArtifacts,
-		Usage:  "remove file artifacts when command is done",
+		Usage:  FlagRemoveFileArtifactsUsage,
 		EnvVar: "DSLIM_RM_FILE_ARTIFACTS",
 	}
 
 	doCopyMetaArtifactsFlag := cli.StringFlag{
 		Name:   FlagCopyMetaArtifacts,
-		Usage:  "copy metadata artifacts to the selected location when command is done",
+		Usage:  FlagCopyMetaArtifactsUsage,
 		EnvVar: "DSLIM_CP_META_ARTIFACTS",
 	}
 
 	//true by default
 	doHTTPProbeFlag := cli.BoolTFlag{
 		Name:   FlagHTTPProbe,
-		Usage:  "Enables HTTP probe",
+		Usage:  FlagHTTPProbeUsage,
 		EnvVar: "DSLIM_HTTP_PROBE",
 	}
 
 	doHTTPProbeCmdFlag := cli.StringSliceFlag{
 		Name:   FlagHTTPProbeCmd,
 		Value:  &cli.StringSlice{},
-		Usage:  "User defined HTTP probes",
+		Usage:  FlagHTTPProbeCmdUsage,
 		EnvVar: "DSLIM_HTTP_PROBE_CMD",
 	}
 
 	doHTTPProbeCmdFileFlag := cli.StringFlag{
 		Name:   FlagHTTPProbeCmdFile,
 		Value:  "",
-		Usage:  "File with user defined HTTP probes",
+		Usage:  FlagHTTPProbeCmdFileUsage,
 		EnvVar: "DSLIM_HTTP_PROBE_CMD_FILE",
 	}
 
 	doHTTPProbeRetryCountFlag := cli.IntFlag{
 		Name:   FlagHTTPProbeRetryCount,
 		Value:  5,
-		Usage:  "Number of retries for each HTTP probe",
+		Usage:  FlagHTTPProbeRetryCountUsage,
 		EnvVar: "DSLIM_HTTP_PROBE_RETRY_COUNT",
 	}
 
 	doHTTPProbeRetryWaitFlag := cli.IntFlag{
 		Name:   FlagHTTPProbeRetryWait,
 		Value:  8,
-		Usage:  "Number of seconds to wait before retrying HTTP probe (doubles when target is not ready)",
+		Usage:  FlagHTTPProbeRetryWaitUsage,
 		EnvVar: "DSLIM_HTTP_PROBE_RETRY_WAIT",
 	}
 
 	doHTTPProbePortsFlag := cli.StringFlag{
 		Name:   FlagHTTPProbePorts,
 		Value:  "",
-		Usage:  "Explicit list of ports to probe (in the order you want them to be probed)",
+		Usage:  FlagHTTPProbePortsUsage,
 		EnvVar: "DSLIM_HTTP_PROBE_PORTS",
 	}
 
 	doHTTPProbeFullFlag := cli.BoolFlag{
 		Name:   FlagHTTPProbeFull,
-		Usage:  "Do full HTTP probe for all selected ports (if false, finish after first successful scan)",
+		Usage:  FlagHTTPProbeFullUsage,
 		EnvVar: "DSLIM_HTTP_PROBE_FULL",
 	}
 
 	doKeepPermsFlag := cli.BoolTFlag{
 		Name:   FlagKeepPerms,
-		Usage:  "Keep artifact permissions as-is",
+		Usage:  FlagKeepPermsUsage,
 		EnvVar: "DSLIM_KEEP_PERMS",
 	}
 
 	doRunTargetAsUserFlag := cli.BoolTFlag{
 		Name:   FlagRunTargetAsUser,
-		Usage:  "Run target app as USER",
+		Usage:  FlagRunTargetAsUserUsage,
 		EnvVar: "DSLIM_RUN_TAS_USER",
 	}
 
 	doShowContainerLogsFlag := cli.BoolFlag{
 		Name:   FlagShowContainerLogs,
-		Usage:  "Show container logs",
+		Usage:  FlagShowContainerLogsUsage,
 		EnvVar: "DSLIM_SHOW_CLOGS",
 	}
 
 	doShowBuildLogsFlag := cli.BoolFlag{
 		Name:   FlagShowBuildLogs,
-		Usage:  "Show build logs",
+		Usage:  FlagShowBuildLogsUsage,
 		EnvVar: "DSLIM_SHOW_BLOGS",
 	}
 
 	doUseNewEntrypointFlag := cli.StringFlag{
 		Name:   FlagNewEntrypoint,
 		Value:  "",
-		Usage:  "New ENTRYPOINT instruction for the optimized image",
+		Usage:  FlagNewEntrypointUsage,
 		EnvVar: "DSLIM_NEW_ENTRYPOINT",
 	}
 
 	doUseNewCmdFlag := cli.StringFlag{
 		Name:   FlagNewCmd,
 		Value:  "",
-		Usage:  "New CMD instruction for the optimized image",
+		Usage:  FlagNewCmdUsage,
 		EnvVar: "DSLIM_NEW_CMD",
 	}
 
 	doUseNewExposeFlag := cli.StringSliceFlag{
 		Name:   FlagNewExpose,
 		Value:  &cli.StringSlice{},
-		Usage:  "New EXPOSE instructions for the optimized image",
+		Usage:  FlagNewExposeUsage,
 		EnvVar: "DSLIM_NEW_EXPOSE",
 	}
 
 	doUseNewWorkdirFlag := cli.StringFlag{
 		Name:   FlagNewWorkdir,
 		Value:  "",
-		Usage:  "New WORKDIR instruction for the optimized image",
+		Usage:  FlagNewWorkdirUsage,
 		EnvVar: "DSLIM_NEW_WORKDIR",
 	}
 
 	doUseNewEnvFlag := cli.StringSliceFlag{
 		Name:   FlagNewEnv,
 		Value:  &cli.StringSlice{},
-		Usage:  "New ENV instructions for the optimized image",
+		Usage:  FlagNewEnvUsage,
 		EnvVar: "DSLIM_NEW_ENV",
 	}
 
 	doUseEntrypointFlag := cli.StringFlag{
 		Name:   FlagEntrypoint,
 		Value:  "",
-		Usage:  "Override ENTRYPOINT analyzing image",
+		Usage:  FlagEntrypointUsage,
 		EnvVar: "DSLIM_ENTRYPOINT",
 	}
 
 	doUseCmdFlag := cli.StringFlag{
 		Name:   FlagCmd,
 		Value:  "",
-		Usage:  "Override CMD analyzing image",
+		Usage:  FlagCmdUsage,
 		EnvVar: "DSLIM_TARGET_CMD",
 	}
 
 	doUseWorkdirFlag := cli.StringFlag{
 		Name:   FlagWorkdir,
 		Value:  "",
-		Usage:  "Override WORKDIR analyzing image",
+		Usage:  FlagWorkdirUsage,
 		EnvVar: "DSLIM_TARGET_WORKDIR",
 	}
 
 	doUseEnvFlag := cli.StringSliceFlag{
 		Name:   FlagEnv,
 		Value:  &cli.StringSlice{},
-		Usage:  "Override ENV analyzing image",
+		Usage:  FlagEnvUsage,
 		EnvVar: "DSLIM_TARGET_ENV",
 	}
 
 	doUseLinkFlag := cli.StringSliceFlag{
 		Name:   FlagLink,
 		Value:  &cli.StringSlice{},
-		Usage:  "Add link to another container analyzing image",
+		Usage:  FlagLinkUsage,
 		EnvVar: "DSLIM_TARGET_LINK",
 	}
 
 	doUseEtcHostsMapFlag := cli.StringSliceFlag{
 		Name:   FlagEtcHostsMap,
 		Value:  &cli.StringSlice{},
-		Usage:  "Add a host to IP mapping to /etc/hosts analyzing image",
+		Usage:  FlagEtcHostsMapUsage,
 		EnvVar: "DSLIM_TARGET_ETC_HOSTS_MAP",
 	}
 
 	doUseContainerDNSFlag := cli.StringSliceFlag{
 		Name:   FlagContainerDNS,
 		Value:  &cli.StringSlice{},
-		Usage:  "Add a dns server analyzing image",
+		Usage:  FlagContainerDNSUsage,
 		EnvVar: "DSLIM_TARGET_DNS",
 	}
 
 	doUseContainerDNSSearchFlag := cli.StringSliceFlag{
 		Name:   FlagContainerDNSSearch,
 		Value:  &cli.StringSlice{},
-		Usage:  "Add a dns search domain for unqualified hostnames analyzing image",
+		Usage:  FlagContainerDNSSearchUsage,
 		EnvVar: "DSLIM_TARGET_DNS_SEARCH",
 	}
 
 	doUseHostnameFlag := cli.StringFlag{
 		Name:   FlagHostname,
 		Value:  "",
-		Usage:  "Override default container hostname analyzing image",
+		Usage:  FlagHostnameUsage,
 		EnvVar: "DSLIM_TARGET_HOSTNAME",
 	}
 
 	doUseNetworkFlag := cli.StringFlag{
 		Name:   FlagNetwork,
 		Value:  "",
-		Usage:  "Override default container network settings analyzing image",
+		Usage:  FlagNetworkUsage,
 		EnvVar: "DSLIM_TARGET_NET",
 	}
 
 	doUseExposeFlag := cli.StringSliceFlag{
 		Name:   FlagExpose,
 		Value:  &cli.StringSlice{},
-		Usage:  "Use additional EXPOSE instructions analyzing image",
+		Usage:  FlagExposeUsage,
 		EnvVar: "DSLIM_TARGET_EXPOSE",
 	}
 
 	//true by default
 	doExcludeMountsFlag := cli.BoolTFlag{
-		Name:   FlagExludeMounts,
-		Usage:  "Exclude mounted volumes from image",
+		Name:   FlagExcludeMounts,
+		Usage:  FlagExcludeMountsUsage,
 		EnvVar: "DSLIM_EXCLUDE_MOUNTS",
 	}
 
 	doExcludePatternFlag := cli.StringSliceFlag{
 		Name:   FlagExcludePattern,
 		Value:  &cli.StringSlice{},
-		Usage:  "Exclude path pattern (Glob/Match in Go and **) from image",
+		Usage:  FlagExcludePatternUsage,
 		EnvVar: "DSLIM_EXCLUDE_PATTERN",
 	}
 
 	doSetPathPermsFlag := cli.StringSliceFlag{
 		Name:   FlagPathPerms,
 		Value:  &cli.StringSlice{},
-		Usage:  "Set path permissions in optimized image",
+		Usage:  FlagPathPermsUsage,
 		EnvVar: "DSLIM_PATH_PERMS",
 	}
 
 	doSetPathPermsFileFlag := cli.StringFlag{
 		Name:   FlagPathPermsFile,
 		Value:  "",
-		Usage:  "File with path permissions to set",
+		Usage:  FlagPathPermsFileUsage,
 		EnvVar: "DSLIM_PATH_PERMS_FILE",
 	}
 
 	doIncludePathFlag := cli.StringSliceFlag{
 		Name:   FlagIncludePath,
 		Value:  &cli.StringSlice{},
-		Usage:  "Include path from image",
+		Usage:  FlagIncludePathUsage,
 		EnvVar: "DSLIM_INCLUDE_PATH",
 	}
 
 	doIncludePathFileFlag := cli.StringFlag{
 		Name:   FlagIncludePathFile,
 		Value:  "",
-		Usage:  "File with paths to include from image",
+		Usage:  FlagIncludePathFileUsage,
 		EnvVar: "DSLIM_INCLUDE_PATH_FILE",
 	}
 
 	doIncludeBinFlag := cli.StringSliceFlag{
 		Name:   FlagIncludeBin,
 		Value:  &cli.StringSlice{},
-		Usage:  "Include binary from image (executable or shared object using its absolute path)",
+		Usage:  FlagIncludeBinUsage,
 		EnvVar: "DSLIM_INCLUDE_BIN",
 	}
 
 	doIncludeExeFlag := cli.StringSliceFlag{
 		Name:   FlagIncludeExe,
 		Value:  &cli.StringSlice{},
-		Usage:  "Include executable from image (by executable name)",
+		Usage:  FlagIncludeExeUsage,
 		EnvVar: "DSLIM_INCLUDE_EXE",
 	}
 
 	doIncludeShellFlag := cli.BoolFlag{
 		Name:   FlagIncludeShell,
-		Usage:  "Include basic shell functionality",
+		Usage:  FlagIncludeShellUsage,
 		EnvVar: "DSLIM_INCLUDE_SHELL",
 	}
 
 	doKeepTmpArtifactsFlag := cli.BoolFlag{
 		Name:   FlagKeepTmpArtifacts,
-		Usage:  "keep temporary artifacts when command is done",
+		Usage:  FlagKeepTmpArtifactsUsage,
 		EnvVar: "DSLIM_KEEP_TMP_ARTIFACTS",
 	}
 
 	doUseLocalMountsFlag := cli.BoolFlag{
 		Name:   FlagUseLocalMounts,
-		Usage:  "Mount local paths for target container artifact input and output",
+		Usage:  FlagUseLocalMountsUsage,
 		EnvVar: "DSLIM_USE_LOCAL_MOUNTS",
 	}
 
 	doUseSensorVolumeFlag := cli.StringFlag{
 		Name:   FlagUseSensorVolume,
 		Value:  "",
-		Usage:  "Sensor volume name to use",
+		Usage:  FlagUseSensorVolumeUsage,
 		EnvVar: "DSLIM_USE_SENSOR_VOLUME",
 	}
 
 	doUseMountFlag := cli.StringSliceFlag{
 		Name:   FlagMount,
 		Value:  &cli.StringSlice{},
-		Usage:  "Mount volume analyzing image",
+		Usage:  FlagMountUsage,
 		EnvVar: "DSLIM_MOUNT",
 	}
 
 	doContinueAfterFlag := cli.StringFlag{
 		Name:   FlagContinueAfter,
 		Value:  "probe",
-		Usage:  "Select continue mode: enter | signal | probe | timeout or numberInSeconds",
+		Usage:  FlagContinueAfterUsage,
 		EnvVar: "DSLIM_CONTINUE_AFTER",
 	}
 
@@ -597,14 +957,14 @@ func init() {
 	switch runtime.GOOS {
 	case "darwin":
 		doShowProgressFlag = cli.BoolTFlag{
-			Name:   "show-progress",
-			Usage:  "show progress when the release package is downloaded (default: true)",
+			Name:   FlagShowProgress,
+			Usage:  fmt.Sprintf("%s (default: true)", FlagShowProgressUsage),
 			EnvVar: "DSLIM_UPDATE_SHOW_PROGRESS",
 		}
 	default:
 		doShowProgressFlag = cli.BoolFlag{
-			Name:   "show-progress",
-			Usage:  "show progress when the release package is downloaded (default: false)",
+			Name:   FlagShowProgress,
+			Usage:  fmt.Sprintf("%s (default: false)", FlagShowProgressUsage),
 			EnvVar: "DSLIM_UPDATE_SHOW_PROGRESS",
 		}
 	}
@@ -615,10 +975,22 @@ func init() {
 			Aliases: []string{cmdSpecs[CmdVersion].alias},
 			Usage:   cmdSpecs[CmdVersion].usage,
 			Action: func(ctx *cli.Context) error {
-				doDebug := ctx.GlobalBool(FlagDebug)
-				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
-				clientConfig := getDockerClientConfig(ctx)
-				commands.OnVersion(doDebug, inContainer, isDSImage, clientConfig)
+				gcvalues, err := globalCommandFlagValues(ctx)
+				if err != nil {
+					return err
+				}
+
+				ia := NewInteractiveApp(app, gcvalues)
+				ia.Run()
+				return nil
+			},
+		},
+		{
+			Name:    cmdSpecs[CmdHelp].name,
+			Aliases: []string{cmdSpecs[CmdHelp].alias},
+			Usage:   cmdSpecs[CmdHelp].usage,
+			Action: func(ctx *cli.Context) error {
+				cli.ShowAppHelp(ctx)
 				return nil
 			},
 		},
@@ -634,7 +1006,7 @@ func init() {
 				statePath := ctx.GlobalString(FlagStatePath)
 				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
 				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
-				doShowProgress := ctx.Bool("show-progress")
+				doShowProgress := ctx.Bool(FlagShowProgress)
 
 				commands.OnUpdate(doDebug, statePath, archiveState, inContainer, isDSImage, doShowProgress)
 				return nil
@@ -703,13 +1075,13 @@ func init() {
 				cli.StringSliceFlag{
 					Name:   FlagChanges,
 					Value:  &cli.StringSlice{""},
-					Usage:  "Show layer change details for the selected change type (values: none, all, delete, modify, add)",
+					Usage:  FlagChangesUsage,
 					EnvVar: "DSLIM_CHANGES",
 				},
 				cli.StringSliceFlag{
 					Name:   FlagLayer,
 					Value:  &cli.StringSlice{},
-					Usage:  "Show details for the selected layer (using layer index or ID)",
+					Usage:  FlagLayerUsage,
 					EnvVar: "DSLIM_LAYER",
 				},
 				doRemoveFileArtifactsFlag,
@@ -762,7 +1134,7 @@ func init() {
 				cli.StringFlag{
 					Name:   FlagBuildFromDockerfile,
 					Value:  "",
-					Usage:  "The source Dockerfile name to build the fat image before it's optimized",
+					Usage:  FlagBuildFromDockerfileUsage,
 					EnvVar: "DSLIM_BUILD_DOCKERFILE",
 				},
 				doHTTPProbeFlag,
@@ -781,19 +1153,19 @@ func init() {
 				cli.StringFlag{
 					Name:   FlagTag,
 					Value:  "",
-					Usage:  "Custom tag for the generated image",
+					Usage:  FlagTagUsage,
 					EnvVar: "DSLIM_TARGET_TAG",
 				},
 				cli.StringFlag{
 					Name:   FlagTagFat,
 					Value:  "",
-					Usage:  "Custom tag for the fat image built from Dockerfile",
+					Usage:  FlagTagFatUsage,
 					EnvVar: "DSLIM_TARGET_TAG_FAT",
 				},
 				cli.StringFlag{
 					Name:   FlagImageOverrides,
 					Value:  "",
-					Usage:  "Use overrides in generated image",
+					Usage:  FlagImageOverridesUsage,
 					EnvVar: "DSLIM_TARGET_OVERRIDES",
 				},
 				doUseEntrypointFlag,
@@ -934,7 +1306,7 @@ func init() {
 
 				doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
 
-				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
+				doExcludeMounts := ctx.BoolT(FlagExcludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
 						excludePatterns[mpath] = nil
@@ -1137,7 +1509,7 @@ func init() {
 
 				doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
 
-				doExcludeMounts := ctx.BoolT(FlagExludeMounts)
+				doExcludeMounts := ctx.BoolT(FlagExcludeMounts)
 				if doExcludeMounts {
 					for mpath := range volumeMounts {
 						excludePatterns[mpath] = nil
