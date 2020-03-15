@@ -31,6 +31,12 @@ const (
 	emptyImageDockerfile = "FROM scratch\nCMD\n"
 )
 
+type BasicImageProps struct {
+	ID      string
+	Size    int64
+	Created int64
+}
+
 func CleanImageID(id string) string {
 	if strings.HasPrefix(id, "sha256:") {
 		id = id[len("sha256:"):]
@@ -76,6 +82,51 @@ func HasImage(dclient *dockerapi.Client, imageRef string) error {
 	}
 
 	return nil
+}
+
+func ListImages(dclient *dockerapi.Client, imageNameFilter string) (map[string]BasicImageProps, error) {
+	var err error
+	if dclient == nil {
+		dclient, err = dockerapi.NewClient(dockerHost)
+		if err != nil {
+			log.Errorf("dockerutil.ListImages(%s): dockerapi.NewClient() error = %v", imageNameFilter, err)
+			return nil, err
+		}
+	}
+
+	listOptions := dockerapi.ListImagesOptions{
+		Filter: imageNameFilter,
+		All:    false,
+	}
+
+	imageList, err := dclient.ListImages(listOptions)
+	if err != nil {
+		log.Errorf("dockerutil.ListImages(%s): dockerapi.ListImages() error = %v", imageNameFilter, err)
+		return nil, err
+	}
+
+	log.Debugf("dockerutil.ListImages(%s): matching images - %+v", imageNameFilter, imageList)
+
+	images := map[string]BasicImageProps{}
+	for _, imageInfo := range imageList {
+		for _, repo := range imageInfo.RepoTags {
+			info := BasicImageProps{
+				ID:      strings.TrimPrefix(imageInfo.ID, "sha256:"),
+				Size:    imageInfo.Size,
+				Created: imageInfo.Created,
+			}
+
+			if repo == "<none>:<none>" {
+				repo = strings.TrimPrefix(imageInfo.ID, "sha256:")
+				images[repo] = info
+				break
+			}
+
+			images[repo] = info
+		}
+	}
+
+	return images, nil
 }
 
 func BuildEmptyImage(dclient *dockerapi.Client) error {

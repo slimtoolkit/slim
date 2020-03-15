@@ -36,6 +36,7 @@ func OnProfile(
 	httpProbeRetryWait int,
 	httpProbePorts []uint16,
 	doHTTPProbeFull bool,
+	doRmFileArtifacts bool,
 	copyMetaArtifactsLocation string,
 	doRunTargetAsUser bool,
 	doShowContainerLogs bool,
@@ -69,7 +70,6 @@ func OnProfile(
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
 	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, targetRef)
-	doRmFileArtifacts := false
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {

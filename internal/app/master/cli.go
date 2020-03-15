@@ -12,11 +12,13 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/system"
+	"github.com/docker-slim/docker-slim/pkg/util/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	"github.com/docker-slim/docker-slim/pkg/version"
 
 	"github.com/c-bata/go-prompt"
+	"github.com/dustin/go-humanize"
 	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -90,6 +92,8 @@ const (
 
 // Shared command flag names
 const (
+	FlagTarget = "target"
+
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
 
@@ -138,6 +142,8 @@ const (
 
 // Shared command flag usage info
 const (
+	FlagTargetUsage = "Target container image (name or ID)"
+
 	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
 	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
 
@@ -282,7 +288,6 @@ func (ia *InteractiveApp) execute(command string) {
 	command = strings.TrimSpace(command)
 	parts := strings.Split(command, " ") //todo: use a shell split
 	args := append([]string{AppName}, parts...)
-	fmt.Printf("Q TMP: args = %#v\n", args)
 
 	if err := ia.app.Run(args); err != nil {
 		log.Fatal(err)
@@ -410,8 +415,45 @@ var boolValues = []prompt.Suggest{
 	{Text: "false"},
 }
 
+var layerChangeValues = []prompt.Suggest{
+	{Text: "none", Description: "Don't show any file system change details in image layers"},
+	{Text: "all", Description: "Show all file system change details in image layers"},
+	{Text: "delete", Description: "Show only 'delete' file system change details in image layers"},
+	{Text: "modify", Description: "Show only 'modify' file system change details in image layers"},
+	{Text: "add", Description: "Show only 'add' file system change details in image layers"},
+}
+
 func completeBool(ia *InteractiveApp, token string) []prompt.Suggest {
 	return prompt.FilterHasPrefix(boolValues, token, true)
+}
+
+func completeLayerChanges(ia *InteractiveApp, token string) []prompt.Suggest {
+	return prompt.FilterHasPrefix(layerChangeValues, token, true)
+}
+
+func completeTarget(ia *InteractiveApp, token string) []prompt.Suggest {
+	images, err := dockerutil.ListImages(ia.dclient, token)
+	if err != nil {
+		log.Errorf("completeTarget(%q): error - %v", token, err)
+		return []prompt.Suggest{}
+	}
+
+	var values []prompt.Suggest
+	for name, info := range images {
+		description := fmt.Sprintf("size=%v created=%v id=%v",
+			humanize.Bytes(uint64(info.Size)),
+			time.Unix(info.Created, 0).Format(time.RFC3339),
+			info.ID)
+
+		entry := prompt.Suggest{
+			Text:        name,
+			Description: description,
+		}
+
+		values = append(values, entry)
+	}
+
+	return prompt.FilterHasPrefix(values, token, true)
 }
 
 type CompleteValue func(ia *InteractiveApp, token string) []prompt.Suggest
@@ -453,10 +495,15 @@ var cmdSpecs = map[string]cmdSpec{
 		usage: CmdXrayUsage,
 		suggestions: &flagSuggestions{
 			Names: []prompt.Suggest{
-				{Text: "--bone", Description: "Flag one"},
+				{Text: fullFlagName(FlagTarget), Description: FlagTargetUsage},
+				{Text: fullFlagName(FlagChanges), Description: FlagChangesUsage},
+				{Text: fullFlagName(FlagLayer), Description: FlagLayerUsage},
+				{Text: fullFlagName(FlagRemoveFileArtifacts), Description: FlagRemoveFileArtifactsUsage},
 			},
 			Values: map[string]CompleteValue{
-				"--bone": completeBool,
+				fullFlagName(FlagTarget):              completeTarget,
+				fullFlagName(FlagChanges):             completeLayerChanges,
+				fullFlagName(FlagRemoveFileArtifacts): completeBool,
 			},
 		},
 	},
@@ -466,10 +513,47 @@ var cmdSpecs = map[string]cmdSpec{
 		usage: CmdProfileUsage,
 		suggestions: &flagSuggestions{
 			Names: []prompt.Suggest{
-				{Text: "--bone", Description: "Flag one"},
+				{Text: fullFlagName(FlagTarget), Description: FlagTargetUsage},
+				{Text: fullFlagName(FlagShowContainerLogs), Description: FlagShowContainerLogsUsage},
+				{Text: fullFlagName(FlagHTTPProbe), Description: FlagHTTPProbeUsage},
+				{Text: fullFlagName(FlagHTTPProbeCmd), Description: FlagHTTPProbeCmdUsage},
+				{Text: fullFlagName(FlagHTTPProbeCmdFile), Description: FlagHTTPProbeCmdFileUsage},
+				{Text: fullFlagName(FlagHTTPProbeRetryCount), Description: FlagHTTPProbeRetryCountUsage},
+				{Text: fullFlagName(FlagHTTPProbeRetryWait), Description: FlagHTTPProbeRetryWaitUsage},
+				{Text: fullFlagName(FlagHTTPProbePorts), Description: FlagHTTPProbePortsUsage},
+				{Text: fullFlagName(FlagHTTPProbeFull), Description: FlagHTTPProbeFullUsage},
+				{Text: fullFlagName(FlagKeepPerms), Description: FlagKeepPermsUsage},
+				{Text: fullFlagName(FlagRunTargetAsUser), Description: FlagRunTargetAsUserUsage},
+				{Text: fullFlagName(FlagCopyMetaArtifacts), Description: FlagCopyMetaArtifactsUsage},
+				{Text: fullFlagName(FlagRemoveFileArtifacts), Description: FlagRemoveFileArtifactsUsage},
+				{Text: fullFlagName(FlagEntrypoint), Description: FlagEntrypointUsage},
+				{Text: fullFlagName(FlagCmd), Description: FlagCmdUsage},
+				{Text: fullFlagName(FlagWorkdir), Description: FlagWorkdirUsage},
+				{Text: fullFlagName(FlagEnv), Description: FlagEnvUsage},
+				{Text: fullFlagName(FlagLink), Description: FlagLinkUsage},
+				{Text: fullFlagName(FlagEtcHostsMap), Description: FlagEtcHostsMapUsage},
+				{Text: fullFlagName(FlagContainerDNS), Description: FlagContainerDNSUsage},
+				{Text: fullFlagName(FlagContainerDNSSearch), Description: FlagContainerDNSSearchUsage},
+				{Text: fullFlagName(FlagNetwork), Description: FlagNetworkUsage},
+				{Text: fullFlagName(FlagHostname), Description: FlagHostnameUsage},
+				{Text: fullFlagName(FlagExpose), Description: FlagExposeUsage},
+				{Text: fullFlagName(FlagExcludeMounts), Description: FlagExcludeMountsUsage},
+				{Text: fullFlagName(FlagExcludePattern), Description: FlagExcludePatternUsage},
+				{Text: fullFlagName(FlagPathPerms), Description: FlagPathPermsUsage},
+				{Text: fullFlagName(FlagPathPermsFile), Description: FlagPathPermsFileUsage},
+				{Text: fullFlagName(FlagIncludePath), Description: FlagIncludePathUsage},
+				{Text: fullFlagName(FlagIncludePathFile), Description: FlagIncludePathFileUsage},
+				{Text: fullFlagName(FlagIncludeBin), Description: FlagIncludeBinUsage},
+				{Text: fullFlagName(FlagIncludeExe), Description: FlagIncludeExeUsage},
+				{Text: fullFlagName(FlagIncludeShell), Description: FlagIncludeShellUsage},
+				{Text: fullFlagName(FlagMount), Description: FlagMountUsage},
+				{Text: fullFlagName(FlagContinueAfter), Description: FlagContinueAfterUsage},
+				{Text: fullFlagName(FlagUseLocalMounts), Description: FlagUseLocalMountsUsage},
+				{Text: fullFlagName(FlagUseSensorVolume), Description: FlagUseSensorVolumeUsage},
+				{Text: fullFlagName(FlagKeepTmpArtifacts), Description: FlagKeepTmpArtifactsUsage},
 			},
 			Values: map[string]CompleteValue{
-				"--bone": completeBool,
+				fullFlagName(FlagTarget): completeTarget,
 			},
 		},
 	},
@@ -479,10 +563,57 @@ var cmdSpecs = map[string]cmdSpec{
 		usage: CmdBuildUsage,
 		suggestions: &flagSuggestions{
 			Names: []prompt.Suggest{
-				{Text: "--bone", Description: "Flag one"},
+				{Text: fullFlagName(FlagTarget), Description: FlagTargetUsage},
+				{Text: fullFlagName(FlagBuildFromDockerfile), Description: FlagBuildFromDockerfileUsage},
+				{Text: fullFlagName(FlagShowBuildLogs), Description: FlagShowBuildLogsUsage},
+				{Text: fullFlagName(FlagShowContainerLogs), Description: FlagShowContainerLogsUsage},
+				{Text: fullFlagName(FlagHTTPProbe), Description: FlagHTTPProbeUsage},
+				{Text: fullFlagName(FlagHTTPProbeCmd), Description: FlagHTTPProbeCmdUsage},
+				{Text: fullFlagName(FlagHTTPProbeCmdFile), Description: FlagHTTPProbeCmdFileUsage},
+				{Text: fullFlagName(FlagHTTPProbeRetryCount), Description: FlagHTTPProbeRetryCountUsage},
+				{Text: fullFlagName(FlagHTTPProbeRetryWait), Description: FlagHTTPProbeRetryWaitUsage},
+				{Text: fullFlagName(FlagHTTPProbePorts), Description: FlagHTTPProbePortsUsage},
+				{Text: fullFlagName(FlagHTTPProbeFull), Description: FlagHTTPProbeFullUsage},
+				{Text: fullFlagName(FlagKeepPerms), Description: FlagKeepPermsUsage},
+				{Text: fullFlagName(FlagRunTargetAsUser), Description: FlagRunTargetAsUserUsage},
+				{Text: fullFlagName(FlagCopyMetaArtifacts), Description: FlagCopyMetaArtifactsUsage},
+				{Text: fullFlagName(FlagRemoveFileArtifacts), Description: FlagRemoveFileArtifactsUsage},
+				{Text: fullFlagName(FlagTag), Description: FlagTagUsage},
+				{Text: fullFlagName(FlagTagFat), Description: FlagTagFatUsage},
+				{Text: fullFlagName(FlagImageOverrides), Description: FlagImageOverridesUsage},
+				{Text: fullFlagName(FlagEntrypoint), Description: FlagEntrypointUsage},
+				{Text: fullFlagName(FlagCmd), Description: FlagCmdUsage},
+				{Text: fullFlagName(FlagWorkdir), Description: FlagWorkdirUsage},
+				{Text: fullFlagName(FlagEnv), Description: FlagEnvUsage},
+				{Text: fullFlagName(FlagLink), Description: FlagLinkUsage},
+				{Text: fullFlagName(FlagEtcHostsMap), Description: FlagEtcHostsMapUsage},
+				{Text: fullFlagName(FlagContainerDNS), Description: FlagContainerDNSUsage},
+				{Text: fullFlagName(FlagContainerDNSSearch), Description: FlagContainerDNSSearchUsage},
+				{Text: fullFlagName(FlagNetwork), Description: FlagNetworkUsage},
+				{Text: fullFlagName(FlagHostname), Description: FlagHostnameUsage},
+				{Text: fullFlagName(FlagExpose), Description: FlagExposeUsage},
+				{Text: fullFlagName(FlagNewEntrypoint), Description: FlagNewEntrypointUsage},
+				{Text: fullFlagName(FlagNewCmd), Description: FlagNewCmdUsage},
+				{Text: fullFlagName(FlagNewExpose), Description: FlagNewExposeUsage},
+				{Text: fullFlagName(FlagNewWorkdir), Description: FlagNewWorkdirUsage},
+				{Text: fullFlagName(FlagNewEnv), Description: FlagNewEnvUsage},
+				{Text: fullFlagName(FlagExcludeMounts), Description: FlagExcludeMountsUsage},
+				{Text: fullFlagName(FlagExcludePattern), Description: FlagExcludePatternUsage},
+				{Text: fullFlagName(FlagPathPerms), Description: FlagPathPermsUsage},
+				{Text: fullFlagName(FlagPathPermsFile), Description: FlagPathPermsFileUsage},
+				{Text: fullFlagName(FlagIncludePath), Description: FlagIncludePathUsage},
+				{Text: fullFlagName(FlagIncludePathFile), Description: FlagIncludePathFileUsage},
+				{Text: fullFlagName(FlagIncludeBin), Description: FlagIncludeBinUsage},
+				{Text: fullFlagName(FlagIncludeExe), Description: FlagIncludeExeUsage},
+				{Text: fullFlagName(FlagIncludeShell), Description: FlagIncludeShellUsage},
+				{Text: fullFlagName(FlagMount), Description: FlagMountUsage},
+				{Text: fullFlagName(FlagContinueAfter), Description: FlagContinueAfterUsage},
+				{Text: fullFlagName(FlagUseLocalMounts), Description: FlagUseLocalMountsUsage},
+				{Text: fullFlagName(FlagUseSensorVolume), Description: FlagUseSensorVolumeUsage},
+				{Text: fullFlagName(FlagKeepTmpArtifacts), Description: FlagKeepTmpArtifactsUsage},
 			},
 			Values: map[string]CompleteValue{
-				"--bone": completeBool,
+				fullFlagName(FlagTarget): completeTarget,
 			},
 		},
 	},
@@ -500,6 +631,14 @@ var cmdSpecs = map[string]cmdSpec{
 		name:  CmdUpdate,
 		alias: "u",
 		usage: CmdUpdateUsage,
+		suggestions: &flagSuggestions{
+			Names: []prompt.Suggest{
+				{Text: fullFlagName(FlagShowProgress), Description: FlagShowProgressUsage},
+			},
+			Values: map[string]CompleteValue{
+				fullFlagName(FlagShowProgress): completeBool,
+			},
+		},
 	},
 }
 
@@ -659,6 +798,24 @@ func init() {
 		log.Debugf("sysinfo => %#v", system.GetSystemInfo())
 
 		return nil
+	}
+
+	app.Action = func(ctx *cli.Context) error {
+		gcvalues, err := globalCommandFlagValues(ctx)
+		if err != nil {
+			return err
+		}
+
+		ia := NewInteractiveApp(app, gcvalues)
+		ia.Run()
+		return nil
+	}
+
+	doTargetFlag := cli.StringFlag{
+		Name:   FlagTarget,
+		Value:  "",
+		Usage:  FlagTargetUsage,
+		EnvVar: "DSLIM_TARGET",
 	}
 
 	doRemoveFileArtifactsFlag := cli.BoolFlag{
@@ -971,26 +1128,23 @@ func init() {
 
 	app.Commands = []cli.Command{
 		{
-			Name:    cmdSpecs[CmdVersion].name,
-			Aliases: []string{cmdSpecs[CmdVersion].alias},
-			Usage:   cmdSpecs[CmdVersion].usage,
-			Action: func(ctx *cli.Context) error {
-				gcvalues, err := globalCommandFlagValues(ctx)
-				if err != nil {
-					return err
-				}
-
-				ia := NewInteractiveApp(app, gcvalues)
-				ia.Run()
-				return nil
-			},
-		},
-		{
 			Name:    cmdSpecs[CmdHelp].name,
 			Aliases: []string{cmdSpecs[CmdHelp].alias},
 			Usage:   cmdSpecs[CmdHelp].usage,
 			Action: func(ctx *cli.Context) error {
 				cli.ShowAppHelp(ctx)
+				return nil
+			},
+		},
+		{
+			Name:    cmdSpecs[CmdVersion].name,
+			Aliases: []string{cmdSpecs[CmdVersion].alias},
+			Usage:   cmdSpecs[CmdVersion].usage,
+			Action: func(ctx *cli.Context) error {
+				doDebug := ctx.GlobalBool(FlagDebug)
+				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
+				clientConfig := getDockerClientConfig(ctx)
+				commands.OnVersion(doDebug, inContainer, isDSImage, clientConfig)
 				return nil
 			},
 		},
@@ -1072,6 +1226,7 @@ func init() {
 			Aliases: []string{cmdSpecs[CmdXray].alias},
 			Usage:   cmdSpecs[CmdXray].usage,
 			Flags: []cli.Flag{
+				doTargetFlag,
 				cli.StringSliceFlag{
 					Name:   FlagChanges,
 					Value:  &cli.StringSlice{""},
@@ -1087,18 +1242,22 @@ func init() {
 				doRemoveFileArtifactsFlag,
 			},
 			Action: func(ctx *cli.Context) error {
-				if len(ctx.Args()) < 1 {
-					fmt.Printf("docker-slim[xray]: missing image ID/name...\n\n")
-					cli.ShowCommandHelp(ctx, CmdXray)
-					return nil
+				targetRef := ctx.String(FlagTarget)
+
+				if targetRef == "" {
+					if len(ctx.Args()) < 1 {
+						fmt.Printf("docker-slim[xray]: missing image ID/name...\n\n")
+						cli.ShowCommandHelp(ctx, CmdXray)
+						return nil
+					} else {
+						targetRef = ctx.Args().First()
+					}
 				}
 
 				gcvalues, err := globalCommandFlagValues(ctx)
 				if err != nil {
 					return err
 				}
-
-				targetRef := ctx.Args().First()
 
 				changes, err := parseChangeTypes(ctx.StringSlice(FlagChanges))
 				if err != nil {
@@ -1131,6 +1290,7 @@ func init() {
 			Aliases: []string{cmdSpecs[CmdBuild].alias},
 			Usage:   cmdSpecs[CmdBuild].usage,
 			Flags: []cli.Flag{
+				doTargetFlag,
 				cli.StringFlag{
 					Name:   FlagBuildFromDockerfile,
 					Value:  "",
@@ -1200,18 +1360,22 @@ func init() {
 				doKeepTmpArtifactsFlag,
 			},
 			Action: func(ctx *cli.Context) error {
-				if len(ctx.Args()) < 1 {
-					fmt.Printf("docker-slim[build]: missing image ID/name...\n\n")
-					cli.ShowCommandHelp(ctx, CmdBuild)
-					return nil
+				targetRef := ctx.String(FlagTarget)
+
+				if targetRef == "" {
+					if len(ctx.Args()) < 1 {
+						fmt.Printf("docker-slim[build]: missing image ID/name...\n\n")
+						cli.ShowCommandHelp(ctx, CmdBuild)
+						return nil
+					} else {
+						targetRef = ctx.Args().First()
+					}
 				}
 
 				gcvalues, err := globalCommandFlagValues(ctx)
 				if err != nil {
 					return err
 				}
-
-				targetRef := ctx.Args().First()
 
 				doRmFileArtifacts := ctx.Bool(FlagRemoveFileArtifacts)
 				doCopyMetaArtifacts := ctx.String(FlagCopyMetaArtifacts)
@@ -1379,6 +1543,8 @@ func init() {
 			Aliases: []string{cmdSpecs[CmdProfile].alias},
 			Usage:   cmdSpecs[CmdProfile].usage,
 			Flags: []cli.Flag{
+				doTargetFlag,
+				doShowContainerLogsFlag,
 				doHTTPProbeFlag,
 				doHTTPProbeCmdFlag,
 				doHTTPProbeCmdFileFlag,
@@ -1388,8 +1554,8 @@ func init() {
 				doHTTPProbeFullFlag,
 				doKeepPermsFlag,
 				doRunTargetAsUserFlag,
-				doShowContainerLogsFlag,
 				doCopyMetaArtifactsFlag,
+				doRemoveFileArtifactsFlag,
 				doUseEntrypointFlag,
 				doUseCmdFlag,
 				doUseWorkdirFlag,
@@ -1417,10 +1583,16 @@ func init() {
 				doKeepTmpArtifactsFlag,
 			},
 			Action: func(ctx *cli.Context) error {
-				if len(ctx.Args()) < 1 {
-					fmt.Printf("docker-slim[profile]: missing image ID/name...\n\n")
-					cli.ShowCommandHelp(ctx, CmdProfile)
-					return nil
+				targetRef := ctx.String(FlagTarget)
+
+				if targetRef == "" {
+					if len(ctx.Args()) < 1 {
+						fmt.Printf("docker-slim[profile]: missing image ID/name...\n\n")
+						cli.ShowCommandHelp(ctx, CmdProfile)
+						return nil
+					} else {
+						targetRef = ctx.Args().First()
+					}
 				}
 
 				gcvalues, err := globalCommandFlagValues(ctx)
@@ -1428,8 +1600,7 @@ func init() {
 					return err
 				}
 
-				targetRef := ctx.Args().First()
-
+				doRmFileArtifacts := ctx.Bool(FlagRemoveFileArtifacts)
 				doCopyMetaArtifacts := ctx.String(FlagCopyMetaArtifacts)
 
 				doHTTPProbe := ctx.Bool(FlagHTTPProbe)
@@ -1545,6 +1716,7 @@ func init() {
 					httpProbeRetryWait,
 					httpProbePorts,
 					doHTTPProbeFull,
+					doRmFileArtifacts,
 					doCopyMetaArtifacts,
 					doRunTargetAsUser,
 					doShowContainerLogs,
