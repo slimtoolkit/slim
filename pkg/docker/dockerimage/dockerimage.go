@@ -2,6 +2,7 @@ package dockerimage
 
 import (
 	"archive/tar"
+	"bytes"
 	"container/heap"
 	"encoding/json"
 	"fmt"
@@ -80,11 +81,62 @@ type LayerStats struct {
 type ChangeType int
 
 const (
-	ChangeUnknown = iota
+	ChangeUnknown ChangeType = iota
 	ChangeDelete
 	ChangeAdd
 	ChangeModify
 )
+
+var changeTypeToStrings = map[ChangeType]string{
+	ChangeUnknown: "U",
+	ChangeDelete:  "D",
+	ChangeAdd:     "A",
+	ChangeModify:  "M",
+}
+
+var changeTypeFromStrings = map[string]ChangeType{
+	"U": ChangeUnknown,
+	"D": ChangeDelete,
+	"A": ChangeAdd,
+	"M": ChangeModify,
+}
+
+func (ct ChangeType) String() string {
+	if v, ok := changeTypeToStrings[ct]; ok {
+		return v
+	}
+
+	return "U"
+}
+
+func (ct ChangeType) MarshalJSON() ([]byte, error) {
+	v, ok := changeTypeToStrings[ct]
+	if !ok {
+		v = "O"
+	}
+
+	d := bytes.NewBufferString(`"`)
+	d.WriteString(v)
+	d.WriteString(`"`)
+
+	return d.Bytes(), nil
+}
+
+func (ct *ChangeType) UnmarshalJSON(b []byte) error {
+	var d string
+	err := json.Unmarshal(b, &d)
+	if err != nil {
+		return err
+	}
+
+	if v, ok := changeTypeFromStrings[d]; ok {
+		*ct = v
+	} else {
+		*ct = ChangeUnknown
+	}
+
+	return nil
+}
 
 type ObjectMetadata struct {
 	Change     ChangeType  `json:"change,omitempty"`
@@ -182,6 +234,7 @@ func LoadPackage(archivePath, imageID string, skipObjects bool) (*Package, error
 				}
 
 			case hdr.Name == configObjectFileName:
+				fmt.Printf("Q TMP: loading image config object...\n")
 				var imageConfig ConfigObject
 				if err := jsonFromStream(tr, &imageConfig); err != nil {
 					log.Errorf("dockerimage.LoadPackage: error reading config object from archive(%v/%v) - %v", archivePath, configObjectFileName, err)
@@ -189,6 +242,7 @@ func LoadPackage(archivePath, imageID string, skipObjects bool) (*Package, error
 				}
 
 				pkg.Config = &imageConfig
+				fmt.Printf("Q TMP: loaded image config object...\n")
 			case strings.HasSuffix(hdr.Name, layerSuffix):
 				parts := strings.Split(hdr.Name, "/")
 				layerID := parts[0]

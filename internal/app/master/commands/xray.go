@@ -33,6 +33,8 @@ func OnXray(
 	targetRef string,
 	changes map[string]struct{},
 	layers map[string]struct{},
+	doAddImageManifest bool,
+	doAddImageConfig bool,
 	doRmFileArtifacts bool,
 	ec *ExecutionContext) {
 	const cmdName = "xray"
@@ -46,7 +48,10 @@ func OnXray(
 	cmdReport.ImageReference = targetRef
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
-	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, targetRef)
+	fmt.Printf("%s[%s]: info=params target=%v add-image-manifest=%v add-image-config=%v rm-file-artifacts=%v\n",
+		appName, cmdName, targetRef, doAddImageManifest, doAddImageConfig, doRmFileArtifacts)
+
+	fmt.Printf("Q TMP: doAddImageConfig -> %v\n", doAddImageConfig)
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
@@ -170,6 +175,15 @@ func OnXray(
 
 	printImagePackage(imagePkg, appName, cmdName, changes, layers, cmdReport)
 
+	if doAddImageManifest {
+		cmdReport.RawImageManifest = imagePkg.Manifest
+	}
+
+	if doAddImageConfig {
+		fmt.Printf("Q TMP: doAddImageConfig is on, saving imagePkg.Config\n")
+		cmdReport.RawImageConfig = imagePkg.Config
+	}
+
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
 	cmdReport.State = report.CmdStateCompleted
 
@@ -205,7 +219,60 @@ func printImagePackage(pkg *dockerimage.Package,
 	fmt.Printf("%s[%s]: info=layers.count: %v\n", appName, cmdName, len(pkg.Layers))
 	for _, layer := range pkg.Layers {
 		fmt.Printf("%s[%s]: info=layer index=%d id=%s path=%s\n", appName, cmdName, layer.Index, layer.ID, layer.Path)
-		fmt.Printf("%s[%s]: info=layer.stats data=%#v\n", appName, cmdName, layer.Stats)
+		//fmt.Printf("%s[%s]: info=layer.stats data=%#v\n", appName, cmdName, layer.Stats)
+
+		if layer.Stats.AllSize != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats all_size=%v\n", appName, cmdName, layer.Stats.AllSize)
+		}
+
+		if layer.Stats.ObjectCount != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats object_count=%v\n", appName, cmdName, layer.Stats.ObjectCount)
+		}
+
+		if layer.Stats.DirCount != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats dir_count=%v\n", appName, cmdName, layer.Stats.DirCount)
+		}
+
+		if layer.Stats.FileCount != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats file_count=%v\n", appName, cmdName, layer.Stats.FileCount)
+		}
+
+		if layer.Stats.LinkCount != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats link_count=%v\n", appName, cmdName, layer.Stats.LinkCount)
+		}
+
+		if layer.Stats.MaxFileSize != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats max_file_size=%v\n", appName, cmdName, layer.Stats.MaxFileSize)
+		}
+
+		if layer.Stats.DeletedCount != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats deleted_count=%v\n", appName, cmdName, layer.Stats.DeletedCount)
+		}
+
+		if layer.Stats.DeletedDirCount != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats deleted_dir_count=%v\n", appName, cmdName, layer.Stats.DeletedDirCount)
+		}
+
+		if layer.Stats.DeletedFileCount != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats deleted_file_count=%v\n", appName, cmdName, layer.Stats.DeletedFileCount)
+		}
+
+		if layer.Stats.DeletedLinkCount != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats deleted_link_count=%v\n", appName, cmdName, layer.Stats.DeletedLinkCount)
+		}
+
+		if layer.Stats.DeletedSize != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats deleted_size=%v\n", appName, cmdName, layer.Stats.DeletedSize)
+		}
+
+		if layer.Stats.AddedSize != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats added_size=%v\n", appName, cmdName, layer.Stats.AddedSize)
+		}
+
+		if layer.Stats.ModifiedSize != 0 {
+			fmt.Printf("%s[%s]: info=layer.stats modified_size=%v\n", appName, cmdName, layer.Stats.ModifiedSize)
+		}
+
 		changeCount := len(layer.Changes.Deleted) + len(layer.Changes.Modified) + len(layer.Changes.Added)
 
 		fmt.Printf("%s[%s]: info=layer.change.summary deleted=%d modified=%d added=%d all=%d\n",
@@ -275,7 +342,7 @@ func printImagePackage(pkg *dockerimage.Package,
 }
 
 func printObject(object *dockerimage.ObjectMetadata) {
-	fmt.Printf("O: change=%d mode=%s size=%v(%d) uid=%d gid=%d mtime=%s %s",
+	fmt.Printf("O: change=%s mode=%s size=%v(%d) uid=%d gid=%d mtime=%s %s",
 		object.Change, object.Mode, humanize.Bytes(uint64(object.Size)), object.Size, object.UID, object.GID,
 		object.ModTime, object.Name)
 

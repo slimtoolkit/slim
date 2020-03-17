@@ -151,13 +151,11 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 
 				entrypointShellFormPrefix := `ENTRYPOINT ["/bin/sh" "-c" "`
 				if strings.HasPrefix(cleanInst, entrypointShellFormPrefix) {
-					fmt.Println("Q TMP: ENTRYPOINT shell form...")
 					instData := strings.TrimPrefix(cleanInst, entrypointShellFormPrefix)
 					instData = strings.TrimSuffix(instData, `"]`)
 					cleanInst = "ENTRYPOINT " + instData
 				} else {
 					isExecForm = true
-					fmt.Println("Q TMP: ENTRYPOINT exec form...")
 
 					instData := strings.TrimPrefix(cleanInst, "ENTRYPOINT ")
 					instData = fixJSONArray(instData)
@@ -168,13 +166,11 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 			if strings.HasPrefix(cleanInst, "CMD ") {
 				cmdShellFormPrefix := `CMD ["/bin/sh" "-c" "`
 				if strings.HasPrefix(cleanInst, cmdShellFormPrefix) {
-					fmt.Println("Q TMP: CMD shell form...")
 					instData := strings.TrimPrefix(cleanInst, cmdShellFormPrefix)
 					instData = strings.TrimSuffix(instData, `"]`)
 					cleanInst = "CMD " + instData
 				} else {
 					isExecForm = true
-					fmt.Println("Q TMP: CMD exec form...")
 
 					instData := strings.TrimPrefix(cleanInst, "CMD ")
 					instData = fixJSONArray(instData)

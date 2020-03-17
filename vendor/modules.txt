@@ -10,6 +10,7 @@ github.com/Microsoft/hcsshim/osversion
 github.com/bmatcuk/doublestar
 # github.com/c-bata/go-prompt v0.2.3
 github.com/c-bata/go-prompt
+github.com/c-bata/go-prompt/completer
 # github.com/c4milo/unpackit v0.0.0-20170704181138-4ed373e9ef1c
 github.com/c4milo/unpackit
 # github.com/containerd/containerd v1.3.0

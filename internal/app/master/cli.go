@@ -18,8 +18,10 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/version"
 
 	"github.com/c-bata/go-prompt"
+	"github.com/c-bata/go-prompt/completer"
 	"github.com/dustin/go-humanize"
 	dockerapi "github.com/fsouza/go-dockerclient"
+	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 )
@@ -228,14 +230,18 @@ const (
 
 // Xray command flag names
 const (
-	FlagChanges = "changes"
-	FlagLayer   = "layer"
+	FlagChanges          = "changes"
+	FlagLayer            = "layer"
+	FlagAddImageManifest = "add-image-manifest"
+	FlagAddImageConfig   = "add-image-config"
 )
 
 // Xray command flag usage info
 const (
-	FlagChangesUsage = "Show layer change details for the selected change type (values: none, all, delete, modify, add)"
-	FlagLayerUsage   = "Show details for the selected layer (using layer index or ID)"
+	FlagChangesUsage          = "Show layer change details for the selected change type (values: none, all, delete, modify, add)"
+	FlagLayerUsage            = "Show details for the selected layer (using layer index or ID)"
+	FlagAddImageManifestUsage = "Add raw image manifest to the command execution report file"
+	FlagAddImageConfigUsage   = "Add raw image config object to the command execution report file"
 )
 
 // Update command flag names
@@ -249,14 +255,18 @@ const (
 )
 
 type InteractiveApp struct {
-	appPrompt *prompt.Prompt
-	app       *cli.App
-	dclient   *dockerapi.Client
+	appPrompt   *prompt.Prompt
+	fpCompleter completer.FilePathCompleter
+	app         *cli.App
+	dclient     *dockerapi.Client
 }
 
 func NewInteractiveApp(app *cli.App, gparams *commands.GenericParams) *InteractiveApp {
 	ia := InteractiveApp{
 		app: app,
+		fpCompleter: completer.FilePathCompleter{
+			IgnoreCase: true,
+		},
 	}
 
 	client, err := dockerclient.New(gparams.ClientConfig)
@@ -279,6 +289,7 @@ func NewInteractiveApp(app *cli.App, gparams *commands.GenericParams) *Interacti
 		prompt.OptionTitle(fmt.Sprintf("%s: interactive cli", AppName)),
 		prompt.OptionPrefix(">>> "),
 		prompt.OptionInputTextColor(prompt.Yellow),
+		prompt.OptionCompletionWordSeparator(completer.FilePathCompletionSeparator),
 	)
 
 	return &ia
@@ -286,7 +297,32 @@ func NewInteractiveApp(app *cli.App, gparams *commands.GenericParams) *Interacti
 
 func (ia *InteractiveApp) execute(command string) {
 	command = strings.TrimSpace(command)
-	parts := strings.Split(command, " ") //todo: use a shell split
+	parts, err := shlex.Split(command)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(parts) == 0 {
+		return
+	}
+
+	if parts[0] == "exit" {
+		os.Exit(0)
+	}
+
+	partsCount := len(parts)
+	for i := 0; i < partsCount; i++ {
+		if parts[i] == "" {
+			continue
+		}
+		if strings.HasPrefix(parts[i], "--") &&
+			(i+1) < partsCount &&
+			(parts[i+1] == "true" || parts[i+1] == "false") {
+			parts[i] = fmt.Sprintf("%s=%s", parts[i], parts[i+1])
+			parts[i+1] = ""
+		}
+	}
+
 	args := append([]string{AppName}, parts...)
 
 	if err := ia.app.Run(args); err != nil {
@@ -365,7 +401,7 @@ func (ia *InteractiveApp) complete(params prompt.Document) []prompt.Suggest {
 
 	if strings.HasPrefix(prevToken, "--") {
 		if completeValue, ok := cmdSpec.suggestions.Values[prevToken]; ok && completeValue != nil {
-			return completeValue(ia, currentToken)
+			return completeValue(ia, currentToken, params)
 		}
 	} else {
 		return prompt.FilterHasPrefix(cmdSpec.suggestions.Names, currentToken, true)
@@ -379,14 +415,14 @@ func (ia *InteractiveApp) Run() {
 }
 
 var commandSuggestions = []prompt.Suggest{
-	{Text: "exit", Description: "Exit app"},
-	{Text: CmdHelp, Description: CmdHelpUsage},
-	{Text: CmdVersion, Description: CmdVersionUsage},
-	{Text: CmdUpdate, Description: CmdUpdateUsage},
 	{Text: CmdXray, Description: CmdXrayUsage},
 	{Text: CmdBuild, Description: CmdBuildUsage},
 	{Text: CmdProfile, Description: CmdProfileUsage},
 	{Text: CmdLint, Description: CmdLintUsage},
+	{Text: CmdVersion, Description: CmdVersionUsage},
+	{Text: CmdUpdate, Description: CmdUpdateUsage},
+	{Text: CmdHelp, Description: CmdHelpUsage},
+	{Text: "exit", Description: "Exit app"},
 }
 
 var globalFlagSuggestions = []prompt.Suggest{
@@ -411,7 +447,12 @@ func fullFlagName(name string) string {
 }
 
 var boolValues = []prompt.Suggest{
+	{Text: "false", Description: "default"},
 	{Text: "true"},
+}
+
+var tboolValues = []prompt.Suggest{
+	{Text: "true", Description: "default"},
 	{Text: "false"},
 }
 
@@ -423,16 +464,41 @@ var layerChangeValues = []prompt.Suggest{
 	{Text: "add", Description: "Show only 'add' file system change details in image layers"},
 }
 
-func completeBool(ia *InteractiveApp, token string) []prompt.Suggest {
+var continueAfterValues = []prompt.Suggest{
+	{Text: "probe", Description: "Automatically continue after the HTTP probe is finished running"},
+	{Text: "enter", Description: "Use the <enter> key to indicate you that you are done using the container"},
+	{Text: "signal", Description: "Use SIGUSR1 to signal that you are done using the container"},
+	{Text: "timeout", Description: "Automatically continue after the default timeout (60 seconds)"},
+	{Text: "<seconds>", Description: "Enter the number of seconds to wait instead of <seconds>"},
+}
+
+func completeProgress(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	switch runtime.GOOS {
+	case "darwin":
+		return completeTBool(ia, token, params)
+	default:
+		return completeBool(ia, token, params)
+	}
+}
+
+func completeBool(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(boolValues, token, true)
 }
 
-func completeLayerChanges(ia *InteractiveApp, token string) []prompt.Suggest {
+func completeTBool(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	return prompt.FilterHasPrefix(tboolValues, token, true)
+}
+
+func completeLayerChanges(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(layerChangeValues, token, true)
 }
 
-func completeTarget(ia *InteractiveApp, token string) []prompt.Suggest {
-	images, err := dockerutil.ListImages(ia.dclient, token)
+func completeContinueAfter(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	return prompt.FilterHasPrefix(continueAfterValues, token, true)
+}
+
+func completeTarget(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	images, err := dockerutil.ListImages(ia.dclient, "")
 	if err != nil {
 		log.Errorf("completeTarget(%q): error - %v", token, err)
 		return []prompt.Suggest{}
@@ -453,10 +519,52 @@ func completeTarget(ia *InteractiveApp, token string) []prompt.Suggest {
 		values = append(values, entry)
 	}
 
-	return prompt.FilterHasPrefix(values, token, true)
+	return prompt.FilterContains(values, token, true)
 }
 
-type CompleteValue func(ia *InteractiveApp, token string) []prompt.Suggest
+func completeVolume(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	names, err := dockerutil.ListVolumes(ia.dclient, token)
+	if err != nil {
+		log.Errorf("completeVolume(%q): error - %v", token, err)
+		return []prompt.Suggest{}
+	}
+
+	var values []prompt.Suggest
+	for _, name := range names {
+		entry := prompt.Suggest{
+			Text: name,
+		}
+
+		values = append(values, entry)
+	}
+
+	return prompt.FilterContains(values, token, true)
+}
+
+func completeNetwork(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	names, err := dockerutil.ListNetworks(ia.dclient, token)
+	if err != nil {
+		log.Errorf("completeNetwork(%q): error - %v", token, err)
+		return []prompt.Suggest{}
+	}
+
+	var values []prompt.Suggest
+	for _, name := range names {
+		entry := prompt.Suggest{
+			Text: name,
+		}
+
+		values = append(values, entry)
+	}
+
+	return prompt.FilterContains(values, token, true)
+}
+
+func completeFile(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	return ia.fpCompleter.Complete(params)
+}
+
+type CompleteValue func(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest
 
 type flagSuggestions struct {
 	Names  []prompt.Suggest
@@ -481,12 +589,8 @@ var cmdSpecs = map[string]cmdSpec{
 		alias: "l",
 		usage: CmdLintUsage,
 		suggestions: &flagSuggestions{
-			Names: []prompt.Suggest{
-				{Text: "--bone", Description: "Flag one"},
-			},
-			Values: map[string]CompleteValue{
-				"--bone": completeBool,
-			},
+			Names:  []prompt.Suggest{},
+			Values: map[string]CompleteValue{},
 		},
 	},
 	CmdXray: {
@@ -498,11 +602,15 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagTarget), Description: FlagTargetUsage},
 				{Text: fullFlagName(FlagChanges), Description: FlagChangesUsage},
 				{Text: fullFlagName(FlagLayer), Description: FlagLayerUsage},
+				{Text: fullFlagName(FlagAddImageManifest), Description: FlagAddImageManifestUsage},
+				{Text: fullFlagName(FlagAddImageConfig), Description: FlagAddImageConfigUsage},
 				{Text: fullFlagName(FlagRemoveFileArtifacts), Description: FlagRemoveFileArtifactsUsage},
 			},
 			Values: map[string]CompleteValue{
 				fullFlagName(FlagTarget):              completeTarget,
 				fullFlagName(FlagChanges):             completeLayerChanges,
+				fullFlagName(FlagAddImageManifest):    completeBool,
+				fullFlagName(FlagAddImageConfig):      completeBool,
 				fullFlagName(FlagRemoveFileArtifacts): completeBool,
 			},
 		},
@@ -553,7 +661,23 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagKeepTmpArtifacts), Description: FlagKeepTmpArtifactsUsage},
 			},
 			Values: map[string]CompleteValue{
-				fullFlagName(FlagTarget): completeTarget,
+				fullFlagName(FlagTarget):              completeTarget,
+				fullFlagName(FlagShowContainerLogs):   completeBool,
+				fullFlagName(FlagHTTPProbe):           completeTBool,
+				fullFlagName(FlagHTTPProbeCmdFile):    completeFile,
+				fullFlagName(FlagHTTPProbeFull):       completeBool,
+				fullFlagName(FlagKeepPerms):           completeTBool,
+				fullFlagName(FlagRunTargetAsUser):     completeTBool,
+				fullFlagName(FlagRemoveFileArtifacts): completeBool,
+				fullFlagName(FlagNetwork):             completeNetwork,
+				fullFlagName(FlagExcludeMounts):       completeTBool,
+				fullFlagName(FlagPathPermsFile):       completeFile,
+				fullFlagName(FlagIncludePathFile):     completeFile,
+				fullFlagName(FlagIncludeShell):        completeBool,
+				fullFlagName(FlagContinueAfter):       completeContinueAfter,
+				fullFlagName(FlagUseLocalMounts):      completeBool,
+				fullFlagName(FlagUseSensorVolume):     completeVolume,
+				fullFlagName(FlagKeepTmpArtifacts):    completeBool,
 			},
 		},
 	},
@@ -613,7 +737,24 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagKeepTmpArtifacts), Description: FlagKeepTmpArtifactsUsage},
 			},
 			Values: map[string]CompleteValue{
-				fullFlagName(FlagTarget): completeTarget,
+				fullFlagName(FlagTarget):              completeTarget,
+				fullFlagName(FlagShowBuildLogs):       completeBool,
+				fullFlagName(FlagShowContainerLogs):   completeBool,
+				fullFlagName(FlagHTTPProbe):           completeTBool,
+				fullFlagName(FlagHTTPProbeCmdFile):    completeFile,
+				fullFlagName(FlagHTTPProbeFull):       completeBool,
+				fullFlagName(FlagKeepPerms):           completeTBool,
+				fullFlagName(FlagRunTargetAsUser):     completeTBool,
+				fullFlagName(FlagRemoveFileArtifacts): completeBool,
+				fullFlagName(FlagNetwork):             completeNetwork,
+				fullFlagName(FlagExcludeMounts):       completeTBool,
+				fullFlagName(FlagPathPermsFile):       completeFile,
+				fullFlagName(FlagIncludePathFile):     completeFile,
+				fullFlagName(FlagIncludeShell):        completeBool,
+				fullFlagName(FlagContinueAfter):       completeContinueAfter,
+				fullFlagName(FlagUseLocalMounts):      completeBool,
+				fullFlagName(FlagUseSensorVolume):     completeVolume,
+				fullFlagName(FlagKeepTmpArtifacts):    completeBool,
 			},
 		},
 	},
@@ -636,7 +777,7 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagShowProgress), Description: FlagShowProgressUsage},
 			},
 			Values: map[string]CompleteValue{
-				fullFlagName(FlagShowProgress): completeBool,
+				fullFlagName(FlagShowProgress): completeProgress,
 			},
 		},
 	},
@@ -1239,6 +1380,16 @@ func init() {
 					Usage:  FlagLayerUsage,
 					EnvVar: "DSLIM_LAYER",
 				},
+				cli.BoolFlag{
+					Name:   FlagAddImageManifest,
+					Usage:  FlagAddImageManifestUsage,
+					EnvVar: "DSLIM_XRAY_IMAGE_MANIFEST",
+				},
+				cli.BoolFlag{
+					Name:   FlagAddImageConfig,
+					Usage:  FlagAddImageConfigUsage,
+					EnvVar: "DSLIM_XRAY_IMAGE_CONFIG",
+				},
 				doRemoveFileArtifactsFlag,
 			},
 			Action: func(ctx *cli.Context) error {
@@ -1271,6 +1422,8 @@ func init() {
 					return err
 				}
 
+				doAddImageManifest := ctx.Bool(FlagAddImageManifest)
+				doAddImageConfig := ctx.Bool(FlagAddImageConfig)
 				doRmFileArtifacts := ctx.Bool(FlagRemoveFileArtifacts)
 
 				ec := &commands.ExecutionContext{}
@@ -1280,6 +1433,8 @@ func init() {
 					targetRef,
 					changes,
 					layers,
+					doAddImageManifest,
+					doAddImageConfig,
 					doRmFileArtifacts,
 					ec)
 				return nil

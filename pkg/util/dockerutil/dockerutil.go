@@ -632,3 +632,63 @@ func PrepareContainerDataArchive(fullPath, newName, removePrefix string, removeO
 
 	return nil
 }
+
+func ListNetworks(dclient *dockerapi.Client, nameFilter string) ([]string, error) {
+	var err error
+	if dclient == nil {
+		dclient, err = dockerapi.NewClient(dockerHost)
+		if err != nil {
+			log.Errorf("dockerutil.ListNetworks(%s): dockerapi.NewClient() error = %v", nameFilter, err)
+			return nil, err
+		}
+	}
+
+	filter := dockerapi.NetworkFilterOpts{
+		"name": map[string]bool{
+			nameFilter: true,
+		},
+	}
+
+	networkList, err := dclient.FilteredListNetworks(filter)
+	if err != nil {
+		log.Errorf("dockerutil.ListNetworks(%s): dockerapi.FilteredListNetworks() error = %v", nameFilter, err)
+		return nil, err
+	}
+
+	var names []string
+	for _, networkInfo := range networkList {
+		names = append(names, networkInfo.Name)
+	}
+
+	return names, nil
+}
+
+func ListVolumes(dclient *dockerapi.Client, nameFilter string) ([]string, error) {
+	var err error
+	if dclient == nil {
+		dclient, err = dockerapi.NewClient(dockerHost)
+		if err != nil {
+			log.Errorf("dockerutil.ListVolumes(%s): dockerapi.NewClient() error = %v", nameFilter, err)
+			return nil, err
+		}
+	}
+
+	listOptions := dockerapi.ListVolumesOptions{
+		Filters: map[string][]string{
+			"name": {nameFilter},
+		},
+	}
+
+	volumeList, err := dclient.ListVolumes(listOptions)
+	if err != nil {
+		log.Errorf("dockerutil.ListVolumes(%s): dockerapi.ListVolumes() error = %v", nameFilter, err)
+		return nil, err
+	}
+
+	var names []string
+	for _, volumeInfo := range volumeList {
+		names = append(names, volumeInfo.Name)
+	}
+
+	return names, nil
+}
