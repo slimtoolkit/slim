@@ -131,7 +131,7 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 
 Latest version: 1.29.0 (3/18/2020)
 
-This is a UX release that introduces an interactive mode to make it easier to run `docker-slim` when you don't know all available flags. Usage `<tab>` and `<space>` buttons to navigate the interactive prompt. For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md). For more info about the interactive prompt see [`go-prompt`](https://github.com/c-bata/go-prompt).
+This is a UX release that introduces an interactive mode to make it easier to run `docker-slim` when you don't know all available flags. Usage `<tab>` and `<space>` buttons to navigate the interactive prompt and `<enter>` to execute the selected command. The `--target` option for the `build`, `xray` and `profile` commands is now used to select the target container image you want to process. For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md). For more info about the interactive prompt see [`go-prompt`](https://github.com/c-bata/go-prompt).
 
 
 ## INSTALLATION
@@ -152,7 +152,7 @@ The OS-specific installers for `docker-slim` will be available soon (there's alr
 
 ## BASIC USAGE INFO
 
-`docker-slim [global flags] [xray|build|profile|update|version] [command-specific flags] <IMAGE_ID_OR_NAME>`
+`docker-slim [global flags] [xray|build|profile|update|version|help] [command-specific flags] <IMAGE_ID_OR_NAME>`
 
 
 ### COMMANDS
@@ -184,6 +184,7 @@ Commands:
 * `info`    - Collect fat image information and reverse engineers its Dockerfile (no runtime container analysis)
 * `version` - Show docker-slim and docker version information
 * `update`  - Update docker-slim
+* `help`    - Show help info
 
 Global options:
 
@@ -210,15 +211,18 @@ To disable the version checks set the global `--check-version` flag to `false` (
 
 ### `XRAY` COMMAND OPTIONS
 
+* `--target` - target container image (name or ID)
 * `--changes value` - show layer change details for the selected change type (values: none, all, delete, modify, add)
 * `--layer value` - show details for the selected layer (using layer index or ID)
 * `--remove-file-artifacts` - remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
 * `--add-image-manifest` - add raw image manifest to the command execution report file
 * `--add-image-config` - add raw image config object to the command execution report file
 
+In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.
 
 ### `BUILD` COMMAND OPTIONS
 
+* `--target` - target container image (name or ID)
 * `--http-probe` - enables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`)
 * `--http-probe-cmd` - additional HTTP probe command [zero or more]
 * `--http-probe-cmd-file` - file with user defined HTTP probe commands
@@ -262,6 +266,8 @@ To disable the version checks set the global `--check-version` flag to `false` (
 * `--new-expose` - New EXPOSE instructions for the optimized image
 * `--new-workdir` - New WORKDIR instruction for the optimized image
 * `--new-env` - New ENV instructions for the optimized image
+
+In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.
 
 The `--include-path` option is useful if you want to customize your minified image adding extra files and directories. The `--include-path-file` option allows you to load multiple includes from a newline delimited file. Use this option if you have a lot of includes. The includes from `--include-path` and `--include-path-file` are combined together. Future versions will also include the `--exclude-path` option to have even more control.
 
