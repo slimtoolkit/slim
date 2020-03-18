@@ -234,7 +234,6 @@ func LoadPackage(archivePath, imageID string, skipObjects bool) (*Package, error
 				}
 
 			case hdr.Name == configObjectFileName:
-				fmt.Printf("Q TMP: loading image config object...\n")
 				var imageConfig ConfigObject
 				if err := jsonFromStream(tr, &imageConfig); err != nil {
 					log.Errorf("dockerimage.LoadPackage: error reading config object from archive(%v/%v) - %v", archivePath, configObjectFileName, err)
@@ -242,7 +241,6 @@ func LoadPackage(archivePath, imageID string, skipObjects bool) (*Package, error
 				}
 
 				pkg.Config = &imageConfig
-				fmt.Printf("Q TMP: loaded image config object...\n")
 			case strings.HasSuffix(hdr.Name, layerSuffix):
 				parts := strings.Split(hdr.Name, "/")
 				layerID := parts[0]

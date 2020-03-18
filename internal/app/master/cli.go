@@ -286,9 +286,9 @@ func NewInteractiveApp(app *cli.App, gparams *commands.GenericParams) *Interacti
 	ia.appPrompt = prompt.New(
 		ia.execute,
 		ia.complete,
-		prompt.OptionTitle(fmt.Sprintf("%s: interactive cli", AppName)),
+		prompt.OptionTitle(fmt.Sprintf("%s: interactive prompt", AppName)),
 		prompt.OptionPrefix(">>> "),
-		prompt.OptionInputTextColor(prompt.Yellow),
+		prompt.OptionInputTextColor(prompt.Red),
 		prompt.OptionCompletionWordSeparator(completer.FilePathCompletionSeparator),
 	)
 

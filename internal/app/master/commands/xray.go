@@ -51,8 +51,6 @@ func OnXray(
 	fmt.Printf("%s[%s]: info=params target=%v add-image-manifest=%v add-image-config=%v rm-file-artifacts=%v\n",
 		appName, cmdName, targetRef, doAddImageManifest, doAddImageConfig, doRmFileArtifacts)
 
-	fmt.Printf("Q TMP: doAddImageConfig -> %v\n", doAddImageConfig)
-
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
 		exitMsg := "missing Docker connection info"
@@ -88,7 +86,7 @@ func OnXray(
 	imageInspector.ArtifactLocation = artifactLocation
 	logger.Debugf("localVolumePath=%v, artifactLocation=%v, statePath=%v, stateKey=%v", localVolumePath, artifactLocation, statePath, stateKey)
 
-	fmt.Printf("%s[%s]: info=image id=%v size.bytes=%v size.human=%v\n",
+	fmt.Printf("%s[%s]: info=image id=%v size.bytes=%v size.human='%v'\n",
 		appName, cmdName,
 		imageInspector.ImageInfo.ID,
 		imageInspector.ImageInfo.VirtualSize,
@@ -180,7 +178,6 @@ func OnXray(
 	}
 
 	if doAddImageConfig {
-		fmt.Printf("Q TMP: doAddImageConfig is on, saving imagePkg.Config\n")
 		cmdReport.RawImageConfig = imagePkg.Config
 	}
 
@@ -222,7 +219,8 @@ func printImagePackage(pkg *dockerimage.Package,
 		//fmt.Printf("%s[%s]: info=layer.stats data=%#v\n", appName, cmdName, layer.Stats)
 
 		if layer.Stats.AllSize != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats all_size=%v\n", appName, cmdName, layer.Stats.AllSize)
+			fmt.Printf("%s[%s]: info=layer.stats all_size.human='%v' all_size.bytes=%v\n",
+				appName, cmdName, humanize.Bytes(uint64(layer.Stats.AllSize)), layer.Stats.AllSize)
 		}
 
 		if layer.Stats.ObjectCount != 0 {
@@ -242,7 +240,8 @@ func printImagePackage(pkg *dockerimage.Package,
 		}
 
 		if layer.Stats.MaxFileSize != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats max_file_size=%v\n", appName, cmdName, layer.Stats.MaxFileSize)
+			fmt.Printf("%s[%s]: info=layer.stats max_file_size.human='%v' max_file_size.bytes=%v\n",
+				appName, cmdName, humanize.Bytes(uint64(layer.Stats.MaxFileSize)), layer.Stats.MaxFileSize)
 		}
 
 		if layer.Stats.DeletedCount != 0 {
@@ -266,11 +265,13 @@ func printImagePackage(pkg *dockerimage.Package,
 		}
 
 		if layer.Stats.AddedSize != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats added_size=%v\n", appName, cmdName, layer.Stats.AddedSize)
+			fmt.Printf("%s[%s]: info=layer.stats added_size.human='%v' added_size.bytes=%v\n",
+				appName, cmdName, humanize.Bytes(uint64(layer.Stats.AddedSize)), layer.Stats.AddedSize)
 		}
 
 		if layer.Stats.ModifiedSize != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats modified_size=%v\n", appName, cmdName, layer.Stats.ModifiedSize)
+			fmt.Printf("%s[%s]: info=layer.stats modified_size.human='%v' modified_size.bytes=%v\n",
+				appName, cmdName, humanize.Bytes(uint64(layer.Stats.ModifiedSize)), layer.Stats.ModifiedSize)
 		}
 
 		changeCount := len(layer.Changes.Deleted) + len(layer.Changes.Modified) + len(layer.Changes.Added)
@@ -342,12 +343,18 @@ func printImagePackage(pkg *dockerimage.Package,
 }
 
 func printObject(object *dockerimage.ObjectMetadata) {
-	fmt.Printf("O: change=%s mode=%s size=%v(%d) uid=%d gid=%d mtime=%s %s",
-		object.Change, object.Mode, humanize.Bytes(uint64(object.Size)), object.Size, object.UID, object.GID,
-		object.ModTime, object.Name)
+	fmt.Printf("%s: mode=%s size.human='%v' size.bytes=%d uid=%d gid=%d mtime='%s' '%s'",
+		object.Change,
+		object.Mode,
+		humanize.Bytes(uint64(object.Size)),
+		object.Size,
+		object.UID,
+		object.GID,
+		object.ModTime.UTC().Format(time.RFC3339),
+		object.Name)
 
 	if object.LinkTarget != "" {
-		fmt.Printf(" -> %s\n", object.LinkTarget)
+		fmt.Printf(" -> '%s'\n", object.LinkTarget)
 	} else {
 		fmt.Printf("\n")
 	}

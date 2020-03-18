@@ -25,9 +25,11 @@ const (
 
 // Command type constants
 const (
-	CmdTypeBuild   CmdType = "build"
-	CmdTypeProfile CmdType = "profile"
-	CmdTypeInfo    CmdType = "info"
+	CmdTypeBuild        CmdType = "build"
+	CmdTypeProfile      CmdType = "profile"
+	CmdTypeXray         CmdType = "xray"
+	CmdTypeLint         CmdType = "lint"
+	CmdTypeContainerize CmdType = "containerize"
 )
 
 // CmdType is the command name data type
@@ -148,7 +150,7 @@ func NewXrayCommand(reportLocation string) *XrayCommand {
 	return &XrayCommand{
 		Command: Command{
 			reportLocation: reportLocation,
-			Type:           CmdTypeInfo,
+			Type:           CmdTypeXray,
 			State:          CmdStateUnknown,
 		},
 	}
@@ -159,7 +161,7 @@ func NewLintCommand(reportLocation string) *LintCommand {
 	return &LintCommand{
 		Command: Command{
 			reportLocation: reportLocation,
-			Type:           CmdTypeInfo,
+			Type:           CmdTypeLint,
 			State:          CmdStateUnknown,
 		},
 	}
@@ -170,7 +172,7 @@ func NewContainerizeCommand(reportLocation string) *ContainerizeCommand {
 	return &ContainerizeCommand{
 		Command: Command{
 			reportLocation: reportLocation,
-			Type:           CmdTypeInfo,
+			Type:           CmdTypeContainerize,
 			State:          CmdStateUnknown,
 		},
 	}
