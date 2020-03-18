@@ -16,6 +16,10 @@ Don't worry about manually creating Seccomp and AppArmor security profiles. You 
 
 `docker-slim` has been used with Node.js, Python, Ruby, Java, Golang, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian, CentOS, Alpine and even Distroless.
 
+Interactive CLI prompt screencast:
+
+[![asciicast](https://asciinema.org/a/311513.png)](https://asciinema.org/a/311513)
+
 Watch this screencast to see how an application image is minified by more than 30x.
 
 [![asciicast](https://asciinema.org/a/rHqW8cbr3vXe0WxorHsD36n7V.png)](https://asciinema.org/a/rHqW8cbr3vXe0WxorHsD36n7V)
