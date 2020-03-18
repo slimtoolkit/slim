@@ -89,10 +89,7 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 - [RECENT UPDATES](#recent-updates)
 - [INSTALLATION](#installation)
 - [BASIC USAGE INFO](#basic-usage-info)
-- [QUICK SECCOMP EXAMPLE](#quick-seccomp-example)
-- [USING AUTO-GENERATED SECCOMP PROFILES](#using-auto-generated-seccomp-profiles)
-- [ORIGINAL DEMO VIDEO](#original-demo-video)
-- [DEMO STEPS](#demo-steps)
+- [COMMANDS](#commands)
 - [USAGE DETAILS](#usage-details)
   - [`XRAY` COMMAND OPTIONS](#xray-command-options)
   - [`BUILD` COMMAND OPTIONS](#build-command-options)
@@ -101,6 +98,10 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 - [HTTP PROBE COMMANDS](#http-probe-commands)
 - [DEBUGGING MINIFIED CONTAINERS](#debugging-minified-containers)
 - [MINIFYING COMMAND LINE TOOLS](#minifying-command-line-tools)
+- [QUICK SECCOMP EXAMPLE](#quick-seccomp-example)
+- [USING AUTO-GENERATED SECCOMP PROFILES](#using-auto-generated-seccomp-profiles)
+- [ORIGINAL DEMO VIDEO](#original-demo-video)
+- [DEMO STEPS](#demo-steps)
 - [FAQ](#faq)
   - [Is it safe for production use?](#is-it-safe-for-production-use)
   - [How can I contribute if I don't know Go?](#how-can-i-contribute-if-i-dont-know-go)
@@ -128,16 +129,17 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 
 ## RECENT UPDATES
 
-Latest version: 1.28.1 (3/9/2020)
+Latest version: 1.29.0 (3/18/2020)
 
-This release enhances the `xray` command to show the detailed container image information including its layers and their files and directories. For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
+This is a UX release that introduces an interactive mode to make it easier to run `docker-slim` when you don't know all available flags. Usage `<tab>` and `<space>` buttons to navigate the interactive prompt. For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md). For more info about the interactive prompt see [`go-prompt`](https://github.com/c-bata/go-prompt).
+
 
 ## INSTALLATION
 
 1. Download the zip package for your platform.
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.28.1/dist_mac.zip)
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.28.1/dist_linux.tar.gz)
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.28.1/dist_linux_arm.tar.gz)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.29.0/dist_mac.zip)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.29.0/dist_linux.tar.gz)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.29.0/dist_linux_arm.tar.gz)
 2. Unzip the package.
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
@@ -147,9 +149,11 @@ To use the Docker image distribution just start using the `dslim/docker-slim` co
 
 The OS-specific installers for `docker-slim` will be available soon (there's already a couple of community `Homebrew` formulas for Mac and Linux, but they need to be enhanced to work properly). 
 
+
 ## BASIC USAGE INFO
 
 `docker-slim [global flags] [xray|build|profile|update|version] [command-specific flags] <IMAGE_ID_OR_NAME>`
+
 
 ### COMMANDS
 
@@ -158,93 +162,16 @@ The OS-specific installers for `docker-slim` will be available soon (there's alr
 * `build` - do `profile` plus an ability to create a new optimized image along with the security profiles
 * `version` - show the version information
 * `update` - update `docker-slim` to the latest version
+* `help` - show the available commands and global flags
 
 Example: `docker-slim build my/sample-app`
 
-See the `USAGE DETAILS` section for more details. You can also get additional information about the parameters running `docker-slim`. Run `docker-slim` without any parameters and you'll get a high level overview of the available commands. Run a `docker-slim` command without any parameters and you'll get more information about that command (e.g., `docker-slim build`).
+See the `USAGE DETAILS` section for more details. You can also get additional information about the parameters running `docker-slim`. 
 
-## QUICK SECCOMP EXAMPLE
+Run `docker-slim help` to get a high level overview of the available commands. Run a `docker-slim` command without any parameters and you'll get more information about that command (e.g., `docker-slim build`).
 
-If you want to auto-generate a Seccomp profile AND minify your image use the `build` command. If you only want to auto-generate a Seccomp profile (along with other interesting image metadata) use the `profile` command.
+If you run `docker-slim` without any parameters you'll get an interactive prompt that will provide suggestions about the available commands and flags. `Tabs` are used to show the available options, to autocomplete the parameters and to navigate the option menu (which you can also do with Up and Down arrows). `Spaces` are used to move to the next parameter and `Enter` is used to run the command. For more info about the interactive prompt see [`go-prompt`](https://github.com/c-bata/go-prompt).
 
-Step one: run DockerSlim
-
-`docker-slim build your-name/your-app`
-
-Step two: use the generated Seccomp profile
-
-`docker run --security-opt seccomp:<docker-slim directory>/.images/<YOUR_APP_IMAGE_ID>/artifacts/your-name-your-app-seccomp.json <your other run params> your-name/your-app`
-
-Feel free to copy the generated profile :-)
-
-You can use the generated Seccomp profile with your original image or with the minified image.
-
-## USING AUTO-GENERATED SECCOMP PROFILES
-
-You can use the generated profile with your original image or with the minified image DockerSlim created:
-
-`docker run -it --rm --security-opt seccomp:path_to/my-sample-node-app-seccomp.json -p 8000:8000 my/sample-node-app.slim`
-
-## ORIGINAL DEMO VIDEO
-
-[![DockerSlim demo](http://img.youtube.com/vi/uKdHnfEbc-E/0.jpg)](https://www.youtube.com/watch?v=uKdHnfEbc-E)
-
-[Demo video on YouTube](https://youtu.be/uKdHnfEbc-E)
-
-## DEMO STEPS
-
-The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
-
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.28.1/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.28.1/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.28.1/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
-
-  The extracted directory contains two binaries:
-
-  * `docker-slim` <- the main application
-  * `docker-slim-sensor` <- the sensor application used to collect information from running containers
-
-2. Clone the `examples` repo to use the sample apps (note: the examples have been moved to a separate repo). You can skip this step if you have your own app.
-
-  `git clone https://github.com/docker-slim/examples.git`
-
-3. Create a Docker image for the sample node.js app in `examples/node_ubuntu`. You can skip this step if you have your own app.
-
-  `cd examples/node_ubuntu`
-
-  `eval "$(docker-machine env default)"` <- optional (depends on how Docker is installed on your machine and what kind of Docker version you are using); if the Docker host is not running you'll need to start it first: `docker-machine start default`; see the `Docker connect options` section for more details.
-
-  `docker build -t my/sample-node-app .`
-
-4. Run `docker-slim`:
-
-  `./docker-slim build my/sample-node-app` <- run it from the location where you extraced the docker-slim binaries (or update your PATH env var to include the `docker-slim` bin directory)
-
-  DockerSlim creates a special container based on the target image you provided. It also creates a resource directory where it stores the information it discovers about your image: `<docker-slim directory>/.images/<TARGET_IMAGE_ID>`.
-
-  By default, `docker-slim` will run its http probe against the temporary container. If you are minifying a command line tool that doesn't expose any web service interface you'll need to explicitly disable http probing (by setting `--http-probe=false`).
-
-5. Use curl (or other tools) to call the sample app (optional)
-
-  `curl http://<YOUR_DOCKER_HOST_IP>:<PORT>`
-
-  This is an optional step to make sure the target app container is doing something. Depending on the application it's an optional step. For some applications it's required if it loads new application resources dynamically based on the requests it's processing (e.g., Ruby or Python).
-
-  You'll see the mapped ports printed to the console when `docker-slim` starts the target container. You can also get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
-
-6. Press <enter> and wait until `docker-slim` says it's done
-  
-  By default or when http probing is enabled explicitly `docker-slim` will continue its execution once the http probe is done running. If you explicitly picked a different `continue-after` option follow the expected steps. For example, for the `enter` `continue-after` option you must press the `enter` button on your keyboard.
-
-  If http probing is enabled (when `http-probe` is set) and if `continue-after` is set to `enter` and you press the `enter` key before the built-in HTTP probe is done the probe might produce an EOF error because `docker-slim` will shut down the target container before all probe commands are done executing. It's ok to ignore it unless you really need the probe to finish.
-
-7. Once DockerSlim is done check that the new minified image is there
-
-  `docker images`
-
-  You should see `my/sample-node-app.slim` in the list of images. Right now all generated images have `.slim` at the end of its name.
-
-8. Use the minified image
-
-  `docker run -it --rm --name="slim_node_app" -p 8000:8000 my/sample-node-app.slim`
 
 ## USAGE DETAILS
 
@@ -280,11 +207,15 @@ To get more command line option information run `docker-slim` without any parame
 
 To disable the version checks set the global `--check-version` flag to `false` (e.g., `--check-version=false`) or you can use the `DSLIM_CHECK_VERSION` environment variable.
 
+
 ### `XRAY` COMMAND OPTIONS
 
 * `--changes value` - show layer change details for the selected change type (values: none, all, delete, modify, add)
 * `--layer value` - show details for the selected layer (using layer index or ID)
 * `--remove-file-artifacts` - remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
+* `--add-image-manifest` - add raw image manifest to the command execution report file
+* `--add-image-config` - add raw image config object to the command execution report file
+
 
 ### `BUILD` COMMAND OPTIONS
 
@@ -342,6 +273,7 @@ The `--dockerfile` option makes it possible to build a new minified image direct
 
 The `--use-local-mounts` option is used to choose how the `docker-slim` sensor is added to the target container and how the sensor artifacts are delivered back to the master. If you enable this option you'll get the original `docker-slim` behavior where it uses local file system volume mounts to add the sensor executable and to extract the artifacts from the target container. This option doesn't always work as expected in the dockerized environment where `docker-slim` itself is running in a Docker container. When this option is disabled (default behavior) then a separate Docker volume is used to mount the sensor and the sensor artifacts are explicitly copied from the target container.
 
+
 ## RUNNING CONTAINERIZED
 
 The current version of `docker-slim` is able to run in containers. It will try to detect if it's running in a containerized environment, but you can also tell `docker-slim` explicitly using the `--in-container` global flag.
@@ -387,6 +319,7 @@ If you want to use TLS without verification:
 `docker-slim --host=tcp://192.168.99.100:2376 --tls-cert-path=/Users/youruser/.docker/machine/machines/default --tls=true --tls-verify=false build --http-probe=true my/sample-node-app-multi`
 
 If the Docker environment variables are not set and if you don't specify any Docker connect options `docker-slim` will try to use the default unix socket.
+
 
 ## HTTP PROBE COMMANDS
 
@@ -469,6 +402,7 @@ drwxr-xr-x    3 root     root        4.0K Sep  2 15:51 node_modules
 
 Some of the useful debugging commands include `cat /proc/<TARGET_PID>/cmdline`, `ls -l /proc/<TARGET_PID>/cwd`, `cat /proc/1/environ`, `cat /proc/<TARGET_PID>/limits`, `cat /proc/<TARGET_PID>/status` and `ls -l /proc/<TARGET_PID>/fd`.
 
+
 ## MINIFYING COMMAND LINE TOOLS
 
 Unless the default CMD instruction in your Dockerfile is sufficient you'll have to specify command line parameters when you execute the `build` command in DockerSlim. This can be done with the `--cmd` option.
@@ -486,6 +420,94 @@ Here's a sample `build` command:
 `docker-slim build --show-clogs=true --cmd docker-compose.yml --mount $(pwd)/data/:/data/ dslim/container-transform`
 
 It's used to minify the `container-transform` tool. You can get the minified image from [`Docker Hub`](https://hub.docker.com/r/dslim/container-transform.slim/).
+
+
+## QUICK SECCOMP EXAMPLE
+
+If you want to auto-generate a Seccomp profile AND minify your image use the `build` command. If you only want to auto-generate a Seccomp profile (along with other interesting image metadata) use the `profile` command.
+
+Step one: run DockerSlim
+
+`docker-slim build your-name/your-app`
+
+Step two: use the generated Seccomp profile
+
+`docker run --security-opt seccomp:<docker-slim directory>/.images/<YOUR_APP_IMAGE_ID>/artifacts/your-name-your-app-seccomp.json <your other run params> your-name/your-app`
+
+Feel free to copy the generated profile :-)
+
+You can use the generated Seccomp profile with your original image or with the minified image.
+
+
+## USING AUTO-GENERATED SECCOMP PROFILES
+
+You can use the generated profile with your original image or with the minified image DockerSlim created:
+
+`docker run -it --rm --security-opt seccomp:path_to/my-sample-node-app-seccomp.json -p 8000:8000 my/sample-node-app.slim`
+
+
+## ORIGINAL DEMO VIDEO
+
+[![DockerSlim demo](http://img.youtube.com/vi/uKdHnfEbc-E/0.jpg)](https://www.youtube.com/watch?v=uKdHnfEbc-E)
+
+[Demo video on YouTube](https://youtu.be/uKdHnfEbc-E)
+
+
+## DEMO STEPS
+
+The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
+
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.29.0/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.29.0/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.29.0/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+
+  The extracted directory contains two binaries:
+
+  * `docker-slim` <- the main application
+  * `docker-slim-sensor` <- the sensor application used to collect information from running containers
+
+2. Clone the `examples` repo to use the sample apps (note: the examples have been moved to a separate repo). You can skip this step if you have your own app.
+
+  `git clone https://github.com/docker-slim/examples.git`
+
+3. Create a Docker image for the sample node.js app in `examples/node_ubuntu`. You can skip this step if you have your own app.
+
+  `cd examples/node_ubuntu`
+
+  `eval "$(docker-machine env default)"` <- optional (depends on how Docker is installed on your machine and what kind of Docker version you are using); if the Docker host is not running you'll need to start it first: `docker-machine start default`; see the `Docker connect options` section for more details.
+
+  `docker build -t my/sample-node-app .`
+
+4. Run `docker-slim`:
+
+  `./docker-slim build my/sample-node-app` <- run it from the location where you extraced the docker-slim binaries (or update your PATH env var to include the `docker-slim` bin directory)
+
+  DockerSlim creates a special container based on the target image you provided. It also creates a resource directory where it stores the information it discovers about your image: `<docker-slim directory>/.images/<TARGET_IMAGE_ID>`.
+
+  By default, `docker-slim` will run its http probe against the temporary container. If you are minifying a command line tool that doesn't expose any web service interface you'll need to explicitly disable http probing (by setting `--http-probe=false`).
+
+5. Use curl (or other tools) to call the sample app (optional)
+
+  `curl http://<YOUR_DOCKER_HOST_IP>:<PORT>`
+
+  This is an optional step to make sure the target app container is doing something. Depending on the application it's an optional step. For some applications it's required if it loads new application resources dynamically based on the requests it's processing (e.g., Ruby or Python).
+
+  You'll see the mapped ports printed to the console when `docker-slim` starts the target container. You can also get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
+
+6. Press <enter> and wait until `docker-slim` says it's done
+  
+  By default or when http probing is enabled explicitly `docker-slim` will continue its execution once the http probe is done running. If you explicitly picked a different `continue-after` option follow the expected steps. For example, for the `enter` `continue-after` option you must press the `enter` button on your keyboard.
+
+  If http probing is enabled (when `http-probe` is set) and if `continue-after` is set to `enter` and you press the `enter` key before the built-in HTTP probe is done the probe might produce an EOF error because `docker-slim` will shut down the target container before all probe commands are done executing. It's ok to ignore it unless you really need the probe to finish.
+
+7. Once DockerSlim is done check that the new minified image is there
+
+  `docker images`
+
+  You should see `my/sample-node-app.slim` in the list of images. Right now all generated images have `.slim` at the end of its name.
+
+8. Use the minified image
+
+  `docker run -it --rm --name="slim_node_app" -p 8000:8000 my/sample-node-app.slim`
+
 
 ## FAQ
 

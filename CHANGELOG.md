@@ -1,3 +1,14 @@
+## 1.29.0 (3/18/2020)
+
+### New Features
+
+* Interactive CLI prompt
+
+### Improvements
+
+* `xray` command output improvements
+* Additional image data saved with the `xray` command reports (`--add-image-manifest` and `--add-image-config` flags)
+
 ## 1.28.1 (3/9/2020)
 
 ### Improvements
