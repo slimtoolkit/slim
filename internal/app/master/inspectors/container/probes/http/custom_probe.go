@@ -3,6 +3,7 @@ package http
 import (
 	"crypto/tls"
 	"fmt"
+	"os"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -33,6 +34,7 @@ type CustomProbe struct {
 	RetryWait          int
 	TargetPorts        []uint16
 	ProbeFull          bool
+	ProbeExitOnFailure bool
 	ContainerInspector *container.Inspector
 	doneChan           chan struct{}
 }
@@ -44,6 +46,7 @@ func NewCustomProbe(inspector *container.Inspector,
 	retryWait int,
 	targetPorts []uint16,
 	probeFull bool,
+	probeExitOnFailure bool,
 	printState bool,
 	printPrefix string) (*CustomProbe, error) {
 	//note: the default probe should already be there if the user asked for it
@@ -56,6 +59,7 @@ func NewCustomProbe(inspector *container.Inspector,
 		RetryWait:          retryWait,
 		TargetPorts:        targetPorts,
 		ProbeFull:          probeFull,
+		ProbeExitOnFailure: probeExitOnFailure,
 		ContainerInspector: inspector,
 		doneChan:           make(chan struct{}),
 	}
@@ -344,6 +348,12 @@ func (p *CustomProbe) Start() {
 			}
 
 			fmt.Printf("%s state=http.probe.done %s\n", p.PrintPrefix, warning)
+		}
+
+		if callCount > 0 && okCount == 0 && p.ProbeExitOnFailure {
+			fmt.Printf("%s info=probe.error reason=no.successful.calls\n", p.PrintPrefix)
+			fmt.Printf("%s state=exited\n", p.PrintPrefix)
+			os.Exit(-1)
 		}
 
 		close(p.doneChan)

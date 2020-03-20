@@ -99,13 +99,14 @@ const (
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
 
-	FlagHTTPProbe           = "http-probe"
-	FlagHTTPProbeCmd        = "http-probe-cmd"
-	FlagHTTPProbeCmdFile    = "http-probe-cmd-file"
-	FlagHTTPProbeRetryCount = "http-probe-retry-count"
-	FlagHTTPProbeRetryWait  = "http-probe-retry-wait"
-	FlagHTTPProbePorts      = "http-probe-ports"
-	FlagHTTPProbeFull       = "http-probe-full"
+	FlagHTTPProbe              = "http-probe"
+	FlagHTTPProbeCmd           = "http-probe-cmd"
+	FlagHTTPProbeCmdFile       = "http-probe-cmd-file"
+	FlagHTTPProbeRetryCount    = "http-probe-retry-count"
+	FlagHTTPProbeRetryWait     = "http-probe-retry-wait"
+	FlagHTTPProbePorts         = "http-probe-ports"
+	FlagHTTPProbeFull          = "http-probe-full"
+	FlagHTTPProbeExitOnFailure = "http-probe-exit-on-failure"
 
 	FlagKeepPerms         = "keep-perms"
 	FlagRunTargetAsUser   = "run-target-as-user"
@@ -149,13 +150,14 @@ const (
 	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
 	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
 
-	FlagHTTPProbeUsage           = "Enables HTTP probe"
-	FlagHTTPProbeCmdUsage        = "User defined HTTP probes"
-	FlagHTTPProbeCmdFileUsage    = "File with user defined HTTP probes"
-	FlagHTTPProbeRetryCountUsage = "Number of retries for each HTTP probe"
-	FlagHTTPProbeRetryWaitUsage  = "Number of seconds to wait before retrying HTTP probe (doubles when target is not ready)"
-	FlagHTTPProbePortsUsage      = "Explicit list of ports to probe (in the order you want them to be probed)"
-	FlagHTTPProbeFullUsage       = "Do full HTTP probe for all selected ports (if false, finish after first successful scan)"
+	FlagHTTPProbeUsage              = "Enables HTTP probe"
+	FlagHTTPProbeCmdUsage           = "User defined HTTP probes"
+	FlagHTTPProbeCmdFileUsage       = "File with user defined HTTP probes"
+	FlagHTTPProbeRetryCountUsage    = "Number of retries for each HTTP probe"
+	FlagHTTPProbeRetryWaitUsage     = "Number of seconds to wait before retrying HTTP probe (doubles when target is not ready)"
+	FlagHTTPProbePortsUsage         = "Explicit list of ports to probe (in the order you want them to be probed)"
+	FlagHTTPProbeFullUsage          = "Do full HTTP probe for all selected ports (if false, finish after first successful scan)"
+	FlagHTTPProbeExitOnFailureUsage = "Exit when all HTTP probe commands fail"
 
 	FlagKeepPermsUsage         = "Keep artifact permissions as-is"
 	FlagRunTargetAsUserUsage   = "Run target app as USER"
@@ -630,6 +632,7 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagHTTPProbeRetryWait), Description: FlagHTTPProbeRetryWaitUsage},
 				{Text: fullFlagName(FlagHTTPProbePorts), Description: FlagHTTPProbePortsUsage},
 				{Text: fullFlagName(FlagHTTPProbeFull), Description: FlagHTTPProbeFullUsage},
+				{Text: fullFlagName(FlagHTTPProbeExitOnFailure), Description: FlagHTTPProbeExitOnFailureUsage},
 				{Text: fullFlagName(FlagKeepPerms), Description: FlagKeepPermsUsage},
 				{Text: fullFlagName(FlagRunTargetAsUser), Description: FlagRunTargetAsUserUsage},
 				{Text: fullFlagName(FlagCopyMetaArtifacts), Description: FlagCopyMetaArtifactsUsage},
@@ -666,6 +669,7 @@ var cmdSpecs = map[string]cmdSpec{
 				fullFlagName(FlagHTTPProbe):           completeTBool,
 				fullFlagName(FlagHTTPProbeCmdFile):    completeFile,
 				fullFlagName(FlagHTTPProbeFull):       completeBool,
+				fullFlagName(FlagHTTPProbeExitOnFailure): completeBool,
 				fullFlagName(FlagKeepPerms):           completeTBool,
 				fullFlagName(FlagRunTargetAsUser):     completeTBool,
 				fullFlagName(FlagRemoveFileArtifacts): completeBool,
@@ -698,6 +702,7 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagHTTPProbeRetryWait), Description: FlagHTTPProbeRetryWaitUsage},
 				{Text: fullFlagName(FlagHTTPProbePorts), Description: FlagHTTPProbePortsUsage},
 				{Text: fullFlagName(FlagHTTPProbeFull), Description: FlagHTTPProbeFullUsage},
+				{Text: fullFlagName(FlagHTTPProbeExitOnFailure), Description: FlagHTTPProbeExitOnFailureUsage},
 				{Text: fullFlagName(FlagKeepPerms), Description: FlagKeepPermsUsage},
 				{Text: fullFlagName(FlagRunTargetAsUser), Description: FlagRunTargetAsUserUsage},
 				{Text: fullFlagName(FlagCopyMetaArtifacts), Description: FlagCopyMetaArtifactsUsage},
@@ -743,6 +748,7 @@ var cmdSpecs = map[string]cmdSpec{
 				fullFlagName(FlagHTTPProbe):           completeTBool,
 				fullFlagName(FlagHTTPProbeCmdFile):    completeFile,
 				fullFlagName(FlagHTTPProbeFull):       completeBool,
+				fullFlagName(FlagHTTPProbeExitOnFailure): completeBool,
 				fullFlagName(FlagKeepPerms):           completeTBool,
 				fullFlagName(FlagRunTargetAsUser):     completeTBool,
 				fullFlagName(FlagRemoveFileArtifacts): completeBool,
@@ -1017,6 +1023,12 @@ func init() {
 		Name:   FlagHTTPProbeFull,
 		Usage:  FlagHTTPProbeFullUsage,
 		EnvVar: "DSLIM_HTTP_PROBE_FULL",
+	}
+
+	doHTTPProbeExitOnFailureFlag := cli.BoolFlag{
+		Name:   FlagHTTPProbeExitOnFailure,
+		Usage:  FlagHTTPProbeExitOnFailureUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_EXIT_ON_FAILURE",
 	}
 
 	doKeepPermsFlag := cli.BoolTFlag{
@@ -1459,6 +1471,7 @@ func init() {
 				doHTTPProbeRetryWaitFlag,
 				doHTTPProbePortsFlag,
 				doHTTPProbeFullFlag,
+				doHTTPProbeExitOnFailureFlag,
 				doKeepPermsFlag,
 				doRunTargetAsUserFlag,
 				doShowContainerLogsFlag,
@@ -1565,6 +1578,7 @@ func init() {
 				}
 
 				doHTTPProbeFull := ctx.Bool(FlagHTTPProbeFull)
+				doHTTPProbeExitOnFailure := ctx.Bool(FlagHTTPProbeExitOnFailure)
 
 				doKeepPerms := ctx.Bool(FlagKeepPerms)
 
@@ -1664,6 +1678,7 @@ func init() {
 					httpProbeRetryWait,
 					httpProbePorts,
 					doHTTPProbeFull,
+					doHTTPProbeExitOnFailure,
 					doRmFileArtifacts,
 					doCopyMetaArtifacts,
 					doRunTargetAsUser,
@@ -1707,6 +1722,7 @@ func init() {
 				doHTTPProbeRetryWaitFlag,
 				doHTTPProbePortsFlag,
 				doHTTPProbeFullFlag,
+				doHTTPProbeExitOnFailureFlag,
 				doKeepPermsFlag,
 				doRunTargetAsUserFlag,
 				doCopyMetaArtifactsFlag,
@@ -1786,6 +1802,7 @@ func init() {
 				}
 
 				doHTTPProbeFull := ctx.Bool(FlagHTTPProbeFull)
+				doHTTPProbeExitOnFailure := ctx.Bool(FlagHTTPProbeExitOnFailure)
 
 				doKeepPerms := ctx.Bool(FlagKeepPerms)
 
@@ -1871,6 +1888,7 @@ func init() {
 					httpProbeRetryWait,
 					httpProbePorts,
 					doHTTPProbeFull,
+					doHTTPProbeExitOnFailure,
 					doRmFileArtifacts,
 					doCopyMetaArtifacts,
 					doRunTargetAsUser,

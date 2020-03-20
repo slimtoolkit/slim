@@ -36,6 +36,7 @@ func OnProfile(
 	httpProbeRetryWait int,
 	httpProbePorts []uint16,
 	doHTTPProbeFull bool,
+	doHTTPProbeExitOnFailure bool,
 	doRmFileArtifacts bool,
 	copyMetaArtifactsLocation string,
 	doRunTargetAsUser bool,
@@ -174,7 +175,7 @@ func OnProfile(
 
 	if doHTTPProbe {
 		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds,
-			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts, doHTTPProbeFull,
+			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts, doHTTPProbeFull, doHTTPProbeExitOnFailure,
 			true, prefix)
 		errutil.FailOn(err)
 		if len(probe.Ports) == 0 {
