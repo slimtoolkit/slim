@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
-	"github.com/docker-slim/docker-slim/pkg/util/dockerutil"
+	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
 	"github.com/fsouza/go-dockerclient"

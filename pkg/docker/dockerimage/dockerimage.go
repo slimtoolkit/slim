@@ -15,7 +15,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/util/dockerutil"
+	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 )
 
 const (
