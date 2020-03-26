@@ -1,4 +1,4 @@
-package dockerfile
+package reverse
 
 import (
 	"bytes"
@@ -18,8 +18,8 @@ import (
 	v "github.com/docker-slim/docker-slim/pkg/version"
 )
 
-// Info represents the reverse engineered Dockerfile info
-type Info struct {
+// Dockerfile represents the reverse engineered Dockerfile info
+type Dockerfile struct {
 	Lines           []string
 	AllUsers        []string
 	ExeUser         string
@@ -75,14 +75,14 @@ type InstructionInfo struct {
 //from the image config JSON embedded in the image.
 //Another option is to rely on '#(nop)'.
 
-// ReverseDockerfileFromHistory recreates Dockerfile information from container image history
-func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*Info, error) {
+// DockerfileFromHistory recreates Dockerfile information from container image history
+func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfile, error) {
 	imageHistory, err := apiClient.ImageHistory(imageID)
 	if err != nil {
 		return nil, err
 	}
 
-	var out Info
+	var out Dockerfile
 
 	log.Debugf("\n\nIMAGE HISTORY =>\n%#v\n\n", imageHistory)
 

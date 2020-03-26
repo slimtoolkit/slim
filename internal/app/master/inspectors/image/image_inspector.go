@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerfile"
+	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
 	"github.com/docker-slim/docker-slim/pkg/util/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
@@ -33,7 +33,7 @@ type Inspector struct {
 	ImageRecordInfo     docker.APIImages
 	APIClient           *docker.Client
 	//fatImageDockerInstructions []string
-	DockerfileInfo *dockerfile.Info
+	DockerfileInfo *reverse.Dockerfile
 }
 
 // NewInspector creates a new container image inspector
@@ -114,12 +114,12 @@ func (i *Inspector) ProcessCollectedData() error {
 	i.processImageName()
 
 	var err error
-	i.DockerfileInfo, err = dockerfile.ReverseDockerfileFromHistory(i.APIClient, i.ImageRef)
+	i.DockerfileInfo, err = reverse.DockerfileFromHistory(i.APIClient, i.ImageRef)
 	if err != nil {
 		return err
 	}
 	fatImageDockerfileLocation := filepath.Join(i.ArtifactLocation, fatDockerfileName)
-	err = dockerfile.SaveDockerfileData(fatImageDockerfileLocation, i.DockerfileInfo.Lines)
+	err = reverse.SaveDockerfileData(fatImageDockerfileLocation, i.DockerfileInfo.Lines)
 	errutil.FailOn(err)
 
 	return nil

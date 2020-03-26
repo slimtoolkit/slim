@@ -8,7 +8,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerfile"
+	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
@@ -68,19 +68,19 @@ type SystemMetadata struct {
 // BuildCommand is the 'build' command report data
 type BuildCommand struct {
 	Command
-	ImageReference         string                  `json:"image_reference"`
-	System                 SystemMetadata          `json:"system"`
-	SourceImage            ImageMetadata           `json:"source_image"`
-	MinifiedImageSize      int64                   `json:"minified_image_size"`
-	MinifiedImageSizeHuman string                  `json:"minified_image_size_human"`
-	MinifiedImage          string                  `json:"minified_image"`
-	MinifiedImageHasData   bool                    `json:"minified_image_has_data"`
-	MinifiedBy             float64                 `json:"minified_by"`
-	ArtifactLocation       string                  `json:"artifact_location"`
-	ContainerReportName    string                  `json:"container_report_name"`
-	SeccompProfileName     string                  `json:"seccomp_profile_name"`
-	AppArmorProfileName    string                  `json:"apparmor_profile_name"`
-	ImageStack             []*dockerfile.ImageInfo `json:"image_stack"`
+	ImageReference         string               `json:"image_reference"`
+	System                 SystemMetadata       `json:"system"`
+	SourceImage            ImageMetadata        `json:"source_image"`
+	MinifiedImageSize      int64                `json:"minified_image_size"`
+	MinifiedImageSizeHuman string               `json:"minified_image_size_human"`
+	MinifiedImage          string               `json:"minified_image"`
+	MinifiedImageHasData   bool                 `json:"minified_image_has_data"`
+	MinifiedBy             float64              `json:"minified_by"`
+	ArtifactLocation       string               `json:"artifact_location"`
+	ContainerReportName    string               `json:"container_report_name"`
+	SeccompProfileName     string               `json:"seccomp_profile_name"`
+	AppArmorProfileName    string               `json:"apparmor_profile_name"`
+	ImageStack             []*reverse.ImageInfo `json:"image_stack"`
 }
 
 // ProfileCommand is the 'profile' command report data
@@ -106,7 +106,7 @@ type XrayCommand struct {
 	ImageReference       string                      `json:"image_reference"`
 	SourceImage          ImageMetadata               `json:"source_image"`
 	ArtifactLocation     string                      `json:"artifact_location"`
-	ImageStack           []*dockerfile.ImageInfo     `json:"image_stack"`
+	ImageStack           []*reverse.ImageInfo        `json:"image_stack"`
 	ImageLayers          []*dockerimage.LayerReport  `json:"image_layers"`
 	ImageArchiveLocation string                      `json:"image_archive_location"`
 	RawImageManifest     *dockerimage.ManifestObject `json:"raw_image_manifest,omitempty"`
