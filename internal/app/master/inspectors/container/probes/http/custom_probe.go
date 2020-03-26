@@ -3,11 +3,11 @@ package http
 import (
 	"crypto/tls"
 	"fmt"
-	"os"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 

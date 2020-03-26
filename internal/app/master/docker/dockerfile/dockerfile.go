@@ -349,9 +349,6 @@ func ReverseDockerfileFromHistory(apiClient *docker.Client, imageID string) (*In
 
 	return &out, nil
 
-	//TODO: try adding comments in the docker file to see if the comments
-	//show up in the 'history' command
-
 	/*
 	   NOTE:
 	   Usually "MAINTAINER" is the first instruction,
