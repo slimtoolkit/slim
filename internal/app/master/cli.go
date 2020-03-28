@@ -12,6 +12,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
+	"github.com/docker-slim/docker-slim/pkg/docker/linter"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
@@ -246,6 +247,39 @@ const (
 	FlagAddImageConfigUsage   = "Add raw image config object to the command execution report file"
 )
 
+///////////////////////////////////
+
+// Lint command flag names
+const (
+	FlagTargetType         = "target-type"
+	FlagSkipBuildContext   = "skip-build-context"
+	FlagBuildContextDir    = "build-context-dir"
+	FlagSkipDockerignore   = "skip-dockerignore"
+	FlagIncludeCheckTag    = "include-check-tag"
+	FlagExcludeCheckTag    = "exclude-check-tag"
+	FlagIncludeCheckID     = "include-check-id"
+	FlagIncludeCheckIDFile = "include-check-id-file"
+	FlagExcludeCheckID     = "exclude-check-id"
+	FlagExcludeCheckIDFile = "exclude-check-id-file"
+)
+
+// Lint command flag usage info
+const (
+	FlagLintTargetUsage         = "Target Dockerfile path (or container image)"
+	FlagTargetTypeUsage         = "Explicitly specify the command target type (values: dockerfile, image)"
+	FlagSkipBuildContextUsage   = "Don't try to analyze build context"
+	FlagBuildContextDirUsage    = "Explicitly specify the build context directory"
+	FlagSkipDockerignoreUsage   = "Don't try to analyze .dockerignore"
+	FlagIncludeCheckTagUsage    = "Include checks with the selected tag key:value"
+	FlagExcludeCheckTagUsage    = "Exclude checks with the selected tag key:value"
+	FlagIncludeCheckIDUsage     = "Check ID to include"
+	FlagIncludeCheckIDFileUsage = "File with check IDs to include"
+	FlagExcludeCheckIDUsage     = "Check ID to exclude"
+	FlagExcludeCheckIDFileUsage = "File with check IDs to exclude"
+)
+
+///////////////////////////////////
+
 // Update command flag names
 const (
 	FlagShowProgress = "show-progress"
@@ -474,6 +508,11 @@ var continueAfterValues = []prompt.Suggest{
 	{Text: "<seconds>", Description: "Enter the number of seconds to wait instead of <seconds>"},
 }
 
+var lintTargetTypeValues = []prompt.Suggest{
+	{Text: "dockerfile", Description: "Dockerfile target type"},
+	{Text: "image", Description: "Docker image target type"},
+}
+
 func completeProgress(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	switch runtime.GOOS {
 	case "darwin":
@@ -566,6 +605,32 @@ func completeFile(ia *InteractiveApp, token string, params prompt.Document) []pr
 	return ia.fpCompleter.Complete(params)
 }
 
+func completeLintTarget(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	//for now only support selecting Dockerfiles
+	//later add an ability to choose (files or images)
+	//based on the target-type parameter
+	return completeFile(ia, token, params)
+}
+
+func completeLintTargetType(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	return prompt.FilterHasPrefix(lintTargetTypeValues, token, true)
+}
+
+func completeLintCheckID(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	var values []prompt.Suggest
+	for _, check := range linter.AllChecks {
+		info := check.Info()
+		entry := prompt.Suggest{
+			Text:        info.ID,
+			Description: info.Name,
+		}
+
+		values = append(values, entry)
+	}
+
+	return prompt.FilterContains(values, token, true)
+}
+
 type CompleteValue func(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest
 
 type flagSuggestions struct {
@@ -591,8 +656,30 @@ var cmdSpecs = map[string]cmdSpec{
 		alias: "l",
 		usage: CmdLintUsage,
 		suggestions: &flagSuggestions{
-			Names:  []prompt.Suggest{},
-			Values: map[string]CompleteValue{},
+			Names: []prompt.Suggest{
+				{Text: fullFlagName(FlagTarget), Description: FlagLintTargetUsage},
+				{Text: fullFlagName(FlagTargetType), Description: FlagTargetTypeUsage},
+				{Text: fullFlagName(FlagSkipBuildContext), Description: FlagSkipBuildContextUsage},
+				{Text: fullFlagName(FlagBuildContextDir), Description: FlagBuildContextDirUsage},
+				{Text: fullFlagName(FlagSkipDockerignore), Description: FlagSkipDockerignoreUsage},
+				{Text: fullFlagName(FlagIncludeCheckTag), Description: FlagIncludeCheckTagUsage},
+				{Text: fullFlagName(FlagExcludeCheckTag), Description: FlagExcludeCheckTagUsage},
+				{Text: fullFlagName(FlagIncludeCheckID), Description: FlagIncludeCheckIDUsage},
+				{Text: fullFlagName(FlagIncludeCheckIDFile), Description: FlagIncludeCheckIDFileUsage},
+				{Text: fullFlagName(FlagExcludeCheckID), Description: FlagExcludeCheckIDUsage},
+				{Text: fullFlagName(FlagExcludeCheckIDFile), Description: FlagExcludeCheckIDFileUsage},
+			},
+			Values: map[string]CompleteValue{
+				fullFlagName(FlagTarget):             completeLintTarget,
+				fullFlagName(FlagTargetType):         completeLintTargetType,
+				fullFlagName(FlagSkipBuildContext):   completeBool,
+				fullFlagName(FlagBuildContextDir):    completeFile,
+				fullFlagName(FlagSkipDockerignore):   completeBool,
+				fullFlagName(FlagIncludeCheckID):     completeLintCheckID,
+				fullFlagName(FlagIncludeCheckIDFile): completeFile,
+				fullFlagName(FlagExcludeCheckID):     completeLintCheckID,
+				fullFlagName(FlagExcludeCheckIDFile): completeFile,
+			},
 		},
 	},
 	CmdXray: {
@@ -1350,11 +1437,83 @@ func init() {
 			Name:    cmdSpecs[CmdLint].name,
 			Aliases: []string{cmdSpecs[CmdLint].alias},
 			Usage:   cmdSpecs[CmdLint].usage,
+			Flags: []cli.Flag{
+				cli.StringFlag{
+					Name:   FlagTarget,
+					Value:  "",
+					Usage:  FlagLintTargetUsage,
+					EnvVar: "DSLIM_TARGET",
+				},
+				cli.StringFlag{
+					Name:   FlagTargetType,
+					Value:  "",
+					Usage:  FlagTargetTypeUsage,
+					EnvVar: "DSLIM_LINT_TARGET_TYPE",
+				},
+				cli.BoolFlag{
+					Name:   FlagSkipBuildContext,
+					Usage:  FlagSkipBuildContextUsage,
+					EnvVar: "DSLIM_LINT_SKIP_BC",
+				},
+				cli.StringFlag{
+					Name:   FlagBuildContextDir,
+					Value:  "",
+					Usage:  FlagBuildContextDirUsage,
+					EnvVar: "DSLIM_LINT_BC_DIR",
+				},
+				cli.BoolFlag{
+					Name:   FlagSkipDockerignore,
+					Usage:  FlagSkipDockerignoreUsage,
+					EnvVar: "DSLIM_LINT_SKIP_DI",
+				},
+				cli.StringSliceFlag{
+					Name:   FlagIncludeCheckTag,
+					Value:  &cli.StringSlice{""},
+					Usage:  FlagIncludeCheckTagUsage,
+					EnvVar: "DSLIM_LINT_INCLUDE_CTAG",
+				},
+				cli.StringSliceFlag{
+					Name:   FlagExcludeCheckTag,
+					Value:  &cli.StringSlice{""},
+					Usage:  FlagExcludeCheckTagUsage,
+					EnvVar: "DSLIM_LINT_EXCLUDE_CTAG",
+				},
+				cli.StringSliceFlag{
+					Name:   FlagIncludeCheckID,
+					Value:  &cli.StringSlice{""},
+					Usage:  FlagIncludeCheckIDUsage,
+					EnvVar: "DSLIM_LINT_INCLUDE_CID",
+				},
+				cli.StringFlag{
+					Name:   FlagIncludeCheckIDFile,
+					Value:  "",
+					Usage:  FlagIncludeCheckIDFileUsage,
+					EnvVar: "DSLIM_LINT_INCLUDE_CID_FILE",
+				},
+				cli.StringSliceFlag{
+					Name:   FlagExcludeCheckID,
+					Value:  &cli.StringSlice{""},
+					Usage:  FlagExcludeCheckIDUsage,
+					EnvVar: "DSLIM_LINT_EXCLUDE_CID",
+				},
+				cli.StringFlag{
+					Name:   FlagExcludeCheckIDFile,
+					Value:  "",
+					Usage:  FlagExcludeCheckIDFileUsage,
+					EnvVar: "DSLIM_LINT_EXCLUDE_CID_FILE",
+				},
+			},
 			Action: func(ctx *cli.Context) error {
-				if len(ctx.Args()) < 1 {
-					fmt.Printf("docker-slim[lint]: missing target image/Dockerfile...\n\n")
-					cli.ShowCommandHelp(ctx, CmdLint)
-					return nil
+				targetRef := ctx.String(FlagTarget)
+
+				if targetRef == "" {
+					if len(ctx.Args()) < 1 {
+						fmt.Printf("docker-slim[lint]: missing target image/Dockerfile...\n\n")
+						cli.ShowCommandHelp(ctx, CmdLint)
+						return nil
+					} else {
+						targetRef = ctx.Args().First()
+					}
 				}
 
 				gcvalues, err := globalCommandFlagValues(ctx)
@@ -1362,13 +1521,70 @@ func init() {
 					return err
 				}
 
-				targetRef := ctx.Args().First()
+				targetType := ctx.String(FlagTargetType)
+				doSkipBuildContext := ctx.Bool(FlagSkipBuildContext)
+				buildContextDir := ctx.String(FlagBuildContextDir)
+				doSkipDockerignore := ctx.Bool(FlagSkipDockerignore)
+
+				includeCheckTags, err := parseCheckTags(ctx.StringSlice(FlagIncludeCheckTag))
+				if err != nil {
+					fmt.Printf("docker-slim[lint]: invalid include check tags: %v\n", err)
+					return err
+				}
+
+				excludeCheckTags, err := parseCheckTags(ctx.StringSlice(FlagExcludeCheckTag))
+				if err != nil {
+					fmt.Printf("docker-slim[lint]: invalid exclude check tags: %v\n", err)
+					return err
+				}
+
+				includeCheckIDs, err := parseTokenSet(ctx.StringSlice(FlagIncludeCheckID))
+				if err != nil {
+					fmt.Printf("docker-slim[lint]: invalid include check IDs: %v\n", err)
+					return err
+				}
+
+				includeCheckIDFile := ctx.String(FlagIncludeCheckIDFile)
+				moreIncludeCheckIDs, err := parseTokenSetFile(includeCheckIDFile)
+				if err != nil {
+					fmt.Printf("docker-slim[lint]: invalid include check IDs from file(%v): %v\n", includeCheckIDFile, err)
+					return err
+				}
+
+				for k, v := range moreIncludeCheckIDs {
+					includeCheckIDs[k] = v
+				}
+
+				excludeCheckIDs, err := parseTokenSet(ctx.StringSlice(FlagExcludeCheckID))
+				if err != nil {
+					fmt.Printf("docker-slim[lint]: invalid exclude check IDs: %v\n", err)
+					return err
+				}
+
+				excludeCheckIDFile := ctx.String(FlagExcludeCheckIDFile)
+				moreExcludeCheckIDs, err := parseTokenSetFile(excludeCheckIDFile)
+				if err != nil {
+					fmt.Printf("docker-slim[lint]: invalid exclude check IDs from file(%v): %v\n", excludeCheckIDFile, err)
+					return err
+				}
+
+				for k, v := range moreExcludeCheckIDs {
+					excludeCheckIDs[k] = v
+				}
 
 				ec := &commands.ExecutionContext{}
 
 				commands.OnLint(
 					gcvalues,
 					targetRef,
+					targetType,
+					doSkipBuildContext,
+					buildContextDir,
+					doSkipDockerignore,
+					includeCheckTags,
+					excludeCheckTags,
+					includeCheckIDs,
+					excludeCheckIDs,
 					ec)
 
 				return nil
@@ -1428,7 +1644,7 @@ func init() {
 					return err
 				}
 
-				layers, err := parseLayerSelectors(ctx.StringSlice(FlagLayer))
+				layers, err := parseTokenSet(ctx.StringSlice(FlagLayer))
 				if err != nil {
 					fmt.Printf("docker-slim[xray]: invalid layer selectors: %v\n", err)
 					return err

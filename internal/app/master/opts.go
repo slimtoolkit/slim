@@ -156,13 +156,74 @@ func parseChangeTypes(values []string) (map[string]struct{}, error) {
 	return changes, nil
 }
 
-func parseLayerSelectors(values []string) (map[string]struct{}, error) {
+func parseTokenSet(values []string) (map[string]struct{}, error) {
 	layers := map[string]struct{}{}
 	for _, item := range values {
 		layers[item] = struct{}{}
 	}
 
 	return layers, nil
+}
+
+func parseCheckTags(values []string) (map[string]string, error) {
+	tags := map[string]string{}
+	for _, raw := range values {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+
+		if !strings.Contains(raw, ":") {
+			return nil, fmt.Errorf("invalid check tag format: %s", raw)
+		}
+
+		parts := strings.Split(raw, ":")
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid check tag format: %s", raw)
+		}
+
+		tags[parts[0]] = parts[1]
+	}
+
+	return tags, nil
+}
+
+func parseTokenSetFile(filePath string) (map[string]struct{}, error) {
+	tokens := map[string]struct{}{}
+
+	if filePath == "" {
+		return tokens, nil
+	}
+
+	fullPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return tokens, err
+	}
+
+	_, err = os.Stat(fullPath)
+	if err != nil {
+		return tokens, err
+	}
+
+	fileData, err := ioutil.ReadFile(fullPath) //[]byte
+	if err != nil {
+		return tokens, err
+	}
+
+	if len(fileData) == 0 {
+		return tokens, nil
+	}
+
+	lines := strings.Split(string(fileData), "\n")
+
+	for _, token := range lines {
+		token = strings.TrimSpace(token)
+		if len(token) != 0 {
+			tokens[token] = struct{}{}
+		}
+	}
+
+	return tokens, nil
 }
 
 func parseVolumeMounts(values []string) (map[string]config.VolumeMount, error) {

@@ -25,8 +25,9 @@ var (
 type Options struct {
 	DockerfilePath   string
 	Dockerfile       *spec.Dockerfile
+	SkipBuildContext bool
 	BuildContextDir  string
-	SkipDockerIgnore bool //to disable .dockerignore parsing
+	SkipDockerignore bool //to disable .dockerignore parsing
 	Dockerignore     *dockerignore.Matcher
 	Selector         CheckSelector
 	Config           map[string]*CheckOptions
@@ -41,9 +42,9 @@ type CheckContext struct {
 
 type CheckSelector struct {
 	IncludeCheckTags map[string]string
-	IncludeCheckIDs  map[string]string
-	ExcludeCheckIDs  map[string]string
+	IncludeCheckIDs  map[string]struct{}
 	ExcludeCheckTags map[string]string
+	ExcludeCheckIDs  map[string]struct{}
 }
 
 type CheckOptions struct {
@@ -500,7 +501,7 @@ func (c *EmptyDockerfileCheck) Run(opts *CheckOptions, ctx *CheckContext) (*Chec
 	return result, nil
 }
 
-var allChecks = []Checker{
+var AllChecks = []Checker{
 	&NoDockerignoreCheck{
 		Check: Check{
 			ID:          "ID.10001",
@@ -654,10 +655,21 @@ func Execute(options Options) (*Report, error) {
 		}
 	}
 
+	var buildContextDir string
+	if !options.SkipBuildContext {
+		if df != nil {
+			buildContextDir = df.Location
+		}
+
+		if options.BuildContextDir != "" {
+			buildContextDir = options.BuildContextDir
+		}
+	}
+
 	di := options.Dockerignore
-	if di == nil && !options.SkipDockerIgnore {
+	if di == nil && !options.SkipDockerignore {
 		var err error
-		di, err = dockerignore.Load(options.BuildContextDir)
+		di, err = dockerignore.Load(buildContextDir)
 		if err != nil {
 			return nil, err
 		}
@@ -669,7 +681,7 @@ func Execute(options Options) (*Report, error) {
 	report.Dockerignore = di
 
 	var selectedChecks []Checker
-	for _, check := range allChecks {
+	for _, check := range AllChecks {
 		info := check.Info()
 		if len(options.Selector.ExcludeCheckIDs) == 0 {
 			selectedChecks = append(selectedChecks, check)

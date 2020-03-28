@@ -6,6 +6,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
+	"github.com/docker-slim/docker-slim/pkg/docker/linter"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
@@ -18,6 +19,14 @@ import (
 func OnLint(
 	gparams *GenericParams,
 	targetRef string,
+	targetType string,
+	doSkipBuildContext bool,
+	buildContextDir string,
+	doSkipDockerignore bool,
+	includeCheckTags map[string]string,
+	excludeCheckTags map[string]string,
+	includeCheckIDs map[string]struct{},
+	excludeCheckIDs map[string]struct{},
 	ec *ExecutionContext) {
 	const cmdName = "lint"
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
@@ -47,6 +56,24 @@ func OnLint(
 		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
+	options := linter.Options{
+		DockerfilePath:   targetRef,
+		SkipBuildContext: doSkipBuildContext,
+		BuildContextDir:  buildContextDir,
+		SkipDockerignore: doSkipDockerignore,
+		Selector: linter.CheckSelector{
+			IncludeCheckTags: includeCheckTags,
+			IncludeCheckIDs:  includeCheckIDs,
+			ExcludeCheckTags: excludeCheckTags,
+			ExcludeCheckIDs:  excludeCheckIDs,
+		},
+	}
+
+	lintResults, err := linter.Execute(options)
+	errutil.FailOn(err)
+
+	printLintResults(lintResults, appName, cmdName, cmdReport)
+
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
 	cmdReport.State = report.CmdStateCompleted
 
@@ -58,5 +85,73 @@ func OnLint(
 	cmdReport.State = report.CmdStateDone
 	if cmdReport.Save() {
 		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
+	}
+}
+
+func printLintResults(lintResults *linter.Report,
+	appName, cmdName string,
+	cmdReport *report.LintCommand) {
+	fmt.Printf("%s[%s]: info=lint.results hits=%d nohits=%d errors=%d:\n",
+		appName,
+		cmdName,
+		len(lintResults.Hits),
+		len(lintResults.NoHits),
+		len(lintResults.Errors))
+
+	if len(lintResults.Hits) > 0 {
+		fmt.Printf("%s[%s]: info=lint.check.hits count=%d\n",
+			appName, cmdName, len(lintResults.Hits))
+		for id, result := range lintResults.Hits {
+			fmt.Printf("%s[%s]: info=lint.check.hit id=%s name='%s' level=%s message='%s'\n",
+				appName, cmdName,
+				id,
+				result.Source.Name,
+				result.Source.Labels[linter.LabelLevel],
+				result.Message)
+
+			if len(result.Matches) > 0 {
+				fmt.Printf("%s[%s]: info=lint.check.hit.matches count=%d:\n",
+					appName, cmdName, len(result.Matches))
+
+				for _, m := range result.Matches {
+					var instructionInfo string
+					if m.Instruction != nil {
+						instructionInfo = fmt.Sprintf(" instruction(start=%d end=%d name=%s gindex=%d sindex=%d)",
+							m.Instruction.StartLine,
+							m.Instruction.EndLine,
+							m.Instruction.Name,
+							m.Instruction.GlobalIndex,
+							m.Instruction.StageIndex)
+					}
+
+					var stageInfo string
+					if m.Stage != nil {
+						stageInfo = fmt.Sprintf(" stage(index=%d name='%s')", m.Stage.Index, m.Stage.Name)
+					}
+
+					fmt.Printf("%s[%s]: info=lint.check.hit.match message='%s'%s%s\n",
+						appName, cmdName, m.Message, instructionInfo, stageInfo)
+				}
+			}
+		}
+	}
+
+	if len(lintResults.NoHits) > 0 {
+		fmt.Printf("%s[%s]: info=lint.check.nohits count=%d\n",
+			appName, cmdName, len(lintResults.NoHits))
+
+		for id, result := range lintResults.NoHits {
+			fmt.Printf("%s[%s]: info=lint.check.nohit id=%s name='%s'\n",
+				appName, cmdName, id, result.Source.Name)
+		}
+	}
+
+	if len(lintResults.Errors) > 0 {
+		fmt.Printf("%s[%s]: info=lint.check.errors count=%d: %v\n",
+			appName, cmdName, len(lintResults.Errors))
+
+		for id, err := range lintResults.Errors {
+			fmt.Printf("%s[%s]: info=lint.check.error id=%s message='%v'\n", appName, cmdName, id, err)
+		}
 	}
 }

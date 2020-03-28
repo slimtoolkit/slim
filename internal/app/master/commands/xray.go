@@ -215,7 +215,6 @@ func printImagePackage(pkg *dockerimage.Package,
 	fmt.Printf("%s[%s]: info=layers.count: %v\n", appName, cmdName, len(pkg.Layers))
 	for _, layer := range pkg.Layers {
 		fmt.Printf("%s[%s]: info=layer index=%d id=%s path=%s\n", appName, cmdName, layer.Index, layer.ID, layer.Path)
-		//fmt.Printf("%s[%s]: info=layer.stats data=%#v\n", appName, cmdName, layer.Stats)
 
 		if layer.Stats.AllSize != 0 {
 			fmt.Printf("%s[%s]: info=layer.stats all_size.human='%v' all_size.bytes=%v\n",
