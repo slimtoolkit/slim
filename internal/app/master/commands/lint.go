@@ -23,8 +23,8 @@ func OnLint(
 	doSkipBuildContext bool,
 	buildContextDir string,
 	doSkipDockerignore bool,
-	includeCheckTags map[string]string,
-	excludeCheckTags map[string]string,
+	includeCheckLabels map[string]string,
+	excludeCheckLabels map[string]string,
 	includeCheckIDs map[string]struct{},
 	excludeCheckIDs map[string]struct{},
 	ec *ExecutionContext) {
@@ -62,10 +62,10 @@ func OnLint(
 		BuildContextDir:  buildContextDir,
 		SkipDockerignore: doSkipDockerignore,
 		Selector: linter.CheckSelector{
-			IncludeCheckTags: includeCheckTags,
-			IncludeCheckIDs:  includeCheckIDs,
-			ExcludeCheckTags: excludeCheckTags,
-			ExcludeCheckIDs:  excludeCheckIDs,
+			IncludeCheckLabels: includeCheckLabels,
+			IncludeCheckIDs:    includeCheckIDs,
+			ExcludeCheckLabels: excludeCheckLabels,
+			ExcludeCheckIDs:    excludeCheckIDs,
 		},
 	}
 

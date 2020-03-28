@@ -12,6 +12,8 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/spec"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerignore"
 	"github.com/docker-slim/docker-slim/pkg/docker/instruction"
+
+	log "github.com/sirupsen/logrus"
 )
 
 var (
@@ -41,10 +43,10 @@ type CheckContext struct {
 }
 
 type CheckSelector struct {
-	IncludeCheckTags map[string]string
-	IncludeCheckIDs  map[string]struct{}
-	ExcludeCheckTags map[string]string
-	ExcludeCheckIDs  map[string]struct{}
+	IncludeCheckLabels map[string]string
+	IncludeCheckIDs    map[string]struct{}
+	ExcludeCheckLabels map[string]string
+	ExcludeCheckIDs    map[string]struct{}
 }
 
 type CheckOptions struct {
@@ -506,7 +508,7 @@ var AllChecks = []Checker{
 		Check: Check{
 			ID:          "ID.10001",
 			Name:        "Missing .dockerignore",
-			Description: "Long description",
+			Description: "Missing .dockerignore",
 			DetailsURL:  "https://lint.dockersl.im/check/ID.10001",
 			MainMessage: "No .dockerignore",
 			Labels: map[string]string{
@@ -519,7 +521,7 @@ var AllChecks = []Checker{
 		Check: Check{
 			ID:          "ID.10002",
 			Name:        "Empty .dockerignore",
-			Description: "Long description",
+			Description: "Empty .dockerignore",
 			DetailsURL:  "https://lint.dockersl.im/check/ID.10002",
 			MainMessage: "No exclude patterns in .dockerignore",
 			Labels: map[string]string{
@@ -533,7 +535,7 @@ var AllChecks = []Checker{
 		Check: Check{
 			ID:          "ID.20001",
 			Name:        "Empty Dockerfile",
-			Description: "Long description",
+			Description: "Empty Dockerfile",
 			DetailsURL:  "https://lint.dockersl.im/check/ID.20001",
 			MainMessage: "No instructions in Dockerfile",
 			Labels: map[string]string{
@@ -546,7 +548,7 @@ var AllChecks = []Checker{
 		Check: Check{
 			ID:          "ID.20002",
 			Name:        "No stages",
-			Description: "Long description",
+			Description: "No stages",
 			DetailsURL:  "https://lint.dockersl.im/check/ID.20002",
 			MainMessage: "No stages in Dockerfile",
 			Labels: map[string]string{
@@ -559,7 +561,7 @@ var AllChecks = []Checker{
 		Check: Check{
 			ID:           "ID.20003",
 			Name:         "Empty stage",
-			Description:  "Long description",
+			Description:  "Empty stage",
 			DetailsURL:   "https://lint.dockersl.im/check/ID.20003",
 			MainMessage:  "Empty stage in Dockerfile",
 			MatchMessage: "Stage: index=%d name='%s' start=%d end=%d",
@@ -573,7 +575,7 @@ var AllChecks = []Checker{
 		Check: Check{
 			ID:           "ID.20004",
 			Name:         "No stage arguments",
-			Description:  "Long description",
+			Description:  "No stage arguments",
 			DetailsURL:   "https://lint.dockersl.im/check/ID.20004",
 			MainMessage:  "Stage without arguments in Dockerfile",
 			MatchMessage: "Stage: index=%d start=%d end=%d",
@@ -587,7 +589,7 @@ var AllChecks = []Checker{
 		Check: Check{
 			ID:           "ID.20005",
 			Name:         "Invalid stage arguments",
-			Description:  "Long description",
+			Description:  "Invalid stage arguments",
 			DetailsURL:   "https://lint.dockersl.im/check/ID.20005",
 			MainMessage:  "Stage with invalid arguments in Dockerfile",
 			MatchMessage: "Stage: reason='%s' index=%d name='%s' start=%d end=%d",
@@ -601,7 +603,7 @@ var AllChecks = []Checker{
 		Check: Check{
 			ID:           "ID.20006",
 			Name:         "Stage from latest tag",
-			Description:  "Long description",
+			Description:  "Stage from latest tag",
 			DetailsURL:   "https://lint.dockersl.im/check/ID.20006",
 			MainMessage:  "Stage from latest tag in Dockerfile",
 			MatchMessage: "Stage: index=%d name='%s' start=%d end=%d parent='%s'",
@@ -615,7 +617,7 @@ var AllChecks = []Checker{
 		Check: Check{
 			ID:           "ID.20007",
 			Name:         "Unknown instruction",
-			Description:  "Long description",
+			Description:  "Unknown instruction",
 			DetailsURL:   "https://lint.dockersl.im/check/ID.20007",
 			MainMessage:  "Unknown instruction in Dockerfile",
 			MatchMessage: "Instruction: start=%d end=%d name='%s' global_index=%d stage_id=%d stage_index=%d",
@@ -629,7 +631,7 @@ var AllChecks = []Checker{
 		Check: Check{
 			ID:           "ID.20008",
 			Name:         "Stageless instruction",
-			Description:  "Long description",
+			Description:  "Stageless instruction",
 			DetailsURL:   "https://lint.dockersl.im/check/ID.20008",
 			MainMessage:  "Non-arg instruction outside of a Dockerfile stage",
 			MatchMessage: "Instruction: start=%d end=%d name='%s' global_index=%d",
@@ -683,11 +685,49 @@ func Execute(options Options) (*Report, error) {
 	var selectedChecks []Checker
 	for _, check := range AllChecks {
 		info := check.Info()
-		if len(options.Selector.ExcludeCheckIDs) == 0 {
-			selectedChecks = append(selectedChecks, check)
-		} else if _, ok := options.Selector.ExcludeCheckIDs[info.ID]; !ok {
-			selectedChecks = append(selectedChecks, check)
+
+		if len(options.Selector.IncludeCheckIDs) > 0 {
+			if _, ok := options.Selector.IncludeCheckIDs[info.ID]; ok {
+				selectedChecks = append(selectedChecks, check)
+				log.Debugf("linter.Execute: selected check - id=%v (IncludeCheckIDs)", info.ID)
+			}
+			continue
 		}
+
+		if len(options.Selector.IncludeCheckLabels) > 0 {
+			for k, v := range info.Labels {
+				if inval := options.Selector.IncludeCheckLabels[k]; inval == v {
+					if len(options.Selector.ExcludeCheckIDs) == 0 {
+						selectedChecks = append(selectedChecks, check)
+						log.Debugf("linter.Execute: selected check - id=%v label=%v:%v (IncludeCheckLabels)", info.ID, k, v)
+					} else if _, ok := options.Selector.ExcludeCheckIDs[info.ID]; !ok {
+						selectedChecks = append(selectedChecks, check)
+						log.Debugf("linter.Execute: selected check - id=%v label=%v:%v (IncludeCheckLabels/ExcludeCheckIDs)", info.ID, k, v)
+					}
+
+					continue
+				}
+			}
+
+			continue
+		}
+
+		if len(options.Selector.ExcludeCheckLabels) > 0 {
+			for k, v := range info.Labels {
+				if inval := options.Selector.ExcludeCheckLabels[k]; inval == v {
+					continue
+				}
+			}
+		}
+
+		if len(options.Selector.ExcludeCheckIDs) > 0 {
+			if _, ok := options.Selector.ExcludeCheckIDs[info.ID]; ok {
+				continue
+			}
+		}
+
+		selectedChecks = append(selectedChecks, check)
+		log.Debugf("linter.Execute: selected check - id=%v", info.ID)
 	}
 
 	if len(selectedChecks) == 0 {

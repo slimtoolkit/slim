@@ -157,12 +157,17 @@ func parseChangeTypes(values []string) (map[string]struct{}, error) {
 }
 
 func parseTokenSet(values []string) (map[string]struct{}, error) {
-	layers := map[string]struct{}{}
-	for _, item := range values {
-		layers[item] = struct{}{}
+	tokens := map[string]struct{}{}
+	for _, token := range values {
+		token = strings.TrimSpace(token)
+		if token == "" {
+			continue
+		}
+
+		tokens[token] = struct{}{}
 	}
 
-	return layers, nil
+	return tokens, nil
 }
 
 func parseCheckTags(values []string) (map[string]string, error) {

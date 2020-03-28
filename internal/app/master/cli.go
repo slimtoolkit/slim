@@ -255,8 +255,8 @@ const (
 	FlagSkipBuildContext   = "skip-build-context"
 	FlagBuildContextDir    = "build-context-dir"
 	FlagSkipDockerignore   = "skip-dockerignore"
-	FlagIncludeCheckTag    = "include-check-tag"
-	FlagExcludeCheckTag    = "exclude-check-tag"
+	FlagIncludeCheckLabel  = "include-check-label"
+	FlagExcludeCheckLabel  = "exclude-check-label"
 	FlagIncludeCheckID     = "include-check-id"
 	FlagIncludeCheckIDFile = "include-check-id-file"
 	FlagExcludeCheckID     = "exclude-check-id"
@@ -270,8 +270,8 @@ const (
 	FlagSkipBuildContextUsage   = "Don't try to analyze build context"
 	FlagBuildContextDirUsage    = "Explicitly specify the build context directory"
 	FlagSkipDockerignoreUsage   = "Don't try to analyze .dockerignore"
-	FlagIncludeCheckTagUsage    = "Include checks with the selected tag key:value"
-	FlagExcludeCheckTagUsage    = "Exclude checks with the selected tag key:value"
+	FlagIncludeCheckLabelUsage  = "Include checks with the selected label key:value"
+	FlagExcludeCheckLabelUsage  = "Exclude checks with the selected label key:value"
 	FlagIncludeCheckIDUsage     = "Check ID to include"
 	FlagIncludeCheckIDFileUsage = "File with check IDs to include"
 	FlagExcludeCheckIDUsage     = "Check ID to exclude"
@@ -662,8 +662,8 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagSkipBuildContext), Description: FlagSkipBuildContextUsage},
 				{Text: fullFlagName(FlagBuildContextDir), Description: FlagBuildContextDirUsage},
 				{Text: fullFlagName(FlagSkipDockerignore), Description: FlagSkipDockerignoreUsage},
-				{Text: fullFlagName(FlagIncludeCheckTag), Description: FlagIncludeCheckTagUsage},
-				{Text: fullFlagName(FlagExcludeCheckTag), Description: FlagExcludeCheckTagUsage},
+				{Text: fullFlagName(FlagIncludeCheckLabel), Description: FlagIncludeCheckLabelUsage},
+				{Text: fullFlagName(FlagExcludeCheckLabel), Description: FlagExcludeCheckLabelUsage},
 				{Text: fullFlagName(FlagIncludeCheckID), Description: FlagIncludeCheckIDUsage},
 				{Text: fullFlagName(FlagIncludeCheckIDFile), Description: FlagIncludeCheckIDFileUsage},
 				{Text: fullFlagName(FlagExcludeCheckID), Description: FlagExcludeCheckIDUsage},
@@ -1467,16 +1467,16 @@ func init() {
 					EnvVar: "DSLIM_LINT_SKIP_DI",
 				},
 				cli.StringSliceFlag{
-					Name:   FlagIncludeCheckTag,
+					Name:   FlagIncludeCheckLabel,
 					Value:  &cli.StringSlice{""},
-					Usage:  FlagIncludeCheckTagUsage,
-					EnvVar: "DSLIM_LINT_INCLUDE_CTAG",
+					Usage:  FlagIncludeCheckLabelUsage,
+					EnvVar: "DSLIM_LINT_INCLUDE_LABEL",
 				},
 				cli.StringSliceFlag{
-					Name:   FlagExcludeCheckTag,
+					Name:   FlagExcludeCheckLabel,
 					Value:  &cli.StringSlice{""},
-					Usage:  FlagExcludeCheckTagUsage,
-					EnvVar: "DSLIM_LINT_EXCLUDE_CTAG",
+					Usage:  FlagExcludeCheckLabelUsage,
+					EnvVar: "DSLIM_LINT_EXCLUDE_LABEL",
 				},
 				cli.StringSliceFlag{
 					Name:   FlagIncludeCheckID,
@@ -1526,15 +1526,15 @@ func init() {
 				buildContextDir := ctx.String(FlagBuildContextDir)
 				doSkipDockerignore := ctx.Bool(FlagSkipDockerignore)
 
-				includeCheckTags, err := parseCheckTags(ctx.StringSlice(FlagIncludeCheckTag))
+				includeCheckLabels, err := parseCheckTags(ctx.StringSlice(FlagIncludeCheckLabel))
 				if err != nil {
-					fmt.Printf("docker-slim[lint]: invalid include check tags: %v\n", err)
+					fmt.Printf("docker-slim[lint]: invalid include check labels: %v\n", err)
 					return err
 				}
 
-				excludeCheckTags, err := parseCheckTags(ctx.StringSlice(FlagExcludeCheckTag))
+				excludeCheckLabels, err := parseCheckTags(ctx.StringSlice(FlagExcludeCheckLabel))
 				if err != nil {
-					fmt.Printf("docker-slim[lint]: invalid exclude check tags: %v\n", err)
+					fmt.Printf("docker-slim[lint]: invalid exclude check labels: %v\n", err)
 					return err
 				}
 
@@ -1581,8 +1581,8 @@ func init() {
 					doSkipBuildContext,
 					buildContextDir,
 					doSkipDockerignore,
-					includeCheckTags,
-					excludeCheckTags,
+					includeCheckLabels,
+					excludeCheckLabels,
 					includeCheckIDs,
 					excludeCheckIDs,
 					ec)
