@@ -12,7 +12,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
-	"github.com/docker-slim/docker-slim/pkg/docker/linter"
+	"github.com/docker-slim/docker-slim/pkg/docker/linter/check"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
@@ -618,8 +618,8 @@ func completeLintTargetType(ia *InteractiveApp, token string, params prompt.Docu
 
 func completeLintCheckID(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	var values []prompt.Suggest
-	for _, check := range linter.AllChecks {
-		info := check.Info()
+	for _, check := range check.AllChecks {
+		info := check.Get()
 		entry := prompt.Suggest{
 			Text:        info.ID,
 			Description: info.Name,

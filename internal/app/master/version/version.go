@@ -78,31 +78,35 @@ func Print(printPrefix string, logger *log.Entry, client *docker.Client, checkVe
 	fmt.Printf("%s info=host release=%v\n", printPrefix, hostInfo.Release)
 	fmt.Printf("%s info=host sysname=%v\n", printPrefix, hostInfo.Sysname)
 
-	info, err := client.Info()
-	if err != nil {
-		fmt.Printf("%s error='error getting docker info'\n", printPrefix)
-		logger.Debugf("Error getting docker info => %v", err)
-		return
+	if client != nil {
+		info, err := client.Info()
+		if err != nil {
+			fmt.Printf("%s error='error getting docker info'\n", printPrefix)
+			logger.Debugf("Error getting docker info => %v", err)
+			return
+		}
+
+		fmt.Printf("%s info=docker name=%v\n", printPrefix, info.Name)
+		fmt.Printf("%s info=docker kernel_version=%v\n", printPrefix, info.KernelVersion)
+		fmt.Printf("%s info=docker operating_system=%v\n", printPrefix, info.OperatingSystem)
+		fmt.Printf("%s info=docker ostype=%v\n", printPrefix, info.OSType)
+		fmt.Printf("%s info=docker server_version=%v\n", printPrefix, info.ServerVersion)
+		fmt.Printf("%s info=docker architecture=%v\n", printPrefix, info.Architecture)
+
+		ver, err := client.Version()
+		if err != nil {
+			fmt.Printf("%s error='error getting docker client version'\n", printPrefix)
+			logger.Debugf("Error getting docker client version => %v", err)
+			return
+		}
+
+		fmt.Printf("%s info=dclient api_version=%v\n", printPrefix, ver.Get("ApiVersion"))
+		fmt.Printf("%s info=dclient min_api_version=%v\n", printPrefix, ver.Get("MinAPIVersion"))
+		fmt.Printf("%s info=dclient build_time=%v\n", printPrefix, ver.Get("BuildTime"))
+		fmt.Printf("%s info=dclient git_commit=%v\n", printPrefix, ver.Get("GitCommit"))
+	} else {
+		fmt.Printf("%s info=no.docker.client\n", printPrefix)
 	}
-
-	fmt.Printf("%s info=docker name=%v\n", printPrefix, info.Name)
-	fmt.Printf("%s info=docker kernel_version=%v\n", printPrefix, info.KernelVersion)
-	fmt.Printf("%s info=docker operating_system=%v\n", printPrefix, info.OperatingSystem)
-	fmt.Printf("%s info=docker ostype=%v\n", printPrefix, info.OSType)
-	fmt.Printf("%s info=docker server_version=%v\n", printPrefix, info.ServerVersion)
-	fmt.Printf("%s info=docker architecture=%v\n", printPrefix, info.Architecture)
-
-	ver, err := client.Version()
-	if err != nil {
-		fmt.Printf("%s error='error getting docker client version'\n", printPrefix)
-		logger.Debugf("Error getting docker client version => %v", err)
-		return
-	}
-
-	fmt.Printf("%s info=dclient api_version=%v\n", printPrefix, ver.Get("ApiVersion"))
-	fmt.Printf("%s info=dclient min_api_version=%v\n", printPrefix, ver.Get("MinAPIVersion"))
-	fmt.Printf("%s info=dclient build_time=%v\n", printPrefix, ver.Get("BuildTime"))
-	fmt.Printf("%s info=dclient git_commit=%v\n", printPrefix, ver.Get("GitCommit"))
 }
 
 // Check checks the app version

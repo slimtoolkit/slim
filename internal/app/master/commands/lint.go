@@ -2,16 +2,18 @@ package commands
 
 import (
 	"fmt"
-	"os"
+	//"os"
 
-	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
+	//"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/docker/linter"
+	"github.com/docker-slim/docker-slim/pkg/docker/linter/check"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
-	v "github.com/docker-slim/docker-slim/pkg/version"
+	//"github.com/docker-slim/docker-slim/pkg/util/fsutil"
+	//v "github.com/docker-slim/docker-slim/pkg/version"
 
+	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -40,17 +42,21 @@ func OnLint(
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
 	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, targetRef)
 
-	client, err := dockerclient.New(gparams.ClientConfig)
-	if err == dockerclient.ErrNoDockerInfo {
-		exitMsg := "missing Docker connection info"
-		if gparams.InContainer && gparams.IsDSImage {
-			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
+	/*
+		do it only when targetting images
+		client, err := dockerclient.New(gparams.ClientConfig)
+		if err == dockerclient.ErrNoDockerInfo {
+			exitMsg := "missing Docker connection info"
+			if gparams.InContainer && gparams.IsDSImage {
+				exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
+			}
+			fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
+			fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
+			os.Exit(ectCommon | ecNoDockerConnectInfo)
 		}
-		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
-		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		os.Exit(ectCommon | ecNoDockerConnectInfo)
-	}
-	errutil.FailOn(err)
+		errutil.FailOn(err)
+	*/
+	var client *dockerapi.Client
 
 	if gparams.Debug {
 		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
@@ -106,7 +112,7 @@ func printLintResults(lintResults *linter.Report,
 				appName, cmdName,
 				id,
 				result.Source.Name,
-				result.Source.Labels[linter.LabelLevel],
+				result.Source.Labels[check.LabelLevel],
 				result.Message)
 
 			if len(result.Matches) > 0 {
