@@ -199,6 +199,8 @@ func FromFile(fpath string) (*spec.Dockerfile, error) {
 			}
 
 			dockerfile.AllInstructions = append(dockerfile.AllInstructions, inst)
+			dockerfile.InstructionsByType[inst.Name] = append(
+				dockerfile.InstructionsByType[inst.Name], inst)
 
 			if currentStage != nil {
 				currentStage.EndLine = inst.EndLine

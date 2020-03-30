@@ -5,21 +5,19 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
-
-	"github.com/docker-slim/docker-slim/pkg/docker/instruction"
 )
 
 func init() {
-	check := &DeprecatedInstruction{
+	check := &StagelessInstruction{
 		Info: Info{
-			ID:           "ID.20008",
-			Name:         "Deprecated instruction",
-			Description:  "Deprecated instruction",
-			DetailsURL:   "https://lint.dockersl.im/check/ID.20008",
-			MainMessage:  "Deprecated instruction",
+			ID:           "ID.20009",
+			Name:         "Stageless instruction",
+			Description:  "Stageless instruction",
+			DetailsURL:   "https://lint.dockersl.im/check/ID.20009",
+			MainMessage:  "Non-arg instruction outside of a Dockerfile stage",
 			MatchMessage: "Instruction: start=%d end=%d name='%s' global_index=%d",
 			Labels: map[string]string{
-				LabelLevel: LevelInfo,
+				LabelLevel: LevelWarn,
 				LabelScope: ScopeDockerfile,
 			},
 		},
@@ -28,21 +26,21 @@ func init() {
 	AllChecks = append(AllChecks, check)
 }
 
-type DeprecatedInstruction struct {
+type StagelessInstruction struct {
 	Info
 }
 
-func (c *DeprecatedInstruction) Run(opts *Options, ctx *Context) (*Result, error) {
-	log.Debugf("check.DeprecatedInstruction.Run[%s]", c.ID)
+func (c *StagelessInstruction) Run(opts *Options, ctx *Context) (*Result, error) {
+	log.Debugf("check.StagelessInstruction.Run[%s]", c.ID)
 	result := &Result{
 		Source: &c.Info,
 	}
 
-	if instructions, ok := ctx.Dockerfile.InstructionsByType[instruction.Maintainer]; ok {
+	if len(ctx.Dockerfile.StagelessInstructions) > 0 {
 		result.Hit = true
 		result.Message = c.MainMessage
 
-		for _, inst := range instructions {
+		for _, inst := range ctx.Dockerfile.StagelessInstructions {
 			match := &Match{
 				Instruction: inst,
 				Message: fmt.Sprintf(c.MatchMessage,

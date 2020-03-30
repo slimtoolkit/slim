@@ -67,6 +67,7 @@ type Dockerfile struct {
 	StagelessInstructions []*instruction.Field
 	ArgInstructions       []*instruction.Field
 	AllInstructions       []*instruction.Field
+	InstructionsByType    map[string][]*instruction.Field
 	UnknownInstructions   []*instruction.Field
 	InvalidInstructions   []*instruction.Field //not including unknown instructions
 	Warnings              []string
@@ -74,7 +75,8 @@ type Dockerfile struct {
 
 func NewDockerfile() *Dockerfile {
 	return &Dockerfile{
-		FromArgs:     map[string]string{},
-		StagesByName: map[string]*BuildStage{},
+		FromArgs:           map[string]string{},
+		StagesByName:       map[string]*BuildStage{},
+		InstructionsByType: map[string][]*instruction.Field{},
 	}
 }
