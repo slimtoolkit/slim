@@ -211,6 +211,9 @@ const (
 	FlagImageOverrides = "image-overrides"
 
 	FlagBuildFromDockerfile = "dockerfile"
+
+	FlagIncludeBinFile = "include-bin-file"
+	FlagIncludeExeFile = "include-exe-file"
 )
 
 // Build command flag usage info
@@ -229,6 +232,9 @@ const (
 	FlagImageOverridesUsage = "Use overrides in generated image"
 
 	FlagBuildFromDockerfileUsage = "The source Dockerfile name to build the fat image before it's optimized"
+
+	FlagIncludeBinFileUsage = "File with shared binary file names to include from image"
+	FlagIncludeExeFileUsage = "File with executable file names to include from image"
 )
 
 // Xray command flag names
@@ -820,7 +826,9 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagIncludePath), Description: FlagIncludePathUsage},
 				{Text: fullFlagName(FlagIncludePathFile), Description: FlagIncludePathFileUsage},
 				{Text: fullFlagName(FlagIncludeBin), Description: FlagIncludeBinUsage},
+				{Text: fullFlagName(FlagIncludeBinFile), Description: FlagIncludeBinFileUsage},
 				{Text: fullFlagName(FlagIncludeExe), Description: FlagIncludeExeUsage},
+				{Text: fullFlagName(FlagIncludeExeFile), Description: FlagIncludeExeFileUsage},
 				{Text: fullFlagName(FlagIncludeShell), Description: FlagIncludeShellUsage},
 				{Text: fullFlagName(FlagMount), Description: FlagMountUsage},
 				{Text: fullFlagName(FlagContinueAfter), Description: FlagContinueAfterUsage},
@@ -843,6 +851,8 @@ var cmdSpecs = map[string]cmdSpec{
 				fullFlagName(FlagExcludeMounts):          completeTBool,
 				fullFlagName(FlagPathPermsFile):          completeFile,
 				fullFlagName(FlagIncludePathFile):        completeFile,
+				fullFlagName(FlagIncludeBinFile):         completeFile,
+				fullFlagName(FlagIncludeExeFile):         completeFile,
 				fullFlagName(FlagIncludeShell):           completeBool,
 				fullFlagName(FlagContinueAfter):          completeContinueAfter,
 				fullFlagName(FlagUseLocalMounts):         completeBool,
@@ -1735,7 +1745,19 @@ func init() {
 				doIncludePathFlag,
 				doIncludePathFileFlag,
 				doIncludeBinFlag,
+				cli.StringFlag{
+					Name:   FlagIncludeBinFile,
+					Value:  "",
+					Usage:  FlagIncludeBinFileUsage,
+					EnvVar: "DSLIM_INCLUDE_BIN_FILE",
+				},
 				doIncludeExeFlag,
+				cli.StringFlag{
+					Name:   FlagIncludeExeFile,
+					Value:  "",
+					Usage:  FlagIncludeExeFileUsage,
+					EnvVar: "DSLIM_INCLUDE_EXE_FILE",
+				},
 				doIncludeShellFlag,
 				doUseMountFlag,
 				doContinueAfterFlag,
@@ -1847,7 +1869,25 @@ func init() {
 				}
 
 				includeBins := parsePaths(ctx.StringSlice(FlagIncludeBin))
+				moreIncludeBins, err := parsePathsFile(ctx.String(FlagIncludeBinFile))
+				if err != nil {
+					fmt.Printf("docker-slim[build]: could not read include bin file (ignoring): %v\n", err)
+				} else {
+					for k, v := range moreIncludeBins {
+						includeBins[k] = v
+					}
+				}
+
 				includeExes := parsePaths(ctx.StringSlice(FlagIncludeExe))
+				moreIncludeExes, err := parsePathsFile(ctx.String(FlagIncludeExeFile))
+				if err != nil {
+					fmt.Printf("docker-slim[build]: could not read include exe file (ignoring): %v\n", err)
+				} else {
+					for k, v := range moreIncludeExes {
+						includeExes[k] = v
+					}
+				}
+
 				doIncludeShell := ctx.Bool(FlagIncludeShell)
 
 				doUseLocalMounts := ctx.Bool(FlagUseLocalMounts)
