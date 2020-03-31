@@ -199,11 +199,15 @@ const (
 const (
 	FlagShowBuildLogs = "show-blogs"
 
+	//Flags to edit (modify, add and remove) image metadata
 	FlagNewEntrypoint = "new-entrypoint"
 	FlagNewCmd        = "new-cmd"
 	FlagNewExpose     = "new-expose"
 	FlagNewWorkdir    = "new-workdir"
 	FlagNewEnv        = "new-env"
+	FlagRemoveExpose  = "remove-expose"
+	FlagRemoveEnv     = "remove-env"
+	FlagRemoveVolume  = "remove-volume"
 
 	FlagTag    = "tag"
 	FlagTagFat = "tag-fat"
@@ -225,6 +229,9 @@ const (
 	FlagNewExposeUsage     = "New EXPOSE instructions for the optimized image"
 	FlagNewWorkdirUsage    = "New WORKDIR instruction for the optimized image"
 	FlagNewEnvUsage        = "New ENV instructions for the optimized image"
+	FlagRemoveExposeUsage  = "Remove EXPOSE instructions for the optimized image"
+	FlagRemoveEnvUsage     = "Remove ENV instructions for the optimized image"
+	FlagRemoveVolumeUsage  = "Remove VOLUME instructions for the optimized image"
 
 	FlagTagUsage    = "Custom tag for the generated image"
 	FlagTagFatUsage = "Custom tag for the fat image built from Dockerfile"
@@ -819,6 +826,9 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagNewExpose), Description: FlagNewExposeUsage},
 				{Text: fullFlagName(FlagNewWorkdir), Description: FlagNewWorkdirUsage},
 				{Text: fullFlagName(FlagNewEnv), Description: FlagNewEnvUsage},
+				{Text: fullFlagName(FlagRemoveExpose), Description: FlagRemoveExposeUsage},
+				{Text: fullFlagName(FlagRemoveEnv), Description: FlagRemoveEnvUsage},
+				{Text: fullFlagName(FlagRemoveVolume), Description: FlagRemoveVolumeUsage},
 				{Text: fullFlagName(FlagExcludeMounts), Description: FlagExcludeMountsUsage},
 				{Text: fullFlagName(FlagExcludePattern), Description: FlagExcludePatternUsage},
 				{Text: fullFlagName(FlagPathPerms), Description: FlagPathPermsUsage},
@@ -1738,6 +1748,24 @@ func init() {
 				doUseNewExposeFlag,
 				doUseNewWorkdirFlag,
 				doUseNewEnvFlag,
+				cli.StringSliceFlag{
+					Name:   FlagRemoveExpose,
+					Value:  &cli.StringSlice{},
+					Usage:  FlagRemoveExposeUsage,
+					EnvVar: "DSLIM_RM_EXPOSE",
+				},
+				cli.StringSliceFlag{
+					Name:   FlagRemoveEnv,
+					Value:  &cli.StringSlice{},
+					Usage:  FlagRemoveEnvUsage,
+					EnvVar: "DSLIM_RM_ENV",
+				},
+				cli.StringSliceFlag{
+					Name:   FlagRemoveVolume,
+					Value:  &cli.StringSlice{},
+					Usage:  FlagRemoveVolumeUsage,
+					EnvVar: "DSLIM_RM_VOLUME",
+				},
 				doExcludeMountsFlag,
 				doExcludePatternFlag,
 				doSetPathPermsFlag,
@@ -2245,19 +2273,43 @@ func getImageInstructions(ctx *cli.Context) (*config.ImageNewInstructions, error
 	entrypoint := ctx.String(FlagNewEntrypoint)
 	cmd := ctx.String(FlagNewCmd)
 	expose := ctx.StringSlice(FlagNewExpose)
+	removeExpose := ctx.StringSlice(FlagRemoveExpose)
 
 	instructions := &config.ImageNewInstructions{
 		Workdir: ctx.String(FlagNewWorkdir),
 		Env:     ctx.StringSlice(FlagNewEnv),
 	}
 
+	removeEnvs, err := parseTokenSet(ctx.StringSlice(FlagRemoveEnv))
+	if err != nil {
+		fmt.Printf("getImageInstructions(): invalid remove env options %v\n", err)
+		return nil, err
+	}
+
+	instructions.RemoveEnvs = removeEnvs
+
+	removeVolumes, err := parseTokenSet(ctx.StringSlice(FlagRemoveVolume))
+	if err != nil {
+		fmt.Printf("getImageInstructions(): invalid remove volume options %v\n", err)
+		return nil, err
+	}
+
+	instructions.RemoveVolumes = removeVolumes
+
 	//TODO(future): also load instructions from a file
 
-	var err error
 	if len(expose) > 0 {
 		instructions.ExposedPorts, err = parseDockerExposeOpt(expose)
 		if err != nil {
 			log.Errorf("getImageInstructions(): invalid expose options => %v", err)
+			return nil, err
+		}
+	}
+
+	if len(removeExpose) > 0 {
+		instructions.RemoveExposedPorts, err = parseDockerExposeOpt(removeExpose)
+		if err != nil {
+			log.Errorf("getImageInstructions(): invalid remove-expose options => %v", err)
 			return nil, err
 		}
 	}

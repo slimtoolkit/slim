@@ -23,13 +23,16 @@ type ContainerOverrides struct {
 
 // ImageNewInstructions provides a set new image instructions
 type ImageNewInstructions struct {
-	Entrypoint      []string
-	ClearEntrypoint bool
-	Cmd             []string
-	ClearCmd        bool
-	Workdir         string
-	Env             []string
-	ExposedPorts    map[docker.Port]struct{}
+	Entrypoint         []string
+	ClearEntrypoint    bool
+	Cmd                []string
+	ClearCmd           bool
+	Workdir            string
+	Env                []string
+	ExposedPorts       map[docker.Port]struct{}
+	RemoveEnvs         map[string]struct{}
+	RemoveVolumes      map[string]struct{}
+	RemoveExposedPorts map[docker.Port]struct{}
 }
 
 // VolumeMount provides the volume mount configuration information

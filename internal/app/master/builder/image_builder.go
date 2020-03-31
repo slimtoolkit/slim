@@ -182,6 +182,39 @@ func NewImageBuilder(client *docker.Client,
 		if len(instructions.Cmd) > 0 {
 			builder.Cmd = instructions.Cmd
 		}
+
+		if len(builder.ExposedPorts) > 0 &&
+			len(instructions.RemoveExposedPorts) > 0 {
+			for k := range instructions.RemoveExposedPorts {
+				if _, ok := builder.ExposedPorts[k]; ok {
+					delete(builder.ExposedPorts, k)
+				}
+			}
+		}
+
+		if len(builder.Volumes) > 0 &&
+			len(instructions.RemoveVolumes) > 0 {
+			for k := range instructions.RemoveVolumes {
+				if _, ok := builder.Volumes[k]; ok {
+					delete(builder.Volumes, k)
+				}
+			}
+		}
+
+		if len(instructions.RemoveEnvs) > 0 &&
+			len(builder.Env) > 0 {
+			var newEnv []string
+			for _, envPair := range builder.Env {
+				envParts := strings.SplitN(envPair, "=", 2)
+				if len(envParts) > 0 && envParts[0] != "" {
+					if _, ok := instructions.RemoveEnvs[envParts[0]]; !ok {
+						newEnv = append(newEnv, envPair)
+					}
+				}
+			}
+
+			builder.Env = newEnv
+		}
 	}
 
 	builder.BuildOptions.OutputStream = &builder.BuildLog
