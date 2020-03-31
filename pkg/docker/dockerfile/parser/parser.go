@@ -109,7 +109,7 @@ func FromFile(fpath string) (*spec.Dockerfile, error) {
 					if len(parts) > 0 {
 						if len(parts[0]) > 0 {
 							if strings.HasPrefix(parts[0], "$") {
-								argName := getRefName(parts[0])
+								argName := GetRefName(parts[0])
 								argVal, ok := dockerfile.FromArgs[argName]
 								if !ok {
 									currentStage.UnknownFromArgs[argName] = struct{}{}
@@ -150,7 +150,7 @@ func FromFile(fpath string) (*spec.Dockerfile, error) {
 					if len(parts) == 2 {
 						if len(parts[1]) > 0 {
 							if strings.HasPrefix(parts[1], "$") {
-								argName := getRefName(parts[1])
+								argName := GetRefName(parts[1])
 								argVal, ok := dockerfile.FromArgs[argName]
 								if !ok {
 									currentStage.UnknownFromArgs[argName] = struct{}{}
@@ -312,7 +312,7 @@ func FromFile(fpath string) (*spec.Dockerfile, error) {
 	return dockerfile, nil
 }
 
-func getRefName(ref string) string {
+func GetRefName(ref string) string {
 	ref = strings.TrimPrefix(ref, "$")
 	if strings.HasPrefix(ref, "{") && strings.HasSuffix(ref, "}") {
 		ref = strings.TrimPrefix(ref, "{")
