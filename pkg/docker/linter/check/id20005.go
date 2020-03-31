@@ -18,7 +18,7 @@ func init() {
 			MainMessage:  "Stage with invalid arguments in Dockerfile",
 			MatchMessage: "Stage: reason='%s' index=%d name='%s' start=%d end=%d",
 			Labels: map[string]string{
-				LabelLevel: LevelError,
+				LabelLevel: LevelFatal,
 				LabelScope: ScopeStage,
 			},
 		},
@@ -32,7 +32,7 @@ type InvalidStageArgs struct {
 }
 
 func (c *InvalidStageArgs) Run(opts *Options, ctx *Context) (*Result, error) {
-	log.Debugf("check.InvalidStageArgs.Run[%s]", c.ID)
+	log.Debugf("linter.check[%s:'%s']", c.ID, c.Name)
 	result := &Result{
 		Source: &c.Info,
 	}

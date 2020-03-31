@@ -28,7 +28,7 @@ type NoDockerignore struct {
 }
 
 func (c *NoDockerignore) Run(opts *Options, ctx *Context) (*Result, error) {
-	log.Debugf("check.NoDockerignore.Run[%s]", c.ID)
+	log.Debugf("linter.check[%s:'%s']", c.ID, c.Name)
 	result := &Result{
 		Source: &c.Info,
 	}

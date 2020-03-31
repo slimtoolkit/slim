@@ -33,7 +33,7 @@ type MultipleEntrypointInstructions struct {
 }
 
 func (c *MultipleEntrypointInstructions) Run(opts *Options, ctx *Context) (*Result, error) {
-	log.Debugf("check.MultipleEntrypointInstructions.Run[%s]", c.ID)
+	log.Debugf("linter.check[%s:'%s']", c.ID, c.Name)
 	result := &Result{
 		Source: &c.Info,
 	}

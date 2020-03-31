@@ -19,7 +19,7 @@ func init() {
 			MainMessage:  "No WORKDIR path in stage",
 			MatchMessage: "Instruction: start=%d end=%d global_index=%d stage_id=%d stage_index=%d",
 			Labels: map[string]string{
-				LabelLevel: LevelError,
+				LabelLevel: LevelFatal,
 				LabelScope: ScopeStage,
 			},
 		},
@@ -33,7 +33,7 @@ type NoWorkdirPath struct {
 }
 
 func (c *NoWorkdirPath) Run(opts *Options, ctx *Context) (*Result, error) {
-	log.Debugf("check.NoWorkdirPath.Run[%s]", c.ID)
+	log.Debugf("linter.check[%s:'%s']", c.ID, c.Name)
 	result := &Result{
 		Source: &c.Info,
 	}

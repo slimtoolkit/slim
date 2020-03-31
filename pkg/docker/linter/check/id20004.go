@@ -17,7 +17,7 @@ func init() {
 			MainMessage:  "Stage without arguments in Dockerfile",
 			MatchMessage: "Stage: index=%d start=%d end=%d",
 			Labels: map[string]string{
-				LabelLevel: LevelError,
+				LabelLevel: LevelFatal,
 				LabelScope: ScopeStage,
 			},
 		},
@@ -31,7 +31,7 @@ type NoStageArgs struct {
 }
 
 func (c *NoStageArgs) Run(opts *Options, ctx *Context) (*Result, error) {
-	log.Debugf("check.NoStageArgs.Run[%s]", c.ID)
+	log.Debugf("linter.check[%s:'%s']", c.ID, c.Name)
 	result := &Result{
 		Source: &c.Info,
 	}

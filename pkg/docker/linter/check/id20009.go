@@ -31,7 +31,7 @@ type StagelessInstruction struct {
 }
 
 func (c *StagelessInstruction) Run(opts *Options, ctx *Context) (*Result, error) {
-	log.Debugf("check.StagelessInstruction.Run[%s]", c.ID)
+	log.Debugf("linter.check[%s:'%s']", c.ID, c.Name)
 	result := &Result{
 		Source: &c.Info,
 	}

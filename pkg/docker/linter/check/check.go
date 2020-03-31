@@ -37,6 +37,7 @@ const (
 
 const (
 	LevelAny   = "any"
+	LevelFatal = "fatal" //parse or other errors that will result in image build failures
 	LevelError = "error"
 	LevelWarn  = "warn"
 	LevelInfo  = "info"

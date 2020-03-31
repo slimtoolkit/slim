@@ -33,7 +33,7 @@ type DeprecatedInstruction struct {
 }
 
 func (c *DeprecatedInstruction) Run(opts *Options, ctx *Context) (*Result, error) {
-	log.Debugf("check.DeprecatedInstruction.Run[%s]", c.ID)
+	log.Debugf("linter.check[%s:'%s']", c.ID, c.Name)
 	result := &Result{
 		Source: &c.Info,
 	}
