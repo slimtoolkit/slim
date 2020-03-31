@@ -234,6 +234,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 * `--http-probe-retry-wait` - number of seconds to wait before retrying HTTP probe (doubles when target is not ready; default: 8)
 * `--http-probe-ports` - explicit list of ports to probe (in the order you want them to be probed; excluded ports are not probed!)
 * `--http-probe-full` - do full HTTP probe for all selected ports (if false, finish after first successful scan; default: false)
+* `--http-probe-exit-on-failure` - exit when all HTTP probe commands fail (default: false)
 * `--show-clogs` - show container logs (from the container used to perform dynamic inspection)
 * `--show-blogs` - show build logs (when the minified container is built)
 * `--copy-meta-artifacts` - copy meta artifacts to the provided location
@@ -245,10 +246,14 @@ In the interactive CLI prompt mode you must specify the target image using the `
 * `--include-path` - Include directory or file from image [zero or more] (optionally overwriting the artifact's permissions, user and group information; format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 * `--include-path-file` - Load directory or file includes from a file (optionally overwriting the artifact's permissions, user and group information; format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 * `--include-bin value` - Include binary from image (executable or shared object using its absolute path)
+* `--include-bin-file` - Load shared binary file includes from a file (similar to `--include-path-file`)
 * `--include-exe value` - Include executable from image (by executable name)
-* `--include-shell` - Include basic shell functionality
+* `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
+* `--include-shell` - Include basic shell functionality (default: false)
 * `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 * `--path-perms-file` - File with path permissions to set (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
+* `--exclude-pattern` - Exclude path pattern ([Glob/Match in Go](https://golang.org/pkg/path/filepath/#Match) and `**`) from image
+* `--exclude-mounts` - Exclude mounted volumes from image (default: true)
 * `--env` - override ENV analyzing image [zero or more]
 * `--workdir` - override WORKDIR analyzing image
 * `--network` - override default container network settings analyzing image
