@@ -95,6 +95,7 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 - [BASIC USAGE INFO](#basic-usage-info)
 - [COMMANDS](#commands)
 - [USAGE DETAILS](#usage-details)
+  - [`LINT` COMMAND OPTIONS](#lint-command-options)
   - [`XRAY` COMMAND OPTIONS](#xray-command-options)
   - [`BUILD` COMMAND OPTIONS](#build-command-options)
 - [RUNNING CONTAINERIZED](#running-containerized)
@@ -156,11 +157,12 @@ The OS-specific installers for `docker-slim` will be available soon (there's alr
 
 ## BASIC USAGE INFO
 
-`docker-slim [global flags] [xray|build|profile|update|version|help] [command-specific flags] <IMAGE_ID_OR_NAME>`
+`docker-slim [global flags] [lint|xray|build|profile|update|version|help] [command-specific flags] <IMAGE_ID_OR_NAME>`
 
 
 ### COMMANDS
 
+* `lint` - analyze container instructions in Dockerfiles (or Docker images)
 * `xray` - do static analysis for the target container image (including 'reverse engineering' the Dockerfile for the image)
 * `profile` - do `xray` plus dynamic container analysis
 * `build` - do `profile` plus an ability to create a new optimized image along with the security profiles
@@ -179,10 +181,12 @@ If you run `docker-slim` without any parameters you'll get an interactive prompt
 
 ## USAGE DETAILS
 
-`docker-slim [global options] command [command options] <Docker image ID or name>`
+`docker-slim [global options] command [command options] <target image ID or name>`
 
 Commands:
 
+* `lint`    - Lint the target Dockerfile (or image)
+* `xray`    - Collects fat image information and reverse engineers its Dockerfile
 * `build`   - Collect fat image information and build a slim image from it
 * `profile` - Collect fat image information and generate a fat container report
 * `info`    - Collect fat image information and reverse engineers its Dockerfile (no runtime container analysis)
@@ -211,6 +215,21 @@ Global options:
 To get more command line option information run `docker-slim` without any parameters or select one of the top level commands to get the command-specific information.
 
 To disable the version checks set the global `--check-version` flag to `false` (e.g., `--check-version=false`) or you can use the `DSLIM_CHECK_VERSION` environment variable.
+
+
+### `LINT` COMMAND OPTIONS
+
+* `--target` - target Dockerfile path (or Docker image, in the future)
+* `--target-type` - explicitly specify the command target type (values: dockerfile, image)
+* `--skip-build-context` - don't try to analyze build context
+* `build-context-dir` - explicitly specify the build context directory
+* `skip-dockerignore` - don't try to analyze .dockerignore
+* `include-check-label` - include checks with the selected label key:value
+* `exclude-check-label` - exclude checks with the selected label key:value
+* `include-check-id` - check ID to include
+* `include-check-id-file` - file with check IDs to include
+* `exclude-check-id` - check ID to exclude
+* `exclude-check-id-file` - file with check IDs to exclude
 
 
 ### `XRAY` COMMAND OPTIONS
