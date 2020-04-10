@@ -3,7 +3,6 @@ package check
 
 import (
 	"fmt"
-	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -11,16 +10,16 @@ import (
 )
 
 func init() {
-	check := &RelativeWorkdir{
+	check := &NoWorkdirPath{
 		Info: Info{
 			ID:           "ID.20013",
-			Name:         "Relative WORKDIR path",
-			Description:  "Relative WORKDIR path",
+			Name:         "No WORKDIR path",
+			Description:  "No WORKDIR path",
 			DetailsURL:   "https://lint.dockersl.im/check/ID.20013",
-			MainMessage:  "Relative WORKDIR path in stage",
+			MainMessage:  "No WORKDIR path in stage",
 			MatchMessage: "Instruction: start=%d end=%d global_index=%d stage_id=%d stage_index=%d",
 			Labels: map[string]string{
-				LabelLevel: LevelWarn,
+				LabelLevel: LevelFatal,
 				LabelScope: ScopeStage,
 			},
 		},
@@ -29,11 +28,11 @@ func init() {
 	AllChecks = append(AllChecks, check)
 }
 
-type RelativeWorkdir struct {
+type NoWorkdirPath struct {
 	Info
 }
 
-func (c *RelativeWorkdir) Run(opts *Options, ctx *Context) (*Result, error) {
+func (c *NoWorkdirPath) Run(opts *Options, ctx *Context) (*Result, error) {
 	log.Debugf("linter.check[%s:'%s']", c.ID, c.Name)
 	result := &Result{
 		Source: &c.Info,
@@ -42,16 +41,7 @@ func (c *RelativeWorkdir) Run(opts *Options, ctx *Context) (*Result, error) {
 	for _, stage := range ctx.Dockerfile.Stages {
 		if instructions, ok := stage.CurrentInstructionsByType[instruction.Workdir]; ok {
 			for _, inst := range instructions {
-				if len(inst.Args) > 0 {
-					workdirPath := inst.Args[0]
-					if strings.Contains(workdirPath, "$") {
-						workdirPath = expandEnvVars(workdirPath, stage.EnvVars)
-					}
-
-					if strings.HasPrefix(workdirPath, "/") {
-						continue
-					}
-
+				if len(inst.Args) == 0 {
 					if !result.Hit {
 						result.Hit = true
 						result.Message = c.MainMessage
@@ -77,16 +67,4 @@ func (c *RelativeWorkdir) Run(opts *Options, ctx *Context) (*Result, error) {
 	}
 
 	return result, nil
-}
-
-func expandEnvVars(data string, vars map[string]string) string {
-	//todo: do it the right way
-	if strings.HasPrefix(data, "$") {
-		name := data[1:]
-		if val, ok := vars[name]; ok {
-			return val
-		}
-	}
-
-	return data
 }

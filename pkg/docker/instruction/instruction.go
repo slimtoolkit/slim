@@ -54,8 +54,8 @@ type Format struct {
 	IsDepricated       bool
 }
 
-// Instructions is a map of all available instructions and their format info (by name)
-var Instructions = map[string]Format{
+// Specs is a map of all available instructions and their format info (by name)
+var Specs = map[string]Format{
 	Add: {
 		Name:             Add,
 		SupportsFlags:    true,
@@ -130,6 +130,6 @@ var Instructions = map[string]Format{
 
 func IsKnown(name string) bool {
 	name = strings.ToLower(name)
-	_, ok := Instructions[name]
+	_, ok := Specs[name]
 	return ok
 }
