@@ -3,6 +3,7 @@ package check
 
 import (
 	"fmt"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -10,16 +11,16 @@ import (
 )
 
 func init() {
-	check := &NoWorkdirPath{
+	check := &MalformedInstExecForm{
 		Info: Info{
 			ID:           "ID.20013",
-			Name:         "No WORKDIR path",
-			Description:  "No WORKDIR path",
+			Name:         "Malformed instruction in exec/JSON form",
+			Description:  "Malformed instruction in exec/JSON form",
 			DetailsURL:   "https://lint.dockersl.im/check/ID.20013",
-			MainMessage:  "No WORKDIR path in stage",
-			MatchMessage: "Instruction: start=%d end=%d global_index=%d stage_id=%d stage_index=%d",
+			MainMessage:  "Malformed instruction in exec/JSON form",
+			MatchMessage: "Instruction: start=%d end=%d name='%s' global_index=%d stage_id=%d stage_index=%d",
 			Labels: map[string]string{
-				LabelLevel: LevelFatal,
+				LabelLevel: LevelError,
 				LabelScope: ScopeStage,
 			},
 		},
@@ -28,38 +29,47 @@ func init() {
 	AllChecks = append(AllChecks, check)
 }
 
-type NoWorkdirPath struct {
+type MalformedInstExecForm struct {
 	Info
 }
 
-func (c *NoWorkdirPath) Run(opts *Options, ctx *Context) (*Result, error) {
+func (c *MalformedInstExecForm) Run(opts *Options, ctx *Context) (*Result, error) {
 	log.Debugf("linter.check[%s:'%s']", c.ID, c.Name)
 	result := &Result{
 		Source: &c.Info,
 	}
 
 	for _, stage := range ctx.Dockerfile.Stages {
-		if instructions, ok := stage.CurrentInstructionsByType[instruction.Workdir]; ok {
-			for _, inst := range instructions {
-				if len(inst.Args) == 0 {
-					if !result.Hit {
-						result.Hit = true
-						result.Message = c.MainMessage
+		for _, name := range instruction.SupportsJSONForm() {
+			if instructions, ok := stage.CurrentInstructionsByType[name]; ok {
+				for _, inst := range instructions {
+					if inst.IsJSONForm {
+						continue
 					}
 
-					for _, inst := range instructions {
-						match := &Match{
-							Stage:       stage,
-							Instruction: inst,
-							Message: fmt.Sprintf(c.MatchMessage,
-								inst.StartLine,
-								inst.EndLine,
-								inst.GlobalIndex,
-								inst.StageID,
-								inst.StageIndex),
+					argsRaw := strings.TrimSpace(inst.ArgsRaw)
+					if strings.HasPrefix(argsRaw, "[") ||
+						strings.HasSuffix(argsRaw, "]") {
+						if !result.Hit {
+							result.Hit = true
+							result.Message = c.MainMessage
 						}
 
-						result.Matches = append(result.Matches, match)
+						for _, inst := range instructions {
+							match := &Match{
+								Stage:       stage,
+								Instruction: inst,
+								Message: fmt.Sprintf(c.MatchMessage,
+									inst.StartLine,
+									inst.EndLine,
+									inst.Name,
+									inst.GlobalIndex,
+									inst.StageID,
+									inst.StageIndex),
+							}
+
+							result.Matches = append(result.Matches, match)
+						}
 					}
 				}
 			}

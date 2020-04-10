@@ -10,13 +10,13 @@ import (
 )
 
 func init() {
-	check := &NoWorkdirPath{
+	check := &NoEnvArgs{
 		Info: Info{
-			ID:           "ID.20014",
-			Name:         "No WORKDIR path",
-			Description:  "No WORKDIR path",
-			DetailsURL:   "https://lint.dockersl.im/check/ID.20014",
-			MainMessage:  "No WORKDIR path in stage",
+			ID:           "ID.20016",
+			Name:         "No ENV args",
+			Description:  "No ENV args",
+			DetailsURL:   "https://lint.dockersl.im/check/ID.20016",
+			MainMessage:  "No ENV args in stage",
 			MatchMessage: "Instruction: start=%d end=%d global_index=%d stage_id=%d stage_index=%d",
 			Labels: map[string]string{
 				LabelLevel: LevelFatal,
@@ -28,18 +28,18 @@ func init() {
 	AllChecks = append(AllChecks, check)
 }
 
-type NoWorkdirPath struct {
+type NoEnvArgs struct {
 	Info
 }
 
-func (c *NoWorkdirPath) Run(opts *Options, ctx *Context) (*Result, error) {
+func (c *NoEnvArgs) Run(opts *Options, ctx *Context) (*Result, error) {
 	log.Debugf("linter.check[%s:'%s']", c.ID, c.Name)
 	result := &Result{
 		Source: &c.Info,
 	}
 
 	for _, stage := range ctx.Dockerfile.Stages {
-		if instructions, ok := stage.CurrentInstructionsByType[instruction.Workdir]; ok {
+		if instructions, ok := stage.CurrentInstructionsByType[instruction.Env]; ok {
 			for _, inst := range instructions {
 				if len(inst.Args) == 0 {
 					if !result.Hit {

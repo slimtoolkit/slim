@@ -133,3 +133,12 @@ func IsKnown(name string) bool {
 	_, ok := Specs[name]
 	return ok
 }
+
+func SupportsJSONForm() []string {
+	var names []string
+	for _, spec := range Specs {
+		names = append(names, spec.Name)
+	}
+
+	return names
+}
