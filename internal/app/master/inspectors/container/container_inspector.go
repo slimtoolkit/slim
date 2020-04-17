@@ -65,45 +65,45 @@ const (
 
 // Inspector is a container execution inspector
 type Inspector struct {
-	ContainerInfo      *dockerapi.Container
-	ContainerPortsInfo string
-	ContainerPortList  string
-	ContainerID        string
-	ContainerName      string
-	FatContainerCmd    []string
-	LocalVolumePath    string
-	DoUseLocalMounts   bool
-	SensorVolumeName   string
-	DoKeepTmpArtifacts bool
-	StatePath          string
-	CmdPort            dockerapi.Port
-	EvtPort            dockerapi.Port
-	DockerHostIP       string
-	ImageInspector     *image.Inspector
-	APIClient          *dockerapi.Client
-	Overrides          *config.ContainerOverrides
-	Links              []string
-	EtcHostsMaps       []string
-	DNSServers         []string
-	DNSSearchDomains   []string
-	ShowContainerLogs  bool
-	RunTargetAsUser    bool
-	VolumeMounts       map[string]config.VolumeMount
-	KeepPerms          bool
-	PathPerms          map[string]*fsutil.AccessInfo
-	ExcludePatterns    map[string]*fsutil.AccessInfo
-	IncludePaths       map[string]*fsutil.AccessInfo
-	IncludeBins        map[string]*fsutil.AccessInfo
-	IncludeExes        map[string]*fsutil.AccessInfo
-	DoIncludeShell     bool
-	DoDebug            bool
-	PrintState         bool
-	PrintPrefix        string
-	InContainer        bool
-	dockerEventCh      chan *dockerapi.APIEvents
-	dockerEventStopCh  chan struct{}
-	ipcClient          *ipc.Client
-	logger             *log.Entry
+	ContainerInfo       *dockerapi.Container
+	ContainerPortsInfo  string
+	ContainerPortList   string
+	ContainerID         string
+	ContainerName       string
+	FatContainerCmd     []string
+	LocalVolumePath     string
+	DoUseLocalMounts    bool
+	SensorVolumeName    string
+	DoKeepTmpArtifacts  bool
+	StatePath           string
+	CmdPort             dockerapi.Port
+	EvtPort             dockerapi.Port
+	DockerHostIP        string
+	ImageInspector      *image.Inspector
+	APIClient           *dockerapi.Client
+	Overrides           *config.ContainerOverrides
+	Links               []string
+	EtcHostsMaps        []string
+	DNSServers          []string
+	DNSSearchDomains    []string
+	DoShowContainerLogs bool
+	RunTargetAsUser     bool
+	VolumeMounts        map[string]config.VolumeMount
+	KeepPerms           bool
+	PathPerms           map[string]*fsutil.AccessInfo
+	ExcludePatterns     map[string]*fsutil.AccessInfo
+	IncludePaths        map[string]*fsutil.AccessInfo
+	IncludeBins         map[string]*fsutil.AccessInfo
+	IncludeExes         map[string]*fsutil.AccessInfo
+	DoIncludeShell      bool
+	DoDebug             bool
+	PrintState          bool
+	PrintPrefix         string
+	InContainer         bool
+	dockerEventCh       chan *dockerapi.APIEvents
+	dockerEventStopCh   chan struct{}
+	ipcClient           *ipc.Client
+	logger              *log.Entry
 }
 
 func pathMapKeys(m map[string]*fsutil.AccessInfo) []string {
@@ -151,35 +151,35 @@ func NewInspector(
 
 	logger = logger.WithFields(log.Fields{"component": "container.inspector"})
 	inspector := &Inspector{
-		logger:             logger,
-		StatePath:          statePath,
-		LocalVolumePath:    localVolumePath,
-		DoUseLocalMounts:   doUseLocalMounts,
-		SensorVolumeName:   sensorVolumeName,
-		DoKeepTmpArtifacts: doKeepTmpArtifacts,
-		CmdPort:            cmdPortSpecDefault,
-		EvtPort:            evtPortSpecDefault,
-		ImageInspector:     imageInspector,
-		APIClient:          client,
-		Overrides:          overrides,
-		Links:              links,
-		EtcHostsMaps:       etcHostsMaps,
-		DNSServers:         dnsServers,
-		DNSSearchDomains:   dnsSearchDomains,
-		ShowContainerLogs:  showContainerLogs,
-		RunTargetAsUser:    runTargetAsUser,
-		VolumeMounts:       volumeMounts,
-		KeepPerms:          keepPerms,
-		PathPerms:          pathPerms,
-		ExcludePatterns:    excludePatterns,
-		IncludePaths:       includePaths,
-		IncludeBins:        includeBins,
-		IncludeExes:        includeExes,
-		DoIncludeShell:     doIncludeShell,
-		DoDebug:            doDebug,
-		PrintState:         printState,
-		PrintPrefix:        printPrefix,
-		InContainer:        inContainer,
+		logger:              logger,
+		StatePath:           statePath,
+		LocalVolumePath:     localVolumePath,
+		DoUseLocalMounts:    doUseLocalMounts,
+		SensorVolumeName:    sensorVolumeName,
+		DoKeepTmpArtifacts:  doKeepTmpArtifacts,
+		CmdPort:             cmdPortSpecDefault,
+		EvtPort:             evtPortSpecDefault,
+		ImageInspector:      imageInspector,
+		APIClient:           client,
+		Overrides:           overrides,
+		Links:               links,
+		EtcHostsMaps:        etcHostsMaps,
+		DNSServers:          dnsServers,
+		DNSSearchDomains:    dnsSearchDomains,
+		DoShowContainerLogs: showContainerLogs,
+		RunTargetAsUser:     runTargetAsUser,
+		VolumeMounts:        volumeMounts,
+		KeepPerms:           keepPerms,
+		PathPerms:           pathPerms,
+		ExcludePatterns:     excludePatterns,
+		IncludePaths:        includePaths,
+		IncludeBins:         includeBins,
+		IncludeExes:         includeExes,
+		DoIncludeShell:      doIncludeShell,
+		DoDebug:             doDebug,
+		PrintState:          printState,
+		PrintPrefix:         printPrefix,
+		InContainer:         inContainer,
 	}
 
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
@@ -407,7 +407,7 @@ func (i *Inspector) RunContainer() error {
 								fmt.Printf("%s info=container status=crashed id=%v\n", i.PrintPrefix, i.ContainerID)
 							}
 
-							i.showContainerLogs()
+							i.ShowContainerLogs()
 
 							if i.PrintState {
 								fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
@@ -559,7 +559,7 @@ func (i *Inspector) RunContainer() error {
 	return ErrStartMonitorTimeout
 }
 
-func (i *Inspector) showContainerLogs() {
+func (i *Inspector) ShowContainerLogs() {
 	var outData bytes.Buffer
 	outw := bufio.NewWriter(&outData)
 	var errData bytes.Buffer
@@ -618,8 +618,8 @@ func (i *Inspector) ShutdownContainer() error {
 
 	i.shutdownContainerChannels()
 
-	if i.ShowContainerLogs {
-		i.showContainerLogs()
+	if i.DoShowContainerLogs {
+		i.ShowContainerLogs()
 	}
 
 	err := i.APIClient.StopContainer(i.ContainerID, 9)

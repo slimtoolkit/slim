@@ -277,11 +277,14 @@ func OnBuild(
 		doHTTPProbe = true
 	}
 
+	var probe *http.CustomProbe
 	if doHTTPProbe {
-		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds,
+		var err error
+		probe, err = http.NewCustomProbe(containerInspector, httpProbeCmds,
 			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts, doHTTPProbeFull, doHTTPProbeExitOnFailure,
 			true, prefix)
 		errutil.FailOn(err)
+
 		if len(probe.Ports) == 0 {
 			fmt.Printf("%s[%s]: state=http.probe.error error='no exposed ports' message='expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services\n", appName, cmdName)
 			logger.Info("shutting down 'fat' container...")
@@ -323,6 +326,10 @@ func OnBuild(
 		fmt.Printf("%s[%s]: info=prompt message='waiting for the HTTP probe to finish'\n", appName, cmdName)
 		<-continueAfter.ContinueChan
 		fmt.Printf("%s[%s]: info=event message='HTTP probe is done'\n", appName, cmdName)
+		if probe != nil && probe.CallCount > 0 && probe.OkCount == 0 {
+			//make sure we show the container logs because none of the http probe calls were successful
+			containerInspector.DoShowContainerLogs = true
+		}
 	default:
 		errutil.Fail("unknown continue-after mode")
 	}

@@ -37,6 +37,9 @@ type CustomProbe struct {
 	ProbeExitOnFailure bool
 	ContainerInspector *container.Inspector
 	doneChan           chan struct{}
+	CallCount          uint64
+	ErrCount           uint64
+	OkCount            uint64
 }
 
 // NewCustomProbe creates a new custom HTTP probe
@@ -169,10 +172,6 @@ func (p *CustomProbe) Start() {
 
 		log.Info("HTTP probe started...")
 
-		var callCount uint64
-		var errCount uint64
-		var okCount uint64
-
 		findIdx := func(ports []string, target string) int {
 			for idx, val := range ports {
 				if val == target {
@@ -212,7 +211,7 @@ func (p *CustomProbe) Start() {
 
 		for _, port := range p.Ports {
 			//If it's ok stop after the first successful probe pass
-			if okCount > 0 && !p.ProbeFull {
+			if p.OkCount > 0 && !p.ProbeFull {
 				break
 			}
 
@@ -277,7 +276,7 @@ func (p *CustomProbe) Start() {
 						}
 
 						res, err := httpClient.Do(req)
-						callCount++
+						p.CallCount++
 						reqBody.Seek(0, 0)
 
 						if res != nil {
@@ -308,10 +307,10 @@ func (p *CustomProbe) Start() {
 						}
 
 						if err == nil {
-							okCount++
+							p.OkCount++
 							break
 						} else {
-							errCount++
+							p.ErrCount++
 
 							if urlErr, ok := err.(*url.Error); ok {
 								if urlErr.Err == io.EOF {
@@ -337,21 +336,24 @@ func (p *CustomProbe) Start() {
 
 		if p.PrintState {
 			fmt.Printf("%s info=http.probe.summary total=%v failures=%v successful=%v\n",
-				p.PrintPrefix, callCount, errCount, okCount)
+				p.PrintPrefix, p.CallCount, p.ErrCount, p.OkCount)
 
 			warning := ""
 			switch {
-			case callCount == 0:
+			case p.CallCount == 0:
 				warning = "warning=no.calls"
-			case okCount == 0:
+			case p.OkCount == 0:
 				warning = "warning=no.successful.calls"
 			}
 
 			fmt.Printf("%s state=http.probe.done %s\n", p.PrintPrefix, warning)
 		}
 
-		if callCount > 0 && okCount == 0 && p.ProbeExitOnFailure {
+		if p.CallCount > 0 && p.OkCount == 0 && p.ProbeExitOnFailure {
 			fmt.Printf("%s info=probe.error reason=no.successful.calls\n", p.PrintPrefix)
+			if p.ContainerInspector != nil {
+				p.ContainerInspector.ShowContainerLogs()
+			}
 			fmt.Printf("%s state=exited\n", p.PrintPrefix)
 			os.Exit(-1)
 		}
