@@ -42,8 +42,8 @@ func (c *RelativeWorkdir) Run(opts *Options, ctx *Context) (*Result, error) {
 	for _, stage := range ctx.Dockerfile.Stages {
 		if instructions, ok := stage.CurrentInstructionsByType[instruction.Workdir]; ok {
 			for _, inst := range instructions {
-				if len(inst.Args) > 0 {
-					workdirPath := inst.Args[0]
+				if len(inst.ArgsRaw) > 0 {
+					workdirPath := inst.ArgsRaw
 					if strings.Contains(workdirPath, "$") {
 						workdirPath = expandEnvVars(workdirPath, stage.EnvVars)
 					}

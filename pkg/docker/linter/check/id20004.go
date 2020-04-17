@@ -41,7 +41,7 @@ func (c *NoStageArgs) Run(opts *Options, ctx *Context) (*Result, error) {
 			continue
 		}
 
-		if len(stage.FromInstruction.Args) == 0 {
+		if len(stage.FromInstruction.ArgsRaw) == 0 {
 			if !result.Hit {
 				result.Hit = true
 				result.Message = c.MainMessage

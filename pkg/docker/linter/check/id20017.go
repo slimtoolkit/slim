@@ -42,13 +42,12 @@ func (c *LastUserRoot) Run(opts *Options, ctx *Context) (*Result, error) {
 	lastStageIdx := len(ctx.Dockerfile.Stages) - 1
 	if lastStageIdx > -1 {
 		stage := ctx.Dockerfile.Stages[lastStageIdx]
-		//for _, stage := range ctx.Dockerfile.Stages {
 
 		if instructions, ok := stage.CurrentInstructionsByType[instruction.User]; ok {
 			lastUserIdx := len(instructions) - 1
 			if lastUserIdx > -1 {
 				inst := instructions[lastUserIdx]
-				argsRaw := strings.ToLower(strings.TrimSpace(inst.ArgsRaw))
+				argsRaw := strings.ToLower(inst.ArgsRaw)
 				if argsRaw == "0" ||
 					argsRaw == "root" ||
 					strings.HasPrefix(argsRaw, "0:") ||

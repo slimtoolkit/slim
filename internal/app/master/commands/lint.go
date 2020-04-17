@@ -121,14 +121,15 @@ func printLintResults(lintResults *linter.Report,
 
 				for _, m := range result.Matches {
 					var instructionInfo string
-					if m.Instruction != nil {
-						instructionInfo = fmt.Sprintf(" instruction(start=%d end=%d name=%s gindex=%d sindex=%d)",
-							m.Instruction.StartLine,
-							m.Instruction.EndLine,
-							m.Instruction.Name,
-							m.Instruction.GlobalIndex,
-							m.Instruction.StageIndex)
-					}
+					//the match message has the instruction info already
+					//if m.Instruction != nil {
+					//	instructionInfo = fmt.Sprintf(" instruction(start=%d end=%d name=%s gindex=%d sindex=%d)",
+					//		m.Instruction.StartLine,
+					//		m.Instruction.EndLine,
+					//		m.Instruction.Name,
+					//		m.Instruction.GlobalIndex,
+					//		m.Instruction.StageIndex)
+					//}
 
 					var stageInfo string
 					if m.Stage != nil {

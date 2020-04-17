@@ -61,6 +61,7 @@ func (c *InvalidStageArgs) Run(opts *Options, ctx *Context) (*Result, error) {
 			result.Matches = append(result.Matches, match)
 		}
 
+		//FROM args are always parsed
 		if len(stage.FromInstruction.Args) == 2 ||
 			len(stage.FromInstruction.Args) > 3 {
 			if !result.Hit {

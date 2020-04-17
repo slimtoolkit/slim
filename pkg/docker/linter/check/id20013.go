@@ -47,9 +47,8 @@ func (c *MalformedInstExecForm) Run(opts *Options, ctx *Context) (*Result, error
 						continue
 					}
 
-					argsRaw := strings.TrimSpace(inst.ArgsRaw)
-					if strings.HasPrefix(argsRaw, "[") ||
-						strings.HasSuffix(argsRaw, "]") {
+					if strings.HasPrefix(inst.ArgsRaw, "[") ||
+						strings.HasSuffix(inst.ArgsRaw, "]") {
 						if !result.Hit {
 							result.Hit = true
 							result.Message = c.MainMessage

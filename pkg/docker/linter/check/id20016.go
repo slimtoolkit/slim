@@ -5,21 +5,19 @@ import (
 	"fmt"
 
 	log "github.com/sirupsen/logrus"
-
-	"github.com/docker-slim/docker-slim/pkg/docker/instruction"
 )
 
 func init() {
 	check := &NoEnvArgs{
 		Info: Info{
 			ID:           "ID.20016",
-			Name:         "No ENV args",
-			Description:  "No ENV args",
+			Name:         "No instruction args",
+			Description:  "No instruction args",
 			DetailsURL:   "https://lint.dockersl.im/check/ID.20016",
-			MainMessage:  "No ENV args in stage",
-			MatchMessage: "Instruction: start=%d end=%d global_index=%d stage_id=%d stage_index=%d",
+			MainMessage:  "No instruction args in stage",
+			MatchMessage: "Instruction: start=%d end=%d name='%s' global_index=%d stage_id=%d stage_index=%d",
 			Labels: map[string]string{
-				LabelLevel: LevelFatal,
+				LabelLevel: LevelError,
 				LabelScope: ScopeStage,
 			},
 		},
@@ -39,29 +37,26 @@ func (c *NoEnvArgs) Run(opts *Options, ctx *Context) (*Result, error) {
 	}
 
 	for _, stage := range ctx.Dockerfile.Stages {
-		if instructions, ok := stage.CurrentInstructionsByType[instruction.Env]; ok {
-			for _, inst := range instructions {
-				if len(inst.Args) == 0 {
-					if !result.Hit {
-						result.Hit = true
-						result.Message = c.MainMessage
-					}
-
-					for _, inst := range instructions {
-						match := &Match{
-							Stage:       stage,
-							Instruction: inst,
-							Message: fmt.Sprintf(c.MatchMessage,
-								inst.StartLine,
-								inst.EndLine,
-								inst.GlobalIndex,
-								inst.StageID,
-								inst.StageIndex),
-						}
-
-						result.Matches = append(result.Matches, match)
-					}
+		for _, inst := range stage.CurrentInstructions {
+			if len(inst.ArgsRaw) == 0 {
+				if !result.Hit {
+					result.Hit = true
+					result.Message = c.MainMessage
 				}
+
+				match := &Match{
+					Stage:       stage,
+					Instruction: inst,
+					Message: fmt.Sprintf(c.MatchMessage,
+						inst.StartLine,
+						inst.EndLine,
+						inst.Name,
+						inst.GlobalIndex,
+						inst.StageID,
+						inst.StageIndex),
+				}
+
+				result.Matches = append(result.Matches, match)
 			}
 		}
 	}
