@@ -46,7 +46,8 @@ func (c *UnnecessaryLayer) Run(opts *Options, ctx *Context) (*Result, error) {
 			if inst.Name == instruction.Run &&
 				prevInst != nil &&
 				prevInst.Name == instruction.Run {
-
+				//very primitive unnecessary layer that only checks the previous RUN instruction
+				//should have a separate check with more advanced unnecessary layer detection
 				if !result.Hit {
 					result.Hit = true
 					result.Message = c.MainMessage
