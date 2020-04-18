@@ -29,6 +29,7 @@ func OnLint(
 	excludeCheckLabels map[string]string,
 	includeCheckIDs map[string]struct{},
 	excludeCheckIDs map[string]struct{},
+	doShowNoHits bool,
 	ec *ExecutionContext) {
 	const cmdName = "lint"
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
@@ -78,7 +79,7 @@ func OnLint(
 	lintResults, err := linter.Execute(options)
 	errutil.FailOn(err)
 
-	printLintResults(lintResults, appName, cmdName, cmdReport)
+	printLintResults(lintResults, appName, cmdName, cmdReport, doShowNoHits)
 
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
 	cmdReport.State = report.CmdStateCompleted
@@ -96,7 +97,8 @@ func OnLint(
 
 func printLintResults(lintResults *linter.Report,
 	appName, cmdName string,
-	cmdReport *report.LintCommand) {
+	cmdReport *report.LintCommand,
+	doShowNoHits bool) {
 	fmt.Printf("%s[%s]: info=lint.results hits=%d nohits=%d errors=%d:\n",
 		appName,
 		cmdName,
@@ -143,7 +145,7 @@ func printLintResults(lintResults *linter.Report,
 		}
 	}
 
-	if len(lintResults.NoHits) > 0 {
+	if doShowNoHits && len(lintResults.NoHits) > 0 {
 		fmt.Printf("%s[%s]: info=lint.check.nohits count=%d\n",
 			appName, cmdName, len(lintResults.NoHits))
 

@@ -274,6 +274,7 @@ const (
 	FlagIncludeCheckIDFile = "include-check-id-file"
 	FlagExcludeCheckID     = "exclude-check-id"
 	FlagExcludeCheckIDFile = "exclude-check-id-file"
+	FlagShowNoHits         = "show-nohits"
 )
 
 // Lint command flag usage info
@@ -289,6 +290,7 @@ const (
 	FlagIncludeCheckIDFileUsage = "File with check IDs to include"
 	FlagExcludeCheckIDUsage     = "Check ID to exclude"
 	FlagExcludeCheckIDFileUsage = "File with check IDs to exclude"
+	FlagShowNoHitsUsage         = "Show checks with no matches"
 )
 
 ///////////////////////////////////
@@ -681,6 +683,7 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagIncludeCheckIDFile), Description: FlagIncludeCheckIDFileUsage},
 				{Text: fullFlagName(FlagExcludeCheckID), Description: FlagExcludeCheckIDUsage},
 				{Text: fullFlagName(FlagExcludeCheckIDFile), Description: FlagExcludeCheckIDFileUsage},
+				{Text: fullFlagName(FlagShowNoHits), Description: FlagShowNoHitsUsage},
 			},
 			Values: map[string]CompleteValue{
 				fullFlagName(FlagTarget):             completeLintTarget,
@@ -692,6 +695,7 @@ var cmdSpecs = map[string]cmdSpec{
 				fullFlagName(FlagIncludeCheckIDFile): completeFile,
 				fullFlagName(FlagExcludeCheckID):     completeLintCheckID,
 				fullFlagName(FlagExcludeCheckIDFile): completeFile,
+				fullFlagName(FlagShowNoHits):         completeBool,
 			},
 		},
 	},
@@ -1522,6 +1526,11 @@ func init() {
 					Usage:  FlagExcludeCheckIDFileUsage,
 					EnvVar: "DSLIM_LINT_EXCLUDE_CID_FILE",
 				},
+				cli.BoolFlag{
+					Name:   FlagShowNoHits,
+					Usage:  FlagShowNoHitsUsage,
+					EnvVar: "DSLIM_LINT_SHOW_NOHITS",
+				},
 			},
 			Action: func(ctx *cli.Context) error {
 				targetRef := ctx.String(FlagTarget)
@@ -1592,6 +1601,8 @@ func init() {
 					excludeCheckIDs[k] = v
 				}
 
+				doShowNoHits := ctx.Bool(FlagShowNoHits)
+
 				ec := &commands.ExecutionContext{}
 
 				commands.OnLint(
@@ -1605,6 +1616,7 @@ func init() {
 					excludeCheckLabels,
 					includeCheckIDs,
 					excludeCheckIDs,
+					doShowNoHits,
 					ec)
 
 				return nil
