@@ -14,7 +14,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
-	github.com/fsouza/go-dockerclient v1.5.0
+	github.com/fsouza/go-dockerclient v1.6.4
 	github.com/google/shlex v0.0.0-20181106134648-c34317bd91bf
 	github.com/gosuri/uilive v0.0.3 // indirect
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
