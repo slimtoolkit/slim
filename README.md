@@ -3,7 +3,7 @@
 [![Follow](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Follow)](https://twitter.com/DockerSlim)
 [![Gitter chat](https://badges.gitter.im/docker-slim/docker-slim.svg)](https://gitter.im/docker-slim/community)
 [![Discord chat](https://img.shields.io/static/v1.svg?label=chat&message=on%20discord&color=7389D8)](https://discord.gg/9tDyxYS)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/84c0786a23a444d49aa6f09e5cfd260b)](https://www.codacy.com/manual/edumco/docker-slim?utm_source=github.com&amp;utm_medium=referral&amp;utm_content=edumco/docker-slim&amp;utm_campaign=Badge_Grade)
+[![Codacy Badge](https://api.codacy.com/project/badge/Grade/84c0786a23a444d49aa6f09e5cfd260b)](https://www.codacy.com/manual/edumco/docker-slim?utm_source=github.com&utm_medium=referral&utm_content=edumco/docker-slim&utm_campaign=Badge_Grade)
 
 # Minify and Secure Docker containers (free and open source!)
 
@@ -35,53 +35,53 @@ Note that `docker-slim` will interact with your application for you if you enabl
 
 Node.js application images:
 
-* from ubuntu:14.04    - 432MB  => 14MB   (minified by **30.85X**)
-* from debian:jessie   - 406MB  => 25.1MB (minified by **16.21X**)
-* from node:alpine     - 66.7MB => 34.7MB (minified by **1.92X**)
-* from node:distroless - 72.7MB => 39.7MB (minified by **1.83X**)
+- from ubuntu:14.04 - 432MB => 14MB (minified by **30.85X**)
+- from debian:jessie - 406MB => 25.1MB (minified by **16.21X**)
+- from node:alpine - 66.7MB => 34.7MB (minified by **1.92X**)
+- from node:distroless - 72.7MB => 39.7MB (minified by **1.83X**)
 
 Python application images:
 
-* from ubuntu:14.04             - 438MB  => 16.8MB (minified by **25.99X**)
-* from python:2.7-alpine        - 84.3MB => 23.1MB (minified by **3.65X**)
-* from python:2.7.15            - 916MB  => 27.5MB (minified by **33.29X**)
-* from centos:7                 - 647MB  => 23MB   (minified by **28.57X**)
-* from centos/python-27-centos7 - 700MB  => 24MB   (minified by **29.01X**)
-* from python2.7:distroless     - 60.7MB => 18.3MB (minified by **3.32X**)
+- from ubuntu:14.04 - 438MB => 16.8MB (minified by **25.99X**)
+- from python:2.7-alpine - 84.3MB => 23.1MB (minified by **3.65X**)
+- from python:2.7.15 - 916MB => 27.5MB (minified by **33.29X**)
+- from centos:7 - 647MB => 23MB (minified by **28.57X**)
+- from centos/python-27-centos7 - 700MB => 24MB (minified by **29.01X**)
+- from python2.7:distroless - 60.7MB => 18.3MB (minified by **3.32X**)
 
 Ruby application images:
 
-* from ubuntu:14.04    - 433MB => 13.8MB (minified by **31.31X**)
-* from ruby:2.2-alpine - 319MB => 27MB   (minified by **11.88X**)
-* from ruby:2.5.3      - 978MB => 30MB   (minified by **32.74X**)
+- from ubuntu:14.04 - 433MB => 13.8MB (minified by **31.31X**)
+- from ruby:2.2-alpine - 319MB => 27MB (minified by **11.88X**)
+- from ruby:2.5.3 - 978MB => 30MB (minified by **32.74X**)
 
 Golang application images:
 
-* from golang:latest - 700MB => 1.56MB (minified by **448.76X**)
-* from ubuntu:14.04  - 531MB => 1.87MB (minified by **284.10X**)
-* from golang:alpine - 258MB => 1.56MB (minified by **165.61X**)
-* from centos:7      - 615MB => 1.87MB (minified by **329.14X**)
+- from golang:latest - 700MB => 1.56MB (minified by **448.76X**)
+- from ubuntu:14.04 - 531MB => 1.87MB (minified by **284.10X**)
+- from golang:alpine - 258MB => 1.56MB (minified by **165.61X**)
+- from centos:7 - 615MB => 1.87MB (minified by **329.14X**)
 
 Rust application images:
 
-* from rust:1.31 - 2GB => 14MB (minified by **147.16X**) 
+- from rust:1.31 - 2GB => 14MB (minified by **147.16X**)
 
 JAVA application images:
 
-* from ubuntu:14.04 - 743.6 MB => 100.3 MB
+- from ubuntu:14.04 - 743.6 MB => 100.3 MB
 
 PHP application images:
 
-* from php:7.0-cli - 368MB => 26.6MB (minified by **13.85X**)
+- from php:7.0-cli - 368MB => 26.6MB (minified by **13.85X**)
 
 Haskell application images:
 
-* (Scotty service) from haskell:8 - 2.09GB => 16.6MB (minified by **125.32X**)
-* (Scotty service) from haskell:7 - 1.5GB => 21MB (minified by 71X)
+- (Scotty service) from haskell:8 - 2.09GB => 16.6MB (minified by **125.32X**)
+- (Scotty service) from haskell:7 - 1.5GB => 21MB (minified by 71X)
 
 Elixir application images:
 
-* (Phoenix service) from elixir:1.6 - 1.1 GB => 37 MB (minified by **29.25X**)
+- (Phoenix service) from elixir:1.6 - 1.1 GB => 37 MB (minified by **29.25X**)
 
 Note: The examples are in a separate repository: [https://github.com/docker-slim/examples](https://github.com/docker-slim/examples)
 
@@ -89,7 +89,6 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
-**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [RECENT UPDATES](#recent-updates)
 - [INSTALLATION](#installation)
@@ -117,7 +116,7 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
   - [Nginx fails in my minified image](#nginx-fails-in-my-minified-image)
   - [DockerSlim fails with a 'no permission to read from' error](#dockerslim-fails-with-a-no-permission-to-read-from-error)
 - [BUILD PROCESS](#build-process)
-    - [Build Steps](#build-steps)
+  - [Build Steps](#build-steps)
 - [DESIGN](#design)
   - [CORE CONCEPTS](#core-concepts)
   - [DYNAMIC ANALYSIS OPTIONS](#dynamic-analysis-options)
@@ -139,46 +138,47 @@ Latest version: 1.29.0 (3/18/2020)
 
 This is a UX release that introduces an interactive mode to make it easier to run `docker-slim` when you don't know all available flags. Usage `<tab>` and `<space>` buttons to navigate the interactive prompt and `<enter>` to execute the selected command. The `--target` option for the `build`, `xray` and `profile` commands is now used to select the target container image you want to process. For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md). For more info about the interactive prompt see [`go-prompt`](https://github.com/c-bata/go-prompt).
 
-
 ## INSTALLATION
 
 1. Download the zip package for your platform.
+
    - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.29.0/dist_mac.zip)
+
    - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.29.0/dist_linux.tar.gz)
+
    - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.29.0/dist_linux_arm.tar.gz)
+
 2. Unzip the package.
+
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
 If the directory where you extracted the binaries is not in your PATH then you'll need to run your `docker-slim` commands from that directory.
 
 To use the Docker image distribution just start using the `dslim/docker-slim` container image.
 
-The OS-specific installers for `docker-slim` will be available soon (there's already a couple of community `Homebrew` formulas for Mac and Linux, but they need to be enhanced to work properly). 
-
+The OS-specific installers for `docker-slim` will be available soon (there's already a couple of community `Homebrew` formulas for Mac and Linux, but they need to be enhanced to work properly).
 
 ## BASIC USAGE INFO
 
 `docker-slim [global flags] [lint|xray|build|profile|update|version|help] [command-specific flags] <IMAGE_ID_OR_NAME>`
 
-
 ### COMMANDS
 
-* `lint` - analyze container instructions in Dockerfiles (or Docker images)
-* `xray` - do static analysis for the target container image (including 'reverse engineering' the Dockerfile for the image)
-* `profile` - do `xray` plus dynamic container analysis
-* `build` - do `profile` plus an ability to create a new optimized image along with the security profiles
-* `version` - show the version information
-* `update` - update `docker-slim` to the latest version
-* `help` - show the available commands and global flags
+- `lint` - analyze container instructions in Dockerfiles (or Docker images)
+- `xray` - do static analysis for the target container image (including 'reverse engineering' the Dockerfile for the image)
+- `profile` - do `xray` plus dynamic container analysis
+- `build` - do `profile` plus an ability to create a new optimized image along with the security profiles
+- `version` - show the version information
+- `update` - update `docker-slim` to the latest version
+- `help` - show the available commands and global flags
 
 Example: `docker-slim build my/sample-app`
 
-See the `USAGE DETAILS` section for more details. You can also get additional information about the parameters running `docker-slim`. 
+See the `USAGE DETAILS` section for more details. You can also get additional information about the parameters running `docker-slim`.
 
 Run `docker-slim help` to get a high level overview of the available commands. Run a `docker-slim` command without any parameters and you'll get more information about that command (e.g., `docker-slim build`).
 
 If you run `docker-slim` without any parameters you'll get an interactive prompt that will provide suggestions about the available commands and flags. `Tabs` are used to show the available options, to autocomplete the parameters and to navigate the option menu (which you can also do with Up and Down arrows). `Spaces` are used to move to the next parameter and `Enter` is used to run the command. For more info about the interactive prompt see [`go-prompt`](https://github.com/c-bata/go-prompt).
-
 
 ## USAGE DETAILS
 
@@ -186,115 +186,113 @@ If you run `docker-slim` without any parameters you'll get an interactive prompt
 
 Commands:
 
-* `lint`    - Lint the target Dockerfile (or image)
-* `xray`    - Collects fat image information and reverse engineers its Dockerfile
-* `build`   - Collect fat image information and build a slim image from it
-* `profile` - Collect fat image information and generate a fat container report
-* `info`    - Collect fat image information and reverse engineers its Dockerfile (no runtime container analysis)
-* `version` - Show docker-slim and docker version information
-* `update`  - Update docker-slim
-* `help`    - Show help info
+- `lint` - Lint the target Dockerfile (or image)
+- `xray` - Collects fat image information and reverse engineers its Dockerfile
+- `build` - Collect fat image information and build a slim image from it
+- `profile` - Collect fat image information and generate a fat container report
+- `info` - Collect fat image information and reverse engineers its Dockerfile (no runtime container analysis)
+- `version` - Show docker-slim and docker version information
+- `update` - Update docker-slim
+- `help` - Show help info
 
 Global options:
 
-* `--report` - command report location (target location where to save the executed command results; `slim.report.json` by default; set it to `off` to disable)
-* `--check-version` - check if the current version is outdate
-* `--version` - print the version
-* `--debug` - enable debug logs
-* `--verbose` - enable info logs
-* `--log-level` - set the logging level ('debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')
-* `--log-format` - set the format used by logs ('text' (default), or 'json')
-* `--log` - log file to store logs
-* `--host` - Docker host address
-* `--tls` - use TLS connecting to Docker
-* `--tls-verify` - do TLS verification
-* `--tls-cert-path` - path to TLS cert files
-* `--state-path value` - DockerSlim state base path (must set it if the DockerSlim binaries are not in a writable directory!)
-* `--archive-state` - Archives DockerSlim state to the selected Docker volume (default volume - `docker-slim-state`). By default, enabled when DockerSlim is running in a container (disabled otherwise). Set it to `off` to disable explicitly.
-* `--in-container` - Set it to true to explicitly indicate that DockerSlim is running in a container (if it's not set DockerSlim will try to analyze the environment where it's running to determine if it's containerized)
+- `--report` - command report location (target location where to save the executed command results; `slim.report.json` by default; set it to `off` to disable)
+- `--check-version` - check if the current version is outdate
+- `--version` - print the version
+- `--debug` - enable debug logs
+- `--verbose` - enable info logs
+- `--log-level` - set the logging level ('debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')
+- `--log-format` - set the format used by logs ('text' (default), or 'json')
+- `--log` - log file to store logs
+- `--host` - Docker host address
+- `--tls` - use TLS connecting to Docker
+- `--tls-verify` - do TLS verification
+- `--tls-cert-path` - path to TLS cert files
+- `--state-path value` - DockerSlim state base path (must set it if the DockerSlim binaries are not in a writable directory!)
+- `--archive-state` - Archives DockerSlim state to the selected Docker volume (default volume - `docker-slim-state`). By default, enabled when DockerSlim is running in a container (disabled otherwise). Set it to `off` to disable explicitly.
+- `--in-container` - Set it to true to explicitly indicate that DockerSlim is running in a container (if it's not set DockerSlim will try to analyze the environment where it's running to determine if it's containerized)
 
 To get more command line option information run `docker-slim` without any parameters or select one of the top level commands to get the command-specific information.
 
 To disable the version checks set the global `--check-version` flag to `false` (e.g., `--check-version=false`) or you can use the `DSLIM_CHECK_VERSION` environment variable.
 
-
 ### `LINT` COMMAND OPTIONS
 
-* `--target` - target Dockerfile path (or Docker image, in the future)
-* `--target-type` - explicitly specify the command target type (values: dockerfile, image)
-* `--skip-build-context` - don't try to analyze build context
-* `build-context-dir` - explicitly specify the build context directory
-* `skip-dockerignore` - don't try to analyze .dockerignore
-* `include-check-label` - include checks with the selected label key:value
-* `exclude-check-label` - exclude checks with the selected label key:value
-* `include-check-id` - check ID to include
-* `include-check-id-file` - file with check IDs to include
-* `exclude-check-id` - check ID to exclude
-* `exclude-check-id-file` - file with check IDs to exclude
-
+- `--target` - target Dockerfile path (or Docker image, in the future)
+- `--target-type` - explicitly specify the command target type (values: dockerfile, image)
+- `--skip-build-context` - don't try to analyze build context
+- `build-context-dir` - explicitly specify the build context directory
+- `skip-dockerignore` - don't try to analyze .dockerignore
+- `include-check-label` - include checks with the selected label key:value
+- `exclude-check-label` - exclude checks with the selected label key:value
+- `include-check-id` - check ID to include
+- `include-check-id-file` - file with check IDs to include
+- `exclude-check-id` - check ID to exclude
+- `exclude-check-id-file` - file with check IDs to exclude
 
 ### `XRAY` COMMAND OPTIONS
 
-* `--target` - target container image (name or ID)
-* `--changes value` - show layer change details for the selected change type (values: none, all, delete, modify, add)
-* `--layer value` - show details for the selected layer (using layer index or ID)
-* `--remove-file-artifacts` - remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
-* `--add-image-manifest` - add raw image manifest to the command execution report file
-* `--add-image-config` - add raw image config object to the command execution report file
+- `--target` - target container image (name or ID)
+- `--changes value` - show layer change details for the selected change type (values: none, all, delete, modify, add)
+- `--layer value` - show details for the selected layer (using layer index or ID)
+- `--remove-file-artifacts` - remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
+- `--add-image-manifest` - add raw image manifest to the command execution report file
+- `--add-image-config` - add raw image config object to the command execution report file
 
 In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.
 
 ### `BUILD` COMMAND OPTIONS
 
-* `--target` - target container image (name or ID)
-* `--http-probe` - enables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`)
-* `--http-probe-cmd` - additional HTTP probe command [zero or more]
-* `--http-probe-cmd-file` - file with user defined HTTP probe commands
-* `--http-probe-retry-count` - number of retries for each HTTP probe (default: 5)
-* `--http-probe-retry-wait` - number of seconds to wait before retrying HTTP probe (doubles when target is not ready; default: 8)
-* `--http-probe-ports` - explicit list of ports to probe (in the order you want them to be probed; excluded ports are not probed!)
-* `--http-probe-full` - do full HTTP probe for all selected ports (if false, finish after first successful scan; default: false)
-* `--http-probe-exit-on-failure` - exit when all HTTP probe commands fail (default: false)
-* `--show-clogs` - show container logs (from the container used to perform dynamic inspection)
-* `--show-blogs` - show build logs (when the minified container is built)
-* `--copy-meta-artifacts` - copy meta artifacts to the provided location
-* `--remove-file-artifacts` - remove file artifacts when command is done (note: you'll loose autogenerated Seccomp and Apparmor profiles unless you copy them with the `copy-meta-artifacts` flag or if you archive the state)
-* `--tag` - use a custom tag for the generated image (instead of the default: `<original_image_name>.slim`)
-* `--entrypoint` - override ENTRYPOINT analyzing image
-* `--cmd` - override CMD analyzing image
-* `--mount` - mount volume analyzing image (the mount parameter format is identical to the `-v` mount command in Docker) [zero or more]
-* `--include-path` - Include directory or file from image [zero or more] (optionally overwriting the artifact's permissions, user and group information; format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
-* `--include-path-file` - Load directory or file includes from a file (optionally overwriting the artifact's permissions, user and group information; format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
-* `--include-bin value` - Include binary from image (executable or shared object using its absolute path)
-* `--include-bin-file` - Load shared binary file includes from a file (similar to `--include-path-file`)
-* `--include-exe value` - Include executable from image (by executable name)
-* `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
-* `--include-shell` - Include basic shell functionality (default: false)
-* `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
-* `--path-perms-file` - File with path permissions to set (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
-* `--exclude-pattern` - Exclude path pattern ([Glob/Match in Go](https://golang.org/pkg/path/filepath/#Match) and `**`) from image
-* `--exclude-mounts` - Exclude mounted volumes from image (default: true)
-* `--env` - override ENV analyzing image [zero or more]
-* `--workdir` - override WORKDIR analyzing image
-* `--network` - override default container network settings analyzing image
-* `--expose` - use additional EXPOSE instructions analyzing image [zero or more]
-* `--link` - add link to another container analyzing image [zero or more]
-* `--hostname` - override default container hostname analyzing image
-* `--etc-hosts-map` - add a host to IP mapping to /etc/hosts analyzing image [zero or more]
-* `--container-dns` - add a dns server analyzing image [zero or more]
-* `--container-dns-search` - add a dns search domain for unqualified hostnames analyzing image [zero or more]
-* `--continue-after` - Select continue mode: enter | signal | probe | timeout or numberInSeconds (default: enter)
-* `--dockerfile` - The source Dockerfile name to build the fat image before it's minified.
-* `--use-local-mounts` - Mount local paths for target container artifact input and output (off, by default)
-* `--use-sensor-volume` - Sensor volume name to use (set it to your Docker volume name if you manage your own `docker-slim` sensor volume).
-* `--keep-tmp-artifacts` - Keep temporary artifacts when command is done (off, by default).
-* `--keep-perms` - Keep artifact permissions as-is (true, by default)
-* `--run-target-as-user` - Run target app (in the temporary container) as USER from Dockerfile (true, by default)
-* `--new-entrypoint` - New ENTRYPOINT instruction for the optimized image
-* `--new-cmd` - New CMD instruction for the optimized image
-* `--new-expose` - New EXPOSE instructions for the optimized image
-* `--new-workdir` - New WORKDIR instruction for the optimized image
-* `--new-env` - New ENV instructions for the optimized image
+- `--target` - target container image (name or ID)
+- `--http-probe` - enables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`)
+- `--http-probe-cmd` - additional HTTP probe command [zero or more]
+- `--http-probe-cmd-file` - file with user defined HTTP probe commands
+- `--http-probe-retry-count` - number of retries for each HTTP probe (default: 5)
+- `--http-probe-retry-wait` - number of seconds to wait before retrying HTTP probe (doubles when target is not ready; default: 8)
+- `--http-probe-ports` - explicit list of ports to probe (in the order you want them to be probed; excluded ports are not probed!)
+- `--http-probe-full` - do full HTTP probe for all selected ports (if false, finish after first successful scan; default: false)
+- `--http-probe-exit-on-failure` - exit when all HTTP probe commands fail (default: false)
+- `--show-clogs` - show container logs (from the container used to perform dynamic inspection)
+- `--show-blogs` - show build logs (when the minified container is built)
+- `--copy-meta-artifacts` - copy meta artifacts to the provided location
+- `--remove-file-artifacts` - remove file artifacts when command is done (note: you'll loose autogenerated Seccomp and Apparmor profiles unless you copy them with the `copy-meta-artifacts` flag or if you archive the state)
+- `--tag` - use a custom tag for the generated image (instead of the default: `<original_image_name>.slim`)
+- `--entrypoint` - override ENTRYPOINT analyzing image
+- `--cmd` - override CMD analyzing image
+- `--mount` - mount volume analyzing image (the mount parameter format is identical to the `-v` mount command in Docker) [zero or more]
+- `--include-path` - Include directory or file from image [zero or more] (optionally overwriting the artifact's permissions, user and group information; format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
+- `--include-path-file` - Load directory or file includes from a file (optionally overwriting the artifact's permissions, user and group information; format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
+- `--include-bin value` - Include binary from image (executable or shared object using its absolute path)
+- `--include-bin-file` - Load shared binary file includes from a file (similar to `--include-path-file`)
+- `--include-exe value` - Include executable from image (by executable name)
+- `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
+- `--include-shell` - Include basic shell functionality (default: false)
+- `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
+- `--path-perms-file` - File with path permissions to set (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
+- `--exclude-pattern` - Exclude path pattern ([Glob/Match in Go](https://golang.org/pkg/path/filepath/#Match) and `**`) from image
+- `--exclude-mounts` - Exclude mounted volumes from image (default: true)
+- `--env` - override ENV analyzing image [zero or more]
+- `--workdir` - override WORKDIR analyzing image
+- `--network` - override default container network settings analyzing image
+- `--expose` - use additional EXPOSE instructions analyzing image [zero or more]
+- `--link` - add link to another container analyzing image [zero or more]
+- `--hostname` - override default container hostname analyzing image
+- `--etc-hosts-map` - add a host to IP mapping to /etc/hosts analyzing image [zero or more]
+- `--container-dns` - add a dns server analyzing image [zero or more]
+- `--container-dns-search` - add a dns search domain for unqualified hostnames analyzing image [zero or more]
+- `--continue-after` - Select continue mode: enter | signal | probe | timeout or numberInSeconds (default: enter)
+- `--dockerfile` - The source Dockerfile name to build the fat image before it's minified.
+- `--use-local-mounts` - Mount local paths for target container artifact input and output (off, by default)
+- `--use-sensor-volume` - Sensor volume name to use (set it to your Docker volume name if you manage your own `docker-slim` sensor volume).
+- `--keep-tmp-artifacts` - Keep temporary artifacts when command is done (off, by default).
+- `--keep-perms` - Keep artifact permissions as-is (true, by default)
+- `--run-target-as-user` - Run target app (in the temporary container) as USER from Dockerfile (true, by default)
+- `--new-entrypoint` - New ENTRYPOINT instruction for the optimized image
+- `--new-cmd` - New CMD instruction for the optimized image
+- `--new-expose` - New EXPOSE instructions for the optimized image
+- `--new-workdir` - New WORKDIR instruction for the optimized image
+- `--new-env` - New ENV instructions for the optimized image
 
 In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.
 
@@ -307,7 +305,6 @@ The `--include-shell` option provides a simple way to keep a basic shell in the 
 The `--dockerfile` option makes it possible to build a new minified image directly from source Dockerfile. Pass the Dockerfile name as the value for this flag and pass the build context directory or URL instead of the docker image name as the last parameter for the `docker-slim` build command: `docker-slim build --dockerfile Dockerfile --tag my/custom_minified_image_name .` If you want to see the console output from the build stages (when the fat and slim images are built) add the `--show-blogs` build flag. Note that the build console output is not interactive and it's printed only after the corresponding build step is done. The fat image created during the build process has the `.fat` suffix in its name. If you specify a custom image tag (with the `--tag` flag) the `.fat` suffix is added to the name part of the tag. If you don't provide a custom tag the generated fat image name will have the following format: `docker-slim-tmp-fat-image.<pid_of_docker-slim>.<current_timestamp>`. The minified image name will have the `.slim` suffix added to that auto-generated container image name (`docker-slim-tmp-fat-image.<pid_of_docker-slim>.<current_timestamp>.slim`). Take a look at this [python examples](https://github.com/docker-slim/examples/tree/master/python_ubuntu_18_py27_from_dockerfile) to see how it's using the `--dockerfile` flag.
 
 The `--use-local-mounts` option is used to choose how the `docker-slim` sensor is added to the target container and how the sensor artifacts are delivered back to the master. If you enable this option you'll get the original `docker-slim` behavior where it uses local file system volume mounts to add the sensor executable and to extract the artifacts from the target container. This option doesn't always work as expected in the dockerized environment where `docker-slim` itself is running in a Docker container. When this option is disabled (default behavior) then a separate Docker volume is used to mount the sensor and the sensor artifacts are explicitly copied from the target container.
-
 
 ## RUNNING CONTAINERIZED
 
@@ -322,16 +319,16 @@ By default, `docker-slim` will try to create a Docker volume for its sensor unle
 Here's a basic example of how to use the containerized version of `docker-slim`:
 `docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock dslim/docker-slim build your-docker-image-name`
 
-Here's a GitLab example for their `dind` `.gitlab-ci.yml` config file: 
+Here's a GitLab example for their `dind` `.gitlab-ci.yml` config file:
 `docker run -e DOCKER_HOST=tcp://$(grep docker /etc/hosts | cut -f1):2375 dslim/docker-slim build your-docker-image-name`
 
-Here's a CircleCI example for their `remote docker` `.circleci/config.yml` config file (used after the `setup_remote_docker` step): 
-```
+Here's a CircleCI example for their `remote docker` `.circleci/config.yml` config file (used after the `setup_remote_docker` step):
+
+```bash
 docker create -v /dcert_path --name dcert alpine:latest /bin/true
 docker cp $DOCKER_CERT_PATH/. dcert:/dcert_path
 docker run --volumes-from dcert -e DOCKER_HOST=$DOCKER_HOST -e DOCKER_TLS_VERIFY=$DOCKER_TLS_VERIFY -e DOCKER_CERT_PATH=/dcert_path dslim/docker-slim build your-docker-image-name
 ```
-
 
 ## DOCKER CONNECT OPTIONS
 
@@ -354,7 +351,6 @@ If you want to use TLS without verification:
 `docker-slim --host=tcp://192.168.99.100:2376 --tls-cert-path=/Users/youruser/.docker/machine/machines/default --tls=true --tls-verify=false build --http-probe=true my/sample-node-app-multi`
 
 If the Docker environment variables are not set and if you don't specify any Docker connect options `docker-slim` will try to use the default unix socket.
-
 
 ## HTTP PROBE COMMANDS
 
@@ -411,7 +407,6 @@ For each HTTP probe call docker-slim will print the call status. Example: `info=
 
 You can execute your own external HTTP requests using the `target.port.list` field in the container info message docker-slim prints when it starts its test container: `docker-slim[build]: info=container name=<your_container_name> id=<your_container_id> target.port.list=[<comma_separated_list_of_port_numbers_to_use>] target.port.info=[<comma_separated_list_of_port_mapping_records>]`. Example: `docker-slim[build]: info=container name=dockerslimk_42861_20190203084955 id=aa44c43bcf4dd0dae78e2a8b3ac011e7beb6f098a65b09c8bce4a91dc2ff8427 target.port.list=[32899] target.port.info=[9000/tcp => 0.0.0.0:32899]`. With this information you can run `curl` or other HTTP request generating tools: `curl http://localhost:32899`.
 
-
 ## DEBUGGING MINIFIED CONTAINERS
 
 You can create dedicated debugging side-car container images loaded with the tools you need for debugging target containers. This allows you to keep your production container images small. The debugging side-car containers attach to the running target containers.
@@ -419,6 +414,7 @@ You can create dedicated debugging side-car container images loaded with the too
 Assuming you have a running container named `node_app_alpine` you can attach your debugging side-car with a command like this: `docker run --rm -it --pid=container:node_app_alpine --net=container:node_app_alpine --cap-add sys_admin alpine sh`. In this example, the debugging side-car is a regular alphine image. This is exactly what happens with the `node_alpine` app sample (located in the `node_alpine` directory of the `examples` repo) and the `run_debug_sidecar.command` helper script.
 
 If you run the `ps` command in the side-car you'll see the application from the target container:
+
 ```
 # ps
 PID   USER     TIME   COMMAND
@@ -428,6 +424,7 @@ PID   USER     TIME   COMMAND
 ```
 
 You can access the target container file system through `/proc/<TARGET_PID>/root`:
+
 ```
 # ls -lh /proc/1/root/opt/my/service
 total 8
@@ -437,16 +434,15 @@ drwxr-xr-x    3 root     root        4.0K Sep  2 15:51 node_modules
 
 Some of the useful debugging commands include `cat /proc/<TARGET_PID>/cmdline`, `ls -l /proc/<TARGET_PID>/cwd`, `cat /proc/1/environ`, `cat /proc/<TARGET_PID>/limits`, `cat /proc/<TARGET_PID>/status` and `ls -l /proc/<TARGET_PID>/fd`.
 
-
 ## MINIFYING COMMAND LINE TOOLS
 
 Unless the default CMD instruction in your Dockerfile is sufficient you'll have to specify command line parameters when you execute the `build` command in DockerSlim. This can be done with the `--cmd` option.
 
 Other useful command line parameters:
 
-* `--show-clogs` - use it if you want to see the output of your container.
-* `--mount` - use it  to mount a volume when DockerSlim inspects your image.
-* `--entrypoint` - use it if you want to override the ENTRYPOINT instruction when DockerSlim inspects your image.
+- `--show-clogs` - use it if you want to see the output of your container.
+- `--mount` - use it to mount a volume when DockerSlim inspects your image.
+- `--entrypoint` - use it if you want to override the ENTRYPOINT instruction when DockerSlim inspects your image.
 
 Note that the `--entrypoint` and `--cmd` options don't override the `ENTRYPOINT` and `CMD` instructions in the final minified image.
 
@@ -455,7 +451,6 @@ Here's a sample `build` command:
 `docker-slim build --show-clogs=true --cmd docker-compose.yml --mount $(pwd)/data/:/data/ dslim/container-transform`
 
 It's used to minify the `container-transform` tool. You can get the minified image from [`Docker Hub`](https://hub.docker.com/r/dslim/container-transform.slim/).
-
 
 ## QUICK SECCOMP EXAMPLE
 
@@ -473,13 +468,11 @@ Feel free to copy the generated profile :-)
 
 You can use the generated Seccomp profile with your original image or with the minified image.
 
-
 ## USING AUTO-GENERATED SECCOMP PROFILES
 
 You can use the generated profile with your original image or with the minified image DockerSlim created:
 
 `docker run -it --rm --security-opt seccomp:path_to/my-sample-node-app-seccomp.json -p 8000:8000 my/sample-node-app.slim`
-
 
 ## ORIGINAL DEMO VIDEO
 
@@ -487,62 +480,60 @@ You can use the generated profile with your original image or with the minified 
 
 [Demo video on YouTube](https://youtu.be/uKdHnfEbc-E)
 
-
 ## DEMO STEPS
 
 The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
 1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.29.0/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.29.0/dist_linux.tar.gz) or [Linux ARM](https://downloads.dockerslim.com/releases/1.29.0/dist_linux_arm.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
-  The extracted directory contains two binaries:
+The extracted directory contains two binaries:
 
-  * `docker-slim` <- the main application
-  * `docker-slim-sensor` <- the sensor application used to collect information from running containers
+- `docker-slim` <- the main application
+- `docker-slim-sensor` <- the sensor application used to collect information from running containers
 
 2. Clone the `examples` repo to use the sample apps (note: the examples have been moved to a separate repo). You can skip this step if you have your own app.
 
-  `git clone https://github.com/docker-slim/examples.git`
+`git clone https://github.com/docker-slim/examples.git`
 
 3. Create a Docker image for the sample node.js app in `examples/node_ubuntu`. You can skip this step if you have your own app.
 
-  `cd examples/node_ubuntu`
+`cd examples/node_ubuntu`
 
-  `eval "$(docker-machine env default)"` <- optional (depends on how Docker is installed on your machine and what kind of Docker version you are using); if the Docker host is not running you'll need to start it first: `docker-machine start default`; see the `Docker connect options` section for more details.
+`eval "$(docker-machine env default)"` <- optional (depends on how Docker is installed on your machine and what kind of Docker version you are using); if the Docker host is not running you'll need to start it first: `docker-machine start default`; see the `Docker connect options` section for more details.
 
-  `docker build -t my/sample-node-app .`
+`docker build -t my/sample-node-app .`
 
 4. Run `docker-slim`:
 
-  `./docker-slim build my/sample-node-app` <- run it from the location where you extraced the docker-slim binaries (or update your PATH env var to include the `docker-slim` bin directory)
+`./docker-slim build my/sample-node-app` <- run it from the location where you extraced the docker-slim binaries (or update your PATH env var to include the `docker-slim` bin directory)
 
-  DockerSlim creates a special container based on the target image you provided. It also creates a resource directory where it stores the information it discovers about your image: `<docker-slim directory>/.images/<TARGET_IMAGE_ID>`.
+DockerSlim creates a special container based on the target image you provided. It also creates a resource directory where it stores the information it discovers about your image: `<docker-slim directory>/.images/<TARGET_IMAGE_ID>`.
 
-  By default, `docker-slim` will run its http probe against the temporary container. If you are minifying a command line tool that doesn't expose any web service interface you'll need to explicitly disable http probing (by setting `--http-probe=false`).
+By default, `docker-slim` will run its http probe against the temporary container. If you are minifying a command line tool that doesn't expose any web service interface you'll need to explicitly disable http probing (by setting `--http-probe=false`).
 
 5. Use curl (or other tools) to call the sample app (optional)
 
-  `curl http://<YOUR_DOCKER_HOST_IP>:<PORT>`
+`curl http://<YOUR_DOCKER_HOST_IP>:<PORT>`
 
-  This is an optional step to make sure the target app container is doing something. Depending on the application it's an optional step. For some applications it's required if it loads new application resources dynamically based on the requests it's processing (e.g., Ruby or Python).
+This is an optional step to make sure the target app container is doing something. Depending on the application it's an optional step. For some applications it's required if it loads new application resources dynamically based on the requests it's processing (e.g., Ruby or Python).
 
-  You'll see the mapped ports printed to the console when `docker-slim` starts the target container. You can also get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
+You'll see the mapped ports printed to the console when `docker-slim` starts the target container. You can also get the port number either from the `docker ps` or `docker port <CONTAINER_ID>` commands. The current version of DockerSlim doesn't allow you to map exposed network ports (it works like `docker run … -P`).
 
 6. Press <enter> and wait until `docker-slim` says it's done
-  
-  By default or when http probing is enabled explicitly `docker-slim` will continue its execution once the http probe is done running. If you explicitly picked a different `continue-after` option follow the expected steps. For example, for the `enter` `continue-after` option you must press the `enter` button on your keyboard.
 
-  If http probing is enabled (when `http-probe` is set) and if `continue-after` is set to `enter` and you press the `enter` key before the built-in HTTP probe is done the probe might produce an EOF error because `docker-slim` will shut down the target container before all probe commands are done executing. It's ok to ignore it unless you really need the probe to finish.
+By default or when http probing is enabled explicitly `docker-slim` will continue its execution once the http probe is done running. If you explicitly picked a different `continue-after` option follow the expected steps. For example, for the `enter` `continue-after` option you must press the `enter` button on your keyboard.
+
+If http probing is enabled (when `http-probe` is set) and if `continue-after` is set to `enter` and you press the `enter` key before the built-in HTTP probe is done the probe might produce an EOF error because `docker-slim` will shut down the target container before all probe commands are done executing. It's ok to ignore it unless you really need the probe to finish.
 
 7. Once DockerSlim is done check that the new minified image is there
 
-  `docker images`
+`docker images`
 
-  You should see `my/sample-node-app.slim` in the list of images. Right now all generated images have `.slim` at the end of its name.
+You should see `my/sample-node-app.slim` in the list of images. Right now all generated images have `.slim` at the end of its name.
 
 8. Use the minified image
 
-  `docker run -it --rm --name="slim_node_app" -p 8000:8000 my/sample-node-app.slim`
-
+`docker run -it --rm --name="slim_node_app" -p 8000:8000 my/sample-node-app.slim`
 
 ## FAQ
 
@@ -568,10 +559,10 @@ You can explore the artifacts DockerSlim generates when it's creating a slim ima
 
 If you'd like to see the artifacts without running `docker-slim` you can take a look at the `examples/artifacts` directory in this repo. It doesn't include any image files, but you'll find:
 
-* a reverse engineered Dockerfile (`Dockerfile.fat`)
-* a container report file (`creport.json`)
-* a sample AppArmor profile (which will be named based on your original image name)
-*   and a sample Seccomp profile
+- a reverse engineered Dockerfile (`Dockerfile.fat`)
+- a container report file (`creport.json`)
+- a sample AppArmor profile (which will be named based on your original image name)
+- and a sample Seccomp profile
 
 If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `info` command.
 
@@ -625,21 +616,21 @@ Use Go 1.13 or higher to build `docker-slim`. You can use earlier version of Go,
 
 Tools:
 
-* `license-bill-of-materials` - Optional tool to track dependencies and their licenses.
-* `golint` - Optional tool for code analysis.  See `https://github.com/golang/lint` for more details.
+- `license-bill-of-materials` - Optional tool to track dependencies and their licenses.
+- `golint` - Optional tool for code analysis. See `https://github.com/golang/lint` for more details.
 
 You can install these tools using the `tools.get.sh` shell script in the `scripts` directory.
 
 Notes:
 
-* Make sure you have `golint` if you intend to run the `src.inspect.sh` or `mac.src.inspect.command` scripts.
+- Make sure you have `golint` if you intend to run the `src.inspect.sh` or `mac.src.inspect.command` scripts.
 
 #### Build Steps
 
 You have multiple options to build `docker-slim`:
 
-* Run `make` (or `./scripts/docker-builder.run.sh` or click on `./scripts/mac/docker-builder.run.command` on Macs) from the project directory (builds `docker-slim` in a Docker container; great if you don't want to install Go on your local machine and if you already have Docker)
-* Run `make build` (or `./scripts/src.build.sh` or click on `./scripts/mac/src.build.command` on Macs) to build `docker-slim` natively (requires Go installed locally)
+- Run `make` (or `./scripts/docker-builder.run.sh` or click on `./scripts/mac/docker-builder.run.command` on Macs) from the project directory (builds `docker-slim` in a Docker container; great if you don't want to install Go on your local machine and if you already have Docker)
+- Run `make build` (or `./scripts/src.build.sh` or click on `./scripts/mac/src.build.command` on Macs) to build `docker-slim` natively (requires Go installed locally)
 
 ## DESIGN
 
@@ -662,25 +653,24 @@ You have multiple options to build `docker-slim`:
 
 The goal is to auto-generate Seccomp, AppArmor, (and potentially SELinux) profiles based on the collected information.
 
-* AppArmor profiles
-* Seccomp profiles
+- AppArmor profiles
+- Seccomp profiles
 
 ### CHALLENGES
 
 Some of the advanced analysis options require a number of Linux kernel features that are not always included. The kernel you get with Docker Machine / Boot2docker is a great example of that.
 
-
 ## DEVELOPMENT PROGRESS
 
 ### TODO
 
-* AppArmor profile improvements
-* Better support for command line applications (e.g., ability to specify multiple executions)
-* Discover HTTP endpoints to make the HTTP probe more intelligent.
-* Scripting language dependency discovery in the "scanner" app.
-* Explore additional dependency discovery methods.
-* Build/use a custom Boot2docker kernel with every required feature turned on.
-* "Live" image create mode - to create new images from containers where users install their applications interactively.
+- AppArmor profile improvements
+- Better support for command line applications (e.g., ability to specify multiple executions)
+- Discover HTTP endpoints to make the HTTP probe more intelligent.
+- Scripting language dependency discovery in the "scanner" app.
+- Explore additional dependency discovery methods.
+- Build/use a custom Boot2docker kernel with every required feature turned on.
+- "Live" image create mode - to create new images from containers where users install their applications interactively.
 
 ## ORIGINS
 
@@ -698,7 +688,7 @@ Docker Hub: [dslim](https://hub.docker.com/r/dslim/) (dockerslim is already take
 
 ## MINIFIED DOCKER HUB IMAGES
 
-* [`container-transform`](https://hub.docker.com/r/dslim/container-transform.slim/)
+- [`container-transform`](https://hub.docker.com/r/dslim/container-transform.slim/)
 
 ## CONTRIBUTING
 
