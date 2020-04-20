@@ -23,7 +23,7 @@ require (
 	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/pkg/term v0.0.0-20190109203006-aa71e9d9e942 // indirect
-	github.com/sirupsen/logrus v1.5.0
+	github.com/sirupsen/logrus v1.4.2
 	github.com/urfave/cli v1.22.1
 	golang.org/x/sys v0.0.0-20200223170610-d5e6a3e2c0ae
 )
