@@ -41,6 +41,7 @@ func FromFile(fpath string) (*spec.Dockerfile, error) {
 	dockerfile := spec.NewDockerfile()
 	dockerfile.Name = filepath.Base(fpath)
 	dockerfile.Location = filepath.Dir(fpath)
+	dockerfile.Lines = astParsed.Lines
 
 	if astParsed.AST.StartLine > -1 && len(astParsed.AST.Children) > 0 {
 		var currentStage *spec.BuildStage
@@ -50,12 +51,20 @@ func FromFile(fpath string) (*spec.Dockerfile, error) {
 				GlobalIndex: idx,
 				StageIndex:  instStageIndex,
 				IsValid:     node.IsValid,
-				Raw:         node.Original,
+				RawData:     node.Original,
 				StartLine:   node.StartLine,
 				EndLine:     node.EndLine,
 				Name:        node.Value,
 				Flags:       node.Flags,
 				ArgsRaw:     node.ArgsRaw,
+			}
+
+			if len(dockerfile.Lines) > 0 &&
+			   inst.StartLine > 0 &&
+			   inst.StartLine <= len(dockerfile.Lines) &&
+			   inst.EndLine <= len(dockerfile.Lines) &&
+			   inst.EndLine >= inst.StartLine {
+			   	inst.RawLines = dockerfile.Lines[inst.StartLine-1:inst.EndLine]
 			}
 
 			if !inst.IsValid {

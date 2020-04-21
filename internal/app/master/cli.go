@@ -275,6 +275,7 @@ const (
 	FlagExcludeCheckID     = "exclude-check-id"
 	FlagExcludeCheckIDFile = "exclude-check-id-file"
 	FlagShowNoHits         = "show-nohits"
+	FlagShowSnippet        = "show-snippet"
 )
 
 // Lint command flag usage info
@@ -291,6 +292,7 @@ const (
 	FlagExcludeCheckIDUsage     = "Check ID to exclude"
 	FlagExcludeCheckIDFileUsage = "File with check IDs to exclude"
 	FlagShowNoHitsUsage         = "Show checks with no matches"
+	FlagShowSnippetUsage        = "Show check match snippet"
 )
 
 ///////////////////////////////////
@@ -684,6 +686,7 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagExcludeCheckID), Description: FlagExcludeCheckIDUsage},
 				{Text: fullFlagName(FlagExcludeCheckIDFile), Description: FlagExcludeCheckIDFileUsage},
 				{Text: fullFlagName(FlagShowNoHits), Description: FlagShowNoHitsUsage},
+				{Text: fullFlagName(FlagShowSnippet), Description: FlagShowSnippetUsage},
 			},
 			Values: map[string]CompleteValue{
 				fullFlagName(FlagTarget):             completeLintTarget,
@@ -696,6 +699,7 @@ var cmdSpecs = map[string]cmdSpec{
 				fullFlagName(FlagExcludeCheckID):     completeLintCheckID,
 				fullFlagName(FlagExcludeCheckIDFile): completeFile,
 				fullFlagName(FlagShowNoHits):         completeBool,
+				fullFlagName(FlagShowSnippet):        completeTBool,
 			},
 		},
 	},
@@ -1531,6 +1535,11 @@ func init() {
 					Usage:  FlagShowNoHitsUsage,
 					EnvVar: "DSLIM_LINT_SHOW_NOHITS",
 				},
+				cli.BoolTFlag{
+					Name:   FlagShowSnippet,
+					Usage:  FlagShowSnippetUsage,
+					EnvVar: "DSLIM_LINT_SHOW_SNIPPET",
+				},
 			},
 			Action: func(ctx *cli.Context) error {
 				targetRef := ctx.String(FlagTarget)
@@ -1602,6 +1611,7 @@ func init() {
 				}
 
 				doShowNoHits := ctx.Bool(FlagShowNoHits)
+				doShowSnippet := ctx.Bool(FlagShowSnippet)
 
 				ec := &commands.ExecutionContext{}
 
@@ -1617,6 +1627,7 @@ func init() {
 					includeCheckIDs,
 					excludeCheckIDs,
 					doShowNoHits,
+					doShowSnippet,
 					ec)
 
 				return nil

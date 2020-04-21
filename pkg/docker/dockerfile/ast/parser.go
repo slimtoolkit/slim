@@ -259,6 +259,7 @@ func newNodeFromLine(line string, directive *Directive) (*Node, error) {
 
 // Result is the result of parsing a Dockerfile
 type Result struct {
+	Lines       []string
 	AST         *Node
 	EscapeToken rune
 	Warnings    []string
@@ -275,6 +276,7 @@ func (r *Result) PrintWarnings(out io.Writer) {
 // Parse reads lines from a Reader, parses the lines into an AST and returns
 // the AST and escape token
 func Parse(rwc io.Reader) (*Result, error) {
+	var lines []string
 	d := NewDefaultDirective()
 	currentLine := 0
 
@@ -289,6 +291,9 @@ func Parse(rwc io.Reader) (*Result, error) {
 			// First line, strip the byte-order-marker if present
 			bytesRead = bytes.TrimPrefix(bytesRead, utf8bom)
 		}
+
+		lines = append(lines,string(bytesRead))
+
 		bytesRead, err = processLine(d, bytesRead, true)
 		if err != nil {
 			return nil, err
@@ -344,6 +349,7 @@ func Parse(rwc io.Reader) (*Result, error) {
 	}
 
 	return &Result{
+		Lines:       lines,
 		AST:         root,
 		Warnings:    warnings,
 		EscapeToken: d.escapeToken,

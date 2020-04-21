@@ -30,6 +30,7 @@ func OnLint(
 	includeCheckIDs map[string]struct{},
 	excludeCheckIDs map[string]struct{},
 	doShowNoHits bool,
+	doShowSnippet bool,
 	ec *ExecutionContext) {
 	const cmdName = "lint"
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
@@ -79,7 +80,7 @@ func OnLint(
 	lintResults, err := linter.Execute(options)
 	errutil.FailOn(err)
 
-	printLintResults(lintResults, appName, cmdName, cmdReport, doShowNoHits)
+	printLintResults(lintResults, appName, cmdName, cmdReport, doShowNoHits, doShowSnippet)
 
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
 	cmdReport.State = report.CmdStateCompleted
@@ -98,7 +99,8 @@ func OnLint(
 func printLintResults(lintResults *linter.Report,
 	appName, cmdName string,
 	cmdReport *report.LintCommand,
-	doShowNoHits bool) {
+	doShowNoHits bool,
+	doShowSnippet bool) {
 	fmt.Printf("%s[%s]: info=lint.results hits=%d nohits=%d errors=%d:\n",
 		appName,
 		cmdName,
@@ -140,6 +142,15 @@ func printLintResults(lintResults *linter.Report,
 
 					fmt.Printf("%s[%s]: info=lint.check.hit.match message='%s'%s%s\n",
 						appName, cmdName, m.Message, instructionInfo, stageInfo)
+	
+					if m.Instruction != nil && 
+					   len(m.Instruction.RawLines) > 0 &&
+					   doShowSnippet {
+						for idx, data := range m.Instruction.RawLines {
+							fmt.Printf("%s[%s]: info=lint.check.hit.match.snippet line=%d data='%s'\n",
+								appName, cmdName, idx + m.Instruction.StartLine, data)
+						}
+					}
 				}
 			}
 		}

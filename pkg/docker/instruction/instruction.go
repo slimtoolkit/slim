@@ -31,7 +31,8 @@ type Field struct {
 	GlobalIndex int
 	StageIndex  int
 	StageID     int
-	Raw         string
+	RawData     string
+	RawLines    []string
 	StartLine   int
 	EndLine     int
 	Name        string

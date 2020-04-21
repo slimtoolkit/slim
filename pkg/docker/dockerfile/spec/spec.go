@@ -60,6 +60,7 @@ func NewBuildStage() *BuildStage {
 type Dockerfile struct {
 	Name                  string
 	Location              string
+	Lines                 []string
 	FromArgs              map[string]string //all "FROM" ARGs
 	Stages                []*BuildStage
 	StagesByName          map[string]*BuildStage
