@@ -10,6 +10,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
+	"github.com/docker-slim/docker-slim/pkg/docker/linter/check"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
 
@@ -68,7 +69,7 @@ type SystemMetadata struct {
 // BuildCommand is the 'build' command report data
 type BuildCommand struct {
 	Command
-	ImageReference         string               `json:"image_reference"`
+	TargetReference        string               `json:"target_reference"`
 	System                 SystemMetadata       `json:"system"`
 	SourceImage            ImageMetadata        `json:"source_image"`
 	MinifiedImageSize      int64                `json:"minified_image_size"`
@@ -103,7 +104,7 @@ type ProfileCommand struct {
 // XrayCommand is the 'xray' command report data
 type XrayCommand struct {
 	Command
-	ImageReference       string                      `json:"image_reference"`
+	TargetReference      string                      `json:"target_reference"`
 	SourceImage          ImageMetadata               `json:"source_image"`
 	ArtifactLocation     string                      `json:"artifact_location"`
 	ImageStack           []*reverse.ImageInfo        `json:"image_stack"`
@@ -116,6 +117,14 @@ type XrayCommand struct {
 // LintCommand is the 'lint' command report data
 type LintCommand struct {
 	Command
+	TargetType      string                   `json:"target_type"`
+	TargetReference string                   `json:"target_reference"`
+	BuildContextDir string                   `json:"build_context_dir,omitempty"`
+	HitsCount       int                      `json:"hits_count"`
+	NoHitsCount     int                      `json:"nohits_count"`
+	ErrorsCount     int                      `json:"errors_count"`
+	Hits            map[string]*check.Result `json:"hits,omitempty"`   //map[CHECK_ID]CHECK_RESULT
+	Errors          map[string]error         `json:"errors,omitempty"` //map[CHECK_ID]ERROR_INFO
 }
 
 // ContainerizeCommand is the 'lint' command report data
@@ -231,7 +240,12 @@ func (p *ProfileCommand) Save() bool {
 	return p.saveInfo(p)
 }
 
-// Save saves the Info command report data to the configured location
+// Save saves the Xray command report data to the configured location
 func (p *XrayCommand) Save() bool {
+	return p.saveInfo(p)
+}
+
+// Save saves the Lint command report data to the configured location
+func (p *LintCommand) Save() bool {
 	return p.saveInfo(p)
 }

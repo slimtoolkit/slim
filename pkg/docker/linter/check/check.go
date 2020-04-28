@@ -18,13 +18,13 @@ type Options struct {
 }
 
 type Info struct {
-	ID           string
-	Name         string
-	Description  string
-	MainMessage  string //can be a template with a format string
-	MatchMessage string //can be a template with a format string
-	DetailsURL   string
-	Labels       map[string]string
+	ID           string            `json:"id"`
+	Name         string            `json:"name"`
+	Description  string            `json:"-"`
+	MainMessage  string            `json:"-"` //can be a template with a format string
+	MatchMessage string            `json:"-"` //can be a template with a format string
+	DetailsURL   string            `json:"-"`
+	Labels       map[string]string `json:"-"`
 }
 
 const (
@@ -67,17 +67,17 @@ func (i *Info) Get() *Info {
 }
 
 type Result struct {
-	Source     *Info
-	Hit        bool
-	Message    string
-	Matches    []*Match
-	DetailsURL string
+	Source     *Info    `json:"source"`
+	Hit        bool     `json:"-"`
+	Message    string   `json:"message,omitempty"`
+	Matches    []*Match `json:"matches,omitempty"`
+	DetailsURL string   `json:"-"`
 }
 
 type Match struct {
-	Stage       *spec.BuildStage
-	Instruction *instruction.Field
-	Message     string
+	Stage       *spec.BuildStage   `json:"stage,omitempty"`
+	Instruction *instruction.Field `json:"instruction,omitempty"`
+	Message     string             `json:"message,omitempty"`
 }
 
 type Runner interface {

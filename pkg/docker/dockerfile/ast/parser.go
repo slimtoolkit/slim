@@ -292,7 +292,7 @@ func Parse(rwc io.Reader) (*Result, error) {
 			bytesRead = bytes.TrimPrefix(bytesRead, utf8bom)
 		}
 
-		lines = append(lines,string(bytesRead))
+		lines = append(lines, string(bytesRead))
 
 		bytesRead, err = processLine(d, bytesRead, true)
 		if err != nil {

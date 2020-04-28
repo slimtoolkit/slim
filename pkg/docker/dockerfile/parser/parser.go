@@ -60,11 +60,11 @@ func FromFile(fpath string) (*spec.Dockerfile, error) {
 			}
 
 			if len(dockerfile.Lines) > 0 &&
-			   inst.StartLine > 0 &&
-			   inst.StartLine <= len(dockerfile.Lines) &&
-			   inst.EndLine <= len(dockerfile.Lines) &&
-			   inst.EndLine >= inst.StartLine {
-			   	inst.RawLines = dockerfile.Lines[inst.StartLine-1:inst.EndLine]
+				inst.StartLine > 0 &&
+				inst.StartLine <= len(dockerfile.Lines) &&
+				inst.EndLine <= len(dockerfile.Lines) &&
+				inst.EndLine >= inst.StartLine {
+				inst.RawLines = dockerfile.Lines[inst.StartLine-1 : inst.EndLine]
 			}
 
 			if !inst.IsValid {

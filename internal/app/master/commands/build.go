@@ -80,7 +80,7 @@ func OnBuild(
 
 	cmdReport := report.NewBuildCommand(gparams.ReportLocation)
 	cmdReport.State = report.CmdStateStarted
-	cmdReport.ImageReference = targetRef
+	cmdReport.TargetReference = targetRef
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {

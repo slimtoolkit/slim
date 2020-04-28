@@ -18,6 +18,11 @@ var (
 	ErrBadParams = errors.New("bad params")
 )
 
+const (
+	DockerfileTargetType = "dockerfile"
+	ImageTargetType      = "image"
+)
+
 //TODO:
 //* support incremental, partial and instruction level linting
 //* support linting from string

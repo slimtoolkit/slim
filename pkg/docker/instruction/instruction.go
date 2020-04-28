@@ -28,21 +28,21 @@ const (
 )
 
 type Field struct {
-	GlobalIndex int
-	StageIndex  int
-	StageID     int
-	RawData     string
-	RawLines    []string
-	StartLine   int
-	EndLine     int
-	Name        string
-	Flags       []string
-	Args        []string
-	ArgsRaw     string
-	IsJSONForm  bool
-	IsOnBuild   bool
-	IsValid     bool
-	Errors      []string
+	GlobalIndex int      `json:"start_index"`
+	StageIndex  int      `json:"stage_index"`
+	StageID     int      `json:"stage_id"`
+	RawData     string   `json:"-"`
+	RawLines    []string `json:"raw_lines"`
+	StartLine   int      `json:"start_line"`
+	EndLine     int      `json:"end_line"`
+	Name        string   `json:"name"`
+	Flags       []string `json:"flags,omitempty"`
+	Args        []string `json:"args,omitempty"`
+	ArgsRaw     string   `json:"args_raw,omitempty"`
+	IsJSONForm  bool     `json:"is_json"`
+	IsOnBuild   bool     `json:"is_onbuild,omitempty"`
+	IsValid     bool     `json:"is_valid"`
+	Errors      []string `json:"errors,omitempty"`
 }
 
 type Format struct {

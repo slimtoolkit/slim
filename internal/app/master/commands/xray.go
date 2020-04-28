@@ -44,7 +44,7 @@ func OnXray(
 
 	cmdReport := report.NewXrayCommand(gparams.ReportLocation)
 	cmdReport.State = report.CmdStateStarted
-	cmdReport.ImageReference = targetRef
+	cmdReport.TargetReference = targetRef
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
 	fmt.Printf("%s[%s]: info=params target=%v add-image-manifest=%v add-image-config=%v rm-file-artifacts=%v\n",

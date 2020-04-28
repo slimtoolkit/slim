@@ -6,43 +6,43 @@ import (
 )
 
 type ParentImage struct {
-	Name           string
-	Tag            string
-	Digest         string
-	BuildArgAll    string
-	BuildArgName   string
-	BuildArgTag    string
-	BuildArgDigest string
-	HasEmptyName   bool
-	HasEmptyTag    bool
-	HasEmptyDigest bool
-	ParentStage    *BuildStage
+	Name           string      `json:"name,omitempty"`
+	Tag            string      `json:"tag,omitempty"`
+	Digest         string      `json:"digest,omitempty"`
+	BuildArgAll    string      `json:"-"`
+	BuildArgName   string      `json:"-"`
+	BuildArgTag    string      `json:"-"`
+	BuildArgDigest string      `json:"-"`
+	HasEmptyName   bool        `json:"-"`
+	HasEmptyTag    bool        `json:"-"`
+	HasEmptyDigest bool        `json:"-"`
+	ParentStage    *BuildStage `json:"-"`
 }
 
 type BuildStage struct {
-	Index     int
-	StartLine int
-	EndLine   int
-	Name      string
-	Parent    ParentImage
+	Index     int         `json:"index"`
+	StartLine int         `json:"start_line"`
+	EndLine   int         `json:"end_line"`
+	Name      string      `json:"name,omitempty"`
+	Parent    ParentImage `json:"parent"`
 
-	AllInstructions           []*instruction.Field
-	CurrentInstructions       []*instruction.Field
-	OnBuildInstructions       []*instruction.Field
-	UnknownInstructions       []*instruction.Field
-	InvalidInstructions       []*instruction.Field //not including unknown instructions
-	CurrentInstructionsByType map[string][]*instruction.Field
-	FromInstruction           *instruction.Field
-	ArgInstructions           []*instruction.Field
-	EnvInstructions           []*instruction.Field
+	AllInstructions           []*instruction.Field            `json:"-"`
+	CurrentInstructions       []*instruction.Field            `json:"-"`
+	OnBuildInstructions       []*instruction.Field            `json:"-"`
+	UnknownInstructions       []*instruction.Field            `json:"-"`
+	InvalidInstructions       []*instruction.Field            `json:"-"` //not including unknown instructions
+	CurrentInstructionsByType map[string][]*instruction.Field `json:"-"`
+	FromInstruction           *instruction.Field              `json:"-"`
+	ArgInstructions           []*instruction.Field            `json:"-"`
+	EnvInstructions           []*instruction.Field            `json:"-"`
 
-	EnvVars            map[string]string
-	BuildArgs          map[string]string
-	FromArgs           map[string]string //"FROM" ARGs used by the stage
-	UnknownFromArgs    map[string]struct{}
-	IsUsed             bool
-	StageReferences    map[string]*BuildStage
-	ExternalReferences map[string]struct{}
+	EnvVars            map[string]string      `json:"-"`
+	BuildArgs          map[string]string      `json:"-"`
+	FromArgs           map[string]string      `json:"-"` //"FROM" ARGs used by the stage
+	UnknownFromArgs    map[string]struct{}    `json:"-"`
+	IsUsed             bool                   `json:"-"`
+	StageReferences    map[string]*BuildStage `json:"-"`
+	ExternalReferences map[string]struct{}    `json:"-"`
 }
 
 func NewBuildStage() *BuildStage {
