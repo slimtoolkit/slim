@@ -189,7 +189,7 @@ Commands:
 - `xray` - Collects fat image information and reverse engineers its Dockerfile
 - `build` - Collect fat image information and build a slim image from it
 - `profile` - Collect fat image information and generate a fat container report
-- `info` - Collect fat image information and reverse engineers its Dockerfile (no runtime container analysis)
+- `containerize` - Containerize the target artifacts
 - `version` - Show docker-slim and docker version information
 - `update` - Update docker-slim
 - `help` - Show help info
