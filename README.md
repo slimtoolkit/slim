@@ -16,6 +16,10 @@ Don't worry about manually creating Seccomp and AppArmor security profiles. You 
 
 `docker-slim` has been used with Node.js, Python, Ruby, Java, Golang, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian, CentOS, Alpine and even Distroless.
 
+Note that some application stacks do require advanced container probing to make sure that all dynamically loaded components are detected. See the `--http-probe*` flags for more details to know how you can define custom probe commands. In some cases you might also need to use the `--include-path` flag to make sure everything your application needs is included (e.g., `ubuntu.com` python SPA app container image [example](https://github.com/docker-slim/examples/tree/master/3rdparty/ubuntu-com) where the client side template files are explicitly included).
+
+It's also a good idea to use your app/environment tests when you run `docker-slim`. See the `--continue-after` flag for more details about integrating out of band tests with the temporary container `docker-slim` creates when it's doing its dynamic analysis.
+
 Interactive CLI prompt screencast:
 
 [![asciicast](https://asciinema.org/a/311513.png)](https://asciinema.org/a/311513)
@@ -297,7 +301,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 
 The `--include-path` option is useful if you want to customize your minified image adding extra files and directories. The `--include-path-file` option allows you to load multiple includes from a newline delimited file. Use this option if you have a lot of includes. The includes from `--include-path` and `--include-path-file` are combined together. Future versions will also include the `--exclude-path` option to have even more control.
 
-The `--continue-after` option is useful if you need to script `docker-slim`. If you pick the `probe` option then `docker-slim` will continue executing the build command after the HTTP probe is done executing. If you pick the `timeout` option `docker-slim` will allow the target container to run for 60 seconds before it will attempt to collect the artifacts. You can specify a custom timeout value by passing a number of seconds you need instead of the `timeout` string. If you pick the `signal` option you'll need to send a USR1 signal to the `docker-slim` process.
+The `--continue-after` option is useful if you need to script `docker-slim`. If you pick the `probe` option then `docker-slim` will continue executing the build command after the HTTP probe is done executing. If you pick the `timeout` option `docker-slim` will allow the target container to run for 60 seconds before it will attempt to collect the artifacts. You can specify a custom timeout value by passing a number of seconds you need instead of the `timeout` string. If you pick the `signal` option you'll need to send a `USR1` signal to the `docker-slim` process. The `signal` option is useful when you want to run your own tests against the temporary container `docker-slim` creates. Your test automation / CI/CD pipeline will be able to notify `docker-slim` that it's done running its test by sending the `USR1` to it.
 
 The `--include-shell` option provides a simple way to keep a basic shell in the minified container. Not all shell commands are included. To get additional shell commands or other command line utilities use the `--include-exe` and/or `--include-bin` options. Note that the extra apps and binaries might missed some of the non-binary dependencies (which don't get picked up during static analysis). For those additional dependencies use the `--include-path` and `--include-path-file` options.
 
