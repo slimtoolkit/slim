@@ -18,7 +18,7 @@ Don't worry about manually creating Seccomp and AppArmor security profiles. You 
 
 Note that some application stacks do require advanced container probing to make sure that all dynamically loaded components are detected. See the `--http-probe*` flags for more details to know how you can define custom probe commands. In some cases you might also need to use the `--include-path` flag to make sure everything your application needs is included (e.g., `ubuntu.com` python SPA app container image [example](https://github.com/docker-slim/examples/tree/master/3rdparty/ubuntu-com) where the client side template files are explicitly included).
 
-It's also a good idea to use your app/environment tests when you run `docker-slim`. See the `--continue-after` flag for more details about integrating out of band tests with the temporary container `docker-slim` creates when it's doing its dynamic analysis.
+It's also a good idea to use your app/environment tests when you run `docker-slim`. See the `--continue-after` flag for more details about integrating your tests with the temporary container `docker-slim` creates when it's doing its dynamic analysis. Running tests in the target container is also an option, but it does require you to specify a custom ENTRYPOINT/CMD with a custom wrapper to start your app and to execute your tests.
 
 Interactive CLI prompt screencast:
 
