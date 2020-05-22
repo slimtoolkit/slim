@@ -47,10 +47,10 @@ const (
 
 // Command description / usage info
 const (
-	CmdLintUsage         = "Lint the target Dockerfile or image"
+	CmdLintUsage         = "Lints the target Dockerfile or image"
 	CmdXrayUsage         = "Collects fat image information and reverse engineers its Dockerfile"
 	CmdProfileUsage      = "Collects fat image information and generates a fat container report"
-	CmdBuildUsage        = "Collects fat image information and builds a slim image from it"
+	CmdBuildUsage        = "Collects fat image information and builds an optimized image from it"
 	CmdContainerizeUsage = "containerize"
 	CmdVersionUsage      = "Shows docker-slim and docker version information"
 	CmdUpdateUsage       = "Updates docker-slim"
