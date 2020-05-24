@@ -107,3 +107,23 @@ Class      | Meaning
 `[a-z]`    | matches any single character in the range
 `[^class]` | matches any single character which does *not* match the class
 
+## Abstracting the `os` package
+
+**doublestar** by default uses the `Open`, `Stat`, and `Lstat`, functions and
+`PathSeparator` value from the standard library's `os` package. To abstract
+this, for example to be able to perform tests of Windows paths on Linux, or to
+interoperate with your own filesystem code, it includes the functions `GlobOS`
+and `PathMatchOS` which are identical to `Glob` and `PathMatch` except that they
+operate on an `OS` interface:
+
+```go
+type OS interface {
+	Lstat(name string) (os.FileInfo, error)
+	Open(name string) (*os.File, error)
+	PathSeparator() rune
+	Stat(name string) (os.FileInfo, error)
+}
+```
+
+`StandardOS` is a value that implements this interface by calling functions in
+the standard library's `os` package.

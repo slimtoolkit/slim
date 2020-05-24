@@ -1,0 +1,15 @@
+language: go
+
+go:
+  - 1.9.x
+  - 1.12.x
+  - 1.13.x
+
+install:
+  - go get golang.org/x/net/html/charset
+  - go get github.com/antchfx/xpath
+  - go get github.com/mattn/goveralls
+  - go get github.com/golang/groupcache
+
+script:
+  - $HOME/gopath/bin/goveralls -service=travis-ci

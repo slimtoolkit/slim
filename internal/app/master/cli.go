@@ -100,14 +100,19 @@ const (
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
 
-	FlagHTTPProbe              = "http-probe"
-	FlagHTTPProbeCmd           = "http-probe-cmd"
-	FlagHTTPProbeCmdFile       = "http-probe-cmd-file"
-	FlagHTTPProbeRetryCount    = "http-probe-retry-count"
-	FlagHTTPProbeRetryWait     = "http-probe-retry-wait"
-	FlagHTTPProbePorts         = "http-probe-ports"
-	FlagHTTPProbeFull          = "http-probe-full"
-	FlagHTTPProbeExitOnFailure = "http-probe-exit-on-failure"
+	FlagHTTPProbe                 = "http-probe"
+	FlagHTTPProbeCmd              = "http-probe-cmd"
+	FlagHTTPProbeCmdFile          = "http-probe-cmd-file"
+	FlagHTTPProbeRetryCount       = "http-probe-retry-count"
+	FlagHTTPProbeRetryWait        = "http-probe-retry-wait"
+	FlagHTTPProbePorts            = "http-probe-ports"
+	FlagHTTPProbeFull             = "http-probe-full"
+	FlagHTTPProbeExitOnFailure    = "http-probe-exit-on-failure"
+	FlagHTTPProbeCrawl            = "http-probe-crawl"
+	FlagHTTPCrawlMaxDepth         = "http-crawl-max-depth"
+	FlagHTTPCrawlMaxPageCount     = "http-crawl-max-page-count"
+	FlagHTTPCrawlConcurrency      = "http-crawl-concurrency"
+	FlagHTTPMaxConcurrentCrawlers = "http-max-concurrent-crawlers"
 
 	FlagKeepPerms         = "keep-perms"
 	FlagRunTargetAsUser   = "run-target-as-user"
@@ -151,14 +156,19 @@ const (
 	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
 	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
 
-	FlagHTTPProbeUsage              = "Enables HTTP probe"
-	FlagHTTPProbeCmdUsage           = "User defined HTTP probes"
-	FlagHTTPProbeCmdFileUsage       = "File with user defined HTTP probes"
-	FlagHTTPProbeRetryCountUsage    = "Number of retries for each HTTP probe"
-	FlagHTTPProbeRetryWaitUsage     = "Number of seconds to wait before retrying HTTP probe (doubles when target is not ready)"
-	FlagHTTPProbePortsUsage         = "Explicit list of ports to probe (in the order you want them to be probed)"
-	FlagHTTPProbeFullUsage          = "Do full HTTP probe for all selected ports (if false, finish after first successful scan)"
-	FlagHTTPProbeExitOnFailureUsage = "Exit when all HTTP probe commands fail"
+	FlagHTTPProbeUsage                 = "Enables HTTP probe"
+	FlagHTTPProbeCmdUsage              = "User defined HTTP probes"
+	FlagHTTPProbeCmdFileUsage          = "File with user defined HTTP probes"
+	FlagHTTPProbeRetryCountUsage       = "Number of retries for each HTTP probe"
+	FlagHTTPProbeRetryWaitUsage        = "Number of seconds to wait before retrying HTTP probe (doubles when target is not ready)"
+	FlagHTTPProbePortsUsage            = "Explicit list of ports to probe (in the order you want them to be probed)"
+	FlagHTTPProbeFullUsage             = "Do full HTTP probe for all selected ports (if false, finish after first successful scan)"
+	FlagHTTPProbeExitOnFailureUsage    = "Exit when all HTTP probe commands fail"
+	FlagHTTPProbeCrawlUsage            = "Enable crawling for the default HTTP probe command"
+	FlagHTTPCrawlMaxDepthUsage         = "Max depth to use for the HTTP probe crawler"
+	FlagHTTPCrawlMaxPageCountUsage     = "Max number of pages to visit for the HTTP probe crawler"
+	FlagHTTPCrawlConcurrencyUsage      = "Number of concurrent workers when crawling an HTTP target"
+	FlagHTTPMaxConcurrentCrawlersUsage = "Number of concurrent crawlers in the HTTP probe"
 
 	FlagKeepPermsUsage         = "Keep artifact permissions as-is"
 	FlagRunTargetAsUserUsage   = "Run target app as USER"
@@ -741,6 +751,11 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagHTTPProbePorts), Description: FlagHTTPProbePortsUsage},
 				{Text: fullFlagName(FlagHTTPProbeFull), Description: FlagHTTPProbeFullUsage},
 				{Text: fullFlagName(FlagHTTPProbeExitOnFailure), Description: FlagHTTPProbeExitOnFailureUsage},
+				{Text: fullFlagName(FlagHTTPProbeCrawl), Description: FlagHTTPProbeCrawlUsage},
+				{Text: fullFlagName(FlagHTTPCrawlMaxDepth), Description: FlagHTTPCrawlMaxDepthUsage},
+				{Text: fullFlagName(FlagHTTPCrawlMaxPageCount), Description: FlagHTTPCrawlMaxPageCountUsage},
+				{Text: fullFlagName(FlagHTTPCrawlConcurrency), Description: FlagHTTPCrawlConcurrencyUsage},
+				{Text: fullFlagName(FlagHTTPMaxConcurrentCrawlers), Description: FlagHTTPMaxConcurrentCrawlersUsage},
 				{Text: fullFlagName(FlagKeepPerms), Description: FlagKeepPermsUsage},
 				{Text: fullFlagName(FlagRunTargetAsUser), Description: FlagRunTargetAsUserUsage},
 				{Text: fullFlagName(FlagCopyMetaArtifacts), Description: FlagCopyMetaArtifactsUsage},
@@ -778,6 +793,7 @@ var cmdSpecs = map[string]cmdSpec{
 				fullFlagName(FlagHTTPProbeCmdFile):       completeFile,
 				fullFlagName(FlagHTTPProbeFull):          completeBool,
 				fullFlagName(FlagHTTPProbeExitOnFailure): completeBool,
+				fullFlagName(FlagHTTPProbeCrawl):         completeBool,
 				fullFlagName(FlagKeepPerms):              completeTBool,
 				fullFlagName(FlagRunTargetAsUser):        completeTBool,
 				fullFlagName(FlagRemoveFileArtifacts):    completeBool,
@@ -811,6 +827,11 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagHTTPProbePorts), Description: FlagHTTPProbePortsUsage},
 				{Text: fullFlagName(FlagHTTPProbeFull), Description: FlagHTTPProbeFullUsage},
 				{Text: fullFlagName(FlagHTTPProbeExitOnFailure), Description: FlagHTTPProbeExitOnFailureUsage},
+				{Text: fullFlagName(FlagHTTPProbeCrawl), Description: FlagHTTPProbeCrawlUsage},
+				{Text: fullFlagName(FlagHTTPCrawlMaxDepth), Description: FlagHTTPCrawlMaxDepthUsage},
+				{Text: fullFlagName(FlagHTTPCrawlMaxPageCount), Description: FlagHTTPCrawlMaxPageCountUsage},
+				{Text: fullFlagName(FlagHTTPCrawlConcurrency), Description: FlagHTTPCrawlConcurrencyUsage},
+				{Text: fullFlagName(FlagHTTPMaxConcurrentCrawlers), Description: FlagHTTPMaxConcurrentCrawlersUsage},
 				{Text: fullFlagName(FlagKeepPerms), Description: FlagKeepPermsUsage},
 				{Text: fullFlagName(FlagRunTargetAsUser), Description: FlagRunTargetAsUserUsage},
 				{Text: fullFlagName(FlagCopyMetaArtifacts), Description: FlagCopyMetaArtifactsUsage},
@@ -862,6 +883,7 @@ var cmdSpecs = map[string]cmdSpec{
 				fullFlagName(FlagHTTPProbeCmdFile):       completeFile,
 				fullFlagName(FlagHTTPProbeFull):          completeBool,
 				fullFlagName(FlagHTTPProbeExitOnFailure): completeBool,
+				fullFlagName(FlagHTTPProbeCrawl):         completeBool,
 				fullFlagName(FlagKeepPerms):              completeTBool,
 				fullFlagName(FlagRunTargetAsUser):        completeTBool,
 				fullFlagName(FlagRemoveFileArtifacts):    completeBool,
@@ -1144,6 +1166,40 @@ func init() {
 		Name:   FlagHTTPProbeExitOnFailure,
 		Usage:  FlagHTTPProbeExitOnFailureUsage,
 		EnvVar: "DSLIM_HTTP_PROBE_EXIT_ON_FAILURE",
+	}
+
+	doHTTPProbeCrawlFlag := cli.BoolTFlag{
+		Name:   FlagHTTPProbeCrawl,
+		Usage:  FlagHTTPProbeCrawl,
+		EnvVar: "DSLIM_HTTP_PROBE_CRAWL",
+	}
+
+	doHTTPCrawlMaxDepthFlag := cli.IntFlag{
+		Name:   FlagHTTPCrawlMaxDepth,
+		Value:  3,
+		Usage:  FlagHTTPCrawlMaxDepthUsage,
+		EnvVar: "DSLIM_HTTP_CRAWL_MAX_DEPTH",
+	}
+
+	doHTTPCrawlMaxPageCountFlag := cli.IntFlag{
+		Name:   FlagHTTPCrawlMaxPageCount,
+		Value:  1000,
+		Usage:  FlagHTTPCrawlMaxPageCountUsage,
+		EnvVar: "DSLIM_HTTP_CRAWL_MAX_PAGE_COUNT",
+	}
+
+	doHTTPCrawlConcurrencyFlag := cli.IntFlag{
+		Name:   FlagHTTPCrawlConcurrency,
+		Value:  10,
+		Usage:  FlagHTTPCrawlConcurrencyUsage,
+		EnvVar: "DSLIM_HTTP_CRAWL_CONCURRENCY",
+	}
+
+	doHTTPMaxConcurrentCrawlersFlag := cli.IntFlag{
+		Name:   FlagHTTPMaxConcurrentCrawlers,
+		Value:  1,
+		Usage:  FlagHTTPMaxConcurrentCrawlersUsage,
+		EnvVar: "DSLIM_HTTP_MAX_CONCURRENT_CRAWLERS",
 	}
 
 	doKeepPermsFlag := cli.BoolTFlag{
@@ -1731,6 +1787,11 @@ func init() {
 				doHTTPProbePortsFlag,
 				doHTTPProbeFullFlag,
 				doHTTPProbeExitOnFailureFlag,
+				doHTTPProbeCrawlFlag,
+				doHTTPCrawlMaxDepthFlag,
+				doHTTPCrawlMaxPageCountFlag,
+				doHTTPCrawlConcurrencyFlag,
+				doHTTPMaxConcurrentCrawlersFlag,
 				doKeepPermsFlag,
 				doRunTargetAsUserFlag,
 				doShowContainerLogsFlag,
@@ -1839,6 +1900,12 @@ func init() {
 
 				buildFromDockerfile := ctx.String(FlagBuildFromDockerfile)
 
+				httpCrawlMaxDepth := ctx.Int(FlagHTTPCrawlMaxDepth)
+				httpCrawlMaxPageCount := ctx.Int(FlagHTTPCrawlMaxPageCount)
+				httpCrawlConcurrency := ctx.Int(FlagHTTPCrawlConcurrency)
+				httpMaxConcurrentCrawlers := ctx.Int(FlagHTTPMaxConcurrentCrawlers)
+				doHTTPProbeCrawl := ctx.Bool(FlagHTTPProbeCrawl)
+
 				doHTTPProbe := ctx.Bool(FlagHTTPProbe)
 
 				httpProbeCmds, err := getHTTPProbes(ctx)
@@ -1850,8 +1917,16 @@ func init() {
 				if doHTTPProbe {
 					//add default probe cmd if the "http-probe" flag is set
 					fmt.Println("docker-slim[build]: info=http.probe message='using default probe'")
-					httpProbeCmds = append(httpProbeCmds,
-						config.HTTPProbeCmd{Protocol: "http", Method: "GET", Resource: "/"})
+					defaultCmd := config.HTTPProbeCmd{
+						Protocol: "http",
+						Method:   "GET",
+						Resource: "/",
+					}
+
+					if doHTTPProbeCrawl {
+						defaultCmd.Crawl = true
+					}
+					httpProbeCmds = append(httpProbeCmds, defaultCmd)
 				}
 
 				if len(httpProbeCmds) > 0 {
@@ -1984,6 +2059,10 @@ func init() {
 					httpProbeRetryCount,
 					httpProbeRetryWait,
 					httpProbePorts,
+					httpCrawlMaxDepth,
+					httpCrawlMaxPageCount,
+					httpCrawlConcurrency,
+					httpMaxConcurrentCrawlers,
 					doHTTPProbeFull,
 					doHTTPProbeExitOnFailure,
 					doRmFileArtifacts,
@@ -2030,6 +2109,11 @@ func init() {
 				doHTTPProbePortsFlag,
 				doHTTPProbeFullFlag,
 				doHTTPProbeExitOnFailureFlag,
+				doHTTPProbeCrawlFlag,
+				doHTTPCrawlMaxDepthFlag,
+				doHTTPCrawlMaxPageCountFlag,
+				doHTTPCrawlConcurrencyFlag,
+				doHTTPMaxConcurrentCrawlersFlag,
 				doKeepPermsFlag,
 				doRunTargetAsUserFlag,
 				doCopyMetaArtifactsFlag,
@@ -2081,6 +2165,12 @@ func init() {
 				doRmFileArtifacts := ctx.Bool(FlagRemoveFileArtifacts)
 				doCopyMetaArtifacts := ctx.String(FlagCopyMetaArtifacts)
 
+				httpCrawlMaxDepth := ctx.Int(FlagHTTPCrawlMaxDepth)
+				httpCrawlMaxPageCount := ctx.Int(FlagHTTPCrawlMaxPageCount)
+				httpCrawlConcurrency := ctx.Int(FlagHTTPCrawlConcurrency)
+				httpMaxConcurrentCrawlers := ctx.Int(FlagHTTPMaxConcurrentCrawlers)
+				doHTTPProbeCrawl := ctx.Bool(FlagHTTPProbeCrawl)
+
 				doHTTPProbe := ctx.Bool(FlagHTTPProbe)
 
 				httpProbeCmds, err := getHTTPProbes(ctx)
@@ -2090,10 +2180,18 @@ func init() {
 				}
 
 				if doHTTPProbe {
-					//add default probe cmd if the "http-probe" flag is explicitly set
+					//add default probe cmd if the "http-probe" flag is set
 					fmt.Println("docker-slim[profile]: info=http.probe message='using default probe'")
-					httpProbeCmds = append(httpProbeCmds,
-						config.HTTPProbeCmd{Protocol: "http", Method: "GET", Resource: "/"})
+					defaultCmd := config.HTTPProbeCmd{
+						Protocol: "http",
+						Method:   "GET",
+						Resource: "/",
+					}
+
+					if doHTTPProbeCrawl {
+						defaultCmd.Crawl = true
+					}
+					httpProbeCmds = append(httpProbeCmds, defaultCmd)
 				}
 
 				if len(httpProbeCmds) > 0 {
@@ -2194,6 +2292,10 @@ func init() {
 					httpProbeRetryCount,
 					httpProbeRetryWait,
 					httpProbePorts,
+					httpCrawlMaxDepth,
+					httpCrawlMaxPageCount,
+					httpCrawlConcurrency,
+					httpMaxConcurrentCrawlers,
 					doHTTPProbeFull,
 					doHTTPProbeExitOnFailure,
 					doRmFileArtifacts,

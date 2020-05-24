@@ -52,6 +52,7 @@ type HTTPProbeCmd struct {
 	Body     string   `json:"body"`
 	Username string   `json:"username"`
 	Password string   `json:"password"`
+	Crawl    bool     `json:"crawl"`
 }
 
 // HTTPProbeCmds is a list of HTTPProbeCmd instances

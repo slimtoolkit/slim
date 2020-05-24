@@ -9,13 +9,15 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"sync"
 	"time"
+
+	dockerapi "github.com/fsouza/go-dockerclient"
+	"github.com/gocolly/colly/v2"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container"
-
-	dockerapi "github.com/fsouza/go-dockerclient"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -26,21 +28,34 @@ const (
 
 // CustomProbe is a custom HTTP probe
 type CustomProbe struct {
-	PrintState         bool
-	PrintPrefix        string
-	Ports              []string
-	Cmds               []config.HTTPProbeCmd
-	RetryCount         int
-	RetryWait          int
-	TargetPorts        []uint16
-	ProbeFull          bool
-	ProbeExitOnFailure bool
-	ContainerInspector *container.Inspector
-	doneChan           chan struct{}
-	CallCount          uint64
-	ErrCount           uint64
-	OkCount            uint64
+	PrintState            bool
+	PrintPrefix           string
+	Ports                 []string
+	Cmds                  []config.HTTPProbeCmd
+	RetryCount            int
+	RetryWait             int
+	TargetPorts           []uint16
+	ProbeFull             bool
+	ProbeExitOnFailure    bool
+	ContainerInspector    *container.Inspector
+	CallCount             uint64
+	ErrCount              uint64
+	OkCount               uint64
+	doneChan              chan struct{}
+	workers               sync.WaitGroup
+	crawlMaxDepth         int
+	crawlMaxPageCount     int
+	crawlConcurrency      int
+	maxConcurrentCrawlers int
+	concurrentCrawlers    chan struct{}
 }
+
+const (
+	defaultCrawlMaxDepth         = 3
+	defaultCrawlMaxPageCount     = 1000
+	defaultCrawlConcurrency      = 10
+	defaultMaxConcurrentCrawlers = 1
+)
 
 // NewCustomProbe creates a new custom HTTP probe
 func NewCustomProbe(inspector *container.Inspector,
@@ -48,23 +63,55 @@ func NewCustomProbe(inspector *container.Inspector,
 	retryCount int,
 	retryWait int,
 	targetPorts []uint16,
+	crawlMaxDepth int,
+	crawlMaxPageCount int,
+	crawlConcurrency int,
+	maxConcurrentCrawlers int,
 	probeFull bool,
 	probeExitOnFailure bool,
 	printState bool,
 	printPrefix string) (*CustomProbe, error) {
 	//note: the default probe should already be there if the user asked for it
 
+	//-1 means disabled
+	if crawlMaxDepth == 0 {
+		crawlMaxDepth = defaultCrawlMaxDepth
+	}
+
+	//-1 means disabled
+	if crawlMaxPageCount == 0 {
+		crawlMaxPageCount = defaultCrawlMaxPageCount
+	}
+
+	//-1 means disabled
+	if crawlConcurrency == 0 {
+		crawlConcurrency = defaultCrawlConcurrency
+	}
+
+	//-1 means disabled
+	if maxConcurrentCrawlers == 0 {
+		maxConcurrentCrawlers = defaultMaxConcurrentCrawlers
+	}
+
 	probe := &CustomProbe{
-		PrintState:         printState,
-		PrintPrefix:        printPrefix,
-		Cmds:               cmds,
-		RetryCount:         retryCount,
-		RetryWait:          retryWait,
-		TargetPorts:        targetPorts,
-		ProbeFull:          probeFull,
-		ProbeExitOnFailure: probeExitOnFailure,
-		ContainerInspector: inspector,
-		doneChan:           make(chan struct{}),
+		PrintState:            printState,
+		PrintPrefix:           printPrefix,
+		Cmds:                  cmds,
+		RetryCount:            retryCount,
+		RetryWait:             retryWait,
+		TargetPorts:           targetPorts,
+		ProbeFull:             probeFull,
+		ProbeExitOnFailure:    probeExitOnFailure,
+		ContainerInspector:    inspector,
+		crawlMaxDepth:         crawlMaxDepth,
+		crawlMaxPageCount:     crawlMaxPageCount,
+		crawlConcurrency:      crawlConcurrency,
+		maxConcurrentCrawlers: maxConcurrentCrawlers,
+		doneChan:              make(chan struct{}),
+	}
+
+	if probe.maxConcurrentCrawlers > 0 {
+		probe.concurrentCrawlers = make(chan struct{}, probe.maxConcurrentCrawlers)
 	}
 
 	availableHostPorts := map[string]string{}
@@ -308,6 +355,9 @@ func (p *CustomProbe) Start() {
 
 						if err == nil {
 							p.OkCount++
+							if cmd.Crawl {
+								p.crawl(targetHost, addr)
+							}
 							break
 						} else {
 							p.ErrCount++
@@ -358,6 +408,7 @@ func (p *CustomProbe) Start() {
 			os.Exit(-1)
 		}
 
+		p.workers.Wait()
 		close(p.doneChan)
 	}()
 }
@@ -365,4 +416,75 @@ func (p *CustomProbe) Start() {
 // DoneChan returns the 'done' channel for the HTTP probe instance
 func (p *CustomProbe) DoneChan() <-chan struct{} {
 	return p.doneChan
+}
+
+func (p *CustomProbe) crawl(domain, addr string) {
+	p.workers.Add(1)
+	if p.maxConcurrentCrawlers > 0 &&
+		p.concurrentCrawlers != nil {
+		p.concurrentCrawlers <- struct{}{}
+	}
+
+	go func() {
+		defer func() {
+			if p.maxConcurrentCrawlers > 0 &&
+				p.concurrentCrawlers != nil {
+				<-p.concurrentCrawlers
+			}
+
+			p.workers.Done()
+		}()
+
+		var pageCount int
+
+		c := colly.NewCollector()
+		c.UserAgent = "ds.crawler"
+		c.IgnoreRobotsTxt = true
+		c.Async = true
+		c.AllowedDomains = []string{domain}
+		c.AllowURLRevisit = false
+
+		if p.crawlMaxDepth > 0 {
+			c.MaxDepth = p.crawlMaxDepth
+		}
+
+		if p.crawlConcurrency > 0 {
+			c.Limit(&colly.LimitRule{
+				DomainGlob:  "*",
+				Parallelism: p.crawlConcurrency,
+			})
+		}
+
+		c.OnHTML("a[href]", func(e *colly.HTMLElement) {
+			if p.crawlMaxPageCount > 0 &&
+				pageCount > p.crawlMaxPageCount {
+				log.Debugf("http.CustomProbe.crawl.OnHTML - reached max page count, ignoring link (%v)", p.crawlMaxPageCount)
+				return
+			}
+
+			e.Request.Visit(e.Attr("href"))
+		})
+
+		c.OnRequest(func(r *colly.Request) {
+			fmt.Printf("%s info=probe.crawler page=%v url=%v\n", p.PrintPrefix, pageCount, r.URL)
+
+			if p.crawlMaxPageCount > 0 &&
+				pageCount > p.crawlMaxPageCount {
+				fmt.Println("reached max visits...")
+				log.Debugf("http.CustomProbe.crawl.OnRequest - reached max page count (%v)", p.crawlMaxPageCount)
+				r.Abort()
+				return
+			}
+
+			pageCount++
+		})
+
+		c.OnError(func(_ *colly.Response, err error) {
+			log.Tracef("http.CustomProbe.crawl - error=%v", err)
+		})
+
+		c.Visit(addr)
+		c.Wait()
+		fmt.Printf("%s info=probe.crawler.done addr=%v\n", p.PrintPrefix, addr)
+	}()
 }

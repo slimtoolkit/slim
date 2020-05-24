@@ -35,6 +35,10 @@ func OnProfile(
 	httpProbeRetryCount int,
 	httpProbeRetryWait int,
 	httpProbePorts []uint16,
+	httpCrawlMaxDepth int,
+	httpCrawlMaxPageCount int,
+	httpCrawlConcurrency int,
+	httpMaxConcurrentCrawlers int,
 	doHTTPProbeFull bool,
 	doHTTPProbeExitOnFailure bool,
 	doRmFileArtifacts bool,
@@ -174,8 +178,18 @@ func OnProfile(
 	}
 
 	if doHTTPProbe {
-		probe, err := http.NewCustomProbe(containerInspector, httpProbeCmds,
-			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts, doHTTPProbeFull, doHTTPProbeExitOnFailure,
+		probe, err := http.NewCustomProbe(
+			containerInspector,
+			httpProbeCmds,
+			httpProbeRetryCount,
+			httpProbeRetryWait,
+			httpProbePorts,
+			httpCrawlMaxDepth,
+			httpCrawlMaxPageCount,
+			httpCrawlConcurrency,
+			httpMaxConcurrentCrawlers,
+			doHTTPProbeFull,
+			doHTTPProbeExitOnFailure,
 			true, prefix)
 		errutil.FailOn(err)
 		if len(probe.Ports) == 0 {

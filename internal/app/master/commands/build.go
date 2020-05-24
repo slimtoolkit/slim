@@ -45,6 +45,10 @@ func OnBuild(
 	httpProbeRetryCount int,
 	httpProbeRetryWait int,
 	httpProbePorts []uint16,
+	httpCrawlMaxDepth int,
+	httpCrawlMaxPageCount int,
+	httpCrawlConcurrency int,
+	httpMaxConcurrentCrawlers int,
 	doHTTPProbeFull bool,
 	doHTTPProbeExitOnFailure bool,
 	doRmFileArtifacts bool,
@@ -276,13 +280,35 @@ func OnBuild(
 	if "probe" == continueAfter.Mode {
 		doHTTPProbe = true
 	}
+	/*
+	   NewCustomProbe(inspector *container.Inspector,
+	   	cmds []config.HTTPProbeCmd,
+	   	retryCount int,
+	   	retryWait int,
+	   	targetPorts []uint16,
 
+	   	probeFull bool,
+	   	probeExitOnFailure bool,
+	   	printState bool,
+	   	printPrefix string)
+	*/
 	var probe *http.CustomProbe
 	if doHTTPProbe {
 		var err error
-		probe, err = http.NewCustomProbe(containerInspector, httpProbeCmds,
-			httpProbeRetryCount, httpProbeRetryWait, httpProbePorts, doHTTPProbeFull, doHTTPProbeExitOnFailure,
-			true, prefix)
+		probe, err = http.NewCustomProbe(
+			containerInspector,
+			httpProbeCmds,
+			httpProbeRetryCount,
+			httpProbeRetryWait,
+			httpProbePorts,
+			httpCrawlMaxDepth,
+			httpCrawlMaxPageCount,
+			httpCrawlConcurrency,
+			httpMaxConcurrentCrawlers,
+			doHTTPProbeFull,
+			doHTTPProbeExitOnFailure,
+			true,
+			prefix)
 		errutil.FailOn(err)
 
 		if len(probe.Ports) == 0 {

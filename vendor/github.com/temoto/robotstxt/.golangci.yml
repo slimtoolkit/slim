@@ -1,0 +1,20 @@
+linters:
+  enable:
+    - goconst
+    - gofmt
+    - gosec
+    - maligned
+    - prealloc
+    - staticcheck
+  disable:
+    - deadcode
+    - structcheck
+    - varcheck
+
+linters-settings:
+  gofmt:
+    simplify: true
+  govet:
+    check-shadowing: true
+  maligned:
+    suggest-new: true
