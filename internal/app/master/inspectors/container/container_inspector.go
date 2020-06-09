@@ -304,6 +304,7 @@ func (i *Inspector) RunContainer() error {
 			PublishAllPorts: true, //TODO: need a command flag for this option
 			CapAdd:          []string{"SYS_ADMIN"},
 			Privileged:      true,
+			UsernsMode:      "host",
 		},
 	}
 
