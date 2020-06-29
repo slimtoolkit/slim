@@ -134,7 +134,8 @@ func OnBuild(
 				os.Getpid(), time.Now().UTC().Format("20060102150405"))
 		}
 
-		fmt.Printf("%s[%s]: info=basic.image.name value=%s\n", appName, cmdName, fatImageRepoNameTag)
+		fmt.Printf("%s[%s]: info=basic.image.info tag=%s dockerfile=%s context=%s\n",
+			appName, cmdName, fatImageRepoNameTag, buildFromDockerfile, targetRef)
 
 		fatBuilder, err := builder.NewBasicImageBuilder(client,
 			fatImageRepoNameTag,
