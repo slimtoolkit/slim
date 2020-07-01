@@ -136,6 +136,8 @@ func getReleaseBlobInfo() (base string, ext string) {
 			return "dist_linux", "tar.gz"
 		case "arm":
 			return "dist_linux_arm", "tar.gz"
+		case "arm64":
+			return "dist_linux_arm64", "tar.gz"
 		default:
 			return "", ""
 		}

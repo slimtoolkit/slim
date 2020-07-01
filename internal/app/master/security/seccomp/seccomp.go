@@ -18,6 +18,7 @@ var archMap = map[system.ArchName]specs.Arch{
 	system.ArchName386:   specs.ArchX86,
 	system.ArchNameAmd64: specs.ArchX86_64,
 	system.ArchNameArm32: specs.ArchARM,
+	system.ArchNameArm64: specs.ArchAARCH64,
 }
 
 func archNameToSeccompArch(name string) specs.Arch {

@@ -8,6 +8,7 @@ const (
 	ArchName386         ArchName = "386"
 	ArchNameAmd64       ArchName = "amd64"
 	ArchNameArm32       ArchName = "armhf"
+	ArchNameArm64       ArchName = "aarch64"
 )
 
 type MachineName string
@@ -18,7 +19,7 @@ const (
 	MachineNameNamei686   MachineName = "i686"
 	MachineNameNamex86_64 MachineName = "x86_64"
 	MachineNameNameArm    MachineName = "armv7l"
-	MachineNameNameArm64  MachineName = "arm64"
+	MachineNameNameArm64  MachineName = "aarch64"
 )
 
 type ArchBits uint8
@@ -31,8 +32,9 @@ const (
 type ArchFamily string
 
 const (
-	ArchFamilyX86 ArchFamily = "x86"
-	ArchFamilyArm ArchFamily = "arm"
+	ArchFamilyX86   ArchFamily = "x86"
+	ArchFamilyArm   ArchFamily = "arm"
+	ArchFamilyArm64 ArchFamily = "arm64"
 )
 
 type ArchInfo struct {
@@ -59,6 +61,12 @@ var ArmFamily32Arch = ArchInfo{
 	Bits:   ArchBits32,
 }
 
+var ArmFamily64Arch = ArchInfo{
+	Name:   ArchNameArm64,
+	Family: ArchFamilyArm,
+	Bits:   ArchBits64,
+}
+
 var unsupportedArch = ArchInfo{
 	Name: ArchNameUnsupported,
 }
@@ -73,7 +81,7 @@ var archMap = map[MachineName]*ArchInfo{
 	MachineNameNamei686:   &x86Family32Arch,
 	MachineNameNamex86_64: &x86Family64Arch,
 	MachineNameNameArm:    &ArmFamily32Arch,
-	MachineNameNameArm64:  &unsupportedArch,
+	MachineNameNameArm64:  &ArmFamily64Arch,
 }
 
 func MachineToArchName(mtype string) ArchName {

@@ -1,4 +1,4 @@
-// +build !arm64
+// +build arm64
 
 package ptrace
 
@@ -6,7 +6,6 @@ import (
 	"os/exec"
 	"runtime"
 	"strconv"
-	"syscall"
 	"time"
 
 	"github.com/docker-slim/docker-slim/internal/app/sensor/target"
@@ -16,6 +15,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
 )
 
 type syscallEvent struct {
@@ -25,7 +25,7 @@ type syscallEvent struct {
 
 const (
 	eventBufSize = 500
-	ptOptions    = syscall.PTRACE_O_TRACECLONE | syscall.PTRACE_O_TRACEFORK | syscall.PTRACE_O_TRACEVFORK
+	ptOptions    = unix.PTRACE_O_TRACECLONE | unix.PTRACE_O_TRACEFORK | unix.PTRACE_O_TRACEVFORK
 )
 
 /*
@@ -104,10 +104,10 @@ func Run(
 
 			log.Debugf("ptmon: collector - target PID ==> %d", targetPid)
 
-			var wstat syscall.WaitStatus
+			var wstat unix.WaitStatus
 
 			//pid, err := syscall.Wait4(-1, &wstat, syscall.WALL, nil) - WIP
-			pid, err := syscall.Wait4(targetPid, &wstat, 0, nil)
+			pid, err := unix.Wait4(targetPid, &wstat, 0, nil)
 			if err != nil {
 				log.Warnf("ptmon: collector - error waiting for %d: %v", targetPid, err)
 				collectorDoneChan <- 2
@@ -141,13 +141,14 @@ func Run(
 			var callNum uint64
 			var retVal uint64
 			for wstat.Stopped() {
-				var regs syscall.PtraceRegs
+				var regs unix.PtraceRegsArm64
 
 				switch syscallReturn {
 				case false:
-					if err := syscall.PtraceGetRegs(targetPid, &regs); err != nil {
+					log.Infof("target pid is %d", targetPid)
+					if err := unix.PtraceGetRegSetArm64(targetPid, 1, &regs); err != nil {
 						//if err := syscall.PtraceGetRegs(pid, &regs); err != nil {
-						log.Fatalf("ptmon: collector - PtraceGetRegs1(call): %v", err)
+						log.Fatalf("ptmon: collector - PtraceGetRegsArm64(call): %v", err)
 					}
 
 					callNum = system.CallNumber(regs)
@@ -155,9 +156,9 @@ func Run(
 					gotCallNum = true
 
 				case true:
-					if err := syscall.PtraceGetRegs(targetPid, &regs); err != nil {
+					if err := unix.PtraceGetRegSetArm64(targetPid, 1, &regs); err != nil {
 						//if err := syscall.PtraceGetRegs(pid, &regs); err != nil {
-						log.Fatalf("ptmon: collector - PtraceGetRegs(return): %v", err)
+						log.Fatalf("ptmon: collector - PtraceGetRegsArm64(return): %v", err)
 					}
 
 					retVal = system.CallReturnValue(regs)
@@ -167,14 +168,14 @@ func Run(
 				}
 
 				//err = syscall.PtraceSyscall(pid, 0)
-				err = syscall.PtraceSyscall(targetPid, 0)
+				err = unix.PtraceSyscall(targetPid, 0)
 				if err != nil {
 					log.Warnf("ptmon: collector - PtraceSyscall error: %v", err)
 					break
 				}
 
 				//pid, err = syscall.Wait4(-1, &wstat, syscall.WALL, nil)
-				pid, err = syscall.Wait4(targetPid, &wstat, 0, nil)
+				pid, err = unix.Wait4(targetPid, &wstat, 0, nil)
 				if err != nil {
 					log.Warnf("ptmon: collector - error waiting 4 %d: %v", targetPid, err)
 					break
@@ -209,7 +210,7 @@ func Run(
 			case <-stopChan:
 				log.Info("ptmon: processor - stopping...")
 				//NOTE: need a better way to stop the target app...
-				if err := app.Process.Signal(syscall.SIGTERM); err != nil {
+				if err := app.Process.Signal(unix.SIGTERM); err != nil {
 					log.Warnln("ptmon: processor - error stopping target app =>", err)
 					if err := app.Process.Kill(); err != nil {
 						log.Warnln("ptmon: processor - error killing target app =>", err)
