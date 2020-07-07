@@ -24,13 +24,16 @@ pushd ${BDIR}/cmd/docker-slim
 GOOS=linux GOARCH=amd64 go build -mod=vendor -trimpath -ldflags="${LD_FLAGS}" -a -tags 'netgo osusergo' -o "${BDIR}/bin/linux/docker-slim" 
 GOOS=darwin GOARCH=amd64 go build -mod=vendor -trimpath -ldflags="${LD_FLAGS}" -a -tags 'netgo osusergo' -o "${BDIR}/bin/mac/docker-slim"
 GOOS=linux GOARCH=arm go build -mod=vendor -trimpath -ldflags="${LD_FLAGS}" -a -tags 'netgo osusergo' -o "$BDIR/bin/linux_arm/docker-slim"
+GOOS=linux GOARCH=arm64 go build -mod=vendor -trimpath -ldflags="${LD_FLAGS}" -a -tags 'netgo osusergo' -o "$BDIR/bin/linux_arm64/docker-slim"
 popd
 
 pushd ${BDIR}/cmd/docker-slim-sensor
 GOOS=linux GOARCH=amd64 go build -mod=vendor -trimpath -ldflags="${LD_FLAGS}" -a -tags 'netgo osusergo' -o "${BDIR}/bin/linux/docker-slim-sensor"
 GOOS=linux GOARCH=arm go build -mod=vendor -trimpath -ldflags="${LD_FLAGS}" -a -tags 'netgo osusergo' -o "$BDIR/bin/linux_arm/docker-slim-sensor"
+GOOS=linux GOARCH=arm64 go build -mod=vendor -trimpath -ldflags="${LD_FLAGS}" -a -tags 'netgo osusergo' -o "$BDIR/bin/linux_arm64/docker-slim-sensor"
 chmod a+x "${BDIR}/bin/linux/docker-slim-sensor"
 chmod a+x "$BDIR/bin/linux_arm/docker-slim-sensor"
+chmod a+x "$BDIR/bin/linux_arm64/docker-slim-sensor"
 popd
 
 rm -rfv ${BDIR}/dist_mac
@@ -57,6 +60,13 @@ cp $BDIR/bin/linux_arm/docker-slim $BDIR/dist_linux_arm/docker-slim
 cp $BDIR/bin/linux_arm/docker-slim-sensor $BDIR/dist_linux_arm/docker-slim-sensor
 pushd ${BDIR}
 tar -czvf dist_linux_arm.tar.gz dist_linux_arm
+popd
+rm -rfv $BDIR/dist_linux_arm64
+mkdir $BDIR/dist_linux_arm64
+cp $BDIR/bin/linux_arm64/docker-slim $BDIR/dist_linux_arm64/docker-slim
+cp $BDIR/bin/linux_arm64/docker-slim-sensor $BDIR/dist_linux_arm64/docker-slim-sensor
+pushd ${BDIR}
+tar -czvf dist_linux_arm64.tar.gz dist_linux_arm64
 popd
 
 rm -rfv ${BDIR}/bin
