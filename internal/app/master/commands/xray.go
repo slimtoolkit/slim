@@ -10,6 +10,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
+	"github.com/docker-slim/docker-slim/pkg/command"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/report"
@@ -36,14 +37,14 @@ func OnXray(
 	doAddImageConfig bool,
 	doRmFileArtifacts bool,
 	ec *ExecutionContext) {
-	const cmdName = "xray"
+	const cmdName = command.Xray
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
 	cmdReport := report.NewXrayCommand(gparams.ReportLocation)
-	cmdReport.State = report.CmdStateStarted
+	cmdReport.State = command.StateStarted
 	cmdReport.TargetReference = targetRef
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
@@ -181,7 +182,7 @@ func OnXray(
 	}
 
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
-	cmdReport.State = report.CmdStateCompleted
+	cmdReport.State = command.StateCompleted
 
 	if doRmFileArtifacts {
 		logger.Info("removing temporary artifacts...")
@@ -199,14 +200,15 @@ func OnXray(
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)
 
-	cmdReport.State = report.CmdStateDone
+	cmdReport.State = command.StateDone
 	if cmdReport.Save() {
 		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
 	}
 }
 
 func printImagePackage(pkg *dockerimage.Package,
-	appName, cmdName string,
+	appName string,
+	cmdName command.Type,
 	changes map[string]struct{},
 	layers map[string]struct{},
 	cmdReport *report.XrayCommand) {

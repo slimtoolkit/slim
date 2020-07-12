@@ -12,6 +12,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container/probes/http"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
+	"github.com/docker-slim/docker-slim/pkg/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
@@ -63,14 +64,14 @@ func OnProfile(
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
 	ec *ExecutionContext) {
-	const cmdName = "profile"
+	const cmdName = command.Profile
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
 	cmdReport := report.NewProfileCommand(gparams.ReportLocation)
-	cmdReport.State = report.CmdStateStarted
+	cmdReport.State = command.StateStarted
 	cmdReport.OriginalImage = targetRef
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
@@ -262,7 +263,7 @@ func OnProfile(
 
 	fmt.Printf("%s[%s]: state=container.inspection.done\n", appName, cmdName)
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
-	cmdReport.State = report.CmdStateCompleted
+	cmdReport.State = command.StateCompleted
 
 	if copyMetaArtifactsLocation != "" {
 		toCopy := []string{
@@ -293,7 +294,7 @@ func OnProfile(
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)
 
-	cmdReport.State = report.CmdStateDone
+	cmdReport.State = command.StateDone
 	if cmdReport.Save() {
 		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
 	}

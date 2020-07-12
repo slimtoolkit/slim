@@ -8,40 +8,19 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/docker-slim/docker-slim/pkg/command"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
 	"github.com/docker-slim/docker-slim/pkg/docker/linter/check"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
 
-// Command state constants
-const (
-	CmdStateUnknown   = "unknown"
-	CmdStateError     = "error"
-	CmdStateStarted   = "started"
-	CmdStateCompleted = "completed"
-	CmdStateExited    = "exited"
-	CmdStateDone      = "done"
-)
-
-// Command type constants
-const (
-	CmdTypeBuild        CmdType = "build"
-	CmdTypeProfile      CmdType = "profile"
-	CmdTypeXray         CmdType = "xray"
-	CmdTypeLint         CmdType = "lint"
-	CmdTypeContainerize CmdType = "containerize"
-)
-
-// CmdType is the command name data type
-type CmdType string
-
 // Command is the common command report data
 type Command struct {
 	reportLocation string
-	Type           CmdType `json:"type"`
-	State          string  `json:"state"`
-	Error          string  `json:"error,omitempty"`
+	Type           command.Type  `json:"type"`
+	State          command.State `json:"state"`
+	Error          string        `json:"error,omitempty"`
 }
 
 // ImageMetadata provides basic image metadata
@@ -127,8 +106,18 @@ type LintCommand struct {
 	Errors          map[string]error         `json:"errors,omitempty"` //map[CHECK_ID]ERROR_INFO
 }
 
-// ContainerizeCommand is the 'lint' command report data
+// ContainerizeCommand is the 'containerize' command report data
 type ContainerizeCommand struct {
+	Command
+}
+
+// ConvertCommand is the 'convert' command report data
+type ConvertCommand struct {
+	Command
+}
+
+// EditCommand is the 'edit' command report data
+type EditCommand struct {
 	Command
 }
 
@@ -137,8 +126,8 @@ func NewBuildCommand(reportLocation string) *BuildCommand {
 	return &BuildCommand{
 		Command: Command{
 			reportLocation: reportLocation,
-			Type:           CmdTypeBuild,
-			State:          CmdStateUnknown,
+			Type:           command.Build,
+			State:          command.StateUnknown,
 		},
 	}
 }
@@ -148,8 +137,8 @@ func NewProfileCommand(reportLocation string) *ProfileCommand {
 	return &ProfileCommand{
 		Command: Command{
 			reportLocation: reportLocation,
-			Type:           CmdTypeProfile,
-			State:          CmdStateUnknown,
+			Type:           command.Profile,
+			State:          command.StateUnknown,
 		},
 	}
 }
@@ -159,8 +148,8 @@ func NewXrayCommand(reportLocation string) *XrayCommand {
 	return &XrayCommand{
 		Command: Command{
 			reportLocation: reportLocation,
-			Type:           CmdTypeXray,
-			State:          CmdStateUnknown,
+			Type:           command.Xray,
+			State:          command.StateUnknown,
 		},
 	}
 }
@@ -170,8 +159,8 @@ func NewLintCommand(reportLocation string) *LintCommand {
 	return &LintCommand{
 		Command: Command{
 			reportLocation: reportLocation,
-			Type:           CmdTypeLint,
-			State:          CmdStateUnknown,
+			Type:           command.Lint,
+			State:          command.StateUnknown,
 		},
 	}
 }
@@ -181,8 +170,30 @@ func NewContainerizeCommand(reportLocation string) *ContainerizeCommand {
 	return &ContainerizeCommand{
 		Command: Command{
 			reportLocation: reportLocation,
-			Type:           CmdTypeContainerize,
-			State:          CmdStateUnknown,
+			Type:           command.Containerize,
+			State:          command.StateUnknown,
+		},
+	}
+}
+
+// NewConvertCommand creates a new 'convert' command report
+func NewConvertCommand(reportLocation string) *ConvertCommand {
+	return &ConvertCommand{
+		Command: Command{
+			reportLocation: reportLocation,
+			Type:           command.Convert,
+			State:          command.StateUnknown,
+		},
+	}
+}
+
+// NewEditCommand creates a new 'edit' command report
+func NewEditCommand(reportLocation string) *EditCommand {
+	return &EditCommand{
+		Command: Command{
+			reportLocation: reportLocation,
+			Type:           command.Edit,
+			State:          command.StateUnknown,
 		},
 	}
 }

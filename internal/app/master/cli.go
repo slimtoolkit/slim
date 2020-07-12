@@ -40,6 +40,8 @@ const (
 	CmdProfile      = "profile"
 	CmdBuild        = "build"
 	CmdContainerize = "containerize"
+	CmdConvert      = "convert"
+	CmdEdit         = "edit"
 	CmdVersion      = "version"
 	CmdUpdate       = "update"
 	CmdHelp         = "help"
@@ -51,7 +53,9 @@ const (
 	CmdXrayUsage         = "Collects fat image information and reverse engineers its Dockerfile"
 	CmdProfileUsage      = "Collects fat image information and generates a fat container report"
 	CmdBuildUsage        = "Collects fat image information and builds an optimized image from it"
-	CmdContainerizeUsage = "containerize"
+	CmdContainerizeUsage = "Containerize the target artifacts"
+	CmdConvertUsage      = "Convert container image"
+	CmdEditUsage         = "Edit container image"
 	CmdVersionUsage      = "Shows docker-slim and docker version information"
 	CmdUpdateUsage       = "Updates docker-slim"
 	CmdHelpUsage         = "Show help info"
@@ -904,7 +908,17 @@ var cmdSpecs = map[string]cmdSpec{
 	CmdContainerize: {
 		name:  CmdContainerize,
 		alias: "c",
-		usage: "Containerize the target artifacts",
+		usage: CmdContainerizeUsage,
+	},
+	CmdConvert: {
+		name:  CmdConvert,
+		alias: "k",
+		usage: CmdConvertUsage,
+	},
+	CmdEdit: {
+		name:  CmdEdit,
+		alias: "e",
+		usage: CmdEditUsage,
 	},
 	CmdVersion: {
 		name:  CmdVersion,
@@ -1511,6 +1525,60 @@ func init() {
 				ec := &commands.ExecutionContext{}
 
 				commands.OnContainerize(
+					gcvalues,
+					targetRef,
+					ec)
+				return nil
+			},
+		},
+		{
+			Name:    cmdSpecs[CmdConvert].name,
+			Aliases: []string{cmdSpecs[CmdConvert].alias},
+			Usage:   cmdSpecs[CmdConvert].usage,
+			Action: func(ctx *cli.Context) error {
+				if len(ctx.Args()) < 1 {
+					fmt.Printf("docker-slim[convert]: missing target info...\n\n")
+					cli.ShowCommandHelp(ctx, CmdConvert)
+					return nil
+				}
+
+				gcvalues, err := globalCommandFlagValues(ctx)
+				if err != nil {
+					return err
+				}
+
+				targetRef := ctx.Args().First()
+
+				ec := &commands.ExecutionContext{}
+
+				commands.OnConvert(
+					gcvalues,
+					targetRef,
+					ec)
+				return nil
+			},
+		},
+		{
+			Name:    cmdSpecs[CmdEdit].name,
+			Aliases: []string{cmdSpecs[CmdEdit].alias},
+			Usage:   cmdSpecs[CmdEdit].usage,
+			Action: func(ctx *cli.Context) error {
+				if len(ctx.Args()) < 1 {
+					fmt.Printf("docker-slim[edit]: missing target info...\n\n")
+					cli.ShowCommandHelp(ctx, CmdEdit)
+					return nil
+				}
+
+				gcvalues, err := globalCommandFlagValues(ctx)
+				if err != nil {
+					return err
+				}
+
+				targetRef := ctx.Args().First()
+
+				ec := &commands.ExecutionContext{}
+
+				commands.OnEdit(
 					gcvalues,
 					targetRef,
 					ec)

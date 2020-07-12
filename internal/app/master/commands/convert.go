@@ -15,18 +15,18 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// OnContainerize implements the 'containerize' docker-slim command
-func OnContainerize(
+// OnConvert implements the 'convert' docker-slim command
+func OnConvert(
 	gparams *GenericParams,
 	targetRef string,
 	ec *ExecutionContext) {
-	const cmdName = command.Containerize
+	const cmdName = command.Convert
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewContainerizeCommand(gparams.ReportLocation)
+	cmdReport := report.NewConvertCommand(gparams.ReportLocation)
 	cmdReport.State = command.StateStarted
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)

@@ -9,6 +9,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
+	"github.com/docker-slim/docker-slim/pkg/command"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
@@ -16,7 +17,7 @@ import (
 
 // OnVersion implements the 'version' docker-slim command
 func OnVersion(doDebug, inContainer, isDSImage bool, clientConfig *config.DockerClient) {
-	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "version"})
+	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": command.Version})
 
 	client, err := dockerclient.New(clientConfig)
 	if err == dockerclient.ErrNoDockerInfo {

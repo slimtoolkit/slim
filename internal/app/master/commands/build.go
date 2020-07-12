@@ -17,6 +17,7 @@ import (
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container/probes/http"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
+	"github.com/docker-slim/docker-slim/pkg/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
@@ -76,14 +77,14 @@ func OnBuild(
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
 	ec *ExecutionContext) {
-	const cmdName = "build"
+	const cmdName = command.Build
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
 	cmdReport := report.NewBuildCommand(gparams.ReportLocation)
-	cmdReport.State = report.CmdStateStarted
+	cmdReport.State = command.StateStarted
 	cmdReport.TargetReference = targetRef
 
 	client, err := dockerclient.New(gparams.ClientConfig)
@@ -420,7 +421,7 @@ func OnBuild(
 	}
 
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
-	cmdReport.State = report.CmdStateCompleted
+	cmdReport.State = command.StateCompleted
 
 	/////////////////////////////
 	newImageInspector, err := image.NewInspector(client, builder.RepoName)
@@ -471,7 +472,7 @@ func OnBuild(
 			cmdReport.MinifiedImageSize,
 			cmdReport.MinifiedImageSizeHuman)
 	} else {
-		cmdReport.State = report.CmdStateError
+		cmdReport.State = command.StateError
 		cmdReport.Error = err.Error()
 	}
 
@@ -544,7 +545,7 @@ func OnBuild(
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)
 
-	cmdReport.State = report.CmdStateDone
+	cmdReport.State = command.StateDone
 	if cmdReport.Save() {
 		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
 	}
