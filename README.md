@@ -373,7 +373,18 @@ Adds one extra probe command: `POST /submit` (using only http):
 
 The `--http-probe-cmd-file` option is good when you have a lot of commands and/or you want to select additional HTTP command options.
 
-Here's an example:
+Available HTTP command options:
+* `method` - HTTP method to use
+* `resource` - target resource URL
+* `port` - port number
+* `protocol` - `http` or `https`
+* `headers` - array of strings with column delimited key/value pairs (e.g., "Content-Type: application/json")
+* `body` - request body as a string
+* `username` - username to use for basic auth
+* `password` - password to use for basic auth
+* `crawl` - boolean to indicate if you want to crawl the target (to visit all referenced resources)
+
+Here's a probe command file example:
 
 `docker-slim build --show-clogs --http-probe-cmd-file probeCmds.json my/sample-node-app-multi`
 
