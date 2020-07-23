@@ -16,7 +16,7 @@ import (
 	"github.com/google/shlex"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
-	"github.com/docker-slim/docker-slim/pkg/env"
+	"github.com/docker-slim/docker-slim/pkg/sysenv"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
 
@@ -26,10 +26,10 @@ const (
 
 func isInContainer(flag bool) (bool, bool) {
 	if flag {
-		return true, env.HasDSImageFlag()
+		return true, sysenv.HasDSImageFlag()
 	}
 
-	return env.InContainer()
+	return sysenv.InContainer()
 }
 
 func archiveState(flag string, inContainer bool) string {

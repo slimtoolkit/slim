@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"os"
+	//"os"
 
 	log "github.com/sirupsen/logrus"
 
@@ -27,7 +27,7 @@ func OnVersion(doDebug, inContainer, isDSImage bool, clientConfig *config.Docker
 		}
 		fmt.Printf("docker-slim[version]: info=docker.connect.error message='%s'\n", exitMsg)
 		fmt.Printf("docker-slim[version]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
-		os.Exit(-777)
+		exit(-777)
 	}
 	errutil.FailOn(err)
 

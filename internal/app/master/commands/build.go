@@ -95,7 +95,7 @@ func OnBuild(
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		os.Exit(ectCommon | ecNoDockerConnectInfo)
+		exit(ectCommon | ecNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
 
@@ -128,7 +128,7 @@ func OnBuild(
 			default:
 				fmt.Printf("%s[%s]: info=param.error status=malformed.custom.image.tag value=%s\n", appName, cmdName, customImageTag)
 				fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-				os.Exit(ectBuild | ecbBadCustomImageTag)
+				exit(ectBuild | ecbBadCustomImageTag)
 			}
 		} else {
 			fatImageRepoNameTag = fmt.Sprintf("docker-slim-tmp-fat-image.%v.%v",
@@ -156,7 +156,7 @@ func OnBuild(
 		if err != nil {
 			fmt.Printf("%s[%s]: info=build.error status=standard.image.build.error value='%v'\n", appName, cmdName, err)
 			fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-			os.Exit(ectBuild | ecbImageBuildError)
+			exit(ectBuild | ecbImageBuildError)
 		}
 
 		fmt.Printf("%s[%s]: state=basic.image.build.completed\n", appName, cmdName)
@@ -178,7 +178,7 @@ func OnBuild(
 	if !confirmNetwork(logger, client, overrides.Network) {
 		fmt.Printf("%s[%s]: info=param.error status=unknown.network value=%s\n", appName, cmdName, overrides.Network)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		os.Exit(ectCommon | ecBadNetworkName)
+		exit(ectCommon | ecBadNetworkName)
 	}
 
 	imageInspector, err := image.NewInspector(client, targetRef)
@@ -417,7 +417,7 @@ func OnBuild(
 	if err != nil {
 		fmt.Printf("%s[%s]: info=build.error status=optimized.image.build.error value='%v'\n", appName, cmdName, err)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		os.Exit(ectBuild | ecbImageBuildError)
+		exit(ectBuild | ecbImageBuildError)
 	}
 
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)

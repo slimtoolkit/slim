@@ -1,4 +1,4 @@
-package env
+package sysenv
 
 import (
 	"io/ioutil"

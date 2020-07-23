@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"os"
+	//"os"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
@@ -40,7 +40,7 @@ func OnConvert(
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		os.Exit(ectCommon | ecNoDockerConnectInfo)
+		exit(ectCommon | ecNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
 

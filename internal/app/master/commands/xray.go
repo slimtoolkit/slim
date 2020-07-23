@@ -2,7 +2,7 @@ package commands
 
 import (
 	"fmt"
-	"os"
+	//"os"
 	"path/filepath"
 	"strings"
 	"time"
@@ -59,7 +59,7 @@ func OnXray(
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		os.Exit(ectCommon | ecNoDockerConnectInfo)
+		exit(ectCommon | ecNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
 

@@ -1,12 +1,15 @@
 package commands
 
 import (
+	"fmt"
+	"os"
 	"path/filepath"
 
 	"github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
+	"github.com/docker-slim/docker-slim/pkg/consts"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
@@ -49,6 +52,16 @@ const (
 const (
 	appName = "docker-slim"
 )
+
+func ShowCommunityInfo() {
+	fmt.Printf("docker-slim: message='join the Gitter channel to ask questions or to share your feedback' info='%s'\n", consts.CommunityGitter)
+	fmt.Printf("docker-slim: message='join the Discord server to ask questions or to share your feedback' info='%s'\n", consts.CommunityDiscord)
+}
+
+func exit(exitCode int) {
+	ShowCommunityInfo()
+	os.Exit(exitCode)
+}
 
 func doArchiveState(logger *log.Entry, client *docker.Client, localStatePath, volumeName, stateKey string) error {
 	if volumeName == "" {

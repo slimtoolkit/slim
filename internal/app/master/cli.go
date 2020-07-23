@@ -374,6 +374,7 @@ func (ia *InteractiveApp) execute(command string) {
 	}
 
 	if parts[0] == "exit" {
+		commands.ShowCommunityInfo()
 		os.Exit(0)
 	}
 
@@ -1479,10 +1480,12 @@ func init() {
 			Aliases: []string{cmdSpecs[CmdVersion].alias},
 			Usage:   cmdSpecs[CmdVersion].usage,
 			Action: func(ctx *cli.Context) error {
+				commands.ShowCommunityInfo()
 				doDebug := ctx.GlobalBool(FlagDebug)
 				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
 				clientConfig := getDockerClientConfig(ctx)
 				commands.OnVersion(doDebug, inContainer, isDSImage, clientConfig)
+				commands.ShowCommunityInfo()
 				return nil
 			},
 		},
@@ -1494,6 +1497,7 @@ func init() {
 				doShowProgressFlag,
 			},
 			Action: func(ctx *cli.Context) error {
+				commands.ShowCommunityInfo()
 				doDebug := ctx.GlobalBool(FlagDebug)
 				statePath := ctx.GlobalString(FlagStatePath)
 				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
@@ -1501,6 +1505,7 @@ func init() {
 				doShowProgress := ctx.Bool(FlagShowProgress)
 
 				commands.OnUpdate(doDebug, statePath, archiveState, inContainer, isDSImage, doShowProgress)
+				commands.ShowCommunityInfo()
 				return nil
 			},
 		},
@@ -1509,6 +1514,7 @@ func init() {
 			Aliases: []string{cmdSpecs[CmdContainerize].alias},
 			Usage:   cmdSpecs[CmdContainerize].usage,
 			Action: func(ctx *cli.Context) error {
+				commands.ShowCommunityInfo()
 				if len(ctx.Args()) < 1 {
 					fmt.Printf("docker-slim[containerize]: missing target info...\n\n")
 					cli.ShowCommandHelp(ctx, CmdContainerize)
@@ -1528,6 +1534,7 @@ func init() {
 					gcvalues,
 					targetRef,
 					ec)
+				commands.ShowCommunityInfo()
 				return nil
 			},
 		},
@@ -1536,6 +1543,7 @@ func init() {
 			Aliases: []string{cmdSpecs[CmdConvert].alias},
 			Usage:   cmdSpecs[CmdConvert].usage,
 			Action: func(ctx *cli.Context) error {
+				commands.ShowCommunityInfo()
 				if len(ctx.Args()) < 1 {
 					fmt.Printf("docker-slim[convert]: missing target info...\n\n")
 					cli.ShowCommandHelp(ctx, CmdConvert)
@@ -1555,6 +1563,7 @@ func init() {
 					gcvalues,
 					targetRef,
 					ec)
+				commands.ShowCommunityInfo()
 				return nil
 			},
 		},
@@ -1563,6 +1572,7 @@ func init() {
 			Aliases: []string{cmdSpecs[CmdEdit].alias},
 			Usage:   cmdSpecs[CmdEdit].usage,
 			Action: func(ctx *cli.Context) error {
+				commands.ShowCommunityInfo()
 				if len(ctx.Args()) < 1 {
 					fmt.Printf("docker-slim[edit]: missing target info...\n\n")
 					cli.ShowCommandHelp(ctx, CmdEdit)
@@ -1582,6 +1592,7 @@ func init() {
 					gcvalues,
 					targetRef,
 					ec)
+				commands.ShowCommunityInfo()
 				return nil
 			},
 		},
@@ -1666,6 +1677,7 @@ func init() {
 				},
 			},
 			Action: func(ctx *cli.Context) error {
+				commands.ShowCommunityInfo()
 				targetRef := ctx.String(FlagTarget)
 
 				if targetRef == "" {
@@ -1753,7 +1765,7 @@ func init() {
 					doShowNoHits,
 					doShowSnippet,
 					ec)
-
+				commands.ShowCommunityInfo()
 				return nil
 			},
 		},
@@ -1788,6 +1800,7 @@ func init() {
 				doRemoveFileArtifactsFlag,
 			},
 			Action: func(ctx *cli.Context) error {
+				commands.ShowCommunityInfo()
 				targetRef := ctx.String(FlagTarget)
 
 				if targetRef == "" {
@@ -1832,6 +1845,7 @@ func init() {
 					doAddImageConfig,
 					doRmFileArtifacts,
 					ec)
+				commands.ShowCommunityInfo()
 				return nil
 			},
 		},
@@ -1946,6 +1960,7 @@ func init() {
 				doKeepTmpArtifactsFlag,
 			},
 			Action: func(ctx *cli.Context) error {
+				commands.ShowCommunityInfo()
 				targetRef := ctx.String(FlagTarget)
 
 				if targetRef == "" {
@@ -2158,7 +2173,7 @@ func init() {
 					doKeepTmpArtifacts,
 					continueAfter,
 					ec)
-
+				commands.ShowCommunityInfo()
 				return nil
 			},
 		},
@@ -2213,6 +2228,7 @@ func init() {
 				doKeepTmpArtifactsFlag,
 			},
 			Action: func(ctx *cli.Context) error {
+				commands.ShowCommunityInfo()
 				targetRef := ctx.String(FlagTarget)
 
 				if targetRef == "" {
@@ -2388,7 +2404,7 @@ func init() {
 					doKeepTmpArtifacts,
 					continueAfter,
 					ec)
-
+				commands.ShowCommunityInfo()
 				return nil
 			},
 		},

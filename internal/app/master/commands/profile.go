@@ -85,7 +85,7 @@ func OnProfile(
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		os.Exit(ectCommon | ecNoDockerConnectInfo)
+		exit(ectCommon | ecNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
 
@@ -96,7 +96,7 @@ func OnProfile(
 	if !confirmNetwork(logger, client, overrides.Network) {
 		fmt.Printf("%s[%s]: info=param.error status=unknown.network value=%s\n", appName, cmdName, overrides.Network)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		os.Exit(ectCommon | ecBadNetworkName)
+		exit(ectCommon | ecBadNetworkName)
 	}
 
 	imageInspector, err := image.NewInspector(client, targetRef)
