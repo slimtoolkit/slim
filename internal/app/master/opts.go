@@ -29,7 +29,7 @@ func isInContainer(flag bool) (bool, bool) {
 		return true, sysenv.HasDSImageFlag()
 	}
 
-	return sysenv.InContainer()
+	return sysenv.InDSContainer()
 }
 
 func archiveState(flag string, inContainer bool) string {

@@ -15,6 +15,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/system"
+	"github.com/docker-slim/docker-slim/pkg/sysenv"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
 	log "github.com/sirupsen/logrus"
@@ -111,7 +112,11 @@ func Run() {
 		log.SetLevel(log.DebugLevel)
 	}
 
+	activeCaps, maxCaps, err := sysenv.Capabilities(0)
 	log.Debugf("sensor: uid=%v euid=%v", os.Getuid(), os.Geteuid())
+	log.Debugf("sensor: privileged => %v", sysenv.IsPrivileged())
+	log.Debugf("sensor: active capabilities => %#v", activeCaps)
+	log.Debugf("sensor: max capabilities => %#v", maxCaps)
 	log.Debugf("sensor: sysinfo => %#v", system.GetSystemInfo())
 	log.Debugf("sensor: kernel flags => %#v", system.DefaultKernelFeatures.Raw)
 
