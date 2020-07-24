@@ -1,11 +1,13 @@
 package errutil
 
 import (
+	"fmt"
 	"runtime/debug"
 
-	"github.com/docker-slim/docker-slim/pkg/version"
-
 	log "github.com/sirupsen/logrus"
+
+	"github.com/docker-slim/docker-slim/pkg/consts"
+	"github.com/docker-slim/docker-slim/pkg/version"
 )
 
 // FailOn logs the error information and terminates the application if there's an error
@@ -13,6 +15,8 @@ func FailOn(err error) {
 	if err != nil {
 		stackData := debug.Stack()
 		log.WithError(err).WithField("version", version.Current()).WithField("stack", string(stackData)).Fatal("docker-slim: failure")
+
+		showCommunityInfo()
 	}
 }
 
@@ -33,6 +37,8 @@ func FailWhen(cond bool, msg string) {
 			"error":   msg,
 			"stack":   string(stackData),
 		}).Fatal("docker-slim: failure")
+
+		showCommunityInfo()
 	}
 }
 
@@ -44,4 +50,11 @@ func Fail(msg string) {
 		"error":   msg,
 		"stack":   string(stackData),
 	}).Fatal("docker-slim: failure")
+
+	showCommunityInfo()
+}
+
+func showCommunityInfo() {
+	fmt.Printf("docker-slim: message='join the Gitter channel to get help with this failure' info='%s'\n", consts.CommunityGitter)
+	fmt.Printf("docker-slim: message='join the Discord server to get help with this failure' info='%s'\n", consts.CommunityDiscord)
 }
