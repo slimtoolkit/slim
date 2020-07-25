@@ -458,11 +458,56 @@ func (p *CustomProbe) crawl(domain, addr string) {
 		c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 			if p.crawlMaxPageCount > 0 &&
 				pageCount > p.crawlMaxPageCount {
-				log.Debugf("http.CustomProbe.crawl.OnHTML - reached max page count, ignoring link (%v)", p.crawlMaxPageCount)
+				log.Debugf("http.CustomProbe.crawl.OnHTML(a[href]) - reached max page count, ignoring link (%v)", p.crawlMaxPageCount)
 				return
 			}
 
 			e.Request.Visit(e.Attr("href"))
+		})
+
+		c.OnHTML("link[href]", func(e *colly.HTMLElement) {
+			if p.crawlMaxPageCount > 0 &&
+				pageCount > p.crawlMaxPageCount {
+				log.Debugf("http.CustomProbe.crawl.OnHTML(link[href]) - reached max page count, ignoring link (%v)", p.crawlMaxPageCount)
+				return
+			}
+
+			switch e.Attr("rel") {
+			case "dns-prefetch", "preconnect", "alternate":
+				return
+			}
+
+			e.Request.Visit(e.Attr("href"))
+		})
+
+		c.OnHTML("script[src], source[src], img[src]", func(e *colly.HTMLElement) {
+			if p.crawlMaxPageCount > 0 &&
+				pageCount > p.crawlMaxPageCount {
+				log.Debugf("http.CustomProbe.crawl.OnHTML(script/source/img) - reached max page count, ignoring link (%v)", p.crawlMaxPageCount)
+				return
+			}
+
+			e.Request.Visit(e.Attr("src"))
+		})
+
+		c.OnHTML("source[srcset]", func(e *colly.HTMLElement) {
+			if p.crawlMaxPageCount > 0 &&
+				pageCount > p.crawlMaxPageCount {
+				log.Debugf("http.CustomProbe.crawl.OnHTML(source[srcset]) - reached max page count, ignoring link (%v)", p.crawlMaxPageCount)
+				return
+			}
+
+			e.Request.Visit(e.Attr("srcset"))
+		})
+
+		c.OnHTML("[data-src]", func(e *colly.HTMLElement) {
+			if p.crawlMaxPageCount > 0 &&
+				pageCount > p.crawlMaxPageCount {
+				log.Debugf("http.CustomProbe.crawl.OnHTML([data-src]) - reached max page count, ignoring link (%v)", p.crawlMaxPageCount)
+				return
+			}
+
+			e.Request.Visit(e.Attr("data-src"))
 		})
 
 		c.OnRequest(func(r *colly.Request) {

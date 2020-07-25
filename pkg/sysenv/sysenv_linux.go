@@ -1,12 +1,12 @@
 package sysenv
 
 import (
-	"os"
 	"fmt"
+	"golang.org/x/sys/unix"
+	"io/ioutil"
+	"os"
 	"regexp"
 	"strings"
-	"io/ioutil"
-	"golang.org/x/sys/unix"
 
 	"github.com/syndtr/gocapability/capability"
 )
@@ -61,8 +61,8 @@ func IsPrivileged() bool {
 		return false
 	}
 
-	if WithAllCapabilities() && 
-	   mode == SeccompMNDisabled {
+	if WithAllCapabilities() &&
+		mode == SeccompMNDisabled {
 		return true
 	}
 
@@ -76,8 +76,8 @@ func WithAllCapabilities() bool {
 		return false
 	}
 
-	if caps.Full(capability.PERMITTED) && 
-	caps.Full(capability.EFFECTIVE) {
+	if caps.Full(capability.PERMITTED) &&
+		caps.Full(capability.EFFECTIVE) {
 		return true
 	}
 
@@ -127,54 +127,54 @@ func IsDefaultCapSet(set map[string]struct{}) bool {
 //https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities
 
 var DefaultCapStrings = map[string]struct{}{
-	capability.CAP_SETPCAP.String(): struct{}{},     
-	capability.CAP_MKNOD.String(): struct{}{},      
-	capability.CAP_AUDIT_WRITE.String(): struct{}{}, 
-	capability.CAP_CHOWN.String(): struct{}{},      
-	capability.CAP_NET_RAW.String(): struct{}{},     
-	capability.CAP_DAC_OVERRIDE.String(): struct{}{},
-	capability.CAP_FOWNER.String(): struct{}{},     
-	capability.CAP_FSETID.String(): struct{}{},     
-	capability.CAP_KILL.String(): struct{}{},       
-	capability.CAP_SETGID.String(): struct{}{},    
-	capability.CAP_SETUID.String(): struct{}{},     
-	capability.CAP_NET_BIND_SERVICE.String(): struct{}{},
-	capability.CAP_SYS_CHROOT.String(): struct{}{},     
-	capability.CAP_SETFCAP.String(): struct{}{},      
+	capability.CAP_SETPCAP.String():          {},
+	capability.CAP_MKNOD.String():            {},
+	capability.CAP_AUDIT_WRITE.String():      {},
+	capability.CAP_CHOWN.String():            {},
+	capability.CAP_NET_RAW.String():          {},
+	capability.CAP_DAC_OVERRIDE.String():     {},
+	capability.CAP_FOWNER.String():           {},
+	capability.CAP_FSETID.String():           {},
+	capability.CAP_KILL.String():             {},
+	capability.CAP_SETGID.String():           {},
+	capability.CAP_SETUID.String():           {},
+	capability.CAP_NET_BIND_SERVICE.String(): {},
+	capability.CAP_SYS_CHROOT.String():       {},
+	capability.CAP_SETFCAP.String():          {},
 }
 
-var DefaultCapNums = map[capability.Cap] string {
-	capability.CAP_SETPCAP: capability.CAP_SETPCAP.String(),
-	capability.CAP_MKNOD: capability.CAP_MKNOD.String(),
-	capability.CAP_AUDIT_WRITE: capability.CAP_AUDIT_WRITE.String(),
-	capability.CAP_CHOWN: capability.CAP_CHOWN.String(),
-	capability.CAP_NET_RAW: capability.CAP_NET_RAW.String(),
-	capability.CAP_DAC_OVERRIDE: capability.CAP_DAC_OVERRIDE.String(),
-	capability.CAP_FOWNER: capability.CAP_FOWNER.String(),
-	capability.CAP_FSETID: capability.CAP_FSETID.String(),
-	capability.CAP_KILL: capability.CAP_KILL.String(),
-	capability.CAP_SETGID: capability.CAP_SETGID.String(),
-	capability.CAP_SETUID: capability.CAP_SETUID.String(),
+var DefaultCapNums = map[capability.Cap]string{
+	capability.CAP_SETPCAP:          capability.CAP_SETPCAP.String(),
+	capability.CAP_MKNOD:            capability.CAP_MKNOD.String(),
+	capability.CAP_AUDIT_WRITE:      capability.CAP_AUDIT_WRITE.String(),
+	capability.CAP_CHOWN:            capability.CAP_CHOWN.String(),
+	capability.CAP_NET_RAW:          capability.CAP_NET_RAW.String(),
+	capability.CAP_DAC_OVERRIDE:     capability.CAP_DAC_OVERRIDE.String(),
+	capability.CAP_FOWNER:           capability.CAP_FOWNER.String(),
+	capability.CAP_FSETID:           capability.CAP_FSETID.String(),
+	capability.CAP_KILL:             capability.CAP_KILL.String(),
+	capability.CAP_SETGID:           capability.CAP_SETGID.String(),
+	capability.CAP_SETUID:           capability.CAP_SETUID.String(),
 	capability.CAP_NET_BIND_SERVICE: capability.CAP_NET_BIND_SERVICE.String(),
-	capability.CAP_SYS_CHROOT: capability.CAP_SYS_CHROOT.String(),
-	capability.CAP_SETFCAP: capability.CAP_SETFCAP.String(),	
+	capability.CAP_SYS_CHROOT:       capability.CAP_SYS_CHROOT.String(),
+	capability.CAP_SETFCAP:          capability.CAP_SETFCAP.String(),
 }
 
 type SeccompModeName string
 
 const (
-	SMDisabled string = "0"
+	SMDisabled        string          = "0"
 	SeccompMNDisabled SeccompModeName = "disabled"
-	SMStrict string = "1"
-	SeccompMNStrict SeccompModeName = "strict"
-	SMFiltering string = "2"
+	SMStrict          string          = "1"
+	SeccompMNStrict   SeccompModeName = "strict"
+	SMFiltering       string          = "2"
 	SeccompMFiltering SeccompModeName = "filtering"
 )
 
-var seccompModes = map[string] SeccompModeName {
-		SMDisabled:  SeccompMNDisabled,
-		SMStrict:    SeccompMNStrict,
-		SMFiltering: SeccompMFiltering,
+var seccompModes = map[string]SeccompModeName{
+	SMDisabled:  SeccompMNDisabled,
+	SMStrict:    SeccompMNStrict,
+	SMFiltering: SeccompMFiltering,
 }
 
 const procStatusPat = "/proc/%s/status"
@@ -204,8 +204,9 @@ func procSeccompMode(data string) SeccompModeName {
 	return ""
 }
 
-const procStatusFieldValueRegexStr   = ":(.*)"
-var procStatusFieldValueMatcher   = regexp.MustCompile(procStatusFieldValueRegexStr)
+const procStatusFieldValueRegexStr = ":(.*)"
+
+var procStatusFieldValueMatcher = regexp.MustCompile(procStatusFieldValueRegexStr)
 
 func procStatusField(data, fname string) string {
 	if !strings.HasSuffix(fname, ":") {
@@ -241,7 +242,7 @@ func sysSeccompMode() SeccompModeName {
 		}
 	}
 
-	return SeccompMNDisabled	
+	return SeccompMNDisabled
 }
 
 func fileData(fname string) (string, error) {
