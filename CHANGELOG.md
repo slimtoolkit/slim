@@ -1,5 +1,19 @@
 # Releases
 
+## 1.30.0 (7/27/2020)
+
+### New Features
+
+- `lint` command (initial Dockerfile linting capabilities with a basic set of checks)
+- HTTP probe crawler (automatically probes additional endpoints referenced in the processed targets; see the `--http-probe-crawl` and related flags)
+
+### Improvements
+
+- ARM64 support (need more people to test!)
+- `--http-probe-exit-on-failure` flag to exit execution when all HTTP probe calls fail
+- `--include-bin-file` and `--include-exe-file` flags to make it easier to specify multiple binaries and executables loading them from files
+- `xray` command report enhancements
+
 ## 1.29.0 (3/18/2020)
 
 ### New Features
