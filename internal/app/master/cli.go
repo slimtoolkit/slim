@@ -1484,7 +1484,6 @@ func init() {
 			Aliases: []string{cmdSpecs[CmdVersion].alias},
 			Usage:   cmdSpecs[CmdVersion].usage,
 			Action: func(ctx *cli.Context) error {
-				commands.ShowCommunityInfo()
 				doDebug := ctx.GlobalBool(FlagDebug)
 				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
 				clientConfig := getDockerClientConfig(ctx)
