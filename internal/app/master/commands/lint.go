@@ -2,6 +2,7 @@ package commands
 
 import (
 	"fmt"
+	"strings"
 	//"os"
 
 	//"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
@@ -32,6 +33,7 @@ func OnLint(
 	excludeCheckIDs map[string]struct{},
 	doShowNoHits bool,
 	doShowSnippet bool,
+	doListChecks bool,
 	ec *ExecutionContext) {
 	const cmdName = command.Lint
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
@@ -43,7 +45,7 @@ func OnLint(
 	cmdReport.State = command.StateStarted
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
-	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, targetRef)
+	fmt.Printf("%s[%s]: info=params target=%v list.checks=%v\n", appName, cmdName, targetRef, doListChecks)
 
 	/*
 		do it only when targetting images
@@ -65,30 +67,35 @@ func OnLint(
 		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
-	cmdReport.TargetType = linter.DockerfileTargetType
-	cmdReport.TargetReference = targetRef
+	if doListChecks {
+		checks := linter.ListChecks()
+		printLintChecks(checks, appName, cmdName)
+	} else {
+		cmdReport.TargetType = linter.DockerfileTargetType
+		cmdReport.TargetReference = targetRef
 
-	options := linter.Options{
-		DockerfilePath:   targetRef,
-		SkipBuildContext: doSkipBuildContext,
-		BuildContextDir:  buildContextDir,
-		SkipDockerignore: doSkipDockerignore,
-		Selector: linter.CheckSelector{
-			IncludeCheckLabels: includeCheckLabels,
-			IncludeCheckIDs:    includeCheckIDs,
-			ExcludeCheckLabels: excludeCheckLabels,
-			ExcludeCheckIDs:    excludeCheckIDs,
-		},
+		options := linter.Options{
+			DockerfilePath:   targetRef,
+			SkipBuildContext: doSkipBuildContext,
+			BuildContextDir:  buildContextDir,
+			SkipDockerignore: doSkipDockerignore,
+			Selector: linter.CheckSelector{
+				IncludeCheckLabels: includeCheckLabels,
+				IncludeCheckIDs:    includeCheckIDs,
+				ExcludeCheckLabels: excludeCheckLabels,
+				ExcludeCheckIDs:    excludeCheckIDs,
+			},
+		}
+
+		lintResults, err := linter.Execute(options)
+		errutil.FailOn(err)
+
+		cmdReport.BuildContextDir = lintResults.BuildContextDir
+		cmdReport.Hits = lintResults.Hits
+		cmdReport.Errors = lintResults.Errors
+
+		printLintResults(lintResults, appName, cmdName, cmdReport, doShowNoHits, doShowSnippet)
 	}
-
-	lintResults, err := linter.Execute(options)
-	errutil.FailOn(err)
-
-	cmdReport.BuildContextDir = lintResults.BuildContextDir
-	cmdReport.Hits = lintResults.Hits
-	cmdReport.Errors = lintResults.Errors
-
-	printLintResults(lintResults, appName, cmdName, cmdReport, doShowNoHits, doShowSnippet)
 
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
 	cmdReport.State = command.StateCompleted
@@ -102,6 +109,35 @@ func OnLint(
 	if cmdReport.Save() {
 		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
 	}
+}
+
+func printLintChecks(checks []*check.Info,
+	appName string,
+	cmdName command.Type) {
+	fmt.Printf("%s[%s]: info=lint.checks count=%d:\n",
+		appName,
+		cmdName,
+		len(checks))
+
+	for _, info := range checks {
+		fmt.Printf("%s[%s]: info=lint.check.info id=%s name='%s' labels='%s' description='%s' url='%s'\n",
+			appName,
+			cmdName,
+			info.ID,
+			info.Name,
+			kvMapString(info.Labels),
+			info.Description,
+			info.DetailsURL)
+	}
+}
+
+func kvMapString(m map[string]string) string {
+	var pairs []string
+	for k, v := range m {
+		pairs = append(pairs, fmt.Sprintf("%s=%s", k, v))
+	}
+
+	return strings.Join(pairs, ",")
 }
 
 func printLintResults(lintResults *linter.Report,

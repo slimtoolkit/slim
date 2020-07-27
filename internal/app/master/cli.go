@@ -290,6 +290,7 @@ const (
 	FlagExcludeCheckIDFile = "exclude-check-id-file"
 	FlagShowNoHits         = "show-nohits"
 	FlagShowSnippet        = "show-snippet"
+	FlagListChecks         = "list-checks"
 )
 
 // Lint command flag usage info
@@ -307,6 +308,7 @@ const (
 	FlagExcludeCheckIDFileUsage = "File with check IDs to exclude"
 	FlagShowNoHitsUsage         = "Show checks with no matches"
 	FlagShowSnippetUsage        = "Show check match snippet"
+	FlagListChecksUsage         = "List available checks"
 )
 
 ///////////////////////////////////
@@ -702,6 +704,7 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagExcludeCheckIDFile), Description: FlagExcludeCheckIDFileUsage},
 				{Text: fullFlagName(FlagShowNoHits), Description: FlagShowNoHitsUsage},
 				{Text: fullFlagName(FlagShowSnippet), Description: FlagShowSnippetUsage},
+				{Text: fullFlagName(FlagListChecks), Description: FlagListChecksUsage},
 			},
 			Values: map[string]CompleteValue{
 				fullFlagName(FlagTarget):             completeLintTarget,
@@ -715,6 +718,7 @@ var cmdSpecs = map[string]cmdSpec{
 				fullFlagName(FlagExcludeCheckIDFile): completeFile,
 				fullFlagName(FlagShowNoHits):         completeBool,
 				fullFlagName(FlagShowSnippet):        completeTBool,
+				fullFlagName(FlagListChecks):         completeBool,
 			},
 		},
 	},
@@ -1675,18 +1679,26 @@ func init() {
 					Usage:  FlagShowSnippetUsage,
 					EnvVar: "DSLIM_LINT_SHOW_SNIPPET",
 				},
+				cli.BoolFlag{
+					Name:   FlagListChecks,
+					Usage:  FlagListChecksUsage,
+					EnvVar: "DSLIM_LINT_LIST_CHECKS",
+				},
 			},
 			Action: func(ctx *cli.Context) error {
 				commands.ShowCommunityInfo()
-				targetRef := ctx.String(FlagTarget)
+				doListChecks := ctx.Bool(FlagListChecks)
 
-				if targetRef == "" {
-					if len(ctx.Args()) < 1 {
-						fmt.Printf("docker-slim[lint]: missing target image/Dockerfile...\n\n")
-						cli.ShowCommandHelp(ctx, CmdLint)
-						return nil
-					} else {
-						targetRef = ctx.Args().First()
+				targetRef := ctx.String(FlagTarget)
+				if !doListChecks {
+					if targetRef == "" {
+						if len(ctx.Args()) < 1 {
+							fmt.Printf("docker-slim[lint]: missing target image/Dockerfile...\n\n")
+							cli.ShowCommandHelp(ctx, CmdLint)
+							return nil
+						} else {
+							targetRef = ctx.Args().First()
+						}
 					}
 				}
 
@@ -1764,6 +1776,7 @@ func init() {
 					excludeCheckIDs,
 					doShowNoHits,
 					doShowSnippet,
+					doListChecks,
 					ec)
 				commands.ShowCommunityInfo()
 				return nil

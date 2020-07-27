@@ -189,7 +189,7 @@ If you run `docker-slim` without any parameters you'll get an interactive prompt
 
 Commands:
 
-- `lint` - Lint the target Dockerfile (or image)
+- `lint` - Lint the target Dockerfile (or image, in the future)
 - `xray` - Collects fat image information and reverse engineers its Dockerfile
 - `build` - Collect fat image information and build a slim image from it
 - `profile` - Collect fat image information and generate a fat container report
@@ -222,7 +222,7 @@ To disable the version checks set the global `--check-version` flag to `false` (
 
 ### `LINT` COMMAND OPTIONS
 
-- `--target` - target Dockerfile path (or Docker image, in the future)
+- `--target` - target Dockerfile path (or Docker image, in the future; if you don't use this flag you must specify the target as the argument to the command)
 - `--target-type` - explicitly specify the command target type (values: dockerfile, image)
 - `--skip-build-context` - don't try to analyze build context
 - `build-context-dir` - explicitly specify the build context directory
@@ -233,6 +233,9 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `include-check-id-file` - file with check IDs to include
 - `exclude-check-id` - check ID to exclude
 - `exclude-check-id-file` - file with check IDs to exclude
+- `show-nohits` - show checks with no matches
+- `show-snippet` - show check match snippet (default value: true)
+- `list-checks` - list available checks (don't need to specify the target flag if you just want to list the available checks)
 
 ### `XRAY` COMMAND OPTIONS
 

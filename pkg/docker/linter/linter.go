@@ -250,3 +250,13 @@ done:
 
 	return report, nil
 }
+
+func ListChecks() []*check.Info {
+	var list []*check.Info
+	for _, check := range check.AllChecks {
+		info := check.Get()
+		list = append(list, info)
+	}
+
+	return list
+}
