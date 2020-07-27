@@ -277,6 +277,11 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--http-probe-ports` - explicit list of ports to probe (in the order you want them to be probed; excluded ports are not probed!)
 - `--http-probe-full` - do full HTTP probe for all selected ports (if false, finish after first successful scan; default value: false)
 - `--http-probe-exit-on-failure` - exit when all HTTP probe commands fail (default value: false)
+- `--http-probe-crawl` - enable crawling for the default HTTP probe command (default value: false)
+- `--http-crawl-max-depth` - max depth to use for the HTTP probe crawler (default value: 3)
+- `--http-crawl-max-page-count` - max number of pages to visit for the HTTP probe crawler (default value: 1000)
+- `--http-crawl-concurrency` - number of concurrent workers when crawling an HTTP target (default value: 10)
+- `--http-max-concurrent-crawlers` - number of concurrent crawlers in the HTTP probe (default value: 1)
 - `--show-clogs` - show container logs (from the container used to perform dynamic inspection)
 - `--show-blogs` - show build logs (when the minified container is built)
 - `--copy-meta-artifacts` - copy meta artifacts to the provided location
@@ -441,6 +446,10 @@ The HTTP probe command file path can be a relative path (relative to the current
 For each HTTP probe call docker-slim will print the call status. Example: `info=http.probe.call status=200 method=GET target=http://127.0.0.1:32899/ attempt=1 error=none`.
 
 You can execute your own external HTTP requests using the `target.port.list` field in the container info message docker-slim prints when it starts its test container: `docker-slim[build]: info=container name=<your_container_name> id=<your_container_id> target.port.list=[<comma_separated_list_of_port_numbers_to_use>] target.port.info=[<comma_separated_list_of_port_mapping_records>]`. Example: `docker-slim[build]: info=container name=dockerslimk_42861_20190203084955 id=aa44c43bcf4dd0dae78e2a8b3ac011e7beb6f098a65b09c8bce4a91dc2ff8427 target.port.list=[32899] target.port.info=[9000/tcp => 0.0.0.0:32899]`. With this information you can run `curl` or other HTTP request generating tools: `curl http://localhost:32899`.
+
+The current version also includes an experimental `crawling` capability. To enable it for the default HTTP probe use the `--http-probe-crawl` flag. You can also enable it for the HTTP probe commands in your command file using the `crawl` boolean field.
+
+When `crawling` is enabled the HTTP probe will act like a web crawler following the links it finds in the target endpoint.
 
 ## DEBUGGING MINIFIED CONTAINERS
 
