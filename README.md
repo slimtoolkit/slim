@@ -34,6 +34,25 @@ If your application exposes any web interfaces (e.g., when you have a web server
 
 Note that `docker-slim` will interact with your application for you if you enable HTTP probing with the `--http-probe` flag or other related HTTP probe flags. Some web applications built with scripting languages like Python or Ruby require service interactions to load everything in the application. Enable HTTP probing unless it gets in your way.
 
+## Community
+
+Feel free to join any of these channels or just open a new [`Github issue`](https://github.com/docker-slim/docker-slim/issues) if you want to chat or if you need help.
+
+* [`Gitter channel`](https://gitter.im/docker-slim/community)
+* [`Discord server`](https://discord.gg/9tDyxYS)
+* [`Google group`](https://groups.google.com/d/forum/docker-slim) (brand new)
+* [`Twitter`](https://twitter.com/DockerSlim)
+* [`Slack`](https://join.slack.com/t/dockerslimcommunity/shared_invite/zt-g89azob8-_DzOrn0zLFUT2ErTLu1X9A)
+* Original `IRC channel` on `freenode` (not used anymore, but we can start using it again :-): \#`dockerslim`
+
+## DockerSlim on the Internet
+
+##### Books:
+* [`Everyone's Docker/Kubernetes`](https://www.amazon.co.jp/dp/429710461X) (Japanese)
+* [`Docker in Practice (2nd edition)`](https://www.amazon.com/Docker-Practice-Ian-Miell/dp/1617294802)
+* [`Docker/Kubernetes Security Practice Guide`](https://www.amazon.co.jp/dp/4839970505) (Japanese)
+
+
 ## Minification Examples
 
 Node.js application images:
@@ -128,7 +147,6 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 - [DEVELOPMENT PROGRESS](#development-progress)
   - [TODO](#todo)
 - [ORIGINS](#origins)
-- [ONLINE](#online)
 - [MINIFIED DOCKER HUB IMAGES](#minified-docker-hub-images)
 - [CONTRIBUTING](#contributing)
 - [LICENSE](#license)
@@ -689,6 +707,8 @@ Some of the advanced analysis options require a number of Linux kernel features 
 - Build/use a custom Boot2docker kernel with every required feature turned on.
 - "Live" image create mode - to create new images from containers where users install their applications interactively.
 
+The [`WISHLIST`](WISHLIST.md) doc includes even more potential improvements. 
+
 ## ORIGINS
 
 DockerSlim was a `Docker Global Hack Day` \#`dockerhackday` project. It barely worked at the time, but it did get a win in Seattle and it took the second place in the `Plumbing` category overall :-)
@@ -696,12 +716,6 @@ DockerSlim was a `Docker Global Hack Day` \#`dockerhackday` project. It barely w
 ![DHD3](assets/images/dhd/docker_global_hackday3_red.png)
 
 Since then it's been improved and it works pretty well for its core use cases. It can be better though. That's why the project needs your help! You don't need to know much about Docker and you don't need to know anything about Go. You can contribute in many different ways. For example, use DockerSlim on your images and open a Github issue documenting your experience even if it worked just fine :-)
-
-## ONLINE
-
-IRC (freenode): \#dockerslim
-
-Docker Hub: [dslim](https://hub.docker.com/r/dslim/) (dockerslim is already taken :-()
 
 ## MINIFIED DOCKER HUB IMAGES
 
