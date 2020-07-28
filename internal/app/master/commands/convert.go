@@ -26,7 +26,7 @@ func OnConvert(
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewConvertCommand(gparams.ReportLocation)
+	cmdReport := report.NewConvertCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)

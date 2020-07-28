@@ -83,7 +83,7 @@ func OnBuild(
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewBuildCommand(gparams.ReportLocation)
+	cmdReport := report.NewBuildCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 	cmdReport.TargetReference = targetRef
 

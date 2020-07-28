@@ -26,7 +26,7 @@ func OnEdit(
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewEditCommand(gparams.ReportLocation)
+	cmdReport := report.NewEditCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)

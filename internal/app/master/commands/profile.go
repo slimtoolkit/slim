@@ -70,7 +70,7 @@ func OnProfile(
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewProfileCommand(gparams.ReportLocation)
+	cmdReport := report.NewProfileCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 	cmdReport.OriginalImage = targetRef
 

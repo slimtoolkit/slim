@@ -43,7 +43,7 @@ func OnXray(
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewXrayCommand(gparams.ReportLocation)
+	cmdReport := report.NewXrayCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 	cmdReport.TargetReference = targetRef
 

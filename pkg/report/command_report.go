@@ -12,15 +12,21 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
 	"github.com/docker-slim/docker-slim/pkg/docker/linter/check"
+	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/docker-slim/docker-slim/pkg/version"
 )
 
 // Command is the common command report data
 type Command struct {
 	reportLocation string
-	Type           command.Type  `json:"type"`
-	State          command.State `json:"state"`
-	Error          string        `json:"error,omitempty"`
+	Engine         string `json:"engine"`
+	Containerized  bool   `json:"containerized"`
+	Host           string `json:"host"`
+	//Docker         string  `json:"docker,omitempty"`
+	Type  command.Type  `json:"type"`
+	State command.State `json:"state"`
+	Error string        `json:"error,omitempty"`
 }
 
 // ImageMetadata provides basic image metadata
@@ -121,81 +127,110 @@ type EditCommand struct {
 	Command
 }
 
+func (cmd *Command) init(containerized bool) {
+	cmd.Containerized = containerized
+	cmd.Engine = version.Current()
+
+	hinfo := system.GetSystemInfo()
+	cmd.Host = hinfo.OsName
+}
+
 // NewBuildCommand creates a new 'build' command report
-func NewBuildCommand(reportLocation string) *BuildCommand {
-	return &BuildCommand{
+func NewBuildCommand(reportLocation string, containerized bool) *BuildCommand {
+	cmd := &BuildCommand{
 		Command: Command{
 			reportLocation: reportLocation,
 			Type:           command.Build,
 			State:          command.StateUnknown,
 		},
 	}
+
+	cmd.Command.init(containerized)
+	return cmd
 }
 
 // NewProfileCommand creates a new 'profile' command report
-func NewProfileCommand(reportLocation string) *ProfileCommand {
-	return &ProfileCommand{
+func NewProfileCommand(reportLocation string, containerized bool) *ProfileCommand {
+	cmd := &ProfileCommand{
 		Command: Command{
 			reportLocation: reportLocation,
 			Type:           command.Profile,
 			State:          command.StateUnknown,
 		},
 	}
+
+	cmd.Command.init(containerized)
+	return cmd
 }
 
 // NewXrayCommand creates a new 'xray' command report
-func NewXrayCommand(reportLocation string) *XrayCommand {
-	return &XrayCommand{
+func NewXrayCommand(reportLocation string, containerized bool) *XrayCommand {
+	cmd := &XrayCommand{
 		Command: Command{
 			reportLocation: reportLocation,
 			Type:           command.Xray,
 			State:          command.StateUnknown,
 		},
 	}
+
+	cmd.Command.init(containerized)
+	return cmd
 }
 
 // NewLintCommand creates a new 'lint' command report
-func NewLintCommand(reportLocation string) *LintCommand {
-	return &LintCommand{
+func NewLintCommand(reportLocation string, containerized bool) *LintCommand {
+	cmd := &LintCommand{
 		Command: Command{
 			reportLocation: reportLocation,
 			Type:           command.Lint,
 			State:          command.StateUnknown,
 		},
 	}
+
+	cmd.Command.init(containerized)
+	return cmd
 }
 
 // NewContainerizeCommand creates a new 'containerize' command report
-func NewContainerizeCommand(reportLocation string) *ContainerizeCommand {
-	return &ContainerizeCommand{
+func NewContainerizeCommand(reportLocation string, containerized bool) *ContainerizeCommand {
+	cmd := &ContainerizeCommand{
 		Command: Command{
 			reportLocation: reportLocation,
 			Type:           command.Containerize,
 			State:          command.StateUnknown,
 		},
 	}
+
+	cmd.Command.init(containerized)
+	return cmd
 }
 
 // NewConvertCommand creates a new 'convert' command report
-func NewConvertCommand(reportLocation string) *ConvertCommand {
-	return &ConvertCommand{
+func NewConvertCommand(reportLocation string, containerized bool) *ConvertCommand {
+	cmd := &ConvertCommand{
 		Command: Command{
 			reportLocation: reportLocation,
 			Type:           command.Convert,
 			State:          command.StateUnknown,
 		},
 	}
+
+	cmd.Command.init(containerized)
+	return cmd
 }
 
 // NewEditCommand creates a new 'edit' command report
-func NewEditCommand(reportLocation string) *EditCommand {
-	return &EditCommand{
+func NewEditCommand(reportLocation string, containerized bool) *EditCommand {
+	cmd := &EditCommand{
 		Command: Command{
 			reportLocation: reportLocation,
 			Type:           command.Edit,
 			State:          command.StateUnknown,
 		},
 	}
+
+	cmd.Command.init(containerized)
+	return cmd
 }
 
 func (p *Command) ReportLocation() string {
