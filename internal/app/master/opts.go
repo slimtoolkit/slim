@@ -92,6 +92,8 @@ var allImageOverrides = map[string]bool{
 	"workdir":    true,
 	"env":        true,
 	"expose":     true,
+	"volume":     true,
+	"label":      true,
 }
 
 func parseImageOverrides(value string) map[string]bool {
@@ -165,6 +167,25 @@ func parseTokenSet(values []string) (map[string]struct{}, error) {
 		}
 
 		tokens[token] = struct{}{}
+	}
+
+	return tokens, nil
+}
+
+func parseTokenMap(values []string) (map[string]string, error) {
+	tokens := map[string]string{}
+	for _, token := range values {
+		token = strings.TrimSpace(token)
+		if token == "" {
+			continue
+		}
+
+		parts := strings.SplitN(token, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		tokens[parts[0]] = parts[1]
 	}
 
 	return tokens, nil

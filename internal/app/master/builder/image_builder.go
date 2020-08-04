@@ -35,6 +35,7 @@ type ImageBuilder struct {
 	Cmd          []string
 	WorkingDir   string
 	Env          []string
+	Labels       map[string]string
 	ExposedPorts map[docker.Port]struct{}
 	Volumes      map[string]struct{}
 	OnBuild      []string
@@ -42,6 +43,11 @@ type ImageBuilder struct {
 	HasData      bool
 	TarData      bool
 }
+
+const (
+	dsCmdPortInfo = "65501/tcp"
+	dsEvtPortInfo = "65502/tcp"
+)
 
 // NewImageBuilder creates a new BasicImageBuilder instances
 func NewBasicImageBuilder(client *docker.Client,
@@ -110,10 +116,23 @@ func NewImageBuilder(client *docker.Client,
 		Cmd:          imageInfo.Config.Cmd,
 		WorkingDir:   imageInfo.Config.WorkingDir,
 		Env:          imageInfo.Config.Env,
+		Labels:       imageInfo.Config.Labels,
 		ExposedPorts: imageInfo.Config.ExposedPorts,
 		Volumes:      imageInfo.Config.Volumes,
 		OnBuild:      imageInfo.Config.OnBuild,
 		User:         imageInfo.Config.User,
+	}
+
+	if builder.ExposedPorts == nil {
+		builder.ExposedPorts = map[docker.Port]struct{}{}
+	}
+
+	if builder.Volumes == nil {
+		builder.Volumes = map[string]struct{}{}
+	}
+
+	if builder.Labels == nil {
+		builder.Labels = map[string]string{}
 	}
 
 	if overrides != nil && len(overrideSelectors) > 0 {
@@ -136,17 +155,20 @@ func NewImageBuilder(client *docker.Client,
 				if len(overrides.Env) > 0 {
 					builder.Env = append(builder.Env, instructions.Env...)
 				}
-			case "expose":
-				//TODO: refactor this port filter...
-				dsCmdPort := docker.Port("65501/tcp")
-				dsEnvPort := docker.Port("65502/tcp")
-
-				if builder.ExposedPorts == nil {
-					builder.ExposedPorts = map[docker.Port]struct{}{}
+			case "label":
+				for k, v := range overrides.Labels {
+					builder.Labels[k] = v
 				}
+			case "volume":
+				for k, v := range overrides.Volumes {
+					builder.Volumes[k] = v
+				}
+			case "expose":
+				dsCmdPort := docker.Port(dsCmdPortInfo)
+				dsEvtPort := docker.Port(dsEvtPortInfo)
 
 				for k, v := range overrides.ExposedPorts {
-					if k == dsCmdPort || k == dsEnvPort {
+					if k == dsCmdPort || k == dsEvtPort {
 						continue
 					}
 					builder.ExposedPorts[k] = v
@@ -167,12 +189,16 @@ func NewImageBuilder(client *docker.Client,
 			builder.Env = append(builder.Env, instructions.Env...)
 		}
 
-		if builder.ExposedPorts == nil {
-			builder.ExposedPorts = map[docker.Port]struct{}{}
-		}
-
 		for k, v := range instructions.ExposedPorts {
 			builder.ExposedPorts[k] = v
+		}
+
+		for k, v := range instructions.Volumes {
+			builder.Volumes[k] = v
+		}
+
+		for k, v := range instructions.Labels {
+			builder.Labels[k] = v
 		}
 
 		if len(instructions.Entrypoint) > 0 {
@@ -197,6 +223,15 @@ func NewImageBuilder(client *docker.Client,
 			for k := range instructions.RemoveVolumes {
 				if _, ok := builder.Volumes[k]; ok {
 					delete(builder.Volumes, k)
+				}
+			}
+		}
+
+		if len(builder.Labels) > 0 &&
+			len(instructions.RemoveLabels) > 0 {
+			for k := range instructions.RemoveLabels {
+				if _, ok := builder.Labels[k]; ok {
+					delete(builder.Labels, k)
 				}
 			}
 		}
@@ -246,6 +281,7 @@ func (b *ImageBuilder) GenerateDockerfile() error {
 		b.Volumes,
 		b.WorkingDir,
 		b.Env,
+		b.Labels,
 		b.User,
 		b.ExposedPorts,
 		b.Entrypoint,

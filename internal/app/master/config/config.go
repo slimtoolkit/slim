@@ -19,6 +19,8 @@ type ContainerOverrides struct {
 	Hostname        string
 	Network         string
 	ExposedPorts    map[docker.Port]struct{}
+	Volumes         map[string]struct{}
+	Labels          map[string]string
 }
 
 // ImageNewInstructions provides a set new image instructions
@@ -29,10 +31,13 @@ type ImageNewInstructions struct {
 	ClearCmd           bool
 	Workdir            string
 	Env                []string
+	Volumes            map[string]struct{}
 	ExposedPorts       map[docker.Port]struct{}
+	Labels             map[string]string
 	RemoveEnvs         map[string]struct{}
 	RemoveVolumes      map[string]struct{}
 	RemoveExposedPorts map[docker.Port]struct{}
+	RemoveLabels       map[string]struct{}
 }
 
 // VolumeMount provides the volume mount configuration information

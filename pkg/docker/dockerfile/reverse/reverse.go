@@ -46,19 +46,19 @@ type InstructionInfo struct {
 	Type string `json:"type"`
 	Time string `json:"time"`
 	//Time              time.Time `json:"time"`
-	IsLastInstruction   bool   `json:"is_last_instruction,omitempty"`
-	IsNop               bool   `json:"is_nop"`
-	IsExecForm          bool   `json:"is_exec_form,omitempty"` //is exec/json format (a valid field for RUN, ENTRYPOINT, CMD)
-	LocalImageExits     bool   `json:"local_image_exits"`
-	IntermediateImageID string `json:"intermediate_image_id,omitempty"`
-	LayerIndex          int    `json:"layer_index"` //-1 for an empty layer
-	LayerID             string `json:"layer_id,omitempty"`
-	LayerFSDiffID       string `json:"layer_fsdiff_id,omitempty"`
-	Size                int64  `json:"size"`
-	SizeHuman           string `json:"size_human,omitempty"`
-	Params              string `json:"params,omitempty"`
-	CommandSnippet      string `json:"command_snippet"`
-	command             string
+	IsLastInstruction   bool     `json:"is_last_instruction,omitempty"`
+	IsNop               bool     `json:"is_nop"`
+	IsExecForm          bool     `json:"is_exec_form,omitempty"` //is exec/json format (a valid field for RUN, ENTRYPOINT, CMD)
+	LocalImageExits     bool     `json:"local_image_exits"`
+	IntermediateImageID string   `json:"intermediate_image_id,omitempty"`
+	LayerIndex          int      `json:"layer_index"` //-1 for an empty layer
+	LayerID             string   `json:"layer_id,omitempty"`
+	LayerFSDiffID       string   `json:"layer_fsdiff_id,omitempty"`
+	Size                int64    `json:"size"`
+	SizeHuman           string   `json:"size_human,omitempty"`
+	Params              string   `json:"params,omitempty"`
+	CommandSnippet      string   `json:"command_snippet"`
+	CommandAll          string   `json:"command_all"`
 	SystemCommands      []string `json:"system_commands,omitempty"`
 	Comment             string   `json:"comment,omitempty"`
 	Author              string   `json:"author,omitempty"`
@@ -204,7 +204,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 			instInfo := InstructionInfo{
 				IsNop:      isNop,
 				IsExecForm: isExecForm,
-				command:    cleanInst,
+				CommandAll: cleanInst,
 				Time:       time.Unix(imageHistory[idx].Created, 0).UTC().Format(time.RFC3339),
 				//Time:    time.Unix(imageHistory[idx].Created, 0),
 				Comment: imageHistory[idx].Comment,
@@ -247,10 +247,10 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				// HEALTHCHECK --interval=5s --timeout=10s --retries=3 CMD [ "/healthcheck", "8080" ]
 			}
 
-			if len(instInfo.command) > 44 {
-				instInfo.CommandSnippet = fmt.Sprintf("%s...", instInfo.command[0:44])
+			if len(instInfo.CommandAll) > 44 {
+				instInfo.CommandSnippet = fmt.Sprintf("%s...", instInfo.CommandAll[0:44])
 			} else {
-				instInfo.CommandSnippet = instInfo.command
+				instInfo.CommandSnippet = instInfo.CommandAll
 			}
 
 			if instInfo.Size > 0 {
@@ -323,7 +323,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 			out.Lines = append(out.Lines, "# new image")
 		}
 
-		out.Lines = append(out.Lines, instInfo.command)
+		out.Lines = append(out.Lines, instInfo.CommandAll)
 		if instInfo.instPosition == "last" {
 			commentText := fmt.Sprintf("# end of image: %s (id: %s tags: %s)",
 				instInfo.imageFullName, instInfo.IntermediateImageID, strings.Join(instInfo.RawTags, ","))
@@ -381,6 +381,7 @@ func GenerateFromInfo(location string,
 	volumes map[string]struct{},
 	workingDir string,
 	env []string,
+	labels map[string]string,
 	user string,
 	exposedPorts map[docker.Port]struct{},
 	entrypoint []string,
@@ -395,6 +396,26 @@ func GenerateFromInfo(location string,
 
 	dsInfoLabel := fmt.Sprintf("LABEL docker-slim.version=\"%s\"\n", v.Current())
 	dfData.WriteString(dsInfoLabel)
+
+	if len(labels) > 0 {
+		for name, value := range labels {
+			labelInfo := fmt.Sprintf("LABEL %s=\"%s\"\n", name, value)
+			dfData.WriteString(labelInfo)
+		}
+		dfData.WriteByte('\n')
+	}
+
+	if len(env) > 0 {
+		for _, envInfo := range env {
+			if envParts := strings.Split(envInfo, "="); len(envParts) > 1 {
+				dfData.WriteString("ENV ")
+				envLine := fmt.Sprintf("%s \"%s\"", envParts[0], envParts[1])
+				dfData.WriteString(envLine)
+				dfData.WriteByte('\n')
+			}
+		}
+		dfData.WriteByte('\n')
+	}
 
 	if len(volumes) > 0 {
 		var volumeList []string
@@ -420,17 +441,6 @@ func GenerateFromInfo(location string,
 		dfData.WriteString("WORKDIR ")
 		dfData.WriteString(workingDir)
 		dfData.WriteByte('\n')
-	}
-
-	if len(env) > 0 {
-		for _, envInfo := range env {
-			if envParts := strings.Split(envInfo, "="); len(envParts) > 1 {
-				dfData.WriteString("ENV ")
-				envLine := fmt.Sprintf("%s \"%s\"", envParts[0], envParts[1])
-				dfData.WriteString(envLine)
-				dfData.WriteByte('\n')
-			}
-		}
 	}
 
 	if user != "" {

@@ -126,6 +126,8 @@ const (
 	FlagCmd        = "cmd"
 	FlagWorkdir    = "workdir"
 	FlagEnv        = "env"
+	FlagLabel      = "label"
+	FlagVolume     = "volume"
 	FlagExpose     = "expose"
 
 	FlagLink    = "link"
@@ -178,19 +180,21 @@ const (
 	FlagRunTargetAsUserUsage   = "Run target app as USER"
 	FlagShowContainerLogsUsage = "Show container logs"
 
-	FlagEntrypointUsage = "Override ENTRYPOINT analyzing image"
-	FlagCmdUsage        = "Override CMD analyzing image"
-	FlagWorkdirUsage    = "Override WORKDIR analyzing image"
-	FlagEnvUsage        = "Override ENV analyzing image"
-	FlagExposeUsage     = "Use additional EXPOSE instructions analyzing image"
+	FlagEntrypointUsage = "Override ENTRYPOINT analyzing image at runtime"
+	FlagCmdUsage        = "Override CMD analyzing image at runtime"
+	FlagWorkdirUsage    = "Override WORKDIR analyzing image at runtime"
+	FlagEnvUsage        = "Override or add ENV analyzing image at runtime"
+	FlagLabelUsage      = "Override or add LABEL analyzing image at runtime"
+	FlagVolumeUsage     = "Add VOLUME analyzing image at runtime"
+	FlagExposeUsage     = "Use additional EXPOSE instructions analyzing image at runtime"
 
-	FlagLinkUsage    = "Add link to another container analyzing image"
-	FlagNetworkUsage = "Override default container network settings analyzing image"
+	FlagLinkUsage    = "Add link to another container analyzing image at runtime"
+	FlagNetworkUsage = "Override default container network settings analyzing image at runtime"
 
-	FlagHostnameUsage           = "Override default container hostname analyzing image"
-	FlagEtcHostsMapUsage        = "Add a host to IP mapping to /etc/hosts analyzing image"
-	FlagContainerDNSUsage       = "Add a dns server analyzing image"
-	FlagContainerDNSSearchUsage = "Add a dns search domain for unqualified hostnames analyzing image"
+	FlagHostnameUsage           = "Override default container hostname analyzing image at runtime"
+	FlagEtcHostsMapUsage        = "Add a host to IP mapping to /etc/hosts analyzing image at runtime"
+	FlagContainerDNSUsage       = "Add a dns server analyzing image at runtime"
+	FlagContainerDNSSearchUsage = "Add a dns search domain for unqualified hostnames analyzing image at runtime"
 
 	FlagExcludeMountsUsage   = "Exclude mounted volumes from image"
 	FlagExcludePatternUsage  = "Exclude path pattern (Glob/Match in Go and **) from image"
@@ -216,12 +220,15 @@ const (
 	//Flags to edit (modify, add and remove) image metadata
 	FlagNewEntrypoint = "new-entrypoint"
 	FlagNewCmd        = "new-cmd"
+	FlagNewLabel      = "new-label"
+	FlagNewVolume     = "new-volume"
 	FlagNewExpose     = "new-expose"
 	FlagNewWorkdir    = "new-workdir"
 	FlagNewEnv        = "new-env"
+	FlagRemoveVolume  = "remove-volume"
 	FlagRemoveExpose  = "remove-expose"
 	FlagRemoveEnv     = "remove-env"
-	FlagRemoveVolume  = "remove-volume"
+	FlagRemoveLabel   = "remove-label"
 
 	FlagTag    = "tag"
 	FlagTagFat = "tag-fat"
@@ -240,17 +247,20 @@ const (
 
 	FlagNewEntrypointUsage = "New ENTRYPOINT instruction for the optimized image"
 	FlagNewCmdUsage        = "New CMD instruction for the optimized image"
+	FlagNewVolumeUsage     = "New VOLUME instructions for the optimized image"
+	FlagNewLabelUsage      = "New LABEL instructions for the optimized image"
 	FlagNewExposeUsage     = "New EXPOSE instructions for the optimized image"
 	FlagNewWorkdirUsage    = "New WORKDIR instruction for the optimized image"
 	FlagNewEnvUsage        = "New ENV instructions for the optimized image"
 	FlagRemoveExposeUsage  = "Remove EXPOSE instructions for the optimized image"
 	FlagRemoveEnvUsage     = "Remove ENV instructions for the optimized image"
+	FlagRemoveLabelUsage   = "Remove LABEL instructions for the optimized image"
 	FlagRemoveVolumeUsage  = "Remove VOLUME instructions for the optimized image"
 
 	FlagTagUsage    = "Custom tag for the generated image"
 	FlagTagFatUsage = "Custom tag for the fat image built from Dockerfile"
 
-	FlagImageOverridesUsage = "Use overrides in generated image"
+	FlagImageOverridesUsage = "Save runtime overrides in generated image (values is 'all' or a comma delimited list of override types: 'entrypoint', 'cmd', 'workdir', 'env', 'expose', 'volume', 'label')"
 
 	FlagBuildFromDockerfileUsage = "The source Dockerfile name to build the fat image before it's optimized"
 
@@ -773,6 +783,8 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagCmd), Description: FlagCmdUsage},
 				{Text: fullFlagName(FlagWorkdir), Description: FlagWorkdirUsage},
 				{Text: fullFlagName(FlagEnv), Description: FlagEnvUsage},
+				{Text: fullFlagName(FlagLabel), Description: FlagLabelUsage},
+				{Text: fullFlagName(FlagVolume), Description: FlagVolumeUsage},
 				{Text: fullFlagName(FlagLink), Description: FlagLinkUsage},
 				{Text: fullFlagName(FlagEtcHostsMap), Description: FlagEtcHostsMapUsage},
 				{Text: fullFlagName(FlagContainerDNS), Description: FlagContainerDNSUsage},
@@ -852,6 +864,8 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagCmd), Description: FlagCmdUsage},
 				{Text: fullFlagName(FlagWorkdir), Description: FlagWorkdirUsage},
 				{Text: fullFlagName(FlagEnv), Description: FlagEnvUsage},
+				{Text: fullFlagName(FlagLabel), Description: FlagLabelUsage},
+				{Text: fullFlagName(FlagVolume), Description: FlagVolumeUsage},
 				{Text: fullFlagName(FlagLink), Description: FlagLinkUsage},
 				{Text: fullFlagName(FlagEtcHostsMap), Description: FlagEtcHostsMapUsage},
 				{Text: fullFlagName(FlagContainerDNS), Description: FlagContainerDNSUsage},
@@ -864,8 +878,11 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagNewExpose), Description: FlagNewExposeUsage},
 				{Text: fullFlagName(FlagNewWorkdir), Description: FlagNewWorkdirUsage},
 				{Text: fullFlagName(FlagNewEnv), Description: FlagNewEnvUsage},
+				{Text: fullFlagName(FlagNewVolume), Description: FlagNewVolumeUsage},
+				{Text: fullFlagName(FlagNewLabel), Description: FlagNewLabelUsage},
 				{Text: fullFlagName(FlagRemoveExpose), Description: FlagRemoveExposeUsage},
 				{Text: fullFlagName(FlagRemoveEnv), Description: FlagRemoveEnvUsage},
+				{Text: fullFlagName(FlagRemoveLabel), Description: FlagRemoveLabelUsage},
 				{Text: fullFlagName(FlagRemoveVolume), Description: FlagRemoveVolumeUsage},
 				{Text: fullFlagName(FlagExcludeMounts), Description: FlagExcludeMountsUsage},
 				{Text: fullFlagName(FlagExcludePattern), Description: FlagExcludePatternUsage},
@@ -1280,81 +1297,109 @@ func init() {
 		EnvVar: "DSLIM_NEW_ENV",
 	}
 
+	doUseNewVolumeFlag := cli.StringSliceFlag{
+		Name:   FlagNewVolume,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagNewVolumeUsage,
+		EnvVar: "DSLIM_NEW_VOLUME",
+	}
+
+	doUseNewLabelFlag := cli.StringSliceFlag{
+		Name:   FlagNewLabel,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagNewLabelUsage,
+		EnvVar: "DSLIM_NEW_LABEL",
+	}
+
 	doUseEntrypointFlag := cli.StringFlag{
 		Name:   FlagEntrypoint,
 		Value:  "",
 		Usage:  FlagEntrypointUsage,
-		EnvVar: "DSLIM_ENTRYPOINT",
+		EnvVar: "DSLIM_RC_ENTRYPOINT",
 	}
 
 	doUseCmdFlag := cli.StringFlag{
 		Name:   FlagCmd,
 		Value:  "",
 		Usage:  FlagCmdUsage,
-		EnvVar: "DSLIM_TARGET_CMD",
+		EnvVar: "DSLIM_RC_CMD",
 	}
 
 	doUseWorkdirFlag := cli.StringFlag{
 		Name:   FlagWorkdir,
 		Value:  "",
 		Usage:  FlagWorkdirUsage,
-		EnvVar: "DSLIM_TARGET_WORKDIR",
+		EnvVar: "DSLIM_RC_WORKDIR",
 	}
 
 	doUseEnvFlag := cli.StringSliceFlag{
 		Name:   FlagEnv,
 		Value:  &cli.StringSlice{},
 		Usage:  FlagEnvUsage,
-		EnvVar: "DSLIM_TARGET_ENV",
+		EnvVar: "DSLIM_RC_ENV",
+	}
+
+	doUseLabelFlag := cli.StringSliceFlag{
+		Name:   FlagLabel,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagLabelUsage,
+		EnvVar: "DSLIM_RC_LABEL",
+	}
+
+	doUseVolumeFlag := cli.StringSliceFlag{
+		Name:   FlagVolume,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagVolumeUsage,
+		EnvVar: "DSLIM_RC_VOLUME",
 	}
 
 	doUseLinkFlag := cli.StringSliceFlag{
 		Name:   FlagLink,
 		Value:  &cli.StringSlice{},
 		Usage:  FlagLinkUsage,
-		EnvVar: "DSLIM_TARGET_LINK",
+		EnvVar: "DSLIM_RC_LINK",
 	}
 
 	doUseEtcHostsMapFlag := cli.StringSliceFlag{
 		Name:   FlagEtcHostsMap,
 		Value:  &cli.StringSlice{},
 		Usage:  FlagEtcHostsMapUsage,
-		EnvVar: "DSLIM_TARGET_ETC_HOSTS_MAP",
+		EnvVar: "DSLIM_RC_ETC_HOSTS_MAP",
 	}
 
 	doUseContainerDNSFlag := cli.StringSliceFlag{
 		Name:   FlagContainerDNS,
 		Value:  &cli.StringSlice{},
 		Usage:  FlagContainerDNSUsage,
-		EnvVar: "DSLIM_TARGET_DNS",
+		EnvVar: "DSLIM_RC_DNS",
 	}
 
 	doUseContainerDNSSearchFlag := cli.StringSliceFlag{
 		Name:   FlagContainerDNSSearch,
 		Value:  &cli.StringSlice{},
 		Usage:  FlagContainerDNSSearchUsage,
-		EnvVar: "DSLIM_TARGET_DNS_SEARCH",
+		EnvVar: "DSLIM_RC_DNS_SEARCH",
 	}
 
 	doUseHostnameFlag := cli.StringFlag{
 		Name:   FlagHostname,
 		Value:  "",
 		Usage:  FlagHostnameUsage,
-		EnvVar: "DSLIM_TARGET_HOSTNAME",
+		EnvVar: "DSLIM_RC_HOSTNAME",
 	}
 
 	doUseNetworkFlag := cli.StringFlag{
 		Name:   FlagNetwork,
 		Value:  "",
 		Usage:  FlagNetworkUsage,
-		EnvVar: "DSLIM_TARGET_NET",
+		EnvVar: "DSLIM_RC_NET",
 	}
 
 	doUseExposeFlag := cli.StringSliceFlag{
 		Name:   FlagExpose,
 		Value:  &cli.StringSlice{},
 		Usage:  FlagExposeUsage,
-		EnvVar: "DSLIM_TARGET_EXPOSE",
+		EnvVar: "DSLIM_RC_EXPOSE",
 	}
 
 	//true by default
@@ -1914,6 +1959,8 @@ func init() {
 				doUseCmdFlag,
 				doUseWorkdirFlag,
 				doUseEnvFlag,
+				doUseLabelFlag,
+				doUseVolumeFlag,
 				doUseLinkFlag,
 				doUseEtcHostsMapFlag,
 				doUseContainerDNSFlag,
@@ -1926,6 +1973,8 @@ func init() {
 				doUseNewExposeFlag,
 				doUseNewWorkdirFlag,
 				doUseNewEnvFlag,
+				doUseNewVolumeFlag,
+				doUseNewLabelFlag,
 				cli.StringSliceFlag{
 					Name:   FlagRemoveExpose,
 					Value:  &cli.StringSlice{},
@@ -1937,6 +1986,12 @@ func init() {
 					Value:  &cli.StringSlice{},
 					Usage:  FlagRemoveEnvUsage,
 					EnvVar: "DSLIM_RM_ENV",
+				},
+				cli.StringSliceFlag{
+					Name:   FlagRemoveLabel,
+					Value:  &cli.StringSlice{},
+					Usage:  FlagRemoveLabelUsage,
+					EnvVar: "DSLIM_RM_LABEL",
 				},
 				cli.StringSliceFlag{
 					Name:   FlagRemoveVolume,
@@ -2217,6 +2272,8 @@ func init() {
 				doUseCmdFlag,
 				doUseWorkdirFlag,
 				doUseEnvFlag,
+				doUseLabelFlag,
+				doUseVolumeFlag,
 				doUseLinkFlag,
 				doUseEtcHostsMapFlag,
 				doUseContainerDNSFlag,
@@ -2453,7 +2510,10 @@ func getContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error) {
 	doUseEntrypoint := ctx.String(FlagEntrypoint)
 	doUseCmd := ctx.String(FlagCmd)
-	doUseExpose := ctx.StringSlice(FlagExpose)
+	exposePortList := ctx.StringSlice(FlagExpose)
+
+	volumesList := ctx.StringSlice(FlagVolume)
+	labelsList := ctx.StringSlice(FlagLabel)
 
 	overrides := &config.ContainerOverrides{
 		Workdir:  ctx.String(FlagWorkdir),
@@ -2463,12 +2523,32 @@ func getContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	}
 
 	var err error
-	if len(doUseExpose) > 0 {
-		overrides.ExposedPorts, err = parseDockerExposeOpt(doUseExpose)
+	if len(exposePortList) > 0 {
+		overrides.ExposedPorts, err = parseDockerExposeOpt(exposePortList)
 		if err != nil {
 			fmt.Printf("invalid expose options..\n\n")
 			return nil, err
 		}
+	}
+
+	if len(volumesList) > 0 {
+		volumes, err := parseTokenSet(volumesList)
+		if err != nil {
+			fmt.Printf("invalid volume options %v\n", err)
+			return nil, err
+		}
+
+		overrides.Volumes = volumes
+	}
+
+	if len(labelsList) > 0 {
+		labels, err := parseTokenMap(labelsList)
+		if err != nil {
+			fmt.Printf("invalid label options %v\n", err)
+			return nil, err
+		}
+
+		overrides.Labels = labels
 	}
 
 	overrides.Entrypoint, err = parseExec(doUseEntrypoint)
@@ -2500,6 +2580,30 @@ func getImageInstructions(ctx *cli.Context) (*config.ImageNewInstructions, error
 		Workdir: ctx.String(FlagNewWorkdir),
 		Env:     ctx.StringSlice(FlagNewEnv),
 	}
+
+	volumes, err := parseTokenSet(ctx.StringSlice(FlagNewVolume))
+	if err != nil {
+		fmt.Printf("getImageInstructions(): invalid new volume options %v\n", err)
+		return nil, err
+	}
+
+	instructions.Volumes = volumes
+
+	labels, err := parseTokenMap(ctx.StringSlice(FlagNewLabel))
+	if err != nil {
+		fmt.Printf("getImageInstructions(): invalid new label options %v\n", err)
+		return nil, err
+	}
+
+	instructions.Labels = labels
+
+	removeLabels, err := parseTokenSet(ctx.StringSlice(FlagRemoveLabel))
+	if err != nil {
+		fmt.Printf("getImageInstructions(): invalid remove label options %v\n", err)
+		return nil, err
+	}
+
+	instructions.RemoveLabels = removeLabels
 
 	removeEnvs, err := parseTokenSet(ctx.StringSlice(FlagRemoveEnv))
 	if err != nil {

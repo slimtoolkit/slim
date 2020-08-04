@@ -246,7 +246,11 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	var volumeBinds []string
-	configVolumes := map[string]struct{}{}
+
+	configVolumes := i.Overrides.Volumes
+	if configVolumes == nil {
+		configVolumes = map[string]struct{}{}
+	}
 
 	var err error
 	var volumeName string
@@ -285,6 +289,13 @@ func (i *Inspector) RunContainer() error {
 
 	i.ContainerName = fmt.Sprintf(ContainerNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))
 
+	labels := i.Overrides.Labels
+	if labels == nil {
+		labels = map[string]string{}
+	}
+
+	labels["runtime.container.type"] = LabelName
+
 	containerOptions := dockerapi.CreateContainerOptions{
 		Name: i.ContainerName,
 		Config: &dockerapi.Config{
@@ -296,7 +307,7 @@ func (i *Inspector) RunContainer() error {
 			Entrypoint: []string{SensorBinPath},
 			Cmd:        containerCmd,
 			Env:        i.Overrides.Env,
-			Labels:     map[string]string{"type": LabelName},
+			Labels:     labels,
 			Hostname:   i.Overrides.Hostname,
 		},
 		HostConfig: &dockerapi.HostConfig{
