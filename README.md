@@ -284,7 +284,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--http-probe-ports` - Explicit list of ports to probe (in the order you want them to be probed; excluded ports are not probed!)
 - `--http-probe-full` - Do full HTTP probe for all selected ports (if false, finish after first successful scan; default value: false)
 - `--http-probe-exit-on-failure` - Exit when all HTTP probe commands fail (default value: false)
-- `--http-probe-crawl` - Enable crawling for the default HTTP probe command (default value: false)
+- `--http-probe-crawl` - Enable crawling for the default HTTP probe command (default value: true)
 - `--http-crawl-max-depth` - Max depth to use for the HTTP probe crawler (default value: 3)
 - `--http-crawl-max-page-count` - Max number of pages to visit for the HTTP probe crawler (default value: 1000)
 - `--http-crawl-concurrency` - Number of concurrent workers when crawling an HTTP target (default value: 10)
