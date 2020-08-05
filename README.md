@@ -6,7 +6,7 @@
 
 # Minify and Secure Docker containers (free and open source!)
 
-Don't change anything in your Docker container image and minify it by up to 30x making it secure too!
+Don't change anything in your Docker container image and minify it by up to 30x making it secure too! Optimizing images isn't the only thing it can do though. It can also help you understand and author better container images.
 
 Keep doing what you are doing. No need to change anything. Use the base image you want. Use the package manager you want. Don't worry about hand optimizing your Dockerfile. You shouldn't have to throw away your tools and your workflow to have small container images.
 
@@ -189,15 +189,17 @@ The OS-specific installers for `docker-slim` will be available soon (there's alr
 
 `docker-slim [global flags] [lint|xray|build|profile|update|version|help] [command-specific flags] <IMAGE_ID_OR_NAME>`
 
+If you don't specify any command `docker-slim` will start in the interactive prompt mode.
+
 ### COMMANDS
 
-- `lint` - analyze container instructions in Dockerfiles (or Docker images)
-- `xray` - do static analysis for the target container image (including 'reverse engineering' the Dockerfile for the image)
-- `profile` - do `xray` plus dynamic container analysis
-- `build` - do `profile` plus an ability to create a new optimized image along with the security profiles
-- `version` - show the version information
-- `update` - update `docker-slim` to the latest version
-- `help` - show the available commands and global flags
+- `build` - Analyzes, profiles and optimizes your container image generating the supported security profiles. This is the most popular command.
+- `xray` - Performs static analysis for the target container image (including 'reverse engineering' the Dockerfile for the image). Use this command if you want to know what's inside of your container image and what makes it fat.
+- `lint` - Analyzes container instructions in Dockerfiles (Docker image support is WIP)
+- `profile` - Performs basic container image analysis and dynamic container analysis, but it doesn't generate an optimized image.
+- `version` - Shows the version information.
+- `update` - Updates `docker-slim` to the latest version.
+- `help` - Show the available commands and global flags
 
 Example: `docker-slim build my/sample-app`
 
@@ -217,7 +219,6 @@ Commands:
 - `xray` - Collects fat image information and reverse engineers its Dockerfile
 - `build` - Collect fat image information and build a slim image from it
 - `profile` - Collect fat image information and generate a fat container report
-- `containerize` - Containerize the target artifacts
 - `version` - Show docker-slim and docker version information
 - `update` - Update docker-slim
 - `help` - Show help info
