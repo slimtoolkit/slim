@@ -321,6 +321,7 @@ func printImagePackage(pkg *dockerimage.Package,
 			if _, ok := changes["delete"]; ok && len(layer.Changes.Deleted) > 0 {
 				fmt.Printf("%s[%s]: info=layer.objects.deleted:\n", appName, cmdName)
 				for _, objectIdx := range layer.Changes.Deleted {
+					layerReport.Deleted = append(layerReport.Deleted, layer.Objects[objectIdx])
 					printObject(layer.Objects[objectIdx])
 				}
 				fmt.Printf("\n")
@@ -328,6 +329,7 @@ func printImagePackage(pkg *dockerimage.Package,
 			if _, ok := changes["modify"]; ok && len(layer.Changes.Modified) > 0 {
 				fmt.Printf("%s[%s]: info=layer.objects.modified:\n", appName, cmdName)
 				for _, objectIdx := range layer.Changes.Modified {
+					layerReport.Modified = append(layerReport.Modified, layer.Objects[objectIdx])
 					printObject(layer.Objects[objectIdx])
 				}
 				fmt.Printf("\n")
@@ -335,6 +337,7 @@ func printImagePackage(pkg *dockerimage.Package,
 			if _, ok := changes["add"]; ok && len(layer.Changes.Added) > 0 {
 				fmt.Printf("%s[%s]: info=layer.objects.added:\n", appName, cmdName)
 				for _, objectIdx := range layer.Changes.Added {
+					layerReport.Added = append(layerReport.Added, layer.Objects[objectIdx])
 					printObject(layer.Objects[objectIdx])
 				}
 			}

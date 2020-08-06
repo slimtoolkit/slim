@@ -40,6 +40,9 @@ type LayerReport struct {
 	Stats    LayerStats        `json:"stats"`
 	Changes  ChangesetSummary  `json:"changes"`
 	Top      []*ObjectMetadata `json:"top"`
+	Deleted  []*ObjectMetadata `json:"deleted,omitempty"`
+	Added    []*ObjectMetadata `json:"added,omitempty"`
+	Modified []*ObjectMetadata `json:"modified,omitempty"`
 }
 
 type ChangesetSummary struct {
@@ -142,7 +145,9 @@ type ObjectMetadata struct {
 	Change     ChangeType  `json:"change,omitempty"`
 	Name       string      `json:"name,omitempty"`
 	Size       int64       `json:"size,omitempty"`
+	SizeHuman  string      `json:"size_human,omitempty"`
 	Mode       os.FileMode `json:"mode,omitempty"`
+	ModeHuman  string      `json:"mode_human,omitempty"`
 	UID        int         `json:"uid,omitempty"`
 	GID        int         `json:"gid,omitempty"`
 	ModTime    time.Time   `json:"mod_time,omitempty"`

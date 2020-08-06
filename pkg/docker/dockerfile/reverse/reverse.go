@@ -66,6 +66,8 @@ type InstructionInfo struct {
 	instPosition        string
 	imageFullName       string
 	RawTags             []string `json:"raw_tags,omitempty"`
+	Target              string   `json:"target,omitempty"`      //for ADD and COPY
+	SourceType          string   `json:"source_type,omitempty"` //for ADD and COPY
 }
 
 //The 'History' API doesn't expose the 'author' in the records it returns
@@ -238,6 +240,24 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 
 			if instInfo.Type == "WORKDIR" {
 				instInfo.SystemCommands = append(instInfo.SystemCommands, fmt.Sprintf("mkdir -p %s", instParts[1]))
+			}
+
+			switch instInfo.Type {
+			case "ADD", "COPY":
+				pparts := strings.SplitN(instInfo.Params, ":", 2)
+				if len(pparts) == 2 {
+					instInfo.SourceType = pparts[0]
+					tparts := strings.SplitN(pparts[1], " in ", 2)
+					if len(tparts) == 2 {
+						instInfo.Target = tparts[1]
+
+						instInfo.CommandAll = fmt.Sprintf("%s %s:%s %s",
+							instInfo.Type,
+							instInfo.SourceType,
+							tparts[0],
+							instInfo.Target)
+					}
+				}
 			}
 
 			if instInfo.Type == "HEALTHCHECK" {
