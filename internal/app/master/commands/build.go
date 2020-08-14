@@ -52,6 +52,8 @@ func OnBuild(
 	httpMaxConcurrentCrawlers int,
 	doHTTPProbeFull bool,
 	doHTTPProbeExitOnFailure bool,
+	httpProbeAPISpecs []string,
+	httpProbeAPISpecFiles []string,
 	doRmFileArtifacts bool,
 	copyMetaArtifactsLocation string,
 	doRunTargetAsUser bool,
@@ -282,18 +284,7 @@ func OnBuild(
 	if "probe" == continueAfter.Mode {
 		doHTTPProbe = true
 	}
-	/*
-	   NewCustomProbe(inspector *container.Inspector,
-	   	cmds []config.HTTPProbeCmd,
-	   	retryCount int,
-	   	retryWait int,
-	   	targetPorts []uint16,
 
-	   	probeFull bool,
-	   	probeExitOnFailure bool,
-	   	printState bool,
-	   	printPrefix string)
-	*/
 	var probe *http.CustomProbe
 	if doHTTPProbe {
 		var err error
@@ -309,6 +300,8 @@ func OnBuild(
 			httpMaxConcurrentCrawlers,
 			doHTTPProbeFull,
 			doHTTPProbeExitOnFailure,
+			httpProbeAPISpecs,
+			httpProbeAPISpecFiles,
 			true,
 			prefix)
 		errutil.FailOn(err)

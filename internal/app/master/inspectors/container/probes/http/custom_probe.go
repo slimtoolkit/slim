@@ -1,6 +1,7 @@
 package http
 
 import (
+	"bytes"
 	"crypto/tls"
 	"fmt"
 	"io"
@@ -13,6 +14,10 @@ import (
 	"time"
 
 	dockerapi "github.com/fsouza/go-dockerclient"
+	"github.com/getkin/kin-openapi/openapi2"
+	"github.com/getkin/kin-openapi/openapi2conv"
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/ghodss/yaml"
 	"github.com/gocolly/colly/v2"
 	log "github.com/sirupsen/logrus"
 
@@ -37,6 +42,9 @@ type CustomProbe struct {
 	TargetPorts           []uint16
 	ProbeFull             bool
 	ProbeExitOnFailure    bool
+	APISpecs              []string
+	APISpecFiles          []string
+	APISpecProbes         []apiSpecInfo
 	ContainerInspector    *container.Inspector
 	CallCount             uint64
 	ErrCount              uint64
@@ -48,6 +56,11 @@ type CustomProbe struct {
 	crawlConcurrency      int
 	maxConcurrentCrawlers int
 	concurrentCrawlers    chan struct{}
+}
+
+type apiSpecInfo struct {
+	spec           *openapi3.Swagger
+	prefixOverride string
 }
 
 const (
@@ -69,6 +82,8 @@ func NewCustomProbe(inspector *container.Inspector,
 	maxConcurrentCrawlers int,
 	probeFull bool,
 	probeExitOnFailure bool,
+	apiSpecs []string,
+	apiSpecFiles []string,
 	printState bool,
 	printPrefix string) (*CustomProbe, error) {
 	//note: the default probe should already be there if the user asked for it
@@ -102,6 +117,8 @@ func NewCustomProbe(inspector *container.Inspector,
 		TargetPorts:           targetPorts,
 		ProbeFull:             probeFull,
 		ProbeExitOnFailure:    probeExitOnFailure,
+		APISpecs:              apiSpecs,
+		APISpecFiles:          apiSpecFiles,
 		ContainerInspector:    inspector,
 		crawlMaxDepth:         crawlMaxDepth,
 		crawlMaxPageCount:     crawlMaxPageCount,
@@ -191,7 +208,354 @@ func NewCustomProbe(inspector *container.Inspector,
 		log.Debugf("HTTP probe - probe.Ports => %+v", probe.Ports)
 	}
 
+	if len(probe.APISpecFiles) > 0 {
+		probe.loadAPISpecFiles()
+	}
+
 	return probe, nil
+}
+
+func (p *CustomProbe) loadAPISpecFiles() {
+	for _, info := range p.APISpecFiles {
+		fileName := info
+		prefixOverride := ""
+		if strings.Contains(info, ":") {
+			parts := strings.SplitN(info, ":", 2)
+			fileName = parts[0]
+			prefixOverride = parts[1]
+		}
+
+		spec, err := loadAPISpecFromFile(fileName)
+		if err != nil {
+			fmt.Printf("%s info=http.probe.apispec.error message='error loading api spec file' error='%v'\n", p.PrintPrefix, err)
+			continue
+		}
+
+		if spec == nil {
+			fmt.Printf("%s info=http.probe.apispec message='unsupported spec type'\n", p.PrintPrefix)
+			continue
+		}
+
+		info := apiSpecInfo{
+			spec:           spec,
+			prefixOverride: prefixOverride,
+		}
+
+		p.APISpecProbes = append(p.APISpecProbes, info)
+	}
+}
+
+func parseAPISpec(rdata []byte) (*openapi3.Swagger, error) {
+	if isOpenAPI(rdata) {
+		log.Debug("http.CustomProbe.parseAPISpec - is openapi")
+		loader := openapi3.NewSwaggerLoader()
+		loader.IsExternalRefsAllowed = true
+		spec, err := loader.LoadSwaggerFromData(rdata)
+		if err != nil {
+			log.Debugf("http.CustomProbe.parseAPISpec.LoadSwaggerFromData - error=%v", err)
+			return nil, err
+		}
+
+		return spec, nil
+	}
+
+	if isSwagger(rdata) {
+		log.Debug("http.CustomProbe.parseAPISpec - is swagger")
+		spec2 := &openapi2.Swagger{}
+		if err := yaml.Unmarshal(rdata, spec2); err != nil {
+			log.Debugf("http.CustomProbe.parseAPISpec.yaml.Unmarshal - error=%v", err)
+			return nil, err
+		}
+
+		spec, err := openapi2conv.ToV3Swagger(spec2)
+		if err != nil {
+			log.Debugf("http.CustomProbe.parseAPISpec.ToV3Swagger - error=%v", err)
+			return nil, err
+		}
+
+		return spec, nil
+	}
+
+	log.Debugf("http.CustomProbe.parseAPISpec - unsupported api spec type (%d): %s", len(rdata), string(rdata))
+	return nil, nil
+}
+
+func loadAPISpecFromEndpoint(endpoint string) (*openapi3.Swagger, error) {
+	httpClient := &http.Client{
+		Timeout: time.Second * 30,
+		Transport: &http.Transport{
+			MaxIdleConns:    10,
+			IdleConnTimeout: 30 * time.Second,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	log.Debugf("http.CustomProbe.loadAPISpecFromEndpoint(%s)", endpoint)
+	req, err := http.NewRequest("GET", endpoint, nil)
+	if err != nil {
+		log.Debugf("http.CustomProbe.loadAPISpecFromEndpoint.http.NewRequest - error=%v", err)
+		return nil, err
+	}
+
+	res, err := httpClient.Do(req)
+	if err != nil {
+		log.Debugf("http.CustomProbe.loadAPISpecFromEndpoint.httpClient.Do - error=%v", err)
+		return nil, err
+	}
+
+	if res != nil && res.Body != nil {
+		defer res.Body.Close()
+	}
+
+	if res.Body != nil {
+		rdata, err := ioutil.ReadAll(res.Body)
+		if err != nil {
+			log.Debugf("http.CustomProbe.loadAPISpecFromEndpoint.response.read - error=%v", err)
+			return nil, err
+		}
+
+		return parseAPISpec(rdata)
+	}
+
+	log.Debug("http.CustomProbe.loadAPISpecFromEndpoint.response - no body")
+	return nil, nil
+}
+
+func loadAPISpecFromFile(name string) (*openapi3.Swagger, error) {
+	rdata, err := ioutil.ReadFile(name)
+	if err != nil {
+		log.Debugf("http.CustomProbe.loadAPISpecFromFile.ReadFile - error=%v", err)
+		return nil, err
+	}
+
+	return parseAPISpec(rdata)
+}
+
+func isSwagger(data []byte) bool {
+	if (bytes.Contains(data, []byte(`"swagger":`)) ||
+		bytes.Contains(data, []byte(`swagger:`))) &&
+		bytes.Contains(data, []byte(`paths`)) {
+		return true
+	}
+
+	return false
+}
+
+func isOpenAPI(data []byte) bool {
+	if (bytes.Contains(data, []byte(`"openapi":`)) ||
+		bytes.Contains(data, []byte(`openapi:`))) &&
+		bytes.Contains(data, []byte(`paths`)) {
+		return true
+	}
+
+	return false
+}
+
+func apiSpecPrefix(spec *openapi3.Swagger) (string, error) {
+	//for now get the api prefix from the first server struc
+	//later, support multiple prefixes if there's more than one server struct
+	var prefix string
+	for _, sinfo := range spec.Servers {
+		xurl := sinfo.URL
+		if strings.Contains(xurl, "{") {
+			for k, vinfo := range sinfo.Variables {
+				varStr := fmt.Sprintf("{%s}", k)
+				if strings.Contains(xurl, varStr) {
+					valStr := "var"
+					if vinfo.Default != nil {
+						valStr = fmt.Sprintf("%v", vinfo.Default)
+					} else if len(vinfo.Enum) > 0 {
+						valStr = fmt.Sprintf("%v", vinfo.Enum[0])
+					}
+
+					xurl = strings.ReplaceAll(xurl, varStr, valStr)
+				}
+			}
+		}
+
+		if strings.Contains(xurl, "{") {
+			xurl = strings.ReplaceAll(xurl, "{", "")
+
+			if strings.Contains(xurl, "}") {
+				xurl = strings.ReplaceAll(xurl, "}", "")
+			}
+		}
+
+		parsed, err := url.Parse(xurl)
+		if err != nil {
+			return "", err
+		}
+
+		fmt.Println("target API prefix:", parsed.Path)
+		if parsed.Path != "" && parsed.Path != "/" {
+			prefix = prefix
+		}
+	}
+
+	return prefix, nil
+}
+
+func (p *CustomProbe) loadAPISpecs(proto, targetHost, port string) {
+	//TODO:
+	//Need to support user provided target port for the spec,
+	//but these need to be mapped to the actual port at runtime
+	//Need to support user provided target proto for the spec
+	for _, info := range p.APISpecs {
+		specPath := info
+		prefixOverride := ""
+		if strings.Contains(info, ":") {
+			parts := strings.SplitN(info, ":", 2)
+			specPath = parts[0]
+			prefixOverride = parts[1]
+		}
+
+		addr := fmt.Sprintf("%s://%v:%v%v", proto, targetHost, port, specPath)
+		spec, err := loadAPISpecFromEndpoint(addr)
+		if err != nil {
+			fmt.Printf("%s info=http.probe.apispec.error message='error loading api spec from endpoint' error='%v'\n", p.PrintPrefix, err)
+			continue
+		}
+
+		if spec == nil {
+			fmt.Printf("%s info=http.probe.apispec message='unsupported spec type'\n", p.PrintPrefix)
+			continue
+		}
+
+		info := apiSpecInfo{
+			spec:           spec,
+			prefixOverride: prefixOverride,
+		}
+
+		p.APISpecProbes = append(p.APISpecProbes, info)
+	}
+}
+
+func pathOps(pinfo *openapi3.PathItem) map[string]*openapi3.Operation {
+	ops := map[string]*openapi3.Operation{}
+	addPathOp(&ops, pinfo.Connect, "connect")
+	addPathOp(&ops, pinfo.Delete, "delete")
+	addPathOp(&ops, pinfo.Get, "get")
+	addPathOp(&ops, pinfo.Head, "head")
+	addPathOp(&ops, pinfo.Options, "options")
+	addPathOp(&ops, pinfo.Patch, "patch")
+	addPathOp(&ops, pinfo.Post, "post")
+	addPathOp(&ops, pinfo.Put, "put")
+	addPathOp(&ops, pinfo.Trace, "trace")
+	return ops
+}
+
+func addPathOp(m *map[string]*openapi3.Operation, op *openapi3.Operation, name string) {
+	if op != nil {
+		(*m)[name] = op
+	}
+}
+
+func (p *CustomProbe) probeAPISpecEndpoints(proto, targetHost, port, prefix string, spec *openapi3.Swagger) {
+	addr := fmt.Sprintf("%s://%s:%s", proto, targetHost, port)
+
+	if p.PrintState {
+		fmt.Printf("%s state=http.probe.api-spec.probe.endpoint.starting addr='%s' prefix='%s' endpoints=%d\n", p.PrintPrefix, addr, prefix, len(spec.Paths))
+	}
+
+	httpClient := &http.Client{
+		Timeout: time.Second * 30,
+		Transport: &http.Transport{
+			MaxIdleConns:    10,
+			IdleConnTimeout: 30 * time.Second,
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+		},
+	}
+
+	for apiPath, pathInfo := range spec.Paths {
+		//very primitive way to set the path params (will break for numeric values)
+		if strings.Contains(apiPath, "{") {
+			apiPath = strings.ReplaceAll(apiPath, "{", "")
+
+			if strings.Contains(apiPath, "}") {
+				apiPath = strings.ReplaceAll(apiPath, "}", "")
+			}
+		}
+
+		endpoint := fmt.Sprintf("%s%s%s", addr, prefix, apiPath)
+		ops := pathOps(pathInfo)
+		for apiMethod := range ops {
+			//make a call (no params for now)
+			p.apiSpecEndpointCall(httpClient, endpoint, apiMethod)
+		}
+	}
+}
+
+func (p *CustomProbe) apiSpecEndpointCall(client *http.Client, endpoint, method string) {
+	maxRetryCount := probeRetryCount
+	if p.RetryCount > 0 {
+		maxRetryCount = p.RetryCount
+	}
+
+	notReadyErrorWait := time.Duration(16)
+	webErrorWait := time.Duration(8)
+	otherErrorWait := time.Duration(4)
+	if p.RetryWait > 0 {
+		webErrorWait = time.Duration(p.RetryWait)
+		notReadyErrorWait = time.Duration(p.RetryWait * 2)
+		otherErrorWait = time.Duration(p.RetryWait / 2)
+	}
+
+	method = strings.ToUpper(method)
+	for i := 0; i < maxRetryCount; i++ {
+		req, err := http.NewRequest(method, endpoint, nil)
+		//no body, no request headers and no credentials for now
+		res, err := client.Do(req)
+		p.CallCount++
+
+		if res != nil {
+			if res.Body != nil {
+				io.Copy(ioutil.Discard, res.Body)
+			}
+
+			defer res.Body.Close()
+		}
+
+		statusCode := "error"
+		callErrorStr := ""
+		if err == nil {
+			statusCode = fmt.Sprintf("%v", res.StatusCode)
+		} else {
+			callErrorStr = fmt.Sprintf("error='%v'", err.Error())
+		}
+
+		if p.PrintState {
+			fmt.Printf("%s info=http.probe.api-spec.probe.endpoint.call status=%v method=%v endpoint=%v attempt=%v %v time=%v\n",
+				p.PrintPrefix,
+				statusCode,
+				method,
+				endpoint,
+				i+1,
+				callErrorStr,
+				time.Now().UTC().Format(time.RFC3339))
+		}
+
+		if err == nil {
+			p.OkCount++
+			break
+		} else {
+			p.ErrCount++
+
+			if urlErr, ok := err.(*url.Error); ok {
+				if urlErr.Err == io.EOF {
+					log.Debugf("HTTP probe - target not ready yet (retry again later)...")
+					time.Sleep(notReadyErrorWait * time.Second)
+				} else {
+					log.Debugf("HTTP probe - web error... retry again later...")
+					time.Sleep(webErrorWait * time.Second)
+
+				}
+			} else {
+				log.Debugf("HTTP probe - other error... retry again later...")
+				time.Sleep(otherErrorWait * time.Second)
+			}
+		}
+
+	}
 }
 
 // Start starts the HTTP probe instance execution
@@ -355,6 +719,31 @@ func (p *CustomProbe) Start() {
 
 						if err == nil {
 							p.OkCount++
+
+							if p.OkCount == 1 {
+								//fetch the API spec when we know the target is reachable
+								p.loadAPISpecs(proto, targetHost, port)
+
+								//ideally api spec probes should work without http probe commands
+								//for now trigger the api spec probes after the first successful http probe command
+								//and once the api specs are loaded
+								for _, specInfo := range p.APISpecProbes {
+									var apiPrefix string
+									if specInfo.prefixOverride != "" {
+										apiPrefix = specInfo.prefixOverride
+									} else {
+										apiPrefix, err = apiSpecPrefix(specInfo.spec)
+										if err != nil {
+											fmt.Printf("%s info=http.probe.api-spec.error message='api prefix error' error='%v'\n",
+												p.PrintPrefix, err)
+											continue
+										}
+									}
+
+									p.probeAPISpecEndpoints(proto, targetHost, port, apiPrefix, specInfo.spec)
+								}
+							}
+
 							if cmd.Crawl {
 								p.crawl(targetHost, addr)
 							}

@@ -42,6 +42,8 @@ func OnProfile(
 	httpMaxConcurrentCrawlers int,
 	doHTTPProbeFull bool,
 	doHTTPProbeExitOnFailure bool,
+	httpProbeAPISpecs []string,
+	httpProbeAPISpecFiles []string,
 	doRmFileArtifacts bool,
 	copyMetaArtifactsLocation string,
 	doRunTargetAsUser bool,
@@ -191,6 +193,8 @@ func OnProfile(
 			httpMaxConcurrentCrawlers,
 			doHTTPProbeFull,
 			doHTTPProbeExitOnFailure,
+			httpProbeAPISpecs,
+			httpProbeAPISpecFiles,
 			true, prefix)
 		errutil.FailOn(err)
 		if len(probe.Ports) == 0 {

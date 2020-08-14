@@ -336,6 +336,33 @@ func parsePaths(values []string) map[string]*fsutil.AccessInfo {
 	return paths
 }
 
+func validateFiles(names []string) ([]string, map[string]error) {
+	found := []string{}
+	errors := map[string]error{}
+
+	for _, name := range names {
+		if name == "" {
+			continue
+		}
+
+		fullPath, err := filepath.Abs(name)
+		if err != nil {
+			errors[name] = err
+			continue
+		}
+
+		_, err = os.Stat(fullPath)
+		if err != nil {
+			errors[name] = err
+			continue
+		}
+
+		found = append(found, name)
+	}
+
+	return found, errors
+}
+
 func parsePathsFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
 	paths := map[string]*fsutil.AccessInfo{}
 
@@ -384,45 +411,68 @@ func parseHTTPProbes(values []string) ([]config.HTTPProbeCmd, error) {
 	probes := []config.HTTPProbeCmd{}
 
 	for _, raw := range values {
-		sepCount := strings.Count(raw, ":")
-		switch sepCount {
+		var crawl bool
+		parts := strings.Split(raw, ":")
+		if parts[0] == "crawl" {
+			crawl = true
+			parts = parts[1:]
+		}
+
+		proto := "http"
+		method := "GET"
+		resource := "/"
+
+		//sepCount := strings.Count(raw, ":")
+		switch len(parts) {
 		case 0:
-			if raw == "" || !isResource(raw) {
+		case 1:
+			if parts[0] == "" || !isResource(parts[0]) {
 				return nil, fmt.Errorf("invalid HTTP probe command resource: %+v", raw)
 			}
 
-			probes = append(probes, config.HTTPProbeCmd{Protocol: "http", Method: "GET", Resource: raw})
-		case 1:
-			parts := strings.SplitN(raw, ":", 2)
-
+			resource = parts[0]
+		case 2:
 			if parts[0] != "" && !isMethod(parts[0]) {
 				return nil, fmt.Errorf("invalid HTTP probe command method: %+v", raw)
 			}
+
+			method = strings.ToUpper(parts[0])
 
 			if parts[1] == "" || !isResource(parts[1]) {
 				return nil, fmt.Errorf("invalid HTTP probe command resource: %+v", raw)
 			}
 
-			probes = append(probes, config.HTTPProbeCmd{Protocol: "http", Method: strings.ToUpper(parts[0]), Resource: parts[1]})
-		case 2:
-			parts := strings.SplitN(raw, ":", 3)
-
+			resource = parts[1]
+		case 3:
 			if parts[0] != "" && !isProto(parts[0]) {
 				return nil, fmt.Errorf("invalid HTTP probe command protocol: %+v", raw)
 			}
+
+			proto = parts[0]
 
 			if parts[1] != "" && !isMethod(parts[1]) {
 				return nil, fmt.Errorf("invalid HTTP probe command method: %+v", raw)
 			}
 
+			method = strings.ToUpper(parts[1])
+
 			if parts[2] == "" || !isResource(parts[2]) {
 				return nil, fmt.Errorf("invalid HTTP probe command resource: %+v", raw)
 			}
 
-			probes = append(probes, config.HTTPProbeCmd{Protocol: parts[0], Method: strings.ToUpper(parts[1]), Resource: parts[2]})
+			resource = parts[2]
+
 		default:
 			return nil, fmt.Errorf("invalid HTTP probe command: %s", raw)
 		}
+
+		cmd := config.HTTPProbeCmd{
+			Protocol: proto,
+			Method:   method,
+			Resource: resource,
+			Crawl:    crawl,
+		}
+		probes = append(probes, cmd)
 	}
 
 	return probes, nil

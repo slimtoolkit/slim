@@ -289,6 +289,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--http-crawl-max-page-count` - Max number of pages to visit for the HTTP probe crawler (default value: 1000)
 - `--http-crawl-concurrency` - Number of concurrent workers when crawling an HTTP target (default value: 10)
 - `--http-max-concurrent-crawlers` - Number of concurrent crawlers in the HTTP probe (default value: 1)
+- `http-probe-apispec` - Run HTTP probes for API spec where the value represents the target path where the spec is available (supports Swagger 2.x and OpenAPI 3.x) [can use this flag multiple times]
+- `http-probe-apispec-file` - Run HTTP probes for API spec from file (supports Swagger 2.x and OpenAPI 3.x) [can use this flag multiple times]
 - `--show-clogs` - Show container logs (from the container used to perform dynamic inspection)
 - `--show-blogs` - Show build logs (when the minified container is built)
 - `--copy-meta-artifacts` - Copy meta artifacts to the provided location
@@ -402,9 +404,17 @@ If the Docker environment variables are not set and if you don't specify any Doc
 
 If the HTTP probe is enabled (note: it is enabled by default) it will default to running `GET /` with HTTP and then HTTPS on every exposed port. You can add additional commands using the `--http-probe-cmd` and `--http-probe-cmd-file` options.
 
-The `--http-probe-cmd` option is good when you want to specify a small number of simple commands where you select some or all of these HTTP command options: protocol, method (defaults to GET), resource (path and query string).
+The `--http-probe-cmd` option is good when you want to specify a small number of simple commands where you select some or all of these HTTP command options: crawling (defaults to false), protocol, method (defaults to GET), resource (path and query string).
 
 If you only want to use custom HTTP probe command and you don't want the default `GET /` command added to the command list you explicitly provided you'll need to set `--http-probe` to false when you specify your custom HTTP probe command. Note that this inconsistency will be addressed in the future releases to make it less confusing.
+
+Possible field combinations:
+* `/path` - runs `GET /path`
+* `crawl:/path` - runs `GET /path` and then crawls the pages referenced by the target page
+* `post:/path` - runs `POST /path`
+* `crawl:get:/path` - runs `GET /path` and then crawls the pages referenced by the target page
+* `https:get:/path` runs `GET /path` only on https
+* `crawl:http:get:/path` - runs `GET /path` and then crawls the pages referenced by the target page
 
 Here are a couple of examples:
 
@@ -467,6 +477,11 @@ You can execute your own external HTTP requests using the `target.port.list` fie
 The current version also includes an experimental `crawling` capability. To enable it for the default HTTP probe use the `--http-probe-crawl` flag. You can also enable it for the HTTP probe commands in your command file using the `crawl` boolean field.
 
 When `crawling` is enabled the HTTP probe will act like a web crawler following the links it finds in the target endpoint.
+
+Probing based on the Swagger/OpenAPI spec is another experimental capability. This feature introduces two new flags:
+* `http-probe-apispec` - value: `<path_to_fetch_spec>:<api_endpoint_prefix>`
+* `http-probe-apispec-file` - value: `<local_file_path_to_spec>`
+
 
 ## DEBUGGING MINIFIED CONTAINERS
 

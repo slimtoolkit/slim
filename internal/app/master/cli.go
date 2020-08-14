@@ -117,6 +117,8 @@ const (
 	FlagHTTPCrawlMaxPageCount     = "http-crawl-max-page-count"
 	FlagHTTPCrawlConcurrency      = "http-crawl-concurrency"
 	FlagHTTPMaxConcurrentCrawlers = "http-max-concurrent-crawlers"
+	FlagHTTPProbeAPISpec          = "http-probe-apispec"
+	FlagHTTPProbeAPISpecFile      = "http-probe-apispec-file"
 
 	FlagKeepPerms         = "keep-perms"
 	FlagRunTargetAsUser   = "run-target-as-user"
@@ -175,6 +177,8 @@ const (
 	FlagHTTPCrawlMaxPageCountUsage     = "Max number of pages to visit for the HTTP probe crawler"
 	FlagHTTPCrawlConcurrencyUsage      = "Number of concurrent workers when crawling an HTTP target"
 	FlagHTTPMaxConcurrentCrawlersUsage = "Number of concurrent crawlers in the HTTP probe"
+	FlagHTTPProbeAPISpecUsage          = "Run HTTP probes for API spec"
+	FlagHTTPProbeAPISpecFileUsage      = "Run HTTP probes for API spec from file"
 
 	FlagKeepPermsUsage         = "Keep artifact permissions as-is"
 	FlagRunTargetAsUserUsage   = "Run target app as USER"
@@ -775,6 +779,8 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagHTTPCrawlMaxPageCount), Description: FlagHTTPCrawlMaxPageCountUsage},
 				{Text: fullFlagName(FlagHTTPCrawlConcurrency), Description: FlagHTTPCrawlConcurrencyUsage},
 				{Text: fullFlagName(FlagHTTPMaxConcurrentCrawlers), Description: FlagHTTPMaxConcurrentCrawlersUsage},
+				{Text: fullFlagName(FlagHTTPProbeAPISpec), Description: FlagHTTPProbeAPISpecUsage},
+				{Text: fullFlagName(FlagHTTPProbeAPISpecFile), Description: FlagHTTPProbeAPISpecFileUsage},
 				{Text: fullFlagName(FlagKeepPerms), Description: FlagKeepPermsUsage},
 				{Text: fullFlagName(FlagRunTargetAsUser), Description: FlagRunTargetAsUserUsage},
 				{Text: fullFlagName(FlagCopyMetaArtifacts), Description: FlagCopyMetaArtifactsUsage},
@@ -815,6 +821,7 @@ var cmdSpecs = map[string]cmdSpec{
 				fullFlagName(FlagHTTPProbeFull):          completeBool,
 				fullFlagName(FlagHTTPProbeExitOnFailure): completeBool,
 				fullFlagName(FlagHTTPProbeCrawl):         completeTBool,
+				fullFlagName(FlagHTTPProbeAPISpecFile):   completeFile,
 				fullFlagName(FlagKeepPerms):              completeTBool,
 				fullFlagName(FlagRunTargetAsUser):        completeTBool,
 				fullFlagName(FlagRemoveFileArtifacts):    completeBool,
@@ -853,6 +860,8 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagHTTPCrawlMaxPageCount), Description: FlagHTTPCrawlMaxPageCountUsage},
 				{Text: fullFlagName(FlagHTTPCrawlConcurrency), Description: FlagHTTPCrawlConcurrencyUsage},
 				{Text: fullFlagName(FlagHTTPMaxConcurrentCrawlers), Description: FlagHTTPMaxConcurrentCrawlersUsage},
+				{Text: fullFlagName(FlagHTTPProbeAPISpec), Description: FlagHTTPProbeAPISpecUsage},
+				{Text: fullFlagName(FlagHTTPProbeAPISpecFile), Description: FlagHTTPProbeAPISpecFileUsage},
 				{Text: fullFlagName(FlagKeepPerms), Description: FlagKeepPermsUsage},
 				{Text: fullFlagName(FlagRunTargetAsUser), Description: FlagRunTargetAsUserUsage},
 				{Text: fullFlagName(FlagCopyMetaArtifacts), Description: FlagCopyMetaArtifactsUsage},
@@ -910,6 +919,7 @@ var cmdSpecs = map[string]cmdSpec{
 				fullFlagName(FlagHTTPProbeFull):          completeBool,
 				fullFlagName(FlagHTTPProbeExitOnFailure): completeBool,
 				fullFlagName(FlagHTTPProbeCrawl):         completeTBool,
+				fullFlagName(FlagHTTPProbeAPISpecFile):   completeFile,
 				fullFlagName(FlagKeepPerms):              completeTBool,
 				fullFlagName(FlagRunTargetAsUser):        completeTBool,
 				fullFlagName(FlagRemoveFileArtifacts):    completeBool,
@@ -1169,6 +1179,20 @@ func init() {
 		Value:  "",
 		Usage:  FlagHTTPProbeCmdFileUsage,
 		EnvVar: "DSLIM_HTTP_PROBE_CMD_FILE",
+	}
+
+	doHTTPProbeAPISpecFlag := cli.StringSliceFlag{
+		Name:   FlagHTTPProbeAPISpec,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagHTTPProbeAPISpecUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_API_SPEC",
+	}
+
+	doHTTPProbeAPISpecFileFlag := cli.StringSliceFlag{
+		Name:   FlagHTTPProbeAPISpecFile,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagHTTPProbeAPISpecFileUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_API_SPEC_FILE",
 	}
 
 	doHTTPProbeRetryCountFlag := cli.IntFlag{
@@ -1931,6 +1955,8 @@ func init() {
 				doHTTPCrawlMaxPageCountFlag,
 				doHTTPCrawlConcurrencyFlag,
 				doHTTPMaxConcurrentCrawlersFlag,
+				doHTTPProbeAPISpecFlag,
+				doHTTPProbeAPISpecFileFlag,
 				doKeepPermsFlag,
 				doRunTargetAsUserFlag,
 				doShowContainerLogsFlag,
@@ -2094,6 +2120,26 @@ func init() {
 				doHTTPProbeFull := ctx.Bool(FlagHTTPProbeFull)
 				doHTTPProbeExitOnFailure := ctx.Bool(FlagHTTPProbeExitOnFailure)
 
+				httpProbeAPISpecs := ctx.StringSlice(FlagHTTPProbeAPISpec)
+				if len(httpProbeAPISpecs) > 0 {
+					doHTTPProbe = true
+				}
+
+				httpProbeAPISpecFiles, fileErrors := validateFiles(ctx.StringSlice(FlagHTTPProbeAPISpecFile))
+				if len(fileErrors) > 0 {
+					var err error
+					for k, v := range fileErrors {
+						err = v
+						fmt.Printf("docker-slim[build]: invalid spec file name='%s' error='%v': %v\n", k, v)
+					}
+
+					return err
+				}
+
+				if len(httpProbeAPISpecFiles) > 0 {
+					doHTTPProbe = true
+				}
+
 				doKeepPerms := ctx.Bool(FlagKeepPerms)
 
 				doRunTargetAsUser := ctx.Bool(FlagRunTargetAsUser)
@@ -2215,6 +2261,8 @@ func init() {
 					httpMaxConcurrentCrawlers,
 					doHTTPProbeFull,
 					doHTTPProbeExitOnFailure,
+					httpProbeAPISpecs,
+					httpProbeAPISpecFiles,
 					doRmFileArtifacts,
 					doCopyMetaArtifacts,
 					doRunTargetAsUser,
@@ -2264,6 +2312,8 @@ func init() {
 				doHTTPCrawlMaxPageCountFlag,
 				doHTTPCrawlConcurrencyFlag,
 				doHTTPMaxConcurrentCrawlersFlag,
+				doHTTPProbeAPISpecFlag,
+				doHTTPProbeAPISpecFileFlag,
 				doKeepPermsFlag,
 				doRunTargetAsUserFlag,
 				doCopyMetaArtifactsFlag,
@@ -2362,6 +2412,26 @@ func init() {
 				doHTTPProbeFull := ctx.Bool(FlagHTTPProbeFull)
 				doHTTPProbeExitOnFailure := ctx.Bool(FlagHTTPProbeExitOnFailure)
 
+				httpProbeAPISpecs := ctx.StringSlice(FlagHTTPProbeAPISpec)
+				if len(httpProbeAPISpecs) > 0 {
+					doHTTPProbe = true
+				}
+
+				httpProbeAPISpecFiles, fileErrors := validateFiles(ctx.StringSlice(FlagHTTPProbeAPISpecFile))
+				if len(fileErrors) > 0 {
+					var err error
+					for k, v := range fileErrors {
+						err = v
+						fmt.Printf("docker-slim[profile]: invalid spec file name='%s' error='%v': %v\n", k, v)
+					}
+
+					return err
+				}
+
+				if len(httpProbeAPISpecFiles) > 0 {
+					doHTTPProbe = true
+				}
+
 				doKeepPerms := ctx.Bool(FlagKeepPerms)
 
 				doRunTargetAsUser := ctx.Bool(FlagRunTargetAsUser)
@@ -2451,6 +2521,8 @@ func init() {
 					httpMaxConcurrentCrawlers,
 					doHTTPProbeFull,
 					doHTTPProbeExitOnFailure,
+					httpProbeAPISpecs,
+					httpProbeAPISpecFiles,
 					doRmFileArtifacts,
 					doCopyMetaArtifacts,
 					doRunTargetAsUser,

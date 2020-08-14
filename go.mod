@@ -24,6 +24,8 @@ require (
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fsouza/go-dockerclient v1.6.5
+	github.com/getkin/kin-openapi v0.19.0
+	github.com/ghodss/yaml v1.0.0
 	github.com/gocolly/colly/v2 v2.0.1
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
