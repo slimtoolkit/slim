@@ -1,5 +1,19 @@
 # Releases
 
+## 1.31.0 (8/13/2020)
+
+### New Features
+
+- Experimental HTTP probe command generation based on the API descriptions from the Swagger and OpenAPI specs (`--http-probe-apispec` and `--http-probe-apispec-file` flags)
+- Image metadata editing capabilities to add, remove and update the LABEL, VOLUME, EXPOSE, ENV and WORKDIR instructions (`--new-workdir`, `--new-expose`, `--new-label`, `--new-volume`, `--remove-volume`, `--remove-env`, `--remove-label`, `--remove-expose` and `--image-overrides` combined with `--expose`, `--workdir`, `--env`, `--volume`, `--label`, `--env`)
+
+### Improvements
+
+- Layer change details available in the `xray` command reports when the `--changes` flag is set.
+- System and engine information in the command reports to improve debugging
+- Ability to enable crawling for the HTTP probes specified using the `--http-probe-cmd` flag
+- Improved HTTP probe crawler documentation
+
 ## 1.30.0 (7/27/2020)
 
 ### New Features
