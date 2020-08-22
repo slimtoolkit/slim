@@ -1,6 +1,6 @@
 // +build linux
 
-package target
+package launcher
 
 import (
 	"golang.org/x/sys/unix"
@@ -75,7 +75,7 @@ func fixStdioPermissionsAlt(uid int) error {
 
 // Start starts the target application in the container
 func Start(appName string, appArgs []string, appDir, appUser string, runTargetAsUser, doPtrace bool) (*exec.Cmd, error) {
-	log.Debugf("sensor.startTargetApp(%v,%v,%v,%v)", appName, appArgs, appDir, appUser)
+	log.Debugf("launcher.Start(%v,%v,%v,%v)", appName, appArgs, appDir, appUser)
 	if !runTargetAsUser {
 		appUser = ""
 	}
@@ -103,7 +103,7 @@ func Start(appName string, appArgs []string, appDir, appUser string, runTargetAs
 					if err == nil {
 						gid = xgid
 					} else {
-						log.Errorf("sensor.startTargetApp: error resolving group identity (%v/%v) - %v", appUser, appUserParts[1], err)
+						log.Errorf("launcher.Start: error resolving group identity (%v/%v) - %v", appUser, appUserParts[1], err)
 					}
 				}
 
@@ -112,14 +112,14 @@ func Start(appName string, appArgs []string, appDir, appUser string, runTargetAs
 					Gid: gid,
 				}
 
-				log.Debugf("sensor.startTargetApp: start target as user (%s) - (uid=%d,gid=%d)", appUser, uid, gid)
+				log.Debugf("launcher.Start: start target as user (%s) - (uid=%d,gid=%d)", appUser, uid, gid)
 
 				if err = fixStdioPermissions(int(uid)); err != nil {
-					log.Errorf("sensor.startTargetApp: error fixing i/o perms for user (%v/%v) - %v", appUser, uid, err)
+					log.Errorf("launcher.Start: error fixing i/o perms for user (%v/%v) - %v", appUser, uid, err)
 				}
 
 			} else {
-				log.Errorf("sensor.startTargetApp: error resolving user identity (%v/%v) - %v", appUser, appUserParts[0], err)
+				log.Errorf("launcher.Start: error resolving user identity (%v/%v) - %v", appUser, appUserParts[0], err)
 			}
 		}
 	}
@@ -131,10 +131,10 @@ func Start(appName string, appArgs []string, appDir, appUser string, runTargetAs
 
 	err := app.Start()
 	if err != nil {
-		log.Warnf("app.Start error: %v", err)
+		log.Warnf("launcher.Start: error - %v", err)
 		return nil, err
 	}
 
-	log.Debugf("sensor.startTargetApp: started target app --> PID=%d", app.Process.Pid)
+	log.Debugf("launcher.Start: started target app --> PID=%d", app.Process.Pid)
 	return app, nil
 }

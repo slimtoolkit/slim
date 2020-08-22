@@ -59,6 +59,8 @@ var extraCalls = []string{
 	"wait4",
 	"setitimer",
 	"unlink",
+	"dup3",   //needed for some tty detection/setup logic (doesn't always get picked up)
+	"getcwd", //safe to add
 }
 
 // GenProfile creates a SecComp profile

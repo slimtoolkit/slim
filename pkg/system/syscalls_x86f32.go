@@ -1,8 +1,8 @@
 package system
 
 const (
-	SyscallX86MaxNum32   = 358
-	SyscallX86LastName32 = "execveat"
+	SyscallX86MaxNum32   = 435
+	SyscallX86LastName32 = "clone3"
 )
 
 // line numbers are aligned with the syscall number (-10)

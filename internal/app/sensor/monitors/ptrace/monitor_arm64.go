@@ -8,7 +8,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/docker-slim/docker-slim/internal/app/sensor/target"
+	//"github.com/docker-slim/docker-slim/internal/app/sensor/target"
+	"github.com/docker-slim/docker-slim/pkg/app/launcher"
 	"github.com/docker-slim/docker-slim/pkg/errors"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/system"
@@ -79,7 +80,7 @@ func Run(
 			runtime.LockOSThread()
 
 			var err error
-			app, err = target.Start(appName, appArgs, dirName, appUser, runTargetAsUser, true)
+			app, err = launcher.Start(appName, appArgs, dirName, appUser, runTargetAsUser, true)
 			started := true
 			if err != nil {
 				started = false
@@ -87,7 +88,7 @@ func Run(
 			ackChan <- started
 
 			if err != nil {
-				sensorErr := errors.SE("sensor.ptrace.Run/target.Start", "call.error", err)
+				sensorErr := errors.SE("sensor.ptrace.Run/launcher.Start", "call.error", err)
 				errorCh <- sensorErr
 				time.Sleep(3 * time.Second)
 			}

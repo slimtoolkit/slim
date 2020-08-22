@@ -158,7 +158,7 @@ func Run() {
 		}
 	}()
 
-	monStartAckChan := make(chan bool, 1)
+	monStartAckChan := make(chan bool, 3)
 	monDoneChan := make(chan bool, 1)
 	monDoneAckChan := make(chan bool)
 	pidsChan := make(chan []int, 1)
