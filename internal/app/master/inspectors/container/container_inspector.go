@@ -65,45 +65,47 @@ const (
 
 // Inspector is a container execution inspector
 type Inspector struct {
-	ContainerInfo       *dockerapi.Container
-	ContainerPortsInfo  string
-	ContainerPortList   string
-	ContainerID         string
-	ContainerName       string
-	FatContainerCmd     []string
-	LocalVolumePath     string
-	DoUseLocalMounts    bool
-	SensorVolumeName    string
-	DoKeepTmpArtifacts  bool
-	StatePath           string
-	CmdPort             dockerapi.Port
-	EvtPort             dockerapi.Port
-	DockerHostIP        string
-	ImageInspector      *image.Inspector
-	APIClient           *dockerapi.Client
-	Overrides           *config.ContainerOverrides
-	Links               []string
-	EtcHostsMaps        []string
-	DNSServers          []string
-	DNSSearchDomains    []string
-	DoShowContainerLogs bool
-	RunTargetAsUser     bool
-	VolumeMounts        map[string]config.VolumeMount
-	KeepPerms           bool
-	PathPerms           map[string]*fsutil.AccessInfo
-	ExcludePatterns     map[string]*fsutil.AccessInfo
-	IncludePaths        map[string]*fsutil.AccessInfo
-	IncludeBins         map[string]*fsutil.AccessInfo
-	IncludeExes         map[string]*fsutil.AccessInfo
-	DoIncludeShell      bool
-	DoDebug             bool
-	PrintState          bool
-	PrintPrefix         string
-	InContainer         bool
-	dockerEventCh       chan *dockerapi.APIEvents
-	dockerEventStopCh   chan struct{}
-	ipcClient           *ipc.Client
-	logger              *log.Entry
+	ContainerInfo         *dockerapi.Container
+	ContainerPortsInfo    string
+	ContainerPortList     string
+	ContainerID           string
+	ContainerName         string
+	FatContainerCmd       []string
+	LocalVolumePath       string
+	DoUseLocalMounts      bool
+	SensorVolumeName      string
+	DoKeepTmpArtifacts    bool
+	StatePath             string
+	CmdPort               dockerapi.Port
+	EvtPort               dockerapi.Port
+	DockerHostIP          string
+	ImageInspector        *image.Inspector
+	APIClient             *dockerapi.Client
+	Overrides             *config.ContainerOverrides
+	PortBindings          map[dockerapi.Port][]dockerapi.PortBinding
+	DoPublishExposedPorts bool
+	Links                 []string
+	EtcHostsMaps          []string
+	DNSServers            []string
+	DNSSearchDomains      []string
+	DoShowContainerLogs   bool
+	RunTargetAsUser       bool
+	VolumeMounts          map[string]config.VolumeMount
+	KeepPerms             bool
+	PathPerms             map[string]*fsutil.AccessInfo
+	ExcludePatterns       map[string]*fsutil.AccessInfo
+	IncludePaths          map[string]*fsutil.AccessInfo
+	IncludeBins           map[string]*fsutil.AccessInfo
+	IncludeExes           map[string]*fsutil.AccessInfo
+	DoIncludeShell        bool
+	DoDebug               bool
+	PrintState            bool
+	PrintPrefix           string
+	InContainer           bool
+	dockerEventCh         chan *dockerapi.APIEvents
+	dockerEventStopCh     chan struct{}
+	ipcClient             *ipc.Client
+	logger                *log.Entry
 }
 
 func pathMapKeys(m map[string]*fsutil.AccessInfo) []string {
@@ -130,6 +132,8 @@ func NewInspector(
 	sensorVolumeName string,
 	doKeepTmpArtifacts bool,
 	overrides *config.ContainerOverrides,
+	portBindings map[dockerapi.Port][]dockerapi.PortBinding,
+	doPublishExposedPorts bool,
 	links []string,
 	etcHostsMaps []string,
 	dnsServers []string,
@@ -151,35 +155,37 @@ func NewInspector(
 
 	logger = logger.WithFields(log.Fields{"component": "container.inspector"})
 	inspector := &Inspector{
-		logger:              logger,
-		StatePath:           statePath,
-		LocalVolumePath:     localVolumePath,
-		DoUseLocalMounts:    doUseLocalMounts,
-		SensorVolumeName:    sensorVolumeName,
-		DoKeepTmpArtifacts:  doKeepTmpArtifacts,
-		CmdPort:             cmdPortSpecDefault,
-		EvtPort:             evtPortSpecDefault,
-		ImageInspector:      imageInspector,
-		APIClient:           client,
-		Overrides:           overrides,
-		Links:               links,
-		EtcHostsMaps:        etcHostsMaps,
-		DNSServers:          dnsServers,
-		DNSSearchDomains:    dnsSearchDomains,
-		DoShowContainerLogs: showContainerLogs,
-		RunTargetAsUser:     runTargetAsUser,
-		VolumeMounts:        volumeMounts,
-		KeepPerms:           keepPerms,
-		PathPerms:           pathPerms,
-		ExcludePatterns:     excludePatterns,
-		IncludePaths:        includePaths,
-		IncludeBins:         includeBins,
-		IncludeExes:         includeExes,
-		DoIncludeShell:      doIncludeShell,
-		DoDebug:             doDebug,
-		PrintState:          printState,
-		PrintPrefix:         printPrefix,
-		InContainer:         inContainer,
+		logger:                logger,
+		StatePath:             statePath,
+		LocalVolumePath:       localVolumePath,
+		DoUseLocalMounts:      doUseLocalMounts,
+		SensorVolumeName:      sensorVolumeName,
+		DoKeepTmpArtifacts:    doKeepTmpArtifacts,
+		CmdPort:               cmdPortSpecDefault,
+		EvtPort:               evtPortSpecDefault,
+		ImageInspector:        imageInspector,
+		APIClient:             client,
+		Overrides:             overrides,
+		PortBindings:          portBindings,
+		DoPublishExposedPorts: doPublishExposedPorts,
+		Links:                 links,
+		EtcHostsMaps:          etcHostsMaps,
+		DNSServers:            dnsServers,
+		DNSSearchDomains:      dnsSearchDomains,
+		DoShowContainerLogs:   showContainerLogs,
+		RunTargetAsUser:       runTargetAsUser,
+		VolumeMounts:          volumeMounts,
+		KeepPerms:             keepPerms,
+		PathPerms:             pathPerms,
+		ExcludePatterns:       excludePatterns,
+		IncludePaths:          includePaths,
+		IncludeBins:           includeBins,
+		IncludeExes:           includeExes,
+		DoIncludeShell:        doIncludeShell,
+		DoDebug:               doDebug,
+		PrintState:            printState,
+		PrintPrefix:           printPrefix,
+		InContainer:           inContainer,
 	}
 
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
@@ -311,11 +317,10 @@ func (i *Inspector) RunContainer() error {
 			Hostname:   i.Overrides.Hostname,
 		},
 		HostConfig: &dockerapi.HostConfig{
-			Binds:           volumeBinds,
-			PublishAllPorts: true, //TODO: need a command flag for this option
-			CapAdd:          []string{"SYS_ADMIN"},
-			Privileged:      true,
-			UsernsMode:      "host",
+			Binds:      volumeBinds,
+			CapAdd:     []string{"SYS_ADMIN"},
+			Privileged: true,
+			UsernsMode: "host",
 		},
 	}
 
@@ -354,6 +359,64 @@ func (i *Inspector) RunContainer() error {
 	} else {
 		containerOptions.Config.ExposedPorts = commsExposedPorts
 		i.logger.Debugf("RunContainer: default exposed ports => %#v", containerOptions.Config.ExposedPorts)
+	}
+
+	if len(i.PortBindings) > 0 {
+		//need to add the IPC ports too
+		if pbInfo, ok := i.PortBindings[dockerapi.Port(cmdPortSpecDefault)]; ok {
+			i.logger.Errorf("RunContainer: port bindings comms port conflict (cmd) = %#v", pbInfo)
+			if i.PrintState {
+				fmt.Printf("%s info=sensor.error message='port binding ipc port conflict' type='cmd'\n", i.PrintPrefix)
+				fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
+			}
+
+			os.Exit(-126)
+		}
+
+		i.PortBindings[dockerapi.Port(cmdPortSpecDefault)] = []dockerapi.PortBinding{{
+			HostPort: cmdPortStrDefault,
+		}}
+
+		if pbInfo, ok := i.PortBindings[dockerapi.Port(evtPortSpecDefault)]; ok {
+			i.logger.Errorf("RunContainer: port bindings comms port conflict (evt) = %#v", pbInfo)
+			if i.PrintState {
+				fmt.Printf("%s info=sensor.error message='port binding ipc port conflict' type='evt'\n", i.PrintPrefix)
+				fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
+			}
+
+			os.Exit(-127)
+		}
+
+		i.PortBindings[dockerapi.Port(evtPortSpecDefault)] = []dockerapi.PortBinding{{
+			HostPort: evtPortStrDefault,
+		}}
+
+		containerOptions.HostConfig.PortBindings = i.PortBindings
+	} else {
+		if i.DoPublishExposedPorts {
+			portBindings := map[dockerapi.Port][]dockerapi.PortBinding{}
+
+			if i.ImageInspector.ImageInfo.Config != nil {
+				for k := range i.ImageInspector.ImageInfo.Config.ExposedPorts {
+					parts := strings.Split(string(k), "/")
+					portBindings[k] = []dockerapi.PortBinding{{
+						HostPort: parts[0],
+					}}
+				}
+			}
+
+			for k := range containerOptions.Config.ExposedPorts {
+				parts := strings.Split(string(k), "/")
+				portBindings[k] = []dockerapi.PortBinding{{
+					HostPort: parts[0],
+				}}
+			}
+
+			containerOptions.HostConfig.PortBindings = portBindings
+			i.logger.Debugf("RunContainer: publishExposedPorts/portBindings => %+v", portBindings)
+		} else {
+			containerOptions.HostConfig.PublishAllPorts = true
+		}
 	}
 
 	if i.Overrides.Network != "" {

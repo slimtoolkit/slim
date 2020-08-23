@@ -24,6 +24,7 @@ import (
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	"github.com/dustin/go-humanize"
+	"github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -54,6 +55,8 @@ func OnBuild(
 	doHTTPProbeExitOnFailure bool,
 	httpProbeAPISpecs []string,
 	httpProbeAPISpecFiles []string,
+	portBindings map[docker.Port][]docker.PortBinding,
+	doPublishExposedPorts bool,
 	doRmFileArtifacts bool,
 	copyMetaArtifactsLocation string,
 	doRunTargetAsUser bool,
@@ -248,6 +251,8 @@ func OnBuild(
 		doUseSensorVolume,
 		doKeepTmpArtifacts,
 		overrides,
+		portBindings,
+		doPublishExposedPorts,
 		links,
 		etcHostsMaps,
 		dnsServers,

@@ -75,6 +75,59 @@ func parseDockerExposeOpt(values []string) (map[docker.Port]struct{}, error) {
 	return exposedPorts, nil
 }
 
+func parsePortBindings(values []string) (map[docker.Port][]docker.PortBinding, error) {
+	portBindings := map[docker.Port][]docker.PortBinding{}
+
+	for _, raw := range values {
+		var (
+			hostIP   = ""
+			hostPort = ""
+			portKey  = ""
+		)
+
+		parts := strings.Split(raw, ":")
+		//format:
+		// port
+		// hostPort:containerPort
+		// hostIP:hostPort:containerPort
+		// hostIP::containerPort
+		switch len(parts) {
+		case 1:
+			portKey = fmt.Sprintf("%s/tcp", parts[0])
+			hostPort = parts[0]
+		case 2:
+			hostPort = parts[0]
+			if strings.Contains(parts[1], "/") {
+				portKey = parts[1]
+			} else {
+				portKey = fmt.Sprintf("%s/tcp", parts[1])
+			}
+		case 3:
+			hostIP = parts[0]
+			if len(parts[1]) > 0 {
+				hostPort = parts[1]
+			} else {
+				hostPort = parts[2]
+			}
+
+			if strings.Contains(parts[2], "/") {
+				portKey = parts[2]
+			} else {
+				portKey = fmt.Sprintf("%s/tcp", parts[2])
+			}
+		default:
+			return nil, fmt.Errorf("invalid publish-port: %s", raw)
+		}
+
+		portBindings[docker.Port(portKey)] = []docker.PortBinding{{
+			HostIP:   hostIP,
+			HostPort: hostPort,
+		}}
+	}
+
+	return portBindings, nil
+}
+
 func isOneSpace(value string) bool {
 	if len(value) > 0 && utf8.RuneCountInString(value) == 1 {
 		r, _ := utf8.DecodeRuneInString(value)

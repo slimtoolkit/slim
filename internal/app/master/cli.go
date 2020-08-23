@@ -120,6 +120,9 @@ const (
 	FlagHTTPProbeAPISpec          = "http-probe-apispec"
 	FlagHTTPProbeAPISpecFile      = "http-probe-apispec-file"
 
+	FlagPublishPort         = "publish-port"
+	FlagPublishExposedPorts = "publish-exposed-ports"
+
 	FlagKeepPerms         = "keep-perms"
 	FlagRunTargetAsUser   = "run-target-as-user"
 	FlagShowContainerLogs = "show-clogs"
@@ -179,6 +182,9 @@ const (
 	FlagHTTPMaxConcurrentCrawlersUsage = "Number of concurrent crawlers in the HTTP probe"
 	FlagHTTPProbeAPISpecUsage          = "Run HTTP probes for API spec"
 	FlagHTTPProbeAPISpecFileUsage      = "Run HTTP probes for API spec from file"
+
+	FlagPublishPortUsage         = "Map container port to host port (format => port | hostPort:containerPort | hostIP:hostPort:containerPort | hostIP::containerPort )"
+	FlagPublishExposedPortsUsage = "Map all exposed ports to the same host ports"
 
 	FlagKeepPermsUsage         = "Keep artifact permissions as-is"
 	FlagRunTargetAsUserUsage   = "Run target app as USER"
@@ -781,6 +787,8 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagHTTPMaxConcurrentCrawlers), Description: FlagHTTPMaxConcurrentCrawlersUsage},
 				{Text: fullFlagName(FlagHTTPProbeAPISpec), Description: FlagHTTPProbeAPISpecUsage},
 				{Text: fullFlagName(FlagHTTPProbeAPISpecFile), Description: FlagHTTPProbeAPISpecFileUsage},
+				{Text: fullFlagName(FlagPublishPort), Description: FlagPublishPortUsage},
+				{Text: fullFlagName(FlagPublishExposedPorts), Description: FlagPublishExposedPortsUsage},
 				{Text: fullFlagName(FlagKeepPerms), Description: FlagKeepPermsUsage},
 				{Text: fullFlagName(FlagRunTargetAsUser), Description: FlagRunTargetAsUserUsage},
 				{Text: fullFlagName(FlagCopyMetaArtifacts), Description: FlagCopyMetaArtifactsUsage},
@@ -816,6 +824,7 @@ var cmdSpecs = map[string]cmdSpec{
 			Values: map[string]CompleteValue{
 				fullFlagName(FlagTarget):                 completeTarget,
 				fullFlagName(FlagShowContainerLogs):      completeBool,
+				fullFlagName(FlagPublishExposedPorts):    completeBool,
 				fullFlagName(FlagHTTPProbe):              completeTBool,
 				fullFlagName(FlagHTTPProbeCmdFile):       completeFile,
 				fullFlagName(FlagHTTPProbeFull):          completeBool,
@@ -862,6 +871,8 @@ var cmdSpecs = map[string]cmdSpec{
 				{Text: fullFlagName(FlagHTTPMaxConcurrentCrawlers), Description: FlagHTTPMaxConcurrentCrawlersUsage},
 				{Text: fullFlagName(FlagHTTPProbeAPISpec), Description: FlagHTTPProbeAPISpecUsage},
 				{Text: fullFlagName(FlagHTTPProbeAPISpecFile), Description: FlagHTTPProbeAPISpecFileUsage},
+				{Text: fullFlagName(FlagPublishPort), Description: FlagPublishPortUsage},
+				{Text: fullFlagName(FlagPublishExposedPorts), Description: FlagPublishExposedPortsUsage},
 				{Text: fullFlagName(FlagKeepPerms), Description: FlagKeepPermsUsage},
 				{Text: fullFlagName(FlagRunTargetAsUser), Description: FlagRunTargetAsUserUsage},
 				{Text: fullFlagName(FlagCopyMetaArtifacts), Description: FlagCopyMetaArtifactsUsage},
@@ -914,6 +925,7 @@ var cmdSpecs = map[string]cmdSpec{
 				fullFlagName(FlagTarget):                 completeTarget,
 				fullFlagName(FlagShowBuildLogs):          completeBool,
 				fullFlagName(FlagShowContainerLogs):      completeBool,
+				fullFlagName(FlagPublishExposedPorts):    completeBool,
 				fullFlagName(FlagHTTPProbe):              completeTBool,
 				fullFlagName(FlagHTTPProbeCmdFile):       completeFile,
 				fullFlagName(FlagHTTPProbeFull):          completeBool,
@@ -1260,6 +1272,19 @@ func init() {
 		Value:  1,
 		Usage:  FlagHTTPMaxConcurrentCrawlersUsage,
 		EnvVar: "DSLIM_HTTP_MAX_CONCURRENT_CRAWLERS",
+	}
+
+	doPublishPortFlag := cli.StringSliceFlag{
+		Name:   FlagPublishPort,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagPublishPortUsage,
+		EnvVar: "DSLIM_PUBLISH_PORT",
+	}
+
+	doPublishExposedPortsFlag := cli.BoolFlag{
+		Name:   FlagPublishExposedPorts,
+		Usage:  FlagPublishExposedPortsUsage,
+		EnvVar: "DSLIM_PUBLISH_EXPOSED",
 	}
 
 	doKeepPermsFlag := cli.BoolTFlag{
@@ -1957,6 +1982,8 @@ func init() {
 				doHTTPMaxConcurrentCrawlersFlag,
 				doHTTPProbeAPISpecFlag,
 				doHTTPProbeAPISpecFileFlag,
+				doPublishPortFlag,
+				doPublishExposedPortsFlag,
 				doKeepPermsFlag,
 				doRunTargetAsUserFlag,
 				doShowContainerLogsFlag,
@@ -2075,6 +2102,13 @@ func init() {
 				doCopyMetaArtifacts := ctx.String(FlagCopyMetaArtifacts)
 
 				buildFromDockerfile := ctx.String(FlagBuildFromDockerfile)
+
+				portBindings, err := parsePortBindings(ctx.StringSlice(FlagPublishPort))
+				if err != nil {
+					return err
+				}
+
+				doPublishExposedPorts := ctx.Bool(FlagPublishExposedPorts)
 
 				httpCrawlMaxDepth := ctx.Int(FlagHTTPCrawlMaxDepth)
 				httpCrawlMaxPageCount := ctx.Int(FlagHTTPCrawlMaxPageCount)
@@ -2263,6 +2297,8 @@ func init() {
 					doHTTPProbeExitOnFailure,
 					httpProbeAPISpecs,
 					httpProbeAPISpecFiles,
+					portBindings,
+					doPublishExposedPorts,
 					doRmFileArtifacts,
 					doCopyMetaArtifacts,
 					doRunTargetAsUser,
@@ -2314,6 +2350,8 @@ func init() {
 				doHTTPMaxConcurrentCrawlersFlag,
 				doHTTPProbeAPISpecFlag,
 				doHTTPProbeAPISpecFileFlag,
+				doPublishPortFlag,
+				doPublishExposedPortsFlag,
 				doKeepPermsFlag,
 				doRunTargetAsUserFlag,
 				doCopyMetaArtifactsFlag,
@@ -2367,6 +2405,13 @@ func init() {
 
 				doRmFileArtifacts := ctx.Bool(FlagRemoveFileArtifacts)
 				doCopyMetaArtifacts := ctx.String(FlagCopyMetaArtifacts)
+
+				portBindings, err := parsePortBindings(ctx.StringSlice(FlagPublishPort))
+				if err != nil {
+					return err
+				}
+
+				doPublishExposedPorts := ctx.Bool(FlagPublishExposedPorts)
 
 				httpCrawlMaxDepth := ctx.Int(FlagHTTPCrawlMaxDepth)
 				httpCrawlMaxPageCount := ctx.Int(FlagHTTPCrawlMaxPageCount)
@@ -2523,6 +2568,8 @@ func init() {
 					doHTTPProbeExitOnFailure,
 					httpProbeAPISpecs,
 					httpProbeAPISpecFiles,
+					portBindings,
+					doPublishExposedPorts,
 					doRmFileArtifacts,
 					doCopyMetaArtifacts,
 					doRunTargetAsUser,

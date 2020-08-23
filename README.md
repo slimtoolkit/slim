@@ -296,6 +296,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--http-max-concurrent-crawlers` - Number of concurrent crawlers in the HTTP probe (default value: 1)
 - `http-probe-apispec` - Run HTTP probes for API spec where the value represents the target path where the spec is available (supports Swagger 2.x and OpenAPI 3.x) [can use this flag multiple times]
 - `http-probe-apispec-file` - Run HTTP probes for API spec from file (supports Swagger 2.x and OpenAPI 3.x) [can use this flag multiple times]
+- `publish-port` - Map container port to host port analyzing image at runtime to make it easier to integrate external tests (format => port | hostPort:containerPort | hostIP:hostPort:containerPort | hostIP::containerPort )[can use this flag multiple times]
+- `publish-exposed-ports` - Map all exposed ports to the same host ports analyzing image at runtime (default value: false)
 - `--show-clogs` - Show container logs (from the container used to perform dynamic inspection)
 - `--show-blogs` - Show build logs (when the minified container is built)
 - `--copy-meta-artifacts` - Copy meta artifacts to the provided location
