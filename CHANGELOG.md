@@ -1,5 +1,17 @@
 # Releases
 
+## 1.32.0 (8/23/2020)
+
+### New Features
+
+- Mapping container ports to specific host ports analyzing image at runtime (`--publish-port` and `--publish-exposed-ports` flags)
+
+### Improvements
+
+- `seccomp` security profile generation capability updates
+- Ability to enable crawling for the HTTP probes specified using the `--http-probe-cmd` flag
+- User namespace handling improvements (thanks to `@solarnz`)
+
 ## 1.31.0 (8/13/2020)
 
 ### New Features

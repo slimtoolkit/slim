@@ -155,30 +155,24 @@ Note: The examples are in a separate repository: [https://github.com/docker-slim
 
 ## RECENT UPDATES
 
-Latest version: 1.31.0 (8/13/2020)
+Latest version: 1.32.0 (8/23/2020)
 
-This release introduces an experimental HTTP probing capability that automatically generates its HTTP probe commands based on the Swagger or OpenAPI API specs.
-
-This release also adds a number of image metadata editing capabilities (to add, remove and update the LABEL, VOLUME, EXPOSE, ENV and WORKDIR instructions in the optimized image).
+This release updates the `seccomp` security profile generation capabilities to work with more advanced applications (note: ARM version will be available in the next release). It also makes it easier to integrate external http tests by providing an ability to map container ports to specific host ports.
 
 For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
-
-Previous version:
-
-The previous release introduced two new experimental capabilities: `lint` command (to inspect Dockerfiles) and HTTP crawling to automatically probe additional HTTP endpoints `docker-slim` discovers when it's performing its dynamic container analysis. For more info about the release see the [`CHANGELOG`](CHANGELOG.md).
 
 
 ## INSTALLATION
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.31.0/dist_mac.zip)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.32.0/dist_mac.zip)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.31.0/dist_linux.tar.gz)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.32.0/dist_linux.tar.gz)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.31.0/dist_linux_arm.tar.gz)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.32.0/dist_linux_arm.tar.gz)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.31.0/dist_linux_arm64.tar.gz)
+   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.32.0/dist_linux_arm64.tar.gz)
 
 2. Unzip the package.
 
@@ -567,7 +561,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.31.0/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.31.0/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.31.0/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.31.0/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.32.0/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.32.0/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.32.0/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.32.0/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
 The extracted directory contains two binaries:
 
