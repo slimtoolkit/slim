@@ -828,7 +828,7 @@ var cmdSpecs = map[string]cmdSpec{
 				fullFlagName(FlagHTTPProbe):              completeTBool,
 				fullFlagName(FlagHTTPProbeCmdFile):       completeFile,
 				fullFlagName(FlagHTTPProbeFull):          completeBool,
-				fullFlagName(FlagHTTPProbeExitOnFailure): completeBool,
+				fullFlagName(FlagHTTPProbeExitOnFailure): completeTBool,
 				fullFlagName(FlagHTTPProbeCrawl):         completeTBool,
 				fullFlagName(FlagHTTPProbeAPISpecFile):   completeFile,
 				fullFlagName(FlagKeepPerms):              completeTBool,
@@ -1234,7 +1234,8 @@ func init() {
 		EnvVar: "DSLIM_HTTP_PROBE_FULL",
 	}
 
-	doHTTPProbeExitOnFailureFlag := cli.BoolFlag{
+	//true by default now
+	doHTTPProbeExitOnFailureFlag := cli.BoolTFlag{
 		Name:   FlagHTTPProbeExitOnFailure,
 		Usage:  FlagHTTPProbeExitOnFailureUsage,
 		EnvVar: "DSLIM_HTTP_PROBE_EXIT_ON_FAILURE",
