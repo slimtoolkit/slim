@@ -588,7 +588,10 @@ func parseHTTPProbesFile(filePath string) ([]config.HTTPProbeCmd, error) {
 
 func isProto(value string) bool {
 	switch strings.ToLower(value) {
-	case config.ProtoHTTP, config.ProtoHTTPS, config.ProtoHTTP2:
+	case config.ProtoHTTP,
+		config.ProtoHTTPS,
+		config.ProtoHTTP2,
+		config.ProtoHTTP2C:
 		return true
 	default:
 		return false

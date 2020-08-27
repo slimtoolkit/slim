@@ -48,9 +48,10 @@ type VolumeMount struct {
 }
 
 const (
-	ProtoHTTP  = "http"
-	ProtoHTTPS = "https"
-	ProtoHTTP2 = "http2"
+	ProtoHTTP   = "http"
+	ProtoHTTPS  = "https"
+	ProtoHTTP2  = "http2"
+	ProtoHTTP2C = "http2c"
 )
 
 // HTTPProbeCmd provides the HTTP probe parameters

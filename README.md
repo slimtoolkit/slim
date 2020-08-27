@@ -431,7 +431,7 @@ Available HTTP command options:
 * `method` - HTTP method to use
 * `resource` - target resource URL
 * `port` - port number
-* `protocol` - `http` or `https`
+* `protocol` - `http`, `https`, `http2`, `http2c` (cleartext version of http2)
 * `headers` - array of strings with column delimited key/value pairs (e.g., "Content-Type: application/json")
 * `body` - request body as a string
 * `username` - username to use for basic auth

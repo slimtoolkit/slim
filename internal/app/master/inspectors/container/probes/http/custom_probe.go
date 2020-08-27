@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
+	"net/http/cookiejar"
 	"net/url"
 	"os"
 	"strings"
@@ -281,16 +283,7 @@ func parseAPISpec(rdata []byte) (*openapi3.Swagger, error) {
 	return nil, nil
 }
 
-func loadAPISpecFromEndpoint(endpoint string) (*openapi3.Swagger, error) {
-	httpClient := &http.Client{
-		Timeout: time.Second * 30,
-		Transport: &http.Transport{
-			MaxIdleConns:    10,
-			IdleConnTimeout: 30 * time.Second,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
-
+func loadAPISpecFromEndpoint(client *http.Client, endpoint string) (*openapi3.Swagger, error) {
 	log.Debugf("http.CustomProbe.loadAPISpecFromEndpoint(%s)", endpoint)
 	req, err := http.NewRequest("GET", endpoint, nil)
 	if err != nil {
@@ -298,7 +291,7 @@ func loadAPISpecFromEndpoint(endpoint string) (*openapi3.Swagger, error) {
 		return nil, err
 	}
 
-	res, err := httpClient.Do(req)
+	res, err := client.Do(req)
 	if err != nil {
 		log.Debugf("http.CustomProbe.loadAPISpecFromEndpoint.httpClient.Do - error=%v", err)
 		return nil, err
@@ -410,8 +403,11 @@ func (p *CustomProbe) loadAPISpecs(proto, targetHost, port string) {
 			prefixOverride = parts[1]
 		}
 
-		addr := fmt.Sprintf("%s://%v:%v%v", proto, targetHost, port, specPath)
-		spec, err := loadAPISpecFromEndpoint(addr)
+		baseAddr := getHTTPAddr(proto, targetHost, port)
+		addr := fmt.Sprintf("%s%s", baseAddr, specPath)
+		client := getHTTPClient(proto)
+
+		spec, err := loadAPISpecFromEndpoint(client, addr)
 		if err != nil {
 			fmt.Printf("%s info=http.probe.apispec.error message='error loading api spec from endpoint' error='%v'\n", p.PrintPrefix, err)
 			continue
@@ -451,21 +447,83 @@ func addPathOp(m *map[string]*openapi3.Operation, op *openapi3.Operation, name s
 	}
 }
 
+func getHTTP1Client() *http.Client {
+	client := &http.Client{
+		Timeout: time.Second * 30,
+		Transport: &http.Transport{
+			MaxIdleConns:    10,
+			IdleConnTimeout: 30 * time.Second,
+			TLSClientConfig: &tls.Config{
+				InsecureSkipVerify: true,
+			},
+		},
+	}
+
+	return client
+}
+
+func getHTTP2Client(h2c bool) *http.Client {
+	transport := &http2.Transport{
+		TLSClientConfig: &tls.Config{
+			InsecureSkipVerify: true,
+		},
+	}
+
+	client := &http.Client{
+		Timeout:   time.Second * 30,
+		Transport: transport,
+	}
+
+	if h2c {
+		transport.AllowHTTP = true
+		transport.DialTLS = func(network, addr string, cfg *tls.Config) (net.Conn, error) {
+			return net.Dial(network, addr)
+		}
+	}
+
+	return client
+}
+
+func getHTTPClient(proto string) *http.Client {
+	switch proto {
+	case config.ProtoHTTP2:
+		return getHTTP2Client(false)
+	case config.ProtoHTTP2C:
+		return getHTTP2Client(true)
+	}
+
+	return getHTTP1Client()
+}
+
+func getHTTPAddr(proto, targetHost, port string) string {
+	schema := getHTTPSchema(proto)
+	return fmt.Sprintf("%s://%s:%s", schema, targetHost, port)
+}
+
+func getHTTPSchema(proto string) string {
+	var schema string
+	switch proto {
+	case config.ProtoHTTP:
+		schema = proto
+	case config.ProtoHTTPS:
+		schema = proto
+	case config.ProtoHTTP2:
+		schema = config.ProtoHTTPS
+	case config.ProtoHTTP2C:
+		schema = config.ProtoHTTP
+	}
+
+	return schema
+}
+
 func (p *CustomProbe) probeAPISpecEndpoints(proto, targetHost, port, prefix string, spec *openapi3.Swagger) {
-	addr := fmt.Sprintf("%s://%s:%s", proto, targetHost, port)
+	addr := getHTTPAddr(proto, targetHost, port)
 
 	if p.PrintState {
 		fmt.Printf("%s state=http.probe.api-spec.probe.endpoint.starting addr='%s' prefix='%s' endpoints=%d\n", p.PrintPrefix, addr, prefix, len(spec.Paths))
 	}
 
-	httpClient := &http.Client{
-		Timeout: time.Second * 30,
-		Transport: &http.Transport{
-			MaxIdleConns:    10,
-			IdleConnTimeout: 30 * time.Second,
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
-		},
-	}
+	httpClient := getHTTPClient(proto)
 
 	for apiPath, pathInfo := range spec.Paths {
 		//very primitive way to set the path params (will break for numeric values)
@@ -573,26 +631,6 @@ func (p *CustomProbe) Start() {
 			fmt.Printf("%s state=http.probe.running\n", p.PrintPrefix)
 		}
 
-		httpClient := &http.Client{
-			Timeout: time.Second * 30,
-			Transport: &http.Transport{
-				MaxIdleConns:    10,
-				IdleConnTimeout: 30 * time.Second,
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-			},
-		}
-
-		http2Client := &http.Client{
-			Timeout: time.Second * 30,
-			Transport: &http2.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
-				},
-			},
-		}
-
 		log.Info("HTTP probe started...")
 
 		findIdx := func(ports []string, target string) int {
@@ -664,21 +702,9 @@ func (p *CustomProbe) Start() {
 						targetHost = p.ContainerInspector.DockerHostIP
 					}
 
-					var prefix string
-					var client *http.Client
-					switch proto {
-					case config.ProtoHTTP:
-						client = httpClient
-						prefix = proto
-					case config.ProtoHTTPS:
-						client = httpClient
-						prefix = proto
-					case config.ProtoHTTP2:
-						client = http2Client
-						prefix = "https"
-					}
-
-					addr := fmt.Sprintf("%s://%v:%v%v", prefix, targetHost, port, cmd.Resource)
+					client := getHTTPClient(proto)
+					baseAddr := getHTTPAddr(proto, targetHost, port)
+					addr := fmt.Sprintf("%s%s", baseAddr, cmd.Resource)
 
 					maxRetryCount := probeRetryCount
 					if p.RetryCount > 0 {
@@ -771,7 +797,7 @@ func (p *CustomProbe) Start() {
 							}
 
 							if cmd.Crawl {
-								p.crawl(targetHost, addr)
+								p.crawl(proto, targetHost, addr)
 							}
 							break
 						} else {
@@ -833,8 +859,17 @@ func (p *CustomProbe) DoneChan() <-chan struct{} {
 	return p.doneChan
 }
 
-func (p *CustomProbe) crawl(domain, addr string) {
+func (p *CustomProbe) crawl(proto, domain, addr string) {
 	p.workers.Add(1)
+
+	var httpClient *http.Client
+	if strings.HasPrefix(proto, config.ProtoHTTP2) {
+		httpClient = getHTTPClient(proto)
+		httpClient.Timeout = 10 * time.Second //matches the timeout used by Colly
+		jar, _ := cookiejar.New(nil)
+		httpClient.Jar = jar
+	}
+
 	if p.maxConcurrentCrawlers > 0 &&
 		p.concurrentCrawlers != nil {
 		p.concurrentCrawlers <- struct{}{}
@@ -858,6 +893,9 @@ func (p *CustomProbe) crawl(domain, addr string) {
 		c.Async = true
 		c.AllowedDomains = []string{domain}
 		c.AllowURLRevisit = false
+		if httpClient != nil {
+			c.SetClient(httpClient)
+		}
 
 		if p.crawlMaxDepth > 0 {
 			c.MaxDepth = p.crawlMaxDepth
