@@ -20,6 +20,7 @@ import (
 	"github.com/ghodss/yaml"
 	"github.com/gocolly/colly/v2"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/net/http2"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container"
@@ -577,7 +578,18 @@ func (p *CustomProbe) Start() {
 			Transport: &http.Transport{
 				MaxIdleConns:    10,
 				IdleConnTimeout: 30 * time.Second,
-				TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
+			},
+		}
+
+		http2Client := &http.Client{
+			Timeout: time.Second * 30,
+			Transport: &http2.Transport{
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+				},
 			},
 		}
 
@@ -634,11 +646,11 @@ func (p *CustomProbe) Start() {
 					//need a smarter and more dynamic way to determine the actual protocol type
 					switch port {
 					case httpPortStr:
-						protocols = []string{"http"}
+						protocols = []string{config.ProtoHTTP}
 					case httpsPortStr:
-						protocols = []string{"https"}
+						protocols = []string{config.ProtoHTTPS}
 					default:
-						protocols = []string{"http", "https"}
+						protocols = []string{config.ProtoHTTP, config.ProtoHTTPS}
 					}
 				} else {
 					protocols = []string{cmd.Protocol}
@@ -652,7 +664,21 @@ func (p *CustomProbe) Start() {
 						targetHost = p.ContainerInspector.DockerHostIP
 					}
 
-					addr := fmt.Sprintf("%s://%v:%v%v", proto, targetHost, port, cmd.Resource)
+					var prefix string
+					var client *http.Client
+					switch proto {
+					case config.ProtoHTTP:
+						client = httpClient
+						prefix = proto
+					case config.ProtoHTTPS:
+						client = httpClient
+						prefix = proto
+					case config.ProtoHTTP2:
+						client = http2Client
+						prefix = "https"
+					}
+
+					addr := fmt.Sprintf("%s://%v:%v%v", prefix, targetHost, port, cmd.Resource)
 
 					maxRetryCount := probeRetryCount
 					if p.RetryCount > 0 {
@@ -686,7 +712,7 @@ func (p *CustomProbe) Start() {
 							req.SetBasicAuth(cmd.Username, cmd.Password)
 						}
 
-						res, err := httpClient.Do(req)
+						res, err := client.Do(req)
 						p.CallCount++
 						reqBody.Seek(0, 0)
 

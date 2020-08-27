@@ -47,6 +47,12 @@ type VolumeMount struct {
 	Options     string
 }
 
+const (
+	ProtoHTTP  = "http"
+	ProtoHTTPS = "https"
+	ProtoHTTP2 = "http2"
+)
+
 // HTTPProbeCmd provides the HTTP probe parameters
 type HTTPProbeCmd struct {
 	Method   string   `json:"method"`
