@@ -113,6 +113,8 @@ github.com/golang/protobuf/ptypes/duration
 github.com/golang/protobuf/ptypes/timestamp
 # github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 github.com/google/shlex
+# github.com/gorilla/websocket v1.4.2
+github.com/gorilla/websocket
 # github.com/kennygrant/sanitize v1.2.4
 github.com/kennygrant/sanitize
 # github.com/klauspost/compress v1.10.6

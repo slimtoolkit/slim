@@ -29,6 +29,7 @@ require (
 	github.com/gocolly/colly/v2 v2.0.1
 	github.com/golang/protobuf v1.4.2 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
+	github.com/gorilla/websocket v1.4.2
 	github.com/gosuri/uilive v0.0.3 // indirect
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/klauspost/compress v1.10.6 // indirect

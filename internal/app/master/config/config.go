@@ -1,6 +1,7 @@
 package config
 
 import (
+	"strings"
 	"time"
 
 	"github.com/fsouza/go-dockerclient"
@@ -52,7 +53,23 @@ const (
 	ProtoHTTPS  = "https"
 	ProtoHTTP2  = "http2"
 	ProtoHTTP2C = "http2c"
+	ProtoWS     = "ws"
+	ProtoWSS    = "wss"
 )
+
+func IsProto(value string) bool {
+	switch strings.ToLower(value) {
+	case ProtoHTTP,
+		ProtoHTTPS,
+		ProtoHTTP2,
+		ProtoHTTP2C,
+		ProtoWS,
+		ProtoWSS:
+		return true
+	default:
+		return false
+	}
+}
 
 // HTTPProbeCmd provides the HTTP probe parameters
 type HTTPProbeCmd struct {

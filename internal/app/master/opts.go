@@ -497,7 +497,7 @@ func parseHTTPProbes(values []string) ([]config.HTTPProbeCmd, error) {
 
 			resource = parts[1]
 		case 3:
-			if parts[0] != "" && !isProto(parts[0]) {
+			if parts[0] != "" && !config.IsProto(parts[0]) {
 				return nil, fmt.Errorf("invalid HTTP probe command protocol: %+v", raw)
 			}
 
@@ -557,7 +557,7 @@ func parseHTTPProbesFile(filePath string) ([]config.HTTPProbeCmd, error) {
 		}
 
 		for _, cmd := range configs.Commands {
-			if cmd.Protocol != "" && !isProto(cmd.Protocol) {
+			if cmd.Protocol != "" && !config.IsProto(cmd.Protocol) {
 				return nil, fmt.Errorf("invalid HTTP probe command protocol: %+v", cmd)
 			}
 
@@ -584,18 +584,6 @@ func parseHTTPProbesFile(filePath string) ([]config.HTTPProbeCmd, error) {
 	}
 
 	return probes, nil
-}
-
-func isProto(value string) bool {
-	switch strings.ToLower(value) {
-	case config.ProtoHTTP,
-		config.ProtoHTTPS,
-		config.ProtoHTTP2,
-		config.ProtoHTTP2C:
-		return true
-	default:
-		return false
-	}
 }
 
 func isMethod(value string) bool {

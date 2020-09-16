@@ -22,7 +22,7 @@ It's also a good idea to use your app/environment tests when you run `docker-sli
 
 Interactive CLI prompt screencast:
 
-[![asciicast](https://asciinema.org/a/311513.png)](https://asciinema.org/a/311513)
+[![asciicast](assets/images/dslim/DockerSlimIntPromptDemo.gif)](https://asciinema.org/a/311513)
 
 Watch this screencast to see how an application image is minified by more than 30x.
 
