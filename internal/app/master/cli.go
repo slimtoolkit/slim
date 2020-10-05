@@ -1075,6 +1075,353 @@ func globalCommandFlagValues(ctx *cli.Context) (*commands.GenericParams, error) 
 	return &values, nil
 }
 
+var commonFlags = map[string]cli.Flag{
+	FlagTarget: cli.StringFlag{
+		Name:   FlagTarget,
+		Value:  "",
+		Usage:  FlagTargetUsage,
+		EnvVar: "DSLIM_TARGET",
+	},
+	FlagRemoveFileArtifacts: cli.BoolFlag{
+		Name:   FlagRemoveFileArtifacts,
+		Usage:  FlagRemoveFileArtifactsUsage,
+		EnvVar: "DSLIM_RM_FILE_ARTIFACTS",
+	},
+	FlagCopyMetaArtifacts: cli.StringFlag{
+		Name:   FlagCopyMetaArtifacts,
+		Usage:  FlagCopyMetaArtifactsUsage,
+		EnvVar: "DSLIM_CP_META_ARTIFACTS",
+	},
+	FlagHTTPProbe: cli.BoolTFlag{ //true by default
+		Name:   FlagHTTPProbe,
+		Usage:  FlagHTTPProbeUsage,
+		EnvVar: "DSLIM_HTTP_PROBE",
+	},
+	FlagHTTPProbeCmd: cli.StringSliceFlag{
+		Name:   FlagHTTPProbeCmd,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagHTTPProbeCmdUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_CMD",
+	},
+	FlagHTTPProbeCmdFile: cli.StringFlag{
+		Name:   FlagHTTPProbeCmdFile,
+		Value:  "",
+		Usage:  FlagHTTPProbeCmdFileUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_CMD_FILE",
+	},
+	FlagHTTPProbeAPISpec: cli.StringSliceFlag{
+		Name:   FlagHTTPProbeAPISpec,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagHTTPProbeAPISpecUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_API_SPEC",
+	},
+	FlagHTTPProbeAPISpecFile: cli.StringSliceFlag{
+		Name:   FlagHTTPProbeAPISpecFile,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagHTTPProbeAPISpecFileUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_API_SPEC_FILE",
+	},
+	FlagHTTPProbeRetryCount: cli.IntFlag{
+		Name:   FlagHTTPProbeRetryCount,
+		Value:  5,
+		Usage:  FlagHTTPProbeRetryCountUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_RETRY_COUNT",
+	},
+	FlagHTTPProbeRetryWait: cli.IntFlag{
+		Name:   FlagHTTPProbeRetryWait,
+		Value:  8,
+		Usage:  FlagHTTPProbeRetryWaitUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_RETRY_WAIT",
+	},
+	FlagHTTPProbePorts: cli.StringFlag{
+		Name:   FlagHTTPProbePorts,
+		Value:  "",
+		Usage:  FlagHTTPProbePortsUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_PORTS",
+	},
+	FlagHTTPProbeFull: cli.BoolFlag{
+		Name:   FlagHTTPProbeFull,
+		Usage:  FlagHTTPProbeFullUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_FULL",
+	},
+	FlagHTTPProbeExitOnFailure: cli.BoolTFlag{ //true by default now
+		Name:   FlagHTTPProbeExitOnFailure,
+		Usage:  FlagHTTPProbeExitOnFailureUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_EXIT_ON_FAILURE",
+	},
+	FlagHTTPProbeCrawl: cli.BoolTFlag{
+		Name:   FlagHTTPProbeCrawl,
+		Usage:  FlagHTTPProbeCrawl,
+		EnvVar: "DSLIM_HTTP_PROBE_CRAWL",
+	},
+	FlagHTTPCrawlMaxDepth: cli.IntFlag{
+		Name:   FlagHTTPCrawlMaxDepth,
+		Value:  3,
+		Usage:  FlagHTTPCrawlMaxDepthUsage,
+		EnvVar: "DSLIM_HTTP_CRAWL_MAX_DEPTH",
+	},
+	FlagHTTPCrawlMaxPageCount: cli.IntFlag{
+		Name:   FlagHTTPCrawlMaxPageCount,
+		Value:  1000,
+		Usage:  FlagHTTPCrawlMaxPageCountUsage,
+		EnvVar: "DSLIM_HTTP_CRAWL_MAX_PAGE_COUNT",
+	},
+	FlagHTTPCrawlConcurrency: cli.IntFlag{
+		Name:   FlagHTTPCrawlConcurrency,
+		Value:  10,
+		Usage:  FlagHTTPCrawlConcurrencyUsage,
+		EnvVar: "DSLIM_HTTP_CRAWL_CONCURRENCY",
+	},
+	FlagHTTPMaxConcurrentCrawlers: cli.IntFlag{
+		Name:   FlagHTTPMaxConcurrentCrawlers,
+		Value:  1,
+		Usage:  FlagHTTPMaxConcurrentCrawlersUsage,
+		EnvVar: "DSLIM_HTTP_MAX_CONCURRENT_CRAWLERS",
+	},
+	FlagPublishPort: cli.StringSliceFlag{
+		Name:   FlagPublishPort,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagPublishPortUsage,
+		EnvVar: "DSLIM_PUBLISH_PORT",
+	},
+	FlagPublishExposedPorts: cli.BoolFlag{
+		Name:   FlagPublishExposedPorts,
+		Usage:  FlagPublishExposedPortsUsage,
+		EnvVar: "DSLIM_PUBLISH_EXPOSED",
+	},
+	FlagKeepPerms: cli.BoolTFlag{
+		Name:   FlagKeepPerms,
+		Usage:  FlagKeepPermsUsage,
+		EnvVar: "DSLIM_KEEP_PERMS",
+	},
+	FlagRunTargetAsUser: cli.BoolTFlag{
+		Name:   FlagRunTargetAsUser,
+		Usage:  FlagRunTargetAsUserUsage,
+		EnvVar: "DSLIM_RUN_TAS_USER",
+	},
+	FlagShowContainerLogs: cli.BoolFlag{
+		Name:   FlagShowContainerLogs,
+		Usage:  FlagShowContainerLogsUsage,
+		EnvVar: "DSLIM_SHOW_CLOGS",
+	},
+	FlagShowBuildLogs: cli.BoolFlag{
+		Name:   FlagShowBuildLogs,
+		Usage:  FlagShowBuildLogsUsage,
+		EnvVar: "DSLIM_SHOW_BLOGS",
+	},
+	FlagNewEntrypoint: cli.StringFlag{
+		Name:   FlagNewEntrypoint,
+		Value:  "",
+		Usage:  FlagNewEntrypointUsage,
+		EnvVar: "DSLIM_NEW_ENTRYPOINT",
+	},
+	FlagNewCmd: cli.StringFlag{
+		Name:   FlagNewCmd,
+		Value:  "",
+		Usage:  FlagNewCmdUsage,
+		EnvVar: "DSLIM_NEW_CMD",
+	},
+	FlagNewExpose: cli.StringSliceFlag{
+		Name:   FlagNewExpose,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagNewExposeUsage,
+		EnvVar: "DSLIM_NEW_EXPOSE",
+	},
+	FlagNewWorkdir: cli.StringFlag{
+		Name:   FlagNewWorkdir,
+		Value:  "",
+		Usage:  FlagNewWorkdirUsage,
+		EnvVar: "DSLIM_NEW_WORKDIR",
+	},
+	FlagNewEnv: cli.StringSliceFlag{
+		Name:   FlagNewEnv,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagNewEnvUsage,
+		EnvVar: "DSLIM_NEW_ENV",
+	},
+	FlagNewVolume: cli.StringSliceFlag{
+		Name:   FlagNewVolume,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagNewVolumeUsage,
+		EnvVar: "DSLIM_NEW_VOLUME",
+	},
+	FlagNewLabel: cli.StringSliceFlag{
+		Name:   FlagNewLabel,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagNewLabelUsage,
+		EnvVar: "DSLIM_NEW_LABEL",
+	},
+	FlagEntrypoint: cli.StringFlag{
+		Name:   FlagEntrypoint,
+		Value:  "",
+		Usage:  FlagEntrypointUsage,
+		EnvVar: "DSLIM_RC_ENTRYPOINT",
+	},
+	FlagCmd: cli.StringFlag{
+		Name:   FlagCmd,
+		Value:  "",
+		Usage:  FlagCmdUsage,
+		EnvVar: "DSLIM_RC_CMD",
+	},
+	FlagWorkdir: cli.StringFlag{
+		Name:   FlagWorkdir,
+		Value:  "",
+		Usage:  FlagWorkdirUsage,
+		EnvVar: "DSLIM_RC_WORKDIR",
+	},
+	FlagEnv: cli.StringSliceFlag{
+		Name:   FlagEnv,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagEnvUsage,
+		EnvVar: "DSLIM_RC_ENV",
+	},
+	FlagLabel: cli.StringSliceFlag{
+		Name:   FlagLabel,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagLabelUsage,
+		EnvVar: "DSLIM_RC_LABEL",
+	},
+	FlagVolume: cli.StringSliceFlag{
+		Name:   FlagVolume,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagVolumeUsage,
+		EnvVar: "DSLIM_RC_VOLUME",
+	},
+	FlagLink: cli.StringSliceFlag{
+		Name:   FlagLink,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagLinkUsage,
+		EnvVar: "DSLIM_RC_LINK",
+	},
+	FlagEtcHostsMap: cli.StringSliceFlag{
+		Name:   FlagEtcHostsMap,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagEtcHostsMapUsage,
+		EnvVar: "DSLIM_RC_ETC_HOSTS_MAP",
+	},
+	FlagContainerDNS: cli.StringSliceFlag{
+		Name:   FlagContainerDNS,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagContainerDNSUsage,
+		EnvVar: "DSLIM_RC_DNS",
+	},
+	FlagContainerDNSSearch: cli.StringSliceFlag{
+		Name:   FlagContainerDNSSearch,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagContainerDNSSearchUsage,
+		EnvVar: "DSLIM_RC_DNS_SEARCH",
+	},
+	FlagHostname: cli.StringFlag{
+		Name:   FlagHostname,
+		Value:  "",
+		Usage:  FlagHostnameUsage,
+		EnvVar: "DSLIM_RC_HOSTNAME",
+	},
+	FlagNetwork: cli.StringFlag{
+		Name:   FlagNetwork,
+		Value:  "",
+		Usage:  FlagNetworkUsage,
+		EnvVar: "DSLIM_RC_NET",
+	},
+	FlagExpose: cli.StringSliceFlag{
+		Name:   FlagExpose,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagExposeUsage,
+		EnvVar: "DSLIM_RC_EXPOSE",
+	},
+	FlagExcludeMounts: cli.BoolTFlag{
+		Name:   FlagExcludeMounts, //true by default
+		Usage:  FlagExcludeMountsUsage,
+		EnvVar: "DSLIM_EXCLUDE_MOUNTS",
+	},
+	FlagExcludePattern: cli.StringSliceFlag{
+		Name:   FlagExcludePattern,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagExcludePatternUsage,
+		EnvVar: "DSLIM_EXCLUDE_PATTERN",
+	},
+	FlagPathPerms: cli.StringSliceFlag{
+		Name:   FlagPathPerms,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagPathPermsUsage,
+		EnvVar: "DSLIM_PATH_PERMS",
+	},
+	FlagPathPermsFile: cli.StringFlag{
+		Name:   FlagPathPermsFile,
+		Value:  "",
+		Usage:  FlagPathPermsFileUsage,
+		EnvVar: "DSLIM_PATH_PERMS_FILE",
+	},
+	FlagIncludePath: cli.StringSliceFlag{
+		Name:   FlagIncludePath,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagIncludePathUsage,
+		EnvVar: "DSLIM_INCLUDE_PATH",
+	},
+	FlagIncludePathFile: cli.StringFlag{
+		Name:   FlagIncludePathFile,
+		Value:  "",
+		Usage:  FlagIncludePathFileUsage,
+		EnvVar: "DSLIM_INCLUDE_PATH_FILE",
+	},
+	FlagIncludeBin: cli.StringSliceFlag{
+		Name:   FlagIncludeBin,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagIncludeBinUsage,
+		EnvVar: "DSLIM_INCLUDE_BIN",
+	},
+	FlagIncludeExe: cli.StringSliceFlag{
+		Name:   FlagIncludeExe,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagIncludeExeUsage,
+		EnvVar: "DSLIM_INCLUDE_EXE",
+	},
+	FlagIncludeShell: cli.BoolFlag{
+		Name:   FlagIncludeShell,
+		Usage:  FlagIncludeShellUsage,
+		EnvVar: "DSLIM_INCLUDE_SHELL",
+	},
+	FlagKeepTmpArtifacts: cli.BoolFlag{
+		Name:   FlagKeepTmpArtifacts,
+		Usage:  FlagKeepTmpArtifactsUsage,
+		EnvVar: "DSLIM_KEEP_TMP_ARTIFACTS",
+	},
+	FlagUseLocalMounts: cli.BoolFlag{
+		Name:   FlagUseLocalMounts,
+		Usage:  FlagUseLocalMountsUsage,
+		EnvVar: "DSLIM_USE_LOCAL_MOUNTS",
+	},
+	FlagUseSensorVolume: cli.StringFlag{
+		Name:   FlagUseSensorVolume,
+		Value:  "",
+		Usage:  FlagUseSensorVolumeUsage,
+		EnvVar: "DSLIM_USE_SENSOR_VOLUME",
+	},
+	FlagMount: cli.StringSliceFlag{
+		Name:   FlagMount,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagMountUsage,
+		EnvVar: "DSLIM_MOUNT",
+	},
+	FlagContinueAfter: cli.StringFlag{
+		Name:   FlagContinueAfter,
+		Value:  "probe",
+		Usage:  FlagContinueAfterUsage,
+		EnvVar: "DSLIM_CONTINUE_AFTER",
+	},
+}
+
+//var commonFlags
+
+func cflag(name string) cli.Flag {
+	cf, ok := commonFlags[name]
+	if !ok {
+		log.Fatalf("cli.cflag: unknown flag='%s'", name)
+	}
+
+	return cf
+}
+
 func init() {
 	app = cli.NewApp()
 	app.Version = version.Current()
@@ -1153,417 +1500,6 @@ func init() {
 		return nil
 	}
 
-	doTargetFlag := cli.StringFlag{
-		Name:   FlagTarget,
-		Value:  "",
-		Usage:  FlagTargetUsage,
-		EnvVar: "DSLIM_TARGET",
-	}
-
-	doRemoveFileArtifactsFlag := cli.BoolFlag{
-		Name:   FlagRemoveFileArtifacts,
-		Usage:  FlagRemoveFileArtifactsUsage,
-		EnvVar: "DSLIM_RM_FILE_ARTIFACTS",
-	}
-
-	doCopyMetaArtifactsFlag := cli.StringFlag{
-		Name:   FlagCopyMetaArtifacts,
-		Usage:  FlagCopyMetaArtifactsUsage,
-		EnvVar: "DSLIM_CP_META_ARTIFACTS",
-	}
-
-	//true by default
-	doHTTPProbeFlag := cli.BoolTFlag{
-		Name:   FlagHTTPProbe,
-		Usage:  FlagHTTPProbeUsage,
-		EnvVar: "DSLIM_HTTP_PROBE",
-	}
-
-	doHTTPProbeCmdFlag := cli.StringSliceFlag{
-		Name:   FlagHTTPProbeCmd,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagHTTPProbeCmdUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_CMD",
-	}
-
-	doHTTPProbeCmdFileFlag := cli.StringFlag{
-		Name:   FlagHTTPProbeCmdFile,
-		Value:  "",
-		Usage:  FlagHTTPProbeCmdFileUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_CMD_FILE",
-	}
-
-	doHTTPProbeAPISpecFlag := cli.StringSliceFlag{
-		Name:   FlagHTTPProbeAPISpec,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagHTTPProbeAPISpecUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_API_SPEC",
-	}
-
-	doHTTPProbeAPISpecFileFlag := cli.StringSliceFlag{
-		Name:   FlagHTTPProbeAPISpecFile,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagHTTPProbeAPISpecFileUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_API_SPEC_FILE",
-	}
-
-	doHTTPProbeRetryCountFlag := cli.IntFlag{
-		Name:   FlagHTTPProbeRetryCount,
-		Value:  5,
-		Usage:  FlagHTTPProbeRetryCountUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_RETRY_COUNT",
-	}
-
-	doHTTPProbeRetryWaitFlag := cli.IntFlag{
-		Name:   FlagHTTPProbeRetryWait,
-		Value:  8,
-		Usage:  FlagHTTPProbeRetryWaitUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_RETRY_WAIT",
-	}
-
-	doHTTPProbePortsFlag := cli.StringFlag{
-		Name:   FlagHTTPProbePorts,
-		Value:  "",
-		Usage:  FlagHTTPProbePortsUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_PORTS",
-	}
-
-	doHTTPProbeFullFlag := cli.BoolFlag{
-		Name:   FlagHTTPProbeFull,
-		Usage:  FlagHTTPProbeFullUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_FULL",
-	}
-
-	//true by default now
-	doHTTPProbeExitOnFailureFlag := cli.BoolTFlag{
-		Name:   FlagHTTPProbeExitOnFailure,
-		Usage:  FlagHTTPProbeExitOnFailureUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_EXIT_ON_FAILURE",
-	}
-
-	doHTTPProbeCrawlFlag := cli.BoolTFlag{
-		Name:   FlagHTTPProbeCrawl,
-		Usage:  FlagHTTPProbeCrawl,
-		EnvVar: "DSLIM_HTTP_PROBE_CRAWL",
-	}
-
-	doHTTPCrawlMaxDepthFlag := cli.IntFlag{
-		Name:   FlagHTTPCrawlMaxDepth,
-		Value:  3,
-		Usage:  FlagHTTPCrawlMaxDepthUsage,
-		EnvVar: "DSLIM_HTTP_CRAWL_MAX_DEPTH",
-	}
-
-	doHTTPCrawlMaxPageCountFlag := cli.IntFlag{
-		Name:   FlagHTTPCrawlMaxPageCount,
-		Value:  1000,
-		Usage:  FlagHTTPCrawlMaxPageCountUsage,
-		EnvVar: "DSLIM_HTTP_CRAWL_MAX_PAGE_COUNT",
-	}
-
-	doHTTPCrawlConcurrencyFlag := cli.IntFlag{
-		Name:   FlagHTTPCrawlConcurrency,
-		Value:  10,
-		Usage:  FlagHTTPCrawlConcurrencyUsage,
-		EnvVar: "DSLIM_HTTP_CRAWL_CONCURRENCY",
-	}
-
-	doHTTPMaxConcurrentCrawlersFlag := cli.IntFlag{
-		Name:   FlagHTTPMaxConcurrentCrawlers,
-		Value:  1,
-		Usage:  FlagHTTPMaxConcurrentCrawlersUsage,
-		EnvVar: "DSLIM_HTTP_MAX_CONCURRENT_CRAWLERS",
-	}
-
-	doPublishPortFlag := cli.StringSliceFlag{
-		Name:   FlagPublishPort,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagPublishPortUsage,
-		EnvVar: "DSLIM_PUBLISH_PORT",
-	}
-
-	doPublishExposedPortsFlag := cli.BoolFlag{
-		Name:   FlagPublishExposedPorts,
-		Usage:  FlagPublishExposedPortsUsage,
-		EnvVar: "DSLIM_PUBLISH_EXPOSED",
-	}
-
-	doKeepPermsFlag := cli.BoolTFlag{
-		Name:   FlagKeepPerms,
-		Usage:  FlagKeepPermsUsage,
-		EnvVar: "DSLIM_KEEP_PERMS",
-	}
-
-	doRunTargetAsUserFlag := cli.BoolTFlag{
-		Name:   FlagRunTargetAsUser,
-		Usage:  FlagRunTargetAsUserUsage,
-		EnvVar: "DSLIM_RUN_TAS_USER",
-	}
-
-	doShowContainerLogsFlag := cli.BoolFlag{
-		Name:   FlagShowContainerLogs,
-		Usage:  FlagShowContainerLogsUsage,
-		EnvVar: "DSLIM_SHOW_CLOGS",
-	}
-
-	doShowBuildLogsFlag := cli.BoolFlag{
-		Name:   FlagShowBuildLogs,
-		Usage:  FlagShowBuildLogsUsage,
-		EnvVar: "DSLIM_SHOW_BLOGS",
-	}
-
-	doUseNewEntrypointFlag := cli.StringFlag{
-		Name:   FlagNewEntrypoint,
-		Value:  "",
-		Usage:  FlagNewEntrypointUsage,
-		EnvVar: "DSLIM_NEW_ENTRYPOINT",
-	}
-
-	doUseNewCmdFlag := cli.StringFlag{
-		Name:   FlagNewCmd,
-		Value:  "",
-		Usage:  FlagNewCmdUsage,
-		EnvVar: "DSLIM_NEW_CMD",
-	}
-
-	doUseNewExposeFlag := cli.StringSliceFlag{
-		Name:   FlagNewExpose,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagNewExposeUsage,
-		EnvVar: "DSLIM_NEW_EXPOSE",
-	}
-
-	doUseNewWorkdirFlag := cli.StringFlag{
-		Name:   FlagNewWorkdir,
-		Value:  "",
-		Usage:  FlagNewWorkdirUsage,
-		EnvVar: "DSLIM_NEW_WORKDIR",
-	}
-
-	doUseNewEnvFlag := cli.StringSliceFlag{
-		Name:   FlagNewEnv,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagNewEnvUsage,
-		EnvVar: "DSLIM_NEW_ENV",
-	}
-
-	doUseNewVolumeFlag := cli.StringSliceFlag{
-		Name:   FlagNewVolume,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagNewVolumeUsage,
-		EnvVar: "DSLIM_NEW_VOLUME",
-	}
-
-	doUseNewLabelFlag := cli.StringSliceFlag{
-		Name:   FlagNewLabel,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagNewLabelUsage,
-		EnvVar: "DSLIM_NEW_LABEL",
-	}
-
-	doUseEntrypointFlag := cli.StringFlag{
-		Name:   FlagEntrypoint,
-		Value:  "",
-		Usage:  FlagEntrypointUsage,
-		EnvVar: "DSLIM_RC_ENTRYPOINT",
-	}
-
-	doUseCmdFlag := cli.StringFlag{
-		Name:   FlagCmd,
-		Value:  "",
-		Usage:  FlagCmdUsage,
-		EnvVar: "DSLIM_RC_CMD",
-	}
-
-	doUseWorkdirFlag := cli.StringFlag{
-		Name:   FlagWorkdir,
-		Value:  "",
-		Usage:  FlagWorkdirUsage,
-		EnvVar: "DSLIM_RC_WORKDIR",
-	}
-
-	doUseEnvFlag := cli.StringSliceFlag{
-		Name:   FlagEnv,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagEnvUsage,
-		EnvVar: "DSLIM_RC_ENV",
-	}
-
-	doUseLabelFlag := cli.StringSliceFlag{
-		Name:   FlagLabel,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagLabelUsage,
-		EnvVar: "DSLIM_RC_LABEL",
-	}
-
-	doUseVolumeFlag := cli.StringSliceFlag{
-		Name:   FlagVolume,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagVolumeUsage,
-		EnvVar: "DSLIM_RC_VOLUME",
-	}
-
-	doUseLinkFlag := cli.StringSliceFlag{
-		Name:   FlagLink,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagLinkUsage,
-		EnvVar: "DSLIM_RC_LINK",
-	}
-
-	doUseEtcHostsMapFlag := cli.StringSliceFlag{
-		Name:   FlagEtcHostsMap,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagEtcHostsMapUsage,
-		EnvVar: "DSLIM_RC_ETC_HOSTS_MAP",
-	}
-
-	doUseContainerDNSFlag := cli.StringSliceFlag{
-		Name:   FlagContainerDNS,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagContainerDNSUsage,
-		EnvVar: "DSLIM_RC_DNS",
-	}
-
-	doUseContainerDNSSearchFlag := cli.StringSliceFlag{
-		Name:   FlagContainerDNSSearch,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagContainerDNSSearchUsage,
-		EnvVar: "DSLIM_RC_DNS_SEARCH",
-	}
-
-	doUseHostnameFlag := cli.StringFlag{
-		Name:   FlagHostname,
-		Value:  "",
-		Usage:  FlagHostnameUsage,
-		EnvVar: "DSLIM_RC_HOSTNAME",
-	}
-
-	doUseNetworkFlag := cli.StringFlag{
-		Name:   FlagNetwork,
-		Value:  "",
-		Usage:  FlagNetworkUsage,
-		EnvVar: "DSLIM_RC_NET",
-	}
-
-	doUseExposeFlag := cli.StringSliceFlag{
-		Name:   FlagExpose,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagExposeUsage,
-		EnvVar: "DSLIM_RC_EXPOSE",
-	}
-
-	//true by default
-	doExcludeMountsFlag := cli.BoolTFlag{
-		Name:   FlagExcludeMounts,
-		Usage:  FlagExcludeMountsUsage,
-		EnvVar: "DSLIM_EXCLUDE_MOUNTS",
-	}
-
-	doExcludePatternFlag := cli.StringSliceFlag{
-		Name:   FlagExcludePattern,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagExcludePatternUsage,
-		EnvVar: "DSLIM_EXCLUDE_PATTERN",
-	}
-
-	doSetPathPermsFlag := cli.StringSliceFlag{
-		Name:   FlagPathPerms,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagPathPermsUsage,
-		EnvVar: "DSLIM_PATH_PERMS",
-	}
-
-	doSetPathPermsFileFlag := cli.StringFlag{
-		Name:   FlagPathPermsFile,
-		Value:  "",
-		Usage:  FlagPathPermsFileUsage,
-		EnvVar: "DSLIM_PATH_PERMS_FILE",
-	}
-
-	doIncludePathFlag := cli.StringSliceFlag{
-		Name:   FlagIncludePath,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagIncludePathUsage,
-		EnvVar: "DSLIM_INCLUDE_PATH",
-	}
-
-	doIncludePathFileFlag := cli.StringFlag{
-		Name:   FlagIncludePathFile,
-		Value:  "",
-		Usage:  FlagIncludePathFileUsage,
-		EnvVar: "DSLIM_INCLUDE_PATH_FILE",
-	}
-
-	doIncludeBinFlag := cli.StringSliceFlag{
-		Name:   FlagIncludeBin,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagIncludeBinUsage,
-		EnvVar: "DSLIM_INCLUDE_BIN",
-	}
-
-	doIncludeExeFlag := cli.StringSliceFlag{
-		Name:   FlagIncludeExe,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagIncludeExeUsage,
-		EnvVar: "DSLIM_INCLUDE_EXE",
-	}
-
-	doIncludeShellFlag := cli.BoolFlag{
-		Name:   FlagIncludeShell,
-		Usage:  FlagIncludeShellUsage,
-		EnvVar: "DSLIM_INCLUDE_SHELL",
-	}
-
-	doKeepTmpArtifactsFlag := cli.BoolFlag{
-		Name:   FlagKeepTmpArtifacts,
-		Usage:  FlagKeepTmpArtifactsUsage,
-		EnvVar: "DSLIM_KEEP_TMP_ARTIFACTS",
-	}
-
-	doUseLocalMountsFlag := cli.BoolFlag{
-		Name:   FlagUseLocalMounts,
-		Usage:  FlagUseLocalMountsUsage,
-		EnvVar: "DSLIM_USE_LOCAL_MOUNTS",
-	}
-
-	doUseSensorVolumeFlag := cli.StringFlag{
-		Name:   FlagUseSensorVolume,
-		Value:  "",
-		Usage:  FlagUseSensorVolumeUsage,
-		EnvVar: "DSLIM_USE_SENSOR_VOLUME",
-	}
-
-	doUseMountFlag := cli.StringSliceFlag{
-		Name:   FlagMount,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagMountUsage,
-		EnvVar: "DSLIM_MOUNT",
-	}
-
-	doContinueAfterFlag := cli.StringFlag{
-		Name:   FlagContinueAfter,
-		Value:  "probe",
-		Usage:  FlagContinueAfterUsage,
-		EnvVar: "DSLIM_CONTINUE_AFTER",
-	}
-
-	//enable 'show-progress' by default only on Mac OS X
-	var doShowProgressFlag cli.Flag
-	switch runtime.GOOS {
-	case "darwin":
-		doShowProgressFlag = cli.BoolTFlag{
-			Name:   FlagShowProgress,
-			Usage:  fmt.Sprintf("%s (default: true)", FlagShowProgressUsage),
-			EnvVar: "DSLIM_UPDATE_SHOW_PROGRESS",
-		}
-	default:
-		doShowProgressFlag = cli.BoolFlag{
-			Name:   FlagShowProgress,
-			Usage:  fmt.Sprintf("%s (default: false)", FlagShowProgressUsage),
-			EnvVar: "DSLIM_UPDATE_SHOW_PROGRESS",
-		}
-	}
-
 	app.Commands = []cli.Command{
 		{
 			Name:    cmdSpecs[CmdHelp].name,
@@ -1587,1016 +1523,14 @@ func init() {
 				return nil
 			},
 		},
-		{
-			Name:    cmdSpecs[CmdUpdate].name,
-			Aliases: []string{cmdSpecs[CmdUpdate].alias},
-			Usage:   cmdSpecs[CmdUpdate].usage,
-			Flags: []cli.Flag{
-				doShowProgressFlag,
-			},
-			Action: func(ctx *cli.Context) error {
-				commands.ShowCommunityInfo()
-				doDebug := ctx.GlobalBool(FlagDebug)
-				statePath := ctx.GlobalString(FlagStatePath)
-				inContainer, isDSImage := isInContainer(ctx.GlobalBool(FlagInContainer))
-				archiveState := archiveState(ctx.GlobalString(FlagArchiveState), inContainer)
-				doShowProgress := ctx.Bool(FlagShowProgress)
-
-				commands.OnUpdate(doDebug, statePath, archiveState, inContainer, isDSImage, doShowProgress)
-				commands.ShowCommunityInfo()
-				return nil
-			},
-		},
-		{
-			Name:    cmdSpecs[CmdContainerize].name,
-			Aliases: []string{cmdSpecs[CmdContainerize].alias},
-			Usage:   cmdSpecs[CmdContainerize].usage,
-			Action: func(ctx *cli.Context) error {
-				commands.ShowCommunityInfo()
-				if len(ctx.Args()) < 1 {
-					fmt.Printf("docker-slim[containerize]: missing target info...\n\n")
-					cli.ShowCommandHelp(ctx, CmdContainerize)
-					return nil
-				}
-
-				gcvalues, err := globalCommandFlagValues(ctx)
-				if err != nil {
-					return err
-				}
-
-				targetRef := ctx.Args().First()
-
-				ec := &commands.ExecutionContext{}
-
-				commands.OnContainerize(
-					gcvalues,
-					targetRef,
-					ec)
-				commands.ShowCommunityInfo()
-				return nil
-			},
-		},
-		{
-			Name:    cmdSpecs[CmdConvert].name,
-			Aliases: []string{cmdSpecs[CmdConvert].alias},
-			Usage:   cmdSpecs[CmdConvert].usage,
-			Action: func(ctx *cli.Context) error {
-				commands.ShowCommunityInfo()
-				if len(ctx.Args()) < 1 {
-					fmt.Printf("docker-slim[convert]: missing target info...\n\n")
-					cli.ShowCommandHelp(ctx, CmdConvert)
-					return nil
-				}
-
-				gcvalues, err := globalCommandFlagValues(ctx)
-				if err != nil {
-					return err
-				}
-
-				targetRef := ctx.Args().First()
-
-				ec := &commands.ExecutionContext{}
-
-				commands.OnConvert(
-					gcvalues,
-					targetRef,
-					ec)
-				commands.ShowCommunityInfo()
-				return nil
-			},
-		},
-		{
-			Name:    cmdSpecs[CmdEdit].name,
-			Aliases: []string{cmdSpecs[CmdEdit].alias},
-			Usage:   cmdSpecs[CmdEdit].usage,
-			Action: func(ctx *cli.Context) error {
-				commands.ShowCommunityInfo()
-				if len(ctx.Args()) < 1 {
-					fmt.Printf("docker-slim[edit]: missing target info...\n\n")
-					cli.ShowCommandHelp(ctx, CmdEdit)
-					return nil
-				}
-
-				gcvalues, err := globalCommandFlagValues(ctx)
-				if err != nil {
-					return err
-				}
-
-				targetRef := ctx.Args().First()
-
-				ec := &commands.ExecutionContext{}
-
-				commands.OnEdit(
-					gcvalues,
-					targetRef,
-					ec)
-				commands.ShowCommunityInfo()
-				return nil
-			},
-		},
-		{
-			Name:    cmdSpecs[CmdLint].name,
-			Aliases: []string{cmdSpecs[CmdLint].alias},
-			Usage:   cmdSpecs[CmdLint].usage,
-			Flags: []cli.Flag{
-				cli.StringFlag{
-					Name:   FlagTarget,
-					Value:  "",
-					Usage:  FlagLintTargetUsage,
-					EnvVar: "DSLIM_TARGET",
-				},
-				cli.StringFlag{
-					Name:   FlagTargetType,
-					Value:  "",
-					Usage:  FlagTargetTypeUsage,
-					EnvVar: "DSLIM_LINT_TARGET_TYPE",
-				},
-				cli.BoolFlag{
-					Name:   FlagSkipBuildContext,
-					Usage:  FlagSkipBuildContextUsage,
-					EnvVar: "DSLIM_LINT_SKIP_BC",
-				},
-				cli.StringFlag{
-					Name:   FlagBuildContextDir,
-					Value:  "",
-					Usage:  FlagBuildContextDirUsage,
-					EnvVar: "DSLIM_LINT_BC_DIR",
-				},
-				cli.BoolFlag{
-					Name:   FlagSkipDockerignore,
-					Usage:  FlagSkipDockerignoreUsage,
-					EnvVar: "DSLIM_LINT_SKIP_DI",
-				},
-				cli.StringSliceFlag{
-					Name:   FlagIncludeCheckLabel,
-					Value:  &cli.StringSlice{""},
-					Usage:  FlagIncludeCheckLabelUsage,
-					EnvVar: "DSLIM_LINT_INCLUDE_LABEL",
-				},
-				cli.StringSliceFlag{
-					Name:   FlagExcludeCheckLabel,
-					Value:  &cli.StringSlice{""},
-					Usage:  FlagExcludeCheckLabelUsage,
-					EnvVar: "DSLIM_LINT_EXCLUDE_LABEL",
-				},
-				cli.StringSliceFlag{
-					Name:   FlagIncludeCheckID,
-					Value:  &cli.StringSlice{""},
-					Usage:  FlagIncludeCheckIDUsage,
-					EnvVar: "DSLIM_LINT_INCLUDE_CID",
-				},
-				cli.StringFlag{
-					Name:   FlagIncludeCheckIDFile,
-					Value:  "",
-					Usage:  FlagIncludeCheckIDFileUsage,
-					EnvVar: "DSLIM_LINT_INCLUDE_CID_FILE",
-				},
-				cli.StringSliceFlag{
-					Name:   FlagExcludeCheckID,
-					Value:  &cli.StringSlice{""},
-					Usage:  FlagExcludeCheckIDUsage,
-					EnvVar: "DSLIM_LINT_EXCLUDE_CID",
-				},
-				cli.StringFlag{
-					Name:   FlagExcludeCheckIDFile,
-					Value:  "",
-					Usage:  FlagExcludeCheckIDFileUsage,
-					EnvVar: "DSLIM_LINT_EXCLUDE_CID_FILE",
-				},
-				cli.BoolFlag{
-					Name:   FlagShowNoHits,
-					Usage:  FlagShowNoHitsUsage,
-					EnvVar: "DSLIM_LINT_SHOW_NOHITS",
-				},
-				cli.BoolTFlag{
-					Name:   FlagShowSnippet,
-					Usage:  FlagShowSnippetUsage,
-					EnvVar: "DSLIM_LINT_SHOW_SNIPPET",
-				},
-				cli.BoolFlag{
-					Name:   FlagListChecks,
-					Usage:  FlagListChecksUsage,
-					EnvVar: "DSLIM_LINT_LIST_CHECKS",
-				},
-			},
-			Action: func(ctx *cli.Context) error {
-				commands.ShowCommunityInfo()
-				doListChecks := ctx.Bool(FlagListChecks)
-
-				targetRef := ctx.String(FlagTarget)
-				if !doListChecks {
-					if targetRef == "" {
-						if len(ctx.Args()) < 1 {
-							fmt.Printf("docker-slim[lint]: missing target image/Dockerfile...\n\n")
-							cli.ShowCommandHelp(ctx, CmdLint)
-							return nil
-						} else {
-							targetRef = ctx.Args().First()
-						}
-					}
-				}
-
-				gcvalues, err := globalCommandFlagValues(ctx)
-				if err != nil {
-					return err
-				}
-
-				targetType := ctx.String(FlagTargetType)
-				doSkipBuildContext := ctx.Bool(FlagSkipBuildContext)
-				buildContextDir := ctx.String(FlagBuildContextDir)
-				doSkipDockerignore := ctx.Bool(FlagSkipDockerignore)
-
-				includeCheckLabels, err := parseCheckTags(ctx.StringSlice(FlagIncludeCheckLabel))
-				if err != nil {
-					fmt.Printf("docker-slim[lint]: invalid include check labels: %v\n", err)
-					return err
-				}
-
-				excludeCheckLabels, err := parseCheckTags(ctx.StringSlice(FlagExcludeCheckLabel))
-				if err != nil {
-					fmt.Printf("docker-slim[lint]: invalid exclude check labels: %v\n", err)
-					return err
-				}
-
-				includeCheckIDs, err := parseTokenSet(ctx.StringSlice(FlagIncludeCheckID))
-				if err != nil {
-					fmt.Printf("docker-slim[lint]: invalid include check IDs: %v\n", err)
-					return err
-				}
-
-				includeCheckIDFile := ctx.String(FlagIncludeCheckIDFile)
-				moreIncludeCheckIDs, err := parseTokenSetFile(includeCheckIDFile)
-				if err != nil {
-					fmt.Printf("docker-slim[lint]: invalid include check IDs from file(%v): %v\n", includeCheckIDFile, err)
-					return err
-				}
-
-				for k, v := range moreIncludeCheckIDs {
-					includeCheckIDs[k] = v
-				}
-
-				excludeCheckIDs, err := parseTokenSet(ctx.StringSlice(FlagExcludeCheckID))
-				if err != nil {
-					fmt.Printf("docker-slim[lint]: invalid exclude check IDs: %v\n", err)
-					return err
-				}
-
-				excludeCheckIDFile := ctx.String(FlagExcludeCheckIDFile)
-				moreExcludeCheckIDs, err := parseTokenSetFile(excludeCheckIDFile)
-				if err != nil {
-					fmt.Printf("docker-slim[lint]: invalid exclude check IDs from file(%v): %v\n", excludeCheckIDFile, err)
-					return err
-				}
-
-				for k, v := range moreExcludeCheckIDs {
-					excludeCheckIDs[k] = v
-				}
-
-				doShowNoHits := ctx.Bool(FlagShowNoHits)
-				doShowSnippet := ctx.Bool(FlagShowSnippet)
-
-				ec := &commands.ExecutionContext{}
-
-				commands.OnLint(
-					gcvalues,
-					targetRef,
-					targetType,
-					doSkipBuildContext,
-					buildContextDir,
-					doSkipDockerignore,
-					includeCheckLabels,
-					excludeCheckLabels,
-					includeCheckIDs,
-					excludeCheckIDs,
-					doShowNoHits,
-					doShowSnippet,
-					doListChecks,
-					ec)
-				commands.ShowCommunityInfo()
-				return nil
-			},
-		},
-		{
-			Name:    cmdSpecs[CmdXray].name,
-			Aliases: []string{cmdSpecs[CmdXray].alias},
-			Usage:   cmdSpecs[CmdXray].usage,
-			Flags: []cli.Flag{
-				doTargetFlag,
-				cli.StringSliceFlag{
-					Name:   FlagChanges,
-					Value:  &cli.StringSlice{""},
-					Usage:  FlagChangesUsage,
-					EnvVar: "DSLIM_CHANGES",
-				},
-				cli.StringSliceFlag{
-					Name:   FlagLayer,
-					Value:  &cli.StringSlice{},
-					Usage:  FlagLayerUsage,
-					EnvVar: "DSLIM_LAYER",
-				},
-				cli.BoolFlag{
-					Name:   FlagAddImageManifest,
-					Usage:  FlagAddImageManifestUsage,
-					EnvVar: "DSLIM_XRAY_IMAGE_MANIFEST",
-				},
-				cli.BoolFlag{
-					Name:   FlagAddImageConfig,
-					Usage:  FlagAddImageConfigUsage,
-					EnvVar: "DSLIM_XRAY_IMAGE_CONFIG",
-				},
-				doRemoveFileArtifactsFlag,
-			},
-			Action: func(ctx *cli.Context) error {
-				commands.ShowCommunityInfo()
-				targetRef := ctx.String(FlagTarget)
-
-				if targetRef == "" {
-					if len(ctx.Args()) < 1 {
-						fmt.Printf("docker-slim[xray]: missing image ID/name...\n\n")
-						cli.ShowCommandHelp(ctx, CmdXray)
-						return nil
-					} else {
-						targetRef = ctx.Args().First()
-					}
-				}
-
-				gcvalues, err := globalCommandFlagValues(ctx)
-				if err != nil {
-					return err
-				}
-
-				changes, err := parseChangeTypes(ctx.StringSlice(FlagChanges))
-				if err != nil {
-					fmt.Printf("docker-slim[xray]: invalid change types: %v\n", err)
-					return err
-				}
-
-				layers, err := parseTokenSet(ctx.StringSlice(FlagLayer))
-				if err != nil {
-					fmt.Printf("docker-slim[xray]: invalid layer selectors: %v\n", err)
-					return err
-				}
-
-				doAddImageManifest := ctx.Bool(FlagAddImageManifest)
-				doAddImageConfig := ctx.Bool(FlagAddImageConfig)
-				doRmFileArtifacts := ctx.Bool(FlagRemoveFileArtifacts)
-
-				ec := &commands.ExecutionContext{}
-
-				commands.OnXray(
-					gcvalues,
-					targetRef,
-					changes,
-					layers,
-					doAddImageManifest,
-					doAddImageConfig,
-					doRmFileArtifacts,
-					ec)
-				commands.ShowCommunityInfo()
-				return nil
-			},
-		},
-		{
-			Name:    cmdSpecs[CmdBuild].name,
-			Aliases: []string{cmdSpecs[CmdBuild].alias},
-			Usage:   cmdSpecs[CmdBuild].usage,
-			Flags: []cli.Flag{
-				doTargetFlag,
-				cli.StringFlag{
-					Name:   FlagBuildFromDockerfile,
-					Value:  "",
-					Usage:  FlagBuildFromDockerfileUsage,
-					EnvVar: "DSLIM_BUILD_DOCKERFILE",
-				},
-				doHTTPProbeFlag,
-				doHTTPProbeCmdFlag,
-				doHTTPProbeCmdFileFlag,
-				doHTTPProbeRetryCountFlag,
-				doHTTPProbeRetryWaitFlag,
-				doHTTPProbePortsFlag,
-				doHTTPProbeFullFlag,
-				doHTTPProbeExitOnFailureFlag,
-				doHTTPProbeCrawlFlag,
-				doHTTPCrawlMaxDepthFlag,
-				doHTTPCrawlMaxPageCountFlag,
-				doHTTPCrawlConcurrencyFlag,
-				doHTTPMaxConcurrentCrawlersFlag,
-				doHTTPProbeAPISpecFlag,
-				doHTTPProbeAPISpecFileFlag,
-				doPublishPortFlag,
-				doPublishExposedPortsFlag,
-				doKeepPermsFlag,
-				doRunTargetAsUserFlag,
-				doShowContainerLogsFlag,
-				doShowBuildLogsFlag,
-				doCopyMetaArtifactsFlag,
-				doRemoveFileArtifactsFlag,
-				cli.StringFlag{
-					Name:   FlagTag,
-					Value:  "",
-					Usage:  FlagTagUsage,
-					EnvVar: "DSLIM_TARGET_TAG",
-				},
-				cli.StringFlag{
-					Name:   FlagTagFat,
-					Value:  "",
-					Usage:  FlagTagFatUsage,
-					EnvVar: "DSLIM_TARGET_TAG_FAT",
-				},
-				cli.StringFlag{
-					Name:   FlagImageOverrides,
-					Value:  "",
-					Usage:  FlagImageOverridesUsage,
-					EnvVar: "DSLIM_TARGET_OVERRIDES",
-				},
-				doUseEntrypointFlag,
-				doUseCmdFlag,
-				doUseWorkdirFlag,
-				doUseEnvFlag,
-				doUseLabelFlag,
-				doUseVolumeFlag,
-				doUseLinkFlag,
-				doUseEtcHostsMapFlag,
-				doUseContainerDNSFlag,
-				doUseContainerDNSSearchFlag,
-				doUseNetworkFlag,
-				doUseHostnameFlag,
-				doUseExposeFlag,
-				doUseNewEntrypointFlag,
-				doUseNewCmdFlag,
-				doUseNewExposeFlag,
-				doUseNewWorkdirFlag,
-				doUseNewEnvFlag,
-				doUseNewVolumeFlag,
-				doUseNewLabelFlag,
-				cli.StringSliceFlag{
-					Name:   FlagRemoveExpose,
-					Value:  &cli.StringSlice{},
-					Usage:  FlagRemoveExposeUsage,
-					EnvVar: "DSLIM_RM_EXPOSE",
-				},
-				cli.StringSliceFlag{
-					Name:   FlagRemoveEnv,
-					Value:  &cli.StringSlice{},
-					Usage:  FlagRemoveEnvUsage,
-					EnvVar: "DSLIM_RM_ENV",
-				},
-				cli.StringSliceFlag{
-					Name:   FlagRemoveLabel,
-					Value:  &cli.StringSlice{},
-					Usage:  FlagRemoveLabelUsage,
-					EnvVar: "DSLIM_RM_LABEL",
-				},
-				cli.StringSliceFlag{
-					Name:   FlagRemoveVolume,
-					Value:  &cli.StringSlice{},
-					Usage:  FlagRemoveVolumeUsage,
-					EnvVar: "DSLIM_RM_VOLUME",
-				},
-				doExcludeMountsFlag,
-				doExcludePatternFlag,
-				doSetPathPermsFlag,
-				doSetPathPermsFileFlag,
-				doIncludePathFlag,
-				doIncludePathFileFlag,
-				doIncludeBinFlag,
-				cli.StringFlag{
-					Name:   FlagIncludeBinFile,
-					Value:  "",
-					Usage:  FlagIncludeBinFileUsage,
-					EnvVar: "DSLIM_INCLUDE_BIN_FILE",
-				},
-				doIncludeExeFlag,
-				cli.StringFlag{
-					Name:   FlagIncludeExeFile,
-					Value:  "",
-					Usage:  FlagIncludeExeFileUsage,
-					EnvVar: "DSLIM_INCLUDE_EXE_FILE",
-				},
-				doIncludeShellFlag,
-				doUseMountFlag,
-				doContinueAfterFlag,
-				doUseLocalMountsFlag,
-				doUseSensorVolumeFlag,
-				doKeepTmpArtifactsFlag,
-			},
-			Action: func(ctx *cli.Context) error {
-				commands.ShowCommunityInfo()
-				targetRef := ctx.String(FlagTarget)
-
-				if targetRef == "" {
-					if len(ctx.Args()) < 1 {
-						fmt.Printf("docker-slim[build]: missing image ID/name...\n\n")
-						cli.ShowCommandHelp(ctx, CmdBuild)
-						return nil
-					} else {
-						targetRef = ctx.Args().First()
-					}
-				}
-
-				gcvalues, err := globalCommandFlagValues(ctx)
-				if err != nil {
-					return err
-				}
-
-				doRmFileArtifacts := ctx.Bool(FlagRemoveFileArtifacts)
-				doCopyMetaArtifacts := ctx.String(FlagCopyMetaArtifacts)
-
-				buildFromDockerfile := ctx.String(FlagBuildFromDockerfile)
-
-				portBindings, err := parsePortBindings(ctx.StringSlice(FlagPublishPort))
-				if err != nil {
-					return err
-				}
-
-				doPublishExposedPorts := ctx.Bool(FlagPublishExposedPorts)
-
-				httpCrawlMaxDepth := ctx.Int(FlagHTTPCrawlMaxDepth)
-				httpCrawlMaxPageCount := ctx.Int(FlagHTTPCrawlMaxPageCount)
-				httpCrawlConcurrency := ctx.Int(FlagHTTPCrawlConcurrency)
-				httpMaxConcurrentCrawlers := ctx.Int(FlagHTTPMaxConcurrentCrawlers)
-				doHTTPProbeCrawl := ctx.Bool(FlagHTTPProbeCrawl)
-
-				doHTTPProbe := ctx.Bool(FlagHTTPProbe)
-
-				httpProbeCmds, err := getHTTPProbes(ctx)
-				if err != nil {
-					fmt.Printf("docker-slim[build]: invalid HTTP probes: %v\n", err)
-					return err
-				}
-
-				if doHTTPProbe {
-					//add default probe cmd if the "http-probe" flag is set
-					fmt.Println("docker-slim[build]: info=http.probe message='using default probe'")
-					defaultCmd := config.HTTPProbeCmd{
-						Protocol: "http",
-						Method:   "GET",
-						Resource: "/",
-					}
-
-					if doHTTPProbeCrawl {
-						defaultCmd.Crawl = true
-					}
-					httpProbeCmds = append(httpProbeCmds, defaultCmd)
-				}
-
-				if len(httpProbeCmds) > 0 {
-					doHTTPProbe = true
-				}
-
-				httpProbeRetryCount := ctx.Int(FlagHTTPProbeRetryCount)
-				httpProbeRetryWait := ctx.Int(FlagHTTPProbeRetryWait)
-				httpProbePorts, err := parseHTTPProbesPorts(ctx.String(FlagHTTPProbePorts))
-				if err != nil {
-					fmt.Printf("docker-slim[build]: invalid HTTP Probe target ports: %v\n", err)
-					return err
-				}
-
-				doHTTPProbeFull := ctx.Bool(FlagHTTPProbeFull)
-				doHTTPProbeExitOnFailure := ctx.Bool(FlagHTTPProbeExitOnFailure)
-
-				httpProbeAPISpecs := ctx.StringSlice(FlagHTTPProbeAPISpec)
-				if len(httpProbeAPISpecs) > 0 {
-					doHTTPProbe = true
-				}
-
-				httpProbeAPISpecFiles, fileErrors := validateFiles(ctx.StringSlice(FlagHTTPProbeAPISpecFile))
-				if len(fileErrors) > 0 {
-					var err error
-					for k, v := range fileErrors {
-						err = v
-						fmt.Printf("docker-slim[build]: invalid spec file name='%s' error='%v': %v\n", k, v)
-					}
-
-					return err
-				}
-
-				if len(httpProbeAPISpecFiles) > 0 {
-					doHTTPProbe = true
-				}
-
-				doKeepPerms := ctx.Bool(FlagKeepPerms)
-
-				doRunTargetAsUser := ctx.Bool(FlagRunTargetAsUser)
-
-				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
-				doShowBuildLogs := ctx.Bool(FlagShowBuildLogs)
-				doTag := ctx.String(FlagTag)
-				doTagFat := ctx.String(FlagTagFat)
-
-				doImageOverrides := ctx.String(FlagImageOverrides)
-				overrides, err := getContainerOverrides(ctx)
-				if err != nil {
-					fmt.Printf("docker-slim[build]: invalid container overrides: %v\n", err)
-					return err
-				}
-
-				instructions, err := getImageInstructions(ctx)
-				if err != nil {
-					fmt.Printf("docker-slim[build]: invalid image instructions: %v\n", err)
-					return err
-				}
-
-				volumeMounts, err := parseVolumeMounts(ctx.StringSlice(FlagMount))
-				if err != nil {
-					fmt.Printf("docker-slim[build]: invalid volume mounts: %v\n", err)
-					return err
-				}
-
-				excludePatterns := parsePaths(ctx.StringSlice(FlagExcludePattern))
-
-				includePaths := parsePaths(ctx.StringSlice(FlagIncludePath))
-				moreIncludePaths, err := parsePathsFile(ctx.String(FlagIncludePathFile))
-				if err != nil {
-					fmt.Printf("docker-slim[build]: could not read include path file (ignoring): %v\n", err)
-				} else {
-					for k, v := range moreIncludePaths {
-						includePaths[k] = v
-					}
-				}
-
-				pathPerms := parsePaths(ctx.StringSlice(FlagPathPerms))
-				morePathPerms, err := parsePathsFile(ctx.String(FlagPathPermsFile))
-				if err != nil {
-					fmt.Printf("docker-slim[build]: could not read path perms file (ignoring): %v\n", err)
-				} else {
-					for k, v := range morePathPerms {
-						pathPerms[k] = v
-					}
-				}
-
-				includeBins := parsePaths(ctx.StringSlice(FlagIncludeBin))
-				moreIncludeBins, err := parsePathsFile(ctx.String(FlagIncludeBinFile))
-				if err != nil {
-					fmt.Printf("docker-slim[build]: could not read include bin file (ignoring): %v\n", err)
-				} else {
-					for k, v := range moreIncludeBins {
-						includeBins[k] = v
-					}
-				}
-
-				includeExes := parsePaths(ctx.StringSlice(FlagIncludeExe))
-				moreIncludeExes, err := parsePathsFile(ctx.String(FlagIncludeExeFile))
-				if err != nil {
-					fmt.Printf("docker-slim[build]: could not read include exe file (ignoring): %v\n", err)
-				} else {
-					for k, v := range moreIncludeExes {
-						includeExes[k] = v
-					}
-				}
-
-				doIncludeShell := ctx.Bool(FlagIncludeShell)
-
-				doUseLocalMounts := ctx.Bool(FlagUseLocalMounts)
-				doUseSensorVolume := ctx.String(FlagUseSensorVolume)
-
-				doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
-
-				doExcludeMounts := ctx.BoolT(FlagExcludeMounts)
-				if doExcludeMounts {
-					for mpath := range volumeMounts {
-						excludePatterns[mpath] = nil
-						mpattern := fmt.Sprintf("%s/**", mpath)
-						excludePatterns[mpattern] = nil
-					}
-				}
-
-				continueAfter, err := getContinueAfter(ctx)
-				if err != nil {
-					fmt.Printf("docker-slim[build]: invalid continue-after mode: %v\n", err)
-					return err
-				}
-
-				if !doHTTPProbe && continueAfter.Mode == "probe" {
-					fmt.Printf("docker-slim[build]: info=probe message='changing continue-after from probe to enter because http-probe is disabled'\n")
-					continueAfter.Mode = "enter"
-				}
-
-				commandReport := ctx.GlobalString(FlagCommandReport)
-				if commandReport == "off" {
-					commandReport = ""
-				}
-
-				ec := &commands.ExecutionContext{}
-
-				commands.OnBuild(
-					gcvalues,
-					targetRef,
-					buildFromDockerfile,
-					doTag,
-					doTagFat,
-					doHTTPProbe,
-					httpProbeCmds,
-					httpProbeRetryCount,
-					httpProbeRetryWait,
-					httpProbePorts,
-					httpCrawlMaxDepth,
-					httpCrawlMaxPageCount,
-					httpCrawlConcurrency,
-					httpMaxConcurrentCrawlers,
-					doHTTPProbeFull,
-					doHTTPProbeExitOnFailure,
-					httpProbeAPISpecs,
-					httpProbeAPISpecFiles,
-					portBindings,
-					doPublishExposedPorts,
-					doRmFileArtifacts,
-					doCopyMetaArtifacts,
-					doRunTargetAsUser,
-					doShowContainerLogs,
-					doShowBuildLogs,
-					parseImageOverrides(doImageOverrides),
-					overrides,
-					instructions,
-					ctx.StringSlice(FlagLink),
-					ctx.StringSlice(FlagEtcHostsMap),
-					ctx.StringSlice(FlagContainerDNS),
-					ctx.StringSlice(FlagContainerDNSSearch),
-					volumeMounts,
-					doKeepPerms,
-					pathPerms,
-					excludePatterns,
-					includePaths,
-					includeBins,
-					includeExes,
-					doIncludeShell,
-					doUseLocalMounts,
-					doUseSensorVolume,
-					doKeepTmpArtifacts,
-					continueAfter,
-					ec)
-				commands.ShowCommunityInfo()
-				return nil
-			},
-		},
-		{
-			Name:    cmdSpecs[CmdProfile].name,
-			Aliases: []string{cmdSpecs[CmdProfile].alias},
-			Usage:   cmdSpecs[CmdProfile].usage,
-			Flags: []cli.Flag{
-				doTargetFlag,
-				doShowContainerLogsFlag,
-				doHTTPProbeFlag,
-				doHTTPProbeCmdFlag,
-				doHTTPProbeCmdFileFlag,
-				doHTTPProbeRetryCountFlag,
-				doHTTPProbeRetryWaitFlag,
-				doHTTPProbePortsFlag,
-				doHTTPProbeFullFlag,
-				doHTTPProbeExitOnFailureFlag,
-				doHTTPProbeCrawlFlag,
-				doHTTPCrawlMaxDepthFlag,
-				doHTTPCrawlMaxPageCountFlag,
-				doHTTPCrawlConcurrencyFlag,
-				doHTTPMaxConcurrentCrawlersFlag,
-				doHTTPProbeAPISpecFlag,
-				doHTTPProbeAPISpecFileFlag,
-				doPublishPortFlag,
-				doPublishExposedPortsFlag,
-				doKeepPermsFlag,
-				doRunTargetAsUserFlag,
-				doCopyMetaArtifactsFlag,
-				doRemoveFileArtifactsFlag,
-				doUseEntrypointFlag,
-				doUseCmdFlag,
-				doUseWorkdirFlag,
-				doUseEnvFlag,
-				doUseLabelFlag,
-				doUseVolumeFlag,
-				doUseLinkFlag,
-				doUseEtcHostsMapFlag,
-				doUseContainerDNSFlag,
-				doUseContainerDNSSearchFlag,
-				doUseNetworkFlag,
-				doUseHostnameFlag,
-				doUseExposeFlag,
-				doExcludeMountsFlag,
-				doExcludePatternFlag,
-				doSetPathPermsFlag,
-				doSetPathPermsFileFlag,
-				doIncludePathFlag,
-				doIncludePathFileFlag,
-				doIncludeBinFlag,
-				doIncludeExeFlag,
-				doIncludeShellFlag,
-				doUseMountFlag,
-				doContinueAfterFlag,
-				doUseLocalMountsFlag,
-				doUseSensorVolumeFlag,
-				doKeepTmpArtifactsFlag,
-			},
-			Action: func(ctx *cli.Context) error {
-				commands.ShowCommunityInfo()
-				targetRef := ctx.String(FlagTarget)
-
-				if targetRef == "" {
-					if len(ctx.Args()) < 1 {
-						fmt.Printf("docker-slim[profile]: missing image ID/name...\n\n")
-						cli.ShowCommandHelp(ctx, CmdProfile)
-						return nil
-					} else {
-						targetRef = ctx.Args().First()
-					}
-				}
-
-				gcvalues, err := globalCommandFlagValues(ctx)
-				if err != nil {
-					return err
-				}
-
-				doRmFileArtifacts := ctx.Bool(FlagRemoveFileArtifacts)
-				doCopyMetaArtifacts := ctx.String(FlagCopyMetaArtifacts)
-
-				portBindings, err := parsePortBindings(ctx.StringSlice(FlagPublishPort))
-				if err != nil {
-					return err
-				}
-
-				doPublishExposedPorts := ctx.Bool(FlagPublishExposedPorts)
-
-				httpCrawlMaxDepth := ctx.Int(FlagHTTPCrawlMaxDepth)
-				httpCrawlMaxPageCount := ctx.Int(FlagHTTPCrawlMaxPageCount)
-				httpCrawlConcurrency := ctx.Int(FlagHTTPCrawlConcurrency)
-				httpMaxConcurrentCrawlers := ctx.Int(FlagHTTPMaxConcurrentCrawlers)
-				doHTTPProbeCrawl := ctx.Bool(FlagHTTPProbeCrawl)
-
-				doHTTPProbe := ctx.Bool(FlagHTTPProbe)
-
-				httpProbeCmds, err := getHTTPProbes(ctx)
-				if err != nil {
-					fmt.Printf("docker-slim[profile]: invalid HTTP probes: %v\n", err)
-					return err
-				}
-
-				if doHTTPProbe {
-					//add default probe cmd if the "http-probe" flag is set
-					fmt.Println("docker-slim[profile]: info=http.probe message='using default probe'")
-					defaultCmd := config.HTTPProbeCmd{
-						Protocol: "http",
-						Method:   "GET",
-						Resource: "/",
-					}
-
-					if doHTTPProbeCrawl {
-						defaultCmd.Crawl = true
-					}
-					httpProbeCmds = append(httpProbeCmds, defaultCmd)
-				}
-
-				if len(httpProbeCmds) > 0 {
-					doHTTPProbe = true
-				}
-
-				httpProbeRetryCount := ctx.Int(FlagHTTPProbeRetryCount)
-				httpProbeRetryWait := ctx.Int(FlagHTTPProbeRetryWait)
-				httpProbePorts, err := parseHTTPProbesPorts(ctx.String(FlagHTTPProbePorts))
-				if err != nil {
-					fmt.Printf("docker-slim[profile]: invalid HTTP Probe target ports: %v\n", err)
-					return err
-				}
-
-				doHTTPProbeFull := ctx.Bool(FlagHTTPProbeFull)
-				doHTTPProbeExitOnFailure := ctx.Bool(FlagHTTPProbeExitOnFailure)
-
-				httpProbeAPISpecs := ctx.StringSlice(FlagHTTPProbeAPISpec)
-				if len(httpProbeAPISpecs) > 0 {
-					doHTTPProbe = true
-				}
-
-				httpProbeAPISpecFiles, fileErrors := validateFiles(ctx.StringSlice(FlagHTTPProbeAPISpecFile))
-				if len(fileErrors) > 0 {
-					var err error
-					for k, v := range fileErrors {
-						err = v
-						fmt.Printf("docker-slim[profile]: invalid spec file name='%s' error='%v': %v\n", k, v)
-					}
-
-					return err
-				}
-
-				if len(httpProbeAPISpecFiles) > 0 {
-					doHTTPProbe = true
-				}
-
-				doKeepPerms := ctx.Bool(FlagKeepPerms)
-
-				doRunTargetAsUser := ctx.Bool(FlagRunTargetAsUser)
-
-				doShowContainerLogs := ctx.Bool(FlagShowContainerLogs)
-				overrides, err := getContainerOverrides(ctx)
-				if err != nil {
-					fmt.Printf("docker-slim[profile]: invalid container overrides: %v", err)
-					return err
-				}
-
-				volumeMounts, err := parseVolumeMounts(ctx.StringSlice(FlagMount))
-				if err != nil {
-					fmt.Printf("docker-slim[profile]: invalid volume mounts: %v\n", err)
-					return err
-				}
-
-				excludePatterns := parsePaths(ctx.StringSlice(FlagExcludePattern))
-
-				includePaths := parsePaths(ctx.StringSlice(FlagIncludePath))
-				moreIncludePaths, err := parsePathsFile(ctx.String(FlagIncludePathFile))
-				if err != nil {
-					fmt.Printf("docker-slim[profile]: could not read include path file (ignoring): %v\n", err)
-				} else {
-					for k, v := range moreIncludePaths {
-						includePaths[k] = v
-					}
-				}
-
-				pathPerms := parsePaths(ctx.StringSlice(FlagPathPerms))
-				morePathPerms, err := parsePathsFile(ctx.String(FlagPathPermsFile))
-				if err != nil {
-					fmt.Printf("docker-slim[profile]: could not read path perms file (ignoring): %v\n", err)
-				} else {
-					for k, v := range morePathPerms {
-						pathPerms[k] = v
-					}
-				}
-
-				includeBins := parsePaths(ctx.StringSlice(FlagIncludeBin))
-				includeExes := parsePaths(ctx.StringSlice(FlagIncludeExe))
-				doIncludeShell := ctx.Bool(FlagIncludeShell)
-
-				doUseLocalMounts := ctx.Bool(FlagUseLocalMounts)
-				doUseSensorVolume := ctx.String(FlagUseSensorVolume)
-
-				doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
-
-				doExcludeMounts := ctx.BoolT(FlagExcludeMounts)
-				if doExcludeMounts {
-					for mpath := range volumeMounts {
-						excludePatterns[mpath] = nil
-						mpattern := fmt.Sprintf("%s/**", mpath)
-						excludePatterns[mpattern] = nil
-					}
-				}
-
-				continueAfter, err := getContinueAfter(ctx)
-				if err != nil {
-					fmt.Printf("docker-slim[profile]: invalid continue-after mode: %v\n", err)
-					return err
-				}
-
-				if !doHTTPProbe && continueAfter.Mode == "probe" {
-					fmt.Printf("docker-slim[profile]: info=probe message='changing continue-after from probe to enter because http-probe is disabled'\n")
-					continueAfter.Mode = "enter"
-				}
-
-				commandReport := ctx.GlobalString(FlagCommandReport)
-				if commandReport == "off" {
-					commandReport = ""
-				}
-
-				ec := &commands.ExecutionContext{}
-
-				commands.OnProfile(
-					gcvalues,
-					targetRef,
-					doHTTPProbe,
-					httpProbeCmds,
-					httpProbeRetryCount,
-					httpProbeRetryWait,
-					httpProbePorts,
-					httpCrawlMaxDepth,
-					httpCrawlMaxPageCount,
-					httpCrawlConcurrency,
-					httpMaxConcurrentCrawlers,
-					doHTTPProbeFull,
-					doHTTPProbeExitOnFailure,
-					httpProbeAPISpecs,
-					httpProbeAPISpecFiles,
-					portBindings,
-					doPublishExposedPorts,
-					doRmFileArtifacts,
-					doCopyMetaArtifacts,
-					doRunTargetAsUser,
-					doShowContainerLogs,
-					overrides,
-					ctx.StringSlice(FlagLink),
-					ctx.StringSlice(FlagEtcHostsMap),
-					ctx.StringSlice(FlagContainerDNS),
-					ctx.StringSlice(FlagContainerDNSSearch),
-					volumeMounts,
-					doKeepPerms,
-					pathPerms,
-					excludePatterns,
-					includePaths,
-					includeBins,
-					includeExes,
-					doIncludeShell,
-					doUseLocalMounts,
-					doUseSensorVolume,
-					doKeepTmpArtifacts,
-					continueAfter,
-					ec)
-				commands.ShowCommunityInfo()
-				return nil
-			},
-		},
+		cmdUpdate,
+		cmdContainerize,
+		cmdConvert,
+		cmdEdit,
+		cmdLint,
+		cmdXray,
+		cmdBuild,
+		cmdProfile,
 	}
 }
 
