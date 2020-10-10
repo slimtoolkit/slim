@@ -1,4 +1,4 @@
-package commands
+package profile
 
 import (
 	"bufio"
@@ -6,6 +6,7 @@ import (
 	"os"
 	"time"
 
+	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container"
@@ -23,14 +24,16 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const appName = commands.AppName
+
 // Profile command exit codes
 const (
 	ecpOther = iota + 1
 )
 
-// OnProfile implements the 'profile' docker-slim command
-func OnProfile(
-	gparams *GenericParams,
+// OnCommand implements the 'profile' docker-slim command
+func OnCommand(
+	gparams *commands.GenericParams,
 	targetRef string,
 	doHTTPProbe bool,
 	httpProbeCmds []config.HTTPProbeCmd,
@@ -68,7 +71,7 @@ func OnProfile(
 	doUseSensorVolume string,
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
-	ec *ExecutionContext) {
+	ec *commands.ExecutionContext) {
 	const cmdName = command.Profile
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
@@ -90,7 +93,7 @@ func OnProfile(
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		exit(ectCommon | ecNoDockerConnectInfo)
+		commands.Exit(commands.ECTCommon | commands.ECNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
 
@@ -98,10 +101,10 @@ func OnProfile(
 		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
-	if !confirmNetwork(logger, client, overrides.Network) {
+	if !commands.ConfirmNetwork(logger, client, overrides.Network) {
 		fmt.Printf("%s[%s]: info=param.error status=unknown.network value=%s\n", appName, cmdName, overrides.Network)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		exit(ectCommon | ecBadNetworkName)
+		commands.Exit(commands.ECTCommon | commands.ECBadNetworkName)
 	}
 
 	imageInspector, err := image.NewInspector(client, targetRef)
@@ -280,14 +283,14 @@ func OnProfile(
 			imageInspector.SeccompProfileName,
 			imageInspector.AppArmorProfileName,
 		}
-		if !copyMetaArtifacts(logger,
+		if !commands.CopyMetaArtifacts(logger,
 			toCopy,
 			artifactLocation, copyMetaArtifactsLocation) {
 			fmt.Printf("%s[%s]: info=artifacts message='could not copy meta artifacts'\n", appName, cmdName)
 		}
 	}
 
-	if err := doArchiveState(logger, client, artifactLocation, gparams.ArchiveState, stateKey); err != nil {
+	if err := commands.DoArchiveState(logger, client, artifactLocation, gparams.ArchiveState, stateKey); err != nil {
 		fmt.Printf("%s[%s]: info=state message='could not archive state'\n", appName, cmdName)
 		logger.Errorf("error archiving state - %v", err)
 	}

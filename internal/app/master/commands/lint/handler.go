@@ -1,27 +1,26 @@
-package commands
+package lint
 
 import (
 	"fmt"
 	"strings"
-	//"os"
 
-	//"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
+	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/command"
 	"github.com/docker-slim/docker-slim/pkg/docker/linter"
 	"github.com/docker-slim/docker-slim/pkg/docker/linter/check"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-	//"github.com/docker-slim/docker-slim/pkg/util/fsutil"
-	//v "github.com/docker-slim/docker-slim/pkg/version"
 
 	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 )
 
-// OnLint implements the 'lint' docker-slim command
-func OnLint(
-	gparams *GenericParams,
+const appName = commands.AppName
+
+// OnCommand implements the 'lint' docker-slim command
+func OnCommand(
+	gparams *commands.GenericParams,
 	targetRef string,
 	targetType string,
 	doSkipBuildContext bool,
@@ -34,7 +33,7 @@ func OnLint(
 	doShowNoHits bool,
 	doShowSnippet bool,
 	doListChecks bool,
-	ec *ExecutionContext) {
+	ec *commands.ExecutionContext) {
 	const cmdName = command.Lint
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)

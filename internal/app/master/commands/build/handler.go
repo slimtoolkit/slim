@@ -1,4 +1,4 @@
-package commands
+package build
 
 import (
 	"bufio"
@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/builder"
+	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container"
@@ -28,6 +29,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const appName = commands.AppName
+
 // Build command exit codes
 const (
 	ecbOther = iota + 1
@@ -35,9 +38,9 @@ const (
 	ecbImageBuildError
 )
 
-// OnBuild implements the 'build' docker-slim command
-func OnBuild(
-	gparams *GenericParams,
+// OnCommand implements the 'build' docker-slim command
+func OnCommand(
+	gparams *commands.GenericParams,
 	targetRef string,
 	buildFromDockerfile string,
 	customImageTag string,
@@ -81,7 +84,7 @@ func OnBuild(
 	doUseSensorVolume string,
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
-	ec *ExecutionContext) {
+	ec *commands.ExecutionContext) {
 	const cmdName = command.Build
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
@@ -100,7 +103,7 @@ func OnBuild(
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		exit(ectCommon | ecNoDockerConnectInfo)
+		commands.Exit(commands.ECTCommon | commands.ECNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
 
@@ -133,7 +136,7 @@ func OnBuild(
 			default:
 				fmt.Printf("%s[%s]: info=param.error status=malformed.custom.image.tag value=%s\n", appName, cmdName, customImageTag)
 				fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-				exit(ectBuild | ecbBadCustomImageTag)
+				commands.Exit(commands.ECTBuild | ecbBadCustomImageTag)
 			}
 		} else {
 			fatImageRepoNameTag = fmt.Sprintf("docker-slim-tmp-fat-image.%v.%v",
@@ -161,7 +164,7 @@ func OnBuild(
 		if err != nil {
 			fmt.Printf("%s[%s]: info=build.error status=standard.image.build.error value='%v'\n", appName, cmdName, err)
 			fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-			exit(ectBuild | ecbImageBuildError)
+			commands.Exit(commands.ECTBuild | ecbImageBuildError)
 		}
 
 		fmt.Printf("%s[%s]: state=basic.image.build.completed\n", appName, cmdName)
@@ -180,10 +183,10 @@ func OnBuild(
 		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
-	if !confirmNetwork(logger, client, overrides.Network) {
+	if !commands.ConfirmNetwork(logger, client, overrides.Network) {
 		fmt.Printf("%s[%s]: info=param.error status=unknown.network value=%s\n", appName, cmdName, overrides.Network)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		exit(ectCommon | ecBadNetworkName)
+		commands.Exit(commands.ECTCommon | commands.ECBadNetworkName)
 	}
 
 	imageInspector, err := image.NewInspector(client, targetRef)
@@ -415,7 +418,7 @@ func OnBuild(
 	if err != nil {
 		fmt.Printf("%s[%s]: info=build.error status=optimized.image.build.error value='%v'\n", appName, cmdName, err)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		exit(ectBuild | ecbImageBuildError)
+		commands.Exit(commands.ECTBuild | ecbImageBuildError)
 	}
 
 	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
@@ -520,14 +523,14 @@ func OnBuild(
 			imageInspector.SeccompProfileName,
 			imageInspector.AppArmorProfileName,
 		}
-		if !copyMetaArtifacts(logger,
+		if !commands.CopyMetaArtifacts(logger,
 			toCopy,
 			artifactLocation, copyMetaArtifactsLocation) {
 			fmt.Printf("%s[%s]: info=artifacts message='could not copy meta artifacts'\n", appName, cmdName)
 		}
 	}
 
-	if err := doArchiveState(logger, client, artifactLocation, gparams.ArchiveState, stateKey); err != nil {
+	if err := commands.DoArchiveState(logger, client, artifactLocation, gparams.ArchiveState, stateKey); err != nil {
 		fmt.Printf("%s[%s]: info=state message='could not archive state'\n", appName, cmdName)
 		logger.Errorf("error archiving state - %v", err)
 	}

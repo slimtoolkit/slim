@@ -1,5 +1,68 @@
 [
 	{
+		"project": "github.com/PuerkitoBio/goquery",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.9916666666666667
+			}
+		]
+	},
+	{
+		"project": "github.com/andybalholm/cascadia",
+		"licenses": [
+			{
+				"type": "BSD 2-clause \"Simplified\" License",
+				"confidence": 0.9753694581280788
+			}
+		]
+	},
+	{
+		"project": "github.com/antchfx/htmlquery",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 0.9891304347826086
+			}
+		]
+	},
+	{
+		"project": "github.com/antchfx/xmlquery",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 0.9891304347826086
+			}
+		]
+	},
+	{
+		"project": "github.com/antchfx/xpath",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 0.9891304347826086
+			}
+		]
+	},
+	{
+		"project": "github.com/bmatcuk/doublestar",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/c-bata/go-prompt",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
 		"project": "github.com/c4milo/unpackit",
 		"licenses": [
 			{
@@ -144,11 +207,56 @@
 		]
 	},
 	{
+		"project": "github.com/getkin/kin-openapi",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/ghodss/yaml",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.8357142857142857
+			}
+		]
+	},
+	{
+		"project": "github.com/gobwas/glob",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/gocolly/colly/v2",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 1
+			}
+		]
+	},
+	{
 		"project": "github.com/gogo/protobuf/proto",
 		"licenses": [
 			{
 				"type": "BSD 3-clause \"New\" or \"Revised\" License",
 				"confidence": 0.9163346613545816
+			}
+		]
+	},
+	{
+		"project": "github.com/golang/groupcache/lru",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 0.9966703662597114
 			}
 		]
 	},
@@ -171,6 +279,24 @@
 		]
 	},
 	{
+		"project": "github.com/gorilla/websocket",
+		"licenses": [
+			{
+				"type": "BSD 2-clause \"Simplified\" License",
+				"confidence": 0.9852216748768473
+			}
+		]
+	},
+	{
+		"project": "github.com/kennygrant/sanitize",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.9663865546218487
+			}
+		]
+	},
+	{
 		"project": "github.com/klauspost/compress/flate",
 		"licenses": [
 			{
@@ -180,7 +306,7 @@
 		]
 	},
 	{
-		"project": "github.com/klauspost/cpuid",
+		"project": "github.com/klauspost/pgzip",
 		"licenses": [
 			{
 				"type": "MIT License",
@@ -189,7 +315,7 @@
 		]
 	},
 	{
-		"project": "github.com/klauspost/pgzip",
+		"project": "github.com/mattn/go-runewidth",
 		"licenses": [
 			{
 				"type": "MIT License",
@@ -247,11 +373,29 @@
 		]
 	},
 	{
+		"project": "github.com/pkg/term/termios",
+		"licenses": [
+			{
+				"type": "BSD 2-clause \"Simplified\" License",
+				"confidence": 0.9903846153846154
+			}
+		]
+	},
+	{
 		"project": "github.com/russross/blackfriday/v2",
 		"licenses": [
 			{
 				"type": "BSD 2-clause \"Simplified\" License",
 				"confidence": 0.9626168224299065
+			}
+		]
+	},
+	{
+		"project": "github.com/saintfish/chardet",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 0.9583333333333334
 			}
 		]
 	},
@@ -266,6 +410,15 @@
 	},
 	{
 		"project": "github.com/sirupsen/logrus",
+		"licenses": [
+			{
+				"type": "MIT License",
+				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "github.com/temoto/robotstxt",
 		"licenses": [
 			{
 				"type": "MIT License",
@@ -292,11 +445,38 @@
 		]
 	},
 	{
-		"project": "golang.org/x/sys/unix",
+		"project": "golang.org/x/net",
 		"licenses": [
 			{
 				"type": "BSD 3-clause \"New\" or \"Revised\" License",
 				"confidence": 0.9663865546218487
+			}
+		]
+	},
+	{
+		"project": "golang.org/x/sys",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.9663865546218487
+			}
+		]
+	},
+	{
+		"project": "golang.org/x/text",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.9663865546218487
+			}
+		]
+	},
+	{
+		"project": "google.golang.org/appengine",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 1
 			}
 		]
 	},
@@ -315,6 +495,28 @@
 			{
 				"type": "Apache License 2.0",
 				"confidence": 1
+			}
+		]
+	},
+	{
+		"project": "google.golang.org/protobuf",
+		"licenses": [
+			{
+				"type": "BSD 3-clause \"New\" or \"Revised\" License",
+				"confidence": 0.9663865546218487
+			}
+		]
+	},
+	{
+		"project": "gopkg.in/yaml.v2",
+		"licenses": [
+			{
+				"type": "Apache License 2.0",
+				"confidence": 1
+			},
+			{
+				"type": "MIT License",
+				"confidence": 0.8975609756097561
 			}
 		]
 	}

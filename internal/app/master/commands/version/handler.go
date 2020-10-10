@@ -1,11 +1,11 @@
-package commands
+package version
 
 import (
 	"fmt"
-	//"os"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
@@ -15,8 +15,8 @@ import (
 	v "github.com/docker-slim/docker-slim/pkg/version"
 )
 
-// OnVersion implements the 'version' docker-slim command
-func OnVersion(doDebug, inContainer, isDSImage bool, clientConfig *config.DockerClient) {
+// OnCommand implements the 'version' docker-slim command
+func OnCommand(doDebug, inContainer, isDSImage bool, clientConfig *config.DockerClient) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": command.Version})
 
 	client, err := dockerclient.New(clientConfig)
@@ -27,7 +27,7 @@ func OnVersion(doDebug, inContainer, isDSImage bool, clientConfig *config.Docker
 		}
 		fmt.Printf("docker-slim[version]: info=docker.connect.error message='%s'\n", exitMsg)
 		fmt.Printf("docker-slim[version]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
-		exit(-777)
+		commands.Exit(-777)
 	}
 	errutil.FailOn(err)
 

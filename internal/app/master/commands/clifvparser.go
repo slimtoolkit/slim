@@ -1,4 +1,6 @@
-package app
+package commands
+
+//Flag value parsers
 
 import (
 	"encoding/json"
@@ -24,7 +26,7 @@ const (
 	DefaultStateArchiveVolumeName = "docker-slim-state"
 )
 
-func isInContainer(flag bool) (bool, bool) {
+func IsInContainer(flag bool) (bool, bool) {
 	if flag {
 		return true, sysenv.HasDSImageFlag()
 	}
@@ -32,7 +34,7 @@ func isInContainer(flag bool) (bool, bool) {
 	return sysenv.InDSContainer()
 }
 
-func archiveState(flag string, inContainer bool) string {
+func ArchiveState(flag string, inContainer bool) string {
 	switch flag {
 	case "":
 		switch inContainer {
@@ -49,7 +51,7 @@ func archiveState(flag string, inContainer bool) string {
 }
 
 //based on expose opt parsing in Docker
-func parseDockerExposeOpt(values []string) (map[docker.Port]struct{}, error) {
+func ParseDockerExposeOpt(values []string) (map[docker.Port]struct{}, error) {
 	exposedPorts := map[docker.Port]struct{}{}
 
 	for _, raw := range values {
@@ -75,7 +77,7 @@ func parseDockerExposeOpt(values []string) (map[docker.Port]struct{}, error) {
 	return exposedPorts, nil
 }
 
-func parsePortBindings(values []string) (map[docker.Port][]docker.PortBinding, error) {
+func ParsePortBindings(values []string) (map[docker.Port][]docker.PortBinding, error) {
 	portBindings := map[docker.Port][]docker.PortBinding{}
 
 	for _, raw := range values {
@@ -128,7 +130,7 @@ func parsePortBindings(values []string) (map[docker.Port][]docker.PortBinding, e
 	return portBindings, nil
 }
 
-func isOneSpace(value string) bool {
+func IsOneSpace(value string) bool {
 	if len(value) > 0 && utf8.RuneCountInString(value) == 1 {
 		r, _ := utf8.DecodeRuneInString(value)
 		if r != utf8.RuneError && unicode.IsSpace(r) {
@@ -139,7 +141,7 @@ func isOneSpace(value string) bool {
 	return false
 }
 
-var allImageOverrides = map[string]bool{
+var AllImageOverrides = map[string]bool{
 	"entrypoint": true,
 	"cmd":        true,
 	"workdir":    true,
@@ -149,18 +151,18 @@ var allImageOverrides = map[string]bool{
 	"label":      true,
 }
 
-func parseImageOverrides(value string) map[string]bool {
+func ParseImageOverrides(value string) map[string]bool {
 	switch value {
 	case "":
 		return map[string]bool{}
 	case "all":
-		return allImageOverrides
+		return AllImageOverrides
 	default:
 		parts := strings.Split(value, ",")
 		overrides := map[string]bool{}
 		for _, part := range parts {
 			part = strings.ToLower(part)
-			if _, ok := allImageOverrides[part]; ok {
+			if _, ok := AllImageOverrides[part]; ok {
 				overrides[part] = true
 			}
 		}
@@ -168,7 +170,7 @@ func parseImageOverrides(value string) map[string]bool {
 	}
 }
 
-func parseExec(value string) ([]string, error) {
+func ParseExec(value string) ([]string, error) {
 	if value == "" {
 		return []string{}, nil
 	}
@@ -185,7 +187,7 @@ func parseExec(value string) ([]string, error) {
 	return parts, nil
 }
 
-func parseChangeTypes(values []string) (map[string]struct{}, error) {
+func ParseChangeTypes(values []string) (map[string]struct{}, error) {
 	changes := map[string]struct{}{}
 	if len(values) == 0 {
 		values = append(values, "all")
@@ -211,7 +213,7 @@ func parseChangeTypes(values []string) (map[string]struct{}, error) {
 	return changes, nil
 }
 
-func parseTokenSet(values []string) (map[string]struct{}, error) {
+func ParseTokenSet(values []string) (map[string]struct{}, error) {
 	tokens := map[string]struct{}{}
 	for _, token := range values {
 		token = strings.TrimSpace(token)
@@ -225,7 +227,7 @@ func parseTokenSet(values []string) (map[string]struct{}, error) {
 	return tokens, nil
 }
 
-func parseTokenMap(values []string) (map[string]string, error) {
+func ParseTokenMap(values []string) (map[string]string, error) {
 	tokens := map[string]string{}
 	for _, token := range values {
 		token = strings.TrimSpace(token)
@@ -244,7 +246,7 @@ func parseTokenMap(values []string) (map[string]string, error) {
 	return tokens, nil
 }
 
-func parseCheckTags(values []string) (map[string]string, error) {
+func ParseCheckTags(values []string) (map[string]string, error) {
 	tags := map[string]string{}
 	for _, raw := range values {
 		raw = strings.TrimSpace(raw)
@@ -267,7 +269,7 @@ func parseCheckTags(values []string) (map[string]string, error) {
 	return tags, nil
 }
 
-func parseTokenSetFile(filePath string) (map[string]struct{}, error) {
+func ParseTokenSetFile(filePath string) (map[string]struct{}, error) {
 	tokens := map[string]struct{}{}
 
 	if filePath == "" {
@@ -305,7 +307,7 @@ func parseTokenSetFile(filePath string) (map[string]struct{}, error) {
 	return tokens, nil
 }
 
-func parseVolumeMounts(values []string) (map[string]config.VolumeMount, error) {
+func ParseVolumeMounts(values []string) (map[string]config.VolumeMount, error) {
 	volumeMounts := map[string]config.VolumeMount{}
 
 	for _, raw := range values {
@@ -336,7 +338,7 @@ func parseVolumeMounts(values []string) (map[string]config.VolumeMount, error) {
 	return volumeMounts, nil
 }
 
-func parsePathPerms(raw string) (string, *fsutil.AccessInfo, error) {
+func ParsePathPerms(raw string) (string, *fsutil.AccessInfo, error) {
 	access := fsutil.NewAccessInfo()
 	//note: will work for ASCII (todo: make it work for unicode)
 	sepIdx := strings.LastIndex(raw, ":")
@@ -373,11 +375,11 @@ func parsePathPerms(raw string) (string, *fsutil.AccessInfo, error) {
 	return pathStr, access, nil
 }
 
-func parsePaths(values []string) map[string]*fsutil.AccessInfo {
+func ParsePaths(values []string) map[string]*fsutil.AccessInfo {
 	paths := map[string]*fsutil.AccessInfo{}
 
 	for _, raw := range values {
-		pathStr, access, err := parsePathPerms(raw)
+		pathStr, access, err := ParsePathPerms(raw)
 		if err != nil {
 			fmt.Printf("parsePaths() - skipping %v (error=%v)\n", raw, err)
 			continue
@@ -389,7 +391,7 @@ func parsePaths(values []string) map[string]*fsutil.AccessInfo {
 	return paths
 }
 
-func validateFiles(names []string) ([]string, map[string]error) {
+func ValidateFiles(names []string) ([]string, map[string]error) {
 	found := []string{}
 	errors := map[string]error{}
 
@@ -416,7 +418,7 @@ func validateFiles(names []string) ([]string, map[string]error) {
 	return found, errors
 }
 
-func parsePathsFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
+func ParsePathsFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
 	paths := map[string]*fsutil.AccessInfo{}
 
 	if filePath == "" {
@@ -447,7 +449,7 @@ func parsePathsFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if len(line) != 0 {
-			pathStr, access, err := parsePathPerms(line)
+			pathStr, access, err := ParsePathPerms(line)
 			if err != nil {
 				fmt.Printf("parsePathsFile() - skipping %v (error=%v)\n", line, err)
 				continue
@@ -460,7 +462,7 @@ func parsePathsFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
 	return paths, nil
 }
 
-func parseHTTPProbes(values []string) ([]config.HTTPProbeCmd, error) {
+func ParseHTTPProbes(values []string) ([]config.HTTPProbeCmd, error) {
 	probes := []config.HTTPProbeCmd{}
 
 	for _, raw := range values {
@@ -531,7 +533,7 @@ func parseHTTPProbes(values []string) ([]config.HTTPProbeCmd, error) {
 	return probes, nil
 }
 
-func parseHTTPProbesFile(filePath string) ([]config.HTTPProbeCmd, error) {
+func ParseHTTPProbesFile(filePath string) ([]config.HTTPProbeCmd, error) {
 	probes := []config.HTTPProbeCmd{}
 
 	if filePath != "" {
@@ -611,7 +613,7 @@ func isPortNum(value int) bool {
 	return false
 }
 
-func parseHTTPProbesPorts(portList string) ([]uint16, error) {
+func ParseHTTPProbesPorts(portList string) ([]uint16, error) {
 	var ports []uint16
 
 	if portList == "" {

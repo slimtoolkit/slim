@@ -1,4 +1,4 @@
-package app
+package containerize
 
 import (
 	"fmt"
@@ -8,19 +8,25 @@ import (
 	"github.com/urfave/cli"
 )
 
-var cmdConvert = cli.Command{
-	Name:    cmdSpecs[CmdConvert].name,
-	Aliases: []string{cmdSpecs[CmdConvert].alias},
-	Usage:   cmdSpecs[CmdConvert].usage,
+var (
+	Name  = "containerize"
+	Usage = "Containerize the target artifacts"
+	Alias = "c"
+)
+
+var CLI = cli.Command{
+	Name:    Name,
+	Aliases: []string{Alias},
+	Usage:   Usage,
 	Action: func(ctx *cli.Context) error {
 		commands.ShowCommunityInfo()
 		if len(ctx.Args()) < 1 {
-			fmt.Printf("docker-slim[convert]: missing target info...\n\n")
-			cli.ShowCommandHelp(ctx, CmdConvert)
+			fmt.Printf("docker-slim[%s]: missing target info...\n\n", Name)
+			cli.ShowCommandHelp(ctx, Name)
 			return nil
 		}
 
-		gcvalues, err := globalCommandFlagValues(ctx)
+		gcvalues, err := commands.GlobalCommandFlagValues(ctx)
 		if err != nil {
 			return err
 		}
@@ -29,11 +35,15 @@ var cmdConvert = cli.Command{
 
 		ec := &commands.ExecutionContext{}
 
-		commands.OnConvert(
+		OnCommand(
 			gcvalues,
 			targetRef,
 			ec)
 		commands.ShowCommunityInfo()
 		return nil
 	},
+}
+
+func init() {
+	commands.CLI = append(commands.CLI, CLI)
 }

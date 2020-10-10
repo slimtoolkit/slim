@@ -1,4 +1,4 @@
-package app
+package signals
 
 import (
 	"os"
@@ -8,14 +8,14 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-var appContinueChan = make(chan struct{})
+var AppContinueChan = make(chan struct{})
 var appDoneChan = make(chan struct{})
 
 var signals = []os.Signal{
 	syscall.SIGUSR1,
 }
 
-func initSignalHandlers() {
+func InitHandlers() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, signals...)
 	log.Debugf("docker-slim: listening for signals - %+v", signals)
@@ -28,7 +28,7 @@ func initSignalHandlers() {
 				switch sig {
 				case syscall.SIGUSR1:
 					log.Debug("docker-slim: continue signal")
-					appContinueChan <- struct{}{}
+					AppContinueChan <- struct{}{}
 				default:
 					log.Debugf("docker-slim: other signal (%v)...", sig)
 				}

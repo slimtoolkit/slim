@@ -1,9 +1,9 @@
-package commands
+package edit
 
 import (
 	"fmt"
-	//"os"
 
+	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/command"
@@ -15,18 +15,20 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-// OnContainerize implements the 'containerize' docker-slim command
-func OnContainerize(
-	gparams *GenericParams,
+const appName = commands.AppName
+
+// OnCommand implements the 'edit' docker-slim command
+func OnCommand(
+	gparams *commands.GenericParams,
 	targetRef string,
-	ec *ExecutionContext) {
-	const cmdName = command.Containerize
+	ec *commands.ExecutionContext) {
+	const cmdName = command.Edit
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewContainerizeCommand(gparams.ReportLocation, gparams.InContainer)
+	cmdReport := report.NewEditCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 
 	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
@@ -40,7 +42,7 @@ func OnContainerize(
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		exit(ectCommon | ecNoDockerConnectInfo)
+		commands.Exit(commands.ECTCommon | commands.ECNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
 

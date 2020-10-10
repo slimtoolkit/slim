@@ -1,12 +1,12 @@
-package commands
+package xray
 
 import (
 	"fmt"
-	//"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/internal/app/master/version"
@@ -22,21 +22,23 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const appName = commands.AppName
+
 // Xray command exit codes
 const (
 	ecxOther = iota + 1
 )
 
-// OnXray implements the 'xray' docker-slim command
-func OnXray(
-	gparams *GenericParams,
+// OnCommand implements the 'xray' docker-slim command
+func OnCommand(
+	gparams *commands.GenericParams,
 	targetRef string,
 	changes map[string]struct{},
 	layers map[string]struct{},
 	doAddImageManifest bool,
 	doAddImageConfig bool,
 	doRmFileArtifacts bool,
-	ec *ExecutionContext) {
+	ec *commands.ExecutionContext) {
 	const cmdName = command.Xray
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
@@ -59,7 +61,7 @@ func OnXray(
 		}
 		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
 		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
-		exit(ectCommon | ecNoDockerConnectInfo)
+		commands.Exit(commands.ECTCommon | commands.ECNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
 
