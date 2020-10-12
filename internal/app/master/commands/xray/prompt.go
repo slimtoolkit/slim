@@ -40,8 +40,3 @@ var layerChangeValues = []prompt.Suggest{
 func completeLayerChanges(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(layerChangeValues, token, true)
 }
-
-func init() {
-	commands.CommandFlagSuggestions[Name] = CommandFlagSuggestions
-	commands.CommandSuggestions = append(commands.CommandSuggestions, CommandSuggestion)
-}

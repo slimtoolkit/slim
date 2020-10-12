@@ -196,7 +196,6 @@ var CommandFlagSuggestions = map[string]*FlagSuggestions{}
 
 var CommandSuggestions = []prompt.Suggest{
 	{Text: "exit", Description: "Exit app"},
-	{Text: "help", Description: "Show help info"},
 }
 
 //NOTE: command packages will add their prompt command suggestion in their init()

@@ -10,7 +10,7 @@ import (
 
 var (
 	Name  = "xray"
-	Usage = "Collects fat image information and reverse engineers its Dockerfile"
+	Usage = "Shows what's inside of your container image and reverse engineers its Dockerfile"
 	Alias = "x"
 )
 
@@ -75,8 +75,4 @@ var CLI = cli.Command{
 		commands.ShowCommunityInfo()
 		return nil
 	},
-}
-
-func init() {
-	commands.CLI = append(commands.CLI, CLI)
 }

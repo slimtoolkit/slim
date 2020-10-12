@@ -10,7 +10,7 @@ import (
 
 var (
 	Name  = "lint"
-	Usage = "Lints the target Dockerfile or image"
+	Usage = "Analyzes container instructions in Dockerfiles"
 	Alias = "l"
 )
 
@@ -130,8 +130,4 @@ var CLI = cli.Command{
 		commands.ShowCommunityInfo()
 		return nil
 	},
-}
-
-func init() {
-	commands.CLI = append(commands.CLI, CLI)
 }

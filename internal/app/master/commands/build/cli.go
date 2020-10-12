@@ -13,7 +13,7 @@ import (
 //CmdBuildUsage   = "Collects fat image information and builds an optimized image from it"
 var (
 	Name  = "build"
-	Usage = "Collects fat image information and builds an optimized image from it"
+	Usage = "Analyzes, profiles and optimizes your container image auto-generating Seccomp and AppArmor security profiles"
 	Alias = "b"
 )
 

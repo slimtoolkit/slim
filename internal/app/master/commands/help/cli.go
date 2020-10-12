@@ -2,8 +2,6 @@ package help
 
 import (
 	"github.com/urfave/cli"
-
-	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 )
 
 var (
@@ -20,8 +18,4 @@ var CLI = cli.Command{
 		cli.ShowAppHelp(ctx)
 		return nil
 	},
-}
-
-func init() {
-	commands.CLI = append(commands.CLI, CLI)
 }

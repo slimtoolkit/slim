@@ -5,6 +5,16 @@ import (
 	"os"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/commands"
+	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/build"
+	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/containerize"
+	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/convert"
+	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/edit"
+	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/help"
+	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/lint"
+	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/profile"
+	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/update"
+	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/version"
+	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/xray"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/version"
 
@@ -18,10 +28,8 @@ const (
 	AppUsage = "optimize and secure your Docker containers!"
 )
 
-var app *cli.App
-
-func init() {
-	app = cli.NewApp()
+func newCLI() *cli.App {
+	app := cli.NewApp()
 	app.Version = version.Current()
 	app.Name = AppName
 	app.Usage = AppUsage
@@ -99,10 +107,5 @@ func init() {
 	}
 
 	app.Commands = commands.CLI
-}
-
-func runCli() {
-	if err := app.Run(os.Args); err != nil {
-		log.Fatal(err)
-	}
+	return app
 }

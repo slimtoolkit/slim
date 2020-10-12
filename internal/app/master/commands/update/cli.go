@@ -56,7 +56,3 @@ func initFlagShowProgress() cli.Flag {
 
 	return doShowProgressFlag
 }
-
-func init() {
-	commands.CLI = append(commands.CLI, CLI)
-}

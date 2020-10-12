@@ -283,7 +283,3 @@ var CLI = cli.Command{
 		return nil
 	},
 }
-
-func init() {
-	commands.CLI = append(commands.CLI, CLI)
-}

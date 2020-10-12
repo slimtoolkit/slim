@@ -109,8 +109,3 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(commands.FlagKeepTmpArtifacts):       commands.CompleteBool,
 	},
 }
-
-func init() {
-	commands.CommandFlagSuggestions[Name] = CommandFlagSuggestions
-	commands.CommandSuggestions = append(commands.CommandSuggestions, CommandSuggestion)
-}
