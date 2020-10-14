@@ -48,6 +48,9 @@ const (
 	pyoExt                 = ".pyo"
 	pycacheDir             = "/__pycache__/"
 	pycache                = "__pycache__"
+	nodePackageFile        = "package.json"
+	nodeNPMNodeGypPackage  = "/npm/node_modules/node-gyp/package.json"
+	nodeNPMNodeGypFile     = "bin/node-gyp.js"
 	defaultReportName      = "creport.json"
 	defaultArtifactDirName = "/opt/dockerslim/artifacts"
 	fileTypeCmdName        = "file"
@@ -376,6 +379,12 @@ copyLinks:
 			err := rbEnsureGemFiles(fileName, p.storeLocation, "/files")
 			if err != nil {
 				log.Warn("saveArtifacts - error ensuring ruby gem files => ", err)
+			}
+		} else if isNodePackageFile(fileName) {
+			log.Debug("saveArtifacts - processing node package file ==>", fileName)
+			err := nodeEnsurePackageFiles(p.cmd.KeepPerms, fileName, p.storeLocation, "/files")
+			if err != nil {
+				log.Warn("saveArtifacts - error ensuring node package files => ", err)
 			}
 		} else if isNgxArtifact(fileName) && !ngxEnsured {
 			log.Debug("saveArtifacts - ensuring ngx artifacts....")
@@ -787,6 +796,35 @@ func isRbGemSpecFile(filePath string) bool {
 	}
 
 	return false
+}
+
+func isNodePackageFile(filePath string) bool {
+	fileName := filepath.Base(filePath)
+
+	if fileName == nodePackageFile {
+		return true
+	}
+
+	//TODO: read the file and verify that it's a real package file
+	return false
+}
+
+func nodeEnsurePackageFiles(keepPerms bool, src, storeLocation, prefix string) error {
+	if strings.HasSuffix(src, nodeNPMNodeGypPackage) {
+		//for now only ensure that we have node-gyp for npm
+		//npm requires it to be there even though it won't use it
+		//'check if exists' condition (not picked up by the current FS monitor)
+		nodeGypFilePath := path.Join(filepath.Dir(src), nodeNPMNodeGypFile)
+		if _, err := os.Stat(nodeGypFilePath); err == nil {
+			nodeGypFilePathDst := fmt.Sprintf("%s%s%s", storeLocation, prefix, nodeGypFilePath)
+			if err := fsutil.CopyRegularFile(keepPerms, nodeGypFilePath, nodeGypFilePathDst, true); err != nil {
+				log.Warnf("sensor: nodeEnsurePackageFiles - error copying %s => %v", nodeGypFilePath, err)
+			}
+		}
+	}
+
+	//NOTE: can also read the dependencies and confirm/ensure that we copied everything we need
+	return nil
 }
 
 var pidFilePathSuffixes = []string{
