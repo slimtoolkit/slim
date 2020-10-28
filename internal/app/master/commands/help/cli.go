@@ -4,7 +4,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-var (
+const (
 	Name  = "help"
 	Usage = "Show help info"
 	Alias = "h"

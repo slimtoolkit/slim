@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-var (
+const (
 	Name  = "xray"
 	Usage = "Shows what's inside of your container image and reverse engineers its Dockerfile"
 	Alias = "x"

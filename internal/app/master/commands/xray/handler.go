@@ -39,7 +39,7 @@ func OnCommand(
 	doAddImageConfig bool,
 	doRmFileArtifacts bool,
 	ec *commands.ExecutionContext) {
-	const cmdName = command.Xray
+	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 

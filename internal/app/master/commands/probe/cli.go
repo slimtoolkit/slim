@@ -1,4 +1,4 @@
-package edit
+package probe
 
 import (
 	"fmt"
@@ -8,10 +8,12 @@ import (
 	"github.com/urfave/cli"
 )
 
+//Standalone probing
+
 const (
-	Name  = "edit"
-	Usage = "Edit container image"
-	Alias = "e"
+	Name  = "probe"
+	Usage = "Probe target"
+	Alias = "prb"
 )
 
 var CLI = cli.Command{

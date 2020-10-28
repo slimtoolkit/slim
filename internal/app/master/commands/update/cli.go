@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-var (
+const (
 	Name  = "update"
 	Usage = "Updates docker-slim"
 	Alias = "u"

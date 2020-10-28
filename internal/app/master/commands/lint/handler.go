@@ -34,7 +34,7 @@ func OnCommand(
 	doShowSnippet bool,
 	doListChecks bool,
 	ec *commands.ExecutionContext) {
-	const cmdName = command.Lint
+	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 

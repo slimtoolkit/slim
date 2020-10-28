@@ -1,4 +1,4 @@
-package convert
+package server
 
 import (
 	"fmt"
@@ -17,22 +17,19 @@ import (
 
 const appName = commands.AppName
 
-// OnCommand implements the 'convert' docker-slim command
+// OnCommand implements the 'server' docker-slim command
 func OnCommand(
 	gparams *commands.GenericParams,
-	targetRef string,
 	ec *commands.ExecutionContext) {
-	const cmdName = Name
-	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
+	logger := log.WithFields(log.Fields{"app": appName, "command": Name})
+	prefix := fmt.Sprintf("%s[%s]:", appName, Name)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewConvertCommand(gparams.ReportLocation, gparams.InContainer)
+	cmdReport := report.NewEditCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 
-	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
-	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, targetRef)
+	fmt.Printf("%s[%s]: state=started\n", appName, Name)
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
@@ -40,8 +37,8 @@ func OnCommand(
 		if gparams.InContainer && gparams.IsDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
-		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
-		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
+		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, Name, exitMsg)
+		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, Name, v.Current(), fsutil.ExeDir())
 		commands.Exit(commands.ECTCommon | commands.ECNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
@@ -50,16 +47,16 @@ func OnCommand(
 		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
-	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
+	fmt.Printf("%s[%s]: state=completed\n", appName, Name)
 	cmdReport.State = command.StateCompleted
 
-	fmt.Printf("%s[%s]: state=done\n", appName, cmdName)
+	fmt.Printf("%s[%s]: state=done\n", appName, Name)
 
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)
 
 	cmdReport.State = command.StateDone
 	if cmdReport.Save() {
-		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
+		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, Name, cmdReport.ReportLocation())
 	}
 }

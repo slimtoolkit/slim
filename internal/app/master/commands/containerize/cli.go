@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-var (
+const (
 	Name  = "containerize"
 	Usage = "Containerize the target artifacts"
 	Alias = "c"

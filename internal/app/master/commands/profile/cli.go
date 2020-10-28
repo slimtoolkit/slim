@@ -9,7 +9,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-var (
+const (
 	Name  = "profile"
 	Usage = "Collects fat image information and generates a fat container report"
 	Alias = "p"

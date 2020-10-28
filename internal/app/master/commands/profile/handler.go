@@ -72,7 +72,7 @@ func OnCommand(
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
 	ec *commands.ExecutionContext) {
-	const cmdName = command.Profile
+	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
 

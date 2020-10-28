@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-var (
+const (
 	Name  = "lint"
 	Usage = "Analyzes container instructions in Dockerfiles"
 	Alias = "l"

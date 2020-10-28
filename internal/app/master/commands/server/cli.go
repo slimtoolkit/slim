@@ -1,17 +1,15 @@
-package edit
+package server
 
 import (
-	"fmt"
-
 	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 
 	"github.com/urfave/cli"
 )
 
 const (
-	Name  = "edit"
-	Usage = "Edit container image"
-	Alias = "e"
+	Name  = "server"
+	Usage = "Run as an HTTP server"
+	Alias = "s"
 )
 
 var CLI = cli.Command{
@@ -20,24 +18,16 @@ var CLI = cli.Command{
 	Usage:   Usage,
 	Action: func(ctx *cli.Context) error {
 		commands.ShowCommunityInfo()
-		if len(ctx.Args()) < 1 {
-			fmt.Printf("docker-slim[%s]: missing target info...\n\n", Name)
-			cli.ShowCommandHelp(ctx, Name)
-			return nil
-		}
 
 		gcvalues, err := commands.GlobalCommandFlagValues(ctx)
 		if err != nil {
 			return err
 		}
 
-		targetRef := ctx.Args().First()
-
 		ec := &commands.ExecutionContext{}
 
 		OnCommand(
 			gcvalues,
-			targetRef,
 			ec)
 		commands.ShowCommunityInfo()
 		return nil

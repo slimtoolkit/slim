@@ -6,7 +6,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-var (
+const (
 	Name  = "version"
 	Usage = "Shows docker-slim and docker version information"
 	Alias = "v"

@@ -8,7 +8,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-var (
+const (
 	Name  = "convert"
 	Usage = "Convert container image"
 	Alias = "k"

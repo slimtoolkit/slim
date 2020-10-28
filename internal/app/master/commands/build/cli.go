@@ -9,9 +9,7 @@ import (
 	"github.com/urfave/cli"
 )
 
-//CmdBuild        = "build"
-//CmdBuildUsage   = "Collects fat image information and builds an optimized image from it"
-var (
+const (
 	Name  = "build"
 	Usage = "Analyzes, profiles and optimizes your container image auto-generating Seccomp and AppArmor security profiles"
 	Alias = "b"
