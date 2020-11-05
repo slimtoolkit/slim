@@ -13,6 +13,7 @@ import (
 	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/lint"
 	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/probe"
 	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/profile"
+	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/run"
 	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/server"
 	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/update"
 	_ "github.com/docker-slim/docker-slim/internal/app/master/commands/version"
