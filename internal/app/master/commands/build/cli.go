@@ -68,6 +68,7 @@ var CLI = cli.Command{
 			Usage:  FlagImageOverridesUsage,
 			EnvVar: "DSLIM_TARGET_OVERRIDES",
 		},
+		commands.Cflag(commands.FlagExec),
 		commands.Cflag(commands.FlagEntrypoint),
 		commands.Cflag(commands.FlagCmd),
 		commands.Cflag(commands.FlagWorkdir),
@@ -326,7 +327,13 @@ var CLI = cli.Command{
 			return err
 		}
 
-		if !doHTTPProbe && continueAfter.Mode == "probe" {
+		execCmd := ctx.String(commands.FlagExec)
+		if len(execCmd) > 0 {
+			continueAfter.Mode = "exec"
+			doHTTPProbe = false
+			fmt.Printf("docker-slim[%s]: info=probe message='changing continue-after to exec because --exec is specified'\n", Name)
+			fmt.Printf("docker-slim[%s]: info=probe message='changing http-probe to false because --exec is specified'\n", Name)
+		} else if !doHTTPProbe && continueAfter.Mode == "probe" {
 			fmt.Printf("docker-slim[%s]: info=probe message='changing continue-after from probe to enter because http-probe is disabled'\n", Name)
 			continueAfter.Mode = "enter"
 		}
@@ -383,7 +390,8 @@ var CLI = cli.Command{
 			doUseSensorVolume,
 			doKeepTmpArtifacts,
 			continueAfter,
-			ec)
+			ec,
+		    execCmd)
 		commands.ShowCommunityInfo()
 		return nil
 	},
