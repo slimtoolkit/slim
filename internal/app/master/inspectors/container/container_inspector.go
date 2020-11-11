@@ -210,6 +210,22 @@ func NewInspector(
 		inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Cmd...)
 	}
 
+	emptyIdx := -1
+	for idx, val := range inspector.FatContainerCmd {
+		val = strings.TrimSpace(val)
+		if val != "" {
+			break
+		}
+
+		emptyIdx = idx
+	}
+
+	if emptyIdx > -1 {
+		inspector.FatContainerCmd = inspector.FatContainerCmd[emptyIdx + 1:]
+	}
+
+	logger.Debugf("FatContainerCmd - %+v", inspector.FatContainerCmd)
+
 	inspector.dockerEventCh = make(chan *dockerapi.APIEvents)
 	inspector.dockerEventStopCh = make(chan struct{})
 

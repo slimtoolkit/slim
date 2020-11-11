@@ -236,7 +236,8 @@ func (app *App) start() error {
 	var err error
 	app.cmd, err = launcher.Start(app.Cmd, app.Args, app.Dir, app.User, app.RunAsUser, true)
 	if err != nil {
-		log.Errorf("ptrace.App.start: error=%v\n", err)
+		log.Errorf("ptrace.App.start: cmd='%v' args='%+v' dir='%v' error=%v\n", 
+			app.Cmd, app.Args, app.Dir, err)
 		return err
 	}
 
