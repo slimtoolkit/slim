@@ -353,7 +353,7 @@ func OnCommand(
 		input := bytes.NewBufferString("")
 		if len(execFileCmd) != 0 {
 			input = bytes.NewBufferString(execFileCmd)
-			execCmd = "bash -s"
+			execCmd = "sh -s"
 			for _, line := range strings.Split(string(execFileCmd), "\n") {
 				fmt.Printf("%s[%s][exec]: cmd: %s\n", appName, cmdName, line)
 			}
@@ -362,7 +362,7 @@ func OnCommand(
 		}
 		exec, err := containerInspector.APIClient.CreateExec(docker.CreateExecOptions{
 			Container:    containerInspector.ContainerID,
-			Cmd:          []string{"bash", "-c", execCmd},
+			Cmd:          []string{"sh", "-c", execCmd},
 			AttachStdin:  true,
 			AttachStdout: true,
 			AttachStderr: true,
@@ -380,18 +380,11 @@ func OnCommand(
 			panic(err)
 		}
 		inspect, err := containerInspector.APIClient.InspectExec(exec.ID)
-		for {
-			inspect, err = containerInspector.APIClient.InspectExec(exec.ID)
-			if err != nil {
-				panic(err)
-			}
-			if inspect.Running {
-				// panic("still running")
-				fmt.Println("still running...")
-				time.Sleep(time.Second)
-			} else {
-				break
-			}
+		if err != nil {
+			panic(err)
+		}
+		if inspect.Running {
+			panic("still running")
 		}
 		if inspect.ExitCode != 0 {
 			execFail = true
