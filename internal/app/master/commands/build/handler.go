@@ -2,6 +2,8 @@ package build
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -86,7 +88,8 @@ func OnCommand(
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
 	ec *commands.ExecutionContext,
-	execCmd string) {
+	execCmd string,
+	execFileBase64 string) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
@@ -348,34 +351,52 @@ func OnCommand(
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
 	case "exec":
-		fmt.Printf("%s[%s][exec]: cmd: %s\n", appName, cmdName, execCmd)
+		input := bytes.NewBufferString("")
+		if len(execFileBase64) != 0 {
+			input = bytes.NewBufferString(execFileBase64)
+			execCmd = "base64 -d > slim.sh && bash slim.sh"
+			execFileCmd, err := base64.StdEncoding.DecodeString(execFileBase64)
+			if err != nil {
+			    panic(err)
+			}
+			for _, line := range strings.Split(string(execFileCmd), "\n") {
+				fmt.Printf("%s[%s][exec]: cmd: %s\n", appName, cmdName, line)
+			}
+		} else {
+			fmt.Printf("%s[%s][exec]: cmd: %s\n", appName, cmdName, execCmd)
+		}
 		exec, err := containerInspector.APIClient.CreateExec(docker.CreateExecOptions{
 			Container:    containerInspector.ContainerID,
 			Cmd:          []string{"bash", "-c", execCmd},
-			Tty:          true,
-			AttachStdin:  false,
+			AttachStdin:  true,
 			AttachStdout: true,
 			AttachStderr: true,
 		})
 		if err != nil {
 			panic(err)
 		}
-		buffer := printbuffer.PrintBuffer{Prefix: fmt.Sprintf("%s[%s][exec]:", appName, cmdName)}
+		buffer := &printbuffer.PrintBuffer{Prefix: fmt.Sprintf("%s[%s][exec]: output:", appName, cmdName)}
 		err = containerInspector.APIClient.StartExec(exec.ID, docker.StartExecOptions{
-			OutputStream: &buffer,
-			ErrorStream:  &buffer,
-			RawTerminal:  true,
-			Tty:          true,
+			InputStream:  input,
+			OutputStream: buffer,
+			ErrorStream:  buffer,
 		})
 		if err != nil {
 			panic(err)
 		}
 		inspect, err := containerInspector.APIClient.InspectExec(exec.ID)
-		if err != nil {
-			panic(err)
-		}
-		if inspect.Running {
-			panic("still running")
+		for {
+			inspect, err = containerInspector.APIClient.InspectExec(exec.ID)
+			if err != nil {
+				panic(err)
+			}
+			if inspect.Running {
+				// panic("still running")
+				fmt.Println("still running...")
+				time.Sleep(time.Second)
+			} else {
+				break
+			}
 		}
 		if inspect.ExitCode != 0 {
 			execFail = true

@@ -90,6 +90,7 @@ const (
 	FlagShowContainerLogs = "show-clogs"
 
 	FlagExec       = "exec"
+	FlagExecFile   = "exec-file"
 	FlagEntrypoint = "entrypoint"
 	FlagCmd        = "cmd"
 	FlagWorkdir    = "workdir"
@@ -153,7 +154,8 @@ const (
 	FlagRunTargetAsUserUsage   = "Run target app as USER"
 	FlagShowContainerLogsUsage = "Show container logs"
 
-	FlagExecUsage       = "A bash snippet to run via Docker exec to exercise the container. sets --continue-after=exec and --http-probe=false"
+	FlagExecUsage       = "A bash snippet to run via Docker exec"
+	FlagExecFileUsage   = "A bash file to run via Docker exec"
 	FlagEntrypointUsage = "Override ENTRYPOINT analyzing image at runtime"
 	FlagCmdUsage        = "Override CMD analyzing image at runtime"
 	FlagWorkdirUsage    = "Override WORKDIR analyzing image at runtime"
@@ -392,6 +394,12 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  "",
 		Usage:  FlagExecUsage,
 		EnvVar: "DSLIM_RC_EXE",
+	},
+	FlagExecFile: cli.StringFlag{
+		Name:   FlagExecFile,
+		Value:  "",
+		Usage:  FlagExecFileUsage,
+		EnvVar: "DSLIM_RC_EXE_FILE",
 	},
 	FlagEntrypoint: cli.StringFlag{
 		Name:   FlagEntrypoint,

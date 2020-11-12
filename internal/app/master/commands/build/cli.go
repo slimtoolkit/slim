@@ -1,7 +1,10 @@
 package build
 
 import (
+	"encoding/base64"
 	"fmt"
+	"io/ioutil"
+	"os"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
@@ -69,6 +72,7 @@ var CLI = cli.Command{
 			EnvVar: "DSLIM_TARGET_OVERRIDES",
 		},
 		commands.Cflag(commands.FlagExec),
+		commands.Cflag(commands.FlagExecFile),
 		commands.Cflag(commands.FlagEntrypoint),
 		commands.Cflag(commands.FlagCmd),
 		commands.Cflag(commands.FlagWorkdir),
@@ -328,11 +332,23 @@ var CLI = cli.Command{
 		}
 
 		execCmd := ctx.String(commands.FlagExec)
-		if len(execCmd) > 0 {
+		execFile := ctx.String(commands.FlagExecFile)
+		var execFileBase64 string
+		if len(execCmd) != 0 && len(execFile) != 0 {
+			fmt.Printf("docker-slim[%s]: info=exec message='fatal: cannot use both --exec and --exec-file'\n", Name)
+			os.Exit(1)
+		}
+		if len(execFile) > 0 {
+			execFileCmd, err := ioutil.ReadFile(execFile)
+			if err != nil {
+				panic(err)
+			}
+			execFileBase64 = base64.StdEncoding.EncodeToString(execFileCmd)
 			continueAfter.Mode = "exec"
-			doHTTPProbe = false
-			fmt.Printf("docker-slim[%s]: info=probe message='changing continue-after to exec because --exec is specified'\n", Name)
-			fmt.Printf("docker-slim[%s]: info=probe message='changing http-probe to false because --exec is specified'\n", Name)
+			fmt.Printf("docker-slim[%s]: info=exec message='changing continue-after to exec'\n", Name)
+		} else if len(execCmd) > 0 {
+			continueAfter.Mode = "exec"
+			fmt.Printf("docker-slim[%s]: info=exec message='changing continue-after to exec'\n", Name)
 		} else if !doHTTPProbe && continueAfter.Mode == "probe" {
 			fmt.Printf("docker-slim[%s]: info=probe message='changing continue-after from probe to enter because http-probe is disabled'\n", Name)
 			continueAfter.Mode = "enter"
@@ -391,7 +407,8 @@ var CLI = cli.Command{
 			doKeepTmpArtifacts,
 			continueAfter,
 			ec,
-		    execCmd)
+			execCmd,
+			execFileBase64)
 		commands.ShowCommunityInfo()
 		return nil
 	},
