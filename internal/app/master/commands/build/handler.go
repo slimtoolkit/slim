@@ -350,19 +350,22 @@ func OnCommand(
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
 	case "exec":
-		input := bytes.NewBufferString("")
+		var input *bytes.Buffer
+		var cmd []string
 		if len(execFileCmd) != 0 {
 			input = bytes.NewBufferString(execFileCmd)
-			execCmd = "sh -s"
+			cmd = []string{"sh", "-s"}
 			for _, line := range strings.Split(string(execFileCmd), "\n") {
 				fmt.Printf("%s[%s][exec]: cmd: %s\n", appName, cmdName, line)
 			}
 		} else {
+			input = bytes.NewBufferString("")
+			cmd = []string{"sh", "-c", execCmd}
 			fmt.Printf("%s[%s][exec]: cmd: %s\n", appName, cmdName, execCmd)
 		}
 		exec, err := containerInspector.APIClient.CreateExec(docker.CreateExecOptions{
 			Container:    containerInspector.ContainerID,
-			Cmd:          []string{"sh", "-c", execCmd},
+			Cmd:          cmd,
 			AttachStdin:  true,
 			AttachStdout: true,
 			AttachStderr: true,
