@@ -154,8 +154,8 @@ const (
 	FlagRunTargetAsUserUsage   = "Run target app as USER"
 	FlagShowContainerLogsUsage = "Show container logs"
 
-	FlagExecUsage       = "A bash snippet to run via Docker exec"
-	FlagExecFileUsage   = "A bash file to run via Docker exec"
+	FlagExecUsage       = "A shell script snippet to run via Docker exec"
+	FlagExecFileUsage   = "A shell script file to run via Docker exec"
 	FlagEntrypointUsage = "Override ENTRYPOINT analyzing image at runtime"
 	FlagCmdUsage        = "Override CMD analyzing image at runtime"
 	FlagWorkdirUsage    = "Override WORKDIR analyzing image at runtime"
