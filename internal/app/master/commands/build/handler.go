@@ -2,6 +2,7 @@ package build
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -22,6 +23,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
+	"github.com/docker-slim/docker-slim/pkg/util/printbuffer"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	"github.com/dustin/go-humanize"
@@ -84,7 +86,9 @@ func OnCommand(
 	doUseSensorVolume string,
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
-	ec *commands.ExecutionContext) {
+	ec *commands.ExecutionContext,
+	execCmd string,
+	execFileCmd string) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
@@ -338,11 +342,48 @@ func OnCommand(
 
 	fmt.Printf("%s[%s]: info=continue.after mode=%v message='%v'\n", appName, cmdName, continueAfter.Mode, continueAfterMsg)
 
+	execFail := false
+
 	switch continueAfter.Mode {
 	case "enter":
 		fmt.Printf("%s[%s]: info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'\n", appName, cmdName)
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
+	case "exec":
+		var input *bytes.Buffer
+		var cmd []string
+		if len(execFileCmd) != 0 {
+			input = bytes.NewBufferString(execFileCmd)
+			cmd = []string{"sh", "-s"}
+			for _, line := range strings.Split(string(execFileCmd), "\n") {
+				fmt.Printf("%s[%s][exec]: cmd: %s\n", appName, cmdName, line)
+			}
+		} else {
+			input = bytes.NewBufferString("")
+			cmd = []string{"sh", "-c", execCmd}
+			fmt.Printf("%s[%s][exec]: cmd: %s\n", appName, cmdName, execCmd)
+		}
+		exec, err := containerInspector.APIClient.CreateExec(docker.CreateExecOptions{
+			Container:    containerInspector.ContainerID,
+			Cmd:          cmd,
+			AttachStdin:  true,
+			AttachStdout: true,
+			AttachStderr: true,
+		})
+		errutil.FailOn(err)
+		buffer := &printbuffer.PrintBuffer{Prefix: fmt.Sprintf("%s[%s][exec]: output:", appName, cmdName)}
+		errutil.FailOn(containerInspector.APIClient.StartExec(exec.ID, docker.StartExecOptions{
+			InputStream:  input,
+			OutputStream: buffer,
+			ErrorStream:  buffer,
+		}))
+		inspect, err := containerInspector.APIClient.InspectExec(exec.ID)
+		errutil.FailOn(err)
+		errutil.FailWhen(inspect.Running, "still running")
+		if inspect.ExitCode != 0 {
+			execFail = true
+		}
+		fmt.Printf("%s[%s][exec]: exitcode: %d\n", appName, cmdName, inspect.ExitCode)
 	case "signal":
 		fmt.Printf("%s[%s]: info=prompt message='send SIGUSR1 when you are done using the container'\n", appName, cmdName)
 		<-continueAfter.ContinueChan
@@ -370,6 +411,11 @@ func OnCommand(
 	logger.Info("shutting down 'fat' container...")
 	err = containerInspector.ShutdownContainer()
 	errutil.WarnOn(err)
+
+	if execFail {
+		fmt.Printf("%s[%s][exec]: fatal: exec cmd failure\n", appName, cmdName)
+		os.Exit(1)
+	}
 
 	fmt.Printf("%s[%s]: state=container.inspection.artifact.processing\n", appName, cmdName)
 
