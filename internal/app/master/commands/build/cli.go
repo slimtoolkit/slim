@@ -7,6 +7,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
 	"github.com/urfave/cli"
 )
@@ -339,9 +340,7 @@ var CLI = cli.Command{
 		var execFileCmd []byte
 		if len(execFile) > 0 {
 			execFileCmd, err = ioutil.ReadFile(execFile)
-			if err != nil {
-				panic(err)
-			}
+			errutil.FailOn(err)
 			continueAfter.Mode = "exec"
 			fmt.Printf("docker-slim[%s]: info=exec message='changing continue-after to exec'\n", Name)
 		} else if len(execCmd) > 0 {

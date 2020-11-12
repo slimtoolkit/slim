@@ -367,25 +367,16 @@ func OnCommand(
 			AttachStdout: true,
 			AttachStderr: true,
 		})
-		if err != nil {
-			panic(err)
-		}
+		errutil.FailOn(err)
 		buffer := &printbuffer.PrintBuffer{Prefix: fmt.Sprintf("%s[%s][exec]: output:", appName, cmdName)}
-		err = containerInspector.APIClient.StartExec(exec.ID, docker.StartExecOptions{
+		errutil.FailOn(containerInspector.APIClient.StartExec(exec.ID, docker.StartExecOptions{
 			InputStream:  input,
 			OutputStream: buffer,
 			ErrorStream:  buffer,
-		})
-		if err != nil {
-			panic(err)
-		}
+		}))
 		inspect, err := containerInspector.APIClient.InspectExec(exec.ID)
-		if err != nil {
-			panic(err)
-		}
-		if inspect.Running {
-			panic("still running")
-		}
+		errutil.FailOn(err)
+		errutil.FailWhen(inspect.Running, "still running")
 		if inspect.ExitCode != 0 {
 			execFail = true
 		}
