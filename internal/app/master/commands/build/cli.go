@@ -1,7 +1,6 @@
 package build
 
 import (
-	"encoding/base64"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -333,17 +332,16 @@ var CLI = cli.Command{
 
 		execCmd := ctx.String(commands.FlagExec)
 		execFile := ctx.String(commands.FlagExecFile)
-		var execFileBase64 string
 		if len(execCmd) != 0 && len(execFile) != 0 {
 			fmt.Printf("docker-slim[%s]: info=exec message='fatal: cannot use both --exec and --exec-file'\n", Name)
 			os.Exit(1)
 		}
+		var execFileCmd []byte
 		if len(execFile) > 0 {
-			execFileCmd, err := ioutil.ReadFile(execFile)
+			execFileCmd, err = ioutil.ReadFile(execFile)
 			if err != nil {
 				panic(err)
 			}
-			execFileBase64 = base64.StdEncoding.EncodeToString(execFileCmd)
 			continueAfter.Mode = "exec"
 			fmt.Printf("docker-slim[%s]: info=exec message='changing continue-after to exec'\n", Name)
 		} else if len(execCmd) > 0 {
@@ -408,7 +406,7 @@ var CLI = cli.Command{
 			continueAfter,
 			ec,
 			execCmd,
-			execFileBase64)
+			string(execFileCmd))
 		commands.ShowCommunityInfo()
 		return nil
 	},

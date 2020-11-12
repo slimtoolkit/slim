@@ -3,7 +3,6 @@ package build
 import (
 	"bufio"
 	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -89,7 +88,7 @@ func OnCommand(
 	continueAfter *config.ContinueAfter,
 	ec *commands.ExecutionContext,
 	execCmd string,
-	execFileBase64 string) {
+	execFileCmd string) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
@@ -352,13 +351,9 @@ func OnCommand(
 		_, _, _ = creader.ReadLine()
 	case "exec":
 		input := bytes.NewBufferString("")
-		if len(execFileBase64) != 0 {
-			input = bytes.NewBufferString(execFileBase64)
-			execCmd = "base64 -d > slim.sh && bash slim.sh"
-			execFileCmd, err := base64.StdEncoding.DecodeString(execFileBase64)
-			if err != nil {
-			    panic(err)
-			}
+		if len(execFileCmd) != 0 {
+			input = bytes.NewBufferString(execFileCmd)
+			execCmd = "bash -s"
 			for _, line := range strings.Split(string(execFileCmd), "\n") {
 				fmt.Printf("%s[%s][exec]: cmd: %s\n", appName, cmdName, line)
 			}
