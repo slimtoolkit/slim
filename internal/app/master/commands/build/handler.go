@@ -176,8 +176,8 @@ func OnCommand(
 		targetRef = fatImageRepoNameTag
 		//todo: remove the temporary fat image (should have a flag for it in case users want the fat image too)
 	}
-	fmt.Printf("%s[%s]: image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+q (%v) workdir='%v' env=%+v expose=%+v",
-		appName, cmdName,
+
+	logger.Infof("image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v",
 		targetRef, doHTTPProbe, doRmFileArtifacts,
 		imageOverrideSelectors,
 		overrides.Entrypoint, overrides.ClearEntrypoint, overrides.Cmd, overrides.ClearCmd,
