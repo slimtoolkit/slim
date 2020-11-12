@@ -34,6 +34,24 @@ If your application exposes any web interfaces (e.g., when you have a web server
 
 Note that `docker-slim` will interact with your application for you if you enable HTTP probing with the `--http-probe` flag or other related HTTP probe flags. Some web applications built with scripting languages like Python or Ruby require service interactions to load everything in the application. Enable HTTP probing unless it gets in your way.
 
+You can also interact with the temporary container via a shell script or snippet using `--exec-file` or `--exec`. For example, you can create a container which is only capable of using curl.
+
+```bash
+>> docker pull archlinux:latest
+...
+
+>> docker-slim build --target archlinux:latest --tag archlinux:curl --http-probe=false --exec "curl checkip.amazonaws.com"
+...
+
+>> docker run archlinux:curl curl checkip.amazonaws.com
+...
+
+>> docker images
+archlinux                 curl                ...        ...         17.4MB
+archlinux                 latest              ...        ...         467MB
+...
+```
+
 ## Community
 
 Feel free to join any of these channels or just open a new [`Github issue`](https://github.com/docker-slim/docker-slim/issues) if you want to chat or if you need help.
@@ -342,6 +360,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--remove-env` - Remove ENV instructions for the optimized image
 - `--remove-label` - Remove LABEL instructions for the optimized image
 - `--remove-expose` - Remove EXPOSE instructions for the optimized image
+- `--exec` - A shell script snippet to run via Docker exec
+- `--exec-file` - A shell script file to run via Docker exec
 
 In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.
 
