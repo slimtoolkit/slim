@@ -221,7 +221,7 @@ func NewInspector(
 	}
 
 	if emptyIdx > -1 {
-		inspector.FatContainerCmd = inspector.FatContainerCmd[emptyIdx + 1:]
+		inspector.FatContainerCmd = inspector.FatContainerCmd[emptyIdx+1:]
 	}
 
 	logger.Debugf("FatContainerCmd - %+v", inspector.FatContainerCmd)

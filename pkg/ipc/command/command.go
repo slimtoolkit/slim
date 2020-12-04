@@ -1,6 +1,7 @@
 package command
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 
@@ -87,11 +88,14 @@ func Encode(m Message) ([]byte, error) {
 
 	switch v := m.(type) {
 	case *StartMonitor:
-		var err error
-		obj.Data, err = json.Marshal(v)
-		if err != nil {
+		var b bytes.Buffer
+		encoder := json.NewEncoder(&b)
+		encoder.SetEscapeHTML(false)
+		if err := encoder.Encode(v); err != nil {
 			return nil, err
 		}
+
+		obj.Data = b.Bytes()
 	case *StopMonitor:
 	case *ShutdownSensor:
 	default:

@@ -588,6 +588,7 @@ func OnCommand(
 	}
 
 	fmt.Printf("%s[%s]: state=done\n", appName, cmdName)
+	fmt.Printf("%s[%s]: info=commands message='use the xray command to learn more about the optimize image'\n", appName, cmdName)
 
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)

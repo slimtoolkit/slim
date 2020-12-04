@@ -1,8 +1,8 @@
 package printbuffer
 
 import (
-	"fmt"
 	"bytes"
+	"fmt"
 )
 
 type PrintBuffer struct {
