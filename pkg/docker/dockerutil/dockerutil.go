@@ -81,7 +81,33 @@ func HasImage(dclient *dockerapi.Client, imageRef string) error {
 		return ErrNotFound
 	}
 
-	return nil
+	for _, img := range imageList {
+		if strings.HasPrefix(img.ID, "sha") {
+			parts := strings.Split(img.ID, ":")
+			if len(parts) == 2 && parts[1] == imageRef {
+				return nil
+			}
+		} else {
+			if img.ID == imageRef {
+				return nil
+			}
+		}
+
+		for _, tag := range img.RepoTags {
+			if tag == imageRef {
+				return nil
+			}
+
+			if !strings.Contains(imageRef, ":") {
+				target := fmt.Sprintf("%s:latest", imageRef)
+				if tag == target {
+					return nil
+				}
+			}
+		}
+	}
+
+	return ErrNotFound
 }
 
 func ListImages(dclient *dockerapi.Client, imageNameFilter string) (map[string]BasicImageProps, error) {
