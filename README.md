@@ -173,9 +173,9 @@ Elixir application images:
 
 ## RECENT UPDATES
 
-Latest version: 1.32.0 (8/23/2020)
+Latest version: 1.33.0 (12/12/2020)
 
-This release updates the `seccomp` security profile generation capabilities to work with more advanced applications (note: ARM version will be available in the next release). It also makes it easier to integrate external http tests by providing an ability to map container ports to specific host ports.
+This release adds an ability to interact with the temporary containers using the `--exec` and `--exec-file` flags in addition to a number of bug fixes and npm support enhancements.
 
 For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
@@ -184,13 +184,13 @@ For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.32.0/dist_mac.zip)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.33.0/dist_mac.zip)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.32.0/dist_linux.tar.gz)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.33.0/dist_linux.tar.gz)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.32.0/dist_linux_arm.tar.gz)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.33.0/dist_linux_arm.tar.gz)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.32.0/dist_linux_arm64.tar.gz)
+   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.33.0/dist_linux_arm64.tar.gz)
 
 2. Unzip the package.
 
@@ -581,7 +581,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.32.0/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.32.0/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.32.0/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.32.0/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.33.0/dist_mac.zip), [Linux](https://downloads.dockerslim.com/releases/1.33.0/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.33.0/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.33.0/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
 The extracted directory contains two binaries:
 
