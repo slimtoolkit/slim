@@ -164,7 +164,7 @@ func downloadRelease(logger *log.Entry, localBlobPath, downloadSource string, c 
 	req.Header.Set(hdrUserAgent, fmt.Sprintf("DockerSlimApp/%s", vinfo.Current()))
 
 	qs := url.Values{}
-	qs.Add("cv", fmt.Sprintf("%s", vinfo.Tag()))
+	qs.Add("cv", vinfo.Tag())
 	req.URL.RawQuery = qs.Encode()
 
 	resp, err := client.Do(req)

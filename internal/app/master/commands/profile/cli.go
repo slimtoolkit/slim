@@ -154,7 +154,7 @@ var CLI = cli.Command{
 			var err error
 			for k, v := range fileErrors {
 				err = v
-				fmt.Printf("docker-slim[profile]: invalid spec file name='%s' error='%v': %v\n", k, v)
+				fmt.Printf("docker-slim[profile]: invalid spec file name='%s' error='%v'\n", k, v)
 			}
 
 			return err

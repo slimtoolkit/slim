@@ -39,7 +39,7 @@ type BasicImageProps struct {
 
 func CleanImageID(id string) string {
 	if strings.HasPrefix(id, "sha256:") {
-		id = id[len("sha256:"):]
+		id = strings.TrimPrefix(id, "sha256:")
 	}
 
 	return id

@@ -369,6 +369,8 @@ func (c *Client) Read(retries uint) (*Frame, error) {
 				if retries > 0 && timeouts > retries {
 					return nil, err
 				}
+
+				continue
 			} else {
 				log.Errorf("channel.Client.Read: read error (%v), exiting...", err)
 				return nil, err

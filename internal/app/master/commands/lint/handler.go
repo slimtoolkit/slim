@@ -216,7 +216,7 @@ func printLintResults(lintResults *linter.Report,
 	}
 
 	if cmdReport.ErrorsCount > 0 {
-		fmt.Printf("%s[%s]: info=lint.check.errors count=%d: %v\n",
+		fmt.Printf("%s[%s]: info=lint.check.errors count=%d\n",
 			appName, cmdName, cmdReport.ErrorsCount)
 
 		for id, err := range lintResults.Errors {
