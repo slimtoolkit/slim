@@ -64,8 +64,10 @@ func HasImage(dclient *dockerapi.Client, imageRef string) error {
 	}
 
 	listOptions := dockerapi.ListImagesOptions{
-		Filter: imageRef,
-		All:    false,
+		Filters: map[string][]string{
+			"reference": {imageRef},
+		},
+		All: false,
 	}
 
 	imageList, err := dclient.ListImages(listOptions)
@@ -121,8 +123,10 @@ func ListImages(dclient *dockerapi.Client, imageNameFilter string) (map[string]B
 	}
 
 	listOptions := dockerapi.ListImagesOptions{
-		Filter: imageNameFilter,
-		All:    false,
+		Filters: map[string][]string{
+			"reference": {imageNameFilter},
+		},
+		All: false,
 	}
 
 	imageList, err := dclient.ListImages(listOptions)
