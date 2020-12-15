@@ -524,7 +524,9 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	errutil.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
-	errutil.FailWhen(len(i.ContainerInfo.NetworkSettings.Ports) < len(commsExposedPorts), "docker-slim: error => missing comms ports")
+	if containerOptions.HostConfig.NetworkMode != "host" {
+		errutil.FailWhen(len(i.ContainerInfo.NetworkSettings.Ports) < len(commsExposedPorts), "docker-slim: error => missing comms ports")
+	}
 	i.logger.Debugf("RunContainer: container NetworkSettings.Ports => %#v", i.ContainerInfo.NetworkSettings.Ports)
 
 	if len(i.ContainerInfo.NetworkSettings.Ports) > 2 {
@@ -765,7 +767,7 @@ func (i *Inspector) initContainerChannels() error {
 	var cmdPort string
 	var evtPort string
 
-	if i.InContainer {
+	if i.InContainer || i.Overrides.Network == "host" {
 		targetHost = i.ContainerInfo.NetworkSettings.IPAddress
 		cmdPort = cmdPortStrDefault
 		evtPort = evtPortStrDefault
