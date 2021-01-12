@@ -36,15 +36,15 @@ func OnCommand(
 	ec *commands.ExecutionContext) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
+	prefix := fmt.Sprintf("cmd=%s", cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
 	cmdReport := report.NewLintCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 
-	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
-	fmt.Printf("%s[%s]: info=params target=%v list.checks=%v\n", appName, cmdName, targetRef, doListChecks)
+	fmt.Printf("cmd=%s state=started\n", cmdName)
+	fmt.Printf("cmd=%s info=params target=%v list.checks=%v\n", cmdName, targetRef, doListChecks)
 
 	/*
 		do it only when targetting images
@@ -54,8 +54,8 @@ func OnCommand(
 			if gparams.InContainer && gparams.IsDSImage {
 				exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 			}
-			fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
-			fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
+			fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", cmdName, exitMsg)
+			fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())
 			os.Exit(ectCommon | ecNoDockerConnectInfo)
 		}
 		errutil.FailOn(err)
@@ -96,31 +96,29 @@ func OnCommand(
 		printLintResults(lintResults, appName, cmdName, cmdReport, doShowNoHits, doShowSnippet)
 	}
 
-	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=completed\n", cmdName)
 	cmdReport.State = command.StateCompleted
 
-	fmt.Printf("%s[%s]: state=done\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=done\n", cmdName)
 
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)
 
 	cmdReport.State = command.StateDone
 	if cmdReport.Save() {
-		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
+		fmt.Printf("cmd=%s info=report file='%s'\n", cmdName, cmdReport.ReportLocation())
 	}
 }
 
 func printLintChecks(checks []*check.Info,
 	appName string,
 	cmdName command.Type) {
-	fmt.Printf("%s[%s]: info=lint.checks count=%d:\n",
-		appName,
+	fmt.Printf("cmd=%s info=lint.checks count=%d:\n",
 		cmdName,
 		len(checks))
 
 	for _, info := range checks {
-		fmt.Printf("%s[%s]: info=lint.check.info id=%s name='%s' labels='%s' description='%s' url='%s'\n",
-			appName,
+		fmt.Printf("cmd=%s info=lint.check.info id=%s name='%s' labels='%s' description='%s' url='%s'\n",
 			cmdName,
 			info.ID,
 			info.Name,
@@ -149,28 +147,27 @@ func printLintResults(lintResults *linter.Report,
 	cmdReport.NoHitsCount = len(lintResults.NoHits)
 	cmdReport.ErrorsCount = len(lintResults.Errors)
 
-	fmt.Printf("%s[%s]: info=lint.results hits=%d nohits=%d errors=%d:\n",
-		appName,
+	fmt.Printf("cmd=%s info=lint.results hits=%d nohits=%d errors=%d:\n",
 		cmdName,
 		cmdReport.HitsCount,
 		cmdReport.NoHitsCount,
 		cmdReport.ErrorsCount)
 
 	if cmdReport.HitsCount > 0 {
-		fmt.Printf("%s[%s]: info=lint.check.hits count=%d\n",
-			appName, cmdName, cmdReport.HitsCount)
+		fmt.Printf("cmd=%s info=lint.check.hits count=%d\n",
+			cmdName, cmdReport.HitsCount)
 
 		for id, result := range lintResults.Hits {
-			fmt.Printf("%s[%s]: info=lint.check.hit id=%s name='%s' level=%s message='%s'\n",
-				appName, cmdName,
+			fmt.Printf("cmd=%s info=lint.check.hit id=%s name='%s' level=%s message='%s'\n",
+				cmdName,
 				id,
 				result.Source.Name,
 				result.Source.Labels[check.LabelLevel],
 				result.Message)
 
 			if len(result.Matches) > 0 {
-				fmt.Printf("%s[%s]: info=lint.check.hit.matches count=%d:\n",
-					appName, cmdName, len(result.Matches))
+				fmt.Printf("cmd=%s info=lint.check.hit.matches count=%d:\n",
+					cmdName, len(result.Matches))
 
 				for _, m := range result.Matches {
 					var instructionInfo string
@@ -189,15 +186,15 @@ func printLintResults(lintResults *linter.Report,
 						stageInfo = fmt.Sprintf(" stage(index=%d name='%s')", m.Stage.Index, m.Stage.Name)
 					}
 
-					fmt.Printf("%s[%s]: info=lint.check.hit.match message='%s'%s%s\n",
-						appName, cmdName, m.Message, instructionInfo, stageInfo)
+					fmt.Printf("cmd=%s info=lint.check.hit.match message='%s'%s%s\n",
+						cmdName, m.Message, instructionInfo, stageInfo)
 
 					if m.Instruction != nil &&
 						len(m.Instruction.RawLines) > 0 &&
 						doShowSnippet {
 						for idx, data := range m.Instruction.RawLines {
-							fmt.Printf("%s[%s]: info=lint.check.hit.match.snippet line=%d data='%s'\n",
-								appName, cmdName, idx+m.Instruction.StartLine, data)
+							fmt.Printf("cmd=%s info=lint.check.hit.match.snippet line=%d data='%s'\n",
+								cmdName, idx+m.Instruction.StartLine, data)
 						}
 					}
 				}
@@ -206,21 +203,21 @@ func printLintResults(lintResults *linter.Report,
 	}
 
 	if doShowNoHits && cmdReport.NoHitsCount > 0 {
-		fmt.Printf("%s[%s]: info=lint.check.nohits count=%d\n",
-			appName, cmdName, cmdReport.NoHitsCount)
+		fmt.Printf("cmd=%s info=lint.check.nohits count=%d\n",
+			cmdName, cmdReport.NoHitsCount)
 
 		for id, result := range lintResults.NoHits {
-			fmt.Printf("%s[%s]: info=lint.check.nohit id=%s name='%s'\n",
-				appName, cmdName, id, result.Source.Name)
+			fmt.Printf("cmd=%s info=lint.check.nohit id=%s name='%s'\n",
+				cmdName, id, result.Source.Name)
 		}
 	}
 
 	if cmdReport.ErrorsCount > 0 {
-		fmt.Printf("%s[%s]: info=lint.check.errors count=%d\n",
-			appName, cmdName, cmdReport.ErrorsCount)
+		fmt.Printf("cmd=%s info=lint.check.errors count=%d\n",
+			cmdName, cmdReport.ErrorsCount)
 
 		for id, err := range lintResults.Errors {
-			fmt.Printf("%s[%s]: info=lint.check.error id=%s message='%v'\n", appName, cmdName, id, err)
+			fmt.Printf("cmd=%s info=lint.check.error id=%s message='%v'\n", cmdName, id, err)
 		}
 	}
 }

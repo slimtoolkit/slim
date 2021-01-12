@@ -41,7 +41,7 @@ func OnCommand(
 	ec *commands.ExecutionContext) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
+	prefix := fmt.Sprintf("cmd=%s", cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -49,9 +49,9 @@ func OnCommand(
 	cmdReport.State = command.StateStarted
 	cmdReport.TargetReference = targetRef
 
-	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
-	fmt.Printf("%s[%s]: info=params target=%v add-image-manifest=%v add-image-config=%v rm-file-artifacts=%v\n",
-		appName, cmdName, targetRef, doAddImageManifest, doAddImageConfig, doRmFileArtifacts)
+	fmt.Printf("cmd=%s state=started\n", cmdName)
+	fmt.Printf("cmd=%s info=params target=%v add-image-manifest=%v add-image-config=%v rm-file-artifacts=%v\n",
+		cmdName, targetRef, doAddImageManifest, doAddImageConfig, doRmFileArtifacts)
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
@@ -59,8 +59,8 @@ func OnCommand(
 		if gparams.InContainer && gparams.IsDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
-		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
-		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
+		fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", cmdName, exitMsg)
+		fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())
 		commands.Exit(commands.ECTCommon | commands.ECNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
@@ -73,12 +73,12 @@ func OnCommand(
 	errutil.FailOn(err)
 
 	if imageInspector.NoImage() {
-		fmt.Printf("%s[%s]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", appName, cmdName, targetRef)
-		fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
+		fmt.Printf("cmd=%s info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", cmdName, targetRef)
+		fmt.Printf("cmd=%s state=exited\n", cmdName)
 		return
 	}
 
-	fmt.Printf("%s[%s]: state=image.api.inspection.start\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=image.api.inspection.start\n", cmdName)
 
 	logger.Info("inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
@@ -88,8 +88,8 @@ func OnCommand(
 	imageInspector.ArtifactLocation = artifactLocation
 	logger.Debugf("localVolumePath=%v, artifactLocation=%v, statePath=%v, stateKey=%v", localVolumePath, artifactLocation, statePath, stateKey)
 
-	fmt.Printf("%s[%s]: info=image id=%v size.bytes=%v size.human='%v'\n",
-		appName, cmdName,
+	fmt.Printf("cmd=%s info=image id=%v size.bytes=%v size.human='%v'\n",
+		cmdName,
 		imageInspector.ImageInfo.ID,
 		imageInspector.ImageInfo.VirtualSize,
 		humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)))
@@ -100,8 +100,8 @@ func OnCommand(
 
 	if imageInspector.DockerfileInfo != nil {
 		if imageInspector.DockerfileInfo.ExeUser != "" {
-			fmt.Printf("%s[%s]: info=image.users exe='%v' all='%v'\n",
-				appName, cmdName,
+			fmt.Printf("cmd=%s info=image.users exe='%v' all='%v'\n",
+				cmdName,
 				imageInspector.DockerfileInfo.ExeUser,
 				strings.Join(imageInspector.DockerfileInfo.AllUsers, ","))
 		}
@@ -110,13 +110,13 @@ func OnCommand(
 			cmdReport.ImageStack = imageInspector.DockerfileInfo.ImageStack
 
 			for idx, imageInfo := range imageInspector.DockerfileInfo.ImageStack {
-				fmt.Printf("%s[%s]: info=image.stack index=%v name='%v' id='%v' instructions=%v message='see report file for details'\n",
-					appName, cmdName, idx, imageInfo.FullName, imageInfo.ID, len(imageInfo.Instructions))
+				fmt.Printf("cmd=%s info=image.stack index=%v name='%v' id='%v' instructions=%v message='see report file for details'\n",
+					cmdName, idx, imageInfo.FullName, imageInfo.ID, len(imageInfo.Instructions))
 			}
 		}
 
 		if len(imageInspector.DockerfileInfo.ExposedPorts) > 0 {
-			fmt.Printf("%s[%s]: info=image.exposed_ports list='%v'\n", appName, cmdName,
+			fmt.Printf("cmd=%s info=image.exposed_ports list='%v'\n", cmdName,
 				strings.Join(imageInspector.DockerfileInfo.ExposedPorts, ","))
 		}
 	}
@@ -145,8 +145,8 @@ func OnCommand(
 
 	cmdReport.ArtifactLocation = imageInspector.ArtifactLocation
 
-	fmt.Printf("%s[%s]: state=image.api.inspection.done\n", appName, cmdName)
-	fmt.Printf("%s[%s]: state=image.data.inspection.start\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=image.api.inspection.done\n", cmdName)
+	fmt.Printf("cmd=%s state=image.data.inspection.start\n", cmdName)
 
 	imageID := dockerutil.CleanImageID(imageInspector.ImageInfo.ID)
 	iaName := fmt.Sprintf("%s.tar", imageID)
@@ -157,7 +157,7 @@ func OnCommand(
 	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false)
 	errutil.FailOn(err)
 
-	fmt.Printf("%s[%s]: state=image.data.inspection.done\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=image.data.inspection.done\n", cmdName)
 
 	if len(imageInspector.DockerfileInfo.AllInstructions) == len(imagePkg.Config.History) {
 		for instIdx, instInfo := range imageInspector.DockerfileInfo.AllInstructions {
@@ -183,7 +183,7 @@ func OnCommand(
 		cmdReport.RawImageConfig = imagePkg.Config
 	}
 
-	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=completed\n", cmdName)
 	cmdReport.State = command.StateCompleted
 
 	if doRmFileArtifacts {
@@ -194,17 +194,17 @@ func OnCommand(
 		cmdReport.ImageArchiveLocation = iaPath
 	}
 
-	fmt.Printf("%s[%s]: state=done\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=done\n", cmdName)
 
-	fmt.Printf("%s[%s]: info=results  artifacts.location='%v'\n", appName, cmdName, cmdReport.ArtifactLocation)
-	fmt.Printf("%s[%s]: info=results  artifacts.dockerfile.original=Dockerfile.fat\n", appName, cmdName)
+	fmt.Printf("cmd=%s info=results  artifacts.location='%v'\n", cmdName, cmdReport.ArtifactLocation)
+	fmt.Printf("cmd=%s info=results  artifacts.dockerfile.original=Dockerfile.fat\n", cmdName)
 
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)
 
 	cmdReport.State = command.StateDone
 	if cmdReport.Save() {
-		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
+		fmt.Printf("cmd=%s info=report file='%s'\n", cmdName, cmdReport.ReportLocation())
 	}
 }
 
@@ -214,78 +214,78 @@ func printImagePackage(pkg *dockerimage.Package,
 	changes map[string]struct{},
 	layers map[string]struct{},
 	cmdReport *report.XrayCommand) {
-	fmt.Printf("%s[%s]: info=image.package.details\n", appName, cmdName)
+	fmt.Printf("cmd=%s info=image.package.details\n", cmdName)
 
-	fmt.Printf("%s[%s]: info=layers.count: %v\n", appName, cmdName, len(pkg.Layers))
+	fmt.Printf("cmd=%s info=layers.count: %v\n", cmdName, len(pkg.Layers))
 	for _, layer := range pkg.Layers {
-		fmt.Printf("%s[%s]: info=layer index=%d id=%s path=%s\n", appName, cmdName, layer.Index, layer.ID, layer.Path)
+		fmt.Printf("cmd=%s info=layer index=%d id=%s path=%s\n", cmdName, layer.Index, layer.ID, layer.Path)
 
 		if layer.Stats.AllSize != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats all_size.human='%v' all_size.bytes=%v\n",
-				appName, cmdName, humanize.Bytes(uint64(layer.Stats.AllSize)), layer.Stats.AllSize)
+			fmt.Printf("cmd=%s info=layer.stats all_size.human='%v' all_size.bytes=%v\n",
+				cmdName, humanize.Bytes(uint64(layer.Stats.AllSize)), layer.Stats.AllSize)
 		}
 
 		if layer.Stats.ObjectCount != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats object_count=%v\n", appName, cmdName, layer.Stats.ObjectCount)
+			fmt.Printf("cmd=%s info=layer.stats object_count=%v\n", cmdName, layer.Stats.ObjectCount)
 		}
 
 		if layer.Stats.DirCount != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats dir_count=%v\n", appName, cmdName, layer.Stats.DirCount)
+			fmt.Printf("cmd=%s info=layer.stats dir_count=%v\n", cmdName, layer.Stats.DirCount)
 		}
 
 		if layer.Stats.FileCount != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats file_count=%v\n", appName, cmdName, layer.Stats.FileCount)
+			fmt.Printf("cmd=%s info=layer.stats file_count=%v\n", cmdName, layer.Stats.FileCount)
 		}
 
 		if layer.Stats.LinkCount != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats link_count=%v\n", appName, cmdName, layer.Stats.LinkCount)
+			fmt.Printf("cmd=%s info=layer.stats link_count=%v\n", cmdName, layer.Stats.LinkCount)
 		}
 
 		if layer.Stats.MaxFileSize != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats max_file_size.human='%v' max_file_size.bytes=%v\n",
-				appName, cmdName, humanize.Bytes(uint64(layer.Stats.MaxFileSize)), layer.Stats.MaxFileSize)
+			fmt.Printf("cmd=%s info=layer.stats max_file_size.human='%v' max_file_size.bytes=%v\n",
+				cmdName, humanize.Bytes(uint64(layer.Stats.MaxFileSize)), layer.Stats.MaxFileSize)
 		}
 
 		if layer.Stats.DeletedCount != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats deleted_count=%v\n", appName, cmdName, layer.Stats.DeletedCount)
+			fmt.Printf("cmd=%s info=layer.stats deleted_count=%v\n", cmdName, layer.Stats.DeletedCount)
 		}
 
 		if layer.Stats.DeletedDirCount != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats deleted_dir_count=%v\n", appName, cmdName, layer.Stats.DeletedDirCount)
+			fmt.Printf("cmd=%s info=layer.stats deleted_dir_count=%v\n", cmdName, layer.Stats.DeletedDirCount)
 		}
 
 		if layer.Stats.DeletedFileCount != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats deleted_file_count=%v\n", appName, cmdName, layer.Stats.DeletedFileCount)
+			fmt.Printf("cmd=%s info=layer.stats deleted_file_count=%v\n", cmdName, layer.Stats.DeletedFileCount)
 		}
 
 		if layer.Stats.DeletedLinkCount != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats deleted_link_count=%v\n", appName, cmdName, layer.Stats.DeletedLinkCount)
+			fmt.Printf("cmd=%s info=layer.stats deleted_link_count=%v\n", cmdName, layer.Stats.DeletedLinkCount)
 		}
 
 		if layer.Stats.DeletedSize != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats deleted_size=%v\n", appName, cmdName, layer.Stats.DeletedSize)
+			fmt.Printf("cmd=%s info=layer.stats deleted_size=%v\n", cmdName, layer.Stats.DeletedSize)
 		}
 
 		if layer.Stats.AddedSize != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats added_size.human='%v' added_size.bytes=%v\n",
-				appName, cmdName, humanize.Bytes(uint64(layer.Stats.AddedSize)), layer.Stats.AddedSize)
+			fmt.Printf("cmd=%s info=layer.stats added_size.human='%v' added_size.bytes=%v\n",
+				cmdName, humanize.Bytes(uint64(layer.Stats.AddedSize)), layer.Stats.AddedSize)
 		}
 
 		if layer.Stats.ModifiedSize != 0 {
-			fmt.Printf("%s[%s]: info=layer.stats modified_size.human='%v' modified_size.bytes=%v\n",
-				appName, cmdName, humanize.Bytes(uint64(layer.Stats.ModifiedSize)), layer.Stats.ModifiedSize)
+			fmt.Printf("cmd=%s info=layer.stats modified_size.human='%v' modified_size.bytes=%v\n",
+				cmdName, humanize.Bytes(uint64(layer.Stats.ModifiedSize)), layer.Stats.ModifiedSize)
 		}
 
 		changeCount := len(layer.Changes.Deleted) + len(layer.Changes.Modified) + len(layer.Changes.Added)
 
-		fmt.Printf("%s[%s]: info=layer.change.summary deleted=%d modified=%d added=%d all=%d\n",
-			appName, cmdName, len(layer.Changes.Deleted), len(layer.Changes.Modified),
+		fmt.Printf("cmd=%s info=layer.change.summary deleted=%d modified=%d added=%d all=%d\n",
+			cmdName, len(layer.Changes.Deleted), len(layer.Changes.Modified),
 			len(layer.Changes.Added), changeCount)
 
-		fmt.Printf("%s[%s]: info=layer.objects.count data=%d\n", appName, cmdName, len(layer.Objects))
+		fmt.Printf("cmd=%s info=layer.objects.count data=%d\n", cmdName, len(layer.Objects))
 
 		topList := layer.Top.List()
-		fmt.Printf("%s[%s]: info=layer.objects.top:\n", appName, cmdName)
+		fmt.Printf("cmd=%s info=layer.objects.top:\n", cmdName)
 		for _, object := range topList {
 			printObject(object)
 		}
@@ -321,7 +321,7 @@ func printImagePackage(pkg *dockerimage.Package,
 
 		if showLayer {
 			if _, ok := changes["delete"]; ok && len(layer.Changes.Deleted) > 0 {
-				fmt.Printf("%s[%s]: info=layer.objects.deleted:\n", appName, cmdName)
+				fmt.Printf("cmd=%s info=layer.objects.deleted:\n", cmdName)
 				for _, objectIdx := range layer.Changes.Deleted {
 					layerReport.Deleted = append(layerReport.Deleted, layer.Objects[objectIdx])
 					printObject(layer.Objects[objectIdx])
@@ -329,7 +329,7 @@ func printImagePackage(pkg *dockerimage.Package,
 				fmt.Printf("\n")
 			}
 			if _, ok := changes["modify"]; ok && len(layer.Changes.Modified) > 0 {
-				fmt.Printf("%s[%s]: info=layer.objects.modified:\n", appName, cmdName)
+				fmt.Printf("cmd=%s info=layer.objects.modified:\n", cmdName)
 				for _, objectIdx := range layer.Changes.Modified {
 					layerReport.Modified = append(layerReport.Modified, layer.Objects[objectIdx])
 					printObject(layer.Objects[objectIdx])
@@ -337,7 +337,7 @@ func printImagePackage(pkg *dockerimage.Package,
 				fmt.Printf("\n")
 			}
 			if _, ok := changes["add"]; ok && len(layer.Changes.Added) > 0 {
-				fmt.Printf("%s[%s]: info=layer.objects.added:\n", appName, cmdName)
+				fmt.Printf("cmd=%s info=layer.objects.added:\n", cmdName)
 				for _, objectIdx := range layer.Changes.Added {
 					layerReport.Added = append(layerReport.Added, layer.Objects[objectIdx])
 					printObject(layer.Objects[objectIdx])

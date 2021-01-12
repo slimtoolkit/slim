@@ -74,7 +74,7 @@ func OnCommand(
 	ec *commands.ExecutionContext) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
+	prefix := fmt.Sprintf("cmd=%s", cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -82,8 +82,8 @@ func OnCommand(
 	cmdReport.State = command.StateStarted
 	cmdReport.OriginalImage = targetRef
 
-	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
-	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, targetRef)
+	fmt.Printf("cmd=%s state=started\n", cmdName)
+	fmt.Printf("cmd=%s info=params target=%v\n", cmdName, targetRef)
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
@@ -91,8 +91,8 @@ func OnCommand(
 		if gparams.InContainer && gparams.IsDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
-		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
-		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
+		fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", cmdName, exitMsg)
+		fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())
 		commands.Exit(commands.ECTCommon | commands.ECNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
@@ -102,8 +102,8 @@ func OnCommand(
 	}
 
 	if !commands.ConfirmNetwork(logger, client, overrides.Network) {
-		fmt.Printf("%s[%s]: info=param.error status=unknown.network value=%s\n", appName, cmdName, overrides.Network)
-		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
+		fmt.Printf("cmd=%s info=param.error status=unknown.network value=%s\n", cmdName, overrides.Network)
+		fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())
 		commands.Exit(commands.ECTCommon | commands.ECBadNetworkName)
 	}
 
@@ -111,12 +111,12 @@ func OnCommand(
 	errutil.FailOn(err)
 
 	if imageInspector.NoImage() {
-		fmt.Printf("%s[%s]: info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", appName, cmdName, targetRef)
-		fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
+		fmt.Printf("cmd=%s info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", cmdName, targetRef)
+		fmt.Printf("cmd=%s state=exited\n", cmdName)
 		return
 	}
 
-	fmt.Printf("%s[%s]: state=image.inspection.start\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=image.inspection.start\n", cmdName)
 
 	logger.Info("inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
@@ -126,8 +126,8 @@ func OnCommand(
 	imageInspector.ArtifactLocation = artifactLocation
 	logger.Debugf("localVolumePath=%v, artifactLocation=%v, statePath=%v, stateKey=%v", localVolumePath, artifactLocation, statePath, stateKey)
 
-	fmt.Printf("%s[%s]: info=image id=%v size.bytes=%v size.human=%v\n",
-		appName, cmdName,
+	fmt.Printf("cmd=%s info=image id=%v size.bytes=%v size.human=%v\n",
+		cmdName,
 		imageInspector.ImageInfo.ID,
 		imageInspector.ImageInfo.VirtualSize,
 		humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)))
@@ -136,8 +136,8 @@ func OnCommand(
 	err = imageInspector.ProcessCollectedData()
 	errutil.FailOn(err)
 
-	fmt.Printf("%s[%s]: state=image.inspection.done\n", appName, cmdName)
-	fmt.Printf("%s[%s]: state=container.inspection.start\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=image.inspection.done\n", cmdName)
+	fmt.Printf("cmd=%s state=container.inspection.start\n", cmdName)
 
 	containerInspector, err := container.NewInspector(
 		logger,
@@ -175,8 +175,8 @@ func OnCommand(
 	err = containerInspector.RunContainer()
 	errutil.FailOn(err)
 
-	fmt.Printf("%s[%s]: info=container name=%v id=%v target.port.list=[%v] target.port.info=[%v] message='YOU CAN USE THESE PORTS TO INTERACT WITH THE CONTAINER'\n",
-		appName, cmdName,
+	fmt.Printf("cmd=%s info=container name=%v id=%v target.port.list=[%v] target.port.info=[%v] message='YOU CAN USE THESE PORTS TO INTERACT WITH THE CONTAINER'\n",
+		cmdName,
 		containerInspector.ContainerName,
 		containerInspector.ContainerID,
 		containerInspector.ContainerPortList,
@@ -206,12 +206,12 @@ func OnCommand(
 			true, prefix)
 		errutil.FailOn(err)
 		if len(probe.Ports) == 0 {
-			fmt.Printf("%s[%s]: state=http.probe.error error='no exposed ports' message='expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services\n", appName, cmdName)
+			fmt.Printf("cmd=%s state=http.probe.error error='no exposed ports' message='expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services\n", cmdName)
 			logger.Info("shutting down 'fat' container...")
 			containerInspector.FinishMonitoring()
 			_ = containerInspector.ShutdownContainer()
 
-			fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
+			fmt.Printf("cmd=%s state=exited\n", cmdName)
 			return
 		}
 
@@ -227,30 +227,30 @@ func OnCommand(
 		continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
 	}
 
-	fmt.Printf("%s[%s]: info=continue.after mode=%v message='%v'\n", appName, cmdName, continueAfter.Mode, continueAfterMsg)
+	fmt.Printf("cmd=%s info=continue.after mode=%v message='%v'\n", cmdName, continueAfter.Mode, continueAfterMsg)
 
 	switch continueAfter.Mode {
 	case "enter":
-		fmt.Printf("%s[%s]: info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'\n", appName, cmdName)
+		fmt.Printf("cmd=%s info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'\n", cmdName)
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
 	case "signal":
-		fmt.Printf("%s[%s]: info=prompt message='send SIGUSR1 when you are done using the container'\n", appName, cmdName)
+		fmt.Printf("cmd=%s info=prompt message='send SIGUSR1 when you are done using the container'\n", cmdName)
 		<-continueAfter.ContinueChan
-		fmt.Printf("%s[%s]: info=event message='got SIGUSR1'\n", appName, cmdName)
+		fmt.Printf("cmd=%s info=event message='got SIGUSR1'\n", cmdName)
 	case "timeout":
-		fmt.Printf("%s[%s]: info=prompt message='waiting for the target container (%v seconds)'\n", appName, cmdName, int(continueAfter.Timeout))
+		fmt.Printf("cmd=%s info=prompt message='waiting for the target container (%v seconds)'\n", cmdName, int(continueAfter.Timeout))
 		<-time.After(time.Second * continueAfter.Timeout)
-		fmt.Printf("%s[%s]: info=event message='done waiting for the target container'\n", appName, cmdName)
+		fmt.Printf("cmd=%s info=event message='done waiting for the target container'\n", cmdName)
 	case "probe":
-		fmt.Printf("%s[%s]: info=prompt message='waiting for the HTTP probe to finish'\n", appName, cmdName)
+		fmt.Printf("cmd=%s info=prompt message='waiting for the HTTP probe to finish'\n", cmdName)
 		<-continueAfter.ContinueChan
-		fmt.Printf("%s[%s]: info=event message='HTTP probe is done'\n", appName, cmdName)
+		fmt.Printf("cmd=%s info=event message='HTTP probe is done'\n", cmdName)
 	default:
 		errutil.Fail("unknown continue-after mode")
 	}
 
-	fmt.Printf("%s[%s]: state=container.inspection.finishing\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=container.inspection.finishing\n", cmdName)
 
 	containerInspector.FinishMonitoring()
 
@@ -258,14 +258,14 @@ func OnCommand(
 	err = containerInspector.ShutdownContainer()
 	errutil.WarnOn(err)
 
-	fmt.Printf("%s[%s]: state=container.inspection.artifact.processing\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=container.inspection.artifact.processing\n", cmdName)
 
 	if !containerInspector.HasCollectedData() {
 		imageInspector.ShowFatImageDockerInstructions()
-		fmt.Printf("%s[%s]: info=results status='no data collected (no minified image generated). (version=%v location='%v')'\n",
-			appName, cmdName,
+		fmt.Printf("cmd=%s info=results status='no data collected (no minified image generated). (version=%v location='%v')'\n",
+			cmdName,
 			v.Current(), fsutil.ExeDir())
-		fmt.Printf("%s[%s]: state=exited\n", appName, cmdName)
+		fmt.Printf("cmd=%s state=exited\n", cmdName)
 		return
 	}
 
@@ -273,8 +273,8 @@ func OnCommand(
 	err = containerInspector.ProcessCollectedData()
 	errutil.FailOn(err)
 
-	fmt.Printf("%s[%s]: state=container.inspection.done\n", appName, cmdName)
-	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=container.inspection.done\n", cmdName)
+	fmt.Printf("cmd=%s state=completed\n", cmdName)
 	cmdReport.State = command.StateCompleted
 
 	if copyMetaArtifactsLocation != "" {
@@ -286,12 +286,12 @@ func OnCommand(
 		if !commands.CopyMetaArtifacts(logger,
 			toCopy,
 			artifactLocation, copyMetaArtifactsLocation) {
-			fmt.Printf("%s[%s]: info=artifacts message='could not copy meta artifacts'\n", appName, cmdName)
+			fmt.Printf("cmd=%s info=artifacts message='could not copy meta artifacts'\n", cmdName)
 		}
 	}
 
 	if err := commands.DoArchiveState(logger, client, artifactLocation, gparams.ArchiveState, stateKey); err != nil {
-		fmt.Printf("%s[%s]: info=state message='could not archive state'\n", appName, cmdName)
+		fmt.Printf("cmd=%s info=state message='could not archive state'\n", cmdName)
 		logger.Errorf("error archiving state - %v", err)
 	}
 
@@ -301,13 +301,13 @@ func OnCommand(
 		errutil.WarnOn(err)
 	}
 
-	fmt.Printf("%s[%s]: state=done\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=done\n", cmdName)
 
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)
 
 	cmdReport.State = command.StateDone
 	if cmdReport.Save() {
-		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
+		fmt.Printf("cmd=%s info=report file='%s'\n", cmdName, cmdReport.ReportLocation())
 	}
 }

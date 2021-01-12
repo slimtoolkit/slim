@@ -25,11 +25,11 @@ func OnCommand(doDebug, inContainer, isDSImage bool, clientConfig *config.Docker
 		if inContainer && isDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
-		fmt.Printf("docker-slim[version]: info=docker.connect.error message='%s'\n", exitMsg)
-		fmt.Printf("docker-slim[version]: state=exited version=%s location='%s'\n", v.Current(), fsutil.ExeDir())
+		fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", Name, exitMsg)
+		fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", Name, v.Current(), fsutil.ExeDir())
 		commands.Exit(-777)
 	}
 	errutil.FailOn(err)
 
-	version.Print("docker-slim[version]:", logger, client, true, inContainer, isDSImage)
+	version.Print(fmt.Sprintf("cmd=%s", Name), logger, client, true, inContainer, isDSImage)
 }

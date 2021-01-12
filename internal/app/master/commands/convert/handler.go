@@ -24,15 +24,15 @@ func OnCommand(
 	ec *commands.ExecutionContext) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("%s[%s]:", appName, cmdName)
+	prefix := fmt.Sprintf("cmd=%s", cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
 	cmdReport := report.NewConvertCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 
-	fmt.Printf("%s[%s]: state=started\n", appName, cmdName)
-	fmt.Printf("%s[%s]: info=params target=%v\n", appName, cmdName, targetRef)
+	fmt.Printf("cmd=%s state=started\n", cmdName)
+	fmt.Printf("cmd=%s info=params target=%v\n", cmdName, targetRef)
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
@@ -40,8 +40,8 @@ func OnCommand(
 		if gparams.InContainer && gparams.IsDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
-		fmt.Printf("%s[%s]: info=docker.connect.error message='%s'\n", appName, cmdName, exitMsg)
-		fmt.Printf("%s[%s]: state=exited version=%s location='%s'\n", appName, cmdName, v.Current(), fsutil.ExeDir())
+		fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", cmdName, exitMsg)
+		fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())
 		commands.Exit(commands.ECTCommon | commands.ECNoDockerConnectInfo)
 	}
 	errutil.FailOn(err)
@@ -50,16 +50,16 @@ func OnCommand(
 		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
-	fmt.Printf("%s[%s]: state=completed\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=completed\n", cmdName)
 	cmdReport.State = command.StateCompleted
 
-	fmt.Printf("%s[%s]: state=done\n", appName, cmdName)
+	fmt.Printf("cmd=%s state=done\n", cmdName)
 
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)
 
 	cmdReport.State = command.StateDone
 	if cmdReport.Save() {
-		fmt.Printf("%s[%s]: info=report file='%s'\n", appName, cmdName, cmdReport.ReportLocation())
+		fmt.Printf("cmd=%s info=report file='%s'\n", cmdName, cmdReport.ReportLocation())
 	}
 }
