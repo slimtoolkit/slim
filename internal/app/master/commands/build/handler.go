@@ -234,7 +234,7 @@ func OnCommand(
 			cmdReport.ImageStack = imageInspector.DockerfileInfo.ImageStack
 
 			for idx, layerInfo := range imageInspector.DockerfileInfo.ImageStack {
-				fmt.Printf("info=image.stack index=%v name='%v' id='%v'\n",
+				fmt.Printf("cmd=%s info=image.stack index=%v name='%v' id='%v'\n",
 					cmdName, idx, layerInfo.FullName, layerInfo.ID)
 			}
 		}
