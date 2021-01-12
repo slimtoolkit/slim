@@ -38,6 +38,7 @@ const (
 	ecbOther = iota + 1
 	ecbBadCustomImageTag
 	ecbImageBuildError
+	ecbNoEntrypoint
 )
 
 // OnCommand implements the 'build' docker-slim command
@@ -279,6 +280,12 @@ func OnCommand(
 		true,
 		prefix)
 	errutil.FailOn(err)
+
+	if len(containerInspector.FatContainerCmd) == 0 {
+		fmt.Printf("cmd=%s info=target.image.error status=no.entrypoint.cmd image='%v' message='no ENTRYPOINT/CMD'\n", cmdName, targetRef)
+		fmt.Printf("cmd=%s state=exited\n", cmdName)
+		commands.Exit(commands.ECTBuild | ecbNoEntrypoint)
+	}
 
 	logger.Info("starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
