@@ -3,6 +3,7 @@
 [![Follow](https://img.shields.io/twitter/url/http/shields.io.svg?style=social&label=Follow)](https://twitter.com/DockerSlim)
 [![Gitter chat](https://badges.gitter.im/docker-slim/docker-slim.svg)](https://gitter.im/docker-slim/community)
 [![Discord chat](https://img.shields.io/static/v1.svg?label=chat&message=on%20discord&color=7389D8)](https://discord.gg/9tDyxYS)
+[![Download DockerSlim](https://img.shields.io/badge/download-docker--slim-blue)](https://github.com/docker-slim/docker-slim#installation)
 
 # Minify and Secure Docker containers (free and open source!)
 
