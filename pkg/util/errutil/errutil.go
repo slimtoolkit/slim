@@ -10,6 +10,18 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/version"
 )
 
+// FailOnWithInfo logs the error information with additional context info and terminates the application if there's an error
+func FailOnWithInfo(err error, info map[string]string) {
+	if err != nil {
+		showInfo(info)
+
+		stackData := debug.Stack()
+		log.WithError(err).WithField("version", version.Current()).WithField("stack", string(stackData)).Fatal("docker-slim: failure")
+
+		showCommunityInfo()
+	}
+}
+
 // FailOn logs the error information and terminates the application if there's an error
 func FailOn(err error) {
 	if err != nil {
@@ -52,6 +64,15 @@ func Fail(msg string) {
 	}).Fatal("docker-slim: failure")
 
 	showCommunityInfo()
+}
+
+func showInfo(info map[string]string) {
+	if len(info) > 0 {
+		fmt.Println("Error Context Info:")
+		for k, v := range info {
+			fmt.Printf("'%s': '%s'\n", k, v)
+		}
+	}
 }
 
 func showCommunityInfo() {

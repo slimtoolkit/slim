@@ -793,6 +793,7 @@ func PrepareImageStateDirs(statePrefix, imageID string) (string, string, string,
 		//Should be a prefix check ideally
 		//and should check if it's actually one of the 'shared' directories in Docker for Mac (on Macs)
 		if statePrefix == badPath {
+			log.Debugf("PrepareImageStateDirs - statePrefix=%s appDir=%s badPath=%s", statePrefix, appDir, badPath)
 			if pinfo, err := os.Stat(tmpPath); err == nil && pinfo.IsDir() {
 				log.Debugf("PrepareImageStateDirs - overriding state path to %v", stateTmpPath)
 				statePrefix = stateTmpPath
@@ -802,13 +803,21 @@ func PrepareImageStateDirs(statePrefix, imageID string) (string, string, string,
 		}
 
 		if appDir == badPath {
+			log.Debugf("PrepareImageStateDirs - statePrefix=%s appDir=%s badPath=%s", statePrefix, appDir, badPath)
 			if pinfo, err := os.Stat(tmpPath); err == nil && pinfo.IsDir() {
 				log.Debugf("PrepareImageStateDirs - copying sensor to state path (to %v)", stateTmpPath)
 
 				srcSensorPath := filepath.Join(appDir, sensorFileName)
 				dstSensorPath := filepath.Join(statePrefix, sensorFileName)
 				err = CopyRegularFile(false, srcSensorPath, dstSensorPath, true)
-				errutil.FailOn(err)
+				errInfo := map[string]string{
+					"op":            "PrepareImageStateDirs",
+					"call":          "CopyRegularFile",
+					"srcSensorPath": srcSensorPath,
+					"dstSensorPath": dstSensorPath,
+				}
+
+				errutil.FailOnWithInfo(err, errInfo)
 			} else {
 				log.Debugf("PrepareImageStateDirs - did not find tmp")
 			}
