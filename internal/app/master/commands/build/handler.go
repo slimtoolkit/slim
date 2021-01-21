@@ -432,7 +432,7 @@ func OnCommand(
 			cmdName,
 			v.Current(), fsutil.ExeDir())
 		fmt.Printf("cmd=%s state=exited\n", cmdName)
-		return
+		commands.Exit(commands.ECTBuild | ecbImageBuildError)
 	}
 
 	logger.Info("processing instrumented 'fat' container info...")
@@ -484,7 +484,7 @@ func OnCommand(
 	if newImageInspector.NoImage() {
 		fmt.Printf("cmd=%s info=results message='minified image not found - %s'\n", cmdName, builder.RepoName)
 		fmt.Printf("cmd=%s state=exited\n", cmdName)
-		return
+		commands.Exit(commands.ECTBuild | ecbImageBuildError)
 	}
 
 	err = newImageInspector.Inspect()
