@@ -200,7 +200,7 @@ func OnCommand(
 	if imageInspector.NoImage() {
 		fmt.Printf("cmd=%s info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", cmdName, targetRef)
 		fmt.Printf("cmd=%s state=exited\n", cmdName)
-		return
+		commands.Exit(commands.ECTBuild | ecbImageBuildError)
 	}
 
 	fmt.Printf("cmd=%s state=image.inspection.start\n", cmdName)
@@ -332,7 +332,7 @@ func OnCommand(
 			_ = containerInspector.ShutdownContainer()
 
 			fmt.Printf("cmd=%s state=exited\n", cmdName)
-			return
+			commands.Exit(commands.ECTBuild | ecbImageBuildError)
 		}
 
 		probe.Start()
