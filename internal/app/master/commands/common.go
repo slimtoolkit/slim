@@ -608,6 +608,7 @@ const (
 	ectInfo    = 0x04000000
 	ectUpdate  = 0x05000000
 	ectVersion = 0x06000000
+	ECTXray    = 0x07000000
 )
 
 // Build command exit codes

@@ -27,6 +27,7 @@ const appName = commands.AppName
 // Xray command exit codes
 const (
 	ecxOther = iota + 1
+	ecxImageNotFound
 )
 
 // OnCommand implements the 'xray' docker-slim command
@@ -75,7 +76,7 @@ func OnCommand(
 	if imageInspector.NoImage() {
 		fmt.Printf("cmd=%s info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", cmdName, targetRef)
 		fmt.Printf("cmd=%s state=exited\n", cmdName)
-		return
+		commands.Exit(commands.ECTBuild | ecxImageNotFound)
 	}
 
 	fmt.Printf("cmd=%s state=image.api.inspection.start\n", cmdName)
