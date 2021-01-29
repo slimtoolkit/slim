@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"time"
 
@@ -186,6 +187,12 @@ func OnCommand(
 
 	if gparams.Debug {
 		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+	}
+
+	if overrides.Network == "host" && runtime.GOOS == "darwin" {
+		fmt.Printf("cmd=%s info=param.error status=unsupported.network.mac value=%s\n", cmdName, overrides.Network)
+		fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())
+		commands.Exit(commands.ECTCommon | commands.ECBadNetworkName)
 	}
 
 	if !commands.ConfirmNetwork(logger, client, overrides.Network) {
