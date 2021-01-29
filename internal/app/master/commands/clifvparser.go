@@ -187,32 +187,6 @@ func ParseExec(value string) ([]string, error) {
 	return parts, nil
 }
 
-func ParseChangeTypes(values []string) (map[string]struct{}, error) {
-	changes := map[string]struct{}{}
-	if len(values) == 0 {
-		values = append(values, "all")
-	}
-
-	for _, item := range values {
-		switch item {
-		case "none":
-			return nil, nil
-		case "all":
-			changes["delete"] = struct{}{}
-			changes["modify"] = struct{}{}
-			changes["add"] = struct{}{}
-		case "delete":
-			changes["delete"] = struct{}{}
-		case "modify":
-			changes["modify"] = struct{}{}
-		case "add":
-			changes["add"] = struct{}{}
-		}
-	}
-
-	return changes, nil
-}
-
 func ParseTokenSet(values []string) (map[string]struct{}, error) {
 	tokens := map[string]struct{}{}
 	for _, token := range values {

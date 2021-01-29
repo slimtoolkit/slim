@@ -11,6 +11,11 @@ const (
 	FlagLayer            = "layer"
 	FlagAddImageManifest = "add-image-manifest"
 	FlagAddImageConfig   = "add-image-config"
+	FlagLayerChangesMax  = "layer-changes-max"
+	FlagAllChangesMax    = "all-changes-max"
+	FlagAddChangesMax    = "add-changes-max"
+	FlagModifyChangesMax = "modify-changes-max"
+	FlagDeleteChangesMax = "delete-changes-max"
 )
 
 // Xray command flag usage info
@@ -19,6 +24,11 @@ const (
 	FlagLayerUsage            = "Show details for the selected layer (using layer index or ID)"
 	FlagAddImageManifestUsage = "Add raw image manifest to the command execution report file"
 	FlagAddImageConfigUsage   = "Add raw image config object to the command execution report file"
+	FlagLayerChangesMaxUsage  = "Maximum number of changes to show for each layer"
+	FlagAllChangesMaxUsage    = "Maximum number of changes to show for all layers"
+	FlagAddChangesMaxUsage    = "Maximum number of 'add' changes to show for all layers"
+	FlagModifyChangesMaxUsage = "Maximum number of 'modify' changes to show for all layers"
+	FlagDeleteChangesMaxUsage = "Maximum number of 'delete' changes to show for all layers"
 )
 
 var Flags = map[string]cli.Flag{
@@ -43,6 +53,36 @@ var Flags = map[string]cli.Flag{
 		Name:   FlagAddImageConfig,
 		Usage:  FlagAddImageConfigUsage,
 		EnvVar: "DSLIM_XRAY_IMAGE_CONFIG",
+	},
+	FlagLayerChangesMax: cli.IntFlag{
+		Name:   FlagLayerChangesMax,
+		Value:  -1,
+		Usage:  FlagLayerChangesMaxUsage,
+		EnvVar: "DSLIM_XRAY_LAYER_CHANGES_MAX",
+	},
+	FlagAllChangesMax: cli.IntFlag{
+		Name:   FlagAllChangesMax,
+		Value:  -1,
+		Usage:  FlagAllChangesMaxUsage,
+		EnvVar: "DSLIM_XRAY_ALL_CHANGES_MAX",
+	},
+	FlagAddChangesMax: cli.IntFlag{
+		Name:   FlagAddChangesMax,
+		Value:  -1,
+		Usage:  FlagAddChangesMaxUsage,
+		EnvVar: "DSLIM_XRAY_ADD_CHANGES_MAX",
+	},
+	FlagModifyChangesMax: cli.IntFlag{
+		Name:   FlagModifyChangesMax,
+		Value:  -1,
+		Usage:  FlagModifyChangesMaxUsage,
+		EnvVar: "DSLIM_XRAY_MODIFY_CHANGES_MAX",
+	},
+	FlagDeleteChangesMax: cli.IntFlag{
+		Name:   FlagDeleteChangesMax,
+		Value:  -1,
+		Usage:  FlagDeleteChangesMaxUsage,
+		EnvVar: "DSLIM_XRAY_DELETE_CHANGES_MAX",
 	},
 }
 

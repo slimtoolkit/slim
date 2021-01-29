@@ -113,6 +113,14 @@ func HasImage(dclient *dockerapi.Client, imageRef string) error {
 }
 
 func ListImages(dclient *dockerapi.Client, imageNameFilter string) (map[string]BasicImageProps, error) {
+	// python <- exact match only
+	// py* <- all image names starting with 'py' (no/default namespace)
+	// dslimexamples/* <- all image names in the 'dslimexamples' namespace
+	// dslimexamples/ser* <- all image names starting with 'ser' in the 'dslimexamples' namespace
+	// dslimexamples/*python* <- all image names with 'python' in them in the 'dslimexamples' namespace
+	// */*python* <- all image names with 'python' in them in all namesapces (except the default namespace)
+	// */*alpine <- all image names ending with 'alpine' in all namesapces (except the default namespace)
+	// * <- all image names with no/default namespace. note that no images with namespaces will be returned
 	var err error
 	if dclient == nil {
 		dclient, err = dockerapi.NewClient(dockerHost)
@@ -123,10 +131,13 @@ func ListImages(dclient *dockerapi.Client, imageNameFilter string) (map[string]B
 	}
 
 	listOptions := dockerapi.ListImagesOptions{
-		Filters: map[string][]string{
-			"reference": {imageNameFilter},
-		},
 		All: false,
+	}
+
+	if imageNameFilter != "" {
+		listOptions.Filters = map[string][]string{
+			"reference": {imageNameFilter},
+		}
 	}
 
 	imageList, err := dclient.ListImages(listOptions)

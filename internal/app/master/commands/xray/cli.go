@@ -24,6 +24,11 @@ var CLI = cli.Command{
 		cflag(FlagLayer),
 		cflag(FlagAddImageManifest),
 		cflag(FlagAddImageConfig),
+		cflag(FlagLayerChangesMax),
+		cflag(FlagAllChangesMax),
+		cflag(FlagAddChangesMax),
+		cflag(FlagModifyChangesMax),
+		cflag(FlagDeleteChangesMax),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
 	},
 	Action: func(ctx *cli.Context) error {
@@ -45,7 +50,7 @@ var CLI = cli.Command{
 			return err
 		}
 
-		changes, err := commands.ParseChangeTypes(ctx.StringSlice(FlagChanges))
+		changes, err := parseChangeTypes(ctx.StringSlice(FlagChanges))
 		if err != nil {
 			fmt.Printf("docker-slim[%s]: invalid change types: %v\n", Name, err)
 			return err
@@ -56,6 +61,12 @@ var CLI = cli.Command{
 			fmt.Printf("docker-slim[%s]: invalid layer selectors: %v\n", Name, err)
 			return err
 		}
+
+		layerChangesMax := ctx.Int(FlagLayerChangesMax)
+		allChangesMax := ctx.Int(FlagAllChangesMax)
+		addChangesMax := ctx.Int(FlagAddChangesMax)
+		modifyChangesMax := ctx.Int(FlagModifyChangesMax)
+		deleteChangesMax := ctx.Int(FlagDeleteChangesMax)
 
 		doAddImageManifest := ctx.Bool(FlagAddImageManifest)
 		doAddImageConfig := ctx.Bool(FlagAddImageConfig)
@@ -68,6 +79,11 @@ var CLI = cli.Command{
 			targetRef,
 			changes,
 			layers,
+			layerChangesMax,
+			allChangesMax,
+			addChangesMax,
+			modifyChangesMax,
+			deleteChangesMax,
 			doAddImageManifest,
 			doAddImageConfig,
 			doRmFileArtifacts,
@@ -75,4 +91,30 @@ var CLI = cli.Command{
 		commands.ShowCommunityInfo()
 		return nil
 	},
+}
+
+func parseChangeTypes(values []string) (map[string]struct{}, error) {
+	changes := map[string]struct{}{}
+	if len(values) == 0 {
+		values = append(values, "all")
+	}
+
+	for _, item := range values {
+		switch item {
+		case "none":
+			return nil, nil
+		case "all":
+			changes["delete"] = struct{}{}
+			changes["modify"] = struct{}{}
+			changes["add"] = struct{}{}
+		case "delete":
+			changes["delete"] = struct{}{}
+		case "modify":
+			changes["modify"] = struct{}{}
+		case "add":
+			changes["add"] = struct{}{}
+		}
+	}
+
+	return changes, nil
 }

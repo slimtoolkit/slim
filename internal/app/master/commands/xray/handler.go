@@ -36,6 +36,11 @@ func OnCommand(
 	targetRef string,
 	changes map[string]struct{},
 	layers map[string]struct{},
+	layerChangesMax int,
+	allChangesMax int,
+	addChangesMax int,
+	modifyChangesMax int,
+	deleteChangesMax int,
 	doAddImageManifest bool,
 	doAddImageConfig bool,
 	doRmFileArtifacts bool,
@@ -174,7 +179,17 @@ func OnCommand(
 			len(imagePkg.Config.History))
 	}
 
-	printImagePackage(imagePkg, appName, cmdName, changes, layers, cmdReport)
+	printImagePackage(imagePkg,
+		appName,
+		cmdName,
+		changes,
+		layers,
+		layerChangesMax,
+		allChangesMax,
+		addChangesMax,
+		modifyChangesMax,
+		deleteChangesMax,
+		cmdReport)
 
 	if doAddImageManifest {
 		cmdReport.RawImageManifest = imagePkg.Manifest
@@ -214,12 +229,22 @@ func printImagePackage(pkg *dockerimage.Package,
 	cmdName command.Type,
 	changes map[string]struct{},
 	layers map[string]struct{},
+	layerChangesMax int,
+	allChangesMax int,
+	addChangesMax int,
+	modifyChangesMax int,
+	deleteChangesMax int,
 	cmdReport *report.XrayCommand) {
 	fmt.Printf("cmd=%s info=image.package.details\n", cmdName)
+	var allChangesCount int
+	var addChangesCount int
+	var modifyChangesCount int
+	var deleteChangesCount int
 
 	fmt.Printf("cmd=%s info=layers.count: %v\n", cmdName, len(pkg.Layers))
 	for _, layer := range pkg.Layers {
 		fmt.Printf("cmd=%s info=layer index=%d id=%s path=%s\n", cmdName, layer.Index, layer.ID, layer.Path)
+		var layerChangesCount int
 
 		if layer.Stats.AllSize != 0 {
 			fmt.Printf("cmd=%s info=layer.stats all_size.human='%v' all_size.bytes=%v\n",
@@ -321,9 +346,32 @@ func printImagePackage(pkg *dockerimage.Package,
 		}
 
 		if showLayer {
+
+			allChangesCount++
+			addChangesCount++
+			modifyChangesCount++
+			deleteChangesCount++
+			layerChangesCount++
+
 			if _, ok := changes["delete"]; ok && len(layer.Changes.Deleted) > 0 {
 				fmt.Printf("cmd=%s info=layer.objects.deleted:\n", cmdName)
 				for _, objectIdx := range layer.Changes.Deleted {
+					allChangesCount++
+					deleteChangesCount++
+					layerChangesCount++
+
+					if allChangesMax > -1 && allChangesCount > allChangesMax {
+						break
+					}
+
+					if deleteChangesMax > -1 && deleteChangesCount > deleteChangesMax {
+						break
+					}
+
+					if layerChangesMax > -1 && layerChangesCount > layerChangesMax {
+						break
+					}
+
 					layerReport.Deleted = append(layerReport.Deleted, layer.Objects[objectIdx])
 					printObject(layer.Objects[objectIdx])
 				}
@@ -332,6 +380,22 @@ func printImagePackage(pkg *dockerimage.Package,
 			if _, ok := changes["modify"]; ok && len(layer.Changes.Modified) > 0 {
 				fmt.Printf("cmd=%s info=layer.objects.modified:\n", cmdName)
 				for _, objectIdx := range layer.Changes.Modified {
+					allChangesCount++
+					modifyChangesCount++
+					layerChangesCount++
+
+					if allChangesMax > -1 && allChangesCount > allChangesMax {
+						break
+					}
+
+					if modifyChangesMax > -1 && modifyChangesCount > modifyChangesMax {
+						break
+					}
+
+					if layerChangesMax > -1 && layerChangesCount > layerChangesMax {
+						break
+					}
+
 					layerReport.Modified = append(layerReport.Modified, layer.Objects[objectIdx])
 					printObject(layer.Objects[objectIdx])
 				}
@@ -340,6 +404,22 @@ func printImagePackage(pkg *dockerimage.Package,
 			if _, ok := changes["add"]; ok && len(layer.Changes.Added) > 0 {
 				fmt.Printf("cmd=%s info=layer.objects.added:\n", cmdName)
 				for _, objectIdx := range layer.Changes.Added {
+					allChangesCount++
+					addChangesCount++
+					layerChangesCount++
+
+					if allChangesMax > -1 && allChangesCount > allChangesMax {
+						break
+					}
+
+					if addChangesMax > -1 && addChangesCount > addChangesMax {
+						break
+					}
+
+					if layerChangesMax > -1 && layerChangesCount > layerChangesMax {
+						break
+					}
+
 					layerReport.Added = append(layerReport.Added, layer.Objects[objectIdx])
 					printObject(layer.Objects[objectIdx])
 				}
