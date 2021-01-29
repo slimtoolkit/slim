@@ -1,6 +1,34 @@
 # Releases
 
+## 1.34.0 (1/29/2021)
+
+### New Features
+
+- New `xray` flags to control what layer change data to include in the generated reports (`layer-changes-max`, `all-changes-max`, `add-changes-max`, `modify-changes-max`, `delete-changes-max`)
+
+### Improvements
+
+- `host` network flag handling enhancements.
+- Returning non-zero exit codes on failures
+- Additional image checks to catch missing ENTRYPOINT/CMD instructions
+
+### Bug Fixes
+
+- Fixed container image listing bug that broke the `--target` value suggestions in the interactive prompt mode.
+
 ## 1.33.0 (12/12/2020)
+
+### New Features
+
+- Ability to interact with the temporary containers using the `--exec` and `--exec-file` flags
+
+### Improvements
+
+- `npm` support enhancements (makes it possible to use `npm start` in Dockerfiles, which isn't recommended though)
+
+### Bug Fixes
+
+- Various bug fixes.
 
 ## 1.32.0 (8/23/2020)
 
