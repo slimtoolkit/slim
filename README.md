@@ -234,8 +234,8 @@ If you run `docker-slim` without any parameters you'll get an interactive prompt
 Commands:
 
 - `lint` - Lint the target Dockerfile (or image, in the future)
-- `xray` - Collects fat image information and reverse engineers its Dockerfile
-- `build` - Collect fat image information and build a slim image from it
+- `xray` - Show what's in the container image and reverse engineer its Dockerfile
+- `build` - Analyze the target container image along with its application and build an optimized image from it
 - `profile` - Collect fat image information and generate a fat container report
 - `version` - Show docker-slim and docker version information
 - `update` - Update docker-slim
@@ -282,12 +282,25 @@ To disable the version checks set the global `--check-version` flag to `false` (
 
 ### `XRAY` COMMAND OPTIONS
 
-- `--target` - target container image (name or ID)
-- `--changes value` - show layer change details for the selected change type (values: none, all, delete, modify, add)
-- `--layer value` - show details for the selected layer (using layer index or ID)
-- `--remove-file-artifacts` - remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
-- `--add-image-manifest` - add raw image manifest to the command execution report file
-- `--add-image-config` - add raw image config object to the command execution report file
+- `--target` - Target container image (name or ID)
+- `--changes value` - Show layer change details for the selected change type (values: none, all, delete, modify, add). 
+- `--layer value` - Show details for the selected layer (using layer index or ID)
+- `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
+- `--add-image-manifest` - Add raw image manifest to the command execution report file
+- `--add-image-config` - Add raw image config object to the command execution report file
+- `layer-changes-max` - Maximum number of changes to show for each layer
+- `all-changes-max` - Maximum number of changes to show for all layers
+- `add-changes-max` - Maximum number of `add` changes to show for all layers
+- `modify-changes-max` - Maximum number of `modify` changes to show for all layers
+- `delete-changes-max` - Maximum number of `delete` changes to show for all layers
+
+Change Types:
+
+- `none` - Don't show any file system change details in image layers (the top changes from the corresponding layer are still shown)
+- `all` - Show all file system change details in image layers
+- `delete` - Show only `delete` file system change details in image layers
+- `modify` - Show only `modify` file system change details in image layers
+- `add` - Show only 'add' file system change details in image layers
 
 In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.
 
