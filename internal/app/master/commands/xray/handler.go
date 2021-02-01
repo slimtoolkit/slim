@@ -41,6 +41,7 @@ func OnCommand(
 	addChangesMax int,
 	modifyChangesMax int,
 	deleteChangesMax int,
+	changePaths []string,
 	doAddImageManifest bool,
 	doAddImageConfig bool,
 	doRmFileArtifacts bool,

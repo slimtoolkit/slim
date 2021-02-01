@@ -16,6 +16,7 @@ const (
 	FlagAddChangesMax    = "add-changes-max"
 	FlagModifyChangesMax = "modify-changes-max"
 	FlagDeleteChangesMax = "delete-changes-max"
+	FlagChangePath       = "change-path"
 )
 
 // Xray command flag usage info
@@ -29,6 +30,7 @@ const (
 	FlagAddChangesMaxUsage    = "Maximum number of 'add' changes to show for all layers"
 	FlagModifyChangesMaxUsage = "Maximum number of 'modify' changes to show for all layers"
 	FlagDeleteChangesMaxUsage = "Maximum number of 'delete' changes to show for all layers"
+	FlagChangePathUsage       = "Include changes for the files that match the path pattern (Glob/Match in Go and **)"
 )
 
 var Flags = map[string]cli.Flag{
@@ -83,6 +85,12 @@ var Flags = map[string]cli.Flag{
 		Value:  -1,
 		Usage:  FlagDeleteChangesMaxUsage,
 		EnvVar: "DSLIM_XRAY_DELETE_CHANGES_MAX",
+	},
+	FlagChangePath: cli.StringSliceFlag{
+		Name:   FlagChangePath,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagChangePathUsage,
+		EnvVar: "DSLIM_XRAY_CHANGE_PATH",
 	},
 }
 
