@@ -33,7 +33,7 @@ func GetSystemInfo() SystemInfo {
 }
 
 func osName() string {
-	bdata, err := ioutil.ReadFile("/etc/os-release")
+	bdata, err := ioutil.ReadFile(OSReleaseFile)
 	if err != nil {
 		return "unknown"
 	}
