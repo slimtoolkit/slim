@@ -565,7 +565,7 @@ func OnCommand(
 				cmdReport.System = report.SystemMetadata{
 					Type:    creport.System.Type,
 					Release: creport.System.Release,
-					OS:      creport.System.OS,
+					Distro:  creport.System.Distro,
 				}
 			} else {
 				logger.Infof("could not read container report - json parsing error - %v", err)

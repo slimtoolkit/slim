@@ -16,6 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
+	"github.com/docker-slim/docker-slim/pkg/system"
 )
 
 const (
@@ -61,6 +62,7 @@ type Layer struct {
 	Objects    []*ObjectMetadata
 	References map[string]*ObjectMetadata
 	Top        TopObjects
+	Distro     *system.DistroInfo
 }
 
 type LayerStats struct {
@@ -433,6 +435,9 @@ func layerFromStream(tr *tar.Reader, layerID string) (*Layer, error) {
 
 			if isDeleted {
 				layer.Stats.DeletedFileCount++
+			} else {
+				err = inspectFile(object.Name, tr, layer)
+				log.Errorf("layerFromStream: error inspecting layer file (%s) - (%v) - %v", object.Name, layerID, err)
 			}
 		case tar.TypeDir:
 			layer.Stats.DirCount++
@@ -447,6 +452,45 @@ func layerFromStream(tr *tar.Reader, layerID string) (*Layer, error) {
 	}
 
 	return layer, nil
+}
+
+func inspectFile(name string, reader io.Reader, layer *Layer) error {
+	//TODO: refactor and enhance the OS Distro detection logic
+	if system.IsOSReleaseFile(name) {
+		data, err := ioutil.ReadAll(reader)
+		if err != nil {
+			return err
+		}
+
+		osr, err := system.NewOsRelease(data)
+		if err != nil {
+			return err
+		}
+
+		distro := &system.DistroInfo{
+			Name:        osr.Name,
+			Version:     osr.VersionID,
+			DisplayName: osr.PrettyName,
+		}
+
+		if distro.Version == "" {
+			distro.Version = osr.Version
+		}
+
+		if distro.DisplayName == "" {
+			nameMain := osr.Name
+			nameVersion := osr.Version
+			if nameVersion == "" {
+				nameVersion = osr.VersionID
+			}
+
+			distro.DisplayName = fmt.Sprintf("%v %v", nameMain, nameVersion)
+		}
+
+		layer.Distro = distro
+	}
+
+	return nil
 }
 
 func jsonFromStream(reader io.Reader, data interface{}) error {

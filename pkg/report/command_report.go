@@ -20,9 +20,9 @@ import (
 // Command is the common command report data
 type Command struct {
 	reportLocation string
-	Engine         string `json:"engine"`
-	Containerized  bool   `json:"containerized"`
-	Host           string `json:"host"`
+	Engine         string     `json:"engine"`
+	Containerized  bool       `json:"containerized"`
+	HostDistro     DistroInfo `json:"host_distro"`
 	//Docker         string  `json:"docker,omitempty"`
 	Type  command.Type  `json:"type"`
 	State command.State `json:"state"`
@@ -31,24 +31,25 @@ type Command struct {
 
 // ImageMetadata provides basic image metadata
 type ImageMetadata struct {
-	ID            string   `json:"id"`
-	Name          string   `json:"name"`
-	Size          int64    `json:"size"`
-	SizeHuman     string   `json:"size_human"`
-	CreateTime    string   `json:"create_time"`
-	AllNames      []string `json:"all_names"`
-	Author        string   `json:"author,omitempty"`
-	DockerVersion string   `json:"docker_version"`
-	Architecture  string   `json:"architecture"`
-	User          string   `json:"user,omitempty"`
-	ExposedPorts  []string `json:"exposed_ports,omitempty"`
+	ID            string      `json:"id"`
+	Name          string      `json:"name"`
+	Size          int64       `json:"size"`
+	SizeHuman     string      `json:"size_human"`
+	CreateTime    string      `json:"create_time"`
+	AllNames      []string    `json:"all_names"`
+	Author        string      `json:"author,omitempty"`
+	DockerVersion string      `json:"docker_version"`
+	Architecture  string      `json:"architecture"`
+	User          string      `json:"user,omitempty"`
+	ExposedPorts  []string    `json:"exposed_ports,omitempty"`
+	Distro        *DistroInfo `json:"distro,omitempty"`
 }
 
 // SystemMetadata provides basic system metadata
 type SystemMetadata struct {
-	Type    string `json:"type"`
-	Release string `json:"release"`
-	OS      string `json:"os"`
+	Type    string     `json:"type"`
+	Release string     `json:"release"`
+	Distro  DistroInfo `json:"distro"`
 }
 
 // BuildCommand is the 'build' command report data
@@ -132,7 +133,11 @@ func (cmd *Command) init(containerized bool) {
 	cmd.Engine = version.Current()
 
 	hinfo := system.GetSystemInfo()
-	cmd.Host = hinfo.OsName
+	cmd.HostDistro = DistroInfo{
+		Name:        hinfo.Distro.Name,
+		Version:     hinfo.Distro.Version,
+		DisplayName: hinfo.Distro.DisplayName,
+	}
 }
 
 // NewBuildCommand creates a new 'build' command report

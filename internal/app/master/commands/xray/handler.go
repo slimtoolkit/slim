@@ -247,6 +247,19 @@ func printImagePackage(pkg *dockerimage.Package,
 		fmt.Printf("cmd=%s info=layer index=%d id=%s path=%s\n", cmdName, layer.Index, layer.ID, layer.Path)
 		var layerChangesCount int
 
+		if layer.Distro != nil {
+			distro := &report.DistroInfo{
+				Name:        layer.Distro.Name,
+				Version:     layer.Distro.Version,
+				DisplayName: layer.Distro.DisplayName,
+			}
+
+			fmt.Printf("cmd=%s info=distro name='%s' version='%s' display='%s'\n",
+				cmdName, distro.Name, distro.Version, distro.DisplayName)
+
+			cmdReport.SourceImage.Distro = distro
+		}
+
 		if layer.Stats.AllSize != 0 {
 			fmt.Printf("cmd=%s info=layer.stats all_size.human='%v' all_size.bytes=%v\n",
 				cmdName, humanize.Bytes(uint64(layer.Stats.AllSize)), layer.Stats.AllSize)

@@ -5,6 +5,23 @@ import (
 	"strconv"
 )
 
+const (
+	OSReleaseFile    = "/etc/os-release"
+	OSReleaseFileNew = "/usr/lib/os-release"
+	LSBReleaseFile   = "/etc/lsb-release"
+	IssueFile        = "/etc/issue"
+	IssueNetFile     = "/etc/issue.net"
+)
+
+func IsOSReleaseFile(name string) bool {
+	switch name {
+	case OSReleaseFile, OSReleaseFileNew:
+		return true
+	default:
+		return false
+	}
+}
+
 type SystemInfo struct {
 	Sysname    string
 	Nodename   string
@@ -12,8 +29,14 @@ type SystemInfo struct {
 	Version    string
 	Machine    string
 	Domainname string
-	OsName     string
 	OsBuild    string
+	Distro     DistroInfo
+}
+
+type DistroInfo struct {
+	Name        string `json:"name"`
+	Version     string `json:"version"`
+	DisplayName string `json:"display_name"`
 }
 
 func ResolveUser(identity string) (uint32, uint32, error) {

@@ -10,14 +10,6 @@ import (
 	"log"
 )
 
-const (
-	OSReleaseFile    = "/etc/os-release"
-	OSReleaseFileNew = "/usr/lib/os-release"
-	LSBReleaseFile   = "/etc/lsb-release"
-	IssueFile        = "/etc/issue"
-	IssueNetFile     = "/etc/issue.net"
-)
-
 //NOTE:
 //copied from https://github.com/docker/machine/blob/master/libmachine/provision/os_release.go
 

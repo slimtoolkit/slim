@@ -16,12 +16,13 @@ func newSystemInfo() SystemInfo {
 
 	sysInfo.Sysname = nativeCharsToString(unameInfo.Sysname)
 	sysInfo.Nodename = nativeCharsToString(unameInfo.Nodename)
-	sysInfo.Release = nativeCharsToString(unameInfo.Release)
-	sysInfo.Version = nativeCharsToString(unameInfo.Version)
 	sysInfo.Machine = nativeCharsToString(unameInfo.Machine)
 	sysInfo.Domainname = nativeCharsToString(unameInfo.Domainname)
-
-	sysInfo.OsName = osName()
+	//kernel info
+	sysInfo.Release = nativeCharsToString(unameInfo.Release)
+	sysInfo.Version = nativeCharsToString(unameInfo.Version)
+	//distro info
+	sysInfo.Distro = distroInfo()
 
 	return sysInfo
 }
@@ -32,26 +33,45 @@ func GetSystemInfo() SystemInfo {
 	return defaultSysInfo
 }
 
-func osName() string {
+func distroInfo() DistroInfo {
+	distro := DistroInfo{
+		Name:        "unknown",
+		DisplayName: "unknown",
+	}
+
 	bdata, err := ioutil.ReadFile(OSReleaseFile)
 	if err != nil {
-		return "unknown"
+		return distro
 	}
 
 	if osr, err := NewOsRelease(bdata); err == nil {
 		var nameMain, nameVersion string
 
-		nameMain = osr.Name
-		if len(osr.Version) > 0 {
-			nameVersion = osr.Version
-		} else {
-			nameVersion = osr.VersionID
+		distro.Name = osr.Name
+		distro.Version = osr.VersionID
+		if distro.Version == "" {
+			distro.Version = osr.Version
 		}
 
-		return fmt.Sprintf("%v %v", nameMain, nameVersion)
+		distro.DisplayName = osr.PrettyName
+		if distro.DisplayName == "" {
+			nameMain = osr.Name
+			if len(osr.Version) > 0 {
+				nameVersion = osr.Version
+			} else {
+				nameVersion = osr.VersionID
+			}
+
+			distro.DisplayName = fmt.Sprintf("%v %v", nameMain, nameVersion)
+		}
+
+		return distro
 	}
 
-	return "other"
+	distro.Name = "other"
+	distro.DisplayName = "other"
+
+	return distro
 }
 
 /*

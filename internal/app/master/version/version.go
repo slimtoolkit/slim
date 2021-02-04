@@ -72,7 +72,7 @@ func Print(printPrefix string, logger *log.Entry, client *docker.Client, checkVe
 	fmt.Printf("%s info=app location='%v'\n", printPrefix, fsutil.ExeDir())
 
 	hostInfo := system.GetSystemInfo()
-	fmt.Printf("%s info=host osname='%v'\n", printPrefix, hostInfo.OsName)
+	fmt.Printf("%s info=host osname='%v'\n", printPrefix, hostInfo.Distro.DisplayName)
 	fmt.Printf("%s info=host osbuild=%v\n", printPrefix, hostInfo.OsBuild)
 	fmt.Printf("%s info=host version='%v'\n", printPrefix, hostInfo.Version)
 	fmt.Printf("%s info=host release=%v\n", printPrefix, hostInfo.Release)
@@ -136,7 +136,7 @@ func Check(inContainer, isDSImage bool) *CheckVersionInfo {
 	}
 	hinfo := system.GetSystemInfo()
 	req.Header.Set("User-Agent", fmt.Sprintf("DockerSlimApp/%v/%v/%v/%v",
-		v.Current(), inContainer, isDSImage, hinfo.OsName))
+		v.Current(), inContainer, isDSImage, hinfo.Distro.DisplayName))
 	req.Header.Set("Content-Type", jsonContentType)
 	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", versionAuthKey))
 

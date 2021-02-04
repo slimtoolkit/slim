@@ -558,7 +558,11 @@ func (p *artifactStore) saveReport() {
 	creport.System = report.SystemReport{
 		Type:    sinfo.Sysname,
 		Release: sinfo.Release,
-		OS:      sinfo.OsName,
+		Distro: report.DistroInfo{
+			Name:        sinfo.Distro.Name,
+			Version:     sinfo.Distro.Version,
+			DisplayName: sinfo.Distro.DisplayName,
+		},
 	}
 
 	for _, fname := range p.nameList {

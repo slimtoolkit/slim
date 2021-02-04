@@ -154,9 +154,9 @@ type MonitorReports struct {
 
 // SystemReport provides a basic system report for the container environment
 type SystemReport struct {
-	Type    string `json:"type"`
-	Release string `json:"release"`
-	OS      string `json:"os"`
+	Type    string     `json:"type"`
+	Release string     `json:"release"`
+	Distro  DistroInfo `json:"distro"`
 }
 
 // ContainerReport contains container report fields

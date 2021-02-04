@@ -25,7 +25,9 @@ func newSystemInfo() SystemInfo {
 			major, _ := strconv.ParseUint(rparts[0], 10, 64)
 			minor, _ := strconv.ParseUint(rparts[1], 10, 64)
 
-			sysInfo.OsName = osName(major, minor)
+			sysInfo.Distro = DistroInfo{
+				DisplayName: osName(major, minor),
+			}
 		}
 
 		sysInfo.Release = releaseInfo
@@ -81,4 +83,5 @@ var osNames = map[uint64]struct {
 	17: {"High Sierra", "10.13."},
 	18: {"Mojave", "10.14."},
 	19: {"Catalina", "10.15."},
+	20: {"Big Sur", "11."},
 }
