@@ -437,7 +437,9 @@ func layerFromStream(tr *tar.Reader, layerID string) (*Layer, error) {
 				layer.Stats.DeletedFileCount++
 			} else {
 				err = inspectFile(object.Name, tr, layer)
-				log.Errorf("layerFromStream: error inspecting layer file (%s) - (%v) - %v", object.Name, layerID, err)
+				if err != nil {
+					log.Errorf("layerFromStream: error inspecting layer file (%s) - (%v) - %v", object.Name, layerID, err)
+				}
 			}
 		case tar.TypeDir:
 			layer.Stats.DirCount++
@@ -456,7 +458,7 @@ func layerFromStream(tr *tar.Reader, layerID string) (*Layer, error) {
 
 func inspectFile(name string, reader io.Reader, layer *Layer) error {
 	//TODO: refactor and enhance the OS Distro detection logic
-	if system.IsOSReleaseFile(name) {
+	if system.IsOSReleaseFile(fmt.Sprintf("/%s", name)) {
 		data, err := ioutil.ReadAll(reader)
 		if err != nil {
 			return err
