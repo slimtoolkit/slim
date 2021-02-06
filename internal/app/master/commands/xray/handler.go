@@ -43,6 +43,7 @@ func OnCommand(
 	modifyChangesMax int,
 	deleteChangesMax int,
 	changePaths []string,
+	changeDataPatterns []string,
 	doAddImageManifest bool,
 	doAddImageConfig bool,
 	doRmFileArtifacts bool,
@@ -162,7 +163,7 @@ func OnCommand(
 	err = dockerutil.SaveImage(client, imageID, iaPath, false, false)
 	errutil.FailOn(err)
 
-	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false)
+	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, changeDataPatterns)
 	errutil.FailOn(err)
 
 	fmt.Printf("cmd=%s state=image.data.inspection.done\n", cmdName)

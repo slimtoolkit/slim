@@ -53,16 +53,17 @@ type ChangesetSummary struct {
 }
 
 type Layer struct {
-	ID         string
-	Index      int
-	Path       string
-	FSDiffID   string
-	Stats      LayerStats
-	Changes    Changeset
-	Objects    []*ObjectMetadata
-	References map[string]*ObjectMetadata
-	Top        TopObjects
-	Distro     *system.DistroInfo
+	ID          string
+	Index       int
+	Path        string
+	FSDiffID    string
+	Stats       LayerStats
+	Changes     Changeset
+	Objects     []*ObjectMetadata
+	References  map[string]*ObjectMetadata
+	Top         TopObjects
+	Distro      *system.DistroInfo
+	DataMatches map[string][]int //pattern -> object ID list
 }
 
 type LayerStats struct {
@@ -174,10 +175,11 @@ func newPackage() *Package {
 
 func newLayer(id string) *Layer {
 	layer := Layer{
-		ID:         id,
-		Index:      -1,
-		References: map[string]*ObjectMetadata{},
-		Top:        NewTopObjects(topObjectMax),
+		ID:          id,
+		Index:       -1,
+		References:  map[string]*ObjectMetadata{},
+		Top:         NewTopObjects(topObjectMax),
+		DataMatches: map[string][]int{},
 	}
 
 	heap.Init(&(layer.Top))
@@ -185,7 +187,7 @@ func newLayer(id string) *Layer {
 	return &layer
 }
 
-func LoadPackage(archivePath, imageID string, skipObjects bool) (*Package, error) {
+func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataPatterns []string) (*Package, error) {
 	imageID = dockerutil.CleanImageID(imageID)
 
 	configObjectFileName := fmt.Sprintf("%s.json", imageID)
@@ -251,7 +253,7 @@ func LoadPackage(archivePath, imageID string, skipObjects bool) (*Package, error
 			case strings.HasSuffix(hdr.Name, layerSuffix):
 				parts := strings.Split(hdr.Name, "/")
 				layerID := parts[0]
-				layer, err := layerFromStream(tar.NewReader(tr), layerID)
+				layer, err := layerFromStream(tar.NewReader(tr), layerID, changeDataPatterns)
 				if err != nil {
 					log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
 					return nil, err
@@ -363,7 +365,7 @@ func LoadPackage(archivePath, imageID string, skipObjects bool) (*Package, error
 	return pkg, nil
 }
 
-func layerFromStream(tr *tar.Reader, layerID string) (*Layer, error) {
+func layerFromStream(tr *tar.Reader, layerID string, changeDataPatterns []string) (*Layer, error) {
 	layer := newLayer(layerID)
 
 	for {
