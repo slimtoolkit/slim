@@ -18,6 +18,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
+	"github.com/bmatcuk/doublestar"
 	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 )
@@ -190,6 +191,7 @@ func OnCommand(
 		addChangesMax,
 		modifyChangesMax,
 		deleteChangesMax,
+		changePaths,
 		cmdReport)
 
 	if doAddImageManifest {
@@ -235,6 +237,7 @@ func printImagePackage(pkg *dockerimage.Package,
 	addChangesMax int,
 	modifyChangesMax int,
 	deleteChangesMax int,
+	changePaths []string,
 	cmdReport *report.XrayCommand) {
 	fmt.Printf("cmd=%s info=image.package.details\n", cmdName)
 	var allChangesCount int
@@ -319,8 +322,11 @@ func printImagePackage(pkg *dockerimage.Package,
 		changeCount := len(layer.Changes.Deleted) + len(layer.Changes.Modified) + len(layer.Changes.Added)
 
 		fmt.Printf("cmd=%s info=layer.change.summary deleted=%d modified=%d added=%d all=%d\n",
-			cmdName, len(layer.Changes.Deleted), len(layer.Changes.Modified),
-			len(layer.Changes.Added), changeCount)
+			cmdName,
+			len(layer.Changes.Deleted),
+			len(layer.Changes.Modified),
+			len(layer.Changes.Added),
+			changeCount)
 
 		fmt.Printf("cmd=%s info=layer.objects.count data=%d\n", cmdName, len(layer.Objects))
 
@@ -360,19 +366,36 @@ func printImagePackage(pkg *dockerimage.Package,
 		}
 
 		if showLayer {
-
-			allChangesCount++
-			addChangesCount++
-			modifyChangesCount++
-			deleteChangesCount++
-			layerChangesCount++
-
 			if _, ok := changes["delete"]; ok && len(layer.Changes.Deleted) > 0 {
 				fmt.Printf("cmd=%s info=layer.objects.deleted:\n", cmdName)
 				for _, objectIdx := range layer.Changes.Deleted {
 					allChangesCount++
 					deleteChangesCount++
 					layerChangesCount++
+
+					objectInfo := layer.Objects[objectIdx]
+
+					//TODO: add a flag to select change type to apply path patterns
+					var match bool
+					for _, ptrn := range changePaths {
+						ptrn := strings.TrimSpace(ptrn)
+						if len(ptrn) == 0 {
+							continue
+						}
+
+						match, err := doublestar.Match(ptrn, objectInfo.Name)
+						if err != nil {
+							log.Errorf("doublestar.Match name='%s' error=%v", objectInfo.Name, err)
+						}
+
+						if match {
+							break
+						}
+					}
+
+					if !match && len(changePaths) > 0 {
+						continue
+					}
 
 					if allChangesMax > -1 && allChangesCount > allChangesMax {
 						break
@@ -386,8 +409,8 @@ func printImagePackage(pkg *dockerimage.Package,
 						break
 					}
 
-					layerReport.Deleted = append(layerReport.Deleted, layer.Objects[objectIdx])
-					printObject(layer.Objects[objectIdx])
+					layerReport.Deleted = append(layerReport.Deleted, objectInfo)
+					printObject(objectInfo)
 				}
 				fmt.Printf("\n")
 			}
@@ -397,6 +420,30 @@ func printImagePackage(pkg *dockerimage.Package,
 					allChangesCount++
 					modifyChangesCount++
 					layerChangesCount++
+
+					objectInfo := layer.Objects[objectIdx]
+
+					//TODO: add a flag to select change type to apply path patterns
+					var match bool
+					for _, ptrn := range changePaths {
+						ptrn := strings.TrimSpace(ptrn)
+						if len(ptrn) == 0 {
+							continue
+						}
+
+						match, err := doublestar.Match(ptrn, objectInfo.Name)
+						if err != nil {
+							log.Errorf("doublestar.Match name='%s' error=%v", objectInfo.Name, err)
+						}
+
+						if match {
+							break
+						}
+					}
+
+					if !match && len(changePaths) > 0 {
+						continue
+					}
 
 					if allChangesMax > -1 && allChangesCount > allChangesMax {
 						break
@@ -410,8 +457,8 @@ func printImagePackage(pkg *dockerimage.Package,
 						break
 					}
 
-					layerReport.Modified = append(layerReport.Modified, layer.Objects[objectIdx])
-					printObject(layer.Objects[objectIdx])
+					layerReport.Modified = append(layerReport.Modified, objectInfo)
+					printObject(objectInfo)
 				}
 				fmt.Printf("\n")
 			}
@@ -421,6 +468,30 @@ func printImagePackage(pkg *dockerimage.Package,
 					allChangesCount++
 					addChangesCount++
 					layerChangesCount++
+
+					objectInfo := layer.Objects[objectIdx]
+
+					//TODO: add a flag to select change type to apply path patterns
+					var match bool
+					for _, ptrn := range changePaths {
+						ptrn := strings.TrimSpace(ptrn)
+						if len(ptrn) == 0 {
+							continue
+						}
+
+						match, err := doublestar.Match(ptrn, objectInfo.Name)
+						if err != nil {
+							log.Errorf("doublestar.Match name='%s' error=%v", objectInfo.Name, err)
+						}
+
+						if match {
+							break
+						}
+					}
+
+					if !match && len(changePaths) > 0 {
+						continue
+					}
 
 					if allChangesMax > -1 && allChangesCount > allChangesMax {
 						break
