@@ -140,17 +140,23 @@ func OnCommand(
 		DockerVersion: imageInspector.ImageInfo.DockerVersion,
 		Architecture:  imageInspector.ImageInfo.Architecture,
 		User:          imageInspector.ImageInfo.Config.User,
+		OS:            imageInspector.ImageInfo.OS,
 	}
 
 	if len(imageInspector.ImageRecordInfo.RepoTags) > 0 {
 		cmdReport.SourceImage.Name = imageInspector.ImageRecordInfo.RepoTags[0]
 	}
 
-	if len(imageInspector.ImageInfo.Config.ExposedPorts) > 0 {
-		for k := range imageInspector.ImageInfo.Config.ExposedPorts {
-			cmdReport.SourceImage.ExposedPorts = append(cmdReport.SourceImage.ExposedPorts, string(k))
-		}
+	for k := range imageInspector.ImageInfo.Config.ExposedPorts {
+		cmdReport.SourceImage.ExposedPorts = append(cmdReport.SourceImage.ExposedPorts, string(k))
 	}
+
+	for k := range imageInspector.ImageInfo.Config.Volumes {
+		cmdReport.SourceImage.Volumes = append(cmdReport.SourceImage.Volumes, k)
+	}
+
+	cmdReport.SourceImage.Labels = imageInspector.ImageInfo.Config.Labels
+	cmdReport.SourceImage.EnvVars = imageInspector.ImageInfo.Config.Env
 
 	cmdReport.ArtifactLocation = imageInspector.ArtifactLocation
 

@@ -43,6 +43,10 @@ type ImageMetadata struct {
 	User          string      `json:"user,omitempty"`
 	ExposedPorts  []string    `json:"exposed_ports,omitempty"`
 	Distro        *DistroInfo `json:"distro,omitempty"`
+	OS            string      `json:"os,omitempty"`
+	Volumes      []string    `json:"volumes,omitempty"`
+	Labels       map[string]string `json:"Labels,omitempty"`
+	EnvVars      []string    `json:"env_vars,omitempty"`
 }
 
 // SystemMetadata provides basic system metadata
