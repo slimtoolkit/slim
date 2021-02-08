@@ -3,6 +3,7 @@ package xray
 import (
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -51,6 +52,14 @@ func OnCommand(
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
+
+	changeDataMatchers := map[string]*regexp.Regexp{}
+	for _, ptrn := range changeDataPatterns {
+		matcher, err := regexp.Compile(ptrn)
+		errutil.FailOn(err)
+
+		changeDataMatchers[ptrn] = matcher
+	}
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -169,7 +178,7 @@ func OnCommand(
 	err = dockerutil.SaveImage(client, imageID, iaPath, false, false)
 	errutil.FailOn(err)
 
-	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, changeDataPatterns)
+	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, changeDataMatchers)
 	errutil.FailOn(err)
 
 	fmt.Printf("cmd=%s state=image.data.inspection.done\n", cmdName)
@@ -199,6 +208,7 @@ func OnCommand(
 		modifyChangesMax,
 		deleteChangesMax,
 		changePaths,
+		changeDataPatterns,
 		cmdReport)
 
 	if doAddImageManifest {
@@ -245,6 +255,7 @@ func printImagePackage(pkg *dockerimage.Package,
 	modifyChangesMax int,
 	deleteChangesMax int,
 	changePaths []string,
+	changeDataPatterns []string,
 	cmdReport *report.XrayCommand) {
 	fmt.Printf("cmd=%s info=image.package.details\n", cmdName)
 	var allChangesCount int
@@ -401,8 +412,11 @@ func printImagePackage(pkg *dockerimage.Package,
 					}
 
 					if !match && len(changePaths) > 0 {
+						log.Trace("change path patterns, no match. skipping 'delete' change...")
 						continue
 					}
+
+					//NOTE: not checking change data pattern matches for deletes
 
 					if allChangesMax > -1 && allChangesCount > allChangesMax {
 						break
@@ -449,7 +463,18 @@ func printImagePackage(pkg *dockerimage.Package,
 					}
 
 					if !match && len(changePaths) > 0 {
+						log.Trace("change path patterns, no match. skipping 'modify' change...")
 						continue
+					} else {
+						if len(changeDataPatterns) > 0 {
+							matchedPatterns, found := layer.DataMatches[objectInfo.Name]
+							if !found {
+								log.Trace("change data patterns, no match. skipping change...")
+								continue
+							}
+
+							log.Trace("'%s' ('modify' change) matched data patterns: %+v", objectInfo.Name, matchedPatterns)
+						}
 					}
 
 					if allChangesMax > -1 && allChangesCount > allChangesMax {
@@ -497,7 +522,18 @@ func printImagePackage(pkg *dockerimage.Package,
 					}
 
 					if !match && len(changePaths) > 0 {
+						log.Trace("change path patterns, no match. skipping 'add' change...")
 						continue
+					} else {
+						if len(changeDataPatterns) > 0 {
+							matchedPatterns, found := layer.DataMatches[objectInfo.Name]
+							if !found {
+								log.Trace("change data patterns, no match. skipping change...")
+								continue
+							}
+
+							log.Trace("'%s' ('add' change) matched data patterns: %+v", objectInfo.Name, matchedPatterns)
+						}
 					}
 
 					if allChangesMax > -1 && allChangesCount > allChangesMax {

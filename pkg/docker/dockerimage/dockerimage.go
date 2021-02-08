@@ -10,6 +10,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -63,7 +64,7 @@ type Layer struct {
 	References  map[string]*ObjectMetadata
 	Top         TopObjects
 	Distro      *system.DistroInfo
-	DataMatches map[string][]int //pattern -> object ID list
+	DataMatches map[string][]string //object.Name -> matched patterns
 }
 
 type LayerStats struct {
@@ -179,7 +180,7 @@ func newLayer(id string) *Layer {
 		Index:       -1,
 		References:  map[string]*ObjectMetadata{},
 		Top:         NewTopObjects(topObjectMax),
-		DataMatches: map[string][]int{},
+		DataMatches: map[string][]string{},
 	}
 
 	heap.Init(&(layer.Top))
@@ -187,7 +188,7 @@ func newLayer(id string) *Layer {
 	return &layer
 }
 
-func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataPatterns []string) (*Package, error) {
+func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatchers map[string]*regexp.Regexp) (*Package, error) {
 	imageID = dockerutil.CleanImageID(imageID)
 
 	configObjectFileName := fmt.Sprintf("%s.json", imageID)
@@ -253,7 +254,7 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataPatter
 			case strings.HasSuffix(hdr.Name, layerSuffix):
 				parts := strings.Split(hdr.Name, "/")
 				layerID := parts[0]
-				layer, err := layerFromStream(tar.NewReader(tr), layerID, changeDataPatterns)
+				layer, err := layerFromStream(tar.NewReader(tr), layerID, changeDataMatchers)
 				if err != nil {
 					log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
 					return nil, err
@@ -365,7 +366,7 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataPatter
 	return pkg, nil
 }
 
-func layerFromStream(tr *tar.Reader, layerID string, changeDataPatterns []string) (*Layer, error) {
+func layerFromStream(tr *tar.Reader, layerID string, changeDataMatchers map[string]*regexp.Regexp) (*Layer, error) {
 	layer := newLayer(layerID)
 
 	for {
@@ -438,7 +439,7 @@ func layerFromStream(tr *tar.Reader, layerID string, changeDataPatterns []string
 			if isDeleted {
 				layer.Stats.DeletedFileCount++
 			} else {
-				err = inspectFile(object.Name, tr, layer)
+				err = inspectFile(object, tr, layer, changeDataMatchers)
 				if err != nil {
 					log.Errorf("layerFromStream: error inspecting layer file (%s) - (%v) - %v", object.Name, layerID, err)
 				}
@@ -458,40 +459,50 @@ func layerFromStream(tr *tar.Reader, layerID string, changeDataPatterns []string
 	return layer, nil
 }
 
-func inspectFile(name string, reader io.Reader, layer *Layer) error {
+func inspectFile(object *ObjectMetadata, reader io.Reader, layer *Layer, changeDataMatchers map[string]*regexp.Regexp) error {
 	//TODO: refactor and enhance the OS Distro detection logic
-	if system.IsOSReleaseFile(fmt.Sprintf("/%s", name)) {
+	name := object.Name
+	fullPath := fmt.Sprintf("/%s", name)
+	if system.IsOSReleaseFile(fullPath) || len(changeDataMatchers) > 0 {
 		data, err := ioutil.ReadAll(reader)
 		if err != nil {
 			return err
 		}
 
-		osr, err := system.NewOsRelease(data)
-		if err != nil {
-			return err
-		}
-
-		distro := &system.DistroInfo{
-			Name:        osr.Name,
-			Version:     osr.VersionID,
-			DisplayName: osr.PrettyName,
-		}
-
-		if distro.Version == "" {
-			distro.Version = osr.Version
-		}
-
-		if distro.DisplayName == "" {
-			nameMain := osr.Name
-			nameVersion := osr.Version
-			if nameVersion == "" {
-				nameVersion = osr.VersionID
+		if system.IsOSReleaseFile(fullPath) {
+			osr, err := system.NewOsRelease(data)
+			if err != nil {
+				return err
 			}
 
-			distro.DisplayName = fmt.Sprintf("%v %v", nameMain, nameVersion)
+			distro := &system.DistroInfo{
+				Name:        osr.Name,
+				Version:     osr.VersionID,
+				DisplayName: osr.PrettyName,
+			}
+
+			if distro.Version == "" {
+				distro.Version = osr.Version
+			}
+
+			if distro.DisplayName == "" {
+				nameMain := osr.Name
+				nameVersion := osr.Version
+				if nameVersion == "" {
+					nameVersion = osr.VersionID
+				}
+
+				distro.DisplayName = fmt.Sprintf("%v %v", nameMain, nameVersion)
+			}
+
+			layer.Distro = distro
 		}
 
-		layer.Distro = distro
+		for ptrn, matcher := range changeDataMatchers {
+			if matcher.Match(data) {
+				layer.DataMatches[name] = append(layer.DataMatches[name], ptrn)
+			}
+		}
 	}
 
 	return nil

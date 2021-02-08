@@ -31,22 +31,22 @@ type Command struct {
 
 // ImageMetadata provides basic image metadata
 type ImageMetadata struct {
-	ID            string      `json:"id"`
-	Name          string      `json:"name"`
-	Size          int64       `json:"size"`
-	SizeHuman     string      `json:"size_human"`
-	CreateTime    string      `json:"create_time"`
-	AllNames      []string    `json:"all_names"`
-	Author        string      `json:"author,omitempty"`
-	DockerVersion string      `json:"docker_version"`
-	Architecture  string      `json:"architecture"`
-	User          string      `json:"user,omitempty"`
-	ExposedPorts  []string    `json:"exposed_ports,omitempty"`
-	Distro        *DistroInfo `json:"distro,omitempty"`
-	OS            string      `json:"os,omitempty"`
-	Volumes      []string    `json:"volumes,omitempty"`
-	Labels       map[string]string `json:"Labels,omitempty"`
-	EnvVars      []string    `json:"env_vars,omitempty"`
+	ID            string            `json:"id"`
+	Name          string            `json:"name"`
+	Size          int64             `json:"size"`
+	SizeHuman     string            `json:"size_human"`
+	CreateTime    string            `json:"create_time"`
+	AllNames      []string          `json:"all_names"`
+	Author        string            `json:"author,omitempty"`
+	DockerVersion string            `json:"docker_version"`
+	Architecture  string            `json:"architecture"`
+	User          string            `json:"user,omitempty"`
+	ExposedPorts  []string          `json:"exposed_ports,omitempty"`
+	Distro        *DistroInfo       `json:"distro,omitempty"`
+	OS            string            `json:"os,omitempty"`
+	Volumes       []string          `json:"volumes,omitempty"`
+	Labels        map[string]string `json:"Labels,omitempty"`
+	EnvVars       []string          `json:"env_vars,omitempty"`
 }
 
 // SystemMetadata provides basic system metadata
