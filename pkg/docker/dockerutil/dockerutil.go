@@ -37,6 +37,12 @@ type BasicImageProps struct {
 	Created int64
 }
 
+type ImageIdentity struct {
+	ID          string
+	RepoTags    []string
+	RepoDigests []string
+}
+
 func CleanImageID(id string) string {
 	if strings.HasPrefix(id, "sha256:") {
 		id = strings.TrimPrefix(id, "sha256:")
@@ -46,12 +52,16 @@ func CleanImageID(id string) string {
 }
 
 func HasEmptyImage(dclient *dockerapi.Client) error {
-	return HasImage(dclient, emptyImageName)
+	_, err := HasImage(dclient, emptyImageName)
+	return err
 }
 
-func HasImage(dclient *dockerapi.Client, imageRef string) error {
+func HasImage(dclient *dockerapi.Client, imageRef string) (*ImageIdentity, error) {
+	//NOTES:
+	//ListImages doesn't filter by image ID (must use ImageInspect instead)
+	//Check images by name:tag, full or partial image ID or name@digest
 	if imageRef == "" || imageRef == "." || imageRef == ".." {
-		return ErrBadParam
+		return nil, ErrBadParam
 	}
 
 	var err error
@@ -59,57 +69,26 @@ func HasImage(dclient *dockerapi.Client, imageRef string) error {
 		dclient, err = dockerapi.NewClient(dockerHost)
 		if err != nil {
 			log.Errorf("dockerutil.HasImage(%s): dockerapi.NewClient() error = %v", imageRef, err)
-			return err
+			return nil, err
 		}
 	}
 
-	listOptions := dockerapi.ListImagesOptions{
-		Filters: map[string][]string{
-			"reference": {imageRef},
-		},
-		All: false,
-	}
-
-	imageList, err := dclient.ListImages(listOptions)
+	imageInfo, err := dclient.InspectImage(imageRef)
 	if err != nil {
-		log.Errorf("dockerutil.HasImage(%s): dockerapi.ListImages() error = %v", imageRef, err)
-		return err
-	}
-
-	log.Debugf("dockerutil.HasImage(%s): matching images - %+v", imageRef, imageList)
-
-	if len(imageList) == 0 {
-		log.Debugf("dockerutil.HasImage(%s): image not found", imageRef)
-		return ErrNotFound
-	}
-
-	for _, img := range imageList {
-		if strings.HasPrefix(img.ID, "sha") {
-			parts := strings.Split(img.ID, ":")
-			if len(parts) == 2 && parts[1] == imageRef {
-				return nil
-			}
-		} else {
-			if img.ID == imageRef {
-				return nil
-			}
+		if err == dockerapi.ErrNoSuchImage {
+			return nil, ErrNotFound
 		}
 
-		for _, tag := range img.RepoTags {
-			if tag == imageRef {
-				return nil
-			}
-
-			if !strings.Contains(imageRef, ":") {
-				target := fmt.Sprintf("%s:latest", imageRef)
-				if tag == target {
-					return nil
-				}
-			}
-		}
+		return nil, err
 	}
 
-	return ErrNotFound
+	result := &ImageIdentity{
+		ID:          imageInfo.ID,
+		RepoTags:    imageInfo.RepoTags,
+		RepoDigests: imageInfo.RepoDigests,
+	}
+
+	return result, nil
 }
 
 func ListImages(dclient *dockerapi.Client, imageNameFilter string) (map[string]BasicImageProps, error) {

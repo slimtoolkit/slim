@@ -52,12 +52,15 @@ func NewInspector(client *docker.Client, imageRef string /*, artifactLocation st
 
 // NoImage returns true if the target image doesn't exist
 func (i *Inspector) NoImage() bool {
-	err := dockerutil.HasImage(i.APIClient, i.ImageRef)
+	_, err := dockerutil.HasImage(i.APIClient, i.ImageRef)
 	if err == nil {
 		return false
 	}
 
-	log.Debugf("image.inspector.NoImage: err=%v", err)
+	if err != dockerutil.ErrNotFound {
+		log.Debugf("image.inspector.NoImage: err=%v", err)
+	}
+
 	return true
 }
 
