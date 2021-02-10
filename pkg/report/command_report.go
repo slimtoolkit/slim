@@ -65,6 +65,9 @@ type SystemMetadata struct {
 	Distro  DistroInfo `json:"distro"`
 }
 
+// Output Version for 'build'
+const OVBuildCommand = "1.0"
+
 // BuildCommand is the 'build' command report data
 type BuildCommand struct {
 	Command
@@ -83,6 +86,9 @@ type BuildCommand struct {
 	ImageStack             []*reverse.ImageInfo `json:"image_stack"`
 }
 
+// Output Version for 'profile'
+const OVProfileCommand = "1.0"
+
 // ProfileCommand is the 'profile' command report data
 type ProfileCommand struct {
 	Command
@@ -100,6 +106,9 @@ type ProfileCommand struct {
 	AppArmorProfileName    string  `json:"apparmor_profile_name"`
 }
 
+// Output Version for 'xray'
+const OVXrayCommand = "1.0"
+
 // XrayCommand is the 'xray' command report data
 type XrayCommand struct {
 	Command
@@ -112,6 +121,9 @@ type XrayCommand struct {
 	RawImageManifest     *dockerimage.ManifestObject `json:"raw_image_manifest,omitempty"`
 	RawImageConfig       *dockerimage.ConfigObject   `json:"raw_image_config,omitempty"`
 }
+
+// Output Version for 'lint'
+const OVLintCommand = "1.0"
 
 // LintCommand is the 'lint' command report data
 type LintCommand struct {
@@ -126,15 +138,24 @@ type LintCommand struct {
 	Errors          map[string]error         `json:"errors,omitempty"` //map[CHECK_ID]ERROR_INFO
 }
 
+// Output Version for 'containerize'
+const OVContainerizeCommand = "1.0"
+
 // ContainerizeCommand is the 'containerize' command report data
 type ContainerizeCommand struct {
 	Command
 }
 
+// Output Version for 'convert'
+const OVConvertCommand = "1.0"
+
 // ConvertCommand is the 'convert' command report data
 type ConvertCommand struct {
 	Command
 }
+
+// Output Version for 'edit'
+const OVEditCommand = "1.0"
 
 // EditCommand is the 'edit' command report data
 type EditCommand struct {
@@ -142,7 +163,6 @@ type EditCommand struct {
 }
 
 func (cmd *Command) init(containerized bool) {
-	cmd.Version = "1.0"
 	cmd.Containerized = containerized
 	cmd.Engine = version.Current()
 
@@ -159,6 +179,7 @@ func NewBuildCommand(reportLocation string, containerized bool) *BuildCommand {
 	cmd := &BuildCommand{
 		Command: Command{
 			reportLocation: reportLocation,
+			Version:        OVBuildCommand, //build command 'results' version (report and artifacts)
 			Type:           command.Build,
 			State:          command.StateUnknown,
 		},
@@ -173,6 +194,7 @@ func NewProfileCommand(reportLocation string, containerized bool) *ProfileComman
 	cmd := &ProfileCommand{
 		Command: Command{
 			reportLocation: reportLocation,
+			Version:        OVProfileCommand, //profile command 'results' version (report and artifacts)
 			Type:           command.Profile,
 			State:          command.StateUnknown,
 		},
@@ -187,6 +209,7 @@ func NewXrayCommand(reportLocation string, containerized bool) *XrayCommand {
 	cmd := &XrayCommand{
 		Command: Command{
 			reportLocation: reportLocation,
+			Version:        OVXrayCommand, //xray command 'results' version (report and artifacts)
 			Type:           command.Xray,
 			State:          command.StateUnknown,
 		},
@@ -201,6 +224,7 @@ func NewLintCommand(reportLocation string, containerized bool) *LintCommand {
 	cmd := &LintCommand{
 		Command: Command{
 			reportLocation: reportLocation,
+			Version:        OVLintCommand, //lint command 'results' version (report and artifacts)
 			Type:           command.Lint,
 			State:          command.StateUnknown,
 		},
@@ -215,6 +239,7 @@ func NewContainerizeCommand(reportLocation string, containerized bool) *Containe
 	cmd := &ContainerizeCommand{
 		Command: Command{
 			reportLocation: reportLocation,
+			Version:        OVContainerizeCommand, //containerize command 'results' version (report and artifacts)
 			Type:           command.Containerize,
 			State:          command.StateUnknown,
 		},
@@ -229,6 +254,7 @@ func NewConvertCommand(reportLocation string, containerized bool) *ConvertComman
 	cmd := &ConvertCommand{
 		Command: Command{
 			reportLocation: reportLocation,
+			Version:        OVConvertCommand, //convert command 'results' version (report and artifacts)
 			Type:           command.Convert,
 			State:          command.StateUnknown,
 		},
@@ -243,6 +269,7 @@ func NewEditCommand(reportLocation string, containerized bool) *EditCommand {
 	cmd := &EditCommand{
 		Command: Command{
 			reportLocation: reportLocation,
+			Version:        OVEditCommand, //edit command 'results' version (report and artifacts)
 			Type:           command.Edit,
 			State:          command.StateUnknown,
 		},
