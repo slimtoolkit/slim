@@ -20,6 +20,7 @@ import (
 // Command is the common command report data
 type Command struct {
 	reportLocation string
+	Version        string     `json:"version"`
 	Engine         string     `json:"engine"`
 	Containerized  bool       `json:"containerized"`
 	HostDistro     DistroInfo `json:"host_distro"`
@@ -29,14 +30,22 @@ type Command struct {
 	Error string        `json:"error,omitempty"`
 }
 
+// ImageIdentity includes the container image identity fields
+type ImageIdentity struct {
+	ID      string   `json:"id"`
+	Names   []string `json:"names,omitempty"`
+	Digests []string `json:"digests,omitempty"`
+}
+
 // ImageMetadata provides basic image metadata
 type ImageMetadata struct {
-	ID            string            `json:"id"`
-	Name          string            `json:"name"`
-	Size          int64             `json:"size"`
-	SizeHuman     string            `json:"size_human"`
-	CreateTime    string            `json:"create_time"`
-	AllNames      []string          `json:"all_names"`
+	Identity ImageIdentity `json:"identity"`
+	//ID            string            `json:"id"`
+	//Name          string            `json:"name"`
+	Size       int64  `json:"size"`
+	SizeHuman  string `json:"size_human"`
+	CreateTime string `json:"create_time"`
+	//AllNames      []string          `json:"all_names"`
 	Author        string            `json:"author,omitempty"`
 	DockerVersion string            `json:"docker_version"`
 	Architecture  string            `json:"architecture"`
@@ -133,6 +142,7 @@ type EditCommand struct {
 }
 
 func (cmd *Command) init(containerized bool) {
+	cmd.Version = "1.0"
 	cmd.Containerized = containerized
 	cmd.Engine = version.Current()
 

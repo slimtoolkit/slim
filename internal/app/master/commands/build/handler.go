@@ -501,8 +501,13 @@ func OnCommand(
 		cmdReport.MinifiedBy = float64(imageInspector.ImageInfo.VirtualSize) / float64(newImageInspector.ImageInfo.VirtualSize)
 
 		cmdReport.SourceImage = report.ImageMetadata{
-			AllNames:      imageInspector.ImageRecordInfo.RepoTags,
-			ID:            imageInspector.ImageRecordInfo.ID,
+			Identity: report.ImageIdentity{
+				ID:      imageInspector.ImageRecordInfo.ID,
+				Names:   imageInspector.ImageRecordInfo.RepoTags,
+				Digests: imageInspector.ImageRecordInfo.RepoDigests,
+			},
+			//AllNames:      imageInspector.ImageRecordInfo.RepoTags,
+			//ID:            imageInspector.ImageRecordInfo.ID,
 			Size:          imageInspector.ImageInfo.VirtualSize,
 			SizeHuman:     humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
 			CreateTime:    imageInspector.ImageInfo.Created.UTC().Format(time.RFC3339),
@@ -513,9 +518,9 @@ func OnCommand(
 			OS:            imageInspector.ImageInfo.OS,
 		}
 
-		if len(imageInspector.ImageRecordInfo.RepoTags) > 0 {
-			cmdReport.SourceImage.Name = imageInspector.ImageRecordInfo.RepoTags[0]
-		}
+		//if len(imageInspector.ImageRecordInfo.RepoTags) > 0 {
+		//	cmdReport.SourceImage.Name = imageInspector.ImageRecordInfo.RepoTags[0]
+		//}
 
 		for k := range imageInspector.ImageInfo.Config.ExposedPorts {
 			cmdReport.SourceImage.ExposedPorts = append(cmdReport.SourceImage.ExposedPorts, string(k))
