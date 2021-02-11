@@ -32,20 +32,19 @@ type Command struct {
 
 // ImageIdentity includes the container image identity fields
 type ImageIdentity struct {
-	ID      string   `json:"id"`
-	Names   []string `json:"names,omitempty"`
-	Digests []string `json:"digests,omitempty"`
+	ID          string   `json:"id"`
+	Tags        []string `json:"tags,omitempty"`
+	Names       []string `json:"names,omitempty"`
+	Digests     []string `json:"digests,omitempty"`
+	FullDigests []string `json:"full_digests,omitempty"`
 }
 
 // ImageMetadata provides basic image metadata
 type ImageMetadata struct {
-	Identity ImageIdentity `json:"identity"`
-	//ID            string            `json:"id"`
-	//Name          string            `json:"name"`
-	Size       int64  `json:"size"`
-	SizeHuman  string `json:"size_human"`
-	CreateTime string `json:"create_time"`
-	//AllNames      []string          `json:"all_names"`
+	Identity      ImageIdentity     `json:"identity"`
+	Size          int64             `json:"size"`
+	SizeHuman     string            `json:"size_human"`
+	CreateTime    string            `json:"create_time"`
 	Author        string            `json:"author,omitempty"`
 	DockerVersion string            `json:"docker_version"`
 	Architecture  string            `json:"architecture"`

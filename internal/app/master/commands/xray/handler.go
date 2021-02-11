@@ -139,14 +139,15 @@ func OnCommand(
 		}
 	}
 
+	imgIdentity := dockerutil.ImageToIdentity(imageInspector.ImageInfo)
 	cmdReport.SourceImage = report.ImageMetadata{
 		Identity: report.ImageIdentity{
-			ID:      imageInspector.ImageRecordInfo.ID,
-			Names:   imageInspector.ImageRecordInfo.RepoTags,
-			Digests: imageInspector.ImageRecordInfo.RepoDigests,
+			ID:          imgIdentity.ID,
+			Tags:        imgIdentity.ShortTags,
+			Names:       imgIdentity.RepoTags,
+			Digests:     imgIdentity.ShortDigests,
+			FullDigests: imgIdentity.RepoDigests,
 		},
-		//AllNames:      imageInspector.ImageRecordInfo.RepoTags,
-		//ID:            imageInspector.ImageRecordInfo.ID,
 		Size:          imageInspector.ImageInfo.VirtualSize,
 		SizeHuman:     humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
 		CreateTime:    imageInspector.ImageInfo.Created.UTC().Format(time.RFC3339),
@@ -156,10 +157,6 @@ func OnCommand(
 		User:          imageInspector.ImageInfo.Config.User,
 		OS:            imageInspector.ImageInfo.OS,
 	}
-
-	//if len(imageInspector.ImageRecordInfo.RepoTags) > 0 {
-	//	cmdReport.SourceImage.Name = imageInspector.ImageRecordInfo.RepoTags[0]
-	//}
 
 	for k := range imageInspector.ImageInfo.Config.ExposedPorts {
 		cmdReport.SourceImage.ExposedPorts = append(cmdReport.SourceImage.ExposedPorts, string(k))

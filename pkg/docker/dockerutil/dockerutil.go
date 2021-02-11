@@ -38,9 +38,45 @@ type BasicImageProps struct {
 }
 
 type ImageIdentity struct {
-	ID          string
-	RepoTags    []string
-	RepoDigests []string
+	ID           string
+	ShortTags    []string
+	RepoTags     []string
+	ShortDigests []string
+	RepoDigests  []string
+}
+
+func APIImagesToIdentity(info *dockerapi.APIImages) *ImageIdentity {
+	imageInfo := &dockerapi.Image{
+		ID:          info.ID,
+		RepoTags:    info.RepoTags,
+		RepoDigests: info.RepoDigests,
+	}
+
+	return ImageToIdentity(imageInfo)
+}
+
+func ImageToIdentity(info *dockerapi.Image) *ImageIdentity {
+	result := &ImageIdentity{
+		ID:          info.ID,
+		RepoTags:    info.RepoTags,
+		RepoDigests: info.RepoDigests,
+	}
+
+	for _, tag := range result.RepoTags {
+		parts := strings.Split(tag, ":")
+		if len(parts) == 2 {
+			result.ShortTags = append(result.ShortTags, parts[1])
+		}
+	}
+
+	for _, digest := range result.RepoDigests {
+		parts := strings.Split(digest, "@")
+		if len(parts) == 2 {
+			result.ShortDigests = append(result.ShortDigests, parts[1])
+		}
+	}
+
+	return result
 }
 
 func CleanImageID(id string) string {
@@ -82,13 +118,7 @@ func HasImage(dclient *dockerapi.Client, imageRef string) (*ImageIdentity, error
 		return nil, err
 	}
 
-	result := &ImageIdentity{
-		ID:          imageInfo.ID,
-		RepoTags:    imageInfo.RepoTags,
-		RepoDigests: imageInfo.RepoDigests,
-	}
-
-	return result, nil
+	return ImageToIdentity(imageInfo), nil
 }
 
 func ListImages(dclient *dockerapi.Client, imageNameFilter string) (map[string]BasicImageProps, error) {
