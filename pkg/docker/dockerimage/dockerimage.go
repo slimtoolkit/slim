@@ -27,11 +27,10 @@ const (
 )
 
 type Package struct {
-	Manifest        *ManifestObject
-	Config          *ConfigObject
-	Layers          []*Layer
-	LayerIDRefs     map[string]*Layer
-	LayerRootFSRefs map[string]*Layer
+	Manifest    *ManifestObject
+	Config      *ConfigObject
+	Layers      []*Layer
+	LayerIDRefs map[string]*Layer
 }
 
 type LayerReport struct {
@@ -167,8 +166,7 @@ type Changeset struct {
 
 func newPackage() *Package {
 	pkg := Package{
-		LayerIDRefs:     map[string]*Layer{},
-		LayerRootFSRefs: map[string]*Layer{},
+		LayerIDRefs: map[string]*Layer{},
 	}
 
 	return &pkg
@@ -254,6 +252,7 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 			case strings.HasSuffix(hdr.Name, layerSuffix):
 				parts := strings.Split(hdr.Name, "/")
 				layerID := parts[0]
+				//TODO: handle symlinks
 				layer, err := layerFromStream(tar.NewReader(tr), layerID, changeDataMatchers)
 				if err != nil {
 					log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
@@ -284,6 +283,7 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 		}
 
 		layer.Index = idx
+		//adding layers based on their manifest order
 		pkg.Layers = append(pkg.Layers, layer)
 		if len(pkg.Layers)-1 != layer.Index {
 			return nil, fmt.Errorf("dockerimage.LoadPackage: layer index mismatch - %v / %v", len(pkg.Layers)-1, layer.Index)
@@ -328,38 +328,35 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 
 		if pkg.Config.RootFS != nil && idx < len(pkg.Config.RootFS.DiffIDs) {
 			diffID := pkg.Config.RootFS.DiffIDs[idx]
-			pkg.LayerRootFSRefs[diffID] = layer
+			layer.FSDiffID = diffID
 		} else {
 			log.Debugf("dockerimage.LoadPackage: no FS diff for layer index %v", idx)
 		}
 	}
 
-	var didx int
+	var currentLayerIndex int
 	for hidx := range pkg.Config.History {
-		var diffID string
+		var currentLayer *Layer
 		switch pkg.Config.History[hidx].EmptyLayer {
 		case false:
-			diffID = pkg.Config.RootFS.DiffIDs[didx]
-			didx++
+			currentLayer = pkg.Layers[currentLayerIndex]
+			currentLayerIndex++
 		case true:
-			if didx == 0 {
+			if currentLayerIndex == 0 {
 				//no previous layer to reference...
 				pkg.Config.History[hidx].LayerFSDiffID = "none"
 				pkg.Config.History[hidx].LayerID = "none"
 				pkg.Config.History[hidx].LayerIndex = -1
 			} else {
-				diffID = pkg.Config.RootFS.DiffIDs[didx-1]
+				//for empty layers add instructions to the previous layer
+				currentLayer = pkg.Layers[currentLayerIndex-1]
 			}
 		}
 
-		if diffID != "" {
-			if layer, ok := pkg.LayerRootFSRefs[diffID]; ok {
-				pkg.Config.History[hidx].LayerFSDiffID = diffID
-				pkg.Config.History[hidx].LayerID = layer.ID
-				pkg.Config.History[hidx].LayerIndex = layer.Index
-			} else {
-				log.Debugf("dockerimage.LoadPackage: no layer for FS diff %v", diffID)
-			}
+		if currentLayer != nil {
+			pkg.Config.History[hidx].LayerFSDiffID = currentLayer.FSDiffID
+			pkg.Config.History[hidx].LayerID = currentLayer.ID
+			pkg.Config.History[hidx].LayerIndex = currentLayer.Index
 		}
 	}
 
