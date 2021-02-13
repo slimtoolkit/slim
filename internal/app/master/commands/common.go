@@ -61,7 +61,9 @@ const (
 
 // Shared command flag names
 const (
-	FlagTarget = "target"
+	FlagTarget       = "target"
+	FlagPull         = "pull"
+	FlagShowPullLogs = "show-plogs"
 
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
@@ -126,7 +128,9 @@ const (
 
 // Shared command flag usage info
 const (
-	FlagTargetUsage = "Target container image (name or ID)"
+	FlagTargetUsage       = "Target container image (name or ID)"
+	FlagPullUsage         = "Try pulling target if it's not available locally"
+	FlagShowPullLogsUsage = "Show image pull logs"
 
 	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
 	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
@@ -266,6 +270,16 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  "",
 		Usage:  FlagTargetUsage,
 		EnvVar: "DSLIM_TARGET",
+	},
+	FlagPull: cli.BoolFlag{
+		Name:   FlagPull,
+		Usage:  FlagPullUsage,
+		EnvVar: "DSLIM_PULL",
+	},
+	FlagShowPullLogs: cli.BoolFlag{
+		Name:   FlagShowPullLogs,
+		Usage:  FlagShowPullLogsUsage,
+		EnvVar: "DSLIM_PLOG",
 	},
 	FlagRemoveFileArtifacts: cli.BoolFlag{
 		Name:   FlagRemoveFileArtifacts,

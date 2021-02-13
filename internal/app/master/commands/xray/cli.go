@@ -20,6 +20,8 @@ var CLI = cli.Command{
 	Usage:   Usage,
 	Flags: []cli.Flag{
 		commands.Cflag(commands.FlagTarget),
+		commands.Cflag(commands.FlagPull),
+		commands.Cflag(commands.FlagShowPullLogs),
 		cflag(FlagChanges),
 		cflag(FlagLayer),
 		cflag(FlagAddImageManifest),
@@ -52,6 +54,9 @@ var CLI = cli.Command{
 			return err
 		}
 
+		doPull := ctx.Bool(commands.FlagPull)
+		doShowPullLogs := ctx.Bool(commands.FlagShowPullLogs)
+
 		changes, err := parseChangeTypes(ctx.StringSlice(FlagChanges))
 		if err != nil {
 			fmt.Printf("docker-slim[%s]: invalid change types: %v\n", Name, err)
@@ -82,6 +87,8 @@ var CLI = cli.Command{
 		OnCommand(
 			gcvalues,
 			targetRef,
+			doPull,
+			doShowPullLogs,
 			changes,
 			layers,
 			layerChangesMax,

@@ -1,6 +1,7 @@
 package image
 
 import (
+	"bytes"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -62,6 +63,44 @@ func (i *Inspector) NoImage() bool {
 	}
 
 	return true
+}
+
+// Pull tries to download the target image
+func (i *Inspector) Pull(showPullLog bool) error {
+	var pullLog bytes.Buffer
+	var repo string
+	var tag string
+	if strings.Contains(i.ImageRef, ":") {
+		parts := strings.SplitN(i.ImageRef, ":", 2)
+		repo = parts[0]
+		tag = parts[1]
+	} else {
+		repo = i.ImageRef
+		tag = "latest"
+	}
+
+	input := docker.PullImageOptions{
+		Repository: repo,
+		Tag:        tag,
+	}
+
+	if showPullLog {
+		input.OutputStream = &pullLog
+	}
+
+	err := i.APIClient.PullImage(input, docker.AuthConfiguration{})
+	if err != nil {
+		log.Debugf("image.inspector.Pull: client.PullImage err=%v", err)
+		return err
+	}
+
+	if showPullLog {
+		fmt.Printf("pull logs ====================\n")
+		fmt.Println(pullLog.String())
+		fmt.Printf("end of pull logs =============\n")
+	}
+
+	return nil
 }
 
 // Inspect starts the target image inspection

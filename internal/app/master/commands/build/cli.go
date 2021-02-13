@@ -24,6 +24,8 @@ var CLI = cli.Command{
 	Usage:   Usage,
 	Flags: []cli.Flag{
 		commands.Cflag(commands.FlagTarget),
+		commands.Cflag(commands.FlagPull),
+		commands.Cflag(commands.FlagShowPullLogs),
 		cli.StringFlag{
 			Name:   FlagBuildFromDockerfile,
 			Value:  "",
@@ -162,6 +164,9 @@ var CLI = cli.Command{
 		if err != nil {
 			return err
 		}
+
+		doPull := ctx.Bool(commands.FlagPull)
+		doShowPullLogs := ctx.Bool(commands.FlagShowPullLogs)
 
 		doRmFileArtifacts := ctx.Bool(commands.FlagRemoveFileArtifacts)
 		doCopyMetaArtifacts := ctx.String(commands.FlagCopyMetaArtifacts)
@@ -361,6 +366,8 @@ var CLI = cli.Command{
 		OnCommand(
 			gcvalues,
 			targetRef,
+			doPull,
+			doShowPullLogs,
 			buildFromDockerfile,
 			doTag,
 			doTagFat,

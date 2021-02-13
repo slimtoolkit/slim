@@ -36,6 +36,8 @@ const (
 func OnCommand(
 	gparams *commands.GenericParams,
 	targetRef string,
+	doPull bool,
+	doShowPullLogs bool,
 	changes map[string]struct{},
 	layers map[string]struct{},
 	layerChangesMax int,
@@ -91,9 +93,15 @@ func OnCommand(
 	errutil.FailOn(err)
 
 	if imageInspector.NoImage() {
-		fmt.Printf("cmd=%s info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", cmdName, targetRef)
-		fmt.Printf("cmd=%s state=exited\n", cmdName)
-		commands.Exit(commands.ECTBuild | ecxImageNotFound)
+		if doPull {
+			fmt.Printf("cmd=%s info=target.image status=not.found image='%v' message='trying to pull target image'\n", cmdName, targetRef)
+			err := imageInspector.Pull(doShowPullLogs)
+			errutil.FailOn(err)
+		} else {
+			fmt.Printf("cmd=%s info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", cmdName, targetRef)
+			fmt.Printf("cmd=%s state=exited\n", cmdName)
+			commands.Exit(commands.ECTBuild | ecxImageNotFound)
+		}
 	}
 
 	fmt.Printf("cmd=%s state=image.api.inspection.start\n", cmdName)

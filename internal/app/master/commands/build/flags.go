@@ -40,7 +40,7 @@ const (
 
 // Build command flag usage info
 const (
-	FlagShowBuildLogsUsage = "Show build logs"
+	FlagShowBuildLogsUsage = "Show image build logs"
 
 	FlagNewEntrypointUsage = "New ENTRYPOINT instruction for the optimized image"
 	FlagNewCmdUsage        = "New CMD instruction for the optimized image"

@@ -14,6 +14,8 @@ var CommandSuggestion = prompt.Suggest{
 var CommandFlagSuggestions = &commands.FlagSuggestions{
 	Names: []prompt.Suggest{
 		{Text: commands.FullFlagName(commands.FlagTarget), Description: commands.FlagTargetUsage},
+		{Text: commands.FullFlagName(commands.FlagPull), Description: commands.FlagPullUsage},
+		{Text: commands.FullFlagName(commands.FlagShowPullLogs), Description: commands.FlagShowPullLogsUsage},
 		{Text: commands.FullFlagName(FlagBuildFromDockerfile), Description: FlagBuildFromDockerfileUsage},
 		{Text: commands.FullFlagName(FlagShowBuildLogs), Description: FlagShowBuildLogsUsage},
 		{Text: commands.FullFlagName(commands.FlagShowContainerLogs), Description: commands.FlagShowContainerLogsUsage},
@@ -83,6 +85,9 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagKeepTmpArtifacts), Description: commands.FlagKeepTmpArtifactsUsage},
 	},
 	Values: map[string]commands.CompleteValue{
+		//NOTE: with FlagPull target complete needs to check remote registries too
+		commands.FullFlagName(commands.FlagPull):                   commands.CompleteBool,
+		commands.FullFlagName(commands.FlagShowPullLogs):           commands.CompleteBool,
 		commands.FullFlagName(commands.FlagTarget):                 commands.CompleteTarget,
 		commands.FullFlagName(FlagShowBuildLogs):                   commands.CompleteBool,
 		commands.FullFlagName(commands.FlagShowContainerLogs):      commands.CompleteBool,

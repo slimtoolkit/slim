@@ -21,6 +21,8 @@ var CLI = cli.Command{
 	Usage:   Usage,
 	Flags: []cli.Flag{
 		commands.Cflag(commands.FlagTarget),
+		commands.Cflag(commands.FlagPull),
+		commands.Cflag(commands.FlagShowPullLogs),
 		commands.Cflag(commands.FlagShowContainerLogs),
 		commands.Cflag(commands.FlagHTTPProbe),
 		commands.Cflag(commands.FlagHTTPProbeCmd),
@@ -89,6 +91,9 @@ var CLI = cli.Command{
 		if err != nil {
 			return err
 		}
+
+		doPull := ctx.Bool(commands.FlagPull)
+		doShowPullLogs := ctx.Bool(commands.FlagShowPullLogs)
 
 		doRmFileArtifacts := ctx.Bool(commands.FlagRemoveFileArtifacts)
 		doCopyMetaArtifacts := ctx.String(commands.FlagCopyMetaArtifacts)
@@ -242,6 +247,8 @@ var CLI = cli.Command{
 		OnCommand(
 			gcvalues,
 			targetRef,
+			doPull,
+			doShowPullLogs,
 			doHTTPProbe,
 			httpProbeCmds,
 			httpProbeRetryCount,
