@@ -23,6 +23,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagPull),
 		commands.Cflag(commands.FlagShowPullLogs),
 		cflag(FlagChanges),
+		cflag(FlagChangesOutput),
 		cflag(FlagLayer),
 		cflag(FlagAddImageManifest),
 		cflag(FlagAddImageConfig),
@@ -63,6 +64,12 @@ var CLI = cli.Command{
 			return err
 		}
 
+		changesOutputs, err := parseChangeOutputTypes(ctx.StringSlice(FlagChangesOutput))
+		if err != nil {
+			fmt.Printf("docker-slim[%s]: invalid change output types: %v\n", Name, err)
+			return err
+		}
+
 		layers, err := commands.ParseTokenSet(ctx.StringSlice(FlagLayer))
 		if err != nil {
 			fmt.Printf("docker-slim[%s]: invalid layer selectors: %v\n", Name, err)
@@ -90,6 +97,7 @@ var CLI = cli.Command{
 			doPull,
 			doShowPullLogs,
 			changes,
+			changesOutputs,
 			layers,
 			layerChangesMax,
 			allChangesMax,
@@ -131,4 +139,25 @@ func parseChangeTypes(values []string) (map[string]struct{}, error) {
 	}
 
 	return changes, nil
+}
+
+func parseChangeOutputTypes(values []string) (map[string]struct{}, error) {
+	outputs := map[string]struct{}{}
+	if len(values) == 0 {
+		values = append(values, "all")
+	}
+
+	for _, item := range values {
+		switch item {
+		case "all":
+			outputs["report"] = struct{}{}
+			outputs["console"] = struct{}{}
+		case "report":
+			outputs["report"] = struct{}{}
+		case "console":
+			outputs["console"] = struct{}{}
+		}
+	}
+
+	return outputs, nil
 }

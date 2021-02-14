@@ -39,6 +39,7 @@ func OnCommand(
 	doPull bool,
 	doShowPullLogs bool,
 	changes map[string]struct{},
+	changesOutputs map[string]struct{},
 	layers map[string]struct{},
 	layerChangesMax int,
 	allChangesMax int,
@@ -211,6 +212,7 @@ func OnCommand(
 		appName,
 		cmdName,
 		changes,
+		changesOutputs,
 		layers,
 		layerChangesMax,
 		allChangesMax,
@@ -258,6 +260,7 @@ func printImagePackage(pkg *dockerimage.Package,
 	appName string,
 	cmdName command.Type,
 	changes map[string]struct{},
+	changesOutputs map[string]struct{},
 	layers map[string]struct{},
 	layerChangesMax int,
 	allChangesMax int,
@@ -440,8 +443,13 @@ func printImagePackage(pkg *dockerimage.Package,
 						break
 					}
 
-					layerReport.Deleted = append(layerReport.Deleted, objectInfo)
-					printObject(objectInfo)
+					if _, ok := changesOutputs["report"]; ok {
+						layerReport.Deleted = append(layerReport.Deleted, objectInfo)
+					}
+
+					if _, ok := changesOutputs["console"]; ok {
+						printObject(objectInfo)
+					}
 				}
 				fmt.Printf("\n")
 			}
@@ -499,8 +507,13 @@ func printImagePackage(pkg *dockerimage.Package,
 						break
 					}
 
-					layerReport.Modified = append(layerReport.Modified, objectInfo)
-					printObject(objectInfo)
+					if _, ok := changesOutputs["report"]; ok {
+						layerReport.Modified = append(layerReport.Modified, objectInfo)
+					}
+
+					if _, ok := changesOutputs["console"]; ok {
+						printObject(objectInfo)
+					}
 				}
 				fmt.Printf("\n")
 			}
@@ -558,8 +571,13 @@ func printImagePackage(pkg *dockerimage.Package,
 						break
 					}
 
-					layerReport.Added = append(layerReport.Added, layer.Objects[objectIdx])
-					printObject(layer.Objects[objectIdx])
+					if _, ok := changesOutputs["report"]; ok {
+						layerReport.Added = append(layerReport.Added, layer.Objects[objectIdx])
+					}
+
+					if _, ok := changesOutputs["console"]; ok {
+						printObject(layer.Objects[objectIdx])
+					}
 				}
 			}
 		}

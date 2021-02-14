@@ -17,6 +17,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagPull), Description: commands.FlagPullUsage},
 		{Text: commands.FullFlagName(commands.FlagShowPullLogs), Description: commands.FlagShowPullLogsUsage},
 		{Text: commands.FullFlagName(FlagChanges), Description: FlagChangesUsage},
+		{Text: commands.FullFlagName(FlagChangesOutput), Description: FlagChangesOutputUsage},
 		{Text: commands.FullFlagName(FlagLayer), Description: FlagLayerUsage},
 		{Text: commands.FullFlagName(FlagAddImageManifest), Description: FlagAddImageManifestUsage},
 		{Text: commands.FullFlagName(FlagAddImageConfig), Description: FlagAddImageConfigUsage},
@@ -34,6 +35,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(commands.FlagShowPullLogs):        commands.CompleteBool,
 		commands.FullFlagName(commands.FlagTarget):              commands.CompleteTarget,
 		commands.FullFlagName(FlagChanges):                      completeLayerChanges,
+		commands.FullFlagName(FlagChangesOutput):                completeOutputs,
 		commands.FullFlagName(FlagAddImageManifest):             commands.CompleteBool,
 		commands.FullFlagName(FlagAddImageConfig):               commands.CompleteBool,
 		commands.FullFlagName(commands.FlagRemoveFileArtifacts): commands.CompleteBool,
@@ -50,4 +52,14 @@ var layerChangeValues = []prompt.Suggest{
 
 func completeLayerChanges(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(layerChangeValues, token, true)
+}
+
+var outputsValues = []prompt.Suggest{
+	{Text: "all", Description: "Show changes in all outputs"},
+	{Text: "report", Description: "Show changes in command report"},
+	{Text: "console", Description: "Show changes in console"},
+}
+
+func completeOutputs(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	return prompt.FilterHasPrefix(outputsValues, token, true)
 }

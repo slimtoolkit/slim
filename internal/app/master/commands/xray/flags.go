@@ -8,6 +8,7 @@ import (
 // Xray command flag names
 const (
 	FlagChanges          = "changes"
+	FlagChangesOutput    = "changes-output"
 	FlagLayer            = "layer"
 	FlagAddImageManifest = "add-image-manifest"
 	FlagAddImageConfig   = "add-image-config"
@@ -23,6 +24,7 @@ const (
 // Xray command flag usage info
 const (
 	FlagChangesUsage          = "Show layer change details for the selected change type (values: none, all, delete, modify, add)"
+	FlagChangesOutputUsage    = "Where to show the changes (values: all, report, console)"
 	FlagLayerUsage            = "Show details for the selected layer (using layer index or ID)"
 	FlagAddImageManifestUsage = "Add raw image manifest to the command execution report file"
 	FlagAddImageConfigUsage   = "Add raw image config object to the command execution report file"
@@ -41,6 +43,12 @@ var Flags = map[string]cli.Flag{
 		Value:  &cli.StringSlice{""},
 		Usage:  FlagChangesUsage,
 		EnvVar: "DSLIM_CHANGES",
+	},
+	FlagChangesOutput: cli.StringSliceFlag{
+		Name:   FlagChangesOutput,
+		Value:  &cli.StringSlice{"all"},
+		Usage:  FlagChangesOutputUsage,
+		EnvVar: "DSLIM_CHANGES_OUTPUT",
 	},
 	FlagLayer: cli.StringSliceFlag{
 		Name:   FlagLayer,
