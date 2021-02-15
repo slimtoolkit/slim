@@ -34,16 +34,28 @@ type Package struct {
 }
 
 type LayerReport struct {
-	ID       string            `json:"id"`
-	Index    int               `json:"index"`
-	Path     string            `json:"path,omitempty"`
-	FSDiffID string            `json:"fsdiff_id,omitempty"`
-	Stats    LayerStats        `json:"stats"`
-	Changes  ChangesetSummary  `json:"changes"`
-	Top      []*ObjectMetadata `json:"top"`
-	Deleted  []*ObjectMetadata `json:"deleted,omitempty"`
-	Added    []*ObjectMetadata `json:"added,omitempty"`
-	Modified []*ObjectMetadata `json:"modified,omitempty"`
+	ID                  string                `json:"id"`
+	Index               int                   `json:"index"`
+	Path                string                `json:"path,omitempty"`
+	LayerDataSource     string                `json:"layer_data_source,omitempty"`
+	MetadataChangesOnly bool                  `json:"metadata_changes_only,omitempty"`
+	FSDiffID            string                `json:"fsdiff_id,omitempty"`
+	Stats               LayerStats            `json:"stats"`
+	Changes             ChangesetSummary      `json:"changes"`
+	Top                 []*ObjectMetadata     `json:"top"`
+	Deleted             []*ObjectMetadata     `json:"deleted,omitempty"`
+	Added               []*ObjectMetadata     `json:"added,omitempty"`
+	Modified            []*ObjectMetadata     `json:"modified,omitempty"`
+	ChangeInstruction   *InstructionSummary   `json:"change_instruction,omitempty"`
+	OtherInstructions   []*InstructionSummary `json:"other_instructions,omitempty"`
+}
+
+type InstructionSummary struct {
+	Index      int    `json:"index"`
+	ImageIndex int    `json:"image_index"`
+	Type       string `json:"type"`
+	All        string `json:"all"`
+	Snippet    string `json:"snippet"`
 }
 
 type ChangesetSummary struct {
@@ -53,17 +65,19 @@ type ChangesetSummary struct {
 }
 
 type Layer struct {
-	ID          string
-	Index       int
-	Path        string
-	FSDiffID    string
-	Stats       LayerStats
-	Changes     Changeset
-	Objects     []*ObjectMetadata
-	References  map[string]*ObjectMetadata
-	Top         TopObjects
-	Distro      *system.DistroInfo
-	DataMatches map[string][]string //object.Name -> matched patterns
+	ID                  string
+	Index               int
+	Path                string
+	LayerDataSource     string
+	MetadataChangesOnly bool
+	FSDiffID            string
+	Stats               LayerStats
+	Changes             Changeset
+	Objects             []*ObjectMetadata
+	References          map[string]*ObjectMetadata
+	Top                 TopObjects
+	Distro              *system.DistroInfo
+	DataMatches         map[string][]string //object.Name -> matched patterns
 }
 
 type LayerStats struct {
@@ -252,14 +266,43 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 			case strings.HasSuffix(hdr.Name, layerSuffix):
 				parts := strings.Split(hdr.Name, "/")
 				layerID := parts[0]
-				//TODO: handle symlinks
-				layer, err := layerFromStream(tar.NewReader(tr), layerID, changeDataMatchers)
-				if err != nil {
-					log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
-					return nil, err
+
+				var layer *Layer
+				if hdr.Typeflag == tar.TypeSymlink {
+					layer = newLayer(layerID)
+					layer.Path = hdr.Name
+					layer.MetadataChangesOnly = true
+
+					parts := strings.Split(hdr.Linkname, "/")
+					if len(parts) == 3 && parts[2] == "layer.tar" {
+						layer.LayerDataSource = parts[1]
+
+						if srcLayer, ok := layers[layer.LayerDataSource]; ok {
+							for _, srcObj := range srcLayer.Objects {
+								if srcObj.Change != ChangeDelete {
+									newObj := *srcObj
+									newObj.Change = ChangeUnknown
+									layer.Objects = append(layer.Objects, &newObj)
+									layer.References[srcObj.Name] = srcObj
+									layer.Stats.ObjectCount++
+								}
+							}
+
+							layer.Stats.LinkCount = srcLayer.Stats.LinkCount - srcLayer.Stats.DeletedLinkCount
+							layer.Stats.FileCount = srcLayer.Stats.FileCount - srcLayer.Stats.DeletedFileCount
+							layer.Stats.DirCount = srcLayer.Stats.DirCount - srcLayer.Stats.DeletedDirCount
+						} else {
+							log.Debugf("dockerimage.LoadPackage: could not find source layer - %v", layer.LayerDataSource)
+						}
+					}
+				} else {
+					layer, err = layerFromStream(hdr.Name, tar.NewReader(tr), layerID, changeDataMatchers)
+					if err != nil {
+						log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
+						return nil, err
+					}
 				}
 
-				layer.Path = hdr.Name
 				layers[layerID] = layer
 			}
 		}
@@ -363,8 +406,9 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 	return pkg, nil
 }
 
-func layerFromStream(tr *tar.Reader, layerID string, changeDataMatchers map[string]*regexp.Regexp) (*Layer, error) {
+func layerFromStream(layerPath string, tr *tar.Reader, layerID string, changeDataMatchers map[string]*regexp.Regexp) (*Layer, error) {
 	layer := newLayer(layerID)
+	layer.Path = layerPath
 
 	for {
 		hdr, err := tr.Next()

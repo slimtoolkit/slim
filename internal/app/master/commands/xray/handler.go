@@ -278,7 +278,17 @@ func printImagePackage(pkg *dockerimage.Package,
 
 	fmt.Printf("cmd=%s info=layers.count: %v\n", cmdName, len(pkg.Layers))
 	for _, layer := range pkg.Layers {
-		fmt.Printf("cmd=%s info=layer index=%d id=%s path=%s\n", cmdName, layer.Index, layer.ID, layer.Path)
+		layerInfo := fmt.Sprintf("\ncmd=%s info=layer index=%d id=%s path=%s", cmdName, layer.Index, layer.ID, layer.Path)
+		if layer.MetadataChangesOnly {
+			layerInfo = fmt.Sprintf("%s metadata_change_only=true", layerInfo)
+		}
+
+		if layer.LayerDataSource != "" {
+			layerInfo = fmt.Sprintf("%s layer_data_source=%s", layerInfo, layer.LayerDataSource)
+		}
+
+		fmt.Printf("%s\n", layerInfo)
+
 		var layerChangesCount int
 
 		if layer.Distro != nil {
@@ -292,6 +302,84 @@ func printImagePackage(pkg *dockerimage.Package,
 				cmdName, distro.Name, distro.Version, distro.DisplayName)
 
 			cmdReport.SourceImage.Distro = distro
+		}
+
+		topList := layer.Top.List()
+
+		layerReport := dockerimage.LayerReport{
+			ID:                  layer.ID,
+			Index:               layer.Index,
+			Path:                layer.Path,
+			LayerDataSource:     layer.LayerDataSource,
+			MetadataChangesOnly: layer.MetadataChangesOnly,
+			FSDiffID:            layer.FSDiffID,
+			Stats:               layer.Stats,
+		}
+
+		layerReport.Changes.Deleted = uint64(len(layer.Changes.Deleted))
+		layerReport.Changes.Modified = uint64(len(layer.Changes.Modified))
+		layerReport.Changes.Added = uint64(len(layer.Changes.Added))
+
+		layerReport.Top = topList
+
+		for imgIdx, imgInfo := range cmdReport.ImageStack {
+			for instIdx, instInfo := range imgInfo.Instructions {
+				if layerReport.ID == instInfo.LayerID {
+					if !instInfo.EmptyLayer {
+						if layerReport.ChangeInstruction != nil {
+							log.Debugf("overwriting existing layerReport.ChangeInstruction = %#v", layerReport.ChangeInstruction)
+						}
+
+						layerReport.ChangeInstruction = &dockerimage.InstructionSummary{
+							Index:      instIdx,
+							ImageIndex: imgIdx,
+							Type:       instInfo.Type,
+							All:        instInfo.CommandAll,
+							Snippet:    instInfo.CommandSnippet,
+						}
+					} else {
+						extraInst := &dockerimage.InstructionSummary{
+							Index:      instIdx,
+							ImageIndex: imgIdx,
+							Type:       instInfo.Type,
+							All:        instInfo.CommandAll,
+							Snippet:    instInfo.CommandSnippet,
+						}
+
+						layerReport.OtherInstructions = append(layerReport.OtherInstructions, extraInst)
+					}
+				}
+			}
+		}
+
+		cmdReport.ImageLayers = append(cmdReport.ImageLayers, &layerReport)
+
+		if layerReport.ChangeInstruction != nil {
+			fmt.Printf("cmd=%s info=change.instruction index='%d:%d' type=%s snippet='%s' all='%s'\n",
+				cmdName,
+				layerReport.ChangeInstruction.ImageIndex,
+				layerReport.ChangeInstruction.Index,
+				layerReport.ChangeInstruction.Type,
+				layerReport.ChangeInstruction.Snippet,
+				layerReport.ChangeInstruction.All)
+
+		}
+
+		if layerReport.OtherInstructions != nil {
+			fmt.Printf("cmd=%s info=other.instructions count=%d\n",
+				cmdName,
+				len(layerReport.OtherInstructions))
+
+			for idx, info := range layerReport.OtherInstructions {
+				fmt.Printf("cmd=%s info=other.instruction[%d] index='%d:%d' type=%s snippet='%s' all='%s'\n",
+					cmdName,
+					idx,
+					info.ImageIndex,
+					info.Index,
+					info.Type,
+					info.Snippet,
+					info.All)
+			}
 		}
 
 		if layer.Stats.AllSize != 0 {
@@ -361,29 +449,14 @@ func printImagePackage(pkg *dockerimage.Package,
 
 		fmt.Printf("cmd=%s info=layer.objects.count data=%d\n", cmdName, len(layer.Objects))
 
-		topList := layer.Top.List()
-		fmt.Printf("cmd=%s info=layer.objects.top:\n", cmdName)
-		for _, object := range topList {
-			printObject(object)
+		if len(topList) > 0 {
+			fmt.Printf("cmd=%s info=layer.objects.top:\n", cmdName)
+			for _, object := range topList {
+				printObject(object)
+			}
+
+			fmt.Printf("\n")
 		}
-
-		layerReport := dockerimage.LayerReport{
-			ID:       layer.ID,
-			Index:    layer.Index,
-			Path:     layer.Path,
-			FSDiffID: layer.FSDiffID,
-			Stats:    layer.Stats,
-		}
-
-		layerReport.Changes.Deleted = uint64(len(layer.Changes.Deleted))
-		layerReport.Changes.Modified = uint64(len(layer.Changes.Modified))
-		layerReport.Changes.Added = uint64(len(layer.Changes.Added))
-
-		layerReport.Top = topList
-
-		cmdReport.ImageLayers = append(cmdReport.ImageLayers, &layerReport)
-
-		fmt.Printf("\n")
 
 		showLayer := true
 		if len(layers) > 0 {
