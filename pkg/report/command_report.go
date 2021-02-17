@@ -53,7 +53,7 @@ type ImageMetadata struct {
 	Distro        *DistroInfo       `json:"distro,omitempty"`
 	OS            string            `json:"os,omitempty"`
 	Volumes       []string          `json:"volumes,omitempty"`
-	Labels        map[string]string `json:"Labels,omitempty"`
+	Labels        map[string]string `json:"labels,omitempty"`
 	EnvVars       []string          `json:"env_vars,omitempty"`
 }
 

@@ -283,7 +283,7 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 									newObj := *srcObj
 									newObj.Change = ChangeUnknown
 									layer.Objects = append(layer.Objects, &newObj)
-									layer.References[srcObj.Name] = srcObj
+									layer.References[srcObj.Name] = &newObj
 									layer.Stats.ObjectCount++
 								}
 							}
@@ -377,29 +377,32 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 		}
 	}
 
-	var currentLayerIndex int
-	for hidx := range pkg.Config.History {
-		var currentLayer *Layer
-		switch pkg.Config.History[hidx].EmptyLayer {
-		case false:
-			currentLayer = pkg.Layers[currentLayerIndex]
-			currentLayerIndex++
-		case true:
-			if currentLayerIndex == 0 {
-				//no previous layer to reference...
-				pkg.Config.History[hidx].LayerFSDiffID = "none"
-				pkg.Config.History[hidx].LayerID = "none"
-				pkg.Config.History[hidx].LayerIndex = -1
-			} else {
-				//for empty layers add instructions to the previous layer
-				currentLayer = pkg.Layers[currentLayerIndex-1]
-			}
-		}
+	if len(pkg.Layers) > 0 {
+		var currentLayerIndex int
+		for hidx := range pkg.Config.History {
+			var currentLayer *Layer
+			switch pkg.Config.History[hidx].EmptyLayer {
+			case false:
+				currentLayer = pkg.Layers[currentLayerIndex]
 
-		if currentLayer != nil {
-			pkg.Config.History[hidx].LayerFSDiffID = currentLayer.FSDiffID
-			pkg.Config.History[hidx].LayerID = currentLayer.ID
-			pkg.Config.History[hidx].LayerIndex = currentLayer.Index
+				if (len(pkg.Layers) - 1) < currentLayerIndex {
+					currentLayerIndex++
+				}
+			case true:
+				if currentLayerIndex == 0 {
+					//no previous layer to reference (use the first layer)...
+					currentLayer = pkg.Layers[currentLayerIndex]
+				} else {
+					//for empty layers add instructions to the previous layer
+					currentLayer = pkg.Layers[currentLayerIndex-1]
+				}
+			}
+
+			if currentLayer != nil {
+				pkg.Config.History[hidx].LayerFSDiffID = currentLayer.FSDiffID
+				pkg.Config.History[hidx].LayerID = currentLayer.ID
+				pkg.Config.History[hidx].LayerIndex = currentLayer.Index
+			}
 		}
 	}
 
