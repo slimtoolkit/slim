@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
+	"github.com/fatih/color"
 	"github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -639,7 +640,28 @@ const (
 
 //Common command handler code
 
+func ShowState(cmd, state, info string, exitCode int) {
+	if state == "exited" {
+		if exitCode == 0 {
+			color.Set(color.FgHiYellow, color.Bold)
+		} else {
+			color.Set(color.FgHiRed, color.Bold)
+		}
+	} else {
+		color.Set(color.FgHiGreen, color.Bold)
+	}
+	defer color.Unset()
+
+	var exitInfo string
+	if exitCode != 0 {
+		exitInfo = fmt.Sprintf("code=%d", exitCode)
+	}
+	fmt.Printf("cmd=%s state=%s %s %s\n", cmd, state, exitInfo, info)
+}
+
 func ShowCommunityInfo() {
+	color.Set(color.FgHiMagenta)
+	defer color.Unset()
 	fmt.Printf("docker-slim: message='join the Gitter channel to ask questions or to share your feedback' info='%s'\n", consts.CommunityGitter)
 	fmt.Printf("docker-slim: message='join the Discord server to ask questions or to share your feedback' info='%s'\n", consts.CommunityDiscord)
 	fmt.Printf("docker-slim: message='Github discussions' info='%s'\n", consts.CommunityDiscussions)

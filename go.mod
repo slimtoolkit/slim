@@ -23,6 +23,7 @@ require (
 	github.com/docker/go-connections v0.4.0
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/dustin/go-humanize v1.0.0
+	github.com/fatih/color v1.10.0
 	github.com/fsouza/go-dockerclient v1.6.5
 	github.com/getkin/kin-openapi v0.19.0
 	github.com/ghodss/yaml v1.0.0
@@ -34,7 +35,6 @@ require (
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/klauspost/compress v1.10.6 // indirect
 	github.com/klauspost/pgzip v1.2.4 // indirect
-	github.com/mattn/go-colorable v0.1.6 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect

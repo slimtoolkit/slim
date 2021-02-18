@@ -144,8 +144,14 @@ func OnCommand(
 				fatImageRepoNameTag = fmt.Sprintf("%s.fat:%s", citParts[0], citParts[1])
 			default:
 				fmt.Printf("cmd=%s info=param.error status=malformed.custom.image.tag value=%s\n", cmdName, customImageTag)
-				fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())
-				commands.Exit(commands.ECTBuild | ecbBadCustomImageTag)
+				//fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())
+				exitCode := commands.ECTBuild | ecbBadCustomImageTag
+				commands.ShowState(cmdName,
+					"exited",
+					fmt.Sprintf("version=%s location='%s'", v.Current(), fsutil.ExeDir()),
+					exitCode)
+
+				commands.Exit(exitCode)
 			}
 		} else {
 			fatImageRepoNameTag = fmt.Sprintf("docker-slim-tmp-fat-image.%v.%v",
@@ -617,7 +623,9 @@ func OnCommand(
 		errutil.WarnOn(err)
 	}
 
-	fmt.Printf("cmd=%s state=done\n", cmdName)
+	//fmt.Printf("cmd=%s state=done\n", cmdName)
+	commands.ShowState(cmdName, "done", "", 0)
+
 	fmt.Printf("cmd=%s info=commands message='use the xray command to learn more about the optimize image'\n", cmdName)
 
 	vinfo := <-viChan

@@ -79,6 +79,8 @@ github.com/dsnet/compress/internal/errors
 github.com/dsnet/compress/internal/prefix
 # github.com/dustin/go-humanize v1.0.0
 github.com/dustin/go-humanize
+# github.com/fatih/color v1.10.0
+github.com/fatih/color
 # github.com/fsouza/go-dockerclient v1.6.5
 github.com/fsouza/go-dockerclient
 # github.com/getkin/kin-openapi v0.19.0
@@ -123,7 +125,7 @@ github.com/klauspost/compress/flate
 github.com/klauspost/pgzip
 # github.com/konsorten/go-windows-terminal-sequences v1.0.3
 github.com/konsorten/go-windows-terminal-sequences
-# github.com/mattn/go-colorable v0.1.6
+# github.com/mattn/go-colorable v0.1.8
 github.com/mattn/go-colorable
 # github.com/mattn/go-isatty v0.0.12
 github.com/mattn/go-isatty
