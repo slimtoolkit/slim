@@ -14,6 +14,7 @@ import (
 	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container"
 )
@@ -49,10 +50,13 @@ type CustomProbe struct {
 	crawlConcurrency      int
 	maxConcurrentCrawlers int
 	concurrentCrawlers    chan struct{}
+	ec                    *commands.ExecutionContext
 }
 
 // NewCustomProbe creates a new custom HTTP probe
-func NewCustomProbe(inspector *container.Inspector,
+func NewCustomProbe(
+	ec *commands.ExecutionContext,
+	inspector *container.Inspector,
 	cmds []config.HTTPProbeCmd,
 	retryCount int,
 	retryWait int,
@@ -106,6 +110,7 @@ func NewCustomProbe(inspector *container.Inspector,
 		crawlConcurrency:      crawlConcurrency,
 		maxConcurrentCrawlers: maxConcurrentCrawlers,
 		doneChan:              make(chan struct{}),
+		ec:                    ec,
 	}
 
 	if probe.maxConcurrentCrawlers > 0 {
@@ -199,7 +204,10 @@ func NewCustomProbe(inspector *container.Inspector,
 // Start starts the HTTP probe instance execution
 func (p *CustomProbe) Start() {
 	if p.PrintState {
-		fmt.Printf("%s state=http.probe.starting message='WAIT FOR HTTP PROBE TO FINISH'\n", p.PrintPrefix)
+		p.ec.Out.State("http.probe.starting",
+			commands.OutVars{
+				"message": "WAIT FOR HTTP PROBE TO FINISH",
+			})
 	}
 
 	go func() {
@@ -207,7 +215,7 @@ func (p *CustomProbe) Start() {
 		time.Sleep(9 * time.Second)
 
 		if p.PrintState {
-			fmt.Printf("%s state=http.probe.running\n", p.PrintPrefix)
+			p.ec.Out.State("http.probe.running")
 		}
 
 		log.Info("HTTP probe started...")
@@ -472,15 +480,18 @@ func (p *CustomProbe) Start() {
 			fmt.Printf("%s info=http.probe.summary total=%v failures=%v successful=%v\n",
 				p.PrintPrefix, p.CallCount, p.ErrCount, p.OkCount)
 
-			warning := ""
+			outVars := commands.OutVars{}
+			//warning := ""
 			switch {
 			case p.CallCount == 0:
-				warning = "warning=no.calls"
+				outVars["warning"] = "no.calls"
+				//warning = "warning=no.calls"
 			case p.OkCount == 0:
-				warning = "warning=no.successful.calls"
+				//warning = "warning=no.successful.calls"
+				outVars["warning"] = "no.successful.calls"
 			}
 
-			fmt.Printf("%s state=http.probe.done %s\n", p.PrintPrefix, warning)
+			p.ec.Out.State("http.probe.done", outVars)
 		}
 
 		if p.CallCount > 0 && p.OkCount == 0 && p.ProbeExitOnFailure {
@@ -488,7 +499,11 @@ func (p *CustomProbe) Start() {
 			if p.ContainerInspector != nil {
 				p.ContainerInspector.ShowContainerLogs()
 			}
-			fmt.Printf("%s state=exited\n", p.PrintPrefix)
+
+			p.ec.Out.State("exited",
+				commands.OutVars{
+					"exit.code": -1,
+				})
 			os.Exit(-1)
 		}
 

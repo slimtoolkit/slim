@@ -35,12 +35,13 @@ var CLI = cli.Command{
 
 		targetRef := ctx.Args().First()
 
-		ec := &commands.ExecutionContext{}
+		xc := commands.NewExecutionContext(Name)
 
 		OnCommand(
+			xc,
 			gcvalues,
-			targetRef,
-			ec)
+			targetRef)
+
 		commands.ShowCommunityInfo()
 		return nil
 	},

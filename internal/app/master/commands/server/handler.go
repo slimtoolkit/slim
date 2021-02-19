@@ -17,10 +17,12 @@ import (
 
 const appName = commands.AppName
 
+type ovars = commands.OutVars
+
 // OnCommand implements the 'server' docker-slim command
 func OnCommand(
-	gparams *commands.GenericParams,
-	ec *commands.ExecutionContext) {
+	xc *commands.ExecutionContext,
+	gparams *commands.GenericParams) {
 	logger := log.WithFields(log.Fields{"app": appName, "command": Name})
 	prefix := fmt.Sprintf("cmd=%s", Name)
 
@@ -29,7 +31,7 @@ func OnCommand(
 	cmdReport := report.NewEditCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 
-	fmt.Printf("cmd=%s state=started\n", Name)
+	xc.Out.State("started")
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
@@ -38,8 +40,15 @@ func OnCommand(
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 		fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", Name, exitMsg)
-		fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", Name, v.Current(), fsutil.ExeDir())
-		commands.Exit(commands.ECTCommon | commands.ECNoDockerConnectInfo)
+
+		exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
+		xc.Out.State("exited",
+			ovars{
+				"exit.code": exitCode,
+				"version":   v.Current(),
+				"location":  fsutil.ExeDir(),
+			})
+		commands.Exit(exitCode)
 	}
 	errutil.FailOn(err)
 
@@ -47,10 +56,9 @@ func OnCommand(
 		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
-	fmt.Printf("cmd=%s state=completed\n", Name)
+	xc.Out.State("completed")
 	cmdReport.State = command.StateCompleted
-
-	fmt.Printf("cmd=%s state=done\n", Name)
+	xc.Out.State("done")
 
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)

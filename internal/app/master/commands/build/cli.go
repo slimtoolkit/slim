@@ -361,9 +361,10 @@ var CLI = cli.Command{
 			commandReport = ""
 		}
 
-		ec := &commands.ExecutionContext{}
+		xc := commands.NewExecutionContext(Name)
 
 		OnCommand(
+			xc,
 			gcvalues,
 			targetRef,
 			doPull,
@@ -410,7 +411,6 @@ var CLI = cli.Command{
 			doUseSensorVolume,
 			doKeepTmpArtifacts,
 			continueAfter,
-			ec,
 			execCmd,
 			string(execFileCmd))
 		commands.ShowCommunityInfo()

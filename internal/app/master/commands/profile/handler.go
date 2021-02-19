@@ -34,8 +34,11 @@ const (
 	ecpImageNotFound
 )
 
+type ovars = commands.OutVars
+
 // OnCommand implements the 'profile' docker-slim command
 func OnCommand(
+	xc *commands.ExecutionContext,
 	gparams *commands.GenericParams,
 	targetRef string,
 	doPull bool,
@@ -75,8 +78,7 @@ func OnCommand(
 	doUseLocalMounts bool,
 	doUseSensorVolume string,
 	doKeepTmpArtifacts bool,
-	continueAfter *config.ContinueAfter,
-	ec *commands.ExecutionContext) {
+	continueAfter *config.ContinueAfter) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
@@ -87,7 +89,7 @@ func OnCommand(
 	cmdReport.State = command.StateStarted
 	cmdReport.OriginalImage = targetRef
 
-	fmt.Printf("cmd=%s state=started\n", cmdName)
+	xc.Out.State("started")
 	fmt.Printf("cmd=%s info=params target=%v\n", cmdName, targetRef)
 
 	client, err := dockerclient.New(gparams.ClientConfig)
@@ -97,8 +99,15 @@ func OnCommand(
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 		fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", cmdName, exitMsg)
-		fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())
-		commands.Exit(commands.ECTCommon | commands.ECNoDockerConnectInfo)
+
+		exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
+		xc.Out.State("exited",
+			ovars{
+				"exit.code": exitCode,
+				"version":   v.Current(),
+				"location":  fsutil.ExeDir(),
+			})
+		commands.Exit(exitCode)
 	}
 	errutil.FailOn(err)
 
@@ -108,14 +117,28 @@ func OnCommand(
 
 	if overrides.Network == "host" && runtime.GOOS == "darwin" {
 		fmt.Printf("cmd=%s info=param.error status=unsupported.network.mac value=%s\n", cmdName, overrides.Network)
-		fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())
-		commands.Exit(commands.ECTCommon | commands.ECBadNetworkName)
+
+		exitCode := commands.ECTCommon | commands.ECBadNetworkName
+		xc.Out.State("exited",
+			ovars{
+				"exit.code": exitCode,
+				"version":   v.Current(),
+				"location":  fsutil.ExeDir(),
+			})
+		commands.Exit(exitCode)
 	}
 
 	if !commands.ConfirmNetwork(logger, client, overrides.Network) {
 		fmt.Printf("cmd=%s info=param.error status=unknown.network value=%s\n", cmdName, overrides.Network)
-		fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())
-		commands.Exit(commands.ECTCommon | commands.ECBadNetworkName)
+
+		exitCode := commands.ECTCommon | commands.ECBadNetworkName
+		xc.Out.State("exited",
+			ovars{
+				"exit.code": exitCode,
+				"version":   v.Current(),
+				"location":  fsutil.ExeDir(),
+			})
+		commands.Exit(exitCode)
 	}
 
 	imageInspector, err := image.NewInspector(client, targetRef)
@@ -128,12 +151,14 @@ func OnCommand(
 			errutil.FailOn(err)
 		} else {
 			fmt.Printf("cmd=%s info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", cmdName, targetRef)
-			fmt.Printf("cmd=%s state=exited\n", cmdName)
-			commands.Exit(commands.ECTCommon | ecpImageNotFound)
+
+			exitCode := commands.ECTCommon | ecpImageNotFound
+			xc.Out.State("exited", ovars{"exit.code": exitCode})
+			commands.Exit(exitCode)
 		}
 	}
 
-	fmt.Printf("cmd=%s state=image.inspection.start\n", cmdName)
+	xc.Out.State("image.inspection.start")
 
 	logger.Info("inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
@@ -153,8 +178,8 @@ func OnCommand(
 	err = imageInspector.ProcessCollectedData()
 	errutil.FailOn(err)
 
-	fmt.Printf("cmd=%s state=image.inspection.done\n", cmdName)
-	fmt.Printf("cmd=%s state=container.inspection.start\n", cmdName)
+	xc.Out.State("image.inspection.done")
+	xc.Out.State("container.inspection.start")
 
 	containerInspector, err := container.NewInspector(
 		logger,
@@ -190,8 +215,10 @@ func OnCommand(
 
 	if len(containerInspector.FatContainerCmd) == 0 {
 		fmt.Printf("cmd=%s info=target.image.error status=no.entrypoint.cmd image='%v' message='no ENTRYPOINT/CMD'\n", cmdName, targetRef)
-		fmt.Printf("cmd=%s state=exited\n", cmdName)
-		commands.Exit(commands.ECTBuild | ecpNoEntrypoint)
+
+		exitCode := commands.ECTBuild | ecpNoEntrypoint
+		xc.Out.State("exited", ovars{"exit.code": exitCode})
+		commands.Exit(exitCode)
 	}
 
 	logger.Info("starting instrumented 'fat' container...")
@@ -213,6 +240,7 @@ func OnCommand(
 
 	if doHTTPProbe {
 		probe, err := http.NewCustomProbe(
+			xc,
 			containerInspector,
 			httpProbeCmds,
 			httpProbeRetryCount,
@@ -229,13 +257,18 @@ func OnCommand(
 			true, prefix)
 		errutil.FailOn(err)
 		if len(probe.Ports) == 0 {
-			fmt.Printf("cmd=%s state=http.probe.error error='no exposed ports' message='expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services\n", cmdName)
+			xc.Out.State("http.probe.error",
+				ovars{
+					"error":   "no exposed ports",
+					"message": "expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services",
+				})
+
 			logger.Info("shutting down 'fat' container...")
 			containerInspector.FinishMonitoring()
 			_ = containerInspector.ShutdownContainer()
 
-			fmt.Printf("cmd=%s state=exited\n", cmdName)
-			return
+			xc.Out.State("exited", ovars{"exit.code": -1})
+			commands.Exit(-1)
 		}
 
 		probe.Start()
@@ -273,7 +306,7 @@ func OnCommand(
 		errutil.Fail("unknown continue-after mode")
 	}
 
-	fmt.Printf("cmd=%s state=container.inspection.finishing\n", cmdName)
+	xc.Out.State("container.inspection.finishing")
 
 	containerInspector.FinishMonitoring()
 
@@ -281,23 +314,25 @@ func OnCommand(
 	err = containerInspector.ShutdownContainer()
 	errutil.WarnOn(err)
 
-	fmt.Printf("cmd=%s state=container.inspection.artifact.processing\n", cmdName)
+	xc.Out.State("container.inspection.artifact.processing")
 
 	if !containerInspector.HasCollectedData() {
 		imageInspector.ShowFatImageDockerInstructions()
 		fmt.Printf("cmd=%s info=results status='no data collected (no minified image generated). (version=%v location='%v')'\n",
 			cmdName,
 			v.Current(), fsutil.ExeDir())
-		fmt.Printf("cmd=%s state=exited\n", cmdName)
-		return
+
+		xc.Out.State("exited", ovars{"exit.code": -1})
+		commands.Exit(-1)
 	}
 
 	logger.Info("processing instrumented 'fat' container info...")
 	err = containerInspector.ProcessCollectedData()
 	errutil.FailOn(err)
 
-	fmt.Printf("cmd=%s state=container.inspection.done\n", cmdName)
-	fmt.Printf("cmd=%s state=completed\n", cmdName)
+	xc.Out.State("container.inspection.done")
+	xc.Out.State("completed")
+
 	cmdReport.State = command.StateCompleted
 
 	if copyMetaArtifactsLocation != "" {
@@ -324,7 +359,7 @@ func OnCommand(
 		errutil.WarnOn(err)
 	}
 
-	fmt.Printf("cmd=%s state=done\n", cmdName)
+	xc.Out.State("done")
 
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)

@@ -26,6 +26,8 @@ import (
 
 const appName = commands.AppName
 
+type ovars = commands.OutVars
+
 // Xray command exit codes
 const (
 	ecxOther = iota + 1
@@ -34,6 +36,7 @@ const (
 
 // OnCommand implements the 'xray' docker-slim command
 func OnCommand(
+	xc *commands.ExecutionContext,
 	gparams *commands.GenericParams,
 	targetRef string,
 	doPull bool,
@@ -50,8 +53,7 @@ func OnCommand(
 	changeDataPatterns []string,
 	doAddImageManifest bool,
 	doAddImageConfig bool,
-	doRmFileArtifacts bool,
-	ec *commands.ExecutionContext) {
+	doRmFileArtifacts bool) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
@@ -70,7 +72,7 @@ func OnCommand(
 	cmdReport.State = command.StateStarted
 	cmdReport.TargetReference = targetRef
 
-	fmt.Printf("cmd=%s state=started\n", cmdName)
+	xc.Out.State("started")
 	fmt.Printf("cmd=%s info=params target=%v add-image-manifest=%v add-image-config=%v rm-file-artifacts=%v\n",
 		cmdName, targetRef, doAddImageManifest, doAddImageConfig, doRmFileArtifacts)
 
@@ -81,8 +83,15 @@ func OnCommand(
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 		fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", cmdName, exitMsg)
-		fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())
-		commands.Exit(commands.ECTCommon | commands.ECNoDockerConnectInfo)
+
+		exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
+		xc.Out.State("exited",
+			ovars{
+				"exit.code": exitCode,
+				"version":   v.Current(),
+				"location":  fsutil.ExeDir(),
+			})
+		commands.Exit(exitCode)
 	}
 	errutil.FailOn(err)
 
@@ -100,12 +109,17 @@ func OnCommand(
 			errutil.FailOn(err)
 		} else {
 			fmt.Printf("cmd=%s info=target.image.error status=not.found image='%v' message='make sure the target image already exists locally'\n", cmdName, targetRef)
-			fmt.Printf("cmd=%s state=exited\n", cmdName)
-			commands.Exit(commands.ECTBuild | ecxImageNotFound)
+
+			exitCode := commands.ECTBuild | ecxImageNotFound
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": exitCode,
+				})
+			commands.Exit(exitCode)
 		}
 	}
 
-	fmt.Printf("cmd=%s state=image.api.inspection.start\n", cmdName)
+	xc.Out.State("image.api.inspection.start")
 
 	logger.Info("inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
@@ -180,8 +194,8 @@ func OnCommand(
 
 	cmdReport.ArtifactLocation = imageInspector.ArtifactLocation
 
-	fmt.Printf("cmd=%s state=image.api.inspection.done\n", cmdName)
-	fmt.Printf("cmd=%s state=image.data.inspection.start\n", cmdName)
+	xc.Out.State("image.api.inspection.done")
+	xc.Out.State("image.data.inspection.start")
 
 	imageID := dockerutil.CleanImageID(imageInspector.ImageInfo.ID)
 	iaName := fmt.Sprintf("%s.tar", imageID)
@@ -192,7 +206,7 @@ func OnCommand(
 	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, changeDataMatchers)
 	errutil.FailOn(err)
 
-	fmt.Printf("cmd=%s state=image.data.inspection.done\n", cmdName)
+	xc.Out.State("image.data.inspection.done")
 
 	if len(imageInspector.DockerfileInfo.AllInstructions) == len(imagePkg.Config.History) {
 		for instIdx, instInfo := range imageInspector.DockerfileInfo.AllInstructions {
@@ -231,7 +245,7 @@ func OnCommand(
 		cmdReport.RawImageConfig = imagePkg.Config
 	}
 
-	fmt.Printf("cmd=%s state=completed\n", cmdName)
+	xc.Out.State("completed")
 	cmdReport.State = command.StateCompleted
 
 	if doRmFileArtifacts {
@@ -242,7 +256,7 @@ func OnCommand(
 		cmdReport.ImageArchiveLocation = iaPath
 	}
 
-	fmt.Printf("cmd=%s state=done\n", cmdName)
+	xc.Out.State("done")
 
 	fmt.Printf("cmd=%s info=results  artifacts.location='%v'\n", cmdName, cmdReport.ArtifactLocation)
 	fmt.Printf("cmd=%s info=results  artifacts.dockerfile.original=Dockerfile.fat\n", cmdName)

@@ -24,11 +24,11 @@ var CLI = cli.Command{
 			return err
 		}
 
-		ec := &commands.ExecutionContext{}
+		xc := commands.NewExecutionContext(Name)
 
 		OnCommand(
-			gcvalues,
-			ec)
+			xc,
+			gcvalues)
 		commands.ShowCommunityInfo()
 		return nil
 	},

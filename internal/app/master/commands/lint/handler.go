@@ -18,8 +18,11 @@ import (
 
 const appName = commands.AppName
 
+type ovars = commands.OutVars
+
 // OnCommand implements the 'lint' docker-slim command
 func OnCommand(
+	xc *commands.ExecutionContext,
 	gparams *commands.GenericParams,
 	targetRef string,
 	targetType string,
@@ -32,8 +35,7 @@ func OnCommand(
 	excludeCheckIDs map[string]struct{},
 	doShowNoHits bool,
 	doShowSnippet bool,
-	doListChecks bool,
-	ec *commands.ExecutionContext) {
+	doListChecks bool) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
@@ -43,7 +45,7 @@ func OnCommand(
 	cmdReport := report.NewLintCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 
-	fmt.Printf("cmd=%s state=started\n", cmdName)
+	xc.Out.State("started")
 	fmt.Printf("cmd=%s info=params target=%v list.checks=%v\n", cmdName, targetRef, doListChecks)
 
 	/*
@@ -96,10 +98,9 @@ func OnCommand(
 		printLintResults(lintResults, appName, cmdName, cmdReport, doShowNoHits, doShowSnippet)
 	}
 
-	fmt.Printf("cmd=%s state=completed\n", cmdName)
+	xc.Out.State("completed")
 	cmdReport.State = command.StateCompleted
-
-	fmt.Printf("cmd=%s state=done\n", cmdName)
+	xc.Out.State("done")
 
 	vinfo := <-viChan
 	version.PrintCheckVersion(prefix, vinfo)

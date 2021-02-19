@@ -89,9 +89,10 @@ var CLI = cli.Command{
 		doAddImageConfig := ctx.Bool(FlagAddImageConfig)
 		doRmFileArtifacts := ctx.Bool(commands.FlagRemoveFileArtifacts)
 
-		ec := &commands.ExecutionContext{}
+		xc := commands.NewExecutionContext(Name)
 
 		OnCommand(
+			xc,
 			gcvalues,
 			targetRef,
 			doPull,
@@ -108,8 +109,8 @@ var CLI = cli.Command{
 			changeDataPatterns,
 			doAddImageManifest,
 			doAddImageConfig,
-			doRmFileArtifacts,
-			ec)
+			doRmFileArtifacts)
+
 		commands.ShowCommunityInfo()
 		return nil
 	},

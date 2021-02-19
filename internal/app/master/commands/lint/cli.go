@@ -110,9 +110,10 @@ var CLI = cli.Command{
 		doShowNoHits := ctx.Bool(FlagShowNoHits)
 		doShowSnippet := ctx.Bool(FlagShowSnippet)
 
-		ec := &commands.ExecutionContext{}
+		xc := commands.NewExecutionContext(Name)
 
 		OnCommand(
+			xc,
 			gcvalues,
 			targetRef,
 			targetType,
@@ -125,8 +126,7 @@ var CLI = cli.Command{
 			excludeCheckIDs,
 			doShowNoHits,
 			doShowSnippet,
-			doListChecks,
-			ec)
+			doListChecks)
 		commands.ShowCommunityInfo()
 		return nil
 	},

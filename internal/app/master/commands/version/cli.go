@@ -20,7 +20,15 @@ var CLI = cli.Command{
 		doDebug := ctx.GlobalBool(commands.FlagDebug)
 		inContainer, isDSImage := commands.IsInContainer(ctx.GlobalBool(commands.FlagInContainer))
 		clientConfig := commands.GetDockerClientConfig(ctx)
-		OnCommand(doDebug, inContainer, isDSImage, clientConfig)
+
+		xc := commands.NewExecutionContext(Name)
+
+		OnCommand(xc,
+			doDebug,
+			inContainer,
+			isDSImage,
+			clientConfig)
+
 		commands.ShowCommunityInfo()
 		return nil
 	},

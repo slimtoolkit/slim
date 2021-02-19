@@ -15,8 +15,13 @@ import (
 	v "github.com/docker-slim/docker-slim/pkg/version"
 )
 
+type ovars = commands.OutVars
+
 // OnCommand implements the 'version' docker-slim command
-func OnCommand(doDebug, inContainer, isDSImage bool, clientConfig *config.DockerClient) {
+func OnCommand(
+	xc *commands.ExecutionContext,
+	doDebug, inContainer, isDSImage bool,
+	clientConfig *config.DockerClient) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": command.Version})
 
 	client, err := dockerclient.New(clientConfig)
@@ -26,8 +31,15 @@ func OnCommand(doDebug, inContainer, isDSImage bool, clientConfig *config.Docker
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 		fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", Name, exitMsg)
-		fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", Name, v.Current(), fsutil.ExeDir())
-		commands.Exit(-777)
+
+		exitCode := -777
+		xc.Out.State("exited",
+			ovars{
+				"exit.code": exitCode,
+				"version":   v.Current(),
+				"location":  fsutil.ExeDir(),
+			})
+		commands.Exit(exitCode)
 	}
 	errutil.FailOn(err)
 

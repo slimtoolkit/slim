@@ -242,9 +242,10 @@ var CLI = cli.Command{
 			commandReport = ""
 		}
 
-		ec := &commands.ExecutionContext{}
+		xc := commands.NewExecutionContext(Name)
 
 		OnCommand(
+			xc,
 			gcvalues,
 			targetRef,
 			doPull,
@@ -284,8 +285,7 @@ var CLI = cli.Command{
 			doUseLocalMounts,
 			doUseSensorVolume,
 			doKeepTmpArtifacts,
-			continueAfter,
-			ec)
+			continueAfter)
 		commands.ShowCommunityInfo()
 		return nil
 	},

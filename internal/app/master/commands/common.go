@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/fatih/color"
 	"github.com/fsouza/go-dockerclient"
@@ -613,6 +614,87 @@ type GenericParams struct {
 }
 
 type ExecutionContext struct {
+	Out *Output
+}
+
+func NewExecutionContext(cmdName string) *ExecutionContext {
+	ref := &ExecutionContext{
+		Out: NewOutput(cmdName),
+	}
+
+	return ref
+}
+
+type Output struct {
+	CmdName string
+}
+
+func NewOutput(cmdName string) *Output {
+	ref := &Output{
+		CmdName: cmdName,
+	}
+
+	return ref
+}
+
+type OutVars map[string]interface{}
+
+//func (ref *Output) State(state string, exitCode int, format string, params ...interface{}) {
+func (ref *Output) State(state string, params ...OutVars) {
+	var exitInfo string
+	var info string
+	var sep string
+
+	if len(params) > 0 {
+		var minCount int
+		kvSet := params[0]
+		if exitCode, ok := kvSet["exit.code"]; ok {
+			minCount = 1
+			exitInfo = fmt.Sprintf(" code=%d", exitCode)
+		}
+
+		if len(kvSet) > minCount {
+			var builder strings.Builder
+			sep = " "
+
+			for k, v := range kvSet {
+				if k == "exit.code" {
+					continue
+				}
+
+				builder.WriteString(k)
+				builder.WriteString("=")
+				builder.WriteString(fmt.Sprintf("%v", v))
+				builder.WriteString(" ")
+			}
+
+			info = builder.String()
+		}
+	}
+
+	if state == "exited" {
+		if exitInfo == "" || exitInfo == "0" {
+			color.Set(color.FgHiYellow, color.Bold)
+		} else {
+			color.Set(color.FgHiRed, color.Bold)
+		}
+	} else {
+		color.Set(color.FgHiGreen, color.Bold)
+	}
+	defer color.Unset()
+
+	//if exitCode != 0 {
+	//	exitInfo = fmt.Sprintf(" code=%d", exitCode)
+	//}
+
+	//var info string
+	//var sep string
+	//if len(format) > 0 {
+	//	sep = " "
+	//	info = fmt.Sprintf(format, params...)
+	//}
+
+	fmt.Printf("cmd=%s state=%s%s%s%s\n", ref.CmdName, state, exitInfo, sep, info)
 }
 
 // Exit Code Types
@@ -639,25 +721,6 @@ const (
 )
 
 //Common command handler code
-
-func ShowState(cmd, state, info string, exitCode int) {
-	if state == "exited" {
-		if exitCode == 0 {
-			color.Set(color.FgHiYellow, color.Bold)
-		} else {
-			color.Set(color.FgHiRed, color.Bold)
-		}
-	} else {
-		color.Set(color.FgHiGreen, color.Bold)
-	}
-	defer color.Unset()
-
-	var exitInfo string
-	if exitCode != 0 {
-		exitInfo = fmt.Sprintf("code=%d", exitCode)
-	}
-	fmt.Printf("cmd=%s state=%s %s %s\n", cmd, state, exitInfo, info)
-}
 
 func ShowCommunityInfo() {
 	color.Set(color.FgHiMagenta)
