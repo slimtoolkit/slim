@@ -12,6 +12,7 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
@@ -34,10 +35,24 @@ type CheckVersionInfo struct {
 }
 
 // PrintCheckVersion shows if the current version is outdated
-func PrintCheckVersion(printPrefix string, info *CheckVersionInfo) {
+func PrintCheckVersion(
+	xc *commands.ExecutionContext,
+	printPrefix string,
+	info *CheckVersionInfo) {
 	if info != nil && info.Status == "success" && info.Outdated {
-		fmt.Printf("%s info=version status=OUTDATED local=%s current=%s\n", printPrefix, v.Tag(), info.Current)
-		fmt.Printf("%s info=message message='Your version of DockerSlim is out of date! Use the \"update\" command or download the new version from https://dockersl.im/downloads.html'\n", printPrefix)
+		msg := "Your version of DockerSlim is out of date! Use the \"update\" command or download the new version from https://dockersl.im/downloads.html"
+		if xc == nil {
+			fmt.Printf("%s info=version status=OUTDATED local=%s current=%s\n", printPrefix, v.Tag(), info.Current)
+			fmt.Printf("%s info=message message='%s'\n", printPrefix, msg)
+		} else {
+			xc.Out.Info("version",
+				commands.OutVars{
+					"status":  "OUTDATED",
+					"local":   v.Tag(),
+					"current": info.Current,
+				})
+			xc.Out.Message(msg)
+		}
 	}
 }
 
@@ -185,6 +200,6 @@ func CheckAsync(doCheckVersion, inContainer, isDSImage bool) <-chan *CheckVersio
 // CheckAndPrintAsync check the app version and prints the results
 func CheckAndPrintAsync(printPrefix string, inContainer, isDSImage bool) {
 	go func() {
-		PrintCheckVersion(printPrefix, Check(inContainer, isDSImage))
+		PrintCheckVersion(nil, printPrefix, Check(inContainer, isDSImage))
 	}()
 }

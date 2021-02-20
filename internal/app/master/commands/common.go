@@ -639,7 +639,27 @@ func NewOutput(cmdName string) *Output {
 
 type OutVars map[string]interface{}
 
-//func (ref *Output) State(state string, exitCode int, format string, params ...interface{}) {
+func (ref *Output) Prompt(data string) {
+	color.Set(color.FgHiRed)
+	defer color.Unset()
+
+	fmt.Printf("cmd=%s prompt='%s'\n", ref.CmdName, data)
+}
+
+func (ref *Output) Error(errType string, data string) {
+	color.Set(color.FgHiRed)
+	defer color.Unset()
+
+	fmt.Printf("cmd=%s error=%s message='%s'\n", ref.CmdName, errType, data)
+}
+
+func (ref *Output) Message(data string) {
+	color.Set(color.FgHiMagenta)
+	defer color.Unset()
+
+	fmt.Printf("cmd=%s message='%s'\n", ref.CmdName, data)
+}
+
 func (ref *Output) State(state string, params ...OutVars) {
 	var exitInfo string
 	var info string
@@ -673,28 +693,43 @@ func (ref *Output) State(state string, params ...OutVars) {
 	}
 
 	if state == "exited" {
-		if exitInfo == "" || exitInfo == "0" {
-			color.Set(color.FgHiYellow, color.Bold)
-		} else {
-			color.Set(color.FgHiRed, color.Bold)
-		}
+		color.Set(color.FgHiRed, color.Bold)
 	} else {
-		color.Set(color.FgHiGreen, color.Bold)
+		color.Set(color.FgCyan, color.Bold)
 	}
 	defer color.Unset()
 
-	//if exitCode != 0 {
-	//	exitInfo = fmt.Sprintf(" code=%d", exitCode)
-	//}
-
-	//var info string
-	//var sep string
-	//if len(format) > 0 {
-	//	sep = " "
-	//	info = fmt.Sprintf(format, params...)
-	//}
-
 	fmt.Printf("cmd=%s state=%s%s%s%s\n", ref.CmdName, state, exitInfo, sep, info)
+}
+
+var (
+	itcolor = color.New(color.FgMagenta, color.Bold).SprintFunc()
+	kcolor  = color.New(color.FgHiGreen, color.Bold).SprintFunc()
+	vcolor  = color.New(color.FgHiBlue).SprintfFunc()
+)
+
+func (ref *Output) Info(infoType string, params ...OutVars) {
+	var data string
+	var sep string
+
+	if len(params) > 0 {
+		kvSet := params[0]
+		if len(kvSet) > 0 {
+			var builder strings.Builder
+			sep = " "
+
+			for k, v := range kvSet {
+				builder.WriteString(kcolor(k))
+				builder.WriteString("=")
+				builder.WriteString(fmt.Sprintf("'%s'", vcolor("%v", v)))
+				builder.WriteString(" ")
+			}
+
+			data = builder.String()
+		}
+	}
+
+	fmt.Printf("cmd=%s info=%s%s%s\n", ref.CmdName, itcolor(infoType), sep, data)
 }
 
 // Exit Code Types

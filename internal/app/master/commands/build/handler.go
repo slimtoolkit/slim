@@ -113,7 +113,7 @@ func OnCommand(
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 
-		fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", cmdName, exitMsg)
+		xc.Out.Error("docker.connect.error", exitMsg)
 
 		exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
 		xc.Out.State("exited",
@@ -437,7 +437,7 @@ func OnCommand(
 
 	switch continueAfter.Mode {
 	case "enter":
-		fmt.Printf("cmd=%s info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'\n", cmdName)
+		xc.Out.Prompt("USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER")
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
 	case "exec":
@@ -476,15 +476,15 @@ func OnCommand(
 		}
 		fmt.Printf("cmd=%s mode=exec exitcode=%d\n", cmdName, inspect.ExitCode)
 	case "signal":
-		fmt.Printf("cmd=%s info=prompt message='send SIGUSR1 when you are done using the container'\n", cmdName)
+		xc.Out.Prompt("send SIGUSR1 when you are done using the container")
 		<-continueAfter.ContinueChan
 		fmt.Printf("cmd=%s info=event message='got SIGUSR1'\n", cmdName)
 	case "timeout":
-		fmt.Printf("cmd=%s info=prompt message='waiting for the target container (%v seconds)'\n", cmdName, int(continueAfter.Timeout))
+		xc.Out.Prompt(fmt.Sprintf("waiting for the target container (%v seconds)", int(continueAfter.Timeout)))
 		<-time.After(time.Second * continueAfter.Timeout)
 		fmt.Printf("cmd=%s info=event message='done waiting for the target container'\n", cmdName)
 	case "probe":
-		fmt.Printf("cmd=%s info=prompt message='waiting for the HTTP probe to finish'\n", cmdName)
+		xc.Out.Prompt("waiting for the HTTP probe to finish")
 		<-continueAfter.ContinueChan
 		fmt.Printf("cmd=%s info=event message='HTTP probe is done'\n", cmdName)
 		if probe != nil && probe.CallCount > 0 && probe.OkCount == 0 {
@@ -713,7 +713,7 @@ func OnCommand(
 	fmt.Printf("cmd=%s info=commands message='use the xray command to learn more about the optimize image'\n", cmdName)
 
 	vinfo := <-viChan
-	version.PrintCheckVersion(prefix, vinfo)
+	version.PrintCheckVersion(xc, "", vinfo)
 
 	cmdReport.State = command.StateDone
 	if cmdReport.Save() {

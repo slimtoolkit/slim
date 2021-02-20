@@ -287,19 +287,19 @@ func OnCommand(
 
 	switch continueAfter.Mode {
 	case "enter":
-		fmt.Printf("cmd=%s info=prompt message='USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER'\n", cmdName)
+		xc.Out.Prompt("USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER")
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
 	case "signal":
-		fmt.Printf("cmd=%s info=prompt message='send SIGUSR1 when you are done using the container'\n", cmdName)
+		xc.Out.Prompt("send SIGUSR1 when you are done using the container")
 		<-continueAfter.ContinueChan
 		fmt.Printf("cmd=%s info=event message='got SIGUSR1'\n", cmdName)
 	case "timeout":
-		fmt.Printf("cmd=%s info=prompt message='waiting for the target container (%v seconds)'\n", cmdName, int(continueAfter.Timeout))
+		xc.Out.Prompt(fmt.Sprintf("waiting for the target container (%v seconds)", int(continueAfter.Timeout)))
 		<-time.After(time.Second * continueAfter.Timeout)
 		fmt.Printf("cmd=%s info=event message='done waiting for the target container'\n", cmdName)
 	case "probe":
-		fmt.Printf("cmd=%s info=prompt message='waiting for the HTTP probe to finish'\n", cmdName)
+		xc.Out.Prompt("waiting for the HTTP probe to finish")
 		<-continueAfter.ContinueChan
 		fmt.Printf("cmd=%s info=event message='HTTP probe is done'\n", cmdName)
 	default:
@@ -362,7 +362,7 @@ func OnCommand(
 	xc.Out.State("done")
 
 	vinfo := <-viChan
-	version.PrintCheckVersion(prefix, vinfo)
+	version.PrintCheckVersion(xc, "", vinfo)
 
 	cmdReport.State = command.StateDone
 	if cmdReport.Save() {

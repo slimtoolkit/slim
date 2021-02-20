@@ -103,7 +103,7 @@ func OnCommand(
 	xc.Out.State("done")
 
 	vinfo := <-viChan
-	version.PrintCheckVersion(prefix, vinfo)
+	version.PrintCheckVersion(xc, "", vinfo)
 
 	cmdReport.State = command.StateDone
 	if cmdReport.Save() {
