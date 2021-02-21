@@ -30,7 +30,11 @@ func OnCommand(
 		if inContainer && isDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
-		fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", Name, exitMsg)
+
+		xc.Out.Info("docker.connect.error",
+			ovars{
+				"message": exitMsg,
+			})
 
 		exitCode := -777
 		xc.Out.State("exited",

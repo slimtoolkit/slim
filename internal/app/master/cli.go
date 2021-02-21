@@ -44,6 +44,10 @@ func newCLI() *cli.App {
 	app.Flags = commands.GlobalFlags()
 
 	app.Before = func(ctx *cli.Context) error {
+		if ctx.GlobalBool(commands.FlagNoColor) {
+			commands.NoColor()
+		}
+
 		if ctx.GlobalBool(commands.FlagDebug) {
 			log.SetLevel(log.DebugLevel)
 		} else {

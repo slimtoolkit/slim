@@ -46,7 +46,11 @@ func OnCommand(
 	cmdReport.State = command.StateStarted
 
 	xc.Out.State("started")
-	fmt.Printf("cmd=%s info=params target=%v list.checks=%v\n", cmdName, targetRef, doListChecks)
+	xc.Out.Info("params",
+		ovars{
+			"target":      targetRef,
+			"list.checks": doListChecks,
+		})
 
 	/*
 		do it only when targetting images
@@ -70,7 +74,7 @@ func OnCommand(
 
 	if doListChecks {
 		checks := linter.ListChecks()
-		printLintChecks(checks, appName, cmdName)
+		printLintChecks(xc, checks, appName, cmdName)
 	} else {
 		cmdReport.TargetType = linter.DockerfileTargetType
 		cmdReport.TargetReference = targetRef
@@ -95,7 +99,7 @@ func OnCommand(
 		cmdReport.Hits = lintResults.Hits
 		cmdReport.Errors = lintResults.Errors
 
-		printLintResults(lintResults, appName, cmdName, cmdReport, doShowNoHits, doShowSnippet)
+		printLintResults(xc, lintResults, appName, cmdName, cmdReport, doShowNoHits, doShowSnippet)
 	}
 
 	xc.Out.State("completed")
@@ -107,25 +111,32 @@ func OnCommand(
 
 	cmdReport.State = command.StateDone
 	if cmdReport.Save() {
-		fmt.Printf("cmd=%s info=report file='%s'\n", cmdName, cmdReport.ReportLocation())
+		xc.Out.Info("report",
+			ovars{
+				"file": cmdReport.ReportLocation(),
+			})
 	}
 }
 
-func printLintChecks(checks []*check.Info,
+func printLintChecks(
+	xc *commands.ExecutionContext,
+	checks []*check.Info,
 	appName string,
 	cmdName command.Type) {
-	fmt.Printf("cmd=%s info=lint.checks count=%d:\n",
-		cmdName,
-		len(checks))
+	xc.Out.Info("lint.checks",
+		ovars{
+			"count": len(checks),
+		})
 
 	for _, info := range checks {
-		fmt.Printf("cmd=%s info=lint.check.info id=%s name='%s' labels='%s' description='%s' url='%s'\n",
-			cmdName,
-			info.ID,
-			info.Name,
-			kvMapString(info.Labels),
-			info.Description,
-			info.DetailsURL)
+		xc.Out.Info("lint.check.info",
+			ovars{
+				"id":          info.ID,
+				"name":        info.Name,
+				"labels":      kvMapString(info.Labels),
+				"description": info.Description,
+				"url":         info.DetailsURL,
+			})
 	}
 }
 
@@ -138,7 +149,9 @@ func kvMapString(m map[string]string) string {
 	return strings.Join(pairs, ",")
 }
 
-func printLintResults(lintResults *linter.Report,
+func printLintResults(
+	xc *commands.ExecutionContext,
+	lintResults *linter.Report,
 	appName string,
 	cmdName command.Type,
 	cmdReport *report.LintCommand,
@@ -148,30 +161,36 @@ func printLintResults(lintResults *linter.Report,
 	cmdReport.NoHitsCount = len(lintResults.NoHits)
 	cmdReport.ErrorsCount = len(lintResults.Errors)
 
-	fmt.Printf("cmd=%s info=lint.results hits=%d nohits=%d errors=%d:\n",
-		cmdName,
-		cmdReport.HitsCount,
-		cmdReport.NoHitsCount,
-		cmdReport.ErrorsCount)
+	xc.Out.Info("lint.results",
+		ovars{
+			"hits":   cmdReport.HitsCount,
+			"nohits": cmdReport.NoHitsCount,
+			"errors": cmdReport.ErrorsCount,
+		})
 
 	if cmdReport.HitsCount > 0 {
-		fmt.Printf("cmd=%s info=lint.check.hits count=%d\n",
-			cmdName, cmdReport.HitsCount)
+		xc.Out.Info("lint.check.hits",
+			ovars{
+				"count": cmdReport.HitsCount,
+			})
 
 		for id, result := range lintResults.Hits {
-			fmt.Printf("cmd=%s info=lint.check.hit id=%s name='%s' level=%s message='%s'\n",
-				cmdName,
-				id,
-				result.Source.Name,
-				result.Source.Labels[check.LabelLevel],
-				result.Message)
+			xc.Out.Info("lint.check.hit",
+				ovars{
+					"id":      id,
+					"name":    result.Source.Name,
+					"level":   result.Source.Labels[check.LabelLevel],
+					"message": result.Message,
+				})
 
 			if len(result.Matches) > 0 {
-				fmt.Printf("cmd=%s info=lint.check.hit.matches count=%d:\n",
-					cmdName, len(result.Matches))
+				xc.Out.Info("lint.check.hit.matches",
+					ovars{
+						"count": len(result.Matches),
+					})
 
 				for _, m := range result.Matches {
-					var instructionInfo string
+					//var instructionInfo string
 					//the match message has the instruction info already
 					//if m.Instruction != nil {
 					//	instructionInfo = fmt.Sprintf(" instruction(start=%d end=%d name=%s gindex=%d sindex=%d)",
@@ -182,20 +201,23 @@ func printLintResults(lintResults *linter.Report,
 					//		m.Instruction.StageIndex)
 					//}
 
-					var stageInfo string
+					minfo := ovars{}
 					if m.Stage != nil {
-						stageInfo = fmt.Sprintf(" stage(index=%d name='%s')", m.Stage.Index, m.Stage.Name)
+						minfo["stage"] = fmt.Sprintf("%d:%s", m.Stage.Index, m.Stage.Name)
 					}
 
-					fmt.Printf("cmd=%s info=lint.check.hit.match message='%s'%s%s\n",
-						cmdName, m.Message, instructionInfo, stageInfo)
+					minfo["message"] = m.Message
+					xc.Out.Info("lint.check.hit.match", minfo)
 
 					if m.Instruction != nil &&
 						len(m.Instruction.RawLines) > 0 &&
 						doShowSnippet {
 						for idx, data := range m.Instruction.RawLines {
-							fmt.Printf("cmd=%s info=lint.check.hit.match.snippet line=%d data='%s'\n",
-								cmdName, idx+m.Instruction.StartLine, data)
+							xc.Out.Info("lint.check.hit.match.snippet",
+								ovars{
+									"line": idx + m.Instruction.StartLine,
+									"data": data,
+								})
 						}
 					}
 				}
@@ -204,21 +226,32 @@ func printLintResults(lintResults *linter.Report,
 	}
 
 	if doShowNoHits && cmdReport.NoHitsCount > 0 {
-		fmt.Printf("cmd=%s info=lint.check.nohits count=%d\n",
-			cmdName, cmdReport.NoHitsCount)
+		xc.Out.Info("lint.check.nohits",
+			ovars{
+				"count": cmdReport.NoHitsCount,
+			})
 
 		for id, result := range lintResults.NoHits {
-			fmt.Printf("cmd=%s info=lint.check.nohit id=%s name='%s'\n",
-				cmdName, id, result.Source.Name)
+			xc.Out.Info("lint.check.nohit",
+				ovars{
+					"id":   id,
+					"name": result.Source.Name,
+				})
 		}
 	}
 
 	if cmdReport.ErrorsCount > 0 {
-		fmt.Printf("cmd=%s info=lint.check.errors count=%d\n",
-			cmdName, cmdReport.ErrorsCount)
+		xc.Out.Info("lint.check.errors",
+			ovars{
+				"count": cmdReport.ErrorsCount,
+			})
 
 		for id, err := range lintResults.Errors {
-			fmt.Printf("cmd=%s info=lint.check.error id=%s message='%v'\n", cmdName, id, err)
+			xc.Out.Info("lint.check.error",
+				ovars{
+					"id":      id,
+					"message": err,
+				})
 		}
 	}
 }

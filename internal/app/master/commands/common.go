@@ -41,6 +41,7 @@ const (
 	FlagStatePath     = "state-path"
 	FlagInContainer   = "in-container"
 	FlagArchiveState  = "archive-state"
+	FlagNoColor       = "no-color"
 )
 
 // Global flag usage info
@@ -59,6 +60,7 @@ const (
 	FlagStatePathUsage     = "DockerSlim state base path"
 	FlagInContainerUsage   = "DockerSlim is running in a container"
 	FlagArchiveStateUsage  = "archive DockerSlim state to the selected Docker volume (default volume - docker-slim-state). By default, enabled when DockerSlim is running in a container (disabled otherwise). Set it to \"off\" to disable explicitly."
+	FlagNoColorUsage       = "disable color output"
 )
 
 // Shared command flag names
@@ -211,7 +213,7 @@ func GlobalFlags() []cli.Flag {
 		},
 		cli.BoolFlag{
 			Name:  FlagDebug,
-			Usage: "enable debug logs",
+			Usage: FlagDebugUsage,
 		},
 		cli.BoolFlag{
 			Name:  FlagVerbose,
@@ -262,6 +264,10 @@ func GlobalFlags() []cli.Flag {
 			Name:  FlagArchiveState,
 			Value: "",
 			Usage: "archive DockerSlim state to the selected Docker volume (default volume - docker-slim-state). By default, enabled when DockerSlim is running in a container (disabled otherwise). Set it to \"off\" to disable explicitly.",
+		},
+		cli.BoolFlag{
+			Name:  FlagNoColor,
+			Usage: FlagNoColorUsage,
 		},
 	}
 }
@@ -635,6 +641,10 @@ func NewOutput(cmdName string) *Output {
 	}
 
 	return ref
+}
+
+func NoColor() {
+	color.NoColor = true
 }
 
 type OutVars map[string]interface{}

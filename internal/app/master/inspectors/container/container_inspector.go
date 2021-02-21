@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
 	"github.com/docker-slim/docker-slim/internal/app/master/docker/dockerhost"
 	"github.com/docker-slim/docker-slim/internal/app/master/inspectors/container/ipc"
@@ -48,6 +49,8 @@ const (
 	VolumeSensorMountPat = "%s:/opt/dockerslim/bin:ro"
 	LabelName            = "dockerslim"
 )
+
+type ovars = commands.OutVars
 
 var (
 	cmdPortStrDefault  = fmt.Sprintf("%d", channel.CmdPort)
@@ -106,6 +109,7 @@ type Inspector struct {
 	dockerEventStopCh     chan struct{}
 	ipcClient             *ipc.Client
 	logger                *log.Entry
+	xc                    *commands.ExecutionContext
 }
 
 func pathMapKeys(m map[string]*fsutil.AccessInfo) []string {
@@ -123,6 +127,7 @@ func pathMapKeys(m map[string]*fsutil.AccessInfo) []string {
 
 // NewInspector creates a new container execution inspector
 func NewInspector(
+	xc *commands.ExecutionContext,
 	logger *log.Entry,
 	client *dockerapi.Client,
 	statePath string,
@@ -186,6 +191,7 @@ func NewInspector(
 		PrintState:            printState,
 		PrintPrefix:           printPrefix,
 		InContainer:           inContainer,
+		xc:                    xc,
 	}
 
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
@@ -246,8 +252,18 @@ func (i *Inspector) RunContainer() error {
 
 	if !fsutil.Exists(sensorPath) {
 		if i.PrintState {
-			fmt.Printf("%s info=sensor.error message='sensor binary not found' location='%s'\n", i.PrintPrefix, sensorPath)
-			fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
+			i.xc.Out.Info("sensor.error",
+				ovars{
+					"message":  "sensor binary not found",
+					"location": sensorPath,
+				})
+
+			i.xc.Out.State("exited",
+				ovars{
+					"exit.code": -125,
+					"component": "container.inspector",
+					"version":   v.Current(),
+				})
 		}
 
 		os.Exit(-125)
@@ -382,8 +398,18 @@ func (i *Inspector) RunContainer() error {
 		if pbInfo, ok := i.PortBindings[dockerapi.Port(cmdPortSpecDefault)]; ok {
 			i.logger.Errorf("RunContainer: port bindings comms port conflict (cmd) = %#v", pbInfo)
 			if i.PrintState {
-				fmt.Printf("%s info=sensor.error message='port binding ipc port conflict' type='cmd'\n", i.PrintPrefix)
-				fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
+				i.xc.Out.Info("sensor.error",
+					ovars{
+						"message": "port binding ipc port conflict",
+						"type":    "cmd",
+					})
+
+				i.xc.Out.State("exited",
+					ovars{
+						"exit.code": -126,
+						"component": "container.inspector",
+						"version":   v.Current(),
+					})
 			}
 
 			os.Exit(-126)
@@ -396,8 +422,18 @@ func (i *Inspector) RunContainer() error {
 		if pbInfo, ok := i.PortBindings[dockerapi.Port(evtPortSpecDefault)]; ok {
 			i.logger.Errorf("RunContainer: port bindings comms port conflict (evt) = %#v", pbInfo)
 			if i.PrintState {
-				fmt.Printf("%s info=sensor.error message='port binding ipc port conflict' type='evt'\n", i.PrintPrefix)
-				fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
+				i.xc.Out.Info("sensor.error",
+					ovars{
+						"message": "port binding ipc port conflict",
+						"type":    "evt",
+					})
+
+				i.xc.Out.State("exited",
+					ovars{
+						"exit.code": -127,
+						"component": "container.inspector",
+						"version":   v.Current(),
+					})
 			}
 
 			os.Exit(-127)
@@ -474,7 +510,12 @@ func (i *Inspector) RunContainer() error {
 	i.ContainerID = containerInfo.ID
 
 	if i.PrintState {
-		fmt.Printf("%s info=container status=created name=%v id=%v\n", i.PrintPrefix, containerInfo.Name, i.ContainerID)
+		i.xc.Out.Info("container",
+			ovars{
+				"status": "created",
+				"name":   containerInfo.Name,
+				"id":     i.ContainerID,
+			})
 	}
 
 	i.APIClient.AddEventListener(i.dockerEventCh)
@@ -495,13 +536,21 @@ func (i *Inspector) RunContainer() error {
 
 						if nonZeroExitCode {
 							if i.PrintState {
-								fmt.Printf("%s info=container status=crashed id=%v\n", i.PrintPrefix, i.ContainerID)
+								i.xc.Out.Info("container",
+									ovars{
+										"status": "crashed",
+										"id":     i.ContainerID,
+									})
 							}
 
 							i.ShowContainerLogs()
 
 							if i.PrintState {
-								fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
+								i.xc.Out.State("exited",
+									ovars{
+										"exit.code": -123,
+										"version":   v.Current(),
+									})
 							}
 							os.Exit(-123)
 						}
@@ -605,7 +654,10 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	if i.PrintState {
-		fmt.Printf("%s info=cmd.startmonitor status=sent\n", i.PrintPrefix)
+		i.xc.Out.Info("cmd.startmonitor",
+			ovars{
+				"status": "sent",
+			})
 	}
 
 	for idx := 0; idx < 3; idx++ {
@@ -615,7 +667,10 @@ func (i *Inspector) RunContainer() error {
 		if err != nil {
 			if os.IsTimeout(err) || err == channel.ErrWaitTimeout {
 				if i.PrintState {
-					fmt.Printf("%s info=event.startmonitor.done status=receive.timeout\n", i.PrintPrefix)
+					i.xc.Out.Info("event.startmonitor.done",
+						ovars{
+							"status": "receive.timeout",
+						})
 				}
 
 				i.logger.Debug("timeout waiting for the docker-slim container to start...")
@@ -632,15 +687,28 @@ func (i *Inspector) RunContainer() error {
 
 		if evt.Name == event.StartMonitorDone {
 			if i.PrintState {
-				fmt.Printf("%s info=event.startmonitor.done status=received\n", i.PrintPrefix)
+				i.xc.Out.Info("event.startmonitor.done",
+					ovars{
+						"status": "received",
+					})
 			}
 			return nil
 		}
 
 		if evt.Name == event.Error {
 			if i.PrintState {
-				fmt.Printf("%s info=event.error status=received data=%s\n", i.PrintPrefix, evt.Data)
-				fmt.Printf("%s state=exited version=%s\n", i.PrintPrefix, v.Current())
+				i.xc.Out.Info("event.error",
+					ovars{
+						"status": "received",
+						"data":   evt.Data,
+					})
+
+				i.xc.Out.State("exited",
+					ovars{
+						"exit.code": -124,
+						"component": "container.inspector",
+						"version":   v.Current(),
+					})
 			}
 
 			os.Exit(-124)
@@ -648,7 +716,11 @@ func (i *Inspector) RunContainer() error {
 
 		if evt.Name != event.StartMonitorDone {
 			if i.PrintState {
-				fmt.Printf("%s info=event.startmonitor.done status=received.unexpected data=%+v\n", i.PrintPrefix, evt)
+				i.xc.Out.Info("event.startmonitor.done",
+					ovars{
+						"status": "received.unexpected",
+						"data":   fmt.Sprintf("%+v", evt),
+					})
 			}
 			return event.ErrUnexpectedEvent
 		}

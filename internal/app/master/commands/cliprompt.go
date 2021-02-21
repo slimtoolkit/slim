@@ -215,6 +215,7 @@ var GlobalFlagSuggestions = []prompt.Suggest{
 	{Text: FullFlagName(FlagArchiveState), Description: FlagArchiveStateUsage},
 	{Text: FullFlagName(FlagInContainer), Description: FlagInContainerUsage},
 	{Text: FullFlagName(FlagCheckVersion), Description: FlagCheckVersionUsage},
+	{Text: FullFlagName(FlagNoColor), Description: FlagNoColorUsage},
 }
 
 func FullFlagName(name string) string {

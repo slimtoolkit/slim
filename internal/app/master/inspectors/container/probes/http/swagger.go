@@ -35,12 +35,19 @@ func (p *CustomProbe) loadAPISpecFiles() {
 
 		spec, err := loadAPISpecFromFile(fileName)
 		if err != nil {
-			fmt.Printf("%s info=http.probe.apispec.error message='error loading api spec file' error='%v'\n", p.PrintPrefix, err)
+			p.xc.Out.Info("http.probe.apispec.error",
+				ovars{
+					"message": "error loading api spec file",
+					"error":   err,
+				})
 			continue
 		}
 
 		if spec == nil {
-			fmt.Printf("%s info=http.probe.apispec message='unsupported spec type'\n", p.PrintPrefix)
+			p.xc.Out.Info("http.probe.apispec",
+				ovars{
+					"message": "unsupported spec type",
+				})
 			continue
 		}
 
@@ -185,9 +192,8 @@ func apiSpecPrefix(spec *openapi3.Swagger) (string, error) {
 			return "", err
 		}
 
-		fmt.Println("target API prefix:", parsed.Path)
 		if parsed.Path != "" && parsed.Path != "/" {
-			prefix = prefix
+			prefix = parsed.Path
 		}
 	}
 
@@ -214,12 +220,21 @@ func (p *CustomProbe) loadAPISpecs(proto, targetHost, port string) {
 
 		spec, err := loadAPISpecFromEndpoint(client, addr)
 		if err != nil {
-			fmt.Printf("%s info=http.probe.apispec.error message='error loading api spec from endpoint' error='%v'\n", p.PrintPrefix, err)
+			p.xc.Out.Info("http.probe.apispec.error",
+				ovars{
+					"message": "error loading api spec from endpoint",
+					"error":   err,
+				})
+
 			continue
 		}
 
 		if spec == nil {
-			fmt.Printf("%s info=http.probe.apispec message='unsupported spec type'\n", p.PrintPrefix)
+			p.xc.Out.Info("http.probe.apispec",
+				ovars{
+					"message": "unsupported spec type",
+				})
+
 			continue
 		}
 
@@ -256,7 +271,12 @@ func (p *CustomProbe) probeAPISpecEndpoints(proto, targetHost, port, prefix stri
 	addr := getHTTPAddr(proto, targetHost, port)
 
 	if p.PrintState {
-		fmt.Printf("%s state=http.probe.api-spec.probe.endpoint.starting addr='%s' prefix='%s' endpoints=%d\n", p.PrintPrefix, addr, prefix, len(spec.Paths))
+		p.xc.Out.State("http.probe.api-spec.probe.endpoint.starting",
+			ovars{
+				"addr":      addr,
+				"prefix":    prefix,
+				"endpoints": len(spec.Paths),
+			})
 	}
 
 	httpClient := getHTTPClient(proto)
@@ -311,22 +331,23 @@ func (p *CustomProbe) apiSpecEndpointCall(client *http.Client, endpoint, method 
 		}
 
 		statusCode := "error"
-		callErrorStr := ""
+		callErrorStr := "none"
 		if err == nil {
 			statusCode = fmt.Sprintf("%v", res.StatusCode)
 		} else {
-			callErrorStr = fmt.Sprintf("error='%v'", err.Error())
+			callErrorStr = err.Error()
 		}
 
 		if p.PrintState {
-			fmt.Printf("%s info=http.probe.api-spec.probe.endpoint.call status=%v method=%v endpoint=%v attempt=%v %v time=%v\n",
-				p.PrintPrefix,
-				statusCode,
-				method,
-				endpoint,
-				i+1,
-				callErrorStr,
-				time.Now().UTC().Format(time.RFC3339))
+			p.xc.Out.Info("http.probe.api-spec.probe.endpoint.call",
+				ovars{
+					"status":   statusCode,
+					"method":   method,
+					"endpoint": endpoint,
+					"attempt":  i + 1,
+					"error":    callErrorStr,
+					"time":     time.Now().UTC().Format(time.RFC3339),
+				})
 		}
 
 		if err == nil {

@@ -557,7 +557,6 @@ func printImagePackage(
 			})
 
 		if len(topList) > 0 {
-			fmt.Printf("cmd=%s info=layer.objects.top:\n", cmdName)
 			xc.Out.Info("layer.objects.top")
 			for _, object := range topList {
 				printObject(xc, object)

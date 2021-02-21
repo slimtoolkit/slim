@@ -34,7 +34,10 @@ func OnCommand(
 	cmdReport.State = command.StateStarted
 
 	xc.Out.State("started")
-	fmt.Printf("cmd=%s info=params target=%v\n", cmdName, targetRef)
+	xc.Out.Info("params",
+		ovars{
+			"target": targetRef,
+		})
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
@@ -42,7 +45,11 @@ func OnCommand(
 		if gparams.InContainer && gparams.IsDSImage {
 			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
-		fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", cmdName, exitMsg)
+
+		xc.Out.Info("docker.connect.error",
+			ovars{
+				"message": exitMsg,
+			})
 
 		exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
 		xc.Out.State("exited",
@@ -68,6 +75,9 @@ func OnCommand(
 
 	cmdReport.State = command.StateDone
 	if cmdReport.Save() {
-		fmt.Printf("cmd=%s info=report file='%s'\n", cmdName, cmdReport.ReportLocation())
+		xc.Out.Info("report",
+			ovars{
+				"file": cmdReport.ReportLocation(),
+			})
 	}
 }

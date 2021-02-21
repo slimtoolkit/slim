@@ -1,7 +1,6 @@
 package http
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/cookiejar"
 	"strings"
@@ -125,11 +124,19 @@ func (p *CustomProbe) crawl(proto, domain, addr string) {
 		})
 
 		c.OnRequest(func(r *colly.Request) {
-			fmt.Printf("%s info=probe.crawler page=%v url=%v\n", p.PrintPrefix, pageCount, r.URL)
+			p.xc.Out.Info("http.probe.crawler",
+				ovars{
+					"page": pageCount,
+					"url":  r.URL,
+				})
 
 			if p.crawlMaxPageCount > 0 &&
 				pageCount > p.crawlMaxPageCount {
-				fmt.Println("reached max visits...")
+				p.xc.Out.Info("http.probe.crawler.stop",
+					ovars{
+						"reason": "reached max visits",
+					})
+
 				log.Debugf("http.CustomProbe.crawl.OnRequest - reached max page count (%v)", p.crawlMaxPageCount)
 				r.Abort()
 				return
@@ -144,6 +151,9 @@ func (p *CustomProbe) crawl(proto, domain, addr string) {
 
 		c.Visit(addr)
 		c.Wait()
-		fmt.Printf("%s info=probe.crawler.done addr=%v\n", p.PrintPrefix, addr)
+		p.xc.Out.Info("probe.crawler.done",
+			ovars{
+				"addr": addr,
+			})
 	}()
 }

@@ -25,6 +25,8 @@ const (
 	httpsPortStr    = "443"
 )
 
+type ovars = commands.OutVars
+
 // CustomProbe is a custom HTTP probe
 type CustomProbe struct {
 	PrintState            bool
@@ -50,12 +52,12 @@ type CustomProbe struct {
 	crawlConcurrency      int
 	maxConcurrentCrawlers int
 	concurrentCrawlers    chan struct{}
-	ec                    *commands.ExecutionContext
+	xc                    *commands.ExecutionContext
 }
 
 // NewCustomProbe creates a new custom HTTP probe
 func NewCustomProbe(
-	ec *commands.ExecutionContext,
+	xc *commands.ExecutionContext,
 	inspector *container.Inspector,
 	cmds []config.HTTPProbeCmd,
 	retryCount int,
@@ -110,7 +112,7 @@ func NewCustomProbe(
 		crawlConcurrency:      crawlConcurrency,
 		maxConcurrentCrawlers: maxConcurrentCrawlers,
 		doneChan:              make(chan struct{}),
-		ec:                    ec,
+		xc:                    xc,
 	}
 
 	if probe.maxConcurrentCrawlers > 0 {
@@ -204,8 +206,8 @@ func NewCustomProbe(
 // Start starts the HTTP probe instance execution
 func (p *CustomProbe) Start() {
 	if p.PrintState {
-		p.ec.Out.State("http.probe.starting",
-			commands.OutVars{
+		p.xc.Out.State("http.probe.starting",
+			ovars{
 				"message": "WAIT FOR HTTP PROBE TO FINISH",
 			})
 	}
@@ -215,7 +217,7 @@ func (p *CustomProbe) Start() {
 		time.Sleep(9 * time.Second)
 
 		if p.PrintState {
-			p.ec.Out.State("http.probe.running")
+			p.xc.Out.State("http.probe.running")
 		}
 
 		log.Info("HTTP probe started...")
@@ -240,8 +242,11 @@ func (p *CustomProbe) Start() {
 		}
 
 		if p.PrintState {
-			fmt.Printf("%s info=http.probe.ports count=%d targets='%s'\n",
-				p.PrintPrefix, len(p.Ports), strings.Join(p.Ports, ","))
+			p.xc.Out.Info("http.probe.ports",
+				ovars{
+					"count":   len(p.Ports),
+					"targets": strings.Join(p.Ports, ","),
+				})
 
 			var cmdListPreview []string
 			var cmdListTail string
@@ -253,8 +258,12 @@ func (p *CustomProbe) Start() {
 				}
 			}
 
-			fmt.Printf("%s info=http.probe.commands count=%d commands='%s%s'\n",
-				p.PrintPrefix, len(p.Cmds), strings.Join(cmdListPreview, ","), cmdListTail)
+			cmdInfo := fmt.Sprintf("%s%s", strings.Join(cmdListPreview, ","), cmdListTail)
+			p.xc.Out.Info("http.probe.commands",
+				ovars{
+					"count":    len(p.Cmds),
+					"commands": cmdInfo,
+				})
 		}
 
 		for _, port := range p.Ports {
@@ -325,23 +334,24 @@ func (p *CustomProbe) Start() {
 
 							if p.PrintState {
 								statusCode := "error"
-								callErrorStr := ""
+								callErrorStr := "none"
 								if err == nil {
 									statusCode = "ok"
 								} else {
-									callErrorStr = fmt.Sprintf("error='%v'", err.Error())
+									callErrorStr = err.Error()
 								}
 
-								fmt.Printf("%s info=http.probe.call.ws status=%s stats=[rc=%v/pic=%v/poc=%v] target=%v attempt=%v %v time=%v\n",
-									p.PrintPrefix,
-									statusCode,
-									wc.ReadCount,
-									wc.PingCount,
-									wc.PongCount,
-									wc.Addr,
-									i+1,
-									callErrorStr,
-									time.Now().UTC().Format(time.RFC3339))
+								p.xc.Out.Info("http.probe.call.ws",
+									ovars{
+										"status":    statusCode,
+										"stats.rc":  wc.ReadCount,
+										"stats.pic": wc.PingCount,
+										"stats.poc": wc.PongCount,
+										"target":    wc.Addr,
+										"attempt":   i + 1,
+										"error":     callErrorStr,
+										"time":      time.Now().UTC().Format(time.RFC3339),
+									})
 							}
 
 							if err != nil {
@@ -402,22 +412,23 @@ func (p *CustomProbe) Start() {
 						}
 
 						statusCode := "error"
-						callErrorStr := ""
+						callErrorStr := "none"
 						if err == nil {
 							statusCode = fmt.Sprintf("%v", res.StatusCode)
 						} else {
-							callErrorStr = fmt.Sprintf("error='%v'", err.Error())
+							callErrorStr = err.Error()
 						}
 
 						if p.PrintState {
-							fmt.Printf("%s info=http.probe.call status=%v method=%v target=%v attempt=%v %v time=%v\n",
-								p.PrintPrefix,
-								statusCode,
-								cmd.Method,
-								addr,
-								i+1,
-								callErrorStr,
-								time.Now().UTC().Format(time.RFC3339))
+							p.xc.Out.Info("http.probe.call",
+								ovars{
+									"status":  statusCode,
+									"method":  cmd.Method,
+									"target":  addr,
+									"attempt": i + 1,
+									"error":   callErrorStr,
+									"time":    time.Now().UTC().Format(time.RFC3339),
+								})
 						}
 
 						if err == nil {
@@ -437,8 +448,7 @@ func (p *CustomProbe) Start() {
 									} else {
 										apiPrefix, err = apiSpecPrefix(specInfo.spec)
 										if err != nil {
-											fmt.Printf("%s info=http.probe.api-spec.error message='api prefix error' error='%v'\n",
-												p.PrintPrefix, err)
+											p.xc.Out.Error("http.probe.api-spec.error.prefix", err.Error())
 											continue
 										}
 									}
@@ -477,10 +487,14 @@ func (p *CustomProbe) Start() {
 		log.Info("HTTP probe done.")
 
 		if p.PrintState {
-			fmt.Printf("%s info=http.probe.summary total=%v failures=%v successful=%v\n",
-				p.PrintPrefix, p.CallCount, p.ErrCount, p.OkCount)
+			p.xc.Out.Info("http.probe.summary",
+				ovars{
+					"total":      p.CallCount,
+					"failures":   p.ErrCount,
+					"successful": p.OkCount,
+				})
 
-			outVars := commands.OutVars{}
+			outVars := ovars{}
 			//warning := ""
 			switch {
 			case p.CallCount == 0:
@@ -491,17 +505,18 @@ func (p *CustomProbe) Start() {
 				outVars["warning"] = "no.successful.calls"
 			}
 
-			p.ec.Out.State("http.probe.done", outVars)
+			p.xc.Out.State("http.probe.done", outVars)
 		}
 
 		if p.CallCount > 0 && p.OkCount == 0 && p.ProbeExitOnFailure {
-			fmt.Printf("%s info=probe.error reason=no.successful.calls\n", p.PrintPrefix)
+			p.xc.Out.Error("probe.error", "no.successful.calls")
+
 			if p.ContainerInspector != nil {
 				p.ContainerInspector.ShowContainerLogs()
 			}
 
-			p.ec.Out.State("exited",
-				commands.OutVars{
+			p.xc.Out.State("exited",
+				ovars{
 					"exit.code": -1,
 				})
 			os.Exit(-1)
