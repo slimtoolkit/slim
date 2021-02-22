@@ -52,9 +52,10 @@ func OnCommand(
 	targetRef string,
 	doPull bool,
 	doShowPullLogs bool,
-	buildFromDockerfile string,
+	cbOpts *config.ContainerBuildOptions,
+	//buildFromDockerfile string,
 	customImageTag string,
-	fatImageTag string,
+	//fatImageTag string,
 	doHTTPProbe bool,
 	httpProbeCmds []config.HTTPProbeCmd,
 	httpProbeRetryCount int,
@@ -129,7 +130,7 @@ func OnCommand(
 
 	xc.Out.State("started")
 
-	if buildFromDockerfile == "" {
+	if cbOpts.Dockerfile == "" {
 		xc.Out.Info("params",
 			ovars{
 				"target":        targetRef,
@@ -141,14 +142,14 @@ func OnCommand(
 		xc.Out.Info("params",
 			ovars{
 				"context":       targetRef,
-				"file":          buildFromDockerfile,
+				"file":          cbOpts.Dockerfile,
 				"continue.mode": continueAfter.Mode,
 				"rt.as.user":    doRunTargetAsUser,
 				"keep.perms":    doKeepPerms,
 			})
 	}
 
-	if buildFromDockerfile != "" {
+	if cbOpts.Dockerfile != "" {
 		xc.Out.State("building",
 			ovars{
 				"message": "building basic image",
@@ -159,8 +160,8 @@ func OnCommand(
 		//* or create one based on the user provided (slim image) custom tag if it's available
 		//* otherwise auto-generate a name
 		var fatImageRepoNameTag string
-		if fatImageTag != "" {
-			fatImageRepoNameTag = fatImageTag
+		if cbOpts.Tag != "" {
+			fatImageRepoNameTag = cbOpts.Tag
 		} else if customImageTag != "" {
 			citParts := strings.Split(customImageTag, ":")
 			switch len(citParts) {
@@ -190,16 +191,20 @@ func OnCommand(
 				os.Getpid(), time.Now().UTC().Format("20060102150405"))
 		}
 
+		cbOpts.Tag = fatImageRepoNameTag
+
 		xc.Out.Info("basic.image.info",
 			ovars{
-				"tag":        fatImageRepoNameTag,
-				"dockerfile": buildFromDockerfile,
+				"tag":        cbOpts.Tag,
+				"dockerfile": cbOpts.Dockerfile,
 				"context":    targetRef,
 			})
 
-		fatBuilder, err := builder.NewBasicImageBuilder(client,
-			fatImageRepoNameTag,
-			buildFromDockerfile,
+		fatBuilder, err := builder.NewBasicImageBuilder(
+			client,
+			//fatImageRepoNameTag,
+			//buildFromDockerfile,
+			cbOpts,
 			targetRef,
 			doShowBuildLogs)
 		errutil.FailOn(err)

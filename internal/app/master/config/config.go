@@ -41,6 +41,24 @@ type ImageNewInstructions struct {
 	RemoveLabels       map[string]struct{}
 }
 
+// ContainerBuildOptions provides the options to use when
+// building container images from Dockerfiles
+type ContainerBuildOptions struct {
+	Dockerfile  string
+	Tag         string
+	ExtraHosts  string
+	BuildArgs   []CBOBuildArg
+	Labels      map[string]string
+	CacheFrom   []string
+	Target      string
+	NetworkMode string
+}
+
+type CBOBuildArg struct {
+	Name  string
+	Value string
+}
+
 // VolumeMount provides the volume mount configuration information
 type VolumeMount struct {
 	Source      string

@@ -25,12 +25,6 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagTarget),
 		commands.Cflag(commands.FlagPull),
 		commands.Cflag(commands.FlagShowPullLogs),
-		cli.StringFlag{
-			Name:   FlagBuildFromDockerfile,
-			Value:  "",
-			Usage:  FlagBuildFromDockerfileUsage,
-			EnvVar: "DSLIM_BUILD_DOCKERFILE",
-		},
 		commands.Cflag(commands.FlagHTTPProbe),
 		commands.Cflag(commands.FlagHTTPProbeCmd),
 		commands.Cflag(commands.FlagHTTPProbeCmdFile),
@@ -61,12 +55,6 @@ var CLI = cli.Command{
 			EnvVar: "DSLIM_TARGET_TAG",
 		},
 		cli.StringFlag{
-			Name:   FlagTagFat,
-			Value:  "",
-			Usage:  FlagTagFatUsage,
-			EnvVar: "DSLIM_TARGET_TAG_FAT",
-		},
-		cli.StringFlag{
 			Name:   FlagImageOverrides,
 			Value:  "",
 			Usage:  FlagImageOverridesUsage,
@@ -87,6 +75,16 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagNetwork),
 		commands.Cflag(commands.FlagHostname),
 		commands.Cflag(commands.FlagExpose),
+		//Container Build Options
+		cflag(FlagBuildFromDockerfile),
+		cflag(FlagTagFat),
+		cflag(FlagCBOAddHost),
+		cflag(FlagCBOBuildArg),
+		cflag(FlagCBOCacheFrom),
+		cflag(FlagCBOLabel),
+		cflag(FlagCBOTarget),
+		cflag(FlagCBONetwork),
+		//New/Optimized Build Options
 		cflag(FlagNewEntrypoint),
 		cflag(FlagNewCmd),
 		cflag(FlagNewExpose),
@@ -171,13 +169,23 @@ var CLI = cli.Command{
 			commands.Exit(-1)
 		}
 
+		//buildFromDockerfile := ctx.String(FlagBuildFromDockerfile)
+		//doTagFat := ctx.String(FlagTagFat)
+		cbOpts, err := GetContainerBuildOptions(ctx)
+		if err != nil {
+			xc.Out.Error("param.error.container.build.options", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
+		}
+
 		doPull := ctx.Bool(commands.FlagPull)
 		doShowPullLogs := ctx.Bool(commands.FlagShowPullLogs)
 
 		doRmFileArtifacts := ctx.Bool(commands.FlagRemoveFileArtifacts)
 		doCopyMetaArtifacts := ctx.String(commands.FlagCopyMetaArtifacts)
-
-		buildFromDockerfile := ctx.String(FlagBuildFromDockerfile)
 
 		portBindings, err := commands.ParsePortBindings(ctx.StringSlice(commands.FlagPublishPort))
 		if err != nil {
@@ -285,7 +293,6 @@ var CLI = cli.Command{
 		doShowContainerLogs := ctx.Bool(commands.FlagShowContainerLogs)
 		doShowBuildLogs := ctx.Bool(FlagShowBuildLogs)
 		doTag := ctx.String(FlagTag)
-		doTagFat := ctx.String(FlagTagFat)
 
 		doImageOverrides := ctx.String(FlagImageOverrides)
 		overrides, err := commands.GetContainerOverrides(ctx)
@@ -450,9 +457,10 @@ var CLI = cli.Command{
 			targetRef,
 			doPull,
 			doShowPullLogs,
-			buildFromDockerfile,
+			cbOpts,
+			//buildFromDockerfile,
 			doTag,
-			doTagFat,
+			//doTagFat,
 			doHTTPProbe,
 			httpProbeCmds,
 			httpProbeRetryCount,

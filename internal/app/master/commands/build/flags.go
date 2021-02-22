@@ -2,6 +2,7 @@ package build
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
@@ -27,15 +28,22 @@ const (
 	FlagRemoveEnv     = "remove-env"
 	FlagRemoveLabel   = "remove-label"
 
-	FlagTag    = "tag"
-	FlagTagFat = "tag-fat"
+	FlagTag = "tag"
 
 	FlagImageOverrides = "image-overrides"
 
-	FlagBuildFromDockerfile = "dockerfile"
-
 	FlagIncludeBinFile = "include-bin-file"
 	FlagIncludeExeFile = "include-exe-file"
+
+	//Flags to build fat images from Dockerfile
+	FlagTagFat              = "tag-fat"
+	FlagBuildFromDockerfile = "dockerfile"
+	FlagCBOAddHost          = "cbo-add-host"
+	FlagCBOBuildArg         = "cbo-build-arg"
+	FlagCBOLabel            = "cbo-label"
+	FlagCBOTarget           = "cbo-target"
+	FlagCBONetwork          = "cbo-network"
+	FlagCBOCacheFrom        = "cbo-cache-from"
 )
 
 // Build command flag usage info
@@ -54,15 +62,21 @@ const (
 	FlagRemoveLabelUsage   = "Remove LABEL instructions for the optimized image"
 	FlagRemoveVolumeUsage  = "Remove VOLUME instructions for the optimized image"
 
-	FlagTagUsage    = "Custom tag for the generated image"
-	FlagTagFatUsage = "Custom tag for the fat image built from Dockerfile"
+	FlagTagUsage = "Custom tag for the generated image"
 
 	FlagImageOverridesUsage = "Save runtime overrides in generated image (values is 'all' or a comma delimited list of override types: 'entrypoint', 'cmd', 'workdir', 'env', 'expose', 'volume', 'label')"
 
-	FlagBuildFromDockerfileUsage = "The source Dockerfile name to build the fat image before it's optimized"
-
 	FlagIncludeBinFileUsage = "File with shared binary file names to include from image"
 	FlagIncludeExeFileUsage = "File with executable file names to include from image"
+
+	FlagTagFatUsage              = "Custom tag for the fat image built from Dockerfile"
+	FlagBuildFromDockerfileUsage = "The source Dockerfile name to build the fat image before it's optimized"
+	FlagCBOAddHostUsage          = "Add an extra host-to-IP mapping in /etc/hosts to use when building an image"
+	FlagCBOBuildArgUsage         = "Add a build-time variable"
+	FlagCBOLabelUsage            = "Add a label when building from Dockerfiles"
+	FlagCBOTargetUsage           = "Target stage to build for multi-stage Dockerfiles"
+	FlagCBONetworkUsage          = "Networking mode to use for the RUN instructions at build-time"
+	FlagCBOCacheFromUsage        = "Add an image to the build cache"
 )
 
 var Flags = map[string]cli.Flag{
@@ -113,6 +127,55 @@ var Flags = map[string]cli.Flag{
 		Usage:  FlagNewLabelUsage,
 		EnvVar: "DSLIM_NEW_LABEL",
 	},
+	//Container Build Options
+	FlagBuildFromDockerfile: cli.StringFlag{
+		Name:   FlagBuildFromDockerfile,
+		Value:  "",
+		Usage:  FlagBuildFromDockerfileUsage,
+		EnvVar: "DSLIM_BUILD_DOCKERFILE",
+	},
+	FlagTagFat: cli.StringFlag{
+		Name:   FlagTagFat,
+		Value:  "",
+		Usage:  FlagTagFatUsage,
+		EnvVar: "DSLIM_TARGET_TAG_FAT",
+	},
+	FlagCBOAddHost: cli.StringSliceFlag{
+		Name:   FlagCBOAddHost,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagCBOAddHostUsage,
+		EnvVar: "DSLIM_CBO_ADD_HOST",
+	},
+	FlagCBOBuildArg: cli.StringSliceFlag{
+		Name:   FlagCBOBuildArg,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagCBOBuildArgUsage,
+		EnvVar: "DSLIM_CBO_BUILD_ARG",
+	},
+	FlagCBOCacheFrom: cli.StringSliceFlag{
+		Name:   FlagCBOCacheFrom,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagCBOCacheFromUsage,
+		EnvVar: "DSLIM_CBO_CACHE_FROM",
+	},
+	FlagCBOLabel: cli.StringSliceFlag{
+		Name:   FlagCBOLabel,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagCBOLabelUsage,
+		EnvVar: "DSLIM_CBO_LABEL",
+	},
+	FlagCBOTarget: cli.StringFlag{
+		Name:   FlagCBOTarget,
+		Value:  "",
+		Usage:  FlagCBOTargetUsage,
+		EnvVar: "DSLIM_CBO_TARGET",
+	},
+	FlagCBONetwork: cli.StringFlag{
+		Name:   FlagCBONetwork,
+		Value:  "",
+		Usage:  FlagCBONetworkUsage,
+		EnvVar: "DSLIM_CBO_NETWORK",
+	},
 }
 
 func cflag(name string) cli.Flag {
@@ -122,6 +185,64 @@ func cflag(name string) cli.Flag {
 	}
 
 	return cf
+}
+
+func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, error) {
+	cbo := &config.ContainerBuildOptions{
+		Labels: map[string]string{},
+	}
+
+	cbo.Dockerfile = ctx.String(FlagBuildFromDockerfile)
+	cbo.Tag = ctx.String(FlagTagFat)
+	cbo.Target = ctx.String(FlagCBOTarget)
+	cbo.NetworkMode = ctx.String(FlagCBONetwork)
+	cbo.CacheFrom = ctx.StringSlice(FlagCBOCacheFrom)
+
+	hosts := ctx.StringSlice(FlagCBOAddHost)
+	//TODO: figure out how to encode multiple host entries to a string (docs are not helpful)
+	cbo.ExtraHosts = strings.Join(hosts, ",")
+
+	rawBuildArgs := ctx.StringSlice(FlagCBOBuildArg)
+	for _, rba := range rawBuildArgs {
+		//need to handle:
+		//NAME=VALUE
+		//"NAME"="VALUE"
+		//NAME <- value is copied from the env var with the same name (TODO)
+		parts := strings.SplitN(rba, "=", 2)
+		if len(parts) == 2 {
+			if strings.HasPrefix(parts[0], "\"") {
+				parts[0] = strings.Trim(parts[0], "\"")
+				parts[1] = strings.Trim(parts[0], "\"")
+			} else {
+				parts[0] = strings.Trim(parts[0], "'")
+				parts[1] = strings.Trim(parts[0], "'")
+			}
+			ba := config.CBOBuildArg{
+				Name:  parts[0],
+				Value: parts[1],
+			}
+
+			cbo.BuildArgs = append(cbo.BuildArgs, ba)
+		}
+	}
+
+	rawLabels := ctx.StringSlice(FlagCBOLabel)
+	for _, rlabel := range rawLabels {
+		parts := strings.SplitN(rlabel, "=", 2)
+		if len(parts) == 2 {
+			if strings.HasPrefix(parts[0], "\"") {
+				parts[0] = strings.Trim(parts[0], "\"")
+				parts[1] = strings.Trim(parts[0], "\"")
+			} else {
+				parts[0] = strings.Trim(parts[0], "'")
+				parts[1] = strings.Trim(parts[0], "'")
+			}
+
+			cbo.Labels[parts[0]] = parts[1]
+		}
+	}
+
+	return cbo, nil
 }
 
 //TODO: move/share when the 'edit' command needs these flags too

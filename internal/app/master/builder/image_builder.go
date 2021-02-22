@@ -52,16 +52,28 @@ const (
 
 // NewImageBuilder creates a new BasicImageBuilder instances
 func NewBasicImageBuilder(client *docker.Client,
-	imageRepoNameTag string,
-	dockerfileName string,
+	//imageRepoNameTag string,
+	//dockerfileName string,
+	cbOpts *config.ContainerBuildOptions,
 	buildContext string,
 	showBuildLogs bool) (*BasicImageBuilder, error) {
+	var buildArgs []docker.BuildArg
+	for _, ba := range cbOpts.BuildArgs {
+		buildArgs = append(buildArgs, docker.BuildArg{Name: ba.Name, Value: ba.Value})
+	}
+
 	builder := BasicImageBuilder{
 		ShowBuildLogs: showBuildLogs,
 		BuildOptions: docker.BuildImageOptions{
-			Name:           imageRepoNameTag,
+			Name:           cbOpts.Tag,
+			Dockerfile:     cbOpts.Dockerfile,
+			Target:         cbOpts.Target,
+			NetworkMode:    cbOpts.NetworkMode,
+			ExtraHosts:     cbOpts.ExtraHosts,
+			CacheFrom:      cbOpts.CacheFrom,
+			Labels:         cbOpts.Labels,
+			BuildArgs:      buildArgs,
 			RmTmpContainer: true,
-			Dockerfile:     dockerfileName,
 		},
 		APIClient: client,
 	}
@@ -71,7 +83,7 @@ func NewBasicImageBuilder(client *docker.Client,
 	} else {
 		if exists := fsutil.DirExists(buildContext); exists {
 			builder.BuildOptions.ContextDir = buildContext
-			fullDockerfileName := filepath.Join(buildContext, dockerfileName)
+			fullDockerfileName := filepath.Join(buildContext, cbOpts.Dockerfile)
 			if !fsutil.Exists(fullDockerfileName) || !fsutil.IsRegularFile(fullDockerfileName) {
 				return nil, fmt.Errorf("invalid dockerfile reference - %s", fullDockerfileName)
 			}
