@@ -3,6 +3,7 @@ package builder
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"path/filepath"
 	"strings"
 
@@ -70,6 +71,10 @@ func NewBasicImageBuilder(client *docker.Client,
 	} else {
 		if exists := fsutil.DirExists(buildContext); exists {
 			builder.BuildOptions.ContextDir = buildContext
+			fullDockerfileName := filepath.Join(buildContext, dockerfileName)
+			if !fsutil.Exists(fullDockerfileName) || !fsutil.IsRegularFile(fullDockerfileName) {
+				return nil, fmt.Errorf("invalid dockerfile reference - %s", fullDockerfileName)
+			}
 		} else {
 			return nil, ErrInvalidContextDir
 		}

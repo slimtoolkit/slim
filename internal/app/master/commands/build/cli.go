@@ -3,7 +3,6 @@ package build
 import (
 	"fmt"
 	"io/ioutil"
-	"os"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 	"github.com/docker-slim/docker-slim/internal/app/master/config"
@@ -148,11 +147,13 @@ var CLI = cli.Command{
 	},
 	Action: func(ctx *cli.Context) error {
 		commands.ShowCommunityInfo()
+		xc := commands.NewExecutionContext(Name)
+
 		targetRef := ctx.String(commands.FlagTarget)
 
 		if targetRef == "" {
 			if len(ctx.Args()) < 1 {
-				fmt.Printf("docker-slim[%s]: missing image ID/name...\n\n", Name)
+				xc.Out.Error("param.target", "missing image ID/name")
 				cli.ShowCommandHelp(ctx, Name)
 				return nil
 			} else {
@@ -162,7 +163,12 @@ var CLI = cli.Command{
 
 		gcvalues, err := commands.GlobalCommandFlagValues(ctx)
 		if err != nil {
-			return err
+			xc.Out.Error("param.global", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		doPull := ctx.Bool(commands.FlagPull)
@@ -175,7 +181,12 @@ var CLI = cli.Command{
 
 		portBindings, err := commands.ParsePortBindings(ctx.StringSlice(commands.FlagPublishPort))
 		if err != nil {
-			return err
+			xc.Out.Error("param.publish.port", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		doPublishExposedPorts := ctx.Bool(commands.FlagPublishExposedPorts)
@@ -190,13 +201,21 @@ var CLI = cli.Command{
 
 		httpProbeCmds, err := commands.GetHTTPProbes(ctx)
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid HTTP probes: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.http.probe", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		if doHTTPProbe {
 			//add default probe cmd if the "http-probe" flag is set
-			fmt.Printf("docker-slim[%s]: info=http.probe message='using default probe'\n", Name)
+			xc.Out.Info("param.http.probe",
+				ovars{
+					"message": "using default probe",
+				})
+
 			defaultCmd := config.HTTPProbeCmd{
 				Protocol: "http",
 				Method:   "GET",
@@ -217,8 +236,12 @@ var CLI = cli.Command{
 		httpProbeRetryWait := ctx.Int(commands.FlagHTTPProbeRetryWait)
 		httpProbePorts, err := commands.ParseHTTPProbesPorts(ctx.String(commands.FlagHTTPProbePorts))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid HTTP Probe target ports: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.http.probe.ports", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		doHTTPProbeFull := ctx.Bool(commands.FlagHTTPProbeFull)
@@ -234,7 +257,18 @@ var CLI = cli.Command{
 			var err error
 			for k, v := range fileErrors {
 				err = v
-				fmt.Printf("docker-slim[%s]: invalid spec file name='%s' error='%v'\n", Name, k, v)
+				xc.Out.Info("error",
+					ovars{
+						"file":  k,
+						"error": err,
+					})
+
+				xc.Out.Error("param.error.http.api.spec.file", err.Error())
+				xc.Out.State("exited",
+					ovars{
+						"exit.code": -1,
+					})
+				commands.Exit(-1)
 			}
 
 			return err
@@ -256,20 +290,32 @@ var CLI = cli.Command{
 		doImageOverrides := ctx.String(FlagImageOverrides)
 		overrides, err := commands.GetContainerOverrides(ctx)
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid container overrides: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.error.image.overrides", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		instructions, err := GetImageInstructions(ctx)
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid image instructions: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.error.image.instructions", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		volumeMounts, err := commands.ParseVolumeMounts(ctx.StringSlice(commands.FlagMount))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid volume mounts: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.error.mount", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		excludePatterns := commands.ParsePaths(ctx.StringSlice(commands.FlagExcludePattern))
@@ -277,7 +323,12 @@ var CLI = cli.Command{
 		includePaths := commands.ParsePaths(ctx.StringSlice(commands.FlagIncludePath))
 		moreIncludePaths, err := commands.ParsePathsFile(ctx.String(commands.FlagIncludePathFile))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: could not read include path file (ignoring): %v\n", Name, err)
+			xc.Out.Error("param.error.include.path.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		} else {
 			for k, v := range moreIncludePaths {
 				includePaths[k] = v
@@ -287,7 +338,12 @@ var CLI = cli.Command{
 		pathPerms := commands.ParsePaths(ctx.StringSlice(commands.FlagPathPerms))
 		morePathPerms, err := commands.ParsePathsFile(ctx.String(commands.FlagPathPermsFile))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: could not read path perms file (ignoring): %v\n", Name, err)
+			xc.Out.Error("param.error.path.perms.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		} else {
 			for k, v := range morePathPerms {
 				pathPerms[k] = v
@@ -297,7 +353,12 @@ var CLI = cli.Command{
 		includeBins := commands.ParsePaths(ctx.StringSlice(commands.FlagIncludeBin))
 		moreIncludeBins, err := commands.ParsePathsFile(ctx.String(FlagIncludeBinFile))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: could not read include bin file (ignoring): %v\n", Name, err)
+			xc.Out.Error("param.error.include.bin.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		} else {
 			for k, v := range moreIncludeBins {
 				includeBins[k] = v
@@ -307,7 +368,12 @@ var CLI = cli.Command{
 		includeExes := commands.ParsePaths(ctx.StringSlice(commands.FlagIncludeExe))
 		moreIncludeExes, err := commands.ParsePathsFile(ctx.String(FlagIncludeExeFile))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: could not read include exe file (ignoring): %v\n", Name, err)
+			xc.Out.Error("param.error.include.exe.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		} else {
 			for k, v := range moreIncludeExes {
 				includeExes[k] = v
@@ -332,36 +398,51 @@ var CLI = cli.Command{
 
 		continueAfter, err := commands.GetContinueAfter(ctx)
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid continue-after mode: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.error.continue.after", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		execCmd := ctx.String(commands.FlagExec)
 		execFile := ctx.String(commands.FlagExecFile)
 		if len(execCmd) != 0 && len(execFile) != 0 {
-			fmt.Printf("docker-slim[%s]: info=exec message='fatal: cannot use both --exec and --exec-file'\n", Name)
-			os.Exit(1)
+			xc.Out.Error("param.error.exec", "fatal: cannot use both --exec and --exec-file")
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 		var execFileCmd []byte
 		if len(execFile) > 0 {
 			execFileCmd, err = ioutil.ReadFile(execFile)
 			errutil.FailOn(err)
 			continueAfter.Mode = "exec"
-			fmt.Printf("docker-slim[%s]: info=exec message='changing continue-after to exec'\n", Name)
+			xc.Out.Info("exec",
+				ovars{
+					"message": "changing continue-after to exec",
+				})
 		} else if len(execCmd) > 0 {
 			continueAfter.Mode = "exec"
-			fmt.Printf("docker-slim[%s]: info=exec message='changing continue-after to exec'\n", Name)
+			xc.Out.Info("exec",
+				ovars{
+					"message": "changing continue-after to exec",
+				})
 		} else if !doHTTPProbe && continueAfter.Mode == "probe" {
-			fmt.Printf("docker-slim[%s]: info=probe message='changing continue-after from probe to enter because http-probe is disabled'\n", Name)
 			continueAfter.Mode = "enter"
+			xc.Out.Info("exec",
+				ovars{
+					"message": "changing continue-after from probe to enter because http-probe is disabled",
+				})
 		}
 
 		commandReport := ctx.GlobalString(commands.FlagCommandReport)
 		if commandReport == "off" {
 			commandReport = ""
 		}
-
-		xc := commands.NewExecutionContext(Name)
 
 		OnCommand(
 			xc,

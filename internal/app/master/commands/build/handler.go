@@ -153,6 +153,7 @@ func OnCommand(
 			ovars{
 				"message": "building basic image",
 			})
+
 		//create a fat image name:
 		//* use the explicit fat image tag if provided
 		//* or create one based on the user provided (slim image) custom tag if it's available
