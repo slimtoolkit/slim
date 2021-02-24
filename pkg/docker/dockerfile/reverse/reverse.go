@@ -112,7 +112,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 
 			switch {
 			case len(rawLine) == 0:
-				inst = "FROM scratch"
+				inst = ""
 			case strings.HasPrefix(rawLine, notRunInstPrefix):
 				//Instructions that are not RUN
 				inst = strings.TrimPrefix(rawLine, notRunInstPrefix)
@@ -219,6 +219,11 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				instInfo.Type = instParts[0]
 			}
 
+			if instInfo.CommandAll == "" {
+				instInfo.Type = "NONE"
+				instInfo.CommandAll = "#no instruction info"
+			}
+
 			if instInfo.Type == "RUN" {
 				var cmdParts []string
 				cmds := strings.Replace(instParts[1], "\\", "", -1)
@@ -235,7 +240,9 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 					instInfo.SystemCommands = append(instInfo.SystemCommands, cmd)
 				}
 			} else {
-				instInfo.Params = instParts[1]
+				if len(instParts) == 2 {
+					instInfo.Params = instParts[1]
+				}
 			}
 
 			if instInfo.Type == "WORKDIR" {
@@ -338,6 +345,9 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 		}
 	}
 
+	//Always adding "FROM scratch" as the first line
+	//GOAL: to have a reversed Dockerfile that can be used to build a new image
+	out.Lines = append(out.Lines, "FROM scratch")
 	for idx, instInfo := range fatImageDockerInstructions {
 		if instInfo.instPosition == "first" {
 			out.Lines = append(out.Lines, "# new image")
