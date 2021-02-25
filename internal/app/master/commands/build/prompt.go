@@ -18,6 +18,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagShowPullLogs), Description: commands.FlagShowPullLogsUsage},
 		{Text: commands.FullFlagName(FlagShowBuildLogs), Description: FlagShowBuildLogsUsage},
 		{Text: commands.FullFlagName(commands.FlagShowContainerLogs), Description: commands.FlagShowContainerLogsUsage},
+		{Text: commands.FullFlagName(commands.FlagCRORuntime), Description: commands.FlagCRORuntimeUsage},
 		{Text: commands.FullFlagName(commands.FlagHTTPProbe), Description: commands.FlagHTTPProbeUsage},
 		{Text: commands.FullFlagName(commands.FlagHTTPProbeCmd), Description: commands.FlagHTTPProbeCmdUsage},
 		{Text: commands.FullFlagName(commands.FlagHTTPProbeCmdFile), Description: commands.FlagHTTPProbeCmdFileUsage},

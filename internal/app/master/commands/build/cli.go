@@ -48,6 +48,9 @@ var CLI = cli.Command{
 		cflag(FlagShowBuildLogs),
 		commands.Cflag(commands.FlagCopyMetaArtifacts),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
+		//Container Run Options
+		commands.Cflag(commands.FlagCRORuntime),
+		//
 		cli.StringFlag{
 			Name:   FlagTag,
 			Value:  "",
@@ -169,11 +172,19 @@ var CLI = cli.Command{
 			commands.Exit(-1)
 		}
 
-		//buildFromDockerfile := ctx.String(FlagBuildFromDockerfile)
-		//doTagFat := ctx.String(FlagTagFat)
 		cbOpts, err := GetContainerBuildOptions(ctx)
 		if err != nil {
 			xc.Out.Error("param.error.container.build.options", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
+		}
+
+		crOpts, err := commands.GetContainerRunOptions(ctx)
+		if err != nil {
+			xc.Out.Error("param.error.container.run.options", err.Error())
 			xc.Out.State("exited",
 				ovars{
 					"exit.code": -1,
@@ -458,9 +469,8 @@ var CLI = cli.Command{
 			doPull,
 			doShowPullLogs,
 			cbOpts,
-			//buildFromDockerfile,
+			crOpts,
 			doTag,
-			//doTagFat,
 			doHTTPProbe,
 			httpProbeCmds,
 			httpProbeRetryCount,

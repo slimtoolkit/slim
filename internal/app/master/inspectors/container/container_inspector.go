@@ -110,6 +110,7 @@ type Inspector struct {
 	ipcClient             *ipc.Client
 	logger                *log.Entry
 	xc                    *commands.ExecutionContext
+	crOpts                *config.ContainerRunOptions
 }
 
 func pathMapKeys(m map[string]*fsutil.AccessInfo) []string {
@@ -128,6 +129,7 @@ func pathMapKeys(m map[string]*fsutil.AccessInfo) []string {
 // NewInspector creates a new container execution inspector
 func NewInspector(
 	xc *commands.ExecutionContext,
+	crOpts *config.ContainerRunOptions,
 	logger *log.Entry,
 	client *dockerapi.Client,
 	statePath string,
@@ -192,6 +194,7 @@ func NewInspector(
 		PrintPrefix:           printPrefix,
 		InContainer:           inContainer,
 		xc:                    xc,
+		crOpts:                crOpts,
 	}
 
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
@@ -354,6 +357,11 @@ func (i *Inspector) RunContainer() error {
 			Privileged: true,
 			UsernsMode: "host",
 		},
+	}
+
+	if i.crOpts != nil && i.crOpts.Runtime != "" {
+		containerOptions.HostConfig.Runtime = i.crOpts.Runtime
+		i.logger.Debugf("RunContainer: using custom runtime => %s", containerOptions.HostConfig.Runtime)
 	}
 
 	if len(configVolumes) > 0 {

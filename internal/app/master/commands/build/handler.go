@@ -53,9 +53,8 @@ func OnCommand(
 	doPull bool,
 	doShowPullLogs bool,
 	cbOpts *config.ContainerBuildOptions,
-	//buildFromDockerfile string,
+	crOpts *config.ContainerRunOptions,
 	customImageTag string,
-	//fatImageTag string,
 	doHTTPProbe bool,
 	httpProbeCmds []config.HTTPProbeCmd,
 	httpProbeRetryCount int,
@@ -202,8 +201,6 @@ func OnCommand(
 
 		fatBuilder, err := builder.NewBasicImageBuilder(
 			client,
-			//fatImageRepoNameTag,
-			//buildFromDockerfile,
 			cbOpts,
 			targetRef,
 			doShowBuildLogs)
@@ -375,6 +372,7 @@ func OnCommand(
 
 	containerInspector, err := container.NewInspector(
 		xc,
+		crOpts,
 		logger,
 		client,
 		statePath,

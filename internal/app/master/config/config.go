@@ -59,6 +59,11 @@ type CBOBuildArg struct {
 	Value string
 }
 
+// ContainerRunOptions provides the options to use running a container
+type ContainerRunOptions struct {
+	Runtime string
+}
+
 // VolumeMount provides the volume mount configuration information
 type VolumeMount struct {
 	Source      string

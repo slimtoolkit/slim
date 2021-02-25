@@ -15,6 +15,14 @@ import (
 	"github.com/urfave/cli"
 )
 
+func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, error) {
+	var cro config.ContainerRunOptions
+
+	cro.Runtime = ctx.String(FlagCRORuntime)
+
+	return &cro, nil
+}
+
 func GetHTTPProbes(ctx *cli.Context) ([]config.HTTPProbeCmd, error) {
 	httpProbeCmds, err := ParseHTTPProbes(ctx.StringSlice(FlagHTTPProbeCmd))
 	if err != nil {

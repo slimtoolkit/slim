@@ -72,6 +72,9 @@ const (
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
 
+	//Container Run Options (for build, profile and run commands)
+	FlagCRORuntime = "cro-runtime"
+
 	FlagHTTPProbe                 = "http-probe"
 	FlagHTTPProbeCmd              = "http-probe-cmd"
 	FlagHTTPProbeCmdFile          = "http-probe-cmd-file"
@@ -138,6 +141,9 @@ const (
 
 	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
 	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
+
+	//Container Run Options (for build, profile and run commands)
+	FlagCRORuntimeUsage = "Runtime to use with the created containers"
 
 	FlagHTTPProbeUsage                 = "Enables HTTP probe"
 	FlagHTTPProbeCmdUsage              = "User defined HTTP probes"
@@ -299,6 +305,14 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:  FlagCopyMetaArtifactsUsage,
 		EnvVar: "DSLIM_CP_META_ARTIFACTS",
 	},
+	//Container Run Options
+	FlagCRORuntime: cli.StringFlag{
+		Name:   FlagCRORuntime,
+		Value:  "",
+		Usage:  FlagCRORuntimeUsage,
+		EnvVar: "DSLIM_CRO_RUNTIME",
+	},
+	//
 	FlagHTTPProbe: cli.BoolTFlag{ //true by default
 		Name:   FlagHTTPProbe,
 		Usage:  FlagHTTPProbeUsage,

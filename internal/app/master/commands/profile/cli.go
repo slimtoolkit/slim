@@ -45,6 +45,9 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagRunTargetAsUser),
 		commands.Cflag(commands.FlagCopyMetaArtifacts),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
+		//Container Run Options
+		commands.Cflag(commands.FlagCRORuntime),
+		//
 		commands.Cflag(commands.FlagEntrypoint),
 		commands.Cflag(commands.FlagCmd),
 		commands.Cflag(commands.FlagWorkdir),
@@ -75,6 +78,8 @@ var CLI = cli.Command{
 	},
 	Action: func(ctx *cli.Context) error {
 		commands.ShowCommunityInfo()
+		xc := commands.NewExecutionContext(Name)
+
 		targetRef := ctx.String(commands.FlagTarget)
 
 		if targetRef == "" {
@@ -90,6 +95,16 @@ var CLI = cli.Command{
 		gcvalues, err := commands.GlobalCommandFlagValues(ctx)
 		if err != nil {
 			return err
+		}
+
+		crOpts, err := commands.GetContainerRunOptions(ctx)
+		if err != nil {
+			xc.Out.Error("param.error.container.run.options", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		doPull := ctx.Bool(commands.FlagPull)
@@ -242,14 +257,13 @@ var CLI = cli.Command{
 			commandReport = ""
 		}
 
-		xc := commands.NewExecutionContext(Name)
-
 		OnCommand(
 			xc,
 			gcvalues,
 			targetRef,
 			doPull,
 			doShowPullLogs,
+			crOpts,
 			doHTTPProbe,
 			httpProbeCmds,
 			httpProbeRetryCount,

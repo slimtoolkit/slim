@@ -43,6 +43,7 @@ func OnCommand(
 	targetRef string,
 	doPull bool,
 	doShowPullLogs bool,
+	crOpts *config.ContainerRunOptions,
 	doHTTPProbe bool,
 	httpProbeCmds []config.HTTPProbeCmd,
 	httpProbeRetryCount int,
@@ -210,6 +211,7 @@ func OnCommand(
 
 	containerInspector, err := container.NewInspector(
 		xc,
+		crOpts,
 		logger,
 		client,
 		statePath,
