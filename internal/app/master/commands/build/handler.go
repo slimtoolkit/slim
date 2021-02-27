@@ -209,9 +209,10 @@ func OnCommand(
 		err = fatBuilder.Build()
 
 		if doShowBuildLogs || err != nil {
-			fmt.Printf("cmd=%s build logs (standard image) ====================\n", cmdName)
-			fmt.Println(fatBuilder.BuildLog.String())
-			fmt.Printf("cmd=%s end of build logs (standard image) =============\n", cmdName)
+			xc.Out.LogDump("regular.image.build", fatBuilder.BuildLog.String(),
+				ovars{
+					"tag": cbOpts.Tag,
+				})
 		}
 
 		if err != nil {
@@ -656,9 +657,10 @@ func OnCommand(
 	err = builder.Build()
 
 	if doShowBuildLogs || err != nil {
-		fmt.Printf("cmd=%s build logs (optimized image) ====================\n", cmdName)
-		fmt.Println(builder.BuildLog.String())
-		fmt.Printf("cmd=%s end of build logs (optimized image) =============\n", cmdName)
+		xc.Out.LogDump("optimized.image.build", builder.BuildLog.String(),
+			ovars{
+				"tag": customImageTag,
+			})
 	}
 
 	if err != nil {

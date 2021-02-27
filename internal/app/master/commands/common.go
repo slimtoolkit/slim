@@ -663,6 +663,28 @@ func NoColor() {
 
 type OutVars map[string]interface{}
 
+func (ref *Output) LogDump(logType, data string, params ...OutVars) {
+	var info string
+	if len(params) > 0 {
+		kvSet := params[0]
+		if len(kvSet) > 0 {
+			var builder strings.Builder
+			for k, v := range kvSet {
+				builder.WriteString(kcolor(k))
+				builder.WriteString("=")
+				builder.WriteString(fmt.Sprintf("'%s'", vcolor("%v", v)))
+				builder.WriteString(" ")
+			}
+
+			info = builder.String()
+		}
+	}
+
+	fmt.Printf("cmd=%s log='%s' event=LOG.START %s ====================\n", ref.CmdName, logType, info)
+	fmt.Println(data)
+	fmt.Printf("cmd=%s log='%s' event=LOG.END %s ====================\n", ref.CmdName, logType, info)
+}
+
 func (ref *Output) Prompt(data string) {
 	color.Set(color.FgHiRed)
 	defer color.Unset()
