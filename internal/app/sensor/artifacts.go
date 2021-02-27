@@ -26,7 +26,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v3"
 	log "github.com/sirupsen/logrus"
 )
 

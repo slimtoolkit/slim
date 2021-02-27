@@ -19,7 +19,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
-	"github.com/bmatcuk/doublestar"
+	"github.com/bmatcuk/doublestar/v3"
 	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 )
@@ -592,18 +592,21 @@ func printImagePackage(
 							continue
 						}
 
-						match, err := doublestar.Match(ptrn, objectInfo.Name)
+						var err error
+						match, err = doublestar.Match(ptrn, objectInfo.Name)
 						if err != nil {
 							log.Errorf("doublestar.Match name='%s' error=%v", objectInfo.Name, err)
 						}
 
 						if match {
+							log.Trace("Change path patterns match for 'delete'. ptrn='%s' objectInfo.Name='%s'\n", ptrn, objectInfo.Name)
 							break
+							//not collecting all file path matches here
 						}
 					}
 
 					if !match && len(changePaths) > 0 {
-						log.Trace("change path patterns, no match. skipping 'delete' change...")
+						log.Trace("Change path patterns, no match. skipping 'delete' change...")
 						continue
 					}
 
@@ -648,24 +651,27 @@ func printImagePackage(
 							continue
 						}
 
-						match, err := doublestar.Match(ptrn, objectInfo.Name)
+						var err error
+						match, err = doublestar.Match(ptrn, objectInfo.Name)
 						if err != nil {
 							log.Errorf("doublestar.Match name='%s' error=%v", objectInfo.Name, err)
 						}
 
 						if match {
+							log.Trace("Change path patterns match for 'modify'. ptrn='%s' objectInfo.Name='%s'\n", ptrn, objectInfo.Name)
 							break
+							//not collecting all file path matches here
 						}
 					}
 
 					if !match && len(changePaths) > 0 {
-						log.Trace("change path patterns, no match. skipping 'modify' change...")
+						log.Trace("Change path patterns, no match. skipping 'modify' change...")
 						continue
 					} else {
 						if len(changeDataPatterns) > 0 {
 							matchedPatterns, found := layer.DataMatches[objectInfo.Name]
 							if !found {
-								log.Trace("change data patterns, no match. skipping change...")
+								log.Trace("Change data patterns, no match. skipping change...")
 								continue
 							}
 
@@ -712,18 +718,21 @@ func printImagePackage(
 							continue
 						}
 
-						match, err := doublestar.Match(ptrn, objectInfo.Name)
+						var err error
+						match, err = doublestar.Match(ptrn, objectInfo.Name)
 						if err != nil {
 							log.Errorf("doublestar.Match name='%s' error=%v", objectInfo.Name, err)
 						}
 
 						if match {
+							log.Trace("Change path patterns match for 'add'. ptrn='%s' objectInfo.Name='%s'\n", ptrn, objectInfo.Name)
 							break
+							//not collecting all file path matches here
 						}
 					}
 
 					if !match && len(changePaths) > 0 {
-						log.Trace("change path patterns, no match. skipping 'add' change...")
+						log.Trace("Change path patterns, no match. skipping 'add' change...")
 						continue
 					} else {
 						if len(changeDataPatterns) > 0 {

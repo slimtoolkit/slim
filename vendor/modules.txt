@@ -16,8 +16,10 @@ github.com/antchfx/htmlquery
 github.com/antchfx/xmlquery
 # github.com/antchfx/xpath v1.1.8
 github.com/antchfx/xpath
-# github.com/bmatcuk/doublestar v1.3.0
+# github.com/bmatcuk/doublestar v1.3.4
 github.com/bmatcuk/doublestar
+# github.com/bmatcuk/doublestar/v3 v3.0.0
+github.com/bmatcuk/doublestar/v3
 # github.com/c-bata/go-prompt v0.2.3
 github.com/c-bata/go-prompt
 github.com/c-bata/go-prompt/completer

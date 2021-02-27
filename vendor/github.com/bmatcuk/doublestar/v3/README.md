@@ -2,11 +2,14 @@
 
 Path pattern matching and globbing supporting `doublestar` (`**`) patterns.
 
-![Release](https://img.shields.io/github/release/bmatcuk/doublestar.svg?branch=master)
+[![PkgGoDev](https://pkg.go.dev/badge/github.com/bmatcuk/doublestar)](https://pkg.go.dev/github.com/bmatcuk/doublestar/v2)
+[![Release](https://img.shields.io/github/release/bmatcuk/doublestar.svg?branch=master)](https://github.com/bmatcuk/doublestar/releases)
 [![Build Status](https://travis-ci.org/bmatcuk/doublestar.svg?branch=master)](https://travis-ci.org/bmatcuk/doublestar)
 [![codecov.io](https://img.shields.io/codecov/c/github/bmatcuk/doublestar.svg?branch=master)](https://codecov.io/github/bmatcuk/doublestar?branch=master)
 
 ## About
+
+#### [Upgrading to v2? To v3?](UPGRADING.md)
 
 **doublestar** is a [golang](http://golang.org/) implementation of path pattern
 matching and globbing with support for "doublestar" (aka globstar: `**`)
@@ -38,13 +41,13 @@ only match directories.
 **doublestar** can be installed via `go get`:
 
 ```bash
-go get github.com/bmatcuk/doublestar
+go get github.com/bmatcuk/doublestar/v2
 ```
 
 To use it in your code, you must import it:
 
 ```go
-import "github.com/bmatcuk/doublestar"
+import "github.com/bmatcuk/doublestar/v2"
 ```
 
 ## Usage
@@ -103,6 +106,10 @@ Special Terms | Meaning
 `{alt1,...}`  | matches a sequence of characters if one of the comma-separated alternatives matches
 
 Any character with a special meaning can be escaped with a backslash (`\`).
+
+A mid-pattern doublestar (`**`) behaves like bash's globstar option: a pattern
+such as `path/to/**.txt` would return the same results as `path/to/*.txt`. The
+pattern you're looking for is `path/to/**/*.txt`.
 
 #### Character Classes
 
