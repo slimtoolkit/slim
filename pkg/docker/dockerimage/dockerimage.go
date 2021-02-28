@@ -385,7 +385,7 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 			case false:
 				currentLayer = pkg.Layers[currentLayerIndex]
 
-				if (len(pkg.Layers) - 1) < currentLayerIndex {
+				if currentLayerIndex < (len(pkg.Layers) - 1) {
 					currentLayerIndex++
 				}
 			case true:
