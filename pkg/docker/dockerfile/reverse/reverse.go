@@ -307,7 +307,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				instPosition = "first" //first instruction in the list
 			}
 
-			if len(imageHistory[idx].Tags) > 0 {
+			if idx == 0 || (len(imageHistory[idx].Tags) > 0) {
 				instPosition = "last" //last in an image
 
 				currentImageInfo.ID = imageHistory[idx].ID
@@ -321,12 +321,14 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				currentImageInfo.CreateTime = instInfo.Time
 				currentImageInfo.RawTags = imageHistory[idx].Tags
 
-				instInfo.imageFullName = imageHistory[idx].Tags[0]
-				currentImageInfo.FullName = imageHistory[idx].Tags[0]
+				if len(imageHistory[idx].Tags) > 0 {
+					instInfo.imageFullName = imageHistory[idx].Tags[0]
+					currentImageInfo.FullName = imageHistory[idx].Tags[0]
 
-				if tagInfo := strings.Split(imageHistory[idx].Tags[0], ":"); len(tagInfo) > 1 {
-					currentImageInfo.RepoName = tagInfo[0]
-					currentImageInfo.VersionTag = tagInfo[1]
+					if tagInfo := strings.Split(imageHistory[idx].Tags[0], ":"); len(tagInfo) > 1 {
+						currentImageInfo.RepoName = tagInfo[0]
+						currentImageInfo.VersionTag = tagInfo[1]
+					}
 				}
 
 				currentImageInfo.NewSizeHuman = humanize.Bytes(uint64(currentImageInfo.NewSize))
