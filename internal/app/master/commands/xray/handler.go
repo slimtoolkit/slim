@@ -557,10 +557,36 @@ func printImagePackage(
 			})
 
 		if len(topList) > 0 {
-			xc.Out.Info("layer.objects.top")
+			xc.Out.Info("layer.objects.top.start")
 			for _, object := range topList {
+				var match bool
+				for _, ptrn := range changePaths {
+					ptrn := strings.TrimSpace(ptrn)
+					if len(ptrn) == 0 {
+						continue
+					}
+
+					var err error
+					match, err = doublestar.Match(ptrn, object.Name)
+					if err != nil {
+						log.Errorf("doublestar.Match name='%s' error=%v", object.Name, err)
+					}
+
+					if match {
+						log.Trace("Change path patterns match for 'top'. ptrn='%s' object.Name='%s'\n", ptrn, object.Name)
+						break
+						//not collecting all file path matches here
+					}
+				}
+
+				if !match && len(changePaths) > 0 {
+					log.Trace("Change path patterns, no match. skipping 'top' change...")
+					continue
+				}
+
 				printObject(xc, object)
 			}
+			xc.Out.Info("layer.objects.top.end")
 		}
 
 		showLayer := true
@@ -576,7 +602,7 @@ func printImagePackage(
 
 		if showLayer {
 			if _, ok := changes["delete"]; ok && len(layer.Changes.Deleted) > 0 {
-				xc.Out.Info("layer.objects.deleted")
+				xc.Out.Info("layer.objects.deleted.start")
 				for _, objectIdx := range layer.Changes.Deleted {
 					allChangesCount++
 					deleteChangesCount++
@@ -632,10 +658,11 @@ func printImagePackage(
 						printObject(xc, objectInfo)
 					}
 				}
+				xc.Out.Info("layer.objects.deleted.end")
 			}
 
 			if _, ok := changes["modify"]; ok && len(layer.Changes.Modified) > 0 {
-				xc.Out.Info("layer.objects.modified")
+				xc.Out.Info("layer.objects.modified.start")
 				for _, objectIdx := range layer.Changes.Modified {
 					allChangesCount++
 					modifyChangesCount++
@@ -699,10 +726,11 @@ func printImagePackage(
 						printObject(xc, objectInfo)
 					}
 				}
+				xc.Out.Info("layer.objects.modified.end")
 			}
 
 			if _, ok := changes["add"]; ok && len(layer.Changes.Added) > 0 {
-				xc.Out.Info("layer.objects.added")
+				xc.Out.Info("layer.objects.added.start")
 				for _, objectIdx := range layer.Changes.Added {
 					allChangesCount++
 					addChangesCount++
@@ -766,6 +794,7 @@ func printImagePackage(
 						printObject(xc, layer.Objects[objectIdx])
 					}
 				}
+				xc.Out.Info("layer.objects.added.end")
 			}
 		}
 	}
