@@ -346,6 +346,7 @@ func printImagePackage(
 			layerInfo["layer_data_source"] = layer.LayerDataSource
 		}
 
+		xc.Out.Info("layer.start")
 		xc.Out.Info("layer", layerInfo)
 
 		var layerChangesCount int
@@ -582,6 +583,16 @@ func printImagePackage(
 				if !match && len(changePaths) > 0 {
 					log.Trace("Change path patterns, no match. skipping 'top' change...")
 					continue
+				} else {
+					if len(changeDataPatterns) > 0 {
+						matchedPatterns, found := layer.DataMatches[object.Name]
+						if !found {
+							log.Trace("Change data patterns, no match. skipping 'top' change...")
+							continue
+						}
+
+						log.Trace("'%s' ('top' change) matched data patterns: %+v", object.Name, matchedPatterns)
+					}
 				}
 
 				printObject(xc, object)
@@ -797,6 +808,8 @@ func printImagePackage(
 				xc.Out.Info("layer.objects.added.end")
 			}
 		}
+
+		xc.Out.Info("layer.end")
 	}
 }
 

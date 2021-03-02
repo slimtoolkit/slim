@@ -454,8 +454,9 @@ func layerFromStream(layerPath string, tr *tar.Reader, layerID string, changeDat
 
 		normalized, isDeleted, err := NormalizeFileObjectLayerPath(object.Name)
 		if err == nil {
-			object.Name = normalized
+			object.Name = fmt.Sprintf("/%s", normalized)
 		}
+
 		if isDeleted {
 			object.Change = ChangeDelete
 			idx := len(layer.Objects) - 1
@@ -505,8 +506,7 @@ func layerFromStream(layerPath string, tr *tar.Reader, layerID string, changeDat
 
 func inspectFile(object *ObjectMetadata, reader io.Reader, layer *Layer, changeDataMatchers map[string]*regexp.Regexp) error {
 	//TODO: refactor and enhance the OS Distro detection logic
-	name := object.Name
-	fullPath := fmt.Sprintf("/%s", name)
+	fullPath := object.Name
 	if system.IsOSReleaseFile(fullPath) || len(changeDataMatchers) > 0 {
 		data, err := ioutil.ReadAll(reader)
 		if err != nil {
@@ -544,7 +544,7 @@ func inspectFile(object *ObjectMetadata, reader io.Reader, layer *Layer, changeD
 
 		for ptrn, matcher := range changeDataMatchers {
 			if matcher.Match(data) {
-				layer.DataMatches[name] = append(layer.DataMatches[name], ptrn)
+				layer.DataMatches[fullPath] = append(layer.DataMatches[fullPath], ptrn)
 			}
 		}
 	}
