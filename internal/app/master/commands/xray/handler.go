@@ -50,7 +50,8 @@ func OnCommand(
 	modifyChangesMax int,
 	deleteChangesMax int,
 	changePaths []string,
-	changeDataPatterns []string,
+	//changeDataPatterns []string,
+	changeDataMatcherList []*dockerimage.ChangeDataMatcher,
 	doAddImageManifest bool,
 	doAddImageConfig bool,
 	doRmFileArtifacts bool) {
@@ -58,12 +59,15 @@ func OnCommand(
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
 
-	changeDataMatchers := map[string]*regexp.Regexp{}
-	for _, ptrn := range changeDataPatterns {
-		matcher, err := regexp.Compile(ptrn)
+	//changeDataMatchers := map[string]*regexp.Regexp{}
+	changeDataMatchers := map[string]*dockerimage.ChangeDataMatcher{}
+	//for _, ptrn := range changeDataPatterns {
+	for _, cdm := range changeDataMatcherList {
+		matcher, err := regexp.Compile(cdm.DataPattern)
 		errutil.FailOn(err)
 
-		changeDataMatchers[ptrn] = matcher
+		cdm.Matcher = matcher
+		changeDataMatchers[cdm.DataPattern] = cdm
 	}
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
@@ -258,7 +262,8 @@ func OnCommand(
 		modifyChangesMax,
 		deleteChangesMax,
 		changePaths,
-		changeDataPatterns,
+		//changeDataPatterns,
+		changeDataMatchers,
 		cmdReport)
 
 	if doAddImageManifest {
@@ -318,7 +323,8 @@ func printImagePackage(
 	modifyChangesMax int,
 	deleteChangesMax int,
 	changePaths []string,
-	changeDataPatterns []string,
+	//changeDataPatterns []string,
+	changeDataMatchers map[string]*dockerimage.ChangeDataMatcher,
 	cmdReport *report.XrayCommand) {
 	var allChangesCount int
 	var addChangesCount int
@@ -584,14 +590,17 @@ func printImagePackage(
 					log.Trace("Change path patterns, no match. skipping 'top' change...")
 					continue
 				} else {
-					if len(changeDataPatterns) > 0 {
+					if len(changeDataMatchers) > 0 {
 						matchedPatterns, found := layer.DataMatches[object.Name]
 						if !found {
 							log.Trace("Change data patterns, no match. skipping 'top' change...")
 							continue
 						}
 
-						log.Trace("'%s' ('top' change) matched data patterns: %+v", object.Name, matchedPatterns)
+						log.Trace("'%s' ('top' change) matched data patterns - %d", object.Name, len(matchedPatterns))
+						for _, cdm := range matchedPatterns {
+							log.Trace("matched => PP='%s' DP='%s'", cdm.PathPattern, cdm.DataPattern)
+						}
 					}
 				}
 
@@ -706,14 +715,17 @@ func printImagePackage(
 						log.Trace("Change path patterns, no match. skipping 'modify' change...")
 						continue
 					} else {
-						if len(changeDataPatterns) > 0 {
+						if len(changeDataMatchers) > 0 {
 							matchedPatterns, found := layer.DataMatches[objectInfo.Name]
 							if !found {
 								log.Trace("Change data patterns, no match. skipping change...")
 								continue
 							}
 
-							log.Trace("'%s' ('modify' change) matched data patterns: %+v", objectInfo.Name, matchedPatterns)
+							log.Trace("'%s' ('modify' change) matched data patterns - %d", objectInfo.Name, len(matchedPatterns))
+							for _, cdm := range matchedPatterns {
+								log.Trace("matched => PP='%s' DP='%s'", cdm.PathPattern, cdm.DataPattern)
+							}
 						}
 					}
 
@@ -774,14 +786,17 @@ func printImagePackage(
 						log.Trace("Change path patterns, no match. skipping 'add' change...")
 						continue
 					} else {
-						if len(changeDataPatterns) > 0 {
+						if len(changeDataMatchers) > 0 {
 							matchedPatterns, found := layer.DataMatches[objectInfo.Name]
 							if !found {
 								log.Trace("change data patterns, no match. skipping change...")
 								continue
 							}
 
-							log.Trace("'%s' ('add' change) matched data patterns: %+v", objectInfo.Name, matchedPatterns)
+							log.Trace("'%s' ('add' change) matched data patterns - %d", objectInfo.Name, len(matchedPatterns))
+							for _, cdm := range matchedPatterns {
+								log.Trace("matched => PP='%s' DP='%s'", cdm.PathPattern, cdm.DataPattern)
+							}
 						}
 					}
 

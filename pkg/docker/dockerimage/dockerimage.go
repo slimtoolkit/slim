@@ -14,6 +14,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/bmatcuk/doublestar/v3"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
@@ -77,7 +78,7 @@ type Layer struct {
 	References          map[string]*ObjectMetadata
 	Top                 TopObjects
 	Distro              *system.DistroInfo
-	DataMatches         map[string][]string //object.Name -> matched patterns
+	DataMatches         map[string][]*ChangeDataMatcher //object.Name -> matched CDM
 }
 
 type LayerStats struct {
@@ -119,6 +120,17 @@ var changeTypeFromStrings = map[string]ChangeType{
 	"D": ChangeDelete,
 	"A": ChangeAdd,
 	"M": ChangeModify,
+}
+
+const CDMDumpToConsole = "console"
+
+type ChangeDataMatcher struct {
+	Dump        bool
+	DumpConsole bool
+	DumpDir     string
+	PathPattern string
+	DataPattern string
+	Matcher     *regexp.Regexp
 }
 
 func (ct ChangeType) String() string {
@@ -192,7 +204,7 @@ func newLayer(id string) *Layer {
 		Index:       -1,
 		References:  map[string]*ObjectMetadata{},
 		Top:         NewTopObjects(topObjectMax),
-		DataMatches: map[string][]string{},
+		DataMatches: map[string][]*ChangeDataMatcher{},
 	}
 
 	heap.Init(&(layer.Top))
@@ -200,7 +212,7 @@ func newLayer(id string) *Layer {
 	return &layer
 }
 
-func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatchers map[string]*regexp.Regexp) (*Package, error) {
+func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatchers map[string]*ChangeDataMatcher) (*Package, error) {
 	imageID = dockerutil.CleanImageID(imageID)
 
 	configObjectFileName := fmt.Sprintf("%s.json", imageID)
@@ -409,7 +421,7 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 	return pkg, nil
 }
 
-func layerFromStream(layerPath string, tr *tar.Reader, layerID string, changeDataMatchers map[string]*regexp.Regexp) (*Layer, error) {
+func layerFromStream(layerPath string, tr *tar.Reader, layerID string, changeDataMatchers map[string]*ChangeDataMatcher) (*Layer, error) {
 	layer := newLayer(layerID)
 	layer.Path = layerPath
 
@@ -504,7 +516,7 @@ func layerFromStream(layerPath string, tr *tar.Reader, layerID string, changeDat
 	return layer, nil
 }
 
-func inspectFile(object *ObjectMetadata, reader io.Reader, layer *Layer, changeDataMatchers map[string]*regexp.Regexp) error {
+func inspectFile(object *ObjectMetadata, reader io.Reader, layer *Layer, changeDataMatchers map[string]*ChangeDataMatcher) error {
 	//TODO: refactor and enhance the OS Distro detection logic
 	fullPath := object.Name
 	if system.IsOSReleaseFile(fullPath) || len(changeDataMatchers) > 0 {
@@ -542,9 +554,35 @@ func inspectFile(object *ObjectMetadata, reader io.Reader, layer *Layer, changeD
 			layer.Distro = distro
 		}
 
-		for ptrn, matcher := range changeDataMatchers {
-			if matcher.Match(data) {
-				layer.DataMatches[fullPath] = append(layer.DataMatches[fullPath], ptrn)
+		for _, cdm := range changeDataMatchers {
+			if cdm.PathPattern != "" {
+				pmatch, err := doublestar.Match(cdm.PathPattern, fullPath)
+				if err != nil {
+					log.Errorf("doublestar.Match name='%s' error=%v", fullPath, err)
+					continue
+				}
+
+				if !pmatch {
+					continue
+				}
+			}
+
+			if cdm.Matcher.Match(data) {
+				layer.DataMatches[fullPath] = append(layer.DataMatches[fullPath], cdm)
+
+				if cdm.Dump {
+					if cdm.DumpConsole {
+						fmt.Printf("cmd=xray info=change.data.match.start\n")
+						fmt.Printf("cmd=xray info=change.data.match file='%s' ppattern='%s' dpattern='%s'):\n",
+							fullPath, cdm.PathPattern, cdm.DataPattern)
+						fmt.Printf("%s\n", string(data))
+						fmt.Printf("cmd=xray info=change.data.match.end\n")
+					}
+
+					if cdm.DumpDir != "" {
+						//TODO: dump to a file with the same name saved in the 'dump directory'
+					}
+				}
 			}
 		}
 	}

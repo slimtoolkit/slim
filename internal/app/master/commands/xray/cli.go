@@ -2,8 +2,10 @@ package xray
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/commands"
+	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
 
 	"github.com/urfave/cli"
 )
@@ -38,11 +40,13 @@ var CLI = cli.Command{
 	},
 	Action: func(ctx *cli.Context) error {
 		commands.ShowCommunityInfo()
+		xc := commands.NewExecutionContext(Name)
+
 		targetRef := ctx.String(commands.FlagTarget)
 
 		if targetRef == "" {
 			if len(ctx.Args()) < 1 {
-				fmt.Printf("docker-slim[%s]: missing image ID/name...\n\n", Name)
+				xc.Out.Error("param.target", "missing image ID/name")
 				cli.ShowCommandHelp(ctx, Name)
 				return nil
 			} else {
@@ -52,7 +56,12 @@ var CLI = cli.Command{
 
 		gcvalues, err := commands.GlobalCommandFlagValues(ctx)
 		if err != nil {
-			return err
+			xc.Out.Error("param.global", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		doPull := ctx.Bool(commands.FlagPull)
@@ -60,20 +69,32 @@ var CLI = cli.Command{
 
 		changes, err := parseChangeTypes(ctx.StringSlice(FlagChanges))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid change types: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.error.change.types", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		changesOutputs, err := parseChangeOutputTypes(ctx.StringSlice(FlagChangesOutput))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid change output types: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.error.change.output", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		layers, err := commands.ParseTokenSet(ctx.StringSlice(FlagLayer))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid layer selectors: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.error.layer", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
 		}
 
 		layerChangesMax := ctx.Int(FlagLayerChangesMax)
@@ -83,13 +104,21 @@ var CLI = cli.Command{
 		deleteChangesMax := ctx.Int(FlagDeleteChangesMax)
 
 		changePaths := ctx.StringSlice(FlagChangePath)
-		changeDataPatterns := ctx.StringSlice(FlagChangeData)
+
+		//changeDataPatterns := ctx.StringSlice(FlagChangeData)
+		changeDataMatchers, err := parseChangeDataMatchers(ctx.StringSlice(FlagChangeData))
+		if err != nil {
+			xc.Out.Error("param.error.change.data", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			commands.Exit(-1)
+		}
 
 		doAddImageManifest := ctx.Bool(FlagAddImageManifest)
 		doAddImageConfig := ctx.Bool(FlagAddImageConfig)
 		doRmFileArtifacts := ctx.Bool(commands.FlagRemoveFileArtifacts)
-
-		xc := commands.NewExecutionContext(Name)
 
 		OnCommand(
 			xc,
@@ -106,7 +135,8 @@ var CLI = cli.Command{
 			modifyChangesMax,
 			deleteChangesMax,
 			changePaths,
-			changeDataPatterns,
+			//changeDataPatterns,
+			changeDataMatchers,
 			doAddImageManifest,
 			doAddImageConfig,
 			doRmFileArtifacts)
@@ -161,4 +191,50 @@ func parseChangeOutputTypes(values []string) (map[string]struct{}, error) {
 	}
 
 	return outputs, nil
+}
+
+func parseChangeDataMatchers(values []string) ([]*dockerimage.ChangeDataMatcher, error) {
+	var matchers []*dockerimage.ChangeDataMatcher
+
+	for _, raw := range values {
+		var m dockerimage.ChangeDataMatcher
+
+		if strings.HasPrefix(raw, "dump:") {
+			parts := strings.SplitN(raw, ":", 4)
+			if len(parts) != 4 {
+				return nil, fmt.Errorf("malformed change data matcher: %s", raw)
+			}
+
+			m.Dump = true
+
+			if parts[1] == dockerimage.CDMDumpToConsole {
+				m.DumpConsole = true
+			} else {
+				m.DumpDir = parts[1]
+			}
+
+			m.PathPattern = parts[2]
+			m.DataPattern = parts[3]
+
+			//"dump:output:path_ptrn:data_regex"
+			//"::path_ptrn:data_regex"
+			//":::data_regex"
+		} else {
+			if !strings.HasPrefix(raw, ":") {
+				m.DataPattern = raw
+			} else {
+				parts := strings.SplitN(raw, ":", 4)
+				if len(parts) != 4 {
+					return nil, fmt.Errorf("malformed change data matcher: %s", raw)
+				}
+
+				m.PathPattern = parts[2]
+				m.DataPattern = parts[3]
+			}
+		}
+
+		matchers = append(matchers, &m)
+	}
+
+	return matchers, nil
 }
