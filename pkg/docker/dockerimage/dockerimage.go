@@ -19,6 +19,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/system"
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
 
 const (
@@ -573,14 +574,33 @@ func inspectFile(object *ObjectMetadata, reader io.Reader, layer *Layer, changeD
 				if cdm.Dump {
 					if cdm.DumpConsole {
 						fmt.Printf("cmd=xray info=change.data.match.start\n")
-						fmt.Printf("cmd=xray info=change.data.match file='%s' ppattern='%s' dpattern='%s'):\n",
+						fmt.Printf("cmd=xray info=change.data.match file='%s' ppattern='%s' dpattern='%s')\n",
 							fullPath, cdm.PathPattern, cdm.DataPattern)
 						fmt.Printf("%s\n", string(data))
 						fmt.Printf("cmd=xray info=change.data.match.end\n")
 					}
 
 					if cdm.DumpDir != "" {
-						//TODO: dump to a file with the same name saved in the 'dump directory'
+						dumpPath := filepath.Join(cdm.DumpDir, fullPath)
+						dirPath := fsutil.FileDir(dumpPath)
+						if !fsutil.DirExists(dirPath) {
+							err := os.MkdirAll(dirPath, 0755)
+							if err != nil {
+								fmt.Printf("cmd=xray info=change.data.match.dump.error file='%s' ppattern='%s' dpattern='%s' target='%s' error='%s'):\n",
+									fullPath, cdm.PathPattern, cdm.DataPattern, dumpPath, err)
+								continue
+							}
+						}
+
+						err := ioutil.WriteFile(dumpPath, data, 0644)
+						if err != nil {
+							fmt.Printf("cmd=xray info=change.data.match.dump.error file='%s' ppattern='%s' dpattern='%s' target='%s' error='%s'):\n",
+								fullPath, cdm.PathPattern, cdm.DataPattern, dumpPath, err)
+							continue
+						}
+
+						fmt.Printf("cmd=xray info=change.data.match.dump file='%s' ppattern='%s' dpattern='%s' target='%s'):\n",
+							fullPath, cdm.PathPattern, cdm.DataPattern, dumpPath)
 					}
 				}
 			}
