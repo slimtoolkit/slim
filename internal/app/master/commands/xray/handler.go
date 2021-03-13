@@ -828,8 +828,38 @@ func printImagePackage(
 	}
 }
 
+func objectHistoryString(history *dockerimage.ObjectHistory) string {
+	if history == nil {
+		return "H=[]"
+	}
+
+	var builder strings.Builder
+	builder.WriteString("H=[")
+	if history.Add != nil {
+		builder.WriteString(fmt.Sprintf("A:%d", history.Add.Layer))
+	}
+
+	if history.Add != nil {
+		var idxList []string
+		for _, mod := range history.Modifies {
+			idxList = append(idxList, fmt.Sprintf("%s", mod.Layer))
+		}
+
+		if len(idxList) > 0 {
+			builder.WriteString(fmt.Sprintf("/M:%s", strings.Join(idxList, ",")))
+		}
+	}
+
+	if history.Delete != nil {
+		builder.WriteString(fmt.Sprintf("/D:%d", history.Delete.Layer))
+	}
+
+	builder.WriteString("]")
+	return builder.String()
+}
+
 func printObject(xc *commands.ExecutionContext, object *dockerimage.ObjectMetadata) {
-	fmt.Printf("%s: mode=%s size.human='%v' size.bytes=%d uid=%d gid=%d mtime='%s' '%s'",
+	fmt.Printf("%s: mode=%s size.human='%v' size.bytes=%d uid=%d gid=%d mtime='%s' %s '%s'",
 		object.Change,
 		object.Mode,
 		humanize.Bytes(uint64(object.Size)),
@@ -837,6 +867,7 @@ func printObject(xc *commands.ExecutionContext, object *dockerimage.ObjectMetada
 		object.UID,
 		object.GID,
 		object.ModTime.UTC().Format(time.RFC3339),
+		objectHistoryString(object.History),
 		object.Name)
 
 	if object.LinkTarget != "" {

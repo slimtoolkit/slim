@@ -172,17 +172,29 @@ func (ct *ChangeType) UnmarshalJSON(b []byte) error {
 }
 
 type ObjectMetadata struct {
-	Change     ChangeType  `json:"change,omitempty"`
-	Name       string      `json:"name,omitempty"`
-	Size       int64       `json:"size,omitempty"`
-	SizeHuman  string      `json:"size_human,omitempty"`
-	Mode       os.FileMode `json:"mode,omitempty"`
-	ModeHuman  string      `json:"mode_human,omitempty"`
-	UID        int         `json:"uid,omitempty"`
-	GID        int         `json:"gid,omitempty"`
-	ModTime    time.Time   `json:"mod_time,omitempty"`
-	ChangeTime time.Time   `json:"change_time,omitempty"`
-	LinkTarget string      `json:"link_target,omitempty"`
+	Change     ChangeType     `json:"change,omitempty"`
+	Name       string         `json:"name,omitempty"`
+	Size       int64          `json:"size,omitempty"`
+	SizeHuman  string         `json:"size_human,omitempty"`
+	Mode       os.FileMode    `json:"mode,omitempty"`
+	ModeHuman  string         `json:"mode_human,omitempty"`
+	UID        int            `json:"uid,omitempty"`
+	GID        int            `json:"gid,omitempty"`
+	ModTime    time.Time      `json:"mod_time,omitempty"`
+	ChangeTime time.Time      `json:"change_time,omitempty"`
+	LinkTarget string         `json:"link_target,omitempty"`
+	History    *ObjectHistory `json:"history,omitempty"`
+}
+
+type ObjectHistory struct {
+	Add      *ChangeInfo   `json:"A,omitempty"`
+	Modifies []*ChangeInfo `json:"M,omitempty"`
+	Delete   *ChangeInfo   `json:"D,omitempty"`
+}
+
+type ChangeInfo struct {
+	Layer  int             `json:"layer"`
+	Object *ObjectMetadata `json:"-"`
 }
 
 type Changeset struct {
@@ -351,10 +363,24 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 
 		if idx == 0 {
 			for oidx, object := range layer.Objects {
+				object.History = &ObjectHistory{}
+
 				if object.Change == ChangeUnknown {
 					object.Change = ChangeAdd
 					layer.Changes.Added = append(layer.Changes.Added, oidx)
 					layer.Stats.AddedSize += uint64(object.Size)
+				}
+
+				changeInfo := ChangeInfo{
+					Layer:  layer.Index,
+					Object: object,
+				}
+
+				switch object.Change {
+				case ChangeAdd:
+					object.History.Add = &changeInfo
+				case ChangeDelete:
+					object.History.Delete = &changeInfo
 				}
 			}
 		} else {
@@ -362,16 +388,36 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 				if object.Change == ChangeUnknown {
 					for prevIdx := 0; prevIdx < idx; prevIdx++ {
 						prevLayer := pkg.Layers[prevIdx]
-						if _, ok := prevLayer.References[object.Name]; ok {
+						if om, ok := prevLayer.References[object.Name]; ok {
 							object.Change = ChangeModify
 							layer.Changes.Modified = append(layer.Changes.Modified, oidx)
 							layer.Stats.ModifiedSize += uint64(object.Size)
 
+							changeInfo := ChangeInfo{
+								Layer:  layer.Index,
+								Object: object,
+							}
+
+							if om.History != nil {
+								object.History = om.History
+							} else {
+								object.History = &ObjectHistory{}
+								om.History = object.History
+							}
+
+							object.History.Modifies = append(object.History.Modifies, &changeInfo)
 							break
 						}
 					}
 
 					if object.Change == ChangeUnknown {
+						object.History = &ObjectHistory{
+							Add: &ChangeInfo{
+								Layer:  layer.Index,
+								Object: object,
+							},
+						}
+
 						object.Change = ChangeAdd
 						layer.Changes.Added = append(layer.Changes.Added, oidx)
 						layer.Stats.AddedSize += uint64(object.Size)
