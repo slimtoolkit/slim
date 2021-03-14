@@ -363,12 +363,14 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 
 		if idx == 0 {
 			for oidx, object := range layer.Objects {
-				object.History = &ObjectHistory{}
-
 				if object.Change == ChangeUnknown {
 					object.Change = ChangeAdd
 					layer.Changes.Added = append(layer.Changes.Added, oidx)
 					layer.Stats.AddedSize += uint64(object.Size)
+				}
+
+				if object.History == nil {
+					object.History = &ObjectHistory{}
 				}
 
 				changeInfo := ChangeInfo{
@@ -393,16 +395,16 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 							layer.Changes.Modified = append(layer.Changes.Modified, oidx)
 							layer.Stats.ModifiedSize += uint64(object.Size)
 
-							changeInfo := ChangeInfo{
-								Layer:  layer.Index,
-								Object: object,
-							}
-
 							if om.History != nil {
 								object.History = om.History
 							} else {
 								object.History = &ObjectHistory{}
 								om.History = object.History
+							}
+
+							changeInfo := ChangeInfo{
+								Layer:  layer.Index,
+								Object: object,
 							}
 
 							object.History.Modifies = append(object.History.Modifies, &changeInfo)
@@ -411,16 +413,40 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 					}
 
 					if object.Change == ChangeUnknown {
-						object.History = &ObjectHistory{
-							Add: &ChangeInfo{
-								Layer:  layer.Index,
-								Object: object,
-							},
+						if object.History == nil {
+							object.History = &ObjectHistory{}
+						}
+
+						object.History.Add = &ChangeInfo{
+							Layer:  layer.Index,
+							Object: object,
 						}
 
 						object.Change = ChangeAdd
 						layer.Changes.Added = append(layer.Changes.Added, oidx)
 						layer.Stats.AddedSize += uint64(object.Size)
+					}
+				}
+
+				if object.Change == ChangeDelete {
+					for prevIdx := 0; prevIdx < idx; prevIdx++ {
+						prevLayer := pkg.Layers[prevIdx]
+						if om, ok := prevLayer.References[object.Name]; ok {
+
+							if om.History != nil {
+								object.History = om.History
+							} else {
+								object.History = &ObjectHistory{}
+								om.History = object.History
+							}
+
+							object.History.Delete = &ChangeInfo{
+								Layer:  layer.Index,
+								Object: object,
+							}
+
+							break
+						}
 					}
 				}
 			}
@@ -500,6 +526,11 @@ func layerFromStream(layerPath string, tr *tar.Reader, layerID string, changeDat
 			ChangeTime: hdr.ChangeTime,
 		}
 
+		normalized, isDeleted, err := NormalizeFileObjectLayerPath(object.Name)
+		if err == nil {
+			object.Name = fmt.Sprintf("/%s", normalized)
+		}
+
 		layer.Objects = append(layer.Objects, object)
 		layer.References[object.Name] = object
 
@@ -510,11 +541,6 @@ func layerFromStream(layerPath string, tr *tar.Reader, layerID string, changeDat
 
 		layer.Stats.AllSize += uint64(object.Size)
 		layer.Stats.ObjectCount++
-
-		normalized, isDeleted, err := NormalizeFileObjectLayerPath(object.Name)
-		if err == nil {
-			object.Name = fmt.Sprintf("/%s", normalized)
-		}
 
 		if isDeleted {
 			object.Change = ChangeDelete

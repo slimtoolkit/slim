@@ -842,7 +842,7 @@ func objectHistoryString(history *dockerimage.ObjectHistory) string {
 	if history.Add != nil {
 		var idxList []string
 		for _, mod := range history.Modifies {
-			idxList = append(idxList, fmt.Sprintf("%s", mod.Layer))
+			idxList = append(idxList, fmt.Sprintf("%d", mod.Layer))
 		}
 
 		if len(idxList) > 0 {
