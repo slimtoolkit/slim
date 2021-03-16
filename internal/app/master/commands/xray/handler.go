@@ -50,18 +50,16 @@ func OnCommand(
 	modifyChangesMax int,
 	deleteChangesMax int,
 	changePaths []string,
-	//changeDataPatterns []string,
 	changeDataMatcherList []*dockerimage.ChangeDataMatcher,
 	doAddImageManifest bool,
 	doAddImageConfig bool,
+	doReuseSavedImage bool,
 	doRmFileArtifacts bool) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
 
-	//changeDataMatchers := map[string]*regexp.Regexp{}
 	changeDataMatchers := map[string]*dockerimage.ChangeDataMatcher{}
-	//for _, ptrn := range changeDataPatterns {
 	for _, cdm := range changeDataMatcherList {
 		matcher, err := regexp.Compile(cdm.DataPattern)
 		errutil.FailOn(err)
@@ -226,8 +224,22 @@ func OnCommand(
 	imageID := dockerutil.CleanImageID(imageInspector.ImageInfo.ID)
 	iaName := fmt.Sprintf("%s.tar", imageID)
 	iaPath := filepath.Join(localVolumePath, "image", iaName)
-	err = dockerutil.SaveImage(client, imageID, iaPath, false, false)
-	errutil.FailOn(err)
+
+	var doSave bool
+	if fsutil.IsRegularFile(iaPath) {
+		if !doReuseSavedImage {
+			doSave = true
+		}
+	} else {
+		doSave = true
+	}
+
+	if doSave {
+		err = dockerutil.SaveImage(client, imageID, iaPath, false, false)
+		errutil.FailOn(err)
+	} else {
+		logger.Debugf("exported image already exists - %s", iaPath)
+	}
 
 	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, changeDataMatchers)
 	errutil.FailOn(err)
@@ -262,7 +274,6 @@ func OnCommand(
 		modifyChangesMax,
 		deleteChangesMax,
 		changePaths,
-		//changeDataPatterns,
 		changeDataMatchers,
 		cmdReport)
 
@@ -323,7 +334,6 @@ func printImagePackage(
 	modifyChangesMax int,
 	deleteChangesMax int,
 	changePaths []string,
-	//changeDataPatterns []string,
 	changeDataMatchers map[string]*dockerimage.ChangeDataMatcher,
 	cmdReport *report.XrayCommand) {
 	var allChangesCount int

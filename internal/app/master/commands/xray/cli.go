@@ -36,6 +36,7 @@ var CLI = cli.Command{
 		cflag(FlagDeleteChangesMax),
 		cflag(FlagChangePath),
 		cflag(FlagChangeData),
+		cflag(FlagReuseSavedImage),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
 	},
 	Action: func(ctx *cli.Context) error {
@@ -119,6 +120,7 @@ var CLI = cli.Command{
 		doAddImageManifest := ctx.Bool(FlagAddImageManifest)
 		doAddImageConfig := ctx.Bool(FlagAddImageConfig)
 		doRmFileArtifacts := ctx.Bool(commands.FlagRemoveFileArtifacts)
+		doReuseSavedImage := ctx.Bool(FlagReuseSavedImage)
 
 		OnCommand(
 			xc,
@@ -135,10 +137,10 @@ var CLI = cli.Command{
 			modifyChangesMax,
 			deleteChangesMax,
 			changePaths,
-			//changeDataPatterns,
 			changeDataMatchers,
 			doAddImageManifest,
 			doAddImageConfig,
+			doReuseSavedImage,
 			doRmFileArtifacts)
 
 		commands.ShowCommunityInfo()
