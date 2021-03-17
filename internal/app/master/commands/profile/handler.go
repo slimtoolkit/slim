@@ -115,7 +115,7 @@ func OnCommand(
 				"version":   v.Current(),
 				"location":  fsutil.ExeDir(),
 			})
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 	errutil.FailOn(err)
 
@@ -137,7 +137,7 @@ func OnCommand(
 				"version":   v.Current(),
 				"location":  fsutil.ExeDir(),
 			})
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 
 	if !commands.ConfirmNetwork(logger, client, overrides.Network) {
@@ -154,7 +154,7 @@ func OnCommand(
 				"version":   v.Current(),
 				"location":  fsutil.ExeDir(),
 			})
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 
 	imageInspector, err := image.NewInspector(client, targetRef)
@@ -181,7 +181,7 @@ func OnCommand(
 
 			exitCode := commands.ECTCommon | ecpImageNotFound
 			xc.Out.State("exited", ovars{"exit.code": exitCode})
-			commands.Exit(exitCode)
+			xc.Exit(exitCode)
 		}
 	}
 
@@ -253,7 +253,7 @@ func OnCommand(
 
 		exitCode := commands.ECTBuild | ecpNoEntrypoint
 		xc.Out.State("exited", ovars{"exit.code": exitCode})
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 
 	logger.Info("starting instrumented 'fat' container...")
@@ -305,7 +305,7 @@ func OnCommand(
 			_ = containerInspector.ShutdownContainer()
 
 			xc.Out.State("exited", ovars{"exit.code": -1})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		probe.Start()
@@ -376,7 +376,7 @@ func OnCommand(
 			})
 
 		xc.Out.State("exited", ovars{"exit.code": -1})
-		commands.Exit(-1)
+		xc.Exit(-1)
 	}
 
 	logger.Info("processing instrumented 'fat' container info...")

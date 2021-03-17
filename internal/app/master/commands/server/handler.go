@@ -52,7 +52,7 @@ func OnCommand(
 				"version":   v.Current(),
 				"location":  fsutil.ExeDir(),
 			})
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 	errutil.FailOn(err)
 

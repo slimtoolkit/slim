@@ -62,7 +62,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		doPull := ctx.Bool(commands.FlagPull)
@@ -75,7 +75,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		changesOutputs, err := parseChangeOutputTypes(ctx.StringSlice(FlagChangesOutput))
@@ -85,7 +85,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		layers, err := commands.ParseTokenSet(ctx.StringSlice(FlagLayer))
@@ -95,7 +95,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		layerChangesMax := ctx.Int(FlagLayerChangesMax)
@@ -114,7 +114,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		doAddImageManifest := ctx.Bool(FlagAddImageManifest)

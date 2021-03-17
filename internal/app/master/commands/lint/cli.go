@@ -1,8 +1,6 @@
 package lint
 
 import (
-	"fmt"
-
 	"github.com/docker-slim/docker-slim/internal/app/master/commands"
 
 	"github.com/urfave/cli"
@@ -36,13 +34,15 @@ var CLI = cli.Command{
 	},
 	Action: func(ctx *cli.Context) error {
 		commands.ShowCommunityInfo()
+		xc := commands.NewExecutionContext(Name)
+
 		doListChecks := ctx.Bool(FlagListChecks)
 
 		targetRef := ctx.String(commands.FlagTarget)
 		if !doListChecks {
 			if targetRef == "" {
 				if len(ctx.Args()) < 1 {
-					fmt.Printf("docker-slim[%s]: missing target image/Dockerfile...\n\n", Name)
+					xc.Out.Error("param.target", "missing target Dockerfile")
 					cli.ShowCommandHelp(ctx, Name)
 					return nil
 				} else {
@@ -53,7 +53,12 @@ var CLI = cli.Command{
 
 		gcvalues, err := commands.GlobalCommandFlagValues(ctx)
 		if err != nil {
-			return err
+			xc.Out.Error("param.global", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
 		}
 
 		targetType := ctx.String(FlagTargetType)
@@ -63,27 +68,43 @@ var CLI = cli.Command{
 
 		includeCheckLabels, err := commands.ParseCheckTags(ctx.StringSlice(FlagIncludeCheckLabel))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid include check labels: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.error.invalid.include.check.labels", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
 		}
 
 		excludeCheckLabels, err := commands.ParseCheckTags(ctx.StringSlice(FlagExcludeCheckLabel))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid exclude check labels: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.error.invalid.exclude.check.labels", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
 		}
 
 		includeCheckIDs, err := commands.ParseTokenSet(ctx.StringSlice(FlagIncludeCheckID))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid include check IDs: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.error.invalid.include.check.ids", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
 		}
 
 		includeCheckIDFile := ctx.String(FlagIncludeCheckIDFile)
 		moreIncludeCheckIDs, err := commands.ParseTokenSetFile(includeCheckIDFile)
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid include check IDs from file(%v): %v\n", Name, includeCheckIDFile, err)
-			return err
+			xc.Out.Error("param.error.invalid.include.check.ids.from.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
 		}
 
 		for k, v := range moreIncludeCheckIDs {
@@ -92,15 +113,23 @@ var CLI = cli.Command{
 
 		excludeCheckIDs, err := commands.ParseTokenSet(ctx.StringSlice(FlagExcludeCheckID))
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid exclude check IDs: %v\n", Name, err)
-			return err
+			xc.Out.Error("param.error.invalid.exclude.check.ids", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
 		}
 
 		excludeCheckIDFile := ctx.String(FlagExcludeCheckIDFile)
 		moreExcludeCheckIDs, err := commands.ParseTokenSetFile(excludeCheckIDFile)
 		if err != nil {
-			fmt.Printf("docker-slim[%s]: invalid exclude check IDs from file(%v): %v\n", Name, excludeCheckIDFile, err)
-			return err
+			xc.Out.Error("param.error.invalid.exclude.check.ids.from.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
 		}
 
 		for k, v := range moreExcludeCheckIDs {
@@ -109,8 +138,6 @@ var CLI = cli.Command{
 
 		doShowNoHits := ctx.Bool(FlagShowNoHits)
 		doShowSnippet := ctx.Bool(FlagShowSnippet)
-
-		xc := commands.NewExecutionContext(Name)
 
 		OnCommand(
 			xc,

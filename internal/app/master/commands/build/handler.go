@@ -123,7 +123,7 @@ func OnCommand(
 				"location":  fsutil.ExeDir(),
 			})
 
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 	errutil.FailOn(err)
 
@@ -183,7 +183,7 @@ func OnCommand(
 						"location":  fsutil.ExeDir(),
 					})
 
-				commands.Exit(exitCode)
+				xc.Exit(exitCode)
 			}
 		} else {
 			fatImageRepoNameTag = fmt.Sprintf("docker-slim-tmp-fat-image.%v.%v",
@@ -230,7 +230,7 @@ func OnCommand(
 					"location":  fsutil.ExeDir(),
 				})
 
-			commands.Exit(exitCode)
+			xc.Exit(exitCode)
 		}
 
 		xc.Out.State("basic.image.build.completed")
@@ -264,7 +264,7 @@ func OnCommand(
 				"location":  fsutil.ExeDir(),
 			})
 
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 
 	if !commands.ConfirmNetwork(logger, client, overrides.Network) {
@@ -282,7 +282,7 @@ func OnCommand(
 				"location":  fsutil.ExeDir(),
 			})
 
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 
 	imageInspector, err := image.NewInspector(client, targetRef)
@@ -313,7 +313,7 @@ func OnCommand(
 					"exit.code": exitCode,
 				})
 
-			commands.Exit(exitCode)
+			xc.Exit(exitCode)
 		}
 	}
 
@@ -415,7 +415,7 @@ func OnCommand(
 
 		exitCode := commands.ECTBuild | ecbNoEntrypoint
 		xc.Out.State("exited", ovars{"exit.code": exitCode})
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 
 	logger.Info("starting instrumented 'fat' container...")
@@ -476,7 +476,7 @@ func OnCommand(
 					"exit.code": exitCode,
 				})
 
-			commands.Exit(exitCode)
+			xc.Exit(exitCode)
 		}
 
 		probe.Start()
@@ -603,7 +603,7 @@ func OnCommand(
 				"exit.code": exitCode,
 			})
 
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 
 	xc.Out.State("container.inspection.artifact.processing")
@@ -623,7 +623,7 @@ func OnCommand(
 				"exit.code": exitCode,
 			})
 
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 
 	logger.Info("processing instrumented 'fat' container info...")
@@ -678,7 +678,7 @@ func OnCommand(
 				"location":  fsutil.ExeDir(),
 			})
 
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 
 	xc.Out.State("completed")
@@ -701,7 +701,7 @@ func OnCommand(
 				"exit.code": exitCode,
 			})
 
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 
 	err = newImageInspector.Inspect()

@@ -637,6 +637,10 @@ type ExecutionContext struct {
 	Out *Output
 }
 
+func (ref *ExecutionContext) Exit(exitCode int) {
+	Exit(exitCode)
+}
+
 func NewExecutionContext(cmdName string) *ExecutionContext {
 	ref := &ExecutionContext{
 		Out: NewOutput(cmdName),

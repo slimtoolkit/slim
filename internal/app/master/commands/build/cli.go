@@ -169,7 +169,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		cbOpts, err := GetContainerBuildOptions(ctx)
@@ -179,7 +179,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		crOpts, err := commands.GetContainerRunOptions(ctx)
@@ -189,7 +189,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		doPull := ctx.Bool(commands.FlagPull)
@@ -205,7 +205,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		doPublishExposedPorts := ctx.Bool(commands.FlagPublishExposedPorts)
@@ -225,7 +225,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		if doHTTPProbe {
@@ -260,7 +260,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		doHTTPProbeFull := ctx.Bool(commands.FlagHTTPProbeFull)
@@ -287,7 +287,7 @@ var CLI = cli.Command{
 					ovars{
 						"exit.code": -1,
 					})
-				commands.Exit(-1)
+				xc.Exit(-1)
 			}
 
 			return err
@@ -313,7 +313,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		instructions, err := GetImageInstructions(ctx)
@@ -323,7 +323,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		volumeMounts, err := commands.ParseVolumeMounts(ctx.StringSlice(commands.FlagMount))
@@ -333,7 +333,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		excludePatterns := commands.ParsePaths(ctx.StringSlice(commands.FlagExcludePattern))
@@ -346,7 +346,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		} else {
 			for k, v := range moreIncludePaths {
 				includePaths[k] = v
@@ -361,7 +361,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		} else {
 			for k, v := range morePathPerms {
 				pathPerms[k] = v
@@ -376,7 +376,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		} else {
 			for k, v := range moreIncludeBins {
 				includeBins[k] = v
@@ -391,7 +391,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		} else {
 			for k, v := range moreIncludeExes {
 				includeExes[k] = v
@@ -421,7 +421,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 
 		execCmd := ctx.String(commands.FlagExec)
@@ -432,7 +432,7 @@ var CLI = cli.Command{
 				ovars{
 					"exit.code": -1,
 				})
-			commands.Exit(-1)
+			xc.Exit(-1)
 		}
 		var execFileCmd []byte
 		if len(execFile) > 0 {

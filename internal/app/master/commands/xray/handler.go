@@ -99,7 +99,7 @@ func OnCommand(
 				"version":   v.Current(),
 				"location":  fsutil.ExeDir(),
 			})
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 	errutil.FailOn(err)
 
@@ -129,7 +129,7 @@ func OnCommand(
 				ovars{
 					"exit.code": exitCode,
 				})
-			commands.Exit(exitCode)
+			xc.Exit(exitCode)
 		}
 	}
 
