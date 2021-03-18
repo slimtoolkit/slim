@@ -49,7 +49,7 @@ type InstructionInfo struct {
 	IsLastInstruction   bool     `json:"is_last_instruction,omitempty"`
 	IsNop               bool     `json:"is_nop"`
 	IsExecForm          bool     `json:"is_exec_form,omitempty"` //is exec/json format (a valid field for RUN, ENTRYPOINT, CMD)
-	LocalImageExits     bool     `json:"local_image_exits"`
+	LocalImageExists    bool     `json:"local_image_exists"`
 	IntermediateImageID string   `json:"intermediate_image_id,omitempty"`
 	LayerIndex          int      `json:"layer_index"` //-1 for an empty layer
 	LayerID             string   `json:"layer_id,omitempty"`
@@ -285,7 +285,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 			}
 
 			if imageHistory[idx].ID != "<missing>" {
-				instInfo.LocalImageExits = true
+				instInfo.LocalImageExists = true
 				instInfo.IntermediateImageID = imageHistory[idx].ID
 			}
 
