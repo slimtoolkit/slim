@@ -6,9 +6,11 @@ import (
 	goerr "errors"
 	"fmt"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/docker-slim/docker-slim/internal/app/master/commands"
@@ -570,6 +572,14 @@ func (i *Inspector) RunContainer() error {
 				return
 			}
 		}
+	}()
+
+	signals := make(chan os.Signal, 1)
+	signal.Notify(signals, syscall.SIGINT)
+	go func() {
+		<-signals
+		_ = i.APIClient.KillContainer(dockerapi.KillContainerOptions{ID: i.ContainerID})
+		i.logger.Fatalf("KillContainer: docker-slim received SIGINT, killing container %s", i.ContainerID)
 	}()
 
 	if err := i.APIClient.StartContainer(i.ContainerID, nil); err != nil {
