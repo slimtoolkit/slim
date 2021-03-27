@@ -9,9 +9,6 @@ BDIR="$( cd -P "$( dirname "$SOURCE" )/.." && pwd )"
 pushd ${BDIR}/cmd
 gofmt -l -w -s .
 popd
-pushd ${BDIR}/internal
-gofmt -l -w -s .
-popd
 pushd ${BDIR}/pkg
 gofmt -l -w -s .
 popd

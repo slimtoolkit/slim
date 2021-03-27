@@ -10,8 +10,8 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
-	"github.com/docker-slim/docker-slim/pkg/app/launcher"
 	"github.com/docker-slim/docker-slim/pkg/errors"
+	"github.com/docker-slim/docker-slim/pkg/launcher"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/system"
 )

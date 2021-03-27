@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/docker-slim/docker-slim/internal/app/master"
+	"github.com/docker-slim/docker-slim/pkg/app/master"
 )
 
 func main() {
