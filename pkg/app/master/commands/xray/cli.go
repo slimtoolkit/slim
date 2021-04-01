@@ -104,9 +104,8 @@ var CLI = cli.Command{
 		modifyChangesMax := ctx.Int(FlagModifyChangesMax)
 		deleteChangesMax := ctx.Int(FlagDeleteChangesMax)
 
-		changePaths := ctx.StringSlice(FlagChangePath)
+		changePathMatchers, err := parseChangePathMatchers(ctx.StringSlice(FlagChangePath))
 
-		//changeDataPatterns := ctx.StringSlice(FlagChangeData)
 		changeDataMatchers, err := parseChangeDataMatchers(ctx.StringSlice(FlagChangeData))
 		if err != nil {
 			xc.Out.Error("param.error.change.data", err.Error())
@@ -136,7 +135,7 @@ var CLI = cli.Command{
 			addChangesMax,
 			modifyChangesMax,
 			deleteChangesMax,
-			changePaths,
+			changePathMatchers,
 			changeDataMatchers,
 			doAddImageManifest,
 			doAddImageConfig,
@@ -232,6 +231,50 @@ func parseChangeDataMatchers(values []string) ([]*dockerimage.ChangeDataMatcher,
 
 				m.PathPattern = parts[2]
 				m.DataPattern = parts[3]
+			}
+		}
+
+		matchers = append(matchers, &m)
+	}
+
+	return matchers, nil
+}
+
+func parseChangePathMatchers(values []string) ([]*dockerimage.ChangePathMatcher, error) {
+	var matchers []*dockerimage.ChangePathMatcher
+
+	for _, raw := range values {
+		var m dockerimage.ChangePathMatcher
+
+		if strings.HasPrefix(raw, "dump:") {
+			parts := strings.SplitN(raw, ":", 3)
+			if len(parts) != 3 {
+				return nil, fmt.Errorf("malformed change path matcher: %s", raw)
+			}
+
+			m.Dump = true
+
+			if parts[1] == dockerimage.CDMDumpToConsole {
+				m.DumpConsole = true
+			} else {
+				m.DumpDir = parts[1]
+			}
+
+			m.PathPattern = parts[2]
+
+			//"dump:output:path_ptrn"
+			//"::path_ptrn"
+			//"path_ptrn"
+		} else {
+			if !strings.HasPrefix(raw, ":") {
+				m.PathPattern = raw
+			} else {
+				parts := strings.SplitN(raw, ":", 3)
+				if len(parts) != 3 {
+					return nil, fmt.Errorf("malformed change path matcher: %s", raw)
+				}
+
+				m.PathPattern = parts[2]
 			}
 		}
 

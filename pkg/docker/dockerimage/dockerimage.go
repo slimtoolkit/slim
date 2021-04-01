@@ -134,6 +134,13 @@ type ChangeDataMatcher struct {
 	Matcher     *regexp.Regexp
 }
 
+type ChangePathMatcher struct {
+	Dump        bool
+	DumpConsole bool
+	DumpDir     string
+	PathPattern string
+}
+
 func (ct ChangeType) String() string {
 	if v, ok := changeTypeToStrings[ct]; ok {
 		return v
@@ -225,7 +232,11 @@ func newLayer(id string) *Layer {
 	return &layer
 }
 
-func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatchers map[string]*ChangeDataMatcher) (*Package, error) {
+func LoadPackage(archivePath string,
+	imageID string,
+	skipObjects bool,
+	changePathMatchers []*ChangePathMatcher,
+	changeDataMatchers map[string]*ChangeDataMatcher) (*Package, error) {
 	imageID = dockerutil.CleanImageID(imageID)
 
 	configObjectFileName := fmt.Sprintf("%s.json", imageID)
@@ -321,7 +332,7 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 						}
 					}
 				} else {
-					layer, err = layerFromStream(hdr.Name, tar.NewReader(tr), layerID, changeDataMatchers)
+					layer, err = layerFromStream(hdr.Name, tar.NewReader(tr), layerID, changePathMatchers, changeDataMatchers)
 					if err != nil {
 						log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
 						return nil, err
@@ -494,7 +505,11 @@ func LoadPackage(archivePath, imageID string, skipObjects bool, changeDataMatche
 	return pkg, nil
 }
 
-func layerFromStream(layerPath string, tr *tar.Reader, layerID string, changeDataMatchers map[string]*ChangeDataMatcher) (*Layer, error) {
+func layerFromStream(layerPath string,
+	tr *tar.Reader,
+	layerID string,
+	changePathMatchers []*ChangePathMatcher,
+	changeDataMatchers map[string]*ChangeDataMatcher) (*Layer, error) {
 	layer := newLayer(layerID)
 	layer.Path = layerPath
 
@@ -569,7 +584,7 @@ func layerFromStream(layerPath string, tr *tar.Reader, layerID string, changeDat
 			if isDeleted {
 				layer.Stats.DeletedFileCount++
 			} else {
-				err = inspectFile(object, tr, layer, changeDataMatchers)
+				err = inspectFile(object, tr, layer, changePathMatchers, changeDataMatchers)
 				if err != nil {
 					log.Errorf("layerFromStream: error inspecting layer file (%s) - (%v) - %v", object.Name, layerID, err)
 				}
@@ -589,7 +604,11 @@ func layerFromStream(layerPath string, tr *tar.Reader, layerID string, changeDat
 	return layer, nil
 }
 
-func inspectFile(object *ObjectMetadata, reader io.Reader, layer *Layer, changeDataMatchers map[string]*ChangeDataMatcher) error {
+func inspectFile(object *ObjectMetadata,
+	reader io.Reader,
+	layer *Layer,
+	changePathMatchers []*ChangePathMatcher,
+	changeDataMatchers map[string]*ChangeDataMatcher) error {
 	//TODO: refactor and enhance the OS Distro detection logic
 	fullPath := object.Name
 	if system.IsOSReleaseFile(fullPath) || len(changeDataMatchers) > 0 {
@@ -625,6 +644,51 @@ func inspectFile(object *ObjectMetadata, reader io.Reader, layer *Layer, changeD
 			}
 
 			layer.Distro = distro
+		}
+
+		for _, cpm := range changePathMatchers {
+			if cpm.PathPattern != "" && cpm.Dump {
+				pmatch, err := doublestar.Match(cpm.PathPattern, fullPath)
+				if err != nil {
+					log.Errorf("doublestar.Match name='%s' error=%v", fullPath, err)
+					continue
+				}
+
+				if !pmatch {
+					continue
+				}
+
+				if cpm.DumpConsole {
+					fmt.Printf("cmd=xray info=change.path.match.start\n")
+					fmt.Printf("cmd=xray info=change.path.match file='%s' ppattern='%s')\n",
+						fullPath, cpm.PathPattern)
+					fmt.Printf("%s\n", string(data))
+					fmt.Printf("cmd=xray info=change.path.match.end\n")
+				}
+
+				if cpm.DumpDir != "" {
+					dumpPath := filepath.Join(cpm.DumpDir, fullPath)
+					dirPath := fsutil.FileDir(dumpPath)
+					if !fsutil.DirExists(dirPath) {
+						err := os.MkdirAll(dirPath, 0755)
+						if err != nil {
+							fmt.Printf("cmd=xray info=change.path.match.dump.error file='%s' ppattern='%s' target='%s' error='%s'):\n",
+								fullPath, cpm.PathPattern, dumpPath, err)
+							continue
+						}
+					}
+
+					err := ioutil.WriteFile(dumpPath, data, 0644)
+					if err != nil {
+						fmt.Printf("cmd=xray info=change.path.match.dump.error file='%s' ppattern='%s' target='%s' error='%s'):\n",
+							fullPath, cpm.PathPattern, dumpPath, err)
+						continue
+					}
+
+					fmt.Printf("cmd=xray info=change.path.match.dump file='%s' ppattern='%s' target='%s'):\n",
+						fullPath, cpm.PathPattern, dumpPath)
+				}
+			}
 		}
 
 		for _, cdm := range changeDataMatchers {

@@ -49,7 +49,7 @@ func OnCommand(
 	addChangesMax int,
 	modifyChangesMax int,
 	deleteChangesMax int,
-	changePaths []string,
+	changePathMatchers []*dockerimage.ChangePathMatcher,
 	changeDataMatcherList []*dockerimage.ChangeDataMatcher,
 	doAddImageManifest bool,
 	doAddImageConfig bool,
@@ -241,7 +241,7 @@ func OnCommand(
 		logger.Debugf("exported image already exists - %s", iaPath)
 	}
 
-	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, changeDataMatchers)
+	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, changePathMatchers, changeDataMatchers)
 	errutil.FailOn(err)
 
 	xc.Out.State("image.data.inspection.done")
@@ -273,7 +273,7 @@ func OnCommand(
 		addChangesMax,
 		modifyChangesMax,
 		deleteChangesMax,
-		changePaths,
+		changePathMatchers,
 		changeDataMatchers,
 		cmdReport)
 
@@ -333,7 +333,7 @@ func printImagePackage(
 	addChangesMax int,
 	modifyChangesMax int,
 	deleteChangesMax int,
-	changePaths []string,
+	changePathMatchers []*dockerimage.ChangePathMatcher,
 	changeDataMatchers map[string]*dockerimage.ChangeDataMatcher,
 	cmdReport *report.XrayCommand) {
 	var allChangesCount int
@@ -577,8 +577,8 @@ func printImagePackage(
 			xc.Out.Info("layer.objects.top.start")
 			for _, object := range topList {
 				var match bool
-				for _, ptrn := range changePaths {
-					ptrn := strings.TrimSpace(ptrn)
+				for _, pm := range changePathMatchers {
+					ptrn := strings.TrimSpace(pm.PathPattern)
 					if len(ptrn) == 0 {
 						continue
 					}
@@ -596,7 +596,7 @@ func printImagePackage(
 					}
 				}
 
-				if !match && len(changePaths) > 0 {
+				if !match && len(changePathMatchers) > 0 {
 					log.Trace("Change path patterns, no match. skipping 'top' change...")
 					continue
 				} else {
@@ -642,8 +642,8 @@ func printImagePackage(
 
 					//TODO: add a flag to select change type to apply path patterns
 					var match bool
-					for _, ptrn := range changePaths {
-						ptrn := strings.TrimSpace(ptrn)
+					for _, pm := range changePathMatchers {
+						ptrn := strings.TrimSpace(pm.PathPattern)
 						if len(ptrn) == 0 {
 							continue
 						}
@@ -661,7 +661,7 @@ func printImagePackage(
 						}
 					}
 
-					if !match && len(changePaths) > 0 {
+					if !match && len(changePathMatchers) > 0 {
 						log.Trace("Change path patterns, no match. skipping 'delete' change...")
 						continue
 					}
@@ -702,8 +702,8 @@ func printImagePackage(
 
 					//TODO: add a flag to select change type to apply path patterns
 					var match bool
-					for _, ptrn := range changePaths {
-						ptrn := strings.TrimSpace(ptrn)
+					for _, pm := range changePathMatchers {
+						ptrn := strings.TrimSpace(pm.PathPattern)
 						if len(ptrn) == 0 {
 							continue
 						}
@@ -721,7 +721,7 @@ func printImagePackage(
 						}
 					}
 
-					if !match && len(changePaths) > 0 {
+					if !match && len(changePathMatchers) > 0 {
 						log.Trace("Change path patterns, no match. skipping 'modify' change...")
 						continue
 					} else {
@@ -773,8 +773,8 @@ func printImagePackage(
 
 					//TODO: add a flag to select change type to apply path patterns
 					var match bool
-					for _, ptrn := range changePaths {
-						ptrn := strings.TrimSpace(ptrn)
+					for _, pm := range changePathMatchers {
+						ptrn := strings.TrimSpace(pm.PathPattern)
 						if len(ptrn) == 0 {
 							continue
 						}
@@ -792,7 +792,7 @@ func printImagePackage(
 						}
 					}
 
-					if !match && len(changePaths) > 0 {
+					if !match && len(changePathMatchers) > 0 {
 						log.Trace("Change path patterns, no match. skipping 'add' change...")
 						continue
 					} else {
