@@ -1,6 +1,7 @@
 package fsutil
 
 import (
+	"archive/tar"
 	"errors"
 	"fmt"
 	"golang.org/x/sys/unix"
@@ -24,6 +25,20 @@ const (
 	FilePermOtherExe = 0001
 )
 
+// Native FileModes for extra flags
+const (
+	FMSticky = 01000
+	FMSetgid = 02000
+	FMSetuid = 04000
+)
+
+// Native FileMode bits for extra flags
+const (
+	BitSticky = 1
+	BitSetgid = 2
+	BitSetuid = 4
+)
+
 // Directory and file related errors
 var (
 	ErrNoSrcDir                  = errors.New("no source directory path")
@@ -34,6 +49,34 @@ var (
 	ErrSrcNotRegularFile         = errors.New("source is not a regular file")
 	ErrUnsupportedFileObjectType = errors.New("unsupported file object type")
 )
+
+// FileModeExtraUnix2Go converts the standard unix filemode for the extra flags to the Go version
+func FileModeExtraUnix2Go(mode uint32) os.FileMode {
+	switch mode {
+	case FMSticky:
+		return os.ModeSticky
+	case FMSetgid:
+		return os.ModeSetgid
+	case FMSetuid:
+		return os.ModeSetuid
+	}
+
+	return 0
+}
+
+// FileModeExtraBitUnix2Go converts the standard unix filemode bit for the extra flags to the filemode in Go
+func FileModeExtraBitUnix2Go(bit uint32) os.FileMode {
+	switch bit {
+	case BitSticky:
+		return os.ModeSticky
+	case BitSetgid:
+		return os.ModeSetgid
+	case BitSetuid:
+		return os.ModeSetuid
+	}
+
+	return 0
+}
 
 const (
 	rootStateKey           = ".docker-slim-state"
@@ -946,6 +989,124 @@ func createDummyFile(src, dst string) error {
 	return nil
 }
 */
+
+///////////////////////////////////////////////////////////////////////////////
+
+func ArchiveDir(afname string,
+	d2aname string,
+	trimPrefix string,
+	addPrefix string) error {
+	dirInfo, err := os.Stat(d2aname)
+	if err != nil {
+		return err
+	}
+
+	if !dirInfo.IsDir() {
+		return fmt.Errorf("not a directory")
+	}
+
+	tf, err := os.Create(afname)
+	if err != nil {
+		return err
+	}
+
+	defer close(tf)
+
+	tw := tar.NewWriter(tf)
+	defer close(tw)
+
+	onFSObject := func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Errorf("fsutil.ArchiveDir.onFSObject: path=%q err=%q", path, err)
+			return err
+		}
+
+		if info == nil {
+			log.Errorf("fsutil.ArchiveDir.onFSObject: path=%q skipping... no file info", path)
+			return nil
+		}
+
+		log.Debugf("fsutil.ArchiveDir.onFSObject: path=%q name=%v size=%v mode=%o isDir=%v isReg=%v",
+			path, info.Name(), info.Size(), info.Mode(), info.IsDir(), info.Mode().IsRegular())
+
+		switch {
+		case info.IsDir():
+			th, err := tar.FileInfoHeader(info, "")
+			if err != nil {
+				return err
+			}
+
+			th.Name = fmt.Sprintf("%s/", fpUpdate(path, trimPrefix, addPrefix))
+			if err := tw.WriteHeader(th); err != nil {
+				return err
+			}
+		case info.Mode().IsRegular():
+			th, err := tar.FileInfoHeader(info, "")
+			if err != nil {
+				return err
+			}
+
+			th.Name = fpUpdate(path, trimPrefix, addPrefix)
+			if err := tw.WriteHeader(th); err != nil {
+				return err
+			}
+
+			f, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+
+			defer close(f)
+			if _, err := io.Copy(tw, f); err != nil {
+				return err
+			}
+		case info.Mode()&os.ModeSymlink != 0:
+			linkRef, err := os.Readlink(path)
+			if err != nil {
+				return err
+			}
+
+			th, err := tar.FileInfoHeader(info, linkRef)
+			if err != nil {
+				return err
+			}
+
+			th.Name = fpUpdate(path, trimPrefix, addPrefix)
+			if err := tw.WriteHeader(th); err != nil {
+				return err
+			}
+		default:
+			log.Debugf("fsutil.ArchiveDir.onFSObject: ignoring other file object types - %q", path)
+			return nil
+		}
+
+		return nil
+	}
+
+	filepath.Walk(d2aname, onFSObject)
+
+	return nil
+}
+
+func close(ref io.Closer) {
+	if err := ref.Close(); err != nil {
+		log.Errorf("close - error closing: %v", err)
+	}
+}
+
+func fpUpdate(filePath string,
+	trimPrefix string,
+	addPrefix string) string {
+	if trimPrefix != "" {
+		filePath = strings.TrimPrefix(filePath, trimPrefix)
+	}
+
+	if addPrefix != "" {
+		filePath = fmt.Sprintf("%s%s", addPrefix, filePath)
+	}
+
+	return filePath
+}
 
 ///////////////////////////////////////////////////////////////////////////////
 
