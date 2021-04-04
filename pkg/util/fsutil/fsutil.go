@@ -337,8 +337,7 @@ func cloneDirPath(src, dst string) {
 	}
 
 	for _, dir := range dirs {
-		fmt.Printf("cloning dir path = %#v\n", dir)
-
+		//fmt.Printf("cloning dir path = %#v\n", dir)
 		err = os.Mkdir(dir.dst, 0777)
 		if err != nil {
 			errutil.FailOn(err)
@@ -436,9 +435,16 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 		}
 	}
 
+	//Need to close dst file before chmod works the right way
+	if err := d.Close(); err != nil {
+		log.Debugf("CopyRegularFile(%v,%v,%v) - d.Close error - %v", src, dst, err)
+		return err
+	}
+
 	if clone {
-		if err := d.Chmod(srcFileInfo.Mode()); err != nil {
+		if err := os.Chmod(dst, srcFileInfo.Mode()); err != nil {
 			log.Warnf("CopyRegularFile(%v,%v) - unable to set mode", src, dst)
+			return err
 		}
 
 		if sysStat, ok := srcFileInfo.Sys().(*syscall.Stat_t); ok {
@@ -448,7 +454,7 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 					log.Warnf("CopyRegularFile(%v,%v) - UpdateFileTimes error", src, dst)
 				}
 
-				if err := d.Chown(int(ssi.Uid), int(ssi.Gid)); err != nil {
+				if err := os.Chown(dst, int(ssi.Uid), int(ssi.Gid)); err != nil {
 					log.Warnln("CopyRegularFile(%v,%v)- unable to change owner", src, dst)
 				}
 			}
@@ -456,7 +462,7 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 			log.Warnf("CopyRegularFile(%v,%v)- unable to get Stat_t", src, dst)
 		}
 	} else {
-		if err := d.Chmod(0777); err != nil {
+		if err := os.Chmod(dst, 0777); err != nil {
 			log.Warnf("CopyRegularFile(%v,%v) - unable to set mode", src, dst)
 		}
 
@@ -472,7 +478,7 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 		}
 	}
 
-	return d.Close()
+	return nil
 }
 
 func copyFileObjectHandler(

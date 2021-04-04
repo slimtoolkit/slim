@@ -35,21 +35,22 @@ import (
 
 // Container inspector constants
 const (
-	SensorBinPath        = "/opt/dockerslim/bin/docker-slim-sensor"
-	ContainerNamePat     = "dockerslimk_%v_%v"
-	ArtifactsDir         = "artifacts"
-	ReportArtifactTar    = "creport.tar"
-	ReportFileName       = "creport.json"
-	FileArtifactsTar     = "files.tar"
-	FileArtifactsOutTar  = "files_out.tar"
-	FileArtifactsDirName = "files"
-	FileArtifactsPrefix  = "files/"
-	SensorBinLocal       = "docker-slim-sensor"
-	ArtifactsMountPat    = "%s:/opt/dockerslim/artifacts"
-	ArtifactsVolumePath  = "/opt/dockerslim/artifacts"
-	SensorMountPat       = "%s:/opt/dockerslim/bin/docker-slim-sensor:ro"
-	VolumeSensorMountPat = "%s:/opt/dockerslim/bin:ro"
-	LabelName            = "dockerslim"
+	SensorBinPath           = "/opt/dockerslim/bin/docker-slim-sensor"
+	ContainerNamePat        = "dockerslimk_%v_%v"
+	ArtifactsDir            = "artifacts"
+	ReportArtifactTar       = "creport.tar"
+	ReportFileName          = "creport.json"
+	FileArtifactsTar        = "files.tar"
+	FileArtifactsOutTar     = "files_out.tar"
+	FileArtifactsArchiveTar = "files_archive.tar"
+	FileArtifactsDirName    = "files"
+	FileArtifactsPrefix     = "files/"
+	SensorBinLocal          = "docker-slim-sensor"
+	ArtifactsMountPat       = "%s:/opt/dockerslim/artifacts"
+	ArtifactsVolumePath     = "/opt/dockerslim/artifacts"
+	SensorMountPat          = "%s:/opt/dockerslim/bin/docker-slim-sensor:ro"
+	VolumeSensorMountPat    = "%s:/opt/dockerslim/bin:ro"
+	LabelName               = "dockerslim"
 )
 
 type ovars = commands.OutVars
@@ -791,6 +792,21 @@ func (i *Inspector) ShutdownContainer() error {
 			errutil.FailOn(err)
 		}
 
+		/*
+			//ALTERNATIVE WAY TO XFER THE FILE ARTIFACTS
+			filesOutLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, FileArtifactsArchiveTar)
+			filesTarRemotePath := filepath.Join(ArtifactsVolumePath, FileArtifactsTar)
+			err = dockerutil.CopyFromContainer(i.APIClient,
+				i.ContainerID,
+				filesTarRemotePath,
+				filesOutLocalPath,
+				true,
+				false) //make it 'true' once tested/debugged
+			if err != nil {
+				errutil.FailOn(err)
+			}
+		*/
+
 		filesOutLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, FileArtifactsOutTar)
 		filesRemotePath := filepath.Join(ArtifactsVolumePath, FileArtifactsDirName)
 		err = dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, filesRemotePath, filesOutLocalPath, false, false)
@@ -798,6 +814,11 @@ func (i *Inspector) ShutdownContainer() error {
 			errutil.FailOn(err)
 		}
 
+		//NOTE: possible enhancement (if the original filemode bits still get lost)
+		//(alternative to archiving files in the container to preserve filemodes)
+		//Rewrite the filemode bits using the data from creport.json,
+		//but creport.json also needs to be enhanced to use
+		//octal filemodes for the file records
 		err = dockerutil.PrepareContainerDataArchive(filesOutLocalPath, FileArtifactsTar, FileArtifactsPrefix, deleteOrig)
 		if err != nil {
 			errutil.FailOn(err)

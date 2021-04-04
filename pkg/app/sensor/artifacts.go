@@ -51,9 +51,11 @@ const (
 	nodePackageFile        = "package.json"
 	nodeNPMNodeGypPackage  = "/npm/node_modules/node-gyp/package.json"
 	nodeNPMNodeGypFile     = "bin/node-gyp.js"
+	fileTypeCmdName        = "file"
 	defaultReportName      = "creport.json"
 	defaultArtifactDirName = "/opt/dockerslim/artifacts"
-	fileTypeCmdName        = "file"
+	filesDirName           = "files"
+	filesArchiveName       = "files.tar"
 )
 
 var fileTypeCmd string
@@ -84,6 +86,7 @@ func saveResults(fanMonReport *report.FanMonitorReport,
 	artifactStore := newArtifactStore(artifactDirName, fanMonReport, fileNames, ptMonReport, peReport, cmd)
 	artifactStore.prepareArtifacts()
 	artifactStore.saveArtifacts()
+	//artifactStore.archiveArtifacts() //alternative way to xfer artifacts
 	artifactStore.saveReport()
 }
 
@@ -295,8 +298,8 @@ func (p *artifactStore) saveArtifacts() {
 	}
 	log.Debugf("saveArtifacts - merged newPerms(%v): %+v", len(newPerms), newPerms)
 
-	dstRootPath := fmt.Sprintf("%s/files", p.storeLocation)
-	log.Debugf("saveArtifacts - prep file artifacts root dir - %v", dstRootPath)
+	dstRootPath := filepath.Join(p.storeLocation, filesDirName)
+	log.Debugf("saveArtifacts - prep file artifacts root dir - %q", dstRootPath)
 	err := os.MkdirAll(dstRootPath, 0777)
 	errutil.FailOn(err)
 
@@ -544,6 +547,16 @@ copyIncludes:
 	}
 }
 
+func (p *artifactStore) archiveArtifacts() {
+	src := filepath.Join(p.storeLocation, filesDirName)
+	dst := filepath.Join(p.storeLocation, filesArchiveName)
+	log.Debugf("artifactStore.archiveArtifacts: src=%q dst=%q", src, dst)
+
+	trimPrefix := fmt.Sprintf("%s/", src)
+	err := fsutil.ArchiveDir(dst, src, trimPrefix, "")
+	errutil.FailOn(err)
+}
+
 func (p *artifactStore) saveReport() {
 	sort.Strings(p.nameList)
 
@@ -569,18 +582,17 @@ func (p *artifactStore) saveReport() {
 		creport.Image.Files = append(creport.Image.Files, p.rawNames[fname])
 	}
 
-	artifactDirName := defaultArtifactDirName
 	reportName := defaultReportName
 
-	_, err := os.Stat(artifactDirName)
+	_, err := os.Stat(p.storeLocation)
 	if os.IsNotExist(err) {
-		os.MkdirAll(artifactDirName, 0777)
-		_, err = os.Stat(artifactDirName)
+		os.MkdirAll(p.storeLocation, 0777)
+		_, err = os.Stat(p.storeLocation)
 		errutil.FailOn(err)
 	}
 
-	reportFilePath := filepath.Join(artifactDirName, reportName)
-	log.Debug("sensor: monitor - saving report to ", reportFilePath)
+	reportFilePath := filepath.Join(p.storeLocation, reportName)
+	log.Debugf("sensor: monitor - saving report to %q", reportFilePath)
 
 	reportData, err := json.MarshalIndent(creport, "", "  ")
 	errutil.FailOn(err)
