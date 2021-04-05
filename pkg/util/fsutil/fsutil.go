@@ -25,6 +25,9 @@ const (
 	FilePermOtherExe = 0001
 )
 
+// Native FileMode special bits mask
+const FMSpecialBits = os.ModeSticky | os.ModeSetgid | os.ModeSetuid
+
 // Native FileModes for extra flags
 const (
 	FMSticky = 01000
@@ -78,6 +81,25 @@ func FileModeExtraBitUnix2Go(bit uint32) os.FileMode {
 	return 0
 }
 
+// FileModeExtraBitsUnix2Go converts the standard unix filemode bits for the extra flags to the filemode flags in Go
+func FileModeExtraBitsUnix2Go(bits uint32) os.FileMode {
+	var mode os.FileMode
+
+	if bits&BitSticky != 0 {
+		mode |= os.ModeSticky
+	}
+
+	if bits&BitSetgid != 0 {
+		mode |= os.ModeSetgid
+	}
+
+	if bits&BitSetuid != 0 {
+		mode |= os.ModeSetuid
+	}
+
+	return mode
+}
+
 const (
 	rootStateKey           = ".docker-slim-state"
 	releasesStateKey       = "releases"
@@ -104,9 +126,10 @@ const (
 
 // AccessInfo provides the file object access properties
 type AccessInfo struct {
-	Flags os.FileMode
-	UID   int
-	GID   int
+	Flags     os.FileMode
+	PermsOnly bool
+	UID       int
+	GID       int
 }
 
 func NewAccessInfo() *AccessInfo {
@@ -177,7 +200,21 @@ func SetAccess(dst string, access *AccessInfo) error {
 	}
 
 	if access.Flags != 0 {
-		if err := os.Chmod(dst, access.Flags); err != nil {
+		dstInfo, err := os.Stat(dst)
+		if err != nil {
+			return err
+		}
+
+		fmode := dstInfo.Mode()
+		fmode = fmode &^ os.ModePerm
+		fmode |= (access.Flags & os.ModePerm)
+
+		if !access.PermsOnly {
+			fmode = fmode &^ FMSpecialBits
+			fmode |= (access.Flags & FMSpecialBits)
+		}
+
+		if err := os.Chmod(dst, fmode); err != nil {
 			return err
 		}
 	}

@@ -315,32 +315,66 @@ func ParseVolumeMounts(values []string) (map[string]config.VolumeMount, error) {
 func ParsePathPerms(raw string) (string, *fsutil.AccessInfo, error) {
 	access := fsutil.NewAccessInfo()
 	//note: will work for ASCII (todo: make it work for unicode)
+	//
+	//DATA FORMAT:
+	//
+	//    filePath
+	//    filePath:octalFilemodeFlags#uid
+	//    filePath:octalFilemodeFlags#uid#gid
+	//
+	//Filemode bits: perms and extra bits (sticky, setuid, setgid)
+
 	sepIdx := strings.LastIndex(raw, ":")
 	if sepIdx == -1 || sepIdx == (len(raw)-1) {
 		return raw, nil, nil
 	}
 
 	pathStr := raw[0:sepIdx]
-	permsStr := raw[sepIdx+1:]
+	metaStr := raw[sepIdx+1:]
 
-	permsParts := strings.Split(permsStr, "#")
+	metaParts := strings.Split(metaStr, "#")
 
-	permsNum, err := strconv.ParseUint(permsParts[0], 8, 32)
+	var permBitsStr string
+	var extraBitsStr string
+
+	fileModeStr := metaParts[0]
+	if len(fileModeStr) > 3 {
+		access.PermsOnly = false
+		if len(fileModeStr) > 4 {
+			fileModeStr = fileModeStr[len(fileModeStr)-4:]
+		}
+		extraBitsStr = fileModeStr[0:1]
+		permBitsStr = fileModeStr[1:]
+	} else {
+		access.PermsOnly = true
+		permBitsStr = fileModeStr
+	}
+
+	permsNum, err := strconv.ParseUint(permBitsStr, 8, 32)
 	if err != nil {
 		return "", nil, err
 	}
 
 	access.Flags = os.FileMode(permsNum)
 
-	if len(permsParts) > 1 {
-		uidNum, err := strconv.ParseInt(permsParts[1], 10, 32)
+	if len(extraBitsStr) > 0 {
+		extraBits, err := strconv.ParseUint(extraBitsStr, 8, 32)
+		if err != nil {
+			return "", nil, err
+		}
+
+		access.Flags |= fsutil.FileModeExtraBitsUnix2Go(uint32(extraBits))
+	}
+
+	if len(metaParts) > 1 {
+		uidNum, err := strconv.ParseInt(metaParts[1], 10, 32)
 		if err == nil && uidNum > -1 {
 			access.UID = int(uidNum)
 		}
 	}
 
-	if len(permsParts) > 2 {
-		gidNum, err := strconv.ParseInt(permsParts[2], 10, 32)
+	if len(metaParts) > 2 {
+		gidNum, err := strconv.ParseInt(metaParts[2], 10, 32)
 		if err == nil && gidNum > -1 {
 			access.GID = int(gidNum)
 		}
