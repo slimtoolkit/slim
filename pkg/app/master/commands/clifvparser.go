@@ -589,6 +589,23 @@ func ParseHTTPProbesFile(filePath string) ([]config.HTTPProbeCmd, error) {
 				return nil, fmt.Errorf("invalid HTTP probe command port: %v", cmd)
 			}
 
+			if cmd.BodyFile != "" {
+				bfFullPath, err := filepath.Abs(cmd.BodyFile)
+				if err != nil {
+					return nil, err
+				}
+
+				_, err = os.Stat(bfFullPath)
+				if err != nil {
+					return nil, err
+				}
+
+				cmd.BodyFile = bfFullPath
+
+				//the body data file should be ok to load
+				//will load the data at runtime
+			}
+
 			probes = append(probes, cmd)
 		}
 	}

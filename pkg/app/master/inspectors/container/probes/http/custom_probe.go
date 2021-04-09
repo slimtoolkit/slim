@@ -273,7 +273,29 @@ func (p *CustomProbe) Start() {
 			}
 
 			for _, cmd := range p.Cmds {
-				reqBody := strings.NewReader(cmd.Body)
+				var reqBody io.Reader
+				var rbSeeker io.Seeker
+
+				if cmd.BodyFile != "" {
+					_, err := os.Stat(cmd.BodyFile)
+					if err != nil {
+						log.Errorf("http.probe - cmd.BodyFile (%s) check error: %v", cmd.BodyFile, err)
+					} else {
+						bodyFile, err := os.Open(cmd.BodyFile)
+						if err != nil {
+							log.Errorf("http.probe - cmd.BodyFile (%s) read error: %v", cmd.BodyFile, err)
+						} else {
+							reqBody = bodyFile
+							rbSeeker = bodyFile
+							//the file will be closed only when the function exits
+							defer bodyFile.Close()
+						}
+					}
+				} else {
+					strBody := strings.NewReader(cmd.Body)
+					reqBody = strBody
+					rbSeeker = strBody
+				}
 
 				var protocols []string
 				if cmd.Protocol == "" {
@@ -401,7 +423,8 @@ func (p *CustomProbe) Start() {
 
 						res, err := client.Do(req)
 						p.CallCount++
-						reqBody.Seek(0, 0)
+						//reqBody.Seek(0, 0)
+						rbSeeker.Seek(0, 0)
 
 						if res != nil {
 							if res.Body != nil {
