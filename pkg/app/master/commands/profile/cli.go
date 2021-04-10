@@ -39,6 +39,8 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagHTTPMaxConcurrentCrawlers),
 		commands.Cflag(commands.FlagHTTPProbeAPISpec),
 		commands.Cflag(commands.FlagHTTPProbeAPISpecFile),
+		commands.Cflag(commands.FlagHTTPProbeExec),
+		commands.Cflag(commands.FlagHTTPProbeExecFile),
 		commands.Cflag(commands.FlagPublishPort),
 		commands.Cflag(commands.FlagPublishExposedPorts),
 		commands.Cflag(commands.FlagKeepPerms),
@@ -212,6 +214,21 @@ var CLI = cli.Command{
 			doHTTPProbe = true
 		}
 
+		httpProbeApps := ctx.StringSlice(commands.FlagHTTPProbeExec)
+		moreProbeApps, err := commands.ParseHTTPProbeExecFile(ctx.String(commands.FlagHTTPProbeExecFile))
+		if err != nil {
+			xc.Out.Error("param.http.probe.exec.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
+		if len(moreProbeApps) > 0 {
+			httpProbeApps = append(httpProbeApps, moreProbeApps...)
+		}
+
 		doKeepPerms := ctx.Bool(commands.FlagKeepPerms)
 
 		doRunTargetAsUser := ctx.Bool(commands.FlagRunTargetAsUser)
@@ -330,6 +347,7 @@ var CLI = cli.Command{
 			doHTTPProbeExitOnFailure,
 			httpProbeAPISpecs,
 			httpProbeAPISpecFiles,
+			httpProbeApps,
 			portBindings,
 			doPublishExposedPorts,
 			doRmFileArtifacts,

@@ -657,3 +657,41 @@ func ParseHTTPProbesPorts(portList string) ([]uint16, error) {
 
 	return ports, nil
 }
+
+func ParseHTTPProbeExecFile(filePath string) ([]string, error) {
+	var appCalls []string
+
+	if filePath == "" {
+		return appCalls, nil
+	}
+
+	fullPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return appCalls, err
+	}
+
+	_, err = os.Stat(fullPath)
+	if err != nil {
+		return appCalls, err
+	}
+
+	fileData, err := ioutil.ReadFile(fullPath)
+	if err != nil {
+		return appCalls, err
+	}
+
+	if len(fileData) == 0 {
+		return appCalls, nil
+	}
+
+	lines := strings.Split(string(fileData), "\n")
+
+	for _, appCall := range lines {
+		appCall = strings.TrimSpace(appCall)
+		if len(appCall) != 0 {
+			appCalls = append(appCalls, appCall)
+		}
+	}
+
+	return appCalls, nil
+}

@@ -68,6 +68,7 @@ func OnCommand(
 	doHTTPProbeExitOnFailure bool,
 	httpProbeAPISpecs []string,
 	httpProbeAPISpecFiles []string,
+	httpProbeApps []string,
 	portBindings map[docker.Port][]docker.PortBinding,
 	doPublishExposedPorts bool,
 	doRmFileArtifacts bool,
@@ -455,6 +456,7 @@ func OnCommand(
 			doHTTPProbeExitOnFailure,
 			httpProbeAPISpecs,
 			httpProbeAPISpecFiles,
+			httpProbeApps,
 			true,
 			prefix)
 		errutil.FailOn(err)

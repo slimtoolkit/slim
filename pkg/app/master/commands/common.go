@@ -90,6 +90,8 @@ const (
 	FlagHTTPMaxConcurrentCrawlers = "http-max-concurrent-crawlers"
 	FlagHTTPProbeAPISpec          = "http-probe-apispec"
 	FlagHTTPProbeAPISpecFile      = "http-probe-apispec-file"
+	FlagHTTPProbeExec             = "http-probe-exec"
+	FlagHTTPProbeExecFile         = "http-probe-exec-file"
 
 	FlagPublishPort         = "publish-port"
 	FlagPublishExposedPorts = "publish-exposed-ports"
@@ -160,6 +162,8 @@ const (
 	FlagHTTPMaxConcurrentCrawlersUsage = "Number of concurrent crawlers in the HTTP probe"
 	FlagHTTPProbeAPISpecUsage          = "Run HTTP probes for API spec"
 	FlagHTTPProbeAPISpecFileUsage      = "Run HTTP probes for API spec from file"
+	FlagHTTPProbeExecUsage             = "App to execute when running HTTP probes"
+	FlagHTTPProbeExecFileUsage         = "Apps to execute when running HTTP probes loaded from file"
 
 	FlagPublishPortUsage         = "Map container port to host port (format => port | hostPort:containerPort | hostIP:hostPort:containerPort | hostIP::containerPort )"
 	FlagPublishExposedPortsUsage = "Map all exposed ports to the same host ports"
@@ -398,6 +402,18 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  1,
 		Usage:  FlagHTTPMaxConcurrentCrawlersUsage,
 		EnvVar: "DSLIM_HTTP_MAX_CONCURRENT_CRAWLERS",
+	},
+	FlagHTTPProbeExec: cli.StringSliceFlag{
+		Name:   FlagHTTPProbeExec,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagHTTPProbeExecUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_EXEC",
+	},
+	FlagHTTPProbeExecFile: cli.StringFlag{
+		Name:   FlagHTTPProbeExecFile,
+		Value:  "",
+		Usage:  FlagHTTPProbeExecFileUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_EXEC_FILE",
 	},
 	FlagPublishPort: cli.StringSliceFlag{
 		Name:   FlagPublishPort,
