@@ -44,7 +44,6 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagHTTPProbeExecFile),
 		commands.Cflag(commands.FlagPublishPort),
 		commands.Cflag(commands.FlagPublishExposedPorts),
-		commands.Cflag(commands.FlagKeepPerms),
 		commands.Cflag(commands.FlagRunTargetAsUser),
 		commands.Cflag(commands.FlagShowContainerLogs),
 		cflag(FlagShowBuildLogs),
@@ -123,30 +122,33 @@ var CLI = cli.Command{
 		},
 		commands.Cflag(commands.FlagExcludeMounts),
 		commands.Cflag(commands.FlagExcludePattern),
-		commands.Cflag(commands.FlagPathPerms),
-		commands.Cflag(commands.FlagPathPermsFile),
-		commands.Cflag(commands.FlagIncludePath),
-		commands.Cflag(commands.FlagIncludePathFile),
-		commands.Cflag(commands.FlagIncludeBin),
+		cflag(FlagPreservePath),
+		cflag(FlagPreservePathFile),
+		cflag(FlagIncludePath),
+		cflag(FlagIncludePathFile),
+		cflag(FlagIncludeBin),
 		cli.StringFlag{
 			Name:   FlagIncludeBinFile,
 			Value:  "",
 			Usage:  FlagIncludeBinFileUsage,
 			EnvVar: "DSLIM_INCLUDE_BIN_FILE",
 		},
-		commands.Cflag(commands.FlagIncludeExe),
+		cflag(FlagIncludeExe),
 		cli.StringFlag{
 			Name:   FlagIncludeExeFile,
 			Value:  "",
 			Usage:  FlagIncludeExeFileUsage,
 			EnvVar: "DSLIM_INCLUDE_EXE_FILE",
 		},
-		commands.Cflag(commands.FlagIncludeShell),
+		cflag(FlagIncludeShell),
+		cflag(FlagKeepTmpArtifacts),
+		cflag(FlagKeepPerms),
+		cflag(FlagPathPerms),
+		cflag(FlagPathPermsFile),
 		commands.Cflag(commands.FlagMount),
 		commands.Cflag(commands.FlagContinueAfter),
 		commands.Cflag(commands.FlagUseLocalMounts),
 		commands.Cflag(commands.FlagUseSensorVolume),
-		commands.Cflag(commands.FlagKeepTmpArtifacts),
 	},
 	Action: func(ctx *cli.Context) error {
 		commands.ShowCommunityInfo()
@@ -314,7 +316,7 @@ var CLI = cli.Command{
 			httpProbeApps = append(httpProbeApps, moreProbeApps...)
 		}
 
-		doKeepPerms := ctx.Bool(commands.FlagKeepPerms)
+		doKeepPerms := ctx.Bool(FlagKeepPerms)
 
 		doRunTargetAsUser := ctx.Bool(commands.FlagRunTargetAsUser)
 
@@ -355,8 +357,23 @@ var CLI = cli.Command{
 
 		excludePatterns := commands.ParsePaths(ctx.StringSlice(commands.FlagExcludePattern))
 
-		includePaths := commands.ParsePaths(ctx.StringSlice(commands.FlagIncludePath))
-		moreIncludePaths, err := commands.ParsePathsFile(ctx.String(commands.FlagIncludePathFile))
+		preservePaths := commands.ParsePaths(ctx.StringSlice(FlagPreservePath))
+		morePreservePaths, err := commands.ParsePathsFile(ctx.String(FlagPreservePathFile))
+		if err != nil {
+			xc.Out.Error("param.error.preserve.path.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		} else {
+			for k, v := range morePreservePaths {
+				preservePaths[k] = v
+			}
+		}
+
+		includePaths := commands.ParsePaths(ctx.StringSlice(FlagIncludePath))
+		moreIncludePaths, err := commands.ParsePathsFile(ctx.String(FlagIncludePathFile))
 		if err != nil {
 			xc.Out.Error("param.error.include.path.file", err.Error())
 			xc.Out.State("exited",
@@ -370,8 +387,8 @@ var CLI = cli.Command{
 			}
 		}
 
-		pathPerms := commands.ParsePaths(ctx.StringSlice(commands.FlagPathPerms))
-		morePathPerms, err := commands.ParsePathsFile(ctx.String(commands.FlagPathPermsFile))
+		pathPerms := commands.ParsePaths(ctx.StringSlice(FlagPathPerms))
+		morePathPerms, err := commands.ParsePathsFile(ctx.String(FlagPathPermsFile))
 		if err != nil {
 			xc.Out.Error("param.error.path.perms.file", err.Error())
 			xc.Out.State("exited",
@@ -385,7 +402,7 @@ var CLI = cli.Command{
 			}
 		}
 
-		includeBins := commands.ParsePaths(ctx.StringSlice(commands.FlagIncludeBin))
+		includeBins := commands.ParsePaths(ctx.StringSlice(FlagIncludeBin))
 		moreIncludeBins, err := commands.ParsePathsFile(ctx.String(FlagIncludeBinFile))
 		if err != nil {
 			xc.Out.Error("param.error.include.bin.file", err.Error())
@@ -400,7 +417,7 @@ var CLI = cli.Command{
 			}
 		}
 
-		includeExes := commands.ParsePaths(ctx.StringSlice(commands.FlagIncludeExe))
+		includeExes := commands.ParsePaths(ctx.StringSlice(FlagIncludeExe))
 		moreIncludeExes, err := commands.ParsePathsFile(ctx.String(FlagIncludeExeFile))
 		if err != nil {
 			xc.Out.Error("param.error.include.exe.file", err.Error())
@@ -415,12 +432,12 @@ var CLI = cli.Command{
 			}
 		}
 
-		doIncludeShell := ctx.Bool(commands.FlagIncludeShell)
+		doIncludeShell := ctx.Bool(FlagIncludeShell)
 
 		doUseLocalMounts := ctx.Bool(commands.FlagUseLocalMounts)
 		doUseSensorVolume := ctx.String(commands.FlagUseSensorVolume)
 
-		doKeepTmpArtifacts := ctx.Bool(commands.FlagKeepTmpArtifacts)
+		doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
 
 		doExcludeMounts := ctx.BoolT(commands.FlagExcludeMounts)
 		if doExcludeMounts {
@@ -520,6 +537,7 @@ var CLI = cli.Command{
 			doKeepPerms,
 			pathPerms,
 			excludePatterns,
+			preservePaths,
 			includePaths,
 			includeBins,
 			includeExes,

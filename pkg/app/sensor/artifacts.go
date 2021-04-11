@@ -56,6 +56,7 @@ const (
 	defaultArtifactDirName = "/opt/dockerslim/artifacts"
 	filesDirName           = "files"
 	filesArchiveName       = "files.tar"
+	preservedDirName       = "preserved"
 )
 
 var fileTypeCmd string
@@ -72,6 +73,59 @@ func findFileTypeCmd() {
 	}
 
 	log.Debugf("findFileTypeCmd - cmd found: %v", fileTypeCmd)
+}
+
+func prepareEnv(storeLocation string, cmd *command.StartMonitor) {
+	log.Debug("sensor.app.prepareEnv()")
+
+	dstRootPath := filepath.Join(storeLocation, filesDirName)
+	log.Debugf("sensor.app.prepareEnv - prep file artifacts root dir - '%s'", dstRootPath)
+	err := os.MkdirAll(dstRootPath, 0777)
+	errutil.FailOn(err)
+
+	if cmd != nil && len(cmd.Preserves) > 0 {
+		log.Debugf("sensor.app.prepareEnv(): preserving paths - %d", len(cmd.Preserves))
+
+		preservedDirPath := filepath.Join(storeLocation, preservedDirName)
+		log.Debugf("sensor.app.prepareEnv - prep preserved artifacts root dir - '%s'", preservedDirPath)
+		err = os.MkdirAll(preservedDirPath, 0777)
+		errutil.FailOn(err)
+
+		preservePaths := preparePaths(getKeys(cmd.Preserves))
+		log.Debugf("sensor.app.prepareEnv - preservePaths(%v): %+v", len(preservePaths), preservePaths)
+
+		newPerms := getRecordsWithPerms(cmd.Preserves)
+		log.Debugf("sensor.app.prepareEnv - newPerms(%v): %+v", len(newPerms), newPerms)
+
+		for inPath, isDir := range preservePaths {
+			dstPath := fmt.Sprintf("%s%s", preservedDirPath, inPath)
+			log.Debugf("sensor.app.prepareEnv(): [isDir=%v] %s", isDir, dstPath)
+
+			if isDir {
+				err, errs := fsutil.CopyDir(cmd.KeepPerms, inPath, dstPath, true, true, nil, nil, nil)
+				if err != nil {
+					log.Warnf("sensor.app.prepareEnv.CopyDir(%v,%v) error: %v", inPath, dstPath, err)
+				}
+
+				if len(errs) > 0 {
+					log.Warnf("sensor.app.prepareEnv.CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
+				}
+			} else {
+				if err := fsutil.CopyFile(cmd.KeepPerms, inPath, dstPath, true); err != nil {
+					log.Warnf("sensor.app.prepareEnv.CopyFile(%v,%v) error: %v", inPath, dstPath, err)
+				}
+			}
+		}
+
+		for inPath, perms := range newPerms {
+			dstPath := fmt.Sprintf("%s%s", preservedDirPath, inPath)
+			if fsutil.Exists(dstPath) {
+				if err := fsutil.SetAccess(dstPath, perms); err != nil {
+					log.Warnf("sensor.app.prepareEnv.SetPerms(%v,%v) error: %v", dstPath, perms, err)
+				}
+			}
+		}
+	}
 }
 
 func saveResults(fanMonReport *report.FanMonitorReport,
@@ -229,56 +283,56 @@ func (p *artifactStore) resolveLinks() {
 	}
 }
 
+func preparePaths(pathList []string) map[string]bool {
+	if len(pathList) < 1 {
+		return nil
+	}
+
+	paths := map[string]bool{}
+	for _, pathValue := range pathList {
+		pathInfo, err := os.Stat(pathValue)
+		if err != nil {
+			log.Debug("preparePaths(): skipping path = ", pathValue)
+			continue
+		}
+
+		if pathInfo.IsDir() {
+			paths[pathValue] = true
+		} else {
+			paths[pathValue] = false
+		}
+	}
+
+	return paths
+}
+
+func getKeys(m map[string]*fsutil.AccessInfo) []string {
+	if len(m) == 0 {
+		return nil
+	}
+
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+
+	return keys
+}
+
+func getRecordsWithPerms(m map[string]*fsutil.AccessInfo) map[string]*fsutil.AccessInfo {
+	perms := map[string]*fsutil.AccessInfo{}
+	for k, v := range m {
+		if v != nil {
+			perms[k] = v
+		}
+	}
+
+	return perms
+}
+
 func (p *artifactStore) saveArtifacts() {
 	var includePaths map[string]bool
 	var newPerms map[string]*fsutil.AccessInfo
-
-	preparePaths := func(pathList []string) map[string]bool {
-		if len(pathList) < 1 {
-			return nil
-		}
-
-		paths := map[string]bool{}
-		for _, pathValue := range pathList {
-			pathInfo, err := os.Stat(pathValue)
-			if err != nil {
-				log.Debug("saveArtifacts.preparePaths(): skipping path = ", pathValue)
-				continue
-			}
-
-			if pathInfo.IsDir() {
-				paths[pathValue] = true
-			} else {
-				paths[pathValue] = false
-			}
-		}
-
-		return paths
-	}
-
-	getKeys := func(m map[string]*fsutil.AccessInfo) []string {
-		if len(m) == 0 {
-			return nil
-		}
-
-		keys := make([]string, 0, len(m))
-		for k := range m {
-			keys = append(keys, k)
-		}
-
-		return keys
-	}
-
-	getRecordsWithPerms := func(m map[string]*fsutil.AccessInfo) map[string]*fsutil.AccessInfo {
-		perms := map[string]*fsutil.AccessInfo{}
-		for k, v := range m {
-			if v != nil {
-				perms[k] = v
-			}
-		}
-
-		return perms
-	}
 
 	syscall.Umask(0)
 
@@ -298,10 +352,11 @@ func (p *artifactStore) saveArtifacts() {
 	}
 	log.Debugf("saveArtifacts - merged newPerms(%v): %+v", len(newPerms), newPerms)
 
-	dstRootPath := filepath.Join(p.storeLocation, filesDirName)
-	log.Debugf("saveArtifacts - prep file artifacts root dir - %q", dstRootPath)
-	err := os.MkdirAll(dstRootPath, 0777)
-	errutil.FailOn(err)
+	//moved to prepareEnv
+	//dstRootPath := filepath.Join(p.storeLocation, filesDirName)
+	//log.Debugf("saveArtifacts - prep file artifacts root dir - '%s'", dstRootPath)
+	//err := os.MkdirAll(dstRootPath, 0777)
+	//errutil.FailOn(err)
 
 	extraDirs := map[string]struct{}{}
 
@@ -359,6 +414,7 @@ copyLinks:
 			}
 		}
 
+		//TODO: review
 		linkPath := fmt.Sprintf("%s/files%s", p.storeLocation, linkName)
 		linkDir := fsutil.FileDir(linkPath)
 		err := os.MkdirAll(linkDir, 0777)
@@ -545,12 +601,43 @@ copyIncludes:
 			}
 		}
 	}
+
+	if len(p.cmd.Preserves) > 0 {
+		log.Debug("saveArtifacts: restoring preserved paths - %d", len(p.cmd.Preserves))
+
+		preservedDirPath := filepath.Join(p.storeLocation, preservedDirName)
+		filesDirPath := filepath.Join(p.storeLocation, filesDirName)
+		if fsutil.Exists(preservedDirPath) {
+			preservePaths := preparePaths(getKeys(p.cmd.Preserves))
+			for inPath, isDir := range preservePaths {
+				srcPath := fmt.Sprintf("%s%s", preservedDirPath, inPath)
+				dstPath := fmt.Sprintf("%s%s", filesDirPath, inPath)
+
+				if isDir {
+					err, errs := fsutil.CopyDir(p.cmd.KeepPerms, srcPath, dstPath, true, true, nil, nil, nil)
+					if err != nil {
+						log.Warnf("saveArtifacts.CopyDir(%v,%v) error: %v", srcPath, dstPath, err)
+					}
+
+					if len(errs) > 0 {
+						log.Warnf("saveArtifacts.CopyDir(%v,%v) copy errors: %+v", srcPath, dstPath, errs)
+					}
+				} else {
+					if err := fsutil.CopyFile(p.cmd.KeepPerms, srcPath, dstPath, true); err != nil {
+						log.Warnf("saveArtifacts.CopyFile(%v,%v) error: %v", srcPath, dstPath, err)
+					}
+				}
+			}
+		} else {
+			log.Debug("saveArtifacts(): preserved root path doesnt exist")
+		}
+	}
 }
 
 func (p *artifactStore) archiveArtifacts() {
 	src := filepath.Join(p.storeLocation, filesDirName)
 	dst := filepath.Join(p.storeLocation, filesArchiveName)
-	log.Debugf("artifactStore.archiveArtifacts: src=%q dst=%q", src, dst)
+	log.Debugf("artifactStore.archiveArtifacts: src='%s' dst='%s'", src, dst)
 
 	trimPrefix := fmt.Sprintf("%s/", src)
 	err := fsutil.ArchiveDir(dst, src, trimPrefix, "")
@@ -592,7 +679,7 @@ func (p *artifactStore) saveReport() {
 	}
 
 	reportFilePath := filepath.Join(p.storeLocation, reportName)
-	log.Debugf("sensor: monitor - saving report to %q", reportFilePath)
+	log.Debugf("sensor: monitor - saving report to '%s'", reportFilePath)
 
 	reportData, err := json.MarshalIndent(creport, "", "  ")
 	errutil.FailOn(err)

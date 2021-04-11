@@ -100,6 +100,7 @@ type Inspector struct {
 	KeepPerms             bool
 	PathPerms             map[string]*fsutil.AccessInfo
 	ExcludePatterns       map[string]*fsutil.AccessInfo
+	PreservePaths         map[string]*fsutil.AccessInfo
 	IncludePaths          map[string]*fsutil.AccessInfo
 	IncludeBins           map[string]*fsutil.AccessInfo
 	IncludeExes           map[string]*fsutil.AccessInfo
@@ -154,6 +155,7 @@ func NewInspector(
 	keepPerms bool,
 	pathPerms map[string]*fsutil.AccessInfo,
 	excludePatterns map[string]*fsutil.AccessInfo,
+	preservePaths map[string]*fsutil.AccessInfo,
 	includePaths map[string]*fsutil.AccessInfo,
 	includeBins map[string]*fsutil.AccessInfo,
 	includeExes map[string]*fsutil.AccessInfo,
@@ -188,6 +190,7 @@ func NewInspector(
 		KeepPerms:             keepPerms,
 		PathPerms:             pathPerms,
 		ExcludePatterns:       excludePatterns,
+		PreservePaths:         preservePaths,
 		IncludePaths:          includePaths,
 		IncludeBins:           includeBins,
 		IncludeExes:           includeExes,
@@ -637,6 +640,10 @@ func (i *Inspector) RunContainer() error {
 
 	if len(i.ExcludePatterns) > 0 {
 		cmd.Excludes = pathMapKeys(i.ExcludePatterns)
+	}
+
+	if len(i.PreservePaths) > 0 {
+		cmd.Preserves = i.PreservePaths
 	}
 
 	if len(i.IncludePaths) > 0 {

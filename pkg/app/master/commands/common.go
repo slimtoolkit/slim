@@ -96,7 +96,6 @@ const (
 	FlagPublishPort         = "publish-port"
 	FlagPublishExposedPorts = "publish-exposed-ports"
 
-	FlagKeepPerms         = "keep-perms"
 	FlagRunTargetAsUser   = "run-target-as-user"
 	FlagShowContainerLogs = "show-clogs"
 
@@ -117,22 +116,12 @@ const (
 	FlagEtcHostsMap        = "etc-hosts-map"
 	FlagContainerDNS       = "container-dns"
 	FlagContainerDNSSearch = "container-dns-search"
-
-	FlagExcludeMounts   = "exclude-mounts"
-	FlagExcludePattern  = "exclude-pattern"
-	FlagUseLocalMounts  = "use-local-mounts"
-	FlagUseSensorVolume = "use-sensor-volume"
-	FlagMount           = "mount"
-	FlagContinueAfter   = "continue-after"
-
-	FlagPathPerms        = "path-perms"         //shared, but shouldn't be; 'profile' doesn't need it
-	FlagPathPermsFile    = "path-perms-file"    //shared, but shouldn't be; 'profile' doesn't need it
-	FlagIncludePath      = "include-path"       //shared, but shouldn't be; 'profile' doesn't need it
-	FlagIncludePathFile  = "include-path-file"  //shared, but shouldn't be; 'profile' doesn't need it
-	FlagIncludeBin       = "include-bin"        //shared, but shouldn't be; 'profile' doesn't need it
-	FlagIncludeExe       = "include-exe"        //shared, but shouldn't be; 'profile' doesn't need it
-	FlagIncludeShell     = "include-shell"      //shared, but shouldn't be; 'profile' doesn't need it
-	FlagKeepTmpArtifacts = "keep-tmp-artifacts" //shared, but shouldn't be; 'profile' doesn't need it
+	FlagExcludePattern     = "exclude-pattern"
+	FlagExcludeMounts      = "exclude-mounts"
+	FlagUseLocalMounts     = "use-local-mounts"
+	FlagUseSensorVolume    = "use-sensor-volume"
+	FlagMount              = "mount"
+	FlagContinueAfter      = "continue-after"
 )
 
 // Shared command flag usage info
@@ -168,7 +157,6 @@ const (
 	FlagPublishPortUsage         = "Map container port to host port (format => port | hostPort:containerPort | hostIP:hostPort:containerPort | hostIP::containerPort )"
 	FlagPublishExposedPortsUsage = "Map all exposed ports to the same host ports"
 
-	FlagKeepPermsUsage         = "Keep artifact permissions as-is"
 	FlagRunTargetAsUserUsage   = "Run target app as USER"
 	FlagShowContainerLogsUsage = "Show container logs"
 
@@ -196,15 +184,6 @@ const (
 	FlagUseSensorVolumeUsage = "Sensor volume name to use"
 	FlagMountUsage           = "Mount volume analyzing image"
 	FlagContinueAfterUsage   = "Select continue mode: enter | signal | probe | timeout or numberInSeconds"
-
-	FlagPathPermsUsage        = "Set path permissions in optimized image"
-	FlagPathPermsFileUsage    = "File with path permissions to set"
-	FlagIncludePathUsage      = "Include path from image"
-	FlagIncludePathFileUsage  = "File with paths to include from image"
-	FlagIncludeBinUsage       = "Include binary from image (executable or shared object using its absolute path)"
-	FlagIncludeExeUsage       = "Include executable from image (by executable name)"
-	FlagIncludeShellUsage     = "Include basic shell functionality"
-	FlagKeepTmpArtifactsUsage = "keep temporary artifacts when command is done"
 )
 
 ///////////////////////////////////
@@ -426,11 +405,6 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:  FlagPublishExposedPortsUsage,
 		EnvVar: "DSLIM_PUBLISH_EXPOSED",
 	},
-	FlagKeepPerms: cli.BoolTFlag{
-		Name:   FlagKeepPerms,
-		Usage:  FlagKeepPermsUsage,
-		EnvVar: "DSLIM_KEEP_PERMS",
-	},
 	FlagRunTargetAsUser: cli.BoolTFlag{
 		Name:   FlagRunTargetAsUser,
 		Usage:  FlagRunTargetAsUserUsage,
@@ -541,52 +515,6 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  FlagExcludePatternUsage,
 		EnvVar: "DSLIM_EXCLUDE_PATTERN",
-	},
-	FlagPathPerms: cli.StringSliceFlag{
-		Name:   FlagPathPerms,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagPathPermsUsage,
-		EnvVar: "DSLIM_PATH_PERMS",
-	},
-	FlagPathPermsFile: cli.StringFlag{
-		Name:   FlagPathPermsFile,
-		Value:  "",
-		Usage:  FlagPathPermsFileUsage,
-		EnvVar: "DSLIM_PATH_PERMS_FILE",
-	},
-	FlagIncludePath: cli.StringSliceFlag{
-		Name:   FlagIncludePath,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagIncludePathUsage,
-		EnvVar: "DSLIM_INCLUDE_PATH",
-	},
-	FlagIncludePathFile: cli.StringFlag{
-		Name:   FlagIncludePathFile,
-		Value:  "",
-		Usage:  FlagIncludePathFileUsage,
-		EnvVar: "DSLIM_INCLUDE_PATH_FILE",
-	},
-	FlagIncludeBin: cli.StringSliceFlag{
-		Name:   FlagIncludeBin,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagIncludeBinUsage,
-		EnvVar: "DSLIM_INCLUDE_BIN",
-	},
-	FlagIncludeExe: cli.StringSliceFlag{
-		Name:   FlagIncludeExe,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagIncludeExeUsage,
-		EnvVar: "DSLIM_INCLUDE_EXE",
-	},
-	FlagIncludeShell: cli.BoolFlag{
-		Name:   FlagIncludeShell,
-		Usage:  FlagIncludeShellUsage,
-		EnvVar: "DSLIM_INCLUDE_SHELL",
-	},
-	FlagKeepTmpArtifacts: cli.BoolFlag{
-		Name:   FlagKeepTmpArtifacts,
-		Usage:  FlagKeepTmpArtifactsUsage,
-		EnvVar: "DSLIM_KEEP_TMP_ARTIFACTS",
 	},
 	FlagUseLocalMounts: cli.BoolFlag{
 		Name:   FlagUseLocalMounts,

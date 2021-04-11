@@ -43,7 +43,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagHTTPProbeExecFile),
 		commands.Cflag(commands.FlagPublishPort),
 		commands.Cflag(commands.FlagPublishExposedPorts),
-		commands.Cflag(commands.FlagKeepPerms),
+		//commands.Cflag(commands.FlagKeepPerms),
 		commands.Cflag(commands.FlagRunTargetAsUser),
 		commands.Cflag(commands.FlagCopyMetaArtifacts),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
@@ -65,18 +65,18 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagExpose),
 		commands.Cflag(commands.FlagExcludeMounts),
 		commands.Cflag(commands.FlagExcludePattern),
-		commands.Cflag(commands.FlagPathPerms),
-		commands.Cflag(commands.FlagPathPermsFile),
-		commands.Cflag(commands.FlagIncludePath),
-		commands.Cflag(commands.FlagIncludePathFile),
-		commands.Cflag(commands.FlagIncludeBin),
-		commands.Cflag(commands.FlagIncludeExe),
-		commands.Cflag(commands.FlagIncludeShell),
+		//commands.Cflag(commands.FlagPathPerms),
+		//commands.Cflag(commands.FlagPathPermsFile),
+		//commands.Cflag(commands.FlagIncludePath),
+		//commands.Cflag(commands.FlagIncludePathFile),
+		//commands.Cflag(commands.FlagIncludeBin),
+		//commands.Cflag(commands.FlagIncludeExe),
+		//commands.Cflag(commands.FlagIncludeShell),
 		commands.Cflag(commands.FlagMount),
 		commands.Cflag(commands.FlagContinueAfter),
 		commands.Cflag(commands.FlagUseLocalMounts),
 		commands.Cflag(commands.FlagUseSensorVolume),
-		commands.Cflag(commands.FlagKeepTmpArtifacts),
+		//commands.Cflag(commands.FlagKeepTmpArtifacts),
 	},
 	Action: func(ctx *cli.Context) error {
 		commands.ShowCommunityInfo()
@@ -229,7 +229,7 @@ var CLI = cli.Command{
 			httpProbeApps = append(httpProbeApps, moreProbeApps...)
 		}
 
-		doKeepPerms := ctx.Bool(commands.FlagKeepPerms)
+		//doKeepPerms := ctx.Bool(commands.FlagKeepPerms)
 
 		doRunTargetAsUser := ctx.Bool(commands.FlagRunTargetAsUser)
 
@@ -256,44 +256,44 @@ var CLI = cli.Command{
 
 		excludePatterns := commands.ParsePaths(ctx.StringSlice(commands.FlagExcludePattern))
 
-		includePaths := commands.ParsePaths(ctx.StringSlice(commands.FlagIncludePath))
-		moreIncludePaths, err := commands.ParsePathsFile(ctx.String(commands.FlagIncludePathFile))
-		if err != nil {
-			xc.Out.Error("param.error.include.path.file", err.Error())
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
-		} else {
-			for k, v := range moreIncludePaths {
-				includePaths[k] = v
-			}
-		}
+		//includePaths := commands.ParsePaths(ctx.StringSlice(commands.FlagIncludePath))
+		//moreIncludePaths, err := commands.ParsePathsFile(ctx.String(commands.FlagIncludePathFile))
+		//if err != nil {
+		//	xc.Out.Error("param.error.include.path.file", err.Error())
+		//	xc.Out.State("exited",
+		//		ovars{
+		//			"exit.code": -1,
+		//		})
+		//	xc.Exit(-1)
+		//} else {
+		//	for k, v := range moreIncludePaths {
+		//		includePaths[k] = v
+		//	}
+		//}
 
-		pathPerms := commands.ParsePaths(ctx.StringSlice(commands.FlagPathPerms))
-		morePathPerms, err := commands.ParsePathsFile(ctx.String(commands.FlagPathPermsFile))
-		if err != nil {
-			xc.Out.Error("param.error.path.perms.file", err.Error())
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
-		} else {
-			for k, v := range morePathPerms {
-				pathPerms[k] = v
-			}
-		}
+		//pathPerms := commands.ParsePaths(ctx.StringSlice(commands.FlagPathPerms))
+		//morePathPerms, err := commands.ParsePathsFile(ctx.String(commands.FlagPathPermsFile))
+		//if err != nil {
+		//	xc.Out.Error("param.error.path.perms.file", err.Error())
+		//	xc.Out.State("exited",
+		//		ovars{
+		//			"exit.code": -1,
+		//		})
+		//	xc.Exit(-1)
+		//} else {
+		//	for k, v := range morePathPerms {
+		//		pathPerms[k] = v
+		//	}
+		//}
 
-		includeBins := commands.ParsePaths(ctx.StringSlice(commands.FlagIncludeBin))
-		includeExes := commands.ParsePaths(ctx.StringSlice(commands.FlagIncludeExe))
-		doIncludeShell := ctx.Bool(commands.FlagIncludeShell)
+		//includeBins := commands.ParsePaths(ctx.StringSlice(commands.FlagIncludeBin))
+		//includeExes := commands.ParsePaths(ctx.StringSlice(commands.FlagIncludeExe))
+		//doIncludeShell := ctx.Bool(commands.FlagIncludeShell)
 
 		doUseLocalMounts := ctx.Bool(commands.FlagUseLocalMounts)
 		doUseSensorVolume := ctx.String(commands.FlagUseSensorVolume)
 
-		doKeepTmpArtifacts := ctx.Bool(commands.FlagKeepTmpArtifacts)
+		//doKeepTmpArtifacts := ctx.Bool(commands.FlagKeepTmpArtifacts)
 
 		doExcludeMounts := ctx.BoolT(commands.FlagExcludeMounts)
 		if doExcludeMounts {
@@ -360,16 +360,16 @@ var CLI = cli.Command{
 			ctx.StringSlice(commands.FlagContainerDNS),
 			ctx.StringSlice(commands.FlagContainerDNSSearch),
 			volumeMounts,
-			doKeepPerms,
-			pathPerms,
+			//doKeepPerms,
+			//pathPerms,
 			excludePatterns,
-			includePaths,
-			includeBins,
-			includeExes,
-			doIncludeShell,
+			//includePaths,
+			//includeBins,
+			//includeExes,
+			//doIncludeShell,
 			doUseLocalMounts,
 			doUseSensorVolume,
-			doKeepTmpArtifacts,
+			//doKeepTmpArtifacts,
 			continueAfter)
 		commands.ShowCommunityInfo()
 		return nil

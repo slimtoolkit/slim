@@ -47,6 +47,7 @@ type StartMonitor struct {
 	KeepPerms       bool                          `json:"keep_perms,omitempty"`
 	Perms           map[string]*fsutil.AccessInfo `json:"perms,omitempty"`
 	Excludes        []string                      `json:"excludes,omitempty"`
+	Preserves       map[string]*fsutil.AccessInfo `json:"preserves,omitempty"`
 	Includes        map[string]*fsutil.AccessInfo `json:"includes,omitempty"`
 	IncludeBins     []string                      `json:"include_bins,omitempty"`
 	IncludeExes     []string                      `json:"include_exes,omitempty"`

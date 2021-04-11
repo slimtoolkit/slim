@@ -15,6 +15,22 @@ import (
 const (
 	FlagShowBuildLogs = "show-blogs"
 
+	FlagPathPerms        = "path-perms"
+	FlagPathPermsFile    = "path-perms-file"
+	FlagPreservePath     = "preserve-path"
+	FlagPreservePathFile = "preserve-path-file"
+	FlagIncludePath      = "include-path"
+	FlagIncludePathFile  = "include-path-file"
+	FlagIncludeBin       = "include-bin"
+	FlagIncludeBinFile   = "include-bin-file"
+	FlagIncludeExe       = "include-exe"
+	FlagIncludeExeFile   = "include-exe-file"
+	FlagIncludeShell     = "include-shell"
+
+	FlagKeepTmpArtifacts = "keep-tmp-artifacts"
+
+	FlagKeepPerms = "keep-perms"
+
 	//Flags to edit (modify, add and remove) image metadata
 	FlagNewEntrypoint = "new-entrypoint"
 	FlagNewCmd        = "new-cmd"
@@ -32,9 +48,6 @@ const (
 
 	FlagImageOverrides = "image-overrides"
 
-	FlagIncludeBinFile = "include-bin-file"
-	FlagIncludeExeFile = "include-exe-file"
-
 	//Flags to build fat images from Dockerfile
 	FlagTagFat              = "tag-fat"
 	FlagBuildFromDockerfile = "dockerfile"
@@ -49,6 +62,20 @@ const (
 // Build command flag usage info
 const (
 	FlagShowBuildLogsUsage = "Show image build logs"
+
+	FlagPathPermsUsage        = "Set path permissions in optimized image"
+	FlagPathPermsFileUsage    = "File with path permissions to set"
+	FlagPreservePathUsage     = "Keep path from orignal image in its initial state"
+	FlagPreservePathFileUsage = "File with paths to keep from original image in their original state"
+	FlagIncludePathUsage      = "Keep path from original image"
+	FlagIncludePathFileUsage  = "File with paths to keep from original image"
+	FlagIncludeBinUsage       = "Keep binary from original image (executable or shared object using its absolute path)"
+	FlagIncludeExeUsage       = "Keep executable from original image (by executable name)"
+	FlagIncludeShellUsage     = "Keep basic shell functionality"
+
+	FlagKeepTmpArtifactsUsage = "Keep temporary artifacts when command is done"
+
+	FlagKeepPermsUsage = "Keep artifact permissions as-is"
 
 	FlagNewEntrypointUsage = "New ENTRYPOINT instruction for the optimized image"
 	FlagNewCmdUsage        = "New CMD instruction for the optimized image"
@@ -84,6 +111,69 @@ var Flags = map[string]cli.Flag{
 		Name:   FlagShowBuildLogs,
 		Usage:  FlagShowBuildLogsUsage,
 		EnvVar: "DSLIM_SHOW_BLOGS",
+	},
+	FlagPathPerms: cli.StringSliceFlag{
+		Name:   FlagPathPerms,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagPathPermsUsage,
+		EnvVar: "DSLIM_PATH_PERMS",
+	},
+	FlagPathPermsFile: cli.StringFlag{
+		Name:   FlagPathPermsFile,
+		Value:  "",
+		Usage:  FlagPathPermsFileUsage,
+		EnvVar: "DSLIM_PATH_PERMS_FILE",
+	},
+	FlagPreservePath: cli.StringSliceFlag{
+		Name:   FlagPreservePath,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagPreservePathUsage,
+		EnvVar: "DSLIM_PRESERVE_PATH",
+	},
+	FlagPreservePathFile: cli.StringFlag{
+		Name:   FlagPreservePathFile,
+		Value:  "",
+		Usage:  FlagPreservePathFileUsage,
+		EnvVar: "DSLIM_PRESERVE_PATH_FILE",
+	},
+	FlagIncludePath: cli.StringSliceFlag{
+		Name:   FlagIncludePath,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagIncludePathUsage,
+		EnvVar: "DSLIM_INCLUDE_PATH",
+	},
+	FlagIncludePathFile: cli.StringFlag{
+		Name:   FlagIncludePathFile,
+		Value:  "",
+		Usage:  FlagIncludePathFileUsage,
+		EnvVar: "DSLIM_INCLUDE_PATH_FILE",
+	},
+	FlagIncludeBin: cli.StringSliceFlag{
+		Name:   FlagIncludeBin,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagIncludeBinUsage,
+		EnvVar: "DSLIM_INCLUDE_BIN",
+	},
+	FlagIncludeExe: cli.StringSliceFlag{
+		Name:   FlagIncludeExe,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagIncludeExeUsage,
+		EnvVar: "DSLIM_INCLUDE_EXE",
+	},
+	FlagIncludeShell: cli.BoolFlag{
+		Name:   FlagIncludeShell,
+		Usage:  FlagIncludeShellUsage,
+		EnvVar: "DSLIM_INCLUDE_SHELL",
+	},
+	FlagKeepTmpArtifacts: cli.BoolFlag{
+		Name:   FlagKeepTmpArtifacts,
+		Usage:  FlagKeepTmpArtifactsUsage,
+		EnvVar: "DSLIM_KEEP_TMP_ARTIFACTS",
+	},
+	FlagKeepPerms: cli.BoolTFlag{
+		Name:   FlagKeepPerms,
+		Usage:  FlagKeepPermsUsage,
+		EnvVar: "DSLIM_KEEP_PERMS",
 	},
 	FlagNewEntrypoint: cli.StringFlag{
 		Name:   FlagNewEntrypoint,

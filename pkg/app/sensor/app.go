@@ -49,6 +49,8 @@ func startMonitor(errorCh chan error,
 		//ProcEvents are not enabled in the default boot2docker kernel
 	}
 
+	prepareEnv(defaultArtifactDirName, cmd)
+
 	fanReportChan := fanotify.Run(errorCh, mountPoint, stopMonitor) //data.AppName, data.AppArgs
 	if fanReportChan == nil {
 		log.Info("sensor: startMonitor - FAN failed to start running...")
