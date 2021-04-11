@@ -23,9 +23,9 @@ import (
 )
 
 const (
-	manifestFileName = "manifest.json"
-	layerSuffix      = "/layer.tar"
-	topObjectMax     = 10
+	manifestFileName    = "manifest.json"
+	layerSuffix         = "/layer.tar"
+	defaultTopObjectMax = 10
 )
 
 type Package struct {
@@ -218,12 +218,17 @@ func newPackage() *Package {
 	return &pkg
 }
 
-func newLayer(id string) *Layer {
+func newLayer(id string, topChangesMax int) *Layer {
+	topChangesCount := defaultTopObjectMax
+	if topChangesMax > -1 {
+		topChangesCount = topChangesMax
+	}
+
 	layer := Layer{
 		ID:          id,
 		Index:       -1,
 		References:  map[string]*ObjectMetadata{},
-		Top:         NewTopObjects(topObjectMax),
+		Top:         NewTopObjects(topChangesCount),
 		DataMatches: map[string][]*ChangeDataMatcher{},
 	}
 
@@ -235,6 +240,7 @@ func newLayer(id string) *Layer {
 func LoadPackage(archivePath string,
 	imageID string,
 	skipObjects bool,
+	topChangesMax int,
 	changePathMatchers []*ChangePathMatcher,
 	changeDataMatchers map[string]*ChangeDataMatcher) (*Package, error) {
 	imageID = dockerutil.CleanImageID(imageID)
@@ -305,7 +311,7 @@ func LoadPackage(archivePath string,
 
 				var layer *Layer
 				if hdr.Typeflag == tar.TypeSymlink {
-					layer = newLayer(layerID)
+					layer = newLayer(layerID, topChangesMax)
 					layer.Path = hdr.Name
 					layer.MetadataChangesOnly = true
 
@@ -332,7 +338,7 @@ func LoadPackage(archivePath string,
 						}
 					}
 				} else {
-					layer, err = layerFromStream(hdr.Name, tar.NewReader(tr), layerID, changePathMatchers, changeDataMatchers)
+					layer, err = layerFromStream(hdr.Name, tar.NewReader(tr), layerID, topChangesMax, changePathMatchers, changeDataMatchers)
 					if err != nil {
 						log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
 						return nil, err
@@ -508,10 +514,16 @@ func LoadPackage(archivePath string,
 func layerFromStream(layerPath string,
 	tr *tar.Reader,
 	layerID string,
+	topChangesMax int,
 	changePathMatchers []*ChangePathMatcher,
 	changeDataMatchers map[string]*ChangeDataMatcher) (*Layer, error) {
-	layer := newLayer(layerID)
+	layer := newLayer(layerID, topChangesMax)
 	layer.Path = layerPath
+
+	topChangesCount := defaultTopObjectMax
+	if topChangesMax > -1 {
+		topChangesCount = topChangesMax
+	}
 
 	for {
 		hdr, err := tr.Next()
@@ -550,7 +562,7 @@ func layerFromStream(layerPath string,
 		layer.References[object.Name] = object
 
 		heap.Push(&(layer.Top), object)
-		if layer.Top.Len() > topObjectMax {
+		if layer.Top.Len() > topChangesCount {
 			_ = heap.Pop(&(layer.Top))
 		}
 

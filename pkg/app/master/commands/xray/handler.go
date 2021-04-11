@@ -49,6 +49,7 @@ func OnCommand(
 	addChangesMax int,
 	modifyChangesMax int,
 	deleteChangesMax int,
+	topChangesMax int,
 	changePathMatchers []*dockerimage.ChangePathMatcher,
 	changeDataMatcherList []*dockerimage.ChangeDataMatcher,
 	doAddImageManifest bool,
@@ -241,7 +242,7 @@ func OnCommand(
 		logger.Debugf("exported image already exists - %s", iaPath)
 	}
 
-	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, changePathMatchers, changeDataMatchers)
+	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, topChangesMax, changePathMatchers, changeDataMatchers)
 	errutil.FailOn(err)
 
 	xc.Out.State("image.data.inspection.done")
