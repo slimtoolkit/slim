@@ -48,3 +48,16 @@ Dockerizing local applications and creating minified images for them.
 Original issue:
 
 - <https://github.com/docker-slim/docker-slim/issues/60>
+
+## Podman Support
+
+Original issues:
+
+- <https://github.com/docker-slim/docker-slim/issues/91>
+- <https://github.com/docker-slim/docker-slim/issues/99>
+
+## Windows Container Support
+
+Original issues:
+
+- <https://github.com/docker-slim/docker-slim/issues/77>
