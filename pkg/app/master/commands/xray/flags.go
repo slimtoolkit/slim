@@ -19,8 +19,10 @@ const (
 	FlagDeleteChangesMax = "delete-changes-max"
 	FlagChangePath       = "change-path"
 	FlagChangeData       = "change-data"
+	FlagChangeDataHash   = "change-data-hash"
 	FlagReuseSavedImage  = "reuse-saved-image"
 	FlagTopChangesMax    = "top-changes-max"
+	FlagHashData         = "hash-data"
 )
 
 // Xray command flag usage info
@@ -39,6 +41,8 @@ const (
 	FlagChangeDataUsage       = "Include changes for the files that match the data pattern (regex)"
 	FlagReuseSavedImageUsage  = "Reuse saved container image"
 	FlagTopChangesMaxUsage    = "Maximum number of top changes to track"
+	FlagChangeDataHashUsage   = "Include changes for the files that match the provided data hashes (sha1)"
+	FlagHashDataUsage         = "Generate file data hashes"
 )
 
 var Flags = map[string]cli.Flag{
@@ -122,6 +126,17 @@ var Flags = map[string]cli.Flag{
 		Value:  20,
 		Usage:  FlagTopChangesMaxUsage,
 		EnvVar: "DSLIM_XRAY_TOP_CHANGES_MAX",
+	},
+	FlagHashData: cli.BoolFlag{
+		Name:   FlagHashData,
+		Usage:  FlagHashDataUsage,
+		EnvVar: "DSLIM_XRAY_HASH_DATA",
+	},
+	FlagChangeDataHash: cli.StringSliceFlag{
+		Name:   FlagChangeDataHash,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagChangeDataHashUsage,
+		EnvVar: "DSLIM_XRAY_CHANGE_DATA_HASH",
 	},
 }
 

@@ -52,6 +52,8 @@ func OnCommand(
 	topChangesMax int,
 	changePathMatchers []*dockerimage.ChangePathMatcher,
 	changeDataMatcherList []*dockerimage.ChangeDataMatcher,
+	changeDataHashMatcherList []*dockerimage.ChangeDataHashMatcher,
+	doHashData bool,
 	doAddImageManifest bool,
 	doAddImageConfig bool,
 	doReuseSavedImage bool,
@@ -67,6 +69,11 @@ func OnCommand(
 
 		cdm.Matcher = matcher
 		changeDataMatchers[cdm.DataPattern] = cdm
+	}
+
+	changeDataHashMatchers := map[string]*dockerimage.ChangeDataHashMatcher{}
+	for _, cdhm := range changeDataHashMatcherList {
+		changeDataHashMatchers[cdhm.Hash] = cdhm
 	}
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
@@ -242,7 +249,7 @@ func OnCommand(
 		logger.Debugf("exported image already exists - %s", iaPath)
 	}
 
-	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, topChangesMax, changePathMatchers, changeDataMatchers)
+	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, topChangesMax, doHashData, changeDataHashMatchers, changePathMatchers, changeDataMatchers)
 	errutil.FailOn(err)
 
 	xc.Out.State("image.data.inspection.done")
@@ -274,6 +281,8 @@ func OnCommand(
 		addChangesMax,
 		modifyChangesMax,
 		deleteChangesMax,
+		doHashData,
+		changeDataHashMatchers,
 		changePathMatchers,
 		changeDataMatchers,
 		cmdReport)
@@ -334,6 +343,8 @@ func printImagePackage(
 	addChangesMax int,
 	modifyChangesMax int,
 	deleteChangesMax int,
+	doHashData bool,
+	changeDataHashMatchers map[string]*dockerimage.ChangeDataHashMatcher,
 	changePathMatchers []*dockerimage.ChangePathMatcher,
 	changeDataMatchers map[string]*dockerimage.ChangeDataMatcher,
 	cmdReport *report.XrayCommand) {
@@ -870,7 +881,12 @@ func objectHistoryString(history *dockerimage.ObjectHistory) string {
 }
 
 func printObject(xc *commands.ExecutionContext, object *dockerimage.ObjectMetadata) {
-	fmt.Printf("%s: mode=%s size.human='%v' size.bytes=%d uid=%d gid=%d mtime='%s' %s '%s'",
+	var hashInfo string
+	if object.Hash != "" {
+		hashInfo = fmt.Sprintf(" hash=%s", object.Hash)
+	}
+
+	fmt.Printf("%s: mode=%s size.human='%v' size.bytes=%d uid=%d gid=%d mtime='%s' %s%s '%s'",
 		object.Change,
 		object.Mode,
 		humanize.Bytes(uint64(object.Size)),
@@ -879,6 +895,7 @@ func printObject(xc *commands.ExecutionContext, object *dockerimage.ObjectMetada
 		object.GID,
 		object.ModTime.UTC().Format(time.RFC3339),
 		objectHistoryString(object.History),
+		hashInfo,
 		object.Name)
 
 	if object.LinkTarget != "" {

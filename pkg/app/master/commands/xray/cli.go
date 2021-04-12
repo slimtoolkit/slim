@@ -38,6 +38,8 @@ var CLI = cli.Command{
 		cflag(FlagChangeData),
 		cflag(FlagReuseSavedImage),
 		cflag(FlagTopChangesMax),
+		cflag(FlagHashData),
+		cflag(FlagChangeDataHash),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
 	},
 	Action: func(ctx *cli.Context) error {
@@ -123,6 +125,9 @@ var CLI = cli.Command{
 		doRmFileArtifacts := ctx.Bool(commands.FlagRemoveFileArtifacts)
 		doReuseSavedImage := ctx.Bool(FlagReuseSavedImage)
 
+		doHashData := ctx.Bool(FlagHashData)
+		changeDataHashMatchers, err := parseChangeDataHashMatchers(ctx.StringSlice(FlagChangeDataHash))
+
 		OnCommand(
 			xc,
 			gcvalues,
@@ -140,6 +145,8 @@ var CLI = cli.Command{
 			topChangesMax,
 			changePathMatchers,
 			changeDataMatchers,
+			changeDataHashMatchers,
+			doHashData,
 			doAddImageManifest,
 			doAddImageConfig,
 			doReuseSavedImage,
@@ -278,6 +285,50 @@ func parseChangePathMatchers(values []string) ([]*dockerimage.ChangePathMatcher,
 				}
 
 				m.PathPattern = parts[2]
+			}
+		}
+
+		matchers = append(matchers, &m)
+	}
+
+	return matchers, nil
+}
+
+func parseChangeDataHashMatchers(values []string) ([]*dockerimage.ChangeDataHashMatcher, error) {
+	var matchers []*dockerimage.ChangeDataHashMatcher
+
+	for _, raw := range values {
+		var m dockerimage.ChangeDataHashMatcher
+
+		if strings.HasPrefix(raw, "dump:") {
+			parts := strings.SplitN(raw, ":", 3)
+			if len(parts) != 3 {
+				return nil, fmt.Errorf("malformed change data hash matcher: %s", raw)
+			}
+
+			m.Dump = true
+
+			if parts[1] == dockerimage.CDMDumpToConsole {
+				m.DumpConsole = true
+			} else {
+				m.DumpDir = parts[1]
+			}
+
+			m.Hash = strings.ToLower(strings.TrimSpace(parts[2]))
+
+			//"dump:output:hash"
+			//"::hash"
+			//"hash"
+		} else {
+			if !strings.HasPrefix(raw, ":") {
+				m.Hash = strings.ToLower(strings.TrimSpace(raw))
+			} else {
+				parts := strings.SplitN(raw, ":", 3)
+				if len(parts) != 3 {
+					return nil, fmt.Errorf("malformed change data hash matcher: %s", raw)
+				}
+
+				m.Hash = strings.ToLower(strings.TrimSpace(parts[2]))
 			}
 		}
 

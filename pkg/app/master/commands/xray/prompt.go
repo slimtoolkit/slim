@@ -29,6 +29,8 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagChangePath), Description: FlagChangePathUsage},
 		{Text: commands.FullFlagName(FlagChangeData), Description: FlagChangeDataUsage},
 		{Text: commands.FullFlagName(FlagReuseSavedImage), Description: FlagReuseSavedImageUsage},
+		{Text: commands.FullFlagName(FlagHashData), Description: FlagHashDataUsage},
+		{Text: commands.FullFlagName(FlagChangeDataHash), Description: FlagChangeDataHashUsage},
 		{Text: commands.FullFlagName(commands.FlagRemoveFileArtifacts), Description: commands.FlagRemoveFileArtifactsUsage},
 	},
 	Values: map[string]commands.CompleteValue{
@@ -39,6 +41,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(FlagChangesOutput):                completeOutputs,
 		commands.FullFlagName(FlagAddImageManifest):             commands.CompleteBool,
 		commands.FullFlagName(FlagAddImageConfig):               commands.CompleteBool,
+		commands.FullFlagName(FlagHashData):                     commands.CompleteBool,
 		commands.FullFlagName(FlagReuseSavedImage):              commands.CompleteTBool,
 		commands.FullFlagName(commands.FlagRemoveFileArtifacts): commands.CompleteBool,
 	},

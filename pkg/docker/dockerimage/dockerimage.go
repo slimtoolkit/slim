@@ -4,6 +4,8 @@ import (
 	"archive/tar"
 	"bytes"
 	"container/heap"
+	"crypto/sha1"
+	"encoding/hex"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -79,7 +81,8 @@ type Layer struct {
 	References          map[string]*ObjectMetadata
 	Top                 TopObjects
 	Distro              *system.DistroInfo
-	DataMatches         map[string][]*ChangeDataMatcher //object.Name -> matched CDM
+	DataMatches         map[string][]*ChangeDataMatcher   //object.Name -> matched CDM
+	DataHashMatches     map[string]*ChangeDataHashMatcher //object.Name -> matched CDHM
 }
 
 type LayerStats struct {
@@ -132,6 +135,13 @@ type ChangeDataMatcher struct {
 	PathPattern string
 	DataPattern string
 	Matcher     *regexp.Regexp
+}
+
+type ChangeDataHashMatcher struct {
+	Dump        bool
+	DumpConsole bool
+	DumpDir     string
+	Hash        string //lowercase
 }
 
 type ChangePathMatcher struct {
@@ -191,6 +201,7 @@ type ObjectMetadata struct {
 	ChangeTime time.Time      `json:"change_time,omitempty"`
 	LinkTarget string         `json:"link_target,omitempty"`
 	History    *ObjectHistory `json:"history,omitempty"`
+	Hash       string         `json:"Hash,omitempty"`
 }
 
 type ObjectHistory struct {
@@ -225,11 +236,12 @@ func newLayer(id string, topChangesMax int) *Layer {
 	}
 
 	layer := Layer{
-		ID:          id,
-		Index:       -1,
-		References:  map[string]*ObjectMetadata{},
-		Top:         NewTopObjects(topChangesCount),
-		DataMatches: map[string][]*ChangeDataMatcher{},
+		ID:              id,
+		Index:           -1,
+		References:      map[string]*ObjectMetadata{},
+		Top:             NewTopObjects(topChangesCount),
+		DataMatches:     map[string][]*ChangeDataMatcher{},
+		DataHashMatches: map[string]*ChangeDataHashMatcher{},
 	}
 
 	heap.Init(&(layer.Top))
@@ -241,6 +253,8 @@ func LoadPackage(archivePath string,
 	imageID string,
 	skipObjects bool,
 	topChangesMax int,
+	doHashData bool,
+	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
 	changePathMatchers []*ChangePathMatcher,
 	changeDataMatchers map[string]*ChangeDataMatcher) (*Package, error) {
 	imageID = dockerutil.CleanImageID(imageID)
@@ -338,7 +352,7 @@ func LoadPackage(archivePath string,
 						}
 					}
 				} else {
-					layer, err = layerFromStream(hdr.Name, tar.NewReader(tr), layerID, topChangesMax, changePathMatchers, changeDataMatchers)
+					layer, err = layerFromStream(hdr.Name, tar.NewReader(tr), layerID, topChangesMax, doHashData, changeDataHashMatchers, changePathMatchers, changeDataMatchers)
 					if err != nil {
 						log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
 						return nil, err
@@ -515,6 +529,8 @@ func layerFromStream(layerPath string,
 	tr *tar.Reader,
 	layerID string,
 	topChangesMax int,
+	doHashData bool,
+	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
 	changePathMatchers []*ChangePathMatcher,
 	changeDataMatchers map[string]*ChangeDataMatcher) (*Layer, error) {
 	layer := newLayer(layerID, topChangesMax)
@@ -596,7 +612,7 @@ func layerFromStream(layerPath string,
 			if isDeleted {
 				layer.Stats.DeletedFileCount++
 			} else {
-				err = inspectFile(object, tr, layer, changePathMatchers, changeDataMatchers)
+				err = inspectFile(object, tr, layer, doHashData, changeDataHashMatchers, changePathMatchers, changeDataMatchers)
 				if err != nil {
 					log.Errorf("layerFromStream: error inspecting layer file (%s) - (%v) - %v", object.Name, layerID, err)
 				}
@@ -616,9 +632,29 @@ func layerFromStream(layerPath string,
 	return layer, nil
 }
 
+func getStreamHash(reader io.Reader) (string, error) {
+	hasher := sha1.New()
+
+	_, err := io.Copy(hasher, reader)
+	if err != nil {
+		log.Errorf("getStreamHash: error=%v", err)
+		return "", err
+	}
+
+	hash := hasher.Sum(nil)
+	return hex.EncodeToString(hash[:]), nil
+}
+
+func getBytesHash(data []byte) string {
+	hash := sha1.Sum(data)
+	return hex.EncodeToString(hash[:])
+}
+
 func inspectFile(object *ObjectMetadata,
 	reader io.Reader,
 	layer *Layer,
+	doHashData bool,
+	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
 	changePathMatchers []*ChangePathMatcher,
 	changeDataMatchers map[string]*ChangeDataMatcher) error {
 	//TODO: refactor and enhance the OS Distro detection logic
@@ -656,6 +692,53 @@ func inspectFile(object *ObjectMetadata,
 			}
 
 			layer.Distro = distro
+		}
+
+		var hash string
+		if doHashData || len(changeDataHashMatchers) > 0 {
+			hash = getBytesHash(data)
+		}
+
+		if doHashData {
+			object.Hash = getBytesHash(data)
+		}
+
+		if len(changeDataHashMatchers) > 0 {
+			if dhm, found := changeDataHashMatchers[hash]; found {
+				//need to save to DataHashMatches to make it work without generating/saving hashes for all objects
+				layer.DataHashMatches[fullPath] = dhm
+
+				if dhm.DumpConsole {
+					fmt.Printf("cmd=xray info=change.data.hash.match.start\n")
+					fmt.Printf("cmd=xray info=change.data.hash.match file='%s' hash='%s')\n",
+						fullPath, hash)
+					fmt.Printf("%s\n", string(data))
+					fmt.Printf("cmd=xray info=change.data.hash.match.end\n")
+				}
+
+				if dhm.DumpDir != "" {
+					dumpPath := filepath.Join(dhm.DumpDir, fullPath)
+					dirPath := fsutil.FileDir(dumpPath)
+					if !fsutil.DirExists(dirPath) {
+						err := os.MkdirAll(dirPath, 0755)
+						if err != nil {
+							fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
+								fullPath, hash, dumpPath, err)
+							return err
+						}
+					}
+
+					err := ioutil.WriteFile(dumpPath, data, 0644)
+					if err != nil {
+						fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
+							fullPath, hash, dumpPath, err)
+						return err
+					}
+
+					fmt.Printf("cmd=xray info=change.data.hash.match.dump file='%s' hash='%s' target='%s'):\n",
+						fullPath, hash, dumpPath)
+				}
+			}
 		}
 
 		for _, cpm := range changePathMatchers {
@@ -750,6 +833,64 @@ func inspectFile(object *ObjectMetadata,
 						fmt.Printf("cmd=xray info=change.data.match.dump file='%s' ppattern='%s' dpattern='%s' target='%s'):\n",
 							fullPath, cdm.PathPattern, cdm.DataPattern, dumpPath)
 					}
+				}
+			}
+		}
+	} else {
+		if len(changeDataHashMatchers) == 0 {
+			if doHashData {
+				hash, err := getStreamHash(reader)
+				if err != nil {
+					log.Errorf("inspectFile: getStreamHash error - name='%s' error=%v", fullPath, err)
+					return err
+				}
+
+				object.Hash = hash
+			}
+		} else {
+			data, err := ioutil.ReadAll(reader)
+			if err != nil {
+				return err
+			}
+
+			hash := getBytesHash(data)
+			if doHashData {
+				object.Hash = hash
+			}
+
+			if dhm, found := changeDataHashMatchers[hash]; found {
+				//need to save to DataHashMatches to make it work without generating/saving hashes for all objects
+				layer.DataHashMatches[fullPath] = dhm
+
+				if dhm.DumpConsole {
+					fmt.Printf("cmd=xray info=change.data.hash.match.start\n")
+					fmt.Printf("cmd=xray info=change.data.hash.match file='%s' hash='%s')\n",
+						fullPath, hash)
+					fmt.Printf("%s\n", string(data))
+					fmt.Printf("cmd=xray info=change.data.hash.match.end\n")
+				}
+
+				if dhm.DumpDir != "" {
+					dumpPath := filepath.Join(dhm.DumpDir, fullPath)
+					dirPath := fsutil.FileDir(dumpPath)
+					if !fsutil.DirExists(dirPath) {
+						err := os.MkdirAll(dirPath, 0755)
+						if err != nil {
+							fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
+								fullPath, hash, dumpPath, err)
+							return err
+						}
+					}
+
+					err := ioutil.WriteFile(dumpPath, data, 0644)
+					if err != nil {
+						fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
+							fullPath, hash, dumpPath, err)
+						return err
+					}
+
+					fmt.Printf("cmd=xray info=change.data.hash.match.dump file='%s' hash='%s' target='%s'):\n",
+						fullPath, hash, dumpPath)
 				}
 			}
 		}
