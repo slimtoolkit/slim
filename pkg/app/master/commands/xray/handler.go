@@ -243,14 +243,18 @@ func OnCommand(
 	}
 
 	if doSave {
+		xc.Out.Info("image.data.inspection.save.image.start")
 		err = dockerutil.SaveImage(client, imageID, iaPath, false, false)
 		errutil.FailOn(err)
+		xc.Out.Info("image.data.inspection.save.image.end")
 	} else {
 		logger.Debugf("exported image already exists - %s", iaPath)
 	}
 
+	xc.Out.Info("image.data.inspection.process.image.start")
 	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, topChangesMax, doHashData, changeDataHashMatchers, changePathMatchers, changeDataMatchers)
 	errutil.FailOn(err)
+	xc.Out.Info("image.data.inspection.process.image.end")
 
 	xc.Out.State("image.data.inspection.done")
 
@@ -587,7 +591,7 @@ func printImagePackage(
 
 		if len(topList) > 0 {
 			xc.Out.Info("layer.objects.top.start")
-			for _, object := range topList {
+			for _, topObject := range topList {
 				var match bool
 				for _, pm := range changePathMatchers {
 					ptrn := strings.TrimSpace(pm.PathPattern)
@@ -596,13 +600,13 @@ func printImagePackage(
 					}
 
 					var err error
-					match, err = doublestar.Match(ptrn, object.Name)
+					match, err = doublestar.Match(ptrn, topObject.Name)
 					if err != nil {
-						log.Errorf("doublestar.Match name='%s' error=%v", object.Name, err)
+						log.Errorf("doublestar.Match name='%s' error=%v", topObject.Name, err)
 					}
 
 					if match {
-						log.Trace("Change path patterns match for 'top'. ptrn='%s' object.Name='%s'\n", ptrn, object.Name)
+						log.Tracef("Change path patterns match for 'top'. ptrn='%s' object.Name='%s'\n", ptrn, topObject.Name)
 						break
 						//not collecting all file path matches here
 					}
@@ -613,20 +617,30 @@ func printImagePackage(
 					continue
 				} else {
 					if len(changeDataMatchers) > 0 {
-						matchedPatterns, found := layer.DataMatches[object.Name]
+						matchedPatterns, found := layer.DataMatches[topObject.Name]
 						if !found {
 							log.Trace("Change data patterns, no match. skipping 'top' change...")
 							continue
 						}
 
-						log.Trace("'%s' ('top' change) matched data patterns - %d", object.Name, len(matchedPatterns))
+						log.Tracef("'%s' ('top' change) matched data patterns - %d", topObject.Name, len(matchedPatterns))
 						for _, cdm := range matchedPatterns {
-							log.Trace("matched => PP='%s' DP='%s'", cdm.PathPattern, cdm.DataPattern)
+							log.Tracef("matched => PP='%s' DP='%s'", cdm.PathPattern, cdm.DataPattern)
+						}
+					} else {
+						if len(changeDataHashMatchers) > 0 {
+							matched, found := layer.DataHashMatches[topObject.Name]
+							if !found {
+								log.Trace("Change data hash patterns, no match. skipping 'top' change...")
+								continue
+							}
+
+							log.Tracef("'%s' ('top' change) matched data hash pattern - %s", topObject.Name, matched.Hash)
 						}
 					}
 				}
 
-				printObject(xc, object)
+				printObject(xc, topObject)
 			}
 			xc.Out.Info("layer.objects.top.end")
 		}
@@ -744,9 +758,19 @@ func printImagePackage(
 								continue
 							}
 
-							log.Trace("'%s' ('modify' change) matched data patterns - %d", objectInfo.Name, len(matchedPatterns))
+							log.Tracef("'%s' ('modify' change) matched data patterns - %d", objectInfo.Name, len(matchedPatterns))
 							for _, cdm := range matchedPatterns {
-								log.Trace("matched => PP='%s' DP='%s'", cdm.PathPattern, cdm.DataPattern)
+								log.Tracef("matched => PP='%s' DP='%s'", cdm.PathPattern, cdm.DataPattern)
+							}
+						} else {
+							if len(changeDataHashMatchers) > 0 {
+								matched, found := layer.DataHashMatches[objectInfo.Name]
+								if !found {
+									log.Trace("Change data hash patterns, no match. skipping 'modify' change...")
+									continue
+								}
+
+								log.Tracef("'%s' ('modify' change) matched data hash pattern - %s", objectInfo.Name, matched.Hash)
 							}
 						}
 					}
@@ -815,9 +839,19 @@ func printImagePackage(
 								continue
 							}
 
-							log.Trace("'%s' ('add' change) matched data patterns - %d", objectInfo.Name, len(matchedPatterns))
+							log.Tracef("'%s' ('add' change) matched data patterns - %d", objectInfo.Name, len(matchedPatterns))
 							for _, cdm := range matchedPatterns {
-								log.Trace("matched => PP='%s' DP='%s'", cdm.PathPattern, cdm.DataPattern)
+								log.Tracef("matched => PP='%s' DP='%s'", cdm.PathPattern, cdm.DataPattern)
+							}
+						} else {
+							if len(changeDataHashMatchers) > 0 {
+								matched, found := layer.DataHashMatches[objectInfo.Name]
+								if !found {
+									log.Trace("Change data hash patterns, no match. skipping 'add' change...")
+									continue
+								}
+
+								log.Tracef("'%s' ('add' change) matched data hash pattern - %s", objectInfo.Name, matched.Hash)
 							}
 						}
 					}

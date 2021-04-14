@@ -189,14 +189,14 @@ func (ct *ChangeType) UnmarshalJSON(b []byte) error {
 }
 
 type ObjectMetadata struct {
-	Change     ChangeType     `json:"change,omitempty"`
-	Name       string         `json:"name,omitempty"`
+	Change     ChangeType     `json:"change"`
+	Name       string         `json:"name"`
 	Size       int64          `json:"size,omitempty"`
 	SizeHuman  string         `json:"size_human,omitempty"`
 	Mode       os.FileMode    `json:"mode,omitempty"`
 	ModeHuman  string         `json:"mode_human,omitempty"`
-	UID        int            `json:"uid,omitempty"`
-	GID        int            `json:"gid,omitempty"`
+	UID        int            `json:"uid"` //don't omit uid 0
+	GID        int            `json:"gid"` //don't omit gid 0
 	ModTime    time.Time      `json:"mod_time,omitempty"`
 	ChangeTime time.Time      `json:"change_time,omitempty"`
 	LinkTarget string         `json:"link_target,omitempty"`
