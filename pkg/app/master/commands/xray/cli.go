@@ -230,6 +230,7 @@ func parseChangeDataMatchers(values []string) ([]*dockerimage.ChangeDataMatcher,
 			//"dump:output:path_ptrn:data_regex"
 			//"::path_ptrn:data_regex"
 			//":::data_regex"
+			//"data_regex"
 		} else {
 			if !strings.HasPrefix(raw, ":") {
 				m.DataPattern = raw

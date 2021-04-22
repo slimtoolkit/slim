@@ -284,15 +284,23 @@ To disable the version checks set the global `--check-version` flag to `false` (
 
 - `--target` - Target container image (name or ID)
 - `--changes value` - Show layer change details for the selected change type (values: none, all, delete, modify, add). 
+- `--changes-output value` - Where to show the changes (values: all, report, console).
 - `--layer value` - Show details for the selected layer (using layer index or ID)
-- `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
 - `--add-image-manifest` - Add raw image manifest to the command execution report file
 - `--add-image-config` - Add raw image config object to the command execution report file
-- `layer-changes-max` - Maximum number of changes to show for each layer
-- `all-changes-max` - Maximum number of changes to show for all layers
-- `add-changes-max` - Maximum number of `add` changes to show for all layers
-- `modify-changes-max` - Maximum number of `modify` changes to show for all layers
-- `delete-changes-max` - Maximum number of `delete` changes to show for all layers
+- `--layer-changes-max` - Maximum number of changes to show for each layer
+- `--all-changes-max` - Maximum number of changes to show for all layers
+- `--add-changes-max` - Maximum number of `add` changes to show for all layers
+- `--modify-changes-max` - Maximum number of `modify` changes to show for all layers
+- `--delete-changes-max` - Maximum number of `delete` changes to show for all layers
+- `--change-path value` - Include changes for the files that match the path pattern (Glob/Match in Go and **). Value formats: `<path pattern>` | `dump:<output type>:<path pattern>` | `::<path pattern>` where `output type` is `console` or a directory name. [can use this flag multiple times]
+- `--change-data value` - Include changes for the files that match the data pattern (regex). Value formats: `<data regex>` | `dump:<output type>:<path pattern>:<data regex>` | `::<path pattern>:<data regex>` | `:::<data regex>` where `output type` is `console` or a directory name. [can use this flag multiple times]
+- `--change-data-hash value` - Include changes for the files that match the provided data hashes (sha1). Value formats: `<sha1 hash>` | `dump:<output type>:<sha1 hash>` | `::<sha1 hash>` where `output type` is `console` or a directory name. [can use this flag multiple times]
+- `--hash-data` - Generate file data hashes (default: false).
+- `--top-changes-max` - Maximum number of top changes to track (defalt: 20).
+- `--reuse-saved-image` - Reuse saved container image (default: true).
+- `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
+
 
 Change Types:
 
