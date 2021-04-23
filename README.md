@@ -293,9 +293,9 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--add-changes-max` - Maximum number of `add` changes to show for all layers
 - `--modify-changes-max` - Maximum number of `modify` changes to show for all layers
 - `--delete-changes-max` - Maximum number of `delete` changes to show for all layers
-- `--change-path value` - Include changes for the files that match the path pattern (Glob/Match in Go and **). Value formats: `<path pattern>` | `dump:<output type>:<path pattern>` | `::<path pattern>` where `output type` is `console` or a directory name. [can use this flag multiple times]
-- `--change-data value` - Include changes for the files that match the data pattern (regex). Value formats: `<data regex>` | `dump:<output type>:<path pattern>:<data regex>` | `::<path pattern>:<data regex>` | `:::<data regex>` where `output type` is `console` or a directory name. [can use this flag multiple times]
-- `--change-data-hash value` - Include changes for the files that match the provided data hashes (sha1). Value formats: `<sha1 hash>` | `dump:<output type>:<sha1 hash>` | `::<sha1 hash>` where `output type` is `console` or a directory name. [can use this flag multiple times]
+- `--change-path value` - Include changes for the files that match the path pattern (Glob/Match in Go and **). Value formats: `<path pattern>` | `dump:<output type>:<path pattern>` | `::<path pattern>` where `output type` is `console` or a directory name. If `value` starts with `dump:` the match will be 'dumped' to the selected `output type`. [can use this flag multiple times]
+- `--change-data value` - Include changes for the files that match the data pattern (regex). Value formats: `<data regex>` | `dump:<output type>:<path pattern>:<data regex>` | `::<path pattern>:<data regex>` | `:::<data regex>` where `output type` is `console` or a directory name. If `value` starts with `dump:` the match will be 'dumped' to the selected `output type`. [can use this flag multiple times]
+- `--change-data-hash value` - Include changes for the files that match the provided data hashes (sha1). Value formats: `<sha1 hash>` | `dump:<output type>:<sha1 hash>` | `::<sha1 hash>` where `output type` is `console` or a directory name. If `value` starts with `dump:` the match will be 'dumped' to the selected `output type`. [can use this flag multiple times]
 - `--hash-data` - Generate file data hashes (default: false).
 - `--top-changes-max` - Maximum number of top changes to track (defalt: 20).
 - `--reuse-saved-image` - Reuse saved container image (default: true).
@@ -314,7 +314,9 @@ In the interactive CLI prompt mode you must specify the target image using the `
 
 ### `BUILD` COMMAND OPTIONS
 
-- `--target` - Target container image (name or ID)
+- `--target` - Target container image (name or ID). It's an alternative way to provide the target information. The standard way to provide the target information is by putting as the last value in the `build` command CLI call.
+- `--pull` - Try pulling target if it's not available locally (default: false).
+- `--show-plogs` - Show image pull logs (default: false).
 - `--http-probe` - Enables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`)
 - `--http-probe-cmd` - Additional HTTP probe command [can use this flag multiple times]
 - `--http-probe-cmd-file` - File with user defined HTTP probe commands
@@ -328,10 +330,12 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--http-crawl-max-page-count` - Max number of pages to visit for the HTTP probe crawler (default value: 1000)
 - `--http-crawl-concurrency` - Number of concurrent workers when crawling an HTTP target (default value: 10)
 - `--http-max-concurrent-crawlers` - Number of concurrent crawlers in the HTTP probe (default value: 1)
-- `http-probe-apispec` - Run HTTP probes for API spec where the value represents the target path where the spec is available (supports Swagger 2.x and OpenAPI 3.x) [can use this flag multiple times]
-- `http-probe-apispec-file` - Run HTTP probes for API spec from file (supports Swagger 2.x and OpenAPI 3.x) [can use this flag multiple times]
-- `publish-port` - Map container port to host port analyzing image at runtime to make it easier to integrate external tests (format => port | hostPort:containerPort | hostIP:hostPort:containerPort | hostIP::containerPort )[can use this flag multiple times]
-- `publish-exposed-ports` - Map all exposed ports to the same host ports analyzing image at runtime (default value: false)
+- `--http-probe-apispec` - Run HTTP probes for API spec where the value represents the target path where the spec is available (supports Swagger 2.x and OpenAPI 3.x) [can use this flag multiple times]
+- `--http-probe-apispec-file` - Run HTTP probes for API spec from file (supports Swagger 2.x and OpenAPI 3.x) [can use this flag multiple times]
+- `--http-probe-exec` - App to execute when running HTTP probes. [can use this flag multiple times]
+- `--http-probe-exec-file` - Apps to execute when running HTTP probes loaded from file.
+- `--publish-port` - Map container port to host port analyzing image at runtime to make it easier to integrate external tests (format => port | hostPort:containerPort | hostIP:hostPort:containerPort | hostIP::containerPort )[can use this flag multiple times]
+- `--publish-exposed-ports` - Map all exposed ports to the same host ports analyzing image at runtime (default value: false)
 - `--show-clogs` - Show container logs (from the container used to perform dynamic inspection)
 - `--show-blogs` - Show build logs (when the minified container is built)
 - `--copy-meta-artifacts` - Copy meta artifacts to the provided location
@@ -347,6 +351,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-exe value` - Include executable from image (by executable name)
 - `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
 - `--include-shell` - Include basic shell functionality (default value: false)
+- `--preserve-path` - Keep path from orignal image in its initial state. [can use this flag multiple times]
+- `--preserve-path-file` - File with paths to keep from original image in their original state.
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 - `--path-perms-file` - File with path permissions to set (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 - `--exclude-pattern` - Exclude path pattern ([Glob/Match in Go](https://golang.org/pkg/path/filepath/#Match) and `**`) from image
@@ -365,7 +371,15 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--container-dns-search` - Add a dns search domain for unqualified hostnames analyzing image at runtime [can use this flag multiple times]
 - `--image-overrides` - Save runtime overrides in generated image (values is `all` or a comma delimited list of override types: `entrypoint`, `cmd`, `workdir`, `env`, `expose`, `volume`, `label`). Use this flag if you need to set a runtime value and you want to persist it in the optimized image. If you only want to add, edit or delete an image value in the optimized image use one of the `--new-*` or `--remove-*` flags (define below).
 - `--continue-after` - Select continue mode: enter | signal | probe | timeout or numberInSeconds (default value: enter)
-- `--dockerfile` - The source Dockerfile name to build the fat image before it's minified.
+- `--dockerfile` - The source Dockerfile name to build the fat image before it's optimized.
+- `--tag-fat` - Custom tag for the fat image built from Dockerfile.
+- `--cbo-add-host` - Add an extra host-to-IP mapping in /etc/hosts to use when building an image (Container Build Option).
+- `--cbo-build-arg` - Add a build-time variable (Container Build Option).
+- `--cbo-label` - Add a label when building from Dockerfiles (Container Build Option).
+- `--cbo-target` - Target stage to build for multi-stage Dockerfiles (Container Build Option).
+- `--cbo-network` - Networking mode to use for the RUN instructions at build-time (Container Build Option).
+- `--cbo-cache-from` - Add an image to the build cache (Container Build Option).
+- `--cro-runtime` - Runtime to use with the created containers (Container Runtime Option).
 - `--use-local-mounts` - Mount local paths for target container artifact input and output (off, by default)
 - `--use-sensor-volume` - Sensor volume name to use (set it to your Docker volume name if you manage your own `docker-slim` sensor volume).
 - `--keep-tmp-artifacts` - Keep temporary artifacts when command is done (off, by default).
@@ -476,6 +490,7 @@ Available HTTP command options:
 * `protocol` - `http`, `https`, `http2`, `http2c` (cleartext version of http2)
 * `headers` - array of strings with column delimited key/value pairs (e.g., "Content-Type: application/json")
 * `body` - request body as a string
+* `body_file` - request body loaded from the provided file
 * `username` - username to use for basic auth
 * `password` - password to use for basic auth
 * `crawl` - boolean to indicate if you want to crawl the target (to visit all referenced resources)
@@ -506,6 +521,13 @@ Commands in `probeCmds.json`:
      "method": "POST",
      "resource": "/submit2",
      "body": "key=value"
+   },
+   {
+     "protocol": "http",
+     "method": "POST",
+     "resource": "/submit3",
+     "body_file": "mydata.json",
+     "headers": ["Content-Type: application/json"]
    }
   ]
 }
@@ -524,6 +546,10 @@ When `crawling` is enabled the HTTP probe will act like a web crawler following 
 Probing based on the Swagger/OpenAPI spec is another experimental capability. This feature introduces two new flags:
 * `http-probe-apispec` - value: `<path_to_fetch_spec>:<api_endpoint_prefix>`
 * `http-probe-apispec-file` - value: `<local_file_path_to_spec>`
+
+You can use the `--http-probe-exec` and `--http-probe-exec-file` options to run the user provided commands when the http probes are executed. This example shows how you can run `curl` against the temporary docker-slim created container when the http probes are executed.
+
+`docker-slim build --http-probe-exec 'curl http://localhost:YOUR_CONTAINER_PORT_NUM/some/path' --publish-port YOUR_CONTAINER_PORT_NUM your-container-image-name`
 
 
 ## DEBUGGING MINIFIED CONTAINERS
