@@ -2,7 +2,26 @@
 
 ## 1.35.0 (4/14/2021)
 
-WIP
+### New Features
+
+- Console color output (on by default; disable with `no-color`)
+- Loading http probe request data from separate files
+- Ability to execute external probe commands (`--http-probe-exec` and `--http-probe-exec-file` flags)
+- Ability to preserve original files in the target container discarding its test runtime data (`--preserve-path` and `--preserve-path-file`)
+- Ability to pull container images if they don't exist locally yet (`--pull` and `--show-plogs`)
+- File hashing for xray (`--hash-data`)
+- Additional flags to control the xray command executions (`--top-changes-max`, `--reuse-saved-image`)
+- Ability to match by file path, file data and file hash for xray (`--change-path value`, `--change-data value`, `--change-data-hash value`)
+
+### Improvements
+
+- Lots of additional container build flags (`--tag-fat`, `--cbo-add-host`, `--cbo-build-arg`, `--cbo-label`, `--cbo-target`, `--cbo-network`, `--cbo-cache-from`).
+- Additional container runtime flags (`--cro-runtime`)
+- `sigint` should kill the running container (#186)
+
+### Bug Fixes
+
+- Various xray image layer inspection bug fixes
 
 ## 1.34.0 (1/29/2021)
 
