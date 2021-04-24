@@ -436,7 +436,7 @@ func OnCommand(
 
 	logger.Info("watching container monitor...")
 
-	if "probe" == continueAfter.Mode {
+	if strings.Contains(continueAfter.Mode, config.CAMProbe) {
 		doHTTPProbe = true
 	}
 
@@ -488,10 +488,11 @@ func OnCommand(
 	}
 
 	continueAfterMsg := "provide the expected input to allow the container inspector to continue its execution"
-	switch continueAfter.Mode {
-	case "timeout":
+	if continueAfter.Mode == config.CAMTimeout {
 		continueAfterMsg = "no input required, execution will resume after the timeout"
-	case "probe":
+	}
+
+	if strings.Contains(continueAfter.Mode, config.CAMProbe) {
 		continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
 	}
 
@@ -503,87 +504,93 @@ func OnCommand(
 
 	execFail := false
 
-	switch continueAfter.Mode {
-	case "enter":
-		xc.Out.Prompt("USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER")
-		creader := bufio.NewReader(os.Stdin)
-		_, _, _ = creader.ReadLine()
-	case "exec":
-		var input *bytes.Buffer
-		var cmd []string
-		if len(execFileCmd) != 0 {
-			input = bytes.NewBufferString(execFileCmd)
-			cmd = []string{"sh", "-s"}
-			for _, line := range strings.Split(string(execFileCmd), "\n") {
+	modes := strings.Split(continueAfter.Mode, "&")
+	for _, mode := range modes {
+		//should work for the most parts except
+		//when probe and signal are combined
+		//because both need channels (TODO: fix)
+		switch mode {
+		case config.CAMEnter:
+			xc.Out.Prompt("USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER")
+			creader := bufio.NewReader(os.Stdin)
+			_, _, _ = creader.ReadLine()
+		case config.CAMExec:
+			var input *bytes.Buffer
+			var cmd []string
+			if len(execFileCmd) != 0 {
+				input = bytes.NewBufferString(execFileCmd)
+				cmd = []string{"sh", "-s"}
+				for _, line := range strings.Split(string(execFileCmd), "\n") {
+					xc.Out.Info("continue.after",
+						ovars{
+							"mode":  config.CAMExec,
+							"shell": line,
+						})
+				}
+			} else {
+				input = bytes.NewBufferString("")
+				cmd = []string{"sh", "-c", execCmd}
 				xc.Out.Info("continue.after",
 					ovars{
-						"mode":  "exec",
-						"shell": line,
+						"mode":  config.CAMExec,
+						"shell": execCmd,
 					})
 			}
-		} else {
-			input = bytes.NewBufferString("")
-			cmd = []string{"sh", "-c", execCmd}
+			exec, err := containerInspector.APIClient.CreateExec(docker.CreateExecOptions{
+				Container:    containerInspector.ContainerID,
+				Cmd:          cmd,
+				AttachStdin:  true,
+				AttachStdout: true,
+				AttachStderr: true,
+			})
+			errutil.FailOn(err)
+			buffer := &printbuffer.PrintBuffer{Prefix: fmt.Sprintf("%s[%s][exec]: output:", appName, cmdName)}
+			errutil.FailOn(containerInspector.APIClient.StartExec(exec.ID, docker.StartExecOptions{
+				InputStream:  input,
+				OutputStream: buffer,
+				ErrorStream:  buffer,
+			}))
+			inspect, err := containerInspector.APIClient.InspectExec(exec.ID)
+			errutil.FailOn(err)
+			errutil.FailWhen(inspect.Running, "still running")
+			if inspect.ExitCode != 0 {
+				execFail = true
+			}
+
 			xc.Out.Info("continue.after",
 				ovars{
-					"mode":  "exec",
-					"shell": execCmd,
+					"mode":     config.CAMExec,
+					"exitcode": inspect.ExitCode,
 				})
-		}
-		exec, err := containerInspector.APIClient.CreateExec(docker.CreateExecOptions{
-			Container:    containerInspector.ContainerID,
-			Cmd:          cmd,
-			AttachStdin:  true,
-			AttachStdout: true,
-			AttachStderr: true,
-		})
-		errutil.FailOn(err)
-		buffer := &printbuffer.PrintBuffer{Prefix: fmt.Sprintf("%s[%s][exec]: output:", appName, cmdName)}
-		errutil.FailOn(containerInspector.APIClient.StartExec(exec.ID, docker.StartExecOptions{
-			InputStream:  input,
-			OutputStream: buffer,
-			ErrorStream:  buffer,
-		}))
-		inspect, err := containerInspector.APIClient.InspectExec(exec.ID)
-		errutil.FailOn(err)
-		errutil.FailWhen(inspect.Running, "still running")
-		if inspect.ExitCode != 0 {
-			execFail = true
-		}
+		case config.CAMSignal:
+			xc.Out.Prompt("send SIGUSR1 when you are done using the container")
+			<-continueAfter.ContinueChan
+			xc.Out.Info("event",
+				ovars{
+					"message": "got SIGUSR1",
+				})
+		case config.CAMTimeout:
+			xc.Out.Prompt(fmt.Sprintf("waiting for the target container (%v seconds)", int(continueAfter.Timeout)))
+			<-time.After(time.Second * continueAfter.Timeout)
+			xc.Out.Info("event",
+				ovars{
+					"message": "done waiting for the target container",
+				})
+		case config.CAMProbe:
+			xc.Out.Prompt("waiting for the HTTP probe to finish")
+			<-continueAfter.ContinueChan
+			xc.Out.Info("event",
+				ovars{
+					"message": "HTTP probe is done",
+				})
 
-		xc.Out.Info("continue.after",
-			ovars{
-				"mode":     "exec",
-				"exitcode": inspect.ExitCode,
-			})
-	case "signal":
-		xc.Out.Prompt("send SIGUSR1 when you are done using the container")
-		<-continueAfter.ContinueChan
-		xc.Out.Info("event",
-			ovars{
-				"message": "got SIGUSR1",
-			})
-	case "timeout":
-		xc.Out.Prompt(fmt.Sprintf("waiting for the target container (%v seconds)", int(continueAfter.Timeout)))
-		<-time.After(time.Second * continueAfter.Timeout)
-		xc.Out.Info("event",
-			ovars{
-				"message": "done waiting for the target container",
-			})
-	case "probe":
-		xc.Out.Prompt("waiting for the HTTP probe to finish")
-		<-continueAfter.ContinueChan
-		xc.Out.Info("event",
-			ovars{
-				"message": "HTTP probe is done",
-			})
-
-		if probe != nil && probe.CallCount > 0 && probe.OkCount == 0 {
-			//make sure we show the container logs because none of the http probe calls were successful
-			containerInspector.DoShowContainerLogs = true
+			if probe != nil && probe.CallCount > 0 && probe.OkCount == 0 {
+				//make sure we show the container logs because none of the http probe calls were successful
+				containerInspector.DoShowContainerLogs = true
+			}
+		default:
+			errutil.Fail("unknown continue-after mode")
 		}
-	default:
-		errutil.Fail("unknown continue-after mode")
 	}
 
 	xc.Out.State("container.inspection.finishing")
@@ -597,7 +604,7 @@ func OnCommand(
 	if execFail {
 		xc.Out.Info("continue.after",
 			ovars{
-				"mode":    "exec",
+				"mode":    config.CAMExec,
 				"message": "fatal: exec cmd failure",
 			})
 

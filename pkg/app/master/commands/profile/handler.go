@@ -273,7 +273,7 @@ func OnCommand(
 
 	logger.Info("watching container monitor...")
 
-	if "probe" == continueAfter.Mode {
+	if config.CAMProbe == continueAfter.Mode {
 		doHTTPProbe = true
 	}
 
@@ -317,9 +317,9 @@ func OnCommand(
 
 	continueAfterMsg := "provide the expected input to allow the container inspector to continue its execution"
 	switch continueAfter.Mode {
-	case "timeout":
+	case config.CAMTimeout:
 		continueAfterMsg = "no input required, execution will resume after the timeout"
-	case "probe":
+	case config.CAMProbe:
 		continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
 	}
 
@@ -330,25 +330,25 @@ func OnCommand(
 		})
 
 	switch continueAfter.Mode {
-	case "enter":
+	case config.CAMEnter:
 		xc.Out.Prompt("USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER")
 		creader := bufio.NewReader(os.Stdin)
 		_, _, _ = creader.ReadLine()
-	case "signal":
+	case config.CAMSignal:
 		xc.Out.Prompt("send SIGUSR1 when you are done using the container")
 		<-continueAfter.ContinueChan
 		xc.Out.Info("event",
 			ovars{
 				"message": "got SIGUSR1",
 			})
-	case "timeout":
+	case config.CAMTimeout:
 		xc.Out.Prompt(fmt.Sprintf("waiting for the target container (%v seconds)", int(continueAfter.Timeout)))
 		<-time.After(time.Second * continueAfter.Timeout)
 		xc.Out.Info("event",
 			ovars{
 				"message": "done waiting for the target container",
 			})
-	case "probe":
+	case config.CAMProbe:
 		xc.Out.Prompt("waiting for the HTTP probe to finish")
 		<-continueAfter.ContinueChan
 		xc.Out.Info("event",

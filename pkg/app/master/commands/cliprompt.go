@@ -17,6 +17,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
 
+	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
@@ -233,10 +234,11 @@ var tboolValues = []prompt.Suggest{
 }
 
 var continueAfterValues = []prompt.Suggest{
-	{Text: "probe", Description: "Automatically continue after the HTTP probe is finished running"},
-	{Text: "enter", Description: "Use the <enter> key to indicate you that you are done using the container"},
-	{Text: "signal", Description: "Use SIGUSR1 to signal that you are done using the container"},
-	{Text: "timeout", Description: "Automatically continue after the default timeout (60 seconds)"},
+	{Text: config.CAMExec, Description: "Automatically continue after container exec is finished running"},
+	{Text: config.CAMProbe, Description: "Automatically continue after the HTTP probe is finished running"},
+	{Text: config.CAMEnter, Description: "Use the <enter> key to indicate you that you are done using the container"},
+	{Text: config.CAMSignal, Description: "Use SIGUSR1 to signal that you are done using the container"},
+	{Text: config.CAMTimeout, Description: "Automatically continue after the default timeout (60 seconds)"},
 	{Text: "<seconds>", Description: "Enter the number of seconds to wait instead of <seconds>"},
 }
 

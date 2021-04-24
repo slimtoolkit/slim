@@ -122,6 +122,14 @@ type DockerClient struct {
 	Env         map[string]string
 }
 
+const (
+	CAMProbe   = "probe"
+	CAMEnter   = "enter"
+	CAMTimeout = "timeout"
+	CAMSignal  = "signal"
+	CAMExec    = "exec"
+)
+
 // ContinueAfter provides the command execution mode parameters
 type ContinueAfter struct {
 	Mode         string

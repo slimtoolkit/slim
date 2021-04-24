@@ -460,6 +460,16 @@ var CLI = cli.Command{
 
 		execCmd := ctx.String(commands.FlagExec)
 		execFile := ctx.String(commands.FlagExecFile)
+		if continueAfter.Mode == "exec" &&
+			len(execCmd) == 0 &&
+			len(execFile) == 0 {
+			continueAfter.Mode = "enter"
+			xc.Out.Info("exec",
+				ovars{
+					"message": "changing continue-after from exec to enter because there are no exec flags",
+				})
+		}
+
 		if len(execCmd) != 0 && len(execFile) != 0 {
 			xc.Out.Error("param.error.exec", "fatal: cannot use both --exec and --exec-file")
 			xc.Out.State("exited",
@@ -472,16 +482,25 @@ var CLI = cli.Command{
 		if len(execFile) > 0 {
 			execFileCmd, err = ioutil.ReadFile(execFile)
 			errutil.FailOn(err)
-			continueAfter.Mode = "exec"
+			updatedMode := "exec"
+			if doHTTPProbe {
+				updatedMode = "exec&probe"
+			}
+			continueAfter.Mode = updatedMode
 			xc.Out.Info("exec",
 				ovars{
-					"message": "changing continue-after to exec",
+					"message": fmt.Sprintf("changing continue-after mode to %s", updatedMode),
 				})
+
 		} else if len(execCmd) > 0 {
-			continueAfter.Mode = "exec"
+			updatedMode := "exec"
+			if doHTTPProbe {
+				updatedMode = "exec&probe"
+			}
+			continueAfter.Mode = updatedMode
 			xc.Out.Info("exec",
 				ovars{
-					"message": "changing continue-after to exec",
+					"message": fmt.Sprintf("changing continue-after mode to %s", updatedMode),
 				})
 		} else if !doHTTPProbe && continueAfter.Mode == "probe" {
 			continueAfter.Mode = "enter"
