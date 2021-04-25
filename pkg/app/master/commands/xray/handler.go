@@ -12,6 +12,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/pkg/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/command"
+	"github.com/docker-slim/docker-slim/pkg/docker/buildpackinfo"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/report"
@@ -222,6 +223,14 @@ func OnCommand(
 	}
 
 	cmdReport.SourceImage.Labels = imageInspector.ImageInfo.Config.Labels
+
+	if buildpackinfo.HasBuildbackLabels(imageInspector.ImageInfo.Config.Labels) {
+		bpStack := imageInspector.ImageInfo.Config.Labels[buildpackinfo.LabelKeyStackID]
+		cmdReport.SourceImage.Buildpack = &report.BuildpackInfo{
+			Stack: bpStack,
+		}
+	}
+
 	cmdReport.SourceImage.EnvVars = imageInspector.ImageInfo.Config.Env
 
 	cmdReport.ArtifactLocation = imageInspector.ArtifactLocation

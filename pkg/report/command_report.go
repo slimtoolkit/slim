@@ -55,6 +55,13 @@ type ImageMetadata struct {
 	Volumes       []string          `json:"volumes,omitempty"`
 	Labels        map[string]string `json:"labels,omitempty"`
 	EnvVars       []string          `json:"env_vars,omitempty"`
+	Buildpack     *BuildpackInfo    `json:"buildpack,omitempty"`
+}
+
+type BuildpackInfo struct {
+	Stack     string `json:"stack"`
+	Vendor    string `json:"vendor,omitempty"`
+	Buildpack string `json:"buildpack,omitempty"`
 }
 
 // SystemMetadata provides basic system metadata
