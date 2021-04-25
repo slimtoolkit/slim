@@ -431,7 +431,8 @@ func GenerateFromInfo(location string,
 
 	if len(labels) > 0 {
 		for name, value := range labels {
-			labelInfo := fmt.Sprintf("LABEL %s=\"%s\"\n", name, value)
+			encoded, _ := json.Marshal(value)
+			labelInfo := fmt.Sprintf("LABEL %s=%s\n", name, encoded)
 			dfData.WriteString(labelInfo)
 		}
 		dfData.WriteByte('\n')

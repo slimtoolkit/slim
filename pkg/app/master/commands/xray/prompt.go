@@ -31,6 +31,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagReuseSavedImage), Description: FlagReuseSavedImageUsage},
 		{Text: commands.FullFlagName(FlagHashData), Description: FlagHashDataUsage},
 		{Text: commands.FullFlagName(FlagChangeDataHash), Description: FlagChangeDataHashUsage},
+		{Text: commands.FullFlagName(FlagTopChangesMax), Description: FlagTopChangesMaxUsage},
 		{Text: commands.FullFlagName(commands.FlagRemoveFileArtifacts), Description: commands.FlagRemoveFileArtifactsUsage},
 	},
 	Values: map[string]commands.CompleteValue{

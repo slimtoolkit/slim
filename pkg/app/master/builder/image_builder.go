@@ -62,6 +62,31 @@ func NewBasicImageBuilder(client *docker.Client,
 		buildArgs = append(buildArgs, docker.BuildArg{Name: ba.Name, Value: ba.Value})
 	}
 
+	labels := map[string]string{}
+	//cleanup non-standard labels from buildpacks
+	for k, v := range cbOpts.Labels {
+		lineLen := len(k) + len(v) + 7
+		if lineLen > 65535 {
+			//TODO: improve JSON data splitting
+			valueLen := len(v)
+			parts := valueLen / 50000
+			parts++
+			offset := 0
+			for i := 0; i < parts && offset < valueLen; i++ {
+				chunkSize := 50000
+				if (offset + chunkSize) > valueLen {
+					chunkSize = valueLen - offset
+				}
+				value := v[offset:(offset + chunkSize)]
+				offset += chunkSize
+				key := fmt.Sprintf("%s.%d", k, i)
+				labels[key] = value
+			}
+		} else {
+			labels[k] = v
+		}
+	}
+
 	builder := BasicImageBuilder{
 		ShowBuildLogs: showBuildLogs,
 		BuildOptions: docker.BuildImageOptions{
@@ -71,7 +96,7 @@ func NewBasicImageBuilder(client *docker.Client,
 			NetworkMode:    cbOpts.NetworkMode,
 			ExtraHosts:     cbOpts.ExtraHosts,
 			CacheFrom:      cbOpts.CacheFrom,
-			Labels:         cbOpts.Labels,
+			Labels:         labels,
 			BuildArgs:      buildArgs,
 			RmTmpContainer: true,
 		},
@@ -115,6 +140,34 @@ func NewImageBuilder(client *docker.Client,
 	overrideSelectors map[string]bool,
 	overrides *config.ContainerOverrides,
 	instructions *config.ImageNewInstructions) (*ImageBuilder, error) {
+
+	labels := map[string]string{}
+	if imageInfo.Config.Labels != nil {
+		//cleanup non-standard labels from buildpacks
+		for k, v := range imageInfo.Config.Labels {
+			lineLen := len(k) + len(v) + 7
+			if lineLen > 65535 {
+				//TODO: improve JSON data splitting
+				valueLen := len(v)
+				parts := valueLen / 50000
+				parts++
+				offset := 0
+				for i := 0; i < parts && offset < valueLen; i++ {
+					chunkSize := 50000
+					if (offset + chunkSize) > valueLen {
+						chunkSize = valueLen - offset
+					}
+					value := v[offset:(offset + chunkSize)]
+					offset += chunkSize
+					key := fmt.Sprintf("%s.%d", k, i)
+					labels[key] = value
+				}
+			} else {
+				labels[k] = v
+			}
+		}
+	}
+
 	builder := &ImageBuilder{
 		BasicImageBuilder: BasicImageBuilder{
 			ShowBuildLogs: showBuildLogs,
@@ -133,7 +186,7 @@ func NewImageBuilder(client *docker.Client,
 		Cmd:          imageInfo.Config.Cmd,
 		WorkingDir:   imageInfo.Config.WorkingDir,
 		Env:          imageInfo.Config.Env,
-		Labels:       imageInfo.Config.Labels,
+		Labels:       labels,
 		ExposedPorts: imageInfo.Config.ExposedPorts,
 		Volumes:      imageInfo.Config.Volumes,
 		OnBuild:      imageInfo.Config.OnBuild,
