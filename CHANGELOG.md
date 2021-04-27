@@ -1,5 +1,15 @@
 # Releases
 
+## 1.35.1 (4/27/2021)
+
+### Improvements
+
+- Ability to combine `probe` and `exec` `continue-after` modes
+
+### Bug Fixes
+
+- Various xray command bug fixes
+
 ## 1.35.0 (4/14/2021)
 
 ### New Features
