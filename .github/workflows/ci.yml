@@ -1,0 +1,24 @@
+name: ci
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.16
+      - name: Checkout
+        uses: actions/checkout@v2
+        with: 
+          fetch-depth: 0
+      - name: Make
+        run: |
+          make build
