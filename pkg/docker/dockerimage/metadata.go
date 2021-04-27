@@ -11,9 +11,14 @@ func IsDeletedFileObject(path string) bool {
 	return strings.HasPrefix(name, WhiteoutPrefix)
 }
 
-func NormalizeFileObjectLayerPath(path string) (string, bool, error) {
+func NormalizeFileObjectLayerPath(path string) (string, bool, bool, error) {
 	isDeleted := false
 	name := filepath.Base(path)
+	if name == WhiteoutOpaqueDir {
+		//return a fake wildcard delete path for now (to make it easy to detect)
+		return filepath.Join(filepath.Dir(path), "*"), true, true, nil
+	}
+
 	if strings.HasPrefix(name, WhiteoutPrefix) {
 		restored := name[len(WhiteoutPrefix):]
 		dir := filepath.Dir(path)
@@ -21,7 +26,7 @@ func NormalizeFileObjectLayerPath(path string) (string, bool, error) {
 		path = filepath.Join(dir, restored)
 	}
 
-	return path, isDeleted, nil
+	return path, isDeleted, false, nil
 }
 
 type ManifestObject struct {

@@ -87,20 +87,21 @@ type Layer struct {
 
 type LayerStats struct {
 	//BlobSize         uint64 `json:"blob_size"`
-	AllSize          uint64 `json:"all_size"`
-	ObjectCount      uint64 `json:"object_count"`
-	DirCount         uint64 `json:"dir_count"`
-	FileCount        uint64 `json:"file_count"`
-	LinkCount        uint64 `json:"link_count"`
-	MaxFileSize      uint64 `json:"max_file_size"`
-	MaxDirSize       uint64 `json:"max_dir_size"`
-	DeletedCount     uint64 `json:"deleted_count"`
-	DeletedDirCount  uint64 `json:"deleted_dir_count"`
-	DeletedFileCount uint64 `json:"deleted_file_count"`
-	DeletedLinkCount uint64 `json:"deleted_link_count"`
-	DeletedSize      uint64 `json:"deleted_size"`
-	AddedSize        uint64 `json:"added_size"`
-	ModifiedSize     uint64 `json:"modified_size"`
+	AllSize                uint64 `json:"all_size"`
+	ObjectCount            uint64 `json:"object_count"`
+	DirCount               uint64 `json:"dir_count"`
+	FileCount              uint64 `json:"file_count"`
+	LinkCount              uint64 `json:"link_count"`
+	MaxFileSize            uint64 `json:"max_file_size"`
+	MaxDirSize             uint64 `json:"max_dir_size"`
+	DeletedCount           uint64 `json:"deleted_count"`
+	DeletedDirContentCount uint64 `json:"deleted_dir_content_count"`
+	DeletedDirCount        uint64 `json:"deleted_dir_count"`
+	DeletedFileCount       uint64 `json:"deleted_file_count"`
+	DeletedLinkCount       uint64 `json:"deleted_link_count"`
+	DeletedSize            uint64 `json:"deleted_size"`
+	AddedSize              uint64 `json:"added_size"`
+	ModifiedSize           uint64 `json:"modified_size"`
 }
 
 type ChangeType int
@@ -189,19 +190,20 @@ func (ct *ChangeType) UnmarshalJSON(b []byte) error {
 }
 
 type ObjectMetadata struct {
-	Change     ChangeType     `json:"change"`
-	Name       string         `json:"name"`
-	Size       int64          `json:"size,omitempty"`
-	SizeHuman  string         `json:"size_human,omitempty"`
-	Mode       os.FileMode    `json:"mode,omitempty"`
-	ModeHuman  string         `json:"mode_human,omitempty"`
-	UID        int            `json:"uid"` //don't omit uid 0
-	GID        int            `json:"gid"` //don't omit gid 0
-	ModTime    time.Time      `json:"mod_time,omitempty"`
-	ChangeTime time.Time      `json:"change_time,omitempty"`
-	LinkTarget string         `json:"link_target,omitempty"`
-	History    *ObjectHistory `json:"history,omitempty"`
-	Hash       string         `json:"Hash,omitempty"`
+	Change           ChangeType     `json:"change"`
+	DirContentDelete bool           `json:"dir_content_delete,omitempty"`
+	Name             string         `json:"name"`
+	Size             int64          `json:"size,omitempty"`
+	SizeHuman        string         `json:"size_human,omitempty"`
+	Mode             os.FileMode    `json:"mode,omitempty"`
+	ModeHuman        string         `json:"mode_human,omitempty"`
+	UID              int            `json:"uid"` //don't omit uid 0
+	GID              int            `json:"gid"` //don't omit gid 0
+	ModTime          time.Time      `json:"mod_time,omitempty"`
+	ChangeTime       time.Time      `json:"change_time,omitempty"`
+	LinkTarget       string         `json:"link_target,omitempty"`
+	History          *ObjectHistory `json:"history,omitempty"`
+	Hash             string         `json:"Hash,omitempty"`
 }
 
 type ObjectHistory struct {
@@ -216,9 +218,10 @@ type ChangeInfo struct {
 }
 
 type Changeset struct {
-	Deleted  []int
-	Added    []int
-	Modified []int
+	Deleted           []int
+	DeletedDirContent []int
+	Added             []int
+	Modified          []int
 }
 
 func newPackage() *Package {
@@ -569,9 +572,13 @@ func layerFromStream(layerPath string,
 			ChangeTime: hdr.ChangeTime,
 		}
 
-		normalized, isDeleted, err := NormalizeFileObjectLayerPath(object.Name)
+		normalized, isDeleted, isDeletedDirContent, err := NormalizeFileObjectLayerPath(object.Name)
 		if err == nil {
 			object.Name = fmt.Sprintf("/%s", normalized)
+		}
+
+		if isDeletedDirContent {
+			object.DirContentDelete = true
 		}
 
 		layer.Objects = append(layer.Objects, object)
@@ -585,15 +592,23 @@ func layerFromStream(layerPath string,
 		layer.Stats.AllSize += uint64(object.Size)
 		layer.Stats.ObjectCount++
 
-		if isDeleted {
+		if isDeletedDirContent {
 			object.Change = ChangeDelete
 			idx := len(layer.Objects) - 1
 			layer.Changes.Deleted = append(layer.Changes.Deleted, idx)
-			layer.Stats.DeletedCount++
-			layer.Stats.DeletedSize += uint64(object.Size)
-			//NOTE:
-			//This is not the real deleted size.
-			//Need to find the actual object in a previous layer to know the actual size.
+			layer.Changes.DeletedDirContent = append(layer.Changes.DeletedDirContent, idx)
+			layer.Stats.DeletedDirContentCount++
+		} else {
+			if isDeleted {
+				object.Change = ChangeDelete
+				idx := len(layer.Objects) - 1
+				layer.Changes.Deleted = append(layer.Changes.Deleted, idx)
+				layer.Stats.DeletedCount++
+				layer.Stats.DeletedSize += uint64(object.Size)
+				//NOTE:
+				//This is not the real deleted size.
+				//Need to find the actual object in a previous layer to know the actual size.
+			}
 		}
 
 		switch hdr.Typeflag {
