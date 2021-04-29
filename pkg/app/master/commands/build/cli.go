@@ -3,6 +3,7 @@ package build
 import (
 	"fmt"
 	"io/ioutil"
+	"strings"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
@@ -460,10 +461,10 @@ var CLI = cli.Command{
 
 		execCmd := ctx.String(commands.FlagExec)
 		execFile := ctx.String(commands.FlagExecFile)
-		if continueAfter.Mode == "exec" &&
+		if strings.Contains(continueAfter.Mode, config.CAMExec) &&
 			len(execCmd) == 0 &&
 			len(execFile) == 0 {
-			continueAfter.Mode = "enter"
+			continueAfter.Mode = config.CAMEnter
 			xc.Out.Info("exec",
 				ovars{
 					"message": "changing continue-after from exec to enter because there are no exec flags",
@@ -482,28 +483,25 @@ var CLI = cli.Command{
 		if len(execFile) > 0 {
 			execFileCmd, err = ioutil.ReadFile(execFile)
 			errutil.FailOn(err)
-			updatedMode := "exec"
-			if doHTTPProbe {
-				updatedMode = "exec&probe"
+
+			if !strings.Contains(continueAfter.Mode, config.CAMExec) {
+				continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMExec)
+				xc.Out.Info("exec",
+					ovars{
+						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
+					})
 			}
-			continueAfter.Mode = updatedMode
-			xc.Out.Info("exec",
-				ovars{
-					"message": fmt.Sprintf("changing continue-after mode to %s", updatedMode),
-				})
 
 		} else if len(execCmd) > 0 {
-			updatedMode := "exec"
-			if doHTTPProbe {
-				updatedMode = "exec&probe"
+			if !strings.Contains(continueAfter.Mode, config.CAMExec) {
+				continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMExec)
+				xc.Out.Info("exec",
+					ovars{
+						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
+					})
 			}
-			continueAfter.Mode = updatedMode
-			xc.Out.Info("exec",
-				ovars{
-					"message": fmt.Sprintf("changing continue-after mode to %s", updatedMode),
-				})
 		} else if !doHTTPProbe && continueAfter.Mode == "probe" {
-			continueAfter.Mode = "enter"
+			continueAfter.Mode = config.CAMEnter
 			xc.Out.Info("exec",
 				ovars{
 					"message": "changing continue-after from probe to enter because http-probe is disabled",

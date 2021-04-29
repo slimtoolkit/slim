@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
@@ -43,25 +44,33 @@ func GetHTTPProbes(ctx *cli.Context) ([]config.HTTPProbeCmd, error) {
 
 func GetContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 	info := &config.ContinueAfter{
-		Mode: "enter",
+		Mode: config.CAMEnter,
 	}
 
 	doContinueAfter := ctx.String(FlagContinueAfter)
 	switch doContinueAfter {
-	case "enter":
-		info.Mode = "enter"
-	case "signal":
-		info.Mode = "signal"
+	case config.CAMEnter:
+		info.Mode = config.CAMEnter
+	case config.CAMSignal:
+		info.Mode = config.CAMSignal
 		info.ContinueChan = signals.AppContinueChan
-	case "probe":
-		info.Mode = "probe"
-	case "timeout":
-		info.Mode = "timeout"
+	case config.CAMProbe:
+		info.Mode = config.CAMProbe
+	case config.CAMExec:
+		info.Mode = config.CAMExec
+	case config.CAMTimeout:
+		info.Mode = config.CAMTimeout
 		info.Timeout = 60
 	default:
-		if waitTime, err := strconv.Atoi(doContinueAfter); err == nil && waitTime > 0 {
-			info.Mode = "timeout"
-			info.Timeout = time.Duration(waitTime)
+		modes := strings.Split(doContinueAfter, "&")
+		if len(modes) > 1 {
+			//not supporting combining signal or custom timeout modes with other modes
+			info.Mode = doContinueAfter
+		} else {
+			if waitTime, err := strconv.Atoi(doContinueAfter); err == nil && waitTime > 0 {
+				info.Mode = config.CAMTimeout
+				info.Timeout = time.Duration(waitTime)
+			}
 		}
 	}
 

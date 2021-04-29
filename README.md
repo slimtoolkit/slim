@@ -283,6 +283,8 @@ To disable the version checks set the global `--check-version` flag to `false` (
 ### `XRAY` COMMAND OPTIONS
 
 - `--target` - Target container image (name or ID)
+- `--pull` - Try pulling target if it's not available locally (default: false).
+- `--show-plogs` - Show image pull logs (default: false).
 - `--changes value` - Show layer change details for the selected change type (values: none, all, delete, modify, add). 
 - `--changes-output value` - Where to show the changes (values: all, report, console).
 - `--layer value` - Show details for the selected layer (using layer index or ID)
