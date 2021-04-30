@@ -622,13 +622,13 @@ func printImagePackage(
 				}
 
 				if !match && len(changePathMatchers) > 0 {
-					log.Trace("Change path patterns, no match. skipping 'top' change...")
+					log.Tracef("Change path patterns, no match. skipping 'top' change ['%s']", topObject.Name)
 					continue
 				} else {
 					if len(changeDataMatchers) > 0 {
 						matchedPatterns, found := layer.DataMatches[topObject.Name]
 						if !found {
-							log.Trace("Change data patterns, no match. skipping 'top' change...")
+							log.Tracef("Change data patterns, no match. skipping 'top' change ['%s']", topObject.Name)
 							continue
 						}
 
@@ -697,7 +697,7 @@ func printImagePackage(
 					}
 
 					if !match && len(changePathMatchers) > 0 {
-						log.Trace("Change path patterns, no match. skipping 'delete' change...")
+						log.Tracef("Change path patterns, no match. skipping 'delete' change ['%s']", objectInfo.Name)
 						continue
 					}
 
@@ -757,13 +757,13 @@ func printImagePackage(
 					}
 
 					if !match && len(changePathMatchers) > 0 {
-						log.Trace("Change path patterns, no match. skipping 'modify' change...")
+						log.Tracef("Change path patterns, no match. skipping 'modify' change ['%s']", objectInfo.Name)
 						continue
 					} else {
 						if len(changeDataMatchers) > 0 {
 							matchedPatterns, found := layer.DataMatches[objectInfo.Name]
 							if !found {
-								log.Trace("Change data patterns, no match. skipping change...")
+								log.Tracef("Change data patterns, no match. skipping change ['%s']", objectInfo.Name)
 								continue
 							}
 
@@ -831,20 +831,20 @@ func printImagePackage(
 						}
 
 						if match {
-							log.Trace("Change path patterns match for 'add'. ptrn='%s' objectInfo.Name='%s'\n", ptrn, objectInfo.Name)
+							log.Tracef("Change path patterns match for 'add'. ptrn='%s' objectInfo.Name='%s'\n", ptrn, objectInfo.Name)
 							break
 							//not collecting all file path matches here
 						}
 					}
 
 					if !match && len(changePathMatchers) > 0 {
-						log.Trace("Change path patterns, no match. skipping 'add' change...")
+						log.Tracef("Change path patterns, no match. skipping 'add' change ['%s']", objectInfo.Name)
 						continue
 					} else {
 						if len(changeDataMatchers) > 0 {
 							matchedPatterns, found := layer.DataMatches[objectInfo.Name]
 							if !found {
-								log.Trace("change data patterns, no match. skipping change...")
+								log.Tracef("change data patterns, no match. skipping change ['%s']", objectInfo.Name)
 								continue
 							}
 

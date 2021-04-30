@@ -218,10 +218,11 @@ func parseChangeDataMatchers(values []string) ([]*dockerimage.ChangeDataMatcher,
 
 			m.Dump = true
 
-			if parts[1] == dockerimage.CDMDumpToConsole {
+			outTarget := strings.TrimSpace(parts[1])
+			if len(outTarget) == 0 || outTarget == dockerimage.CDMDumpToConsole {
 				m.DumpConsole = true
 			} else {
-				m.DumpDir = parts[1]
+				m.DumpDir = outTarget
 			}
 
 			m.PathPattern = parts[2]
@@ -265,10 +266,11 @@ func parseChangePathMatchers(values []string) ([]*dockerimage.ChangePathMatcher,
 
 			m.Dump = true
 
-			if parts[1] == dockerimage.CDMDumpToConsole {
+			outTarget := strings.TrimSpace(parts[1])
+			if len(outTarget) == 0 || outTarget == dockerimage.CDMDumpToConsole {
 				m.DumpConsole = true
 			} else {
-				m.DumpDir = parts[1]
+				m.DumpDir = outTarget
 			}
 
 			m.PathPattern = parts[2]
@@ -309,10 +311,11 @@ func parseChangeDataHashMatchers(values []string) ([]*dockerimage.ChangeDataHash
 
 			m.Dump = true
 
-			if parts[1] == dockerimage.CDMDumpToConsole {
+			outTarget := strings.TrimSpace(parts[1])
+			if len(outTarget) == 0 || outTarget == dockerimage.CDMDumpToConsole {
 				m.DumpConsole = true
 			} else {
-				m.DumpDir = parts[1]
+				m.DumpDir = outTarget
 			}
 
 			m.Hash = strings.ToLower(strings.TrimSpace(parts[2]))

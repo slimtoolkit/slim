@@ -262,6 +262,7 @@ func LoadPackage(archivePath string,
 	changeDataMatchers map[string]*ChangeDataMatcher) (*Package, error) {
 	imageID = dockerutil.CleanImageID(imageID)
 
+	cpmDumps := hasChangePathMatcherDumps(changePathMatchers)
 	configObjectFileName := fmt.Sprintf("%s.json", imageID)
 	afile, err := os.Open(archivePath)
 	if err != nil {
@@ -355,7 +356,7 @@ func LoadPackage(archivePath string,
 						}
 					}
 				} else {
-					layer, err = layerFromStream(hdr.Name, tar.NewReader(tr), layerID, topChangesMax, doHashData, changeDataHashMatchers, changePathMatchers, changeDataMatchers)
+					layer, err = layerFromStream(hdr.Name, tar.NewReader(tr), layerID, topChangesMax, doHashData, changeDataHashMatchers, changePathMatchers, cpmDumps, changeDataMatchers)
 					if err != nil {
 						log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
 						return nil, err
@@ -528,6 +529,16 @@ func LoadPackage(archivePath string,
 	return pkg, nil
 }
 
+func hasChangePathMatcherDumps(changePathMatchers []*ChangePathMatcher) bool {
+	for _, cpm := range changePathMatchers {
+		if cpm.PathPattern != "" && cpm.Dump {
+			return true
+		}
+	}
+
+	return false
+}
+
 func layerFromStream(layerPath string,
 	tr *tar.Reader,
 	layerID string,
@@ -535,6 +546,7 @@ func layerFromStream(layerPath string,
 	doHashData bool,
 	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
 	changePathMatchers []*ChangePathMatcher,
+	cpmDumps bool,
 	changeDataMatchers map[string]*ChangeDataMatcher) (*Layer, error) {
 	layer := newLayer(layerID, topChangesMax)
 	layer.Path = layerPath
@@ -627,7 +639,7 @@ func layerFromStream(layerPath string,
 			if isDeleted {
 				layer.Stats.DeletedFileCount++
 			} else {
-				err = inspectFile(object, tr, layer, doHashData, changeDataHashMatchers, changePathMatchers, changeDataMatchers)
+				err = inspectFile(object, tr, layer, doHashData, changeDataHashMatchers, changePathMatchers, cpmDumps, changeDataMatchers)
 				if err != nil {
 					log.Errorf("layerFromStream: error inspecting layer file (%s) - (%v) - %v", object.Name, layerID, err)
 				}
@@ -671,10 +683,11 @@ func inspectFile(object *ObjectMetadata,
 	doHashData bool,
 	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
 	changePathMatchers []*ChangePathMatcher,
+	cpmDumps bool,
 	changeDataMatchers map[string]*ChangeDataMatcher) error {
 	//TODO: refactor and enhance the OS Distro detection logic
 	fullPath := object.Name
-	if system.IsOSReleaseFile(fullPath) || len(changeDataMatchers) > 0 {
+	if system.IsOSReleaseFile(fullPath) || len(changeDataMatchers) > 0 || cpmDumps {
 		data, err := ioutil.ReadAll(reader)
 		if err != nil {
 			return err
