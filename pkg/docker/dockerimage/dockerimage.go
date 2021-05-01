@@ -589,6 +589,9 @@ func layerFromStream(layerPath string,
 			object.Name = fmt.Sprintf("/%s", normalized)
 		}
 
+		object.Name = strings.ReplaceAll(object.Name, "//", "/")
+		object.LinkTarget = strings.ReplaceAll(object.LinkTarget, "//", "/")
+
 		if isDeletedDirContent {
 			object.DirContentDelete = true
 		}
