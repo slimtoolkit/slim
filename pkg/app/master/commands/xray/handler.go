@@ -20,7 +20,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
-	"github.com/bmatcuk/doublestar/v3"
+	//"github.com/bmatcuk/doublestar/v3"
 	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 )
@@ -55,6 +55,7 @@ func OnCommand(
 	changeDataMatcherList []*dockerimage.ChangeDataMatcher,
 	changeDataHashMatcherList []*dockerimage.ChangeDataHashMatcher,
 	doHashData bool,
+	changeMatchLayersOnly bool,
 	doAddImageManifest bool,
 	doAddImageConfig bool,
 	doReuseSavedImage bool,
@@ -295,6 +296,7 @@ func OnCommand(
 		modifyChangesMax,
 		deleteChangesMax,
 		doHashData,
+		changeMatchLayersOnly,
 		changeDataHashMatchers,
 		changePathMatchers,
 		changeDataMatchers,
@@ -357,6 +359,7 @@ func printImagePackage(
 	modifyChangesMax int,
 	deleteChangesMax int,
 	doHashData bool,
+	changeMatchLayersOnly bool,
 	changeDataHashMatchers map[string]*dockerimage.ChangeDataHashMatcher,
 	changePathMatchers []*dockerimage.ChangePathMatcher,
 	changeDataMatchers map[string]*dockerimage.ChangeDataMatcher,
@@ -371,6 +374,14 @@ func printImagePackage(
 		ovars{
 			"value": len(pkg.Layers),
 		})
+
+	doShow := func(changeMatchLayersOnly bool, layer *dockerimage.Layer) bool {
+		if !changeMatchLayersOnly || (changeMatchLayersOnly && layer.HasMatches()) {
+			return true
+		}
+
+		return false
+	}
 
 	for _, layer := range pkg.Layers {
 		layerInfo := ovars{
@@ -387,8 +398,10 @@ func printImagePackage(
 			layerInfo["layer_data_source"] = layer.LayerDataSource
 		}
 
-		xc.Out.Info("layer.start")
-		xc.Out.Info("layer", layerInfo)
+		if doShow(changeMatchLayersOnly, layer) {
+			xc.Out.Info("layer.start")
+			xc.Out.Info("layer", layerInfo)
+		}
 
 		var layerChangesCount int
 
@@ -460,198 +473,186 @@ func printImagePackage(
 		cmdReport.ImageLayers = append(cmdReport.ImageLayers, &layerReport)
 
 		if layerReport.ChangeInstruction != nil {
-			xc.Out.Info("change.instruction",
-				ovars{
-					"index":   fmt.Sprintf("%d:%d", layerReport.ChangeInstruction.ImageIndex, layerReport.ChangeInstruction.Index),
-					"type":    layerReport.ChangeInstruction.Type,
-					"snippet": layerReport.ChangeInstruction.Snippet,
-					"all":     layerReport.ChangeInstruction.All,
-				})
+			if doShow(changeMatchLayersOnly, layer) {
+				xc.Out.Info("change.instruction",
+					ovars{
+						"index":   fmt.Sprintf("%d:%d", layerReport.ChangeInstruction.ImageIndex, layerReport.ChangeInstruction.Index),
+						"type":    layerReport.ChangeInstruction.Type,
+						"snippet": layerReport.ChangeInstruction.Snippet,
+						"all":     layerReport.ChangeInstruction.All,
+					})
+			}
 
 		}
 
-		if layerReport.OtherInstructions != nil {
-			xc.Out.Info("other.instructions",
-				ovars{
-					"count": len(layerReport.OtherInstructions),
-				})
-
-			for idx, info := range layerReport.OtherInstructions {
-				xc.Out.Info("other.instruction",
+		if doShow(changeMatchLayersOnly, layer) {
+			if layerReport.OtherInstructions != nil {
+				xc.Out.Info("other.instructions",
 					ovars{
-						"pos":     idx,
-						"index":   fmt.Sprintf("%d:%d", info.ImageIndex, info.Index),
-						"type":    info.Type,
-						"snippet": info.Snippet,
-						"all":     info.All,
+						"count": len(layerReport.OtherInstructions),
+					})
+
+				for idx, info := range layerReport.OtherInstructions {
+					xc.Out.Info("other.instruction",
+						ovars{
+							"pos":     idx,
+							"index":   fmt.Sprintf("%d:%d", info.ImageIndex, info.Index),
+							"type":    info.Type,
+							"snippet": info.Snippet,
+							"all":     info.All,
+						})
+				}
+			}
+
+			if layer.Stats.AllSize != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"all_size.human": humanize.Bytes(uint64(layer.Stats.AllSize)),
+						"all_size.bytes": layer.Stats.AllSize,
+					})
+			}
+
+			if layer.Stats.ObjectCount != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"object_count": layer.Stats.ObjectCount,
+					})
+			}
+
+			if layer.Stats.DirCount != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"dir_count": layer.Stats.DirCount,
+					})
+			}
+
+			if layer.Stats.FileCount != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"file_count": layer.Stats.FileCount,
+					})
+			}
+
+			if layer.Stats.LinkCount != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"link_count": layer.Stats.LinkCount,
+					})
+			}
+
+			if layer.Stats.MaxFileSize != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"max_file_size.human": humanize.Bytes(uint64(layer.Stats.MaxFileSize)),
+						"max_file_size.bytes": layer.Stats.MaxFileSize,
+					})
+			}
+
+			if layer.Stats.DeletedCount != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"deleted_count": layer.Stats.DeletedCount,
+					})
+			}
+
+			if layer.Stats.DeletedDirCount != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"deleted_dir_count": layer.Stats.DeletedDirCount,
+					})
+			}
+
+			if layer.Stats.DeletedFileCount != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"deleted_file_count": layer.Stats.DeletedFileCount,
+					})
+			}
+
+			if layer.Stats.DeletedLinkCount != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"deleted_link_count": layer.Stats.DeletedLinkCount,
+					})
+			}
+
+			if layer.Stats.DeletedSize != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"deleted_size": layer.Stats.DeletedSize,
+					})
+			}
+
+			if layer.Stats.AddedSize != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"added_size.human": humanize.Bytes(uint64(layer.Stats.AddedSize)),
+						"added_size.bytes": layer.Stats.AddedSize,
+					})
+			}
+
+			if layer.Stats.ModifiedSize != 0 {
+				xc.Out.Info("layer.stats",
+					ovars{
+						"modified_size.human": humanize.Bytes(uint64(layer.Stats.ModifiedSize)),
+						"modified_size.bytes": layer.Stats.ModifiedSize,
 					})
 			}
 		}
 
-		if layer.Stats.AllSize != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"all_size.human": humanize.Bytes(uint64(layer.Stats.AllSize)),
-					"all_size.bytes": layer.Stats.AllSize,
-				})
-		}
-
-		if layer.Stats.ObjectCount != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"object_count": layer.Stats.ObjectCount,
-				})
-		}
-
-		if layer.Stats.DirCount != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"dir_count": layer.Stats.DirCount,
-				})
-		}
-
-		if layer.Stats.FileCount != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"file_count": layer.Stats.FileCount,
-				})
-		}
-
-		if layer.Stats.LinkCount != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"link_count": layer.Stats.LinkCount,
-				})
-		}
-
-		if layer.Stats.MaxFileSize != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"max_file_size.human": humanize.Bytes(uint64(layer.Stats.MaxFileSize)),
-					"max_file_size.bytes": layer.Stats.MaxFileSize,
-				})
-		}
-
-		if layer.Stats.DeletedCount != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"deleted_count": layer.Stats.DeletedCount,
-				})
-		}
-
-		if layer.Stats.DeletedDirCount != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"deleted_dir_count": layer.Stats.DeletedDirCount,
-				})
-		}
-
-		if layer.Stats.DeletedFileCount != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"deleted_file_count": layer.Stats.DeletedFileCount,
-				})
-		}
-
-		if layer.Stats.DeletedLinkCount != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"deleted_link_count": layer.Stats.DeletedLinkCount,
-				})
-		}
-
-		if layer.Stats.DeletedSize != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"deleted_size": layer.Stats.DeletedSize,
-				})
-		}
-
-		if layer.Stats.AddedSize != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"added_size.human": humanize.Bytes(uint64(layer.Stats.AddedSize)),
-					"added_size.bytes": layer.Stats.AddedSize,
-				})
-		}
-
-		if layer.Stats.ModifiedSize != 0 {
-			xc.Out.Info("layer.stats",
-				ovars{
-					"modified_size.human": humanize.Bytes(uint64(layer.Stats.ModifiedSize)),
-					"modified_size.bytes": layer.Stats.ModifiedSize,
-				})
-		}
-
 		changeCount := len(layer.Changes.Deleted) + len(layer.Changes.Modified) + len(layer.Changes.Added)
 
-		xc.Out.Info("layer.change.summary",
-			ovars{
-				"deleted":  len(layer.Changes.Deleted),
-				"modified": len(layer.Changes.Modified),
-				"added":    len(layer.Changes.Added),
-				"all":      changeCount,
-			})
+		if doShow(changeMatchLayersOnly, layer) {
+			xc.Out.Info("layer.change.summary",
+				ovars{
+					"deleted":  len(layer.Changes.Deleted),
+					"modified": len(layer.Changes.Modified),
+					"added":    len(layer.Changes.Added),
+					"all":      changeCount,
+				})
 
-		xc.Out.Info("layer.objects.count",
-			ovars{
-				"value": len(layer.Objects),
-			})
+			xc.Out.Info("layer.objects.count",
+				ovars{
+					"value": len(layer.Objects),
+				})
 
-		if len(topList) > 0 {
-			xc.Out.Info("layer.objects.top.start")
-			for _, topObject := range topList {
-				var match bool
-				for _, pm := range changePathMatchers {
-					ptrn := strings.TrimSpace(pm.PathPattern)
-					if len(ptrn) == 0 {
+			if len(topList) > 0 {
+				xc.Out.Info("layer.objects.top.start")
+				for _, topObject := range topList {
+					match := topObject.PathMatch
+
+					if !match && len(changePathMatchers) > 0 {
+						log.Tracef("Change path patterns, no match. skipping 'top' change ['%s']", topObject.Name)
 						continue
-					}
-
-					var err error
-					match, err = doublestar.Match(ptrn, topObject.Name)
-					if err != nil {
-						log.Errorf("doublestar.Match name='%s' error=%v", topObject.Name, err)
-					}
-
-					if match {
-						log.Tracef("Change path patterns match for 'top'. ptrn='%s' object.Name='%s'\n", ptrn, topObject.Name)
-						break
-						//not collecting all file path matches here
-					}
-				}
-
-				if !match && len(changePathMatchers) > 0 {
-					log.Tracef("Change path patterns, no match. skipping 'top' change ['%s']", topObject.Name)
-					continue
-				} else {
-					if len(changeDataMatchers) > 0 {
-						matchedPatterns, found := layer.DataMatches[topObject.Name]
-						if !found {
-							log.Tracef("Change data patterns, no match. skipping 'top' change ['%s']", topObject.Name)
-							continue
-						}
-
-						log.Tracef("'%s' ('top' change) matched data patterns - %d", topObject.Name, len(matchedPatterns))
-						for _, cdm := range matchedPatterns {
-							log.Tracef("matched => PP='%s' DP='%s'", cdm.PathPattern, cdm.DataPattern)
-						}
 					} else {
-						if len(changeDataHashMatchers) > 0 {
-							matched, found := layer.DataHashMatches[topObject.Name]
+						if len(changeDataMatchers) > 0 {
+							matchedPatterns, found := layer.DataMatches[topObject.Name]
 							if !found {
-								log.Trace("Change data hash patterns, no match. skipping 'top' change...")
+								log.Tracef("Change data patterns, no match. skipping 'top' change ['%s']", topObject.Name)
 								continue
 							}
 
-							log.Tracef("'%s' ('top' change) matched data hash pattern - %s", topObject.Name, matched.Hash)
+							log.Tracef("'%s' ('top' change) matched data patterns - %d", topObject.Name, len(matchedPatterns))
+							for _, cdm := range matchedPatterns {
+								log.Tracef("matched => PP='%s' DP='%s'", cdm.PathPattern, cdm.DataPattern)
+							}
+						} else {
+							if len(changeDataHashMatchers) > 0 {
+								matched, found := layer.DataHashMatches[topObject.Name]
+								if !found {
+									log.Trace("Change data hash patterns, no match. skipping 'top' change...")
+									continue
+								}
+
+								log.Tracef("'%s' ('top' change) matched data hash pattern - %s", topObject.Name, matched.Hash)
+							}
 						}
 					}
-				}
 
-				printObject(xc, topObject)
+					printObject(xc, topObject)
+				}
+				xc.Out.Info("layer.objects.top.end")
 			}
-			xc.Out.Info("layer.objects.top.end")
 		}
 
 		showLayer := true
@@ -665,7 +666,7 @@ func printImagePackage(
 			}
 		}
 
-		if showLayer {
+		if doShow(changeMatchLayersOnly, layer) && showLayer {
 			if _, ok := changes["delete"]; ok && len(layer.Changes.Deleted) > 0 {
 				xc.Out.Info("layer.objects.deleted.start")
 				for _, objectIdx := range layer.Changes.Deleted {
@@ -676,25 +677,7 @@ func printImagePackage(
 					objectInfo := layer.Objects[objectIdx]
 
 					//TODO: add a flag to select change type to apply path patterns
-					var match bool
-					for _, pm := range changePathMatchers {
-						ptrn := strings.TrimSpace(pm.PathPattern)
-						if len(ptrn) == 0 {
-							continue
-						}
-
-						var err error
-						match, err = doublestar.Match(ptrn, objectInfo.Name)
-						if err != nil {
-							log.Errorf("doublestar.Match name='%s' error=%v", objectInfo.Name, err)
-						}
-
-						if match {
-							log.Trace("Change path patterns match for 'delete'. ptrn='%s' objectInfo.Name='%s'\n", ptrn, objectInfo.Name)
-							break
-							//not collecting all file path matches here
-						}
-					}
+					match := objectInfo.PathMatch
 
 					if !match && len(changePathMatchers) > 0 {
 						log.Tracef("Change path patterns, no match. skipping 'delete' change ['%s']", objectInfo.Name)
@@ -736,25 +719,7 @@ func printImagePackage(
 					objectInfo := layer.Objects[objectIdx]
 
 					//TODO: add a flag to select change type to apply path patterns
-					var match bool
-					for _, pm := range changePathMatchers {
-						ptrn := strings.TrimSpace(pm.PathPattern)
-						if len(ptrn) == 0 {
-							continue
-						}
-
-						var err error
-						match, err = doublestar.Match(ptrn, objectInfo.Name)
-						if err != nil {
-							log.Errorf("doublestar.Match name='%s' error=%v", objectInfo.Name, err)
-						}
-
-						if match {
-							log.Trace("Change path patterns match for 'modify'. ptrn='%s' objectInfo.Name='%s'\n", ptrn, objectInfo.Name)
-							break
-							//not collecting all file path matches here
-						}
-					}
+					match := objectInfo.PathMatch
 
 					if !match && len(changePathMatchers) > 0 {
 						log.Tracef("Change path patterns, no match. skipping 'modify' change ['%s']", objectInfo.Name)
@@ -817,25 +782,7 @@ func printImagePackage(
 					objectInfo := layer.Objects[objectIdx]
 
 					//TODO: add a flag to select change type to apply path patterns
-					var match bool
-					for _, pm := range changePathMatchers {
-						ptrn := strings.TrimSpace(pm.PathPattern)
-						if len(ptrn) == 0 {
-							continue
-						}
-
-						var err error
-						match, err = doublestar.Match(ptrn, objectInfo.Name)
-						if err != nil {
-							log.Errorf("doublestar.Match name='%s' error=%v", objectInfo.Name, err)
-						}
-
-						if match {
-							log.Tracef("Change path patterns match for 'add'. ptrn='%s' objectInfo.Name='%s'\n", ptrn, objectInfo.Name)
-							break
-							//not collecting all file path matches here
-						}
-					}
+					match := objectInfo.PathMatch
 
 					if !match && len(changePathMatchers) > 0 {
 						log.Tracef("Change path patterns, no match. skipping 'add' change ['%s']", objectInfo.Name)
@@ -889,7 +836,9 @@ func printImagePackage(
 			}
 		}
 
-		xc.Out.Info("layer.end")
+		if doShow(changeMatchLayersOnly, layer) {
+			xc.Out.Info("layer.end")
+		}
 	}
 }
 

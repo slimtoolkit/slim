@@ -38,6 +38,7 @@ var CLI = cli.Command{
 		cflag(FlagChangeData),
 		cflag(FlagReuseSavedImage),
 		cflag(FlagTopChangesMax),
+		cflag(FlagChangeMatchLayersOnly),
 		cflag(FlagHashData),
 		cflag(FlagChangeDataHash),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
@@ -127,6 +128,7 @@ var CLI = cli.Command{
 
 		doHashData := ctx.Bool(FlagHashData)
 		changeDataHashMatchers, err := parseChangeDataHashMatchers(ctx.StringSlice(FlagChangeDataHash))
+		changeMatchLayersOnly := ctx.Bool(FlagChangeMatchLayersOnly)
 
 		OnCommand(
 			xc,
@@ -147,6 +149,7 @@ var CLI = cli.Command{
 			changeDataMatchers,
 			changeDataHashMatchers,
 			doHashData,
+			changeMatchLayersOnly,
 			doAddImageManifest,
 			doAddImageConfig,
 			doReuseSavedImage,

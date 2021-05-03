@@ -83,6 +83,23 @@ type Layer struct {
 	Distro              *system.DistroInfo
 	DataMatches         map[string][]*ChangeDataMatcher   //object.Name -> matched CDM
 	DataHashMatches     map[string]*ChangeDataHashMatcher //object.Name -> matched CDHM
+	pathMatches         bool
+}
+
+func (ref *Layer) HasMatches() bool {
+	if len(ref.DataMatches) > 0 {
+		return true
+	}
+
+	if len(ref.DataHashMatches) > 0 {
+		return true
+	}
+
+	if ref.pathMatches {
+		return true
+	}
+
+	return false
 }
 
 type LayerStats struct {
@@ -203,7 +220,8 @@ type ObjectMetadata struct {
 	ChangeTime       time.Time      `json:"change_time,omitempty"`
 	LinkTarget       string         `json:"link_target,omitempty"`
 	History          *ObjectHistory `json:"history,omitempty"`
-	Hash             string         `json:"Hash,omitempty"`
+	Hash             string         `json:"hash,omitempty"`
+	PathMatch        bool           `json:"-"`
 }
 
 type ObjectHistory struct {
@@ -585,7 +603,7 @@ func layerFromStream(layerPath string,
 		}
 
 		normalized, isDeleted, isDeletedDirContent, err := NormalizeFileObjectLayerPath(object.Name)
-		if err == nil {
+		if err == nil && len(object.Name) > 0 && object.Name[0] != '/' {
 			object.Name = fmt.Sprintf("/%s", normalized)
 		}
 
@@ -770,7 +788,7 @@ func inspectFile(object *ObjectMetadata,
 		}
 
 		for _, cpm := range changePathMatchers {
-			if cpm.PathPattern != "" && cpm.Dump {
+			if cpm.PathPattern != "" {
 				pmatch, err := doublestar.Match(cpm.PathPattern, fullPath)
 				if err != nil {
 					log.Errorf("doublestar.Match name='%s' error=%v", fullPath, err)
@@ -781,7 +799,10 @@ func inspectFile(object *ObjectMetadata,
 					continue
 				}
 
-				if cpm.DumpConsole {
+				object.PathMatch = true
+				layer.pathMatches = true
+
+				if cpm.Dump && cpm.DumpConsole {
 					fmt.Printf("cmd=xray info=change.path.match.start\n")
 					fmt.Printf("cmd=xray info=change.path.match file='%s' ppattern='%s')\n",
 						fullPath, cpm.PathPattern)
@@ -789,7 +810,7 @@ func inspectFile(object *ObjectMetadata,
 					fmt.Printf("cmd=xray info=change.path.match.end\n")
 				}
 
-				if cpm.DumpDir != "" {
+				if cpm.Dump && cpm.DumpDir != "" {
 					dumpPath := filepath.Join(cpm.DumpDir, fullPath)
 					dirPath := fsutil.FileDir(dumpPath)
 					if !fsutil.DirExists(dirPath) {
@@ -811,6 +832,8 @@ func inspectFile(object *ObjectMetadata,
 					fmt.Printf("cmd=xray info=change.path.match.dump file='%s' ppattern='%s' target='%s'):\n",
 						fullPath, cpm.PathPattern, dumpPath)
 				}
+
+				break
 			}
 		}
 
@@ -862,9 +885,29 @@ func inspectFile(object *ObjectMetadata,
 							fullPath, cdm.PathPattern, cdm.DataPattern, dumpPath)
 					}
 				}
+
+				//TODO:
+				//add a flag to do first match only
+				//now we'll try to match all data patterns
 			}
 		}
 	} else {
+		for _, cpm := range changePathMatchers {
+			if cpm.PathPattern != "" {
+				pmatch, err := doublestar.Match(cpm.PathPattern, fullPath)
+				if err != nil {
+					log.Errorf("doublestar.Match name='%s' error=%v", fullPath, err)
+					continue
+				}
+
+				if pmatch {
+					object.PathMatch = true
+					layer.pathMatches = true
+					break
+				}
+			}
+		}
+
 		if len(changeDataHashMatchers) == 0 {
 			if doHashData {
 				hash, err := getStreamHash(reader)

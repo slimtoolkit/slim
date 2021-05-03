@@ -7,42 +7,44 @@ import (
 
 // Xray command flag names
 const (
-	FlagChanges          = "changes"
-	FlagChangesOutput    = "changes-output"
-	FlagLayer            = "layer"
-	FlagAddImageManifest = "add-image-manifest"
-	FlagAddImageConfig   = "add-image-config"
-	FlagLayerChangesMax  = "layer-changes-max"
-	FlagAllChangesMax    = "all-changes-max"
-	FlagAddChangesMax    = "add-changes-max"
-	FlagModifyChangesMax = "modify-changes-max"
-	FlagDeleteChangesMax = "delete-changes-max"
-	FlagChangePath       = "change-path"
-	FlagChangeData       = "change-data"
-	FlagChangeDataHash   = "change-data-hash"
-	FlagReuseSavedImage  = "reuse-saved-image"
-	FlagTopChangesMax    = "top-changes-max"
-	FlagHashData         = "hash-data"
+	FlagChanges               = "changes"
+	FlagChangesOutput         = "changes-output"
+	FlagLayer                 = "layer"
+	FlagAddImageManifest      = "add-image-manifest"
+	FlagAddImageConfig        = "add-image-config"
+	FlagLayerChangesMax       = "layer-changes-max"
+	FlagAllChangesMax         = "all-changes-max"
+	FlagAddChangesMax         = "add-changes-max"
+	FlagModifyChangesMax      = "modify-changes-max"
+	FlagDeleteChangesMax      = "delete-changes-max"
+	FlagChangePath            = "change-path"
+	FlagChangeData            = "change-data"
+	FlagChangeDataHash        = "change-data-hash"
+	FlagReuseSavedImage       = "reuse-saved-image"
+	FlagTopChangesMax         = "top-changes-max"
+	FlagHashData              = "hash-data"
+	FlagChangeMatchLayersOnly = "change-match-layers-only"
 )
 
 // Xray command flag usage info
 const (
-	FlagChangesUsage          = "Show layer change details for the selected change type (values: none, all, delete, modify, add)"
-	FlagChangesOutputUsage    = "Where to show the changes (values: all, report, console)"
-	FlagLayerUsage            = "Show details for the selected layer (using layer index or ID)"
-	FlagAddImageManifestUsage = "Add raw image manifest to the command execution report file"
-	FlagAddImageConfigUsage   = "Add raw image config object to the command execution report file"
-	FlagLayerChangesMaxUsage  = "Maximum number of changes to show for each layer"
-	FlagAllChangesMaxUsage    = "Maximum number of changes to show for all layers"
-	FlagAddChangesMaxUsage    = "Maximum number of 'add' changes to show for all layers"
-	FlagModifyChangesMaxUsage = "Maximum number of 'modify' changes to show for all layers"
-	FlagDeleteChangesMaxUsage = "Maximum number of 'delete' changes to show for all layers"
-	FlagChangePathUsage       = "Include changes for the files that match the path pattern (Glob/Match in Go and **)"
-	FlagChangeDataUsage       = "Include changes for the files that match the data pattern (regex)"
-	FlagReuseSavedImageUsage  = "Reuse saved container image"
-	FlagTopChangesMaxUsage    = "Maximum number of top changes to track"
-	FlagChangeDataHashUsage   = "Include changes for the files that match the provided data hashes (sha1)"
-	FlagHashDataUsage         = "Generate file data hashes"
+	FlagChangesUsage               = "Show layer change details for the selected change type (values: none, all, delete, modify, add)"
+	FlagChangesOutputUsage         = "Where to show the changes (values: all, report, console)"
+	FlagLayerUsage                 = "Show details for the selected layer (using layer index or ID)"
+	FlagAddImageManifestUsage      = "Add raw image manifest to the command execution report file"
+	FlagAddImageConfigUsage        = "Add raw image config object to the command execution report file"
+	FlagLayerChangesMaxUsage       = "Maximum number of changes to show for each layer"
+	FlagAllChangesMaxUsage         = "Maximum number of changes to show for all layers"
+	FlagAddChangesMaxUsage         = "Maximum number of 'add' changes to show for all layers"
+	FlagModifyChangesMaxUsage      = "Maximum number of 'modify' changes to show for all layers"
+	FlagDeleteChangesMaxUsage      = "Maximum number of 'delete' changes to show for all layers"
+	FlagChangePathUsage            = "Include changes for the files that match the path pattern (Glob/Match in Go and **)"
+	FlagChangeDataUsage            = "Include changes for the files that match the data pattern (regex)"
+	FlagReuseSavedImageUsage       = "Reuse saved container image"
+	FlagTopChangesMaxUsage         = "Maximum number of top changes to track"
+	FlagChangeDataHashUsage        = "Include changes for the files that match the provided data hashes (sha1)"
+	FlagHashDataUsage              = "Generate file data hashes"
+	FlagChangeMatchLayersOnlyUsage = "Show only layers with change matches"
 )
 
 var Flags = map[string]cli.Flag{
@@ -137,6 +139,11 @@ var Flags = map[string]cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  FlagChangeDataHashUsage,
 		EnvVar: "DSLIM_XRAY_CHANGE_DATA_HASH",
+	},
+	FlagChangeMatchLayersOnly: cli.BoolFlag{
+		Name:   FlagChangeMatchLayersOnly,
+		Usage:  FlagChangeMatchLayersOnlyUsage,
+		EnvVar: "DSLIM_XRAY_CHANGE_MATCH_LAYERS_ONLY",
 	},
 }
 
