@@ -1,5 +1,19 @@
 # Releases
 
+## 1.35.2 (5/2/2021)
+
+### New Features
+
+- `change-match-layers-only` xray flag to print only the layers that contain the matches.
+
+### Improvements
+
+- xray enhancement: printing to console by default for pattern or data matches.
+
+### Bug Fixes
+
+- Various xray command bug fixes.
+
 ## 1.35.1 (4/27/2021)
 
 ### Improvements
