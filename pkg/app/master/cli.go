@@ -5,21 +5,21 @@ import (
 	"os"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/build"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/containerize"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/convert"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/edit"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/help"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/lint"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/probe"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/profile"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/run"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/server"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/update"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/version"
-	_ "github.com/docker-slim/docker-slim/pkg/app/master/commands/xray"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/build"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/containerize"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/convert"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/edit"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/help"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/lint"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/probe"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/profile"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/run"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/server"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/update"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/version"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/xray"
 	"github.com/docker-slim/docker-slim/pkg/system"
-	"github.com/docker-slim/docker-slim/pkg/version"
+	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli"
@@ -31,9 +31,30 @@ const (
 	AppUsage = "optimize and secure your Docker containers!"
 )
 
+func registerCommands() {
+	//registering commands explicitly instead of relying on init()
+	//also get to control the order of the commands in the interactive prompt
+
+	xray.RegisterCommand()
+	lint.RegisterCommand()
+	build.RegisterCommand()
+	profile.RegisterCommand()
+	version.RegisterCommand()
+	help.RegisterCommand()
+	update.RegisterCommand()
+	edit.RegisterCommand()
+	probe.RegisterCommand()
+	convert.RegisterCommand()
+	run.RegisterCommand()
+	server.RegisterCommand()
+	containerize.RegisterCommand()
+}
+
 func newCLI() *cli.App {
+	registerCommands()
+
 	app := cli.NewApp()
-	app.Version = version.Current()
+	app.Version = v.Current()
 	app.Name = AppName
 	app.Usage = AppUsage
 	app.CommandNotFound = func(ctx *cli.Context, command string) {

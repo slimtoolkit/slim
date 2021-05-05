@@ -1,11 +1,10 @@
-package build
+package help
 
 import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 )
 
-func init() {
+func RegisterCommand() {
 	commands.CLI = append(commands.CLI, CLI)
-	commands.CommandFlagSuggestions[Name] = CommandFlagSuggestions
 	commands.CommandSuggestions = append(commands.CommandSuggestions, CommandSuggestion)
 }
