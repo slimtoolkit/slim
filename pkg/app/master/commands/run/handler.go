@@ -29,7 +29,7 @@ func OnCommand(
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewEditCommand(gparams.ReportLocation, gparams.InContainer)
+	cmdReport := report.NewRunCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 
 	xc.Out.State("started")

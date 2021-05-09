@@ -8,6 +8,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/build"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/containerize"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/convert"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/debug"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/edit"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/help"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/lint"
@@ -47,6 +48,7 @@ func registerCommands() {
 	convert.RegisterCommand()
 	run.RegisterCommand()
 	server.RegisterCommand()
+	debug.RegisterCommand()
 	containerize.RegisterCommand()
 }
 

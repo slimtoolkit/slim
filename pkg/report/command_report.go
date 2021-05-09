@@ -168,6 +168,38 @@ type EditCommand struct {
 	Command
 }
 
+// Output Version for 'debug'
+const OVDebugCommand = "1.0"
+
+// DebugCommand is the 'debug' command report data
+type DebugCommand struct {
+	Command
+}
+
+// Output Version for 'probe'
+const OVProbeCommand = "1.0"
+
+// ProbeCommand is the 'probe' command report data
+type ProbeCommand struct {
+	Command
+}
+
+// Output Version for 'server'
+const OVServerCommand = "1.0"
+
+// ServerCommand is the 'server' command report data
+type ServerCommand struct {
+	Command
+}
+
+// Output Version for 'run'
+const OVRunCommand = "1.0"
+
+// RunCommand is the 'run' command report data
+type RunCommand struct {
+	Command
+}
+
 func (cmd *Command) init(containerized bool) {
 	cmd.Containerized = containerized
 	cmd.Engine = version.Current()
@@ -277,6 +309,66 @@ func NewEditCommand(reportLocation string, containerized bool) *EditCommand {
 			reportLocation: reportLocation,
 			Version:        OVEditCommand, //edit command 'results' version (report and artifacts)
 			Type:           command.Edit,
+			State:          command.StateUnknown,
+		},
+	}
+
+	cmd.Command.init(containerized)
+	return cmd
+}
+
+// NewDebugCommand creates a new 'debug' command report
+func NewDebugCommand(reportLocation string, containerized bool) *DebugCommand {
+	cmd := &DebugCommand{
+		Command: Command{
+			reportLocation: reportLocation,
+			Version:        OVDebugCommand, //debug command 'results' version (report and artifacts)
+			Type:           command.Debug,
+			State:          command.StateUnknown,
+		},
+	}
+
+	cmd.Command.init(containerized)
+	return cmd
+}
+
+// NewProbeCommand creates a new 'probe' command report
+func NewProbeCommand(reportLocation string, containerized bool) *ProbeCommand {
+	cmd := &ProbeCommand{
+		Command: Command{
+			reportLocation: reportLocation,
+			Version:        OVProbeCommand, //probe command 'results' version (report and artifacts)
+			Type:           command.Probe,
+			State:          command.StateUnknown,
+		},
+	}
+
+	cmd.Command.init(containerized)
+	return cmd
+}
+
+// NewServerCommand creates a new 'server' command report
+func NewServerCommand(reportLocation string, containerized bool) *ServerCommand {
+	cmd := &ServerCommand{
+		Command: Command{
+			reportLocation: reportLocation,
+			Version:        OVServerCommand, //server command 'results' version (report and artifacts)
+			Type:           command.Server,
+			State:          command.StateUnknown,
+		},
+	}
+
+	cmd.Command.init(containerized)
+	return cmd
+}
+
+// NewRunCommand creates a new 'run' command report
+func NewRunCommand(reportLocation string, containerized bool) *RunCommand {
+	cmd := &RunCommand{
+		Command: Command{
+			reportLocation: reportLocation,
+			Version:        OVRunCommand, //run command 'results' version (report and artifacts)
+			Type:           command.Run,
 			State:          command.StateUnknown,
 		},
 	}

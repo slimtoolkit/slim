@@ -1,4 +1,4 @@
-package containerize
+package debug
 
 import (
 	"fmt"
@@ -8,10 +8,12 @@ import (
 	"github.com/urfave/cli"
 )
 
+//Debug container
+
 const (
-	Name  = "containerize"
-	Usage = "Containerize the target app"
-	Alias = "c"
+	Name  = "debug"
+	Usage = "Debug target container"
+	Alias = "dbg"
 )
 
 var CLI = cli.Command{
@@ -39,6 +41,7 @@ var CLI = cli.Command{
 			xc,
 			gcvalues,
 			targetRef)
+
 		commands.ShowCommunityInfo()
 		return nil
 	},

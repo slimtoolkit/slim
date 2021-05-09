@@ -1,4 +1,4 @@
-package server
+package debug
 
 import (
 	"fmt"
@@ -19,19 +19,24 @@ const appName = commands.AppName
 
 type ovars = commands.OutVars
 
-// OnCommand implements the 'server' docker-slim command
+// OnCommand implements the 'debug' docker-slim command
 func OnCommand(
 	xc *commands.ExecutionContext,
-	gparams *commands.GenericParams) {
+	gparams *commands.GenericParams,
+	targetRef string) {
 	logger := log.WithFields(log.Fields{"app": appName, "command": Name})
 	prefix := fmt.Sprintf("cmd=%s", Name)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewServerCommand(gparams.ReportLocation, gparams.InContainer)
+	cmdReport := report.NewDebugCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 
 	xc.Out.State("started")
+	xc.Out.Info("params",
+		ovars{
+			"target": targetRef,
+		})
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {

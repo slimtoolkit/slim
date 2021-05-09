@@ -12,7 +12,7 @@ import (
 
 const (
 	Name  = "probe"
-	Usage = "Probe target"
+	Usage = "Probe target endpoint"
 	Alias = "prb"
 )
 

@@ -9,6 +9,10 @@ const (
 	Containerize Type = "containerize"
 	Convert      Type = "convert"
 	Edit         Type = "edit"
+	Debug        Type = "debug"
+	Probe        Type = "probe"
+	Run          Type = "run"
+	Server       Type = "server"
 	Version      Type = "version"
 	Update       Type = "update"
 )
