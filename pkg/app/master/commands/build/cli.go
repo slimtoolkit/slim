@@ -53,12 +53,7 @@ var CLI = cli.Command{
 		//Container Run Options
 		commands.Cflag(commands.FlagCRORuntime),
 		//
-		cli.StringFlag{
-			Name:   FlagTag,
-			Value:  "",
-			Usage:  FlagTagUsage,
-			EnvVar: "DSLIM_TARGET_TAG",
-		},
+		cflag(FlagTag),
 		cli.StringFlag{
 			Name:   FlagImageOverrides,
 			Value:  "",
@@ -323,7 +318,7 @@ var CLI = cli.Command{
 
 		doShowContainerLogs := ctx.Bool(commands.FlagShowContainerLogs)
 		doShowBuildLogs := ctx.Bool(FlagShowBuildLogs)
-		doTag := ctx.String(FlagTag)
+		outputTags := ctx.StringSlice(FlagTag)
 
 		doImageOverrides := ctx.String(FlagImageOverrides)
 		overrides, err := commands.GetContainerOverrides(ctx)
@@ -521,7 +516,7 @@ var CLI = cli.Command{
 			doShowPullLogs,
 			cbOpts,
 			crOpts,
-			doTag,
+			outputTags,
 			doHTTPProbe,
 			httpProbeCmds,
 			httpProbeRetryCount,

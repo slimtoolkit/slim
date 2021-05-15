@@ -89,7 +89,7 @@ const (
 	FlagRemoveLabelUsage   = "Remove LABEL instructions for the optimized image"
 	FlagRemoveVolumeUsage  = "Remove VOLUME instructions for the optimized image"
 
-	FlagTagUsage = "Custom tag for the generated image"
+	FlagTagUsage = "Custom tags for the generated image"
 
 	FlagImageOverridesUsage = "Save runtime overrides in generated image (values is 'all' or a comma delimited list of override types: 'entrypoint', 'cmd', 'workdir', 'env', 'expose', 'volume', 'label')"
 
@@ -216,6 +216,12 @@ var Flags = map[string]cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  FlagNewLabelUsage,
 		EnvVar: "DSLIM_NEW_LABEL",
+	},
+	FlagTag: cli.StringSliceFlag{
+		Name:   FlagTag,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagTagUsage,
+		EnvVar: "DSLIM_TARGET_TAG",
 	},
 	//Container Build Options
 	FlagBuildFromDockerfile: cli.StringFlag{

@@ -54,7 +54,7 @@ func OnCommand(
 	doShowPullLogs bool,
 	cbOpts *config.ContainerBuildOptions,
 	crOpts *config.ContainerRunOptions,
-	customImageTag string,
+	outputTags []string,
 	doHTTPProbe bool,
 	httpProbeCmds []config.HTTPProbeCmd,
 	httpProbeRetryCount int,
@@ -107,6 +107,17 @@ func OnCommand(
 	cmdReport := report.NewBuildCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 	cmdReport.TargetReference = targetRef
+
+	var customImageTag string
+	var additionalTags []string
+
+	if len(outputTags) > 0 {
+		customImageTag = outputTags[0]
+
+		if len(outputTags) > 1 {
+			additionalTags = outputTags[1:]
+		}
+	}
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
@@ -653,6 +664,7 @@ func OnCommand(
 
 	builder, err := builder.NewImageBuilder(client,
 		customImageTag,
+		additionalTags,
 		imageInspector.ImageInfo,
 		artifactLocation,
 		doShowBuildLogs,

@@ -30,19 +30,20 @@ type BasicImageBuilder struct {
 // ImageBuilder creates new optimized container images
 type ImageBuilder struct {
 	BasicImageBuilder
-	RepoName     string
-	ID           string
-	Entrypoint   []string
-	Cmd          []string
-	WorkingDir   string
-	Env          []string
-	Labels       map[string]string
-	ExposedPorts map[docker.Port]struct{}
-	Volumes      map[string]struct{}
-	OnBuild      []string
-	User         string
-	HasData      bool
-	TarData      bool
+	RepoName       string
+	AdditionalTags []string
+	ID             string
+	Entrypoint     []string
+	Cmd            []string
+	WorkingDir     string
+	Env            []string
+	Labels         map[string]string
+	ExposedPorts   map[docker.Port]struct{}
+	Volumes        map[string]struct{}
+	OnBuild        []string
+	User           string
+	HasData        bool
+	TarData        bool
 }
 
 const (
@@ -50,7 +51,7 @@ const (
 	dsEvtPortInfo = "65502/tcp"
 )
 
-// NewImageBuilder creates a new BasicImageBuilder instances
+// NewBasicImageBuilder creates a new BasicImageBuilder instances
 func NewBasicImageBuilder(client *docker.Client,
 	//imageRepoNameTag string,
 	//dockerfileName string,
@@ -134,6 +135,7 @@ func (b *BasicImageBuilder) Remove() error {
 // NewImageBuilder creates a new ImageBuilder instances
 func NewImageBuilder(client *docker.Client,
 	imageRepoNameTag string,
+	additionalTags []string,
 	imageInfo *docker.Image,
 	artifactLocation string,
 	showBuildLogs bool,
@@ -180,17 +182,18 @@ func NewImageBuilder(client *docker.Client,
 				//SuppressOutput: true,
 			},
 		},
-		RepoName:     imageRepoNameTag,
-		ID:           imageInfo.ID,
-		Entrypoint:   imageInfo.Config.Entrypoint,
-		Cmd:          imageInfo.Config.Cmd,
-		WorkingDir:   imageInfo.Config.WorkingDir,
-		Env:          imageInfo.Config.Env,
-		Labels:       labels,
-		ExposedPorts: imageInfo.Config.ExposedPorts,
-		Volumes:      imageInfo.Config.Volumes,
-		OnBuild:      imageInfo.Config.OnBuild,
-		User:         imageInfo.Config.User,
+		RepoName:       imageRepoNameTag,
+		AdditionalTags: additionalTags,
+		ID:             imageInfo.ID,
+		Entrypoint:     imageInfo.Config.Entrypoint,
+		Cmd:            imageInfo.Config.Cmd,
+		WorkingDir:     imageInfo.Config.WorkingDir,
+		Env:            imageInfo.Config.Env,
+		Labels:         labels,
+		ExposedPorts:   imageInfo.Config.ExposedPorts,
+		Volumes:        imageInfo.Config.Volumes,
+		OnBuild:        imageInfo.Config.OnBuild,
+		User:           imageInfo.Config.User,
 	}
 
 	if builder.ExposedPorts == nil {
@@ -342,7 +345,40 @@ func (b *ImageBuilder) Build() error {
 		return err
 	}
 
-	return b.APIClient.BuildImage(b.BuildOptions)
+	err := b.APIClient.BuildImage(b.BuildOptions)
+	if err != nil {
+		return err
+	}
+
+	for _, fullTag := range b.AdditionalTags {
+		fullTag := strings.TrimSpace(fullTag)
+		if len(fullTag) == 0 {
+			log.Debug("ImageBuilder.Build: Skipping empty tag")
+			continue
+		}
+
+		var options docker.TagImageOptions
+		parts := strings.Split(fullTag, ":")
+		if len(parts) > 2 {
+			log.Debugf("ImageBuilder.Build: Skipping malformed tag - '%s'", fullTag)
+			continue
+		}
+
+		if len(parts) == 2 {
+			options.Repo = parts[0]
+			options.Tag = parts[1]
+		} else {
+			options.Repo = parts[0]
+		}
+
+		targetImage := b.BuildOptions.Name
+		if err := b.APIClient.TagImage(targetImage, options); err != nil {
+			//not failing on tagging errors
+			log.Debugf("ImageBuilder.Build: Error tagging image '%s' with tag - '%s' (error - %v)", targetImage, fullTag, err)
+		}
+	}
+
+	return nil
 }
 
 // GenerateDockerfile creates a Dockerfile file
