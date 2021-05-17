@@ -121,6 +121,7 @@ type XrayCommand struct {
 	TargetReference      string                      `json:"target_reference"`
 	SourceImage          ImageMetadata               `json:"source_image"`
 	ArtifactLocation     string                      `json:"artifact_location"`
+	ImageReport          *dockerimage.ImageReport    `json:"image_report,omitempty"`
 	ImageStack           []*reverse.ImageInfo        `json:"image_stack"`
 	ImageLayers          []*dockerimage.LayerReport  `json:"image_layers"`
 	ImageArchiveLocation string                      `json:"image_archive_location"`

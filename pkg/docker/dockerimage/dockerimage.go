@@ -31,10 +31,25 @@ const (
 )
 
 type Package struct {
-	Manifest    *ManifestObject
-	Config      *ConfigObject
-	Layers      []*Layer
-	LayerIDRefs map[string]*Layer
+	Manifest       *ManifestObject
+	Config         *ConfigObject
+	Layers         []*Layer
+	LayerIDRefs    map[string]*Layer
+	HashReferences map[string]map[string]*ObjectMetadata
+	Stats          PackageStats
+}
+
+type ImageReport struct {
+	Stats      PackageStats                     `json:"stats"`
+	Duplicates map[string]*DuplicateFilesReport `json:"duplicates,omitempty"`
+}
+
+type DuplicateFilesReport struct {
+	FileCount   uint64         `json:"file_count"`
+	FileSize    uint64         `json:"file_size"`
+	AllFileSize uint64         `json:"all_file_size"`
+	WastedSize  uint64         `json:"wasted_size"`
+	Files       map[string]int `json:"files"`
 }
 
 type LayerReport struct {
@@ -119,6 +134,14 @@ type LayerStats struct {
 	DeletedSize            uint64 `json:"deleted_size"`
 	AddedSize              uint64 `json:"added_size"`
 	ModifiedSize           uint64 `json:"modified_size"`
+}
+
+type PackageStats struct {
+	DuplicateFileCount      uint64 `json:"duplicate_file_count"`
+	DuplicateFileTotalCount uint64 `json:"duplicate_file_total_count"`
+	DuplicateFileSize       uint64 `json:"duplicate_file_size"`
+	DuplicateFileTotalSize  uint64 `json:"duplicate_file_total_size"`
+	DuplicateFileWastedSize uint64 `json:"duplicate_file_wasted_size"`
 }
 
 type ChangeType int
@@ -211,7 +234,7 @@ type ObjectMetadata struct {
 	DirContentDelete bool           `json:"dir_content_delete,omitempty"`
 	Name             string         `json:"name"`
 	Size             int64          `json:"size,omitempty"`
-	SizeHuman        string         `json:"size_human,omitempty"`
+	SizeHuman        string         `json:"size_human,omitempty"` //not used yet
 	Mode             os.FileMode    `json:"mode,omitempty"`
 	ModeHuman        string         `json:"mode_human,omitempty"`
 	UID              int            `json:"uid"` //don't omit uid 0
@@ -222,6 +245,7 @@ type ObjectMetadata struct {
 	History          *ObjectHistory `json:"history,omitempty"`
 	Hash             string         `json:"hash,omitempty"`
 	PathMatch        bool           `json:"-"`
+	LayerIndex       int            `json:"-"`
 }
 
 type ObjectHistory struct {
@@ -244,7 +268,8 @@ type Changeset struct {
 
 func newPackage() *Package {
 	pkg := Package{
-		LayerIDRefs: map[string]*Layer{},
+		LayerIDRefs:    map[string]*Layer{},
+		HashReferences: map[string]map[string]*ObjectMetadata{},
 	}
 
 	return &pkg
@@ -275,6 +300,7 @@ func LoadPackage(archivePath string,
 	skipObjects bool,
 	topChangesMax int,
 	doHashData bool,
+	doFindDuplicates bool,
 	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
 	changePathMatchers []*ChangePathMatcher,
 	changeDataMatchers map[string]*ChangeDataMatcher) (*Package, error) {
@@ -374,7 +400,18 @@ func LoadPackage(archivePath string,
 						}
 					}
 				} else {
-					layer, err = layerFromStream(hdr.Name, tar.NewReader(tr), layerID, topChangesMax, doHashData, changeDataHashMatchers, changePathMatchers, cpmDumps, changeDataMatchers)
+					layer, err = layerFromStream(
+						pkg,
+						hdr.Name,
+						tar.NewReader(tr),
+						layerID,
+						topChangesMax,
+						doHashData,
+						doFindDuplicates,
+						changeDataHashMatchers,
+						changePathMatchers,
+						cpmDumps,
+						changeDataMatchers)
 					if err != nil {
 						log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
 						return nil, err
@@ -416,6 +453,8 @@ func LoadPackage(archivePath string,
 
 		if idx == 0 {
 			for oidx, object := range layer.Objects {
+				object.LayerIndex = idx
+
 				if object.Change == ChangeUnknown {
 					object.Change = ChangeAdd
 					layer.Changes.Added = append(layer.Changes.Added, oidx)
@@ -440,6 +479,8 @@ func LoadPackage(archivePath string,
 			}
 		} else {
 			for oidx, object := range layer.Objects {
+				object.LayerIndex = idx
+
 				if object.Change == ChangeUnknown {
 					for prevIdx := 0; prevIdx < idx; prevIdx++ {
 						prevLayer := pkg.Layers[prevIdx]
@@ -544,6 +585,27 @@ func LoadPackage(archivePath string,
 		}
 	}
 
+	if doFindDuplicates {
+		for hash, hr := range pkg.HashReferences {
+			dupCount := len(hr)
+			if dupCount > 1 {
+				pkg.Stats.DuplicateFileCount++
+				pkg.Stats.DuplicateFileTotalCount += uint64(dupCount)
+				for _, om := range hr {
+					pkg.Stats.DuplicateFileSize += uint64(om.Size)
+					pkg.Stats.DuplicateFileTotalSize += uint64(om.Size * int64(dupCount))
+					break
+				}
+			} else {
+				delete(pkg.HashReferences, hash)
+			}
+		}
+
+		if pkg.Stats.DuplicateFileCount > 0 {
+			pkg.Stats.DuplicateFileWastedSize = uint64(pkg.Stats.DuplicateFileTotalSize - pkg.Stats.DuplicateFileSize)
+		}
+	}
+
 	return pkg, nil
 }
 
@@ -557,11 +619,14 @@ func hasChangePathMatcherDumps(changePathMatchers []*ChangePathMatcher) bool {
 	return false
 }
 
-func layerFromStream(layerPath string,
+func layerFromStream(
+	pkg *Package,
+	layerPath string,
 	tr *tar.Reader,
 	layerID string,
 	topChangesMax int,
 	doHashData bool,
+	doFindDuplicates bool,
 	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
 	changePathMatchers []*ChangePathMatcher,
 	cpmDumps bool,
@@ -594,7 +659,7 @@ func layerFromStream(layerPath string,
 
 		object := &ObjectMetadata{
 			Name:       hdr.Name,
-			Size:       hdr.Size,
+			Size:       hdr.Size, //todo: set .SizeHuman
 			Mode:       hdr.FileInfo().Mode(),
 			UID:        hdr.Uid,
 			GID:        hdr.Gid,
@@ -660,9 +725,27 @@ func layerFromStream(layerPath string,
 			if isDeleted {
 				layer.Stats.DeletedFileCount++
 			} else {
-				err = inspectFile(object, tr, layer, doHashData, changeDataHashMatchers, changePathMatchers, cpmDumps, changeDataMatchers)
+				err = inspectFile(
+					object,
+					tr,
+					layer,
+					doHashData,
+					changeDataHashMatchers,
+					changePathMatchers,
+					cpmDumps,
+					changeDataMatchers)
 				if err != nil {
 					log.Errorf("layerFromStream: error inspecting layer file (%s) - (%v) - %v", object.Name, layerID, err)
+				} else {
+					if doFindDuplicates && len(object.Hash) != 0 {
+						hr, found := pkg.HashReferences[object.Hash]
+						if !found {
+							hr = map[string]*ObjectMetadata{}
+							pkg.HashReferences[object.Hash] = hr
+						}
+
+						hr[object.Name] = object
+					}
 				}
 			}
 		case tar.TypeDir:

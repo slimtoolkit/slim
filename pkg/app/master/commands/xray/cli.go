@@ -40,6 +40,8 @@ var CLI = cli.Command{
 		cflag(FlagTopChangesMax),
 		cflag(FlagChangeMatchLayersOnly),
 		cflag(FlagHashData),
+		cflag(FlagFindDuplicates),
+		cflag(FlagShowDuplicates),
 		cflag(FlagChangeDataHash),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
 	},
@@ -127,6 +129,13 @@ var CLI = cli.Command{
 		doReuseSavedImage := ctx.Bool(FlagReuseSavedImage)
 
 		doHashData := ctx.Bool(FlagHashData)
+		doFindDuplicates := ctx.Bool(FlagFindDuplicates)
+		if doFindDuplicates {
+			doHashData = true
+		}
+
+		doShowDuplicates := ctx.Bool(FlagShowDuplicates)
+
 		changeDataHashMatchers, err := parseChangeDataHashMatchers(ctx.StringSlice(FlagChangeDataHash))
 		changeMatchLayersOnly := ctx.Bool(FlagChangeMatchLayersOnly)
 
@@ -149,6 +158,8 @@ var CLI = cli.Command{
 			changeDataMatchers,
 			changeDataHashMatchers,
 			doHashData,
+			doFindDuplicates,
+			doShowDuplicates,
 			changeMatchLayersOnly,
 			doAddImageManifest,
 			doAddImageConfig,

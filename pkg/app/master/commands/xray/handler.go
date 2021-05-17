@@ -55,6 +55,8 @@ func OnCommand(
 	changeDataMatcherList []*dockerimage.ChangeDataMatcher,
 	changeDataHashMatcherList []*dockerimage.ChangeDataHashMatcher,
 	doHashData bool,
+	doFindDuplicates bool,
+	doShowDuplicates bool,
 	changeMatchLayersOnly bool,
 	doAddImageManifest bool,
 	doAddImageConfig bool,
@@ -262,7 +264,7 @@ func OnCommand(
 	}
 
 	xc.Out.Info("image.data.inspection.process.image.start")
-	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, topChangesMax, doHashData, changeDataHashMatchers, changePathMatchers, changeDataMatchers)
+	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, topChangesMax, doHashData, doFindDuplicates, changeDataHashMatchers, changePathMatchers, changeDataMatchers)
 	errutil.FailOn(err)
 	xc.Out.Info("image.data.inspection.process.image.end")
 
@@ -296,6 +298,8 @@ func OnCommand(
 		modifyChangesMax,
 		deleteChangesMax,
 		doHashData,
+		doFindDuplicates,
+		doShowDuplicates,
 		changeMatchLayersOnly,
 		changeDataHashMatchers,
 		changePathMatchers,
@@ -359,6 +363,8 @@ func printImagePackage(
 	modifyChangesMax int,
 	deleteChangesMax int,
 	doHashData bool,
+	doFindDuplicates bool,
+	doShowDuplicates bool,
 	changeMatchLayersOnly bool,
 	changeDataHashMatchers map[string]*dockerimage.ChangeDataHashMatcher,
 	changePathMatchers []*dockerimage.ChangePathMatcher,
@@ -374,6 +380,24 @@ func printImagePackage(
 		ovars{
 			"value": len(pkg.Layers),
 		})
+
+	cmdReport.ImageReport = &dockerimage.ImageReport{
+		Stats: pkg.Stats,
+	}
+
+	if doFindDuplicates && pkg.Stats.DuplicateFileCount > 0 {
+		xc.Out.Info("image.stats.duplicates",
+			ovars{
+				"file_count":            pkg.Stats.DuplicateFileCount,
+				"file_total_count":      pkg.Stats.DuplicateFileTotalCount,
+				"file_size.bytes":       pkg.Stats.DuplicateFileSize,
+				"file_size.human":       humanize.Bytes(pkg.Stats.DuplicateFileSize),
+				"file_total_size.bytes": pkg.Stats.DuplicateFileTotalSize,
+				"file_total_size.human": humanize.Bytes(pkg.Stats.DuplicateFileTotalSize),
+				"wasted.bytes":          pkg.Stats.DuplicateFileWastedSize,
+				"wasted.human":          humanize.Bytes(pkg.Stats.DuplicateFileWastedSize),
+			})
+	}
 
 	doShow := func(changeMatchLayersOnly bool, layer *dockerimage.Layer) bool {
 		if !changeMatchLayersOnly || (changeMatchLayersOnly && layer.HasMatches()) {
@@ -838,6 +862,52 @@ func printImagePackage(
 
 		if doShow(changeMatchLayersOnly, layer) {
 			xc.Out.Info("layer.end")
+		}
+	}
+
+	if doFindDuplicates && doShowDuplicates && len(pkg.HashReferences) > 0 {
+		cmdReport.ImageReport.Duplicates = map[string]*dockerimage.DuplicateFilesReport{}
+
+		//TODO: show duplicates by duplicate total size (biggest waste first)
+		for hash, hobjects := range pkg.HashReferences {
+			var dfr *dockerimage.DuplicateFilesReport
+			showStart := true
+			for fpath, info := range hobjects {
+				if showStart {
+					dfr = &dockerimage.DuplicateFilesReport{
+						Files:       map[string]int{},
+						FileCount:   uint64(len(hobjects)),
+						FileSize:    uint64(info.Size),
+						AllFileSize: uint64(info.Size * int64(len(hobjects))),
+					}
+
+					dfr.WastedSize = dfr.AllFileSize - dfr.FileSize
+					cmdReport.ImageReport.Duplicates[hash] = dfr
+
+					xc.Out.Info("image.duplicates.set.start",
+						ovars{
+							"hash":             hash,
+							"count":            dfr.FileCount,
+							"size.bytes":       dfr.FileSize,
+							"size.human":       humanize.Bytes(uint64(dfr.FileSize)),
+							"all_size.bytes":   dfr.AllFileSize,
+							"size_total.human": humanize.Bytes(dfr.AllFileSize),
+							"wasted.bytes":     dfr.WastedSize,
+							"wasted.human":     humanize.Bytes(dfr.WastedSize),
+						})
+
+					showStart = false
+				}
+
+				dfr.Files[fpath] = info.LayerIndex
+				xc.Out.Info("image.duplicates.object",
+					ovars{
+						"name":  fpath,
+						"layer": info.LayerIndex,
+					})
+			}
+
+			xc.Out.Info("image.duplicates.set.end")
 		}
 	}
 }
