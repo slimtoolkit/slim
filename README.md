@@ -4,6 +4,7 @@
 [![Gitter chat](https://badges.gitter.im/docker-slim/docker-slim.svg)](https://gitter.im/docker-slim/community)
 [![Discord chat](https://img.shields.io/static/v1.svg?label=chat&message=on%20discord&color=7389D8)](https://discord.gg/9tDyxYS)
 [![Download DockerSlim](https://img.shields.io/badge/download-docker--slim-blue)](https://github.com/docker-slim/docker-slim#installation)
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod)](https://gitpod.io/#https://github.com/docker-slim/docker-slim)
 
 # Optimize Your Experience with Containers. Make Your Containers Better, Smaller, More Secure and Do Less to Get There (free and open source!)
 
@@ -761,7 +762,11 @@ DockerSlim copies the relevant image artifacts trying to preserve their permissi
 
 ## BUILD PROCESS
 
-Use Go 1.13 or higher to build `docker-slim`. You can use earlier version of Go, but it can't be lower than Go 1.5.1. Versions prior to 1.5.1 have a Docker/ptrace related bug (Go kills processes if your app is PID 1). When the 'monitor' is separate from the 'launcher' process it will be possible to user older Go versions again.
+If you have a web browser, you can get a fully pre-configured development environment in one click:
+
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://gitpod.io/#https://github.com/docker-slim/docker-slim)
+
+Otherwise use Go 1.13 or higher to build `docker-slim`. You can use earlier version of Go, but it can't be lower than Go 1.5.1. Versions prior to 1.5.1 have a Docker/ptrace related bug (Go kills processes if your app is PID 1). When the 'monitor' is separate from the 'launcher' process it will be possible to user older Go versions again.
 
 Tools:
 

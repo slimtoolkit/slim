@@ -1,0 +1,16 @@
+# List the start up tasks. You can start them in parallel in multiple terminals.
+# https://www.gitpod.io/docs/config-start-tasks/
+tasks:
+  - init: >
+      make tools build
+    command: make inspect
+
+# Enable prebuilds of your project to enable faster workspace start times.
+# https://www.gitpod.io/docs/prebuilds/#configure-the-github-app
+github:
+  prebuilds:
+    master: true
+    branches: true
+    pullRequests: true
+    pullRequestsFromForks: true
+    addCheck: true
