@@ -142,6 +142,12 @@ type PackageStats struct {
 	DuplicateFileSize       uint64 `json:"duplicate_file_size"`
 	DuplicateFileTotalSize  uint64 `json:"duplicate_file_total_size"`
 	DuplicateFileWastedSize uint64 `json:"duplicate_file_wasted_size"`
+	DeletedCount            uint64 `json:"deleted_count"`
+	DeletedDirContentCount  uint64 `json:"deleted_dir_content_count"`
+	DeletedDirCount         uint64 `json:"deleted_dir_count"`
+	DeletedFileCount        uint64 `json:"deleted_file_count"`
+	DeletedLinkCount        uint64 `json:"deleted_link_count"`
+	DeletedFileSize         uint64 `json:"deleted_file_size"`
 }
 
 type ChangeType int
@@ -246,6 +252,7 @@ type ObjectMetadata struct {
 	Hash             string         `json:"hash,omitempty"`
 	PathMatch        bool           `json:"-"`
 	LayerIndex       int            `json:"-"`
+	TypeFlag         byte           `json:"-"`
 }
 
 type ObjectHistory struct {
@@ -539,6 +546,15 @@ func LoadPackage(archivePath string,
 								Object: object,
 							}
 
+							switch object.TypeFlag {
+							case tar.TypeReg:
+								//NOTE: counting the file size of the first instance
+								layer.Stats.DeletedSize += uint64(om.Size)
+								pkg.Stats.DeletedFileSize += uint64(om.Size)
+							case tar.TypeDir:
+								//TODO: need to count all file sizes in the dir
+							}
+
 							break
 						}
 					}
@@ -665,6 +681,7 @@ func layerFromStream(
 			GID:        hdr.Gid,
 			ModTime:    hdr.ModTime,
 			ChangeTime: hdr.ChangeTime,
+			TypeFlag:   hdr.Typeflag,
 		}
 
 		normalized, isDeleted, isDeletedDirContent, err := NormalizeFileObjectLayerPath(object.Name)
@@ -696,13 +713,15 @@ func layerFromStream(
 			layer.Changes.Deleted = append(layer.Changes.Deleted, idx)
 			layer.Changes.DeletedDirContent = append(layer.Changes.DeletedDirContent, idx)
 			layer.Stats.DeletedDirContentCount++
+			pkg.Stats.DeletedDirContentCount++
 		} else {
 			if isDeleted {
 				object.Change = ChangeDelete
 				idx := len(layer.Objects) - 1
 				layer.Changes.Deleted = append(layer.Changes.Deleted, idx)
 				layer.Stats.DeletedCount++
-				layer.Stats.DeletedSize += uint64(object.Size)
+				pkg.Stats.DeletedCount++
+				//layer.Stats.DeletedSize += uint64(object.Size)
 				//NOTE:
 				//This is not the real deleted size.
 				//Need to find the actual object in a previous layer to know the actual size.
@@ -715,6 +734,7 @@ func layerFromStream(
 			layer.Stats.LinkCount++
 			if isDeleted {
 				layer.Stats.DeletedLinkCount++
+				pkg.Stats.DeletedLinkCount++
 			}
 		case tar.TypeReg:
 			layer.Stats.FileCount++
@@ -724,6 +744,7 @@ func layerFromStream(
 
 			if isDeleted {
 				layer.Stats.DeletedFileCount++
+				pkg.Stats.DeletedFileCount++
 			} else {
 				err = inspectFile(
 					object,
@@ -756,6 +777,7 @@ func layerFromStream(
 
 			if isDeleted {
 				layer.Stats.DeletedDirCount++
+				pkg.Stats.DeletedDirCount++
 			}
 		}
 	}

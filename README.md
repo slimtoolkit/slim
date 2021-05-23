@@ -762,13 +762,30 @@ DockerSlim copies the relevant image artifacts trying to preserve their permissi
 
 ## BUILD PROCESS
 
+#### Build Options
+
+Picke one of the build options that works best for you.
+
+##### Containerized
+
+Run `make` (or `./scripts/docker-builder.run.sh` or click on `./scripts/mac/docker-builder.run.command` on Macs) from the project directory (builds `docker-slim` in a Docker container; great if you don't want to install Go on your local machine and if you already have Docker).
+
+##### Native
+
+Run `make build` (or `./scripts/src.build.sh` or click on `./scripts/mac/src.build.command` on Macs) to build `docker-slim` natively (requires Go installed locally).
+
+Note:
+
+Use Go 1.13 or higher. You can use earlier version of Go, but it can't be lower than Go 1.5.1. Versions prior to 1.5.1 have a Docker/ptrace related bug (Go kills processes if your app is PID 1). When the 'monitor' is separate from the 'launcher' process it will be possible to user older Go versions again.
+
+##### Gitpod
+
 If you have a web browser, you can get a fully pre-configured development environment in one click:
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://gitpod.io/#https://github.com/docker-slim/docker-slim)
 
-Otherwise use Go 1.13 or higher to build `docker-slim`. You can use earlier version of Go, but it can't be lower than Go 1.5.1. Versions prior to 1.5.1 have a Docker/ptrace related bug (Go kills processes if your app is PID 1). When the 'monitor' is separate from the 'launcher' process it will be possible to user older Go versions again.
 
-Tools:
+##### Additional Tools
 
 - `license-bill-of-materials` - Optional tool to track dependencies and their licenses.
 - `golint` - Optional tool for code analysis. See `https://github.com/golang/lint` for more details.
@@ -779,12 +796,6 @@ Notes:
 
 - Make sure you have `golint` if you intend to run the `src.inspect.sh` or `mac.src.inspect.command` scripts.
 
-#### Build Steps
-
-You have multiple options to build `docker-slim`:
-
-- Run `make` (or `./scripts/docker-builder.run.sh` or click on `./scripts/mac/docker-builder.run.command` on Macs) from the project directory (builds `docker-slim` in a Docker container; great if you don't want to install Go on your local machine and if you already have Docker)
-- Run `make build` (or `./scripts/src.build.sh` or click on `./scripts/mac/src.build.command` on Macs) to build `docker-slim` natively (requires Go installed locally)
 
 ## DESIGN
 
