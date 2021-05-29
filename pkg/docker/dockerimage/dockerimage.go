@@ -15,8 +15,10 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/bmatcuk/doublestar/v3"
+	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
@@ -134,6 +136,12 @@ type LayerStats struct {
 	DeletedSize            uint64 `json:"deleted_size"`
 	AddedSize              uint64 `json:"added_size"`
 	ModifiedSize           uint64 `json:"modified_size"`
+	Utf8Count              uint64 `json:"utf8_count"`
+	Utf8Size               uint64 `json:"utf8_size"`
+	Utf8SizeHuman          string `json:"utf8_size_human"`
+	BinaryCount            uint64 `json:"binary_count"`
+	BinarySize             uint64 `json:"binary_size"`
+	BinarySizeHuman        string `json:"binary_size_human"`
 }
 
 type PackageStats struct {
@@ -148,6 +156,12 @@ type PackageStats struct {
 	DeletedFileCount        uint64 `json:"deleted_file_count"`
 	DeletedLinkCount        uint64 `json:"deleted_link_count"`
 	DeletedFileSize         uint64 `json:"deleted_file_size"`
+	Utf8Count               uint64 `json:"utf8_count"`
+	Utf8Size                uint64 `json:"utf8_size"`
+	Utf8SizeHuman           string `json:"utf8_size_human"`
+	BinaryCount             uint64 `json:"binary_count"`
+	BinarySize              uint64 `json:"binary_size"`
+	BinarySizeHuman         string `json:"binary_size_human"`
 }
 
 type ChangeType int
@@ -253,6 +267,7 @@ type ObjectMetadata struct {
 	PathMatch        bool           `json:"-"`
 	LayerIndex       int            `json:"-"`
 	TypeFlag         byte           `json:"-"`
+	Utf8             bool           `json:"utf8"`
 }
 
 type ObjectHistory struct {
@@ -310,7 +325,9 @@ func LoadPackage(archivePath string,
 	doFindDuplicates bool,
 	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
 	changePathMatchers []*ChangePathMatcher,
-	changeDataMatchers map[string]*ChangeDataMatcher) (*Package, error) {
+	changeDataMatchers map[string]*ChangeDataMatcher,
+	tarUtf8 *tar.Writer,
+) (*Package, error) {
 	imageID = dockerutil.CleanImageID(imageID)
 
 	cpmDumps := hasChangePathMatcherDumps(changePathMatchers)
@@ -418,7 +435,9 @@ func LoadPackage(archivePath string,
 						changeDataHashMatchers,
 						changePathMatchers,
 						cpmDumps,
-						changeDataMatchers)
+						changeDataMatchers,
+						tarUtf8,
+					)
 					if err != nil {
 						log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
 						return nil, err
@@ -462,6 +481,18 @@ func LoadPackage(archivePath string,
 			for oidx, object := range layer.Objects {
 				object.LayerIndex = idx
 
+				if object.Utf8 {
+					layer.Stats.Utf8Count++
+					layer.Stats.Utf8Size += uint64(object.Size)
+					pkg.Stats.Utf8Count++
+					pkg.Stats.Utf8Size += uint64(object.Size)
+				} else {
+					layer.Stats.BinaryCount++
+					layer.Stats.BinarySize += uint64(object.Size)
+					pkg.Stats.BinaryCount++
+					pkg.Stats.BinarySize += uint64(object.Size)
+				}
+
 				if object.Change == ChangeUnknown {
 					object.Change = ChangeAdd
 					layer.Changes.Added = append(layer.Changes.Added, oidx)
@@ -484,9 +515,26 @@ func LoadPackage(archivePath string,
 					object.History.Delete = &changeInfo
 				}
 			}
+
+			layer.Stats.Utf8SizeHuman = humanize.Bytes(layer.Stats.Utf8Size)
+			layer.Stats.BinarySizeHuman = humanize.Bytes(layer.Stats.BinarySize)
+
 		} else {
 			for oidx, object := range layer.Objects {
 				object.LayerIndex = idx
+
+				if object.Utf8 {
+					layer.Stats.Utf8Count++
+					layer.Stats.Utf8Size += uint64(object.Size)
+					pkg.Stats.Utf8Count++
+					pkg.Stats.Utf8Size += uint64(object.Size)
+
+				} else {
+					layer.Stats.BinaryCount++
+					layer.Stats.BinarySize += uint64(object.Size)
+					pkg.Stats.BinaryCount++
+					pkg.Stats.BinarySize += uint64(object.Size)
+				}
 
 				if object.Change == ChangeUnknown {
 					for prevIdx := 0; prevIdx < idx; prevIdx++ {
@@ -560,6 +608,8 @@ func LoadPackage(archivePath string,
 					}
 				}
 			}
+			layer.Stats.Utf8SizeHuman = humanize.Bytes(layer.Stats.Utf8Size)
+			layer.Stats.BinarySizeHuman = humanize.Bytes(layer.Stats.BinarySize)
 		}
 
 		pkg.LayerIDRefs[layerID] = layer
@@ -571,6 +621,9 @@ func LoadPackage(archivePath string,
 			log.Debugf("dockerimage.LoadPackage: no FS diff for layer index %v", idx)
 		}
 	}
+
+	pkg.Stats.Utf8SizeHuman = humanize.Bytes(pkg.Stats.Utf8Size)
+	pkg.Stats.BinarySizeHuman = humanize.Bytes(pkg.Stats.BinarySize)
 
 	if len(pkg.Layers) > 0 {
 		var currentLayerIndex int
@@ -646,7 +699,10 @@ func layerFromStream(
 	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
 	changePathMatchers []*ChangePathMatcher,
 	cpmDumps bool,
-	changeDataMatchers map[string]*ChangeDataMatcher) (*Layer, error) {
+	changeDataMatchers map[string]*ChangeDataMatcher,
+	tarUtf8 *tar.Writer,
+) (*Layer, error) {
+
 	layer := newLayer(layerID, topChangesMax)
 	layer.Path = layerPath
 
@@ -754,7 +810,9 @@ func layerFromStream(
 					changeDataHashMatchers,
 					changePathMatchers,
 					cpmDumps,
-					changeDataMatchers)
+					changeDataMatchers,
+					tarUtf8,
+				)
 				if err != nil {
 					log.Errorf("layerFromStream: error inspecting layer file (%s) - (%v) - %v", object.Name, layerID, err)
 				} else {
@@ -785,32 +843,35 @@ func layerFromStream(
 	return layer, nil
 }
 
-func getStreamHash(reader io.Reader) (string, error) {
-	hasher := sha1.New()
-
-	_, err := io.Copy(hasher, reader)
-	if err != nil {
-		log.Errorf("getStreamHash: error=%v", err)
-		return "", err
-	}
-
-	hash := hasher.Sum(nil)
-	return hex.EncodeToString(hash[:]), nil
-}
-
 func getBytesHash(data []byte) string {
 	hash := sha1.Sum(data)
 	return hex.EncodeToString(hash[:])
 }
 
-func inspectFile(object *ObjectMetadata,
+type utf8FileInfo struct {
+	name    string
+	size    int64
+	modtime time.Time
+}
+
+func (f *utf8FileInfo) Name() string       { return f.name }
+func (f *utf8FileInfo) Size() int64        { return f.size }
+func (f *utf8FileInfo) Mode() os.FileMode  { return os.ModePerm }
+func (f *utf8FileInfo) ModTime() time.Time { return f.modtime }
+func (f *utf8FileInfo) IsDir() bool        { return false }
+func (f *utf8FileInfo) Sys() interface{}   { return nil }
+
+func inspectFile(
+	object *ObjectMetadata,
 	reader io.Reader,
 	layer *Layer,
 	doHashData bool,
 	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
 	changePathMatchers []*ChangePathMatcher,
 	cpmDumps bool,
-	changeDataMatchers map[string]*ChangeDataMatcher) error {
+	changeDataMatchers map[string]*ChangeDataMatcher,
+	tarUtf8 *tar.Writer,
+) error {
 	//TODO: refactor and enhance the OS Distro detection logic
 	fullPath := object.Name
 	if system.IsOSReleaseFile(fullPath) || len(changeDataMatchers) > 0 || cpmDumps {
@@ -848,49 +909,69 @@ func inspectFile(object *ObjectMetadata,
 			layer.Distro = distro
 		}
 
-		var hash string
+		object.Utf8 = utf8.Valid(data)
+
 		if doHashData || len(changeDataHashMatchers) > 0 {
-			hash = getBytesHash(data)
-		}
-
-		if doHashData {
-			object.Hash = getBytesHash(data)
-		}
-
-		if len(changeDataHashMatchers) > 0 {
-			if dhm, found := changeDataHashMatchers[hash]; found {
-				//need to save to DataHashMatches to make it work without generating/saving hashes for all objects
-				layer.DataHashMatches[fullPath] = dhm
-
-				if dhm.DumpConsole {
-					fmt.Printf("cmd=xray info=change.data.hash.match.start\n")
-					fmt.Printf("cmd=xray info=change.data.hash.match file='%s' hash='%s')\n",
-						fullPath, hash)
-					fmt.Printf("%s\n", string(data))
-					fmt.Printf("cmd=xray info=change.data.hash.match.end\n")
+			hash := getBytesHash(data)
+			if doHashData {
+				object.Hash = hash
+			}
+			if tarUtf8 != nil && object.Utf8 {
+				fileInfo := &utf8FileInfo{
+					name:    hash,
+					size:    object.Size,
+					modtime: object.ModTime,
 				}
+				header, err := tar.FileInfoHeader(fileInfo, hash)
+				if err != nil {
+					return err
+				}
+				header.Name = hash
+				err = tarUtf8.WriteHeader(header)
+				if err != nil {
+					return err
+				}
+				_, err = tarUtf8.Write(data)
+				if err != nil {
+					return err
+				}
+			}
 
-				if dhm.DumpDir != "" {
-					dumpPath := filepath.Join(dhm.DumpDir, fullPath)
-					dirPath := fsutil.FileDir(dumpPath)
-					if !fsutil.DirExists(dirPath) {
-						err := os.MkdirAll(dirPath, 0755)
+			if len(changeDataHashMatchers) > 0 {
+				if dhm, found := changeDataHashMatchers[hash]; found {
+					//need to save to DataHashMatches to make it work without generating/saving hashes for all objects
+					layer.DataHashMatches[fullPath] = dhm
+
+					if dhm.DumpConsole {
+						fmt.Printf("cmd=xray info=change.data.hash.match.start\n")
+						fmt.Printf("cmd=xray info=change.data.hash.match file='%s' hash='%s')\n",
+							fullPath, hash)
+						fmt.Printf("%s\n", string(data))
+						fmt.Printf("cmd=xray info=change.data.hash.match.end\n")
+					}
+
+					if dhm.DumpDir != "" {
+						dumpPath := filepath.Join(dhm.DumpDir, fullPath)
+						dirPath := fsutil.FileDir(dumpPath)
+						if !fsutil.DirExists(dirPath) {
+							err := os.MkdirAll(dirPath, 0755)
+							if err != nil {
+								fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
+									fullPath, hash, dumpPath, err)
+								return err
+							}
+						}
+
+						err := ioutil.WriteFile(dumpPath, data, 0644)
 						if err != nil {
 							fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
 								fullPath, hash, dumpPath, err)
 							return err
 						}
-					}
 
-					err := ioutil.WriteFile(dumpPath, data, 0644)
-					if err != nil {
-						fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
-							fullPath, hash, dumpPath, err)
-						return err
+						fmt.Printf("cmd=xray info=change.data.hash.match.dump file='%s' hash='%s' target='%s'):\n",
+							fullPath, hash, dumpPath)
 					}
-
-					fmt.Printf("cmd=xray info=change.data.hash.match.dump file='%s' hash='%s' target='%s'):\n",
-						fullPath, hash, dumpPath)
 				}
 			}
 		}
@@ -1016,25 +1097,37 @@ func inspectFile(object *ObjectMetadata,
 			}
 		}
 
-		if len(changeDataHashMatchers) == 0 {
-			if doHashData {
-				hash, err := getStreamHash(reader)
-				if err != nil {
-					log.Errorf("inspectFile: getStreamHash error - name='%s' error=%v", fullPath, err)
-					return err
-				}
+		data, err := ioutil.ReadAll(reader)
+		if err != nil {
+			return err
+		}
 
-				object.Hash = hash
-			}
-		} else {
-			data, err := ioutil.ReadAll(reader)
-			if err != nil {
-				return err
-			}
+		object.Utf8 = utf8.Valid(data)
 
+		if doHashData || len(changeDataHashMatchers) > 0 {
 			hash := getBytesHash(data)
 			if doHashData {
 				object.Hash = hash
+			}
+			if tarUtf8 != nil && object.Utf8 {
+				fileInfo := &utf8FileInfo{
+					name:    hash,
+					size:    object.Size,
+					modtime: object.ModTime,
+				}
+				header, err := tar.FileInfoHeader(fileInfo, hash)
+				if err != nil {
+					return err
+				}
+				header.Name = hash
+				err = tarUtf8.WriteHeader(header)
+				if err != nil {
+					return err
+				}
+				_, err = tarUtf8.Write(data)
+				if err != nil {
+					return err
+				}
 			}
 
 			if dhm, found := changeDataHashMatchers[hash]; found {
@@ -1074,7 +1167,6 @@ func inspectFile(object *ObjectMetadata,
 			}
 		}
 	}
-
 	return nil
 }
 

@@ -1,7 +1,13 @@
 package xray
 
 import (
+	"archive/tar"
+	"bytes"
+	"compress/gzip"
 	"fmt"
+	"io/ioutil"
+	"os"
+	"path"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -61,7 +67,9 @@ func OnCommand(
 	doAddImageManifest bool,
 	doAddImageConfig bool,
 	doReuseSavedImage bool,
-	doRmFileArtifacts bool) {
+	doRmFileArtifacts bool,
+	doTarUtf8 bool,
+) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
@@ -263,10 +271,22 @@ func OnCommand(
 		logger.Debugf("exported image already exists - %s", iaPath)
 	}
 
+	var tarUtf8Buffer bytes.Buffer
+	tarUtf8BufferGzip := gzip.NewWriter(&tarUtf8Buffer)
+	var tarUtf8 *tar.Writer
+	if doTarUtf8 {
+		tarUtf8 = tar.NewWriter(tarUtf8BufferGzip)
+	}
+
 	xc.Out.Info("image.data.inspection.process.image.start")
-	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, topChangesMax, doHashData, doFindDuplicates, changeDataHashMatchers, changePathMatchers, changeDataMatchers)
+	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, topChangesMax, doHashData, doFindDuplicates, changeDataHashMatchers, changePathMatchers, changeDataMatchers, tarUtf8)
 	errutil.FailOn(err)
 	xc.Out.Info("image.data.inspection.process.image.end")
+
+	if doTarUtf8 {
+		errutil.FailOn(tarUtf8.Close())
+		errutil.FailOn(tarUtf8BufferGzip.Close())
+	}
 
 	xc.Out.State("image.data.inspection.done")
 
@@ -346,6 +366,14 @@ func OnCommand(
 			ovars{
 				"file": cmdReport.ReportLocation(),
 			})
+	}
+
+	if doTarUtf8 {
+		errutil.FailOn(ioutil.WriteFile(
+			path.Join(path.Dir(cmdReport.ReportLocation()), "slim.utf8.tar.gz"),
+			tarUtf8Buffer.Bytes(),
+			os.ModePerm,
+		))
 	}
 }
 
