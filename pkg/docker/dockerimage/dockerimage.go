@@ -136,12 +136,12 @@ type LayerStats struct {
 	DeletedSize            uint64 `json:"deleted_size"`
 	AddedSize              uint64 `json:"added_size"`
 	ModifiedSize           uint64 `json:"modified_size"`
-	Utf8Count              uint64 `json:"utf8_count"`
-	Utf8Size               uint64 `json:"utf8_size"`
-	Utf8SizeHuman          string `json:"utf8_size_human"`
-	BinaryCount            uint64 `json:"binary_count"`
-	BinarySize             uint64 `json:"binary_size"`
-	BinarySizeHuman        string `json:"binary_size_human"`
+	Utf8Count              uint64 `json:"utf8_count,omitempty"`
+	Utf8Size               uint64 `json:"utf8_size,omitempty"`
+	Utf8SizeHuman          string `json:"utf8_size_human,omitempty"`
+	BinaryCount            uint64 `json:"binary_count,omitempty"`
+	BinarySize             uint64 `json:"binary_size,omitempty"`
+	BinarySizeHuman        string `json:"binary_size_human,omitempty"`
 }
 
 type PackageStats struct {
@@ -156,12 +156,12 @@ type PackageStats struct {
 	DeletedFileCount        uint64 `json:"deleted_file_count"`
 	DeletedLinkCount        uint64 `json:"deleted_link_count"`
 	DeletedFileSize         uint64 `json:"deleted_file_size"`
-	Utf8Count               uint64 `json:"utf8_count"`
-	Utf8Size                uint64 `json:"utf8_size"`
-	Utf8SizeHuman           string `json:"utf8_size_human"`
-	BinaryCount             uint64 `json:"binary_count"`
-	BinarySize              uint64 `json:"binary_size"`
-	BinarySizeHuman         string `json:"binary_size_human"`
+	Utf8Count               uint64 `json:"utf8_count,omitempty"`
+	Utf8Size                uint64 `json:"utf8_size,omitempty"`
+	Utf8SizeHuman           string `json:"utf8_size_human,omitempty"`
+	BinaryCount             uint64 `json:"binary_count,omitempty"`
+	BinarySize              uint64 `json:"binary_size,omitempty"`
+	BinarySizeHuman         string `json:"binary_size_human,omitempty"`
 }
 
 type ChangeType int
@@ -249,6 +249,11 @@ func (ct *ChangeType) UnmarshalJSON(b []byte) error {
 	return nil
 }
 
+const (
+	ContentTypeUTF8   = "utf8"
+	ContentTypeBinary = "binary"
+)
+
 type ObjectMetadata struct {
 	Change           ChangeType     `json:"change"`
 	DirContentDelete bool           `json:"dir_content_delete,omitempty"`
@@ -267,7 +272,7 @@ type ObjectMetadata struct {
 	PathMatch        bool           `json:"-"`
 	LayerIndex       int            `json:"-"`
 	TypeFlag         byte           `json:"-"`
-	Utf8             bool           `json:"utf8"`
+	ContentType      string         `json:"content_type,omitempty"`
 }
 
 type ObjectHistory struct {
@@ -481,16 +486,18 @@ func LoadPackage(archivePath string,
 			for oidx, object := range layer.Objects {
 				object.LayerIndex = idx
 
-				if object.Utf8 {
-					layer.Stats.Utf8Count++
-					layer.Stats.Utf8Size += uint64(object.Size)
-					pkg.Stats.Utf8Count++
-					pkg.Stats.Utf8Size += uint64(object.Size)
-				} else {
-					layer.Stats.BinaryCount++
-					layer.Stats.BinarySize += uint64(object.Size)
-					pkg.Stats.BinaryCount++
-					pkg.Stats.BinarySize += uint64(object.Size)
+				if tarUtf8 != nil {
+					if object.ContentType == ContentTypeUTF8 {
+						layer.Stats.Utf8Count++
+						layer.Stats.Utf8Size += uint64(object.Size)
+						pkg.Stats.Utf8Count++
+						pkg.Stats.Utf8Size += uint64(object.Size)
+					} else {
+						layer.Stats.BinaryCount++
+						layer.Stats.BinarySize += uint64(object.Size)
+						pkg.Stats.BinaryCount++
+						pkg.Stats.BinarySize += uint64(object.Size)
+					}
 				}
 
 				if object.Change == ChangeUnknown {
@@ -516,24 +523,27 @@ func LoadPackage(archivePath string,
 				}
 			}
 
-			layer.Stats.Utf8SizeHuman = humanize.Bytes(layer.Stats.Utf8Size)
-			layer.Stats.BinarySizeHuman = humanize.Bytes(layer.Stats.BinarySize)
+			if tarUtf8 != nil {
+				layer.Stats.Utf8SizeHuman = humanize.Bytes(layer.Stats.Utf8Size)
+				layer.Stats.BinarySizeHuman = humanize.Bytes(layer.Stats.BinarySize)
+			}
 
 		} else {
 			for oidx, object := range layer.Objects {
 				object.LayerIndex = idx
 
-				if object.Utf8 {
-					layer.Stats.Utf8Count++
-					layer.Stats.Utf8Size += uint64(object.Size)
-					pkg.Stats.Utf8Count++
-					pkg.Stats.Utf8Size += uint64(object.Size)
-
-				} else {
-					layer.Stats.BinaryCount++
-					layer.Stats.BinarySize += uint64(object.Size)
-					pkg.Stats.BinaryCount++
-					pkg.Stats.BinarySize += uint64(object.Size)
+				if tarUtf8 != nil {
+					if object.ContentType == ContentTypeUTF8 {
+						layer.Stats.Utf8Count++
+						layer.Stats.Utf8Size += uint64(object.Size)
+						pkg.Stats.Utf8Count++
+						pkg.Stats.Utf8Size += uint64(object.Size)
+					} else {
+						layer.Stats.BinaryCount++
+						layer.Stats.BinarySize += uint64(object.Size)
+						pkg.Stats.BinaryCount++
+						pkg.Stats.BinarySize += uint64(object.Size)
+					}
 				}
 
 				if object.Change == ChangeUnknown {
@@ -608,8 +618,10 @@ func LoadPackage(archivePath string,
 					}
 				}
 			}
-			layer.Stats.Utf8SizeHuman = humanize.Bytes(layer.Stats.Utf8Size)
-			layer.Stats.BinarySizeHuman = humanize.Bytes(layer.Stats.BinarySize)
+			if tarUtf8 != nil {
+				layer.Stats.Utf8SizeHuman = humanize.Bytes(layer.Stats.Utf8Size)
+				layer.Stats.BinarySizeHuman = humanize.Bytes(layer.Stats.BinarySize)
+			}
 		}
 
 		pkg.LayerIDRefs[layerID] = layer
@@ -622,8 +634,10 @@ func LoadPackage(archivePath string,
 		}
 	}
 
-	pkg.Stats.Utf8SizeHuman = humanize.Bytes(pkg.Stats.Utf8Size)
-	pkg.Stats.BinarySizeHuman = humanize.Bytes(pkg.Stats.BinarySize)
+	if tarUtf8 != nil {
+		pkg.Stats.Utf8SizeHuman = humanize.Bytes(pkg.Stats.Utf8Size)
+		pkg.Stats.BinarySizeHuman = humanize.Bytes(pkg.Stats.BinarySize)
+	}
 
 	if len(pkg.Layers) > 0 {
 		var currentLayerIndex int
@@ -909,31 +923,35 @@ func inspectFile(
 			layer.Distro = distro
 		}
 
-		object.Utf8 = utf8.Valid(data)
-
 		if doHashData || len(changeDataHashMatchers) > 0 {
+
 			hash := getBytesHash(data)
 			if doHashData {
 				object.Hash = hash
 			}
-			if tarUtf8 != nil && object.Utf8 {
-				fileInfo := &utf8FileInfo{
-					name:    hash,
-					size:    object.Size,
-					modtime: object.ModTime,
-				}
-				header, err := tar.FileInfoHeader(fileInfo, hash)
-				if err != nil {
-					return err
-				}
-				header.Name = hash
-				err = tarUtf8.WriteHeader(header)
-				if err != nil {
-					return err
-				}
-				_, err = tarUtf8.Write(data)
-				if err != nil {
-					return err
+			if tarUtf8 != nil {
+				if utf8.Valid(data) {
+					object.ContentType = ContentTypeUTF8
+					fileInfo := &utf8FileInfo{
+						name:    hash,
+						size:    object.Size,
+						modtime: object.ModTime,
+					}
+					header, err := tar.FileInfoHeader(fileInfo, hash)
+					if err != nil {
+						return err
+					}
+					header.Name = hash
+					err = tarUtf8.WriteHeader(header)
+					if err != nil {
+						return err
+					}
+					_, err = tarUtf8.Write(data)
+					if err != nil {
+						return err
+					}
+				} else {
+					object.ContentType = ContentTypeBinary
 				}
 			}
 
@@ -1097,36 +1115,39 @@ func inspectFile(
 			}
 		}
 
-		data, err := ioutil.ReadAll(reader)
-		if err != nil {
-			return err
-		}
-
-		object.Utf8 = utf8.Valid(data)
-
 		if doHashData || len(changeDataHashMatchers) > 0 {
-			hash := getBytesHash(data)
-			if doHashData {
-				object.Hash = hash
+
+			data, err := ioutil.ReadAll(reader)
+			if err != nil {
+				return err
 			}
-			if tarUtf8 != nil && object.Utf8 {
-				fileInfo := &utf8FileInfo{
-					name:    hash,
-					size:    object.Size,
-					modtime: object.ModTime,
-				}
-				header, err := tar.FileInfoHeader(fileInfo, hash)
-				if err != nil {
-					return err
-				}
-				header.Name = hash
-				err = tarUtf8.WriteHeader(header)
-				if err != nil {
-					return err
-				}
-				_, err = tarUtf8.Write(data)
-				if err != nil {
-					return err
+
+			hash := getBytesHash(data)
+
+			object.Hash = hash
+			if tarUtf8 != nil {
+				if utf8.Valid(data) {
+					object.ContentType = ContentTypeUTF8
+					fileInfo := &utf8FileInfo{
+						name:    hash,
+						size:    object.Size,
+						modtime: object.ModTime,
+					}
+					header, err := tar.FileInfoHeader(fileInfo, hash)
+					if err != nil {
+						return err
+					}
+					header.Name = hash
+					err = tarUtf8.WriteHeader(header)
+					if err != nil {
+						return err
+					}
+					_, err = tarUtf8.Write(data)
+					if err != nil {
+						return err
+					}
+				} else {
+					object.ContentType = ContentTypeBinary
 				}
 			}
 
