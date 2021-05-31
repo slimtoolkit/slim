@@ -299,11 +299,13 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--change-path value` - Include changes for the files that match the path pattern (Glob/Match in Go and **). Value formats: `<path pattern>` | `dump:<output type>:<path pattern>` | `::<path pattern>` where `output type` is `console` or a directory name. If `value` starts with `dump:` the match will be 'dumped' to the selected `output type`. [can use this flag multiple times]
 - `--change-data value` - Include changes for the files that match the data pattern (regex). Value formats: `<data regex>` | `dump:<output type>:<path pattern>:<data regex>` | `::<path pattern>:<data regex>` | `:::<data regex>` where `output type` is `console` or a directory name. If `value` starts with `dump:` the match will be 'dumped' to the selected `output type`. [can use this flag multiple times]
 - `--change-data-hash value` - Include changes for the files that match the provided data hashes (sha1). Value formats: `<sha1 hash>` | `dump:<output type>:<sha1 hash>` | `::<sha1 hash>` where `output type` is `console` or a directory name. If `value` starts with `dump:` the match will be 'dumped' to the selected `output type`. [can use this flag multiple times]
-- `--hash-data` - Generate file data hashes (default: false).
-- `--top-changes-max` - Maximum number of top changes to track (defalt: 20).
 - `--reuse-saved-image` - Reuse saved container image (default: true).
+- `--top-changes-max` - Maximum number of top changes to track (defalt: 20).
+- `--hash-data` - Generate file data hashes (default: false).
+- `--find-duplicates` - Find duplicate files based on their hashes (default: false).
+- `--show-duplicates` - Show all discovered duplicate file paths (default: true).
+- `--change-match-layers-only` - Show only layers with change matches (default: false).
 - `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
-
 
 Change Types:
 
