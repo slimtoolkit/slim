@@ -40,8 +40,8 @@ var CLI = cli.Command{
 		cflag(FlagTopChangesMax),
 		cflag(FlagChangeMatchLayersOnly),
 		cflag(FlagHashData),
-		cflag(FlagTarUTF8),
-		cflag(FlagFindDuplicates),
+		cflag(FlagDetectUTF8),
+		cflag(FlagDetectDuplicates),
 		cflag(FlagShowDuplicates),
 		cflag(FlagChangeDataHash),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
@@ -138,24 +138,23 @@ var CLI = cli.Command{
 		doReuseSavedImage := ctx.Bool(FlagReuseSavedImage)
 
 		doHashData := ctx.Bool(FlagHashData)
-		doFindDuplicates := ctx.Bool(FlagFindDuplicates)
-		if doFindDuplicates {
+		doDetectDuplicates := ctx.Bool(FlagDetectDuplicates)
+		if doDetectDuplicates {
 			doHashData = true
 		}
 
-		doTarUTF8 := ctx.String(FlagTarUTF8)
-		if doTarUTF8 != "" && !strings.HasPrefix(doTarUTF8, "dump:") {
-			xc.Out.Error("param.error.tar.utf8", fmt.Sprintf("malformed argument, should be like 'dump:./utf8.data.tgz', was instead '%s'", doTarUTF8))
+		utf8Detector, err := parseDetectUTF8(ctx)
+		if err != nil {
+			xc.Out.Error("param.error.detect.utf8", err.Error())
 			xc.Out.State("exited",
 				ovars{
 					"exit.code": -1,
 				})
 			xc.Exit(-1)
 		}
-		doTarUTF8 = strings.Replace(doTarUTF8, "dump:", "", 1)
 
-		if doTarUTF8 != "" && !doHashData {
-			xc.Out.Error("param.error.tar.utf8", "--tar-utf8 requires option --hash-data")
+		if utf8Detector != nil && !doHashData {
+			xc.Out.Error("param.error.detect.utf8", "--detect-utf8 requires option --hash-data")
 			xc.Out.State("exited",
 				ovars{
 					"exit.code": -1,
@@ -196,14 +195,14 @@ var CLI = cli.Command{
 			changeDataMatchers,
 			changeDataHashMatchers,
 			doHashData,
-			doFindDuplicates,
+			doDetectDuplicates,
 			doShowDuplicates,
 			changeMatchLayersOnly,
 			doAddImageManifest,
 			doAddImageConfig,
 			doReuseSavedImage,
 			doRmFileArtifacts,
-			doTarUTF8,
+			utf8Detector,
 		)
 
 		commands.ShowCommunityInfo()
@@ -394,4 +393,52 @@ func parseChangeDataHashMatchers(values []string) ([]*dockerimage.ChangeDataHash
 	}
 
 	return matchers, nil
+}
+
+func parseDetectUTF8(ctx *cli.Context) (*dockerimage.UTF8Detector, error) {
+	raw := ctx.String(FlagDetectUTF8)
+	if raw == "" {
+		return nil, nil
+	}
+
+	var detector dockerimage.UTF8Detector
+	if raw == "dump" {
+		detector.Dump = true
+		detector.DumpConsole = true
+	} else if strings.HasPrefix(raw, "dump:") {
+		parts := strings.SplitN(raw, ":", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("malformed find utf8: %s", raw)
+		}
+
+		detector.Dump = true
+
+		outTarget := strings.TrimSpace(parts[1])
+		if len(outTarget) == 0 || outTarget == dockerimage.CDMDumpToConsole {
+			detector.DumpConsole = true
+		} else {
+			if strings.HasSuffix(outTarget, ".tgz") ||
+				strings.HasSuffix(outTarget, ".tar.gz") {
+				detector.DumpArchive = outTarget
+
+				dar, err := dockerimage.NewTarWriter(outTarget)
+				if err != nil {
+					return nil, err
+				}
+
+				detector.Archive = dar
+			} else {
+				detector.DumpDir = outTarget
+			}
+		}
+	} else {
+		if raw != "true" {
+			return nil, nil
+		}
+	}
+
+	//TODO:
+	//get detector filters if we need to find/extract only a subset of the utf8
+
+	return &detector, nil
 }

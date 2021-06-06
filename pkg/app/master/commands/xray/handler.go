@@ -1,10 +1,7 @@
 package xray
 
 import (
-	"archive/tar"
-	"compress/gzip"
 	"fmt"
-	"os"
 	"path/filepath"
 	"regexp"
 	"strings"
@@ -58,14 +55,14 @@ func OnCommand(
 	changeDataMatcherList []*dockerimage.ChangeDataMatcher,
 	changeDataHashMatcherList []*dockerimage.ChangeDataHashMatcher,
 	doHashData bool,
-	doFindDuplicates bool,
+	doDetectDuplicates bool,
 	doShowDuplicates bool,
 	changeMatchLayersOnly bool,
 	doAddImageManifest bool,
 	doAddImageConfig bool,
 	doReuseSavedImage bool,
 	doRmFileArtifacts bool,
-	doTarUtf8 string,
+	utf8Detector *dockerimage.UTF8Detector,
 ) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
@@ -268,25 +265,13 @@ func OnCommand(
 		logger.Debugf("exported image already exists - %s", iaPath)
 	}
 
-	var tarUTF8File *os.File
-	var tarUTF8BufferGzip *gzip.Writer
-	var tarUTF8 *tar.Writer
-	if doTarUtf8 != "" {
-		tarUTF8File, err = os.Create(doTarUtf8)
-		errutil.FailOn(err)
-		tarUTF8BufferGzip = gzip.NewWriter(tarUTF8File)
-		tarUTF8 = tar.NewWriter(tarUTF8BufferGzip)
-	}
-
 	xc.Out.Info("image.data.inspection.process.image.start")
-	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, topChangesMax, doHashData, doFindDuplicates, changeDataHashMatchers, changePathMatchers, changeDataMatchers, tarUTF8)
+	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, topChangesMax, doHashData, doDetectDuplicates, changeDataHashMatchers, changePathMatchers, changeDataMatchers, utf8Detector)
 	errutil.FailOn(err)
 	xc.Out.Info("image.data.inspection.process.image.end")
 
-	if doTarUtf8 != "" {
-		errutil.FailOn(tarUTF8.Close())
-		errutil.FailOn(tarUTF8BufferGzip.Close())
-		errutil.FailOn(tarUTF8File.Close())
+	if utf8Detector != nil {
+		errutil.FailOn(utf8Detector.Close())
 	}
 
 	xc.Out.State("image.data.inspection.done")
@@ -319,7 +304,7 @@ func OnCommand(
 		modifyChangesMax,
 		deleteChangesMax,
 		doHashData,
-		doFindDuplicates,
+		doDetectDuplicates,
 		doShowDuplicates,
 		changeMatchLayersOnly,
 		changeDataHashMatchers,
@@ -385,7 +370,7 @@ func printImagePackage(
 	modifyChangesMax int,
 	deleteChangesMax int,
 	doHashData bool,
-	doFindDuplicates bool,
+	doDetectDuplicates bool,
 	doShowDuplicates bool,
 	changeMatchLayersOnly bool,
 	changeDataHashMatchers map[string]*dockerimage.ChangeDataHashMatcher,
@@ -407,7 +392,7 @@ func printImagePackage(
 		Stats: pkg.Stats,
 	}
 
-	if doFindDuplicates && pkg.Stats.DuplicateFileCount > 0 {
+	if doDetectDuplicates && pkg.Stats.DuplicateFileCount > 0 {
 		xc.Out.Info("image.stats.duplicates",
 			ovars{
 				"file_count":            pkg.Stats.DuplicateFileCount,
@@ -887,7 +872,7 @@ func printImagePackage(
 		}
 	}
 
-	if doFindDuplicates && doShowDuplicates && len(pkg.HashReferences) > 0 {
+	if doDetectDuplicates && doShowDuplicates && len(pkg.HashReferences) > 0 {
 		cmdReport.ImageReport.Duplicates = map[string]*dockerimage.DuplicateFilesReport{}
 
 		//TODO: show duplicates by duplicate total size (biggest waste first)

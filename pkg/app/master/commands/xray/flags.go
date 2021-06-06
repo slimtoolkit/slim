@@ -23,8 +23,8 @@ const (
 	FlagReuseSavedImage       = "reuse-saved-image"
 	FlagTopChangesMax         = "top-changes-max"
 	FlagHashData              = "hash-data"
-	FlagTarUTF8               = "detect-and-extract-utf8"
-	FlagFindDuplicates        = "find-duplicates"
+	FlagDetectUTF8            = "detect-utf8"
+	FlagDetectDuplicates      = "detect-duplicates"
 	FlagShowDuplicates        = "show-duplicates"
 	FlagChangeMatchLayersOnly = "change-match-layers-only"
 )
@@ -47,8 +47,8 @@ const (
 	FlagTopChangesMaxUsage         = "Maximum number of top changes to track"
 	FlagChangeDataHashUsage        = "Include changes for the files that match the provided data hashes (sha1)"
 	FlagHashDataUsage              = "Generate file data hashes"
-	FlagTarUTF8Usage               = "Detect content type as binary or utf8 and extract all utf8 content by hash"
-	FlagFindDuplicatesUsage        = "Find duplicate files based on their hashes"
+	FlagDetectUTF8Usage            = "Detect utf8 files and optionally extract the discovered utf8 file content"
+	FlagDetectDuplicatesUsage      = "Detect duplicate files based on their hashes"
 	FlagShowDuplicatesUsage        = "Show discovered duplicate file paths"
 	FlagChangeMatchLayersOnlyUsage = "Show only layers with change matches"
 )
@@ -140,15 +140,15 @@ var Flags = map[string]cli.Flag{
 		Usage:  FlagHashDataUsage,
 		EnvVar: "DSLIM_XRAY_HASH_DATA",
 	},
-	FlagTarUTF8: cli.StringFlag{
-		Name:   FlagTarUTF8,
-		Usage:  FlagTarUTF8Usage,
-		EnvVar: "DSLIM_XRAY_DETECT_AND_EXTRACT_UTF8",
+	FlagDetectUTF8: cli.StringFlag{
+		Name:   FlagDetectUTF8,
+		Usage:  FlagDetectUTF8Usage,
+		EnvVar: "DSLIM_XRAY_DETECT_UTF8",
 	},
-	FlagFindDuplicates: cli.BoolFlag{
-		Name:   FlagFindDuplicates,
-		Usage:  FlagFindDuplicatesUsage,
-		EnvVar: "DSLIM_XRAY_FIND_DUP",
+	FlagDetectDuplicates: cli.BoolFlag{
+		Name:   FlagDetectDuplicates,
+		Usage:  FlagDetectDuplicatesUsage,
+		EnvVar: "DSLIM_XRAY_DETECT_DUP",
 	},
 	FlagShowDuplicates: cli.BoolTFlag{
 		Name:   FlagShowDuplicates,

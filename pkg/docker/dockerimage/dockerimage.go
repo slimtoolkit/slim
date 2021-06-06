@@ -3,6 +3,7 @@ package dockerimage
 import (
 	"archive/tar"
 	"bytes"
+	"compress/gzip"
 	"container/heap"
 	"crypto/sha1"
 	"encoding/hex"
@@ -136,9 +137,9 @@ type LayerStats struct {
 	DeletedSize            uint64 `json:"deleted_size"`
 	AddedSize              uint64 `json:"added_size"`
 	ModifiedSize           uint64 `json:"modified_size"`
-	Utf8Count              uint64 `json:"utf8_count,omitempty"`
-	Utf8Size               uint64 `json:"utf8_size,omitempty"`
-	Utf8SizeHuman          string `json:"utf8_size_human,omitempty"`
+	UTF8Count              uint64 `json:"utf8_count,omitempty"`
+	UTF8Size               uint64 `json:"utf8_size,omitempty"`
+	UTF8SizeHuman          string `json:"utf8_size_human,omitempty"`
 	BinaryCount            uint64 `json:"binary_count,omitempty"`
 	BinarySize             uint64 `json:"binary_size,omitempty"`
 	BinarySizeHuman        string `json:"binary_size_human,omitempty"`
@@ -156,9 +157,9 @@ type PackageStats struct {
 	DeletedFileCount        uint64 `json:"deleted_file_count"`
 	DeletedLinkCount        uint64 `json:"deleted_link_count"`
 	DeletedFileSize         uint64 `json:"deleted_file_size"`
-	Utf8Count               uint64 `json:"utf8_count,omitempty"`
-	Utf8Size                uint64 `json:"utf8_size,omitempty"`
-	Utf8SizeHuman           string `json:"utf8_size_human,omitempty"`
+	UTF8Count               uint64 `json:"utf8_count,omitempty"`
+	UTF8Size                uint64 `json:"utf8_size,omitempty"`
+	UTF8SizeHuman           string `json:"utf8_size_human,omitempty"`
 	BinaryCount             uint64 `json:"binary_count,omitempty"`
 	BinarySize              uint64 `json:"binary_size,omitempty"`
 	BinarySizeHuman         string `json:"binary_size_human,omitempty"`
@@ -210,6 +211,69 @@ type ChangePathMatcher struct {
 	DumpConsole bool
 	DumpDir     string
 	PathPattern string
+}
+
+type UTF8Detector struct {
+	Dump        bool
+	DumpConsole bool
+	DumpDir     string
+	DumpArchive string
+	Archive     *TarWriter
+	Filters     []UTF8DetectorMatcher
+}
+
+type UTF8DetectorMatcher struct {
+	PathPattern string
+	DataPattern string
+	Matcher     *regexp.Regexp
+}
+
+type TarWriter struct {
+	file       *os.File
+	bufferGzip *gzip.Writer
+	Writer     *tar.Writer
+}
+
+func NewTarWriter(name string) (*TarWriter, error) {
+	file, err := os.Create(name)
+	if err != nil {
+		return nil, err
+	}
+
+	bufferGzip := gzip.NewWriter(file)
+	writer := tar.NewWriter(bufferGzip)
+
+	tw := &TarWriter{
+		file:       file,
+		bufferGzip: bufferGzip,
+		Writer:     writer,
+	}
+
+	return tw, nil
+}
+
+func (w *TarWriter) Close() error {
+	if err := w.Writer.Close(); err != nil {
+		return err
+	}
+
+	if err := w.bufferGzip.Close(); err != nil {
+		return err
+	}
+
+	if err := w.file.Close(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (d *UTF8Detector) Close() error {
+	if d.Archive != nil {
+		return d.Archive.Close()
+	}
+
+	return nil
 }
 
 func (ct ChangeType) String() string {
@@ -327,11 +391,11 @@ func LoadPackage(archivePath string,
 	skipObjects bool,
 	topChangesMax int,
 	doHashData bool,
-	doFindDuplicates bool,
+	doDetectDuplicates bool,
 	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
 	changePathMatchers []*ChangePathMatcher,
 	changeDataMatchers map[string]*ChangeDataMatcher,
-	tarUtf8 *tar.Writer,
+	utf8Detector *UTF8Detector,
 ) (*Package, error) {
 	imageID = dockerutil.CleanImageID(imageID)
 
@@ -436,12 +500,12 @@ func LoadPackage(archivePath string,
 						layerID,
 						topChangesMax,
 						doHashData,
-						doFindDuplicates,
+						doDetectDuplicates,
 						changeDataHashMatchers,
 						changePathMatchers,
 						cpmDumps,
 						changeDataMatchers,
-						tarUtf8,
+						utf8Detector,
 					)
 					if err != nil {
 						log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
@@ -486,13 +550,14 @@ func LoadPackage(archivePath string,
 			for oidx, object := range layer.Objects {
 				object.LayerIndex = idx
 
-				if tarUtf8 != nil {
-					if object.ContentType == ContentTypeUTF8 {
-						layer.Stats.Utf8Count++
-						layer.Stats.Utf8Size += uint64(object.Size)
-						pkg.Stats.Utf8Count++
-						pkg.Stats.Utf8Size += uint64(object.Size)
-					} else {
+				if utf8Detector != nil {
+					switch object.ContentType {
+					case ContentTypeUTF8:
+						layer.Stats.UTF8Count++
+						layer.Stats.UTF8Size += uint64(object.Size)
+						pkg.Stats.UTF8Count++
+						pkg.Stats.UTF8Size += uint64(object.Size)
+					case ContentTypeBinary:
 						layer.Stats.BinaryCount++
 						layer.Stats.BinarySize += uint64(object.Size)
 						pkg.Stats.BinaryCount++
@@ -523,8 +588,8 @@ func LoadPackage(archivePath string,
 				}
 			}
 
-			if tarUtf8 != nil {
-				layer.Stats.Utf8SizeHuman = humanize.Bytes(layer.Stats.Utf8Size)
+			if utf8Detector != nil {
+				layer.Stats.UTF8SizeHuman = humanize.Bytes(layer.Stats.UTF8Size)
 				layer.Stats.BinarySizeHuman = humanize.Bytes(layer.Stats.BinarySize)
 			}
 
@@ -532,13 +597,14 @@ func LoadPackage(archivePath string,
 			for oidx, object := range layer.Objects {
 				object.LayerIndex = idx
 
-				if tarUtf8 != nil {
-					if object.ContentType == ContentTypeUTF8 {
-						layer.Stats.Utf8Count++
-						layer.Stats.Utf8Size += uint64(object.Size)
-						pkg.Stats.Utf8Count++
-						pkg.Stats.Utf8Size += uint64(object.Size)
-					} else {
+				if utf8Detector != nil {
+					switch object.ContentType {
+					case ContentTypeUTF8:
+						layer.Stats.UTF8Count++
+						layer.Stats.UTF8Size += uint64(object.Size)
+						pkg.Stats.UTF8Count++
+						pkg.Stats.UTF8Size += uint64(object.Size)
+					case ContentTypeBinary:
 						layer.Stats.BinaryCount++
 						layer.Stats.BinarySize += uint64(object.Size)
 						pkg.Stats.BinaryCount++
@@ -618,8 +684,8 @@ func LoadPackage(archivePath string,
 					}
 				}
 			}
-			if tarUtf8 != nil {
-				layer.Stats.Utf8SizeHuman = humanize.Bytes(layer.Stats.Utf8Size)
+			if utf8Detector != nil {
+				layer.Stats.UTF8SizeHuman = humanize.Bytes(layer.Stats.UTF8Size)
 				layer.Stats.BinarySizeHuman = humanize.Bytes(layer.Stats.BinarySize)
 			}
 		}
@@ -634,8 +700,8 @@ func LoadPackage(archivePath string,
 		}
 	}
 
-	if tarUtf8 != nil {
-		pkg.Stats.Utf8SizeHuman = humanize.Bytes(pkg.Stats.Utf8Size)
+	if utf8Detector != nil {
+		pkg.Stats.UTF8SizeHuman = humanize.Bytes(pkg.Stats.UTF8Size)
 		pkg.Stats.BinarySizeHuman = humanize.Bytes(pkg.Stats.BinarySize)
 	}
 
@@ -668,7 +734,7 @@ func LoadPackage(archivePath string,
 		}
 	}
 
-	if doFindDuplicates {
+	if doDetectDuplicates {
 		for hash, hr := range pkg.HashReferences {
 			dupCount := len(hr)
 			if dupCount > 1 {
@@ -709,12 +775,12 @@ func layerFromStream(
 	layerID string,
 	topChangesMax int,
 	doHashData bool,
-	doFindDuplicates bool,
+	doDetectDuplicates bool,
 	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
 	changePathMatchers []*ChangePathMatcher,
 	cpmDumps bool,
 	changeDataMatchers map[string]*ChangeDataMatcher,
-	tarUtf8 *tar.Writer,
+	utf8Detector *UTF8Detector,
 ) (*Layer, error) {
 
 	layer := newLayer(layerID, topChangesMax)
@@ -825,12 +891,12 @@ func layerFromStream(
 					changePathMatchers,
 					cpmDumps,
 					changeDataMatchers,
-					tarUtf8,
+					utf8Detector,
 				)
 				if err != nil {
 					log.Errorf("layerFromStream: error inspecting layer file (%s) - (%v) - %v", object.Name, layerID, err)
 				} else {
-					if doFindDuplicates && len(object.Hash) != 0 {
+					if doDetectDuplicates && len(object.Hash) != 0 {
 						hr, found := pkg.HashReferences[object.Hash]
 						if !found {
 							hr = map[string]*ObjectMetadata{}
@@ -855,6 +921,19 @@ func layerFromStream(
 	}
 
 	return layer, nil
+}
+
+func getStreamHash(reader io.Reader) (string, error) {
+	hasher := sha1.New()
+
+	_, err := io.Copy(hasher, reader)
+	if err != nil {
+		log.Errorf("getStreamHash: error=%v", err)
+		return "", err
+	}
+
+	hash := hasher.Sum(nil)
+	return hex.EncodeToString(hash[:]), nil
 }
 
 func getBytesHash(data []byte) string {
@@ -884,11 +963,24 @@ func inspectFile(
 	changePathMatchers []*ChangePathMatcher,
 	cpmDumps bool,
 	changeDataMatchers map[string]*ChangeDataMatcher,
-	tarUtf8 *tar.Writer,
+	utf8Detector *UTF8Detector,
 ) error {
 	//TODO: refactor and enhance the OS Distro detection logic
 	fullPath := object.Name
-	if system.IsOSReleaseFile(fullPath) || len(changeDataMatchers) > 0 || cpmDumps {
+
+	var cdhmDumps bool
+	for _, dhm := range changeDataHashMatchers {
+		if dhm.Dump {
+			cdhmDumps = true
+			break
+		}
+	}
+
+	if system.IsOSReleaseFile(fullPath) ||
+		len(changeDataMatchers) > 0 ||
+		cpmDumps ||
+		cdhmDumps ||
+		utf8Detector != nil {
 		data, err := ioutil.ReadAll(reader)
 		if err != nil {
 			return err
@@ -923,73 +1015,111 @@ func inspectFile(
 			layer.Distro = distro
 		}
 
-		if doHashData || len(changeDataHashMatchers) > 0 {
+		var hash string
+		if doHashData ||
+			len(changeDataHashMatchers) > 0 ||
+			utf8Detector != nil {
+			hash = getBytesHash(data)
+		}
 
-			hash := getBytesHash(data)
-			if doHashData {
-				object.Hash = hash
-			}
-			if tarUtf8 != nil {
-				if utf8.Valid(data) {
-					object.ContentType = ContentTypeUTF8
-					fileInfo := &utf8FileInfo{
-						name:    hash,
-						size:    object.Size,
-						modtime: object.ModTime,
-					}
-					header, err := tar.FileInfoHeader(fileInfo, hash)
-					if err != nil {
-						return err
-					}
-					header.Name = hash
-					err = tarUtf8.WriteHeader(header)
-					if err != nil {
-						return err
-					}
-					_, err = tarUtf8.Write(data)
-					if err != nil {
-						return err
-					}
-				} else {
-					object.ContentType = ContentTypeBinary
-				}
-			}
+		if doHashData {
+			object.Hash = hash
+		}
 
-			if len(changeDataHashMatchers) > 0 {
-				if dhm, found := changeDataHashMatchers[hash]; found {
-					//need to save to DataHashMatches to make it work without generating/saving hashes for all objects
-					layer.DataHashMatches[fullPath] = dhm
+		if len(hash) > 0 && utf8Detector != nil {
+			if utf8.Valid(data) {
+				object.ContentType = ContentTypeUTF8
+				if utf8Detector.Dump {
+					if utf8Detector.Archive != nil {
+						fileInfo := &utf8FileInfo{
+							name:    hash,
+							size:    object.Size,
+							modtime: object.ModTime,
+						}
+						header, err := tar.FileInfoHeader(fileInfo, hash)
+						if err != nil {
+							return err
+						}
+						header.Name = hash
+						err = utf8Detector.Archive.Writer.WriteHeader(header)
+						if err != nil {
+							return err
+						}
+						_, err = utf8Detector.Archive.Writer.Write(data)
+						if err != nil {
+							return err
+						}
+					}
 
-					if dhm.DumpConsole {
-						fmt.Printf("cmd=xray info=change.data.hash.match.start\n")
-						fmt.Printf("cmd=xray info=change.data.hash.match file='%s' hash='%s')\n",
-							fullPath, hash)
+					if utf8Detector.DumpConsole {
+						fmt.Printf("cmd=xray info=detect.utf8.match.start\n")
+						fmt.Printf("cmd=xray info=detect.utf8.match file='%s')\n", fullPath)
 						fmt.Printf("%s\n", string(data))
-						fmt.Printf("cmd=xray info=change.data.hash.match.end\n")
+						fmt.Printf("cmd=xray info=detect.utf8.match.end\n")
 					}
 
-					if dhm.DumpDir != "" {
-						dumpPath := filepath.Join(dhm.DumpDir, fullPath)
+					if utf8Detector.DumpDir != "" {
+						dumpPath := filepath.Join(utf8Detector.DumpDir, fullPath)
 						dirPath := fsutil.FileDir(dumpPath)
 						if !fsutil.DirExists(dirPath) {
 							err := os.MkdirAll(dirPath, 0755)
 							if err != nil {
-								fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
-									fullPath, hash, dumpPath, err)
+								fmt.Printf("cmd=xray info=detect.utf8.match.dump.error file='%s' target='%s' error='%s'):\n",
+									fullPath, dumpPath, err)
 								return err
 							}
 						}
 
 						err := ioutil.WriteFile(dumpPath, data, 0644)
 						if err != nil {
+							fmt.Printf("cmd=xray info=detect.utf8.match.dump.error file='%s' target='%s' error='%s'):\n",
+								fullPath, dumpPath, err)
+							return err
+						}
+
+						fmt.Printf("cmd=xray info=detect.utf8.match.dump file='%s' target='%s'):\n",
+							fullPath, dumpPath)
+					}
+				}
+			} else {
+				object.ContentType = ContentTypeBinary
+			}
+		}
+
+		if len(hash) > 0 && len(changeDataHashMatchers) > 0 {
+			if dhm, found := changeDataHashMatchers[hash]; found {
+				//need to save to DataHashMatches to make it work without generating/saving hashes for all objects
+				layer.DataHashMatches[fullPath] = dhm
+
+				if dhm.DumpConsole {
+					fmt.Printf("cmd=xray info=change.data.hash.match.start\n")
+					fmt.Printf("cmd=xray info=change.data.hash.match file='%s' hash='%s')\n",
+						fullPath, hash)
+					fmt.Printf("%s\n", string(data))
+					fmt.Printf("cmd=xray info=change.data.hash.match.end\n")
+				}
+
+				if dhm.DumpDir != "" {
+					dumpPath := filepath.Join(dhm.DumpDir, fullPath)
+					dirPath := fsutil.FileDir(dumpPath)
+					if !fsutil.DirExists(dirPath) {
+						err := os.MkdirAll(dirPath, 0755)
+						if err != nil {
 							fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
 								fullPath, hash, dumpPath, err)
 							return err
 						}
-
-						fmt.Printf("cmd=xray info=change.data.hash.match.dump file='%s' hash='%s' target='%s'):\n",
-							fullPath, hash, dumpPath)
 					}
+
+					err := ioutil.WriteFile(dumpPath, data, 0644)
+					if err != nil {
+						fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
+							fullPath, hash, dumpPath, err)
+						return err
+					}
+
+					fmt.Printf("cmd=xray info=change.data.hash.match.dump file='%s' hash='%s' target='%s'):\n",
+						fullPath, hash, dumpPath)
 				}
 			}
 		}
@@ -1115,75 +1245,27 @@ func inspectFile(
 			}
 		}
 
+		var hash string
 		if doHashData || len(changeDataHashMatchers) > 0 {
-
-			data, err := ioutil.ReadAll(reader)
+			var err error
+			hash, err = getStreamHash(reader)
 			if err != nil {
+				log.Errorf("inspectFile: getStreamHash error - name='%s' error=%v", fullPath, err)
 				return err
 			}
+		}
 
-			hash := getBytesHash(data)
-
+		if doHashData {
 			object.Hash = hash
-			if tarUtf8 != nil {
-				if utf8.Valid(data) {
-					object.ContentType = ContentTypeUTF8
-					fileInfo := &utf8FileInfo{
-						name:    hash,
-						size:    object.Size,
-						modtime: object.ModTime,
-					}
-					header, err := tar.FileInfoHeader(fileInfo, hash)
-					if err != nil {
-						return err
-					}
-					header.Name = hash
-					err = tarUtf8.WriteHeader(header)
-					if err != nil {
-						return err
-					}
-					_, err = tarUtf8.Write(data)
-					if err != nil {
-						return err
-					}
-				} else {
-					object.ContentType = ContentTypeBinary
-				}
-			}
+		}
 
+		if len(hash) > 0 && len(changeDataHashMatchers) > 0 {
 			if dhm, found := changeDataHashMatchers[hash]; found {
 				//need to save to DataHashMatches to make it work without generating/saving hashes for all objects
 				layer.DataHashMatches[fullPath] = dhm
 
-				if dhm.DumpConsole {
-					fmt.Printf("cmd=xray info=change.data.hash.match.start\n")
-					fmt.Printf("cmd=xray info=change.data.hash.match file='%s' hash='%s')\n",
-						fullPath, hash)
-					fmt.Printf("%s\n", string(data))
-					fmt.Printf("cmd=xray info=change.data.hash.match.end\n")
-				}
-
-				if dhm.DumpDir != "" {
-					dumpPath := filepath.Join(dhm.DumpDir, fullPath)
-					dirPath := fsutil.FileDir(dumpPath)
-					if !fsutil.DirExists(dirPath) {
-						err := os.MkdirAll(dirPath, 0755)
-						if err != nil {
-							fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
-								fullPath, hash, dumpPath, err)
-							return err
-						}
-					}
-
-					err := ioutil.WriteFile(dumpPath, data, 0644)
-					if err != nil {
-						fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
-							fullPath, hash, dumpPath, err)
-						return err
-					}
-
-					fmt.Printf("cmd=xray info=change.data.hash.match.dump file='%s' hash='%s' target='%s'):\n",
-						fullPath, hash, dumpPath)
+				if dhm.Dump {
+					log.Errorf("inspectFile: should not dump - %#v", dhm)
 				}
 			}
 		}

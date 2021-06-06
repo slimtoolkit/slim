@@ -302,7 +302,7 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--reuse-saved-image` - Reuse saved container image (default: true).
 - `--top-changes-max` - Maximum number of top changes to track (defalt: 20).
 - `--hash-data` - Generate file data hashes (default: false).
-- `--find-duplicates` - Find duplicate files based on their hashes (default: false).
+- `--detect-duplicates` - Detect duplicate files based on their hashes (default: false).
 - `--show-duplicates` - Show all discovered duplicate file paths (default: true).
 - `--change-match-layers-only` - Show only layers with change matches (default: false).
 - `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
