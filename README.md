@@ -304,6 +304,7 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--hash-data` - Generate file data hashes (default: false).
 - `--detect-duplicates` - Detect duplicate files based on their hashes (default: false).
 - `--show-duplicates` - Show all discovered duplicate file paths (default: true).
+- `--detect-utf8` - Detect utf8 files and optionally extract the discovered utf8 file content (possible values: "true" or "dump" or "dump:output_target").
 - `--change-match-layers-only` - Show only layers with change matches (default: false).
 - `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
 
