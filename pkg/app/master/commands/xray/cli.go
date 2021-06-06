@@ -40,6 +40,7 @@ var CLI = cli.Command{
 		cflag(FlagTopChangesMax),
 		cflag(FlagChangeMatchLayersOnly),
 		cflag(FlagHashData),
+		cflag(FlagTarUTF8),
 		cflag(FlagFindDuplicates),
 		cflag(FlagShowDuplicates),
 		cflag(FlagChangeDataHash),
@@ -112,6 +113,14 @@ var CLI = cli.Command{
 		topChangesMax := ctx.Int(FlagTopChangesMax)
 
 		changePathMatchers, err := parseChangePathMatchers(ctx.StringSlice(FlagChangePath))
+		if err != nil {
+			xc.Out.Error("param.error.change.path", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
 
 		changeDataMatchers, err := parseChangeDataMatchers(ctx.StringSlice(FlagChangeData))
 		if err != nil {
@@ -134,9 +143,38 @@ var CLI = cli.Command{
 			doHashData = true
 		}
 
+		doTarUTF8 := ctx.String(FlagTarUTF8)
+		if doTarUTF8 != "" && !strings.HasPrefix(doTarUTF8, "dump:") {
+			xc.Out.Error("param.error.tar.utf8", fmt.Sprintf("malformed argument, should be like 'dump:./utf8.data.tgz', was instead '%s'", doTarUTF8))
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+		doTarUTF8 = strings.Replace(doTarUTF8, "dump:", "", 1)
+
+		if doTarUTF8 != "" && !doHashData {
+			xc.Out.Error("param.error.tar.utf8", "--tar-utf8 requires option --hash-data")
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
 		doShowDuplicates := ctx.Bool(FlagShowDuplicates)
 
 		changeDataHashMatchers, err := parseChangeDataHashMatchers(ctx.StringSlice(FlagChangeDataHash))
+		if err != nil {
+			xc.Out.Error("param.error.change.data.hash", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
 		changeMatchLayersOnly := ctx.Bool(FlagChangeMatchLayersOnly)
 
 		OnCommand(
@@ -164,7 +202,9 @@ var CLI = cli.Command{
 			doAddImageManifest,
 			doAddImageConfig,
 			doReuseSavedImage,
-			doRmFileArtifacts)
+			doRmFileArtifacts,
+			doTarUTF8,
+		)
 
 		commands.ShowCommunityInfo()
 		return nil

@@ -30,6 +30,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagChangeData), Description: FlagChangeDataUsage},
 		{Text: commands.FullFlagName(FlagReuseSavedImage), Description: FlagReuseSavedImageUsage},
 		{Text: commands.FullFlagName(FlagHashData), Description: FlagHashDataUsage},
+		{Text: commands.FullFlagName(FlagTarUTF8), Description: FlagTarUTF8Usage},
 		{Text: commands.FullFlagName(FlagFindDuplicates), Description: FlagFindDuplicatesUsage},
 		{Text: commands.FullFlagName(FlagShowDuplicates), Description: FlagShowDuplicatesUsage},
 		{Text: commands.FullFlagName(FlagChangeDataHash), Description: FlagChangeDataHashUsage},
