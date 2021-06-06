@@ -100,6 +100,33 @@ func FileModeExtraBitsUnix2Go(bits uint32) os.FileMode {
 	return mode
 }
 
+// FileModeIsSticky checks if FileMode has the sticky bit set
+func FileModeIsSticky(mode os.FileMode) bool {
+	if mode&os.ModeSticky != 0 {
+		return true
+	}
+
+	return false
+}
+
+// FileModeIsSetgid checks if FileMode has the setgid bit set
+func FileModeIsSetgid(mode os.FileMode) bool {
+	if mode&os.ModeSetgid != 0 {
+		return true
+	}
+
+	return false
+}
+
+// FileModeIsSetuid checks if FileMode has the setuid bit set
+func FileModeIsSetuid(mode os.FileMode) bool {
+	if mode&os.ModeSetuid != 0 {
+		return true
+	}
+
+	return false
+}
+
 const (
 	rootStateKey           = ".docker-slim-state"
 	releasesStateKey       = "releases"

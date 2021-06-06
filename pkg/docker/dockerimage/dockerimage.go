@@ -143,6 +143,9 @@ type LayerStats struct {
 	BinaryCount            uint64 `json:"binary_count,omitempty"`
 	BinarySize             uint64 `json:"binary_size,omitempty"`
 	BinarySizeHuman        string `json:"binary_size_human,omitempty"`
+	SetuidCount            uint64 `json:"setuid_count,omitempty"`
+	SetgidCount            uint64 `json:"setgid_count,omitempty"`
+	StickyCount            uint64 `json:"sticky_count,omitempty"`
 }
 
 type PackageStats struct {
@@ -163,6 +166,9 @@ type PackageStats struct {
 	BinaryCount             uint64 `json:"binary_count,omitempty"`
 	BinarySize              uint64 `json:"binary_size,omitempty"`
 	BinarySizeHuman         string `json:"binary_size_human,omitempty"`
+	SetuidCount             uint64 `json:"setuid_count,omitempty"`
+	SetgidCount             uint64 `json:"setgid_count,omitempty"`
+	StickyCount             uint64 `json:"sticky_count,omitempty"`
 }
 
 type ChangeType int
@@ -412,6 +418,7 @@ func LoadPackage(archivePath string,
 	pkg := newPackage()
 	layers := map[string]*Layer{}
 
+	var archiveFiles []string
 	tr := tar.NewReader(afile)
 	for {
 		hdr, err := tr.Next()
@@ -430,6 +437,7 @@ func LoadPackage(archivePath string,
 		}
 
 		hdr.Name = filepath.Clean(hdr.Name)
+		archiveFiles = append(archiveFiles, hdr.Name)
 		switch hdr.Typeflag {
 		case tar.TypeReg, tar.TypeSymlink:
 			switch {
@@ -519,11 +527,13 @@ func LoadPackage(archivePath string,
 	}
 
 	if pkg.Manifest == nil {
-		return nil, fmt.Errorf("dockerimage.LoadPackage: missing manifest object for image ID - %v", imageID)
+		return nil, fmt.Errorf("dockerimage.LoadPackage: missing manifest object for image ID=%s / archive='%s' / files=%+v",
+			imageID, archivePath, archiveFiles)
 	}
 
 	if pkg.Config == nil {
-		return nil, fmt.Errorf("dockerimage.LoadPackage: missing image config object for image ID - %v", imageID)
+		return nil, fmt.Errorf("dockerimage.LoadPackage: missing image config object for image ID=%s / archive='%s' / files=%+v",
+			imageID, archivePath, archiveFiles)
 	}
 
 	for idx, layerPath := range pkg.Manifest.Layers {
@@ -882,6 +892,21 @@ func layerFromStream(
 				layer.Stats.DeletedFileCount++
 				pkg.Stats.DeletedFileCount++
 			} else {
+				//TODO:
+				//do unique pkg stats counts,
+				//so we don't count the same thing multiple times
+				//across different layers
+				if fsutil.FileModeIsSetuid(object.Mode) {
+					layer.Stats.SetuidCount++
+					pkg.Stats.SetuidCount++
+				} else if fsutil.FileModeIsSetgid(object.Mode) {
+					layer.Stats.SetgidCount++
+					pkg.Stats.SetgidCount++
+				} else if fsutil.FileModeIsSticky(object.Mode) {
+					layer.Stats.StickyCount++
+					pkg.Stats.StickyCount++
+				}
+
 				err = inspectFile(
 					object,
 					tr,
@@ -916,6 +941,15 @@ func layerFromStream(
 			if isDeleted {
 				layer.Stats.DeletedDirCount++
 				pkg.Stats.DeletedDirCount++
+			} else {
+				//TODO:
+				//do unique pkg stats counts,
+				//so we don't count the same thing multiple times
+				//across different layers
+				if fsutil.FileModeIsSticky(object.Mode) {
+					layer.Stats.StickyCount++
+					pkg.Stats.StickyCount++
+				}
 			}
 		}
 	}
