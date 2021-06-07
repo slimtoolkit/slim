@@ -62,6 +62,21 @@ func (i *Inspector) NoImage() bool {
 		log.Debugf("image.inspector.NoImage: err=%v", err)
 	}
 
+	if err == dockerutil.ErrNotFound &&
+		!strings.Contains(i.ImageRef, ":") {
+		//check if there are any tags for the target image
+		matches, err := dockerutil.ListImages(i.APIClient, i.ImageRef)
+		if err != nil {
+			log.Debugf("image.inspector.NoImage: err=%v", err)
+			return true
+		}
+
+		for ref := range matches {
+			i.ImageRef = ref
+			return false
+		}
+	}
+
 	return true
 }
 

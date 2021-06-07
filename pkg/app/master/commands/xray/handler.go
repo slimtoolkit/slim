@@ -147,6 +147,10 @@ func OnCommand(
 		}
 	}
 
+	//refresh the target refs
+	targetRef = imageInspector.ImageRef
+	cmdReport.TargetReference = imageInspector.ImageRef
+
 	xc.Out.State("image.api.inspection.start")
 
 	logger.Info("inspecting 'fat' image metadata...")
