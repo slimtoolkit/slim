@@ -876,6 +876,10 @@ func printImagePackage(
 		}
 	}
 
+	for _, info := range pkg.OSShells {
+		cmdReport.ImageReport.OSShells = append(cmdReport.ImageReport.OSShells, info)
+	}
+
 	if doDetectDuplicates && doShowDuplicates && len(pkg.HashReferences) > 0 {
 		cmdReport.ImageReport.Duplicates = map[string]*dockerimage.DuplicateFilesReport{}
 

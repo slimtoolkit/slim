@@ -40,11 +40,13 @@ type Package struct {
 	LayerIDRefs    map[string]*Layer
 	HashReferences map[string]map[string]*ObjectMetadata
 	Stats          PackageStats
+	OSShells       map[string]*system.OSShell
 }
 
 type ImageReport struct {
 	Stats      PackageStats                     `json:"stats"`
 	Duplicates map[string]*DuplicateFilesReport `json:"duplicates,omitempty"`
+	OSShells   []*system.OSShell                `json:"shells,omitempty"`
 }
 
 type DuplicateFilesReport struct {
@@ -367,6 +369,7 @@ func newPackage() *Package {
 	pkg := Package{
 		LayerIDRefs:    map[string]*Layer{},
 		HashReferences: map[string]map[string]*ObjectMetadata{},
+		OSShells:       map[string]*system.OSShell{},
 	}
 
 	return &pkg
@@ -881,6 +884,12 @@ func layerFromStream(
 			if isDeleted {
 				layer.Stats.DeletedLinkCount++
 				pkg.Stats.DeletedLinkCount++
+			} else {
+				if shellInfo, found := pkg.OSShells[object.Name]; found {
+					if shellInfo.ExePath == object.Name {
+						shellInfo.LinkPath = object.LinkTarget
+					}
+				}
 			}
 		case tar.TypeReg:
 			layer.Stats.FileCount++
@@ -907,9 +916,17 @@ func layerFromStream(
 					pkg.Stats.StickyCount++
 				}
 
+				if shellInfo, found := pkg.OSShells[object.Name]; found {
+					if shellInfo.ExePath == object.Name {
+						//not ideal, need to verify Reference and LinkPath too
+						shellInfo.Verified = true
+					}
+				}
+
 				err = inspectFile(
 					object,
 					tr,
+					pkg,
 					layer,
 					doHashData,
 					changeDataHashMatchers,
@@ -991,6 +1008,7 @@ func (f *utf8FileInfo) Sys() interface{}   { return nil }
 func inspectFile(
 	object *ObjectMetadata,
 	reader io.Reader,
+	pkg *Package,
 	layer *Layer,
 	doHashData bool,
 	changeDataHashMatchers map[string]*ChangeDataHashMatcher,
@@ -1011,6 +1029,7 @@ func inspectFile(
 	}
 
 	if system.IsOSReleaseFile(fullPath) ||
+		system.IsOSShellsFile(fullPath) ||
 		len(changeDataMatchers) > 0 ||
 		cpmDumps ||
 		cdhmDumps ||
@@ -1018,6 +1037,17 @@ func inspectFile(
 		data, err := ioutil.ReadAll(reader)
 		if err != nil {
 			return err
+		}
+
+		if system.IsOSShellsFile(fullPath) {
+			shellsList, _ := system.NewOSShellsFromData(data)
+			for _, shellInfo := range shellsList {
+				if shellInfo.Reference != "" {
+					pkg.OSShells[shellInfo.Reference] = shellInfo
+				} else {
+					pkg.OSShells[shellInfo.ExePath] = shellInfo
+				}
+			}
 		}
 
 		if system.IsOSReleaseFile(fullPath) {
