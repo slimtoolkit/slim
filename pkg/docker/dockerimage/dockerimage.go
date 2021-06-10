@@ -599,6 +599,18 @@ func LoadPackage(archivePath string,
 				case ChangeDelete:
 					object.History.Delete = &changeInfo
 				}
+
+				if object.Change == ChangeAdd ||
+					object.Change == ChangeModify {
+					if shellInfo, found := pkg.OSShells[object.Name]; found {
+						if exeInfo, rfound := layer.References[shellInfo.ExePath]; rfound {
+							shellInfo.Verified = true
+							if exeInfo.LinkTarget != "" {
+								shellInfo.LinkPath = exeInfo.LinkTarget
+							}
+						}
+					}
+				}
 			}
 
 			if utf8Detector != nil {
@@ -693,6 +705,18 @@ func LoadPackage(archivePath string,
 							}
 
 							break
+						}
+					}
+				}
+
+				if object.Change == ChangeAdd ||
+					object.Change == ChangeModify {
+					if shellInfo, found := pkg.OSShells[object.Name]; found {
+						if exeInfo, rfound := layer.References[shellInfo.ExePath]; rfound {
+							shellInfo.Verified = true
+							if exeInfo.LinkTarget != "" {
+								shellInfo.LinkPath = exeInfo.LinkTarget
+							}
 						}
 					}
 				}
@@ -884,12 +908,6 @@ func layerFromStream(
 			if isDeleted {
 				layer.Stats.DeletedLinkCount++
 				pkg.Stats.DeletedLinkCount++
-			} else {
-				if shellInfo, found := pkg.OSShells[object.Name]; found {
-					if shellInfo.ExePath == object.Name {
-						shellInfo.LinkPath = object.LinkTarget
-					}
-				}
 			}
 		case tar.TypeReg:
 			layer.Stats.FileCount++
@@ -914,13 +932,6 @@ func layerFromStream(
 				} else if fsutil.FileModeIsSticky(object.Mode) {
 					layer.Stats.StickyCount++
 					pkg.Stats.StickyCount++
-				}
-
-				if shellInfo, found := pkg.OSShells[object.Name]; found {
-					if shellInfo.ExePath == object.Name {
-						//not ideal, need to verify Reference and LinkPath too
-						shellInfo.Verified = true
-					}
 				}
 
 				err = inspectFile(

@@ -877,6 +877,16 @@ func printImagePackage(
 	}
 
 	for _, info := range pkg.OSShells {
+		xc.Out.Info("image.shells",
+			ovars{
+				"full_name":  info.FullName,
+				"short_name": info.ShortName,
+				"exe_path":   info.ExePath,
+				"link_path":  info.LinkPath,
+				"reference":  info.Reference,
+				"verified":   info.Verified,
+			})
+
 		cmdReport.ImageReport.OSShells = append(cmdReport.ImageReport.OSShells, info)
 	}
 
