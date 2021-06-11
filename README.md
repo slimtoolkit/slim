@@ -1,9 +1,7 @@
 ![DSLIM1](assets/images/dslim/DockerSlimLogo1Big.png)
 
 [![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-brightgreen.svg?style=for-the-badge)](https://gitter.im/docker-slim/community)
-
 [![Discord chat](https://img.shields.io/static/v1.svg?label=chat&message=on%20discord&color=7389D8&style=for-the-badge)](https://discord.gg/9tDyxYS)
-
 [![Follow](https://img.shields.io/badge/follow-on%20twitter-%231DA1F2.svg?style=for-the-badge&logoColor=white)](https://twitter.com/DockerSlim)
 [![Youtube](https://img.shields.io/badge/-YouTube-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA?sub_confirmation=1)
 
