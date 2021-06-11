@@ -1,13 +1,14 @@
 ![DSLIM1](assets/images/dslim/DockerSlimLogo1Big.png)
 
-[![Follow](https://img.shields.io/badge/twitter-%231DA1F2.svg?style=for-the-badge&logoColor=white)](https://twitter.com/DockerSlim)
-[![Gitter chat](https://badges.gitter.im/docker-slim/docker-slim.svg?style=for-the-badge)](https://gitter.im/docker-slim/community)
+[![Gitter chat](https://img.shields.io/badge/chat-on%20gitter-brightgreen.svg?style=for-the-badge)](https://gitter.im/docker-slim/community)
+
 [![Discord chat](https://img.shields.io/static/v1.svg?label=chat&message=on%20discord&color=7389D8&style=for-the-badge)](https://discord.gg/9tDyxYS)
-[![Download DockerSlim](https://img.shields.io/badge/download-docker--slim-blue?style=for-the-badge)](https://github.com/docker-slim/docker-slim#installation)
-[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod&style=for-the-badge)](https://gitpod.io/#https://github.com/docker-slim/docker-slim)
+
+[![Follow](https://img.shields.io/badge/follow-on%20twitter-%231DA1F2.svg?style=for-the-badge&logoColor=white)](https://twitter.com/DockerSlim)
 [![Youtube](https://img.shields.io/badge/-YouTube-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA?sub_confirmation=1)
 
-
+[![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod&style=for-the-badge)](https://gitpod.io/#https://github.com/docker-slim/docker-slim)
+[![Download DockerSlim](https://img.shields.io/badge/download-docker--slim-blue?style=for-the-badge)](https://github.com/docker-slim/docker-slim#installation)
 
 
 
