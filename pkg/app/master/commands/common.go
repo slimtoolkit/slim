@@ -76,6 +76,7 @@ const (
 	FlagCRORuntime = "cro-runtime"
 
 	FlagHTTPProbe                 = "http-probe"
+	FlagHTTPProbeOff              = "http-probe-off" //alternative way to disable http probing
 	FlagHTTPProbeCmd              = "http-probe-cmd"
 	FlagHTTPProbeCmdFile          = "http-probe-cmd-file"
 	FlagHTTPProbeRetryCount       = "http-probe-retry-count"
@@ -136,7 +137,8 @@ const (
 	//Container Run Options (for build, profile and run commands)
 	FlagCRORuntimeUsage = "Runtime to use with the created containers"
 
-	FlagHTTPProbeUsage                 = "Enables HTTP probe"
+	FlagHTTPProbeUsage                 = "Enable or disable HTTP probing"
+	FlagHTTPProbeOffUsage              = "Alternative way to disable HTTP probing"
 	FlagHTTPProbeCmdUsage              = "User defined HTTP probes"
 	FlagHTTPProbeCmdFileUsage          = "File with user defined HTTP probes"
 	FlagHTTPProbeRetryCountUsage       = "Number of retries for each HTTP probe"
@@ -300,6 +302,11 @@ var CommonFlags = map[string]cli.Flag{
 		Name:   FlagHTTPProbe,
 		Usage:  FlagHTTPProbeUsage,
 		EnvVar: "DSLIM_HTTP_PROBE",
+	},
+	FlagHTTPProbeOff: cli.BoolFlag{
+		Name:   FlagHTTPProbeOff,
+		Usage:  FlagHTTPProbeOffUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_OFF",
 	},
 	FlagHTTPProbeCmd: cli.StringSliceFlag{
 		Name:   FlagHTTPProbeCmd,

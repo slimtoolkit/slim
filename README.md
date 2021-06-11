@@ -34,7 +34,7 @@ When `docker-slim` runs it gives you an opportunity to interact with the tempora
 
 If your application exposes any web interfaces (e.g., when you have a web server or an HTTP API), you'll see the port numbers on the host machine you will need to use to interact with your application (look for the `port.list` and `target.port.info` messages on the screen). For example, in the screencast above you'll see that the internal application port 8000 is mapped to port 32911 on your host.
 
-Note that `docker-slim` will interact with your application for you if you enable HTTP probing with the `--http-probe` flag or other related HTTP probe flags. Some web applications built with scripting languages like Python or Ruby require service interactions to load everything in the application. Enable HTTP probing unless it gets in your way.
+Note that `docker-slim` will interact with your application for you when HTTP probing is enabled (enabled by default; see the `--http-probe*` flag docs for more details). Some web applications built with scripting languages like Python or Ruby require service interactions to load everything in the application. Enable HTTP probing unless it gets in your way.
 
 You can also interact with the temporary container via a shell script or snippet using `--exec-file` or `--exec`. For example, you can create a container which is only capable of using curl.
 
@@ -323,7 +323,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--target` - Target container image (name or ID). It's an alternative way to provide the target information. The standard way to provide the target information is by putting as the last value in the `build` command CLI call.
 - `--pull` - Try pulling target if it's not available locally (default: false).
 - `--show-plogs` - Show image pull logs (default: false).
-- `--http-probe` - Enables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`)
+- `--http-probe` - Enables/disables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`: `--http-probe=false`)
+- `--http-probe-off` - Alternative way to disable HTTP probing
 - `--http-probe-cmd` - Additional HTTP probe command [can use this flag multiple times]
 - `--http-probe-cmd-file` - File with user defined HTTP probe commands
 - `--http-probe-retry-count` - Number of retries for each HTTP probe (default value: 5)
@@ -451,23 +452,25 @@ On Mac OS X you get them when you run `eval "$(docker-machine env default)"` or 
 
 If the Docker environment variables are configured to use TLS and to verify the Docker cert (default behavior), but you want to disable the TLS verification you can override the TLS verification behavior by setting the `--tls-verify` to false:
 
-`docker-slim --tls-verify=false build --http-probe=true my/sample-node-app-multi`
+`docker-slim --tls-verify=false build my/sample-node-app-multi`
 
 You can override all Docker connection options using these flags: `--host`, `--tls`, `--tls-verify`, `--tls-cert-path`. These flags correspond to the standard Docker options (and the environment variables).
 
 If you want to use TLS with verification:
 
-`docker-slim --host=tcp://192.168.99.100:2376 --tls-cert-path=/Users/youruser/.docker/machine/machines/default --tls=true --tls-verify=true build --http-probe=true my/sample-node-app-multi`
+`docker-slim --host=tcp://192.168.99.100:2376 --tls-cert-path=/Users/youruser/.docker/machine/machines/default --tls=true --tls-verify=true build my/sample-node-app-multi`
 
 If you want to use TLS without verification:
 
-`docker-slim --host=tcp://192.168.99.100:2376 --tls-cert-path=/Users/youruser/.docker/machine/machines/default --tls=true --tls-verify=false build --http-probe=true my/sample-node-app-multi`
+`docker-slim --host=tcp://192.168.99.100:2376 --tls-cert-path=/Users/youruser/.docker/machine/machines/default --tls=true --tls-verify=false build my/sample-node-app-multi`
 
 If the Docker environment variables are not set and if you don't specify any Docker connect options `docker-slim` will try to use the default unix socket.
 
 ## HTTP PROBE COMMANDS
 
 If the HTTP probe is enabled (note: it is enabled by default) it will default to running `GET /` with HTTP and then HTTPS on every exposed port. You can add additional commands using the `--http-probe-cmd` and `--http-probe-cmd-file` options.
+
+If you want to disable HTTP probing set the `--http-probe` flag to false (e.g., `--http-probe=false`). You can also use the `--http-probe-off` flag to do the same (simply use the flag without any parameters).
 
 The `--http-probe-cmd` option is good when you want to specify a small number of simple commands where you select some or all of these HTTP command options: crawling (defaults to false), protocol, method (defaults to GET), resource (path and query string).
 

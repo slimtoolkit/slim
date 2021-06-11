@@ -26,6 +26,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagTarget),
 		commands.Cflag(commands.FlagPull),
 		commands.Cflag(commands.FlagShowPullLogs),
+		commands.Cflag(commands.FlagHTTPProbeOff),
 		commands.Cflag(commands.FlagHTTPProbe),
 		commands.Cflag(commands.FlagHTTPProbeCmd),
 		commands.Cflag(commands.FlagHTTPProbeCmdFile),
@@ -217,6 +218,9 @@ var CLI = cli.Command{
 		doHTTPProbeCrawl := ctx.Bool(commands.FlagHTTPProbeCrawl)
 
 		doHTTPProbe := ctx.Bool(commands.FlagHTTPProbe)
+		if doHTTPProbe && ctx.Bool(commands.FlagHTTPProbeOff) {
+			doHTTPProbe = false
+		}
 
 		httpProbeCmds, err := commands.GetHTTPProbes(ctx)
 		if err != nil {
