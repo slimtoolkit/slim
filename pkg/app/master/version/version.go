@@ -62,7 +62,7 @@ func GetCheckVersionVerdict(info *CheckVersionInfo) string {
 		if info.Outdated {
 			return fmt.Sprintf("your installed version is OUTDATED (local=%s current=%s)", v.Tag(), info.Current)
 		} else {
-			return "your have the latest version"
+			return "you have the latest version"
 		}
 	}
 
