@@ -317,7 +317,7 @@ func OnCommand(
 				ovars{
 					"status":  "image.not.found",
 					"image":   targetRef,
-					"message": "make sure the target image already exists locally",
+					"message": "make sure the target image already exists locally (use --pull flag to auto-download it from registry)",
 				})
 
 			exitCode := commands.ECTBuild | ecbImageBuildError

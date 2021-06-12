@@ -137,7 +137,7 @@ func OnCommand(
 			err := imageInspector.Pull(doShowPullLogs)
 			errutil.FailOn(err)
 		} else {
-			xc.Out.Error("image.not.found", "make sure the target image already exists locally")
+			xc.Out.Error("image.not.found", "make sure the target image already exists locally (use --pull flag to auto-download it from registry)")
 
 			exitCode := commands.ECTBuild | ecxImageNotFound
 			xc.Out.State("exited",
@@ -227,6 +227,7 @@ func OnCommand(
 			Entrypoint: imageInspector.ImageInfo.Config.Entrypoint,
 			Cmd:        imageInspector.ImageInfo.Config.Cmd,
 		},
+		InheritedInstructions: imageInspector.ImageInfo.Config.OnBuild,
 	}
 
 	cmdReport.SourceImage.EnvVars = imageInspector.ImageInfo.Config.Env

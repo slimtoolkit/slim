@@ -41,23 +41,24 @@ type ImageIdentity struct {
 
 // ImageMetadata provides basic image metadata
 type ImageMetadata struct {
-	Identity       ImageIdentity      `json:"identity"`
-	Size           int64              `json:"size"`
-	SizeHuman      string             `json:"size_human"`
-	CreateTime     string             `json:"create_time"`
-	Author         string             `json:"author,omitempty"`
-	DockerVersion  string             `json:"docker_version"`
-	Architecture   string             `json:"architecture"`
-	User           string             `json:"user,omitempty"`
-	ExposedPorts   []string           `json:"exposed_ports,omitempty"`
-	Distro         *DistroInfo        `json:"distro,omitempty"`
-	OS             string             `json:"os,omitempty"`
-	Volumes        []string           `json:"volumes,omitempty"`
-	Labels         map[string]string  `json:"labels,omitempty"`
-	EnvVars        []string           `json:"env_vars,omitempty"`
-	Buildpack      *BuildpackInfo     `json:"buildpack,omitempty"`
-	WorkDir        string             `json:"workdir,omitempty"`
-	ContainerEntry ContainerEntryInfo `json:"container_entry"`
+	Identity              ImageIdentity      `json:"identity"`
+	Size                  int64              `json:"size"`
+	SizeHuman             string             `json:"size_human"`
+	CreateTime            string             `json:"create_time"`
+	Author                string             `json:"author,omitempty"`
+	DockerVersion         string             `json:"docker_version"`
+	Architecture          string             `json:"architecture"`
+	User                  string             `json:"user,omitempty"`
+	ExposedPorts          []string           `json:"exposed_ports,omitempty"`
+	Distro                *DistroInfo        `json:"distro,omitempty"`
+	OS                    string             `json:"os,omitempty"`
+	Volumes               []string           `json:"volumes,omitempty"`
+	Labels                map[string]string  `json:"labels,omitempty"`
+	EnvVars               []string           `json:"env_vars,omitempty"`
+	Buildpack             *BuildpackInfo     `json:"buildpack,omitempty"`
+	WorkDir               string             `json:"workdir,omitempty"`
+	ContainerEntry        ContainerEntryInfo `json:"container_entry"`
+	InheritedInstructions []string           `json:"inherited_instructions,omitempty"`
 }
 
 type ContainerEntryInfo struct {
@@ -129,7 +130,7 @@ type ProfileCommand struct {
 }
 
 // Output Version for 'xray'
-const OVXrayCommand = "1.0"
+const OVXrayCommand = "1.2"
 
 // XrayCommand is the 'xray' command report data
 type XrayCommand struct {
