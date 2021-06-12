@@ -41,21 +41,37 @@ type ImageIdentity struct {
 
 // ImageMetadata provides basic image metadata
 type ImageMetadata struct {
-	Identity      ImageIdentity     `json:"identity"`
-	Size          int64             `json:"size"`
-	SizeHuman     string            `json:"size_human"`
-	CreateTime    string            `json:"create_time"`
-	Author        string            `json:"author,omitempty"`
-	DockerVersion string            `json:"docker_version"`
-	Architecture  string            `json:"architecture"`
-	User          string            `json:"user,omitempty"`
-	ExposedPorts  []string          `json:"exposed_ports,omitempty"`
-	Distro        *DistroInfo       `json:"distro,omitempty"`
-	OS            string            `json:"os,omitempty"`
-	Volumes       []string          `json:"volumes,omitempty"`
-	Labels        map[string]string `json:"labels,omitempty"`
-	EnvVars       []string          `json:"env_vars,omitempty"`
-	Buildpack     *BuildpackInfo    `json:"buildpack,omitempty"`
+	Identity       ImageIdentity      `json:"identity"`
+	Size           int64              `json:"size"`
+	SizeHuman      string             `json:"size_human"`
+	CreateTime     string             `json:"create_time"`
+	Author         string             `json:"author,omitempty"`
+	DockerVersion  string             `json:"docker_version"`
+	Architecture   string             `json:"architecture"`
+	User           string             `json:"user,omitempty"`
+	ExposedPorts   []string           `json:"exposed_ports,omitempty"`
+	Distro         *DistroInfo        `json:"distro,omitempty"`
+	OS             string             `json:"os,omitempty"`
+	Volumes        []string           `json:"volumes,omitempty"`
+	Labels         map[string]string  `json:"labels,omitempty"`
+	EnvVars        []string           `json:"env_vars,omitempty"`
+	Buildpack      *BuildpackInfo     `json:"buildpack,omitempty"`
+	WorkDir        string             `json:"workdir,omitempty"`
+	ContainerEntry ContainerEntryInfo `json:"container_entry"`
+}
+
+type ContainerEntryInfo struct {
+	Entrypoint  []string             `json:"entrypoint,omitempty"`
+	Cmd         []string             `json:"cmd,omitempty"`
+	ExePath     string               `json:"exe_path"`
+	FullExePath *ContainerFileInfo   `json:"full_exe_path,omitempty"`
+	ExeArgs     []string             `json:"exe_args,omitempty"`
+	ArgFiles    []*ContainerFileInfo `json:"arg_files,omitempty"`
+}
+
+type ContainerFileInfo struct {
+	Name  string `json:"name"`
+	Layer int    `json:"layer"`
 }
 
 type BuildpackInfo struct {

@@ -221,7 +221,14 @@ func OnCommand(
 		Architecture:  imageInspector.ImageInfo.Architecture,
 		User:          imageInspector.ImageInfo.Config.User,
 		OS:            imageInspector.ImageInfo.OS,
+		WorkDir:       imageInspector.ImageInfo.Config.WorkingDir,
+		ContainerEntry: report.ContainerEntryInfo{
+			Entrypoint: imageInspector.ImageInfo.Config.Entrypoint,
+			Cmd:        imageInspector.ImageInfo.Config.Cmd,
+		},
 	}
+
+	cmdReport.SourceImage.EnvVars = imageInspector.ImageInfo.Config.Env
 
 	for k := range imageInspector.ImageInfo.Config.ExposedPorts {
 		cmdReport.SourceImage.ExposedPorts = append(cmdReport.SourceImage.ExposedPorts, string(k))
@@ -239,8 +246,6 @@ func OnCommand(
 			Stack: bpStack,
 		}
 	}
-
-	cmdReport.SourceImage.EnvVars = imageInspector.ImageInfo.Config.Env
 
 	cmdReport.ArtifactLocation = imageInspector.ArtifactLocation
 
@@ -292,6 +297,68 @@ func OnCommand(
 		logger.Debugf("history instruction set size mismatch - %v/%v ",
 			len(imageInspector.DockerfileInfo.AllInstructions),
 			len(imagePkg.Config.History))
+	}
+
+	allEntryParams := append(cmdReport.SourceImage.ContainerEntry.Entrypoint,
+		cmdReport.SourceImage.ContainerEntry.Cmd...)
+	if len(allEntryParams) > 0 {
+		cmdReport.SourceImage.ContainerEntry.ExePath = allEntryParams[0]
+		cmdReport.SourceImage.ContainerEntry.ExeArgs = allEntryParams[1:]
+
+		//fix up exe path if relative
+		if !strings.HasPrefix(cmdReport.SourceImage.ContainerEntry.ExePath, "/") {
+			var envPaths []string
+			for _, envInfo := range cmdReport.SourceImage.EnvVars {
+				if strings.HasPrefix(envInfo, "PATH=") {
+					envInfo = strings.TrimPrefix(envInfo, "PATH=")
+					envPaths = strings.Split(envInfo, ":")
+					break
+				}
+			}
+
+			for _, envPath := range envPaths {
+				fullExePath := fmt.Sprintf("%s/%s", envPath, cmdReport.SourceImage.ContainerEntry.ExePath)
+				object := findChange(imagePkg, fullExePath)
+				if object != nil {
+					cmdReport.SourceImage.ContainerEntry.FullExePath =
+						&report.ContainerFileInfo{
+							Name:  fullExePath,
+							Layer: object.LayerIndex,
+						}
+					break
+				}
+			}
+		}
+
+		//find files in exe args
+		for _, exeArg := range cmdReport.SourceImage.ContainerEntry.ExeArgs {
+			//if starts with / assume a full path and lookup/find in the layer references
+			//otherwise try to use workdir and lookup/find in the layer references
+			if strings.HasPrefix(exeArg, "-") {
+				//skip flag names (might have false positives)
+				continue
+			}
+
+			var filePath string
+			if strings.HasPrefix(exeArg, "/") {
+				filePath = exeArg
+			} else {
+				//not a perfect way to find potential files
+				//but better than nothing
+				filePath = fmt.Sprintf("%s/%s", cmdReport.SourceImage.WorkDir, exeArg)
+			}
+
+			object := findChange(imagePkg, filePath)
+			if object != nil {
+				cmdReport.SourceImage.ContainerEntry.ArgFiles =
+					append(cmdReport.SourceImage.ContainerEntry.ArgFiles,
+						&report.ContainerFileInfo{
+							Name:  filePath,
+							Layer: object.LayerIndex,
+						})
+				break
+			}
+		}
 	}
 
 	printImagePackage(
@@ -358,6 +425,16 @@ func OnCommand(
 			})
 	}
 
+}
+
+func findChange(pkg *dockerimage.Package, filepath string) *dockerimage.ObjectMetadata {
+	for _, layer := range pkg.Layers {
+		if object, found := layer.References[filepath]; found {
+			return object
+		}
+	}
+
+	return nil
 }
 
 func printImagePackage(
@@ -888,6 +965,30 @@ func printImagePackage(
 			})
 
 		cmdReport.ImageReport.OSShells = append(cmdReport.ImageReport.OSShells, info)
+	}
+
+	xc.Out.Info("image.entry",
+		ovars{
+			"exe_path": cmdReport.SourceImage.ContainerEntry.ExePath,
+			"exe_args": strings.Join(cmdReport.SourceImage.ContainerEntry.ExeArgs, ","),
+		})
+
+	if cmdReport.SourceImage.ContainerEntry.FullExePath != nil {
+		xc.Out.Info("image.entry.full_exe_path",
+			ovars{
+				"name":  cmdReport.SourceImage.ContainerEntry.FullExePath.Name,
+				"layer": cmdReport.SourceImage.ContainerEntry.FullExePath.Layer,
+			})
+	}
+
+	if len(cmdReport.SourceImage.ContainerEntry.ArgFiles) > 0 {
+		for _, argFile := range cmdReport.SourceImage.ContainerEntry.ArgFiles {
+			xc.Out.Info("image.entry.arg_file",
+				ovars{
+					"name":  argFile.Name,
+					"layer": argFile.Layer,
+				})
+		}
 	}
 
 	if doDetectDuplicates && doShowDuplicates && len(pkg.HashReferences) > 0 {
