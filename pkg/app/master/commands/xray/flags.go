@@ -26,6 +26,7 @@ const (
 	FlagDetectUTF8            = "detect-utf8"
 	FlagDetectDuplicates      = "detect-duplicates"
 	FlagShowDuplicates        = "show-duplicates"
+	FlagShowSpecialPerms      = "show-special-perms"
 	FlagChangeMatchLayersOnly = "change-match-layers-only"
 )
 
@@ -50,6 +51,7 @@ const (
 	FlagDetectUTF8Usage            = "Detect utf8 files and optionally extract the discovered utf8 file content"
 	FlagDetectDuplicatesUsage      = "Detect duplicate files based on their hashes"
 	FlagShowDuplicatesUsage        = "Show discovered duplicate file paths"
+	FlagShowSpecialPermsUsage      = "Show files with special permissions (setuid,setgid,sticky)"
 	FlagChangeMatchLayersOnlyUsage = "Show only layers with change matches"
 )
 
@@ -154,6 +156,11 @@ var Flags = map[string]cli.Flag{
 		Name:   FlagShowDuplicates,
 		Usage:  FlagShowDuplicatesUsage,
 		EnvVar: "DSLIM_XRAY_SHOW_DUP",
+	},
+	FlagShowSpecialPerms: cli.BoolTFlag{
+		Name:   FlagShowSpecialPerms,
+		Usage:  FlagShowSpecialPermsUsage,
+		EnvVar: "DSLIM_XRAY_SHOW_SPECIAL",
 	},
 	FlagChangeDataHash: cli.StringSliceFlag{
 		Name:   FlagChangeDataHash,

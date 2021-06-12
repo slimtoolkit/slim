@@ -43,6 +43,7 @@ var CLI = cli.Command{
 		cflag(FlagDetectUTF8),
 		cflag(FlagDetectDuplicates),
 		cflag(FlagShowDuplicates),
+		cflag(FlagShowSpecialPerms),
 		cflag(FlagChangeDataHash),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
 	},
@@ -163,6 +164,7 @@ var CLI = cli.Command{
 		}
 
 		doShowDuplicates := ctx.Bool(FlagShowDuplicates)
+		doShowSpecialPerms := ctx.Bool(FlagShowSpecialPerms)
 
 		changeDataHashMatchers, err := parseChangeDataHashMatchers(ctx.StringSlice(FlagChangeDataHash))
 		if err != nil {
@@ -197,6 +199,7 @@ var CLI = cli.Command{
 			doHashData,
 			doDetectDuplicates,
 			doShowDuplicates,
+			doShowSpecialPerms,
 			changeMatchLayersOnly,
 			doAddImageManifest,
 			doAddImageConfig,

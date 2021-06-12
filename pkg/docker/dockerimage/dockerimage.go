@@ -34,19 +34,33 @@ const (
 )
 
 type Package struct {
-	Manifest       *ManifestObject
-	Config         *ConfigObject
-	Layers         []*Layer
-	LayerIDRefs    map[string]*Layer
-	HashReferences map[string]map[string]*ObjectMetadata
-	Stats          PackageStats
-	OSShells       map[string]*system.OSShell
+	Manifest        *ManifestObject
+	Config          *ConfigObject
+	Layers          []*Layer
+	LayerIDRefs     map[string]*Layer
+	HashReferences  map[string]map[string]*ObjectMetadata
+	Stats           PackageStats
+	OSShells        map[string]*system.OSShell
+	SpecialPermRefs SpecialPermsRefsInfo
+}
+
+type SpecialPermsRefsInfo struct {
+	Setuid map[string]*ObjectMetadata
+	Setgid map[string]*ObjectMetadata
+	Sticky map[string]*ObjectMetadata
+}
+
+type SpecialPermsInfo struct {
+	Setuid []string `json:"setuid,omitempty"`
+	Setgid []string `json:"setgid,omitempty"`
+	Sticky []string `json:"sticky,omitempty"`
 }
 
 type ImageReport struct {
-	Stats      PackageStats                     `json:"stats"`
-	Duplicates map[string]*DuplicateFilesReport `json:"duplicates,omitempty"`
-	OSShells   []*system.OSShell                `json:"shells,omitempty"`
+	Stats        PackageStats                     `json:"stats"`
+	Duplicates   map[string]*DuplicateFilesReport `json:"duplicates,omitempty"`
+	SpecialPerms *SpecialPermsInfo                `json:"special_perms,omitempty"`
+	OSShells     []*system.OSShell                `json:"shells,omitempty"`
 }
 
 type DuplicateFilesReport struct {
@@ -370,6 +384,11 @@ func newPackage() *Package {
 		LayerIDRefs:    map[string]*Layer{},
 		HashReferences: map[string]map[string]*ObjectMetadata{},
 		OSShells:       map[string]*system.OSShell{},
+		SpecialPermRefs: SpecialPermsRefsInfo{
+			Setuid: map[string]*ObjectMetadata{},
+			Setgid: map[string]*ObjectMetadata{},
+			Sticky: map[string]*ObjectMetadata{},
+		},
 	}
 
 	return &pkg
@@ -926,12 +945,19 @@ func layerFromStream(
 				if fsutil.FileModeIsSetuid(object.Mode) {
 					layer.Stats.SetuidCount++
 					pkg.Stats.SetuidCount++
-				} else if fsutil.FileModeIsSetgid(object.Mode) {
+					pkg.SpecialPermRefs.Setuid[object.Name] = object
+				}
+
+				if fsutil.FileModeIsSetgid(object.Mode) {
 					layer.Stats.SetgidCount++
 					pkg.Stats.SetgidCount++
-				} else if fsutil.FileModeIsSticky(object.Mode) {
+					pkg.SpecialPermRefs.Setgid[object.Name] = object
+				}
+
+				if fsutil.FileModeIsSticky(object.Mode) {
 					layer.Stats.StickyCount++
 					pkg.Stats.StickyCount++
+					pkg.SpecialPermRefs.Sticky[object.Name] = object
 				}
 
 				err = inspectFile(
@@ -977,6 +1003,7 @@ func layerFromStream(
 				if fsutil.FileModeIsSticky(object.Mode) {
 					layer.Stats.StickyCount++
 					pkg.Stats.StickyCount++
+					pkg.SpecialPermRefs.Sticky[object.Name] = object
 				}
 			}
 		}

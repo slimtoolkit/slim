@@ -57,6 +57,7 @@ func OnCommand(
 	doHashData bool,
 	doDetectDuplicates bool,
 	doShowDuplicates bool,
+	doShowSpecialPerms bool,
 	changeMatchLayersOnly bool,
 	doAddImageManifest bool,
 	doAddImageConfig bool,
@@ -377,6 +378,7 @@ func OnCommand(
 		doHashData,
 		doDetectDuplicates,
 		doShowDuplicates,
+		doShowSpecialPerms,
 		changeMatchLayersOnly,
 		changeDataHashMatchers,
 		changePathMatchers,
@@ -453,6 +455,7 @@ func printImagePackage(
 	doHashData bool,
 	doDetectDuplicates bool,
 	doShowDuplicates bool,
+	doShowSpecialPerms bool,
 	changeMatchLayersOnly bool,
 	changeDataHashMatchers map[string]*dockerimage.ChangeDataHashMatcher,
 	changePathMatchers []*dockerimage.ChangePathMatcher,
@@ -988,6 +991,43 @@ func printImagePackage(
 					"name":  argFile.Name,
 					"layer": argFile.Layer,
 				})
+		}
+	}
+
+	if doShowSpecialPerms &&
+		(len(pkg.SpecialPermRefs.Setuid) > 0 ||
+			len(pkg.SpecialPermRefs.Setgid) > 0 ||
+			len(pkg.SpecialPermRefs.Sticky) > 0) {
+		cmdReport.ImageReport.SpecialPerms = &dockerimage.SpecialPermsInfo{}
+
+		for name := range pkg.SpecialPermRefs.Setuid {
+			xc.Out.Info("image.special_perms.setuid",
+				ovars{
+					"name": name,
+				})
+
+			cmdReport.ImageReport.SpecialPerms.Setuid =
+				append(cmdReport.ImageReport.SpecialPerms.Setuid, name)
+		}
+
+		for name := range pkg.SpecialPermRefs.Setgid {
+			xc.Out.Info("image.special_perms.setgid",
+				ovars{
+					"name": name,
+				})
+
+			cmdReport.ImageReport.SpecialPerms.Setgid =
+				append(cmdReport.ImageReport.SpecialPerms.Setgid, name)
+		}
+
+		for name := range pkg.SpecialPermRefs.Sticky {
+			xc.Out.Info("image.special_perms.sticky",
+				ovars{
+					"name": name,
+				})
+
+			cmdReport.ImageReport.SpecialPerms.Sticky =
+				append(cmdReport.ImageReport.SpecialPerms.Sticky, name)
 		}
 	}
 
