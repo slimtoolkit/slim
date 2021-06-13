@@ -1,5 +1,23 @@
 # Releases
 
+## 1.36.0 (6/12/2021)
+
+### New Features
+
+- Ability to find duplicate files for xray (`--detect-duplicates`, `--show-duplicates`)
+- Ability to find all utf8 encoded files for xray using the `--detect-utf8` flag  (optionally dumping them to console, directory or tar file).
+- Ability to find the files with special permissions (`--show-special-perms`).
+- Ability to find all installed shells for xray.
+- Container entry information for xray with file detection.
+- Inherited image instructions (aka ONBUILD instructions) for xray.
+- More image level stats for xray.
+
+### Improvements
+
+- Multiple tags for the build command.
+- `--http-probe-off` flag for the build command to provide a shortcut to disable HTTP probing.
+- Flexible target image handling to use non-default tags if the `latest` tag doesn't exist and no explicit tag is provided.
+
 ## 1.35.2 (5/2/2021)
 
 ### New Features
