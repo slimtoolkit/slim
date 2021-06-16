@@ -30,13 +30,16 @@ const (
 	OSShellDashExePath           = "/bin/dash"
 	OSShellZExePath              = "/bin/zsh"
 	//usually a link to /bin/zsh
-	OSShellZ2ExePath     = "/usr/bin/zsh"
-	OSShellCExePath      = "/bin/csh"
-	OSShellTCExePath     = "/bin/tcsh"
-	OSShellFishExePath   = "/usr/bin/fish"
-	OSShellElvishExePath = "/usr/bin/elvish"
-	OSShellXonshExePath  = "/usr/bin/xonsh"
-	OSShellYashExePath   = "/usr/bin/yash"
+	OSShellZ2ExePath       = "/usr/bin/zsh"
+	OSShellCExePath        = "/bin/csh"
+	OSShellTCExePath       = "/bin/tcsh"
+	OSShellFishExePath     = "/usr/bin/fish"
+	OSShellElvishExePath   = "/usr/bin/elvish"
+	OSShellXonshExePath    = "/usr/bin/xonsh"
+	OSShellYashExePath     = "/usr/bin/yash"
+	OSShellGitShellExePath = "/usr/bin/git-shell"
+	OSShellScreenExePath   = "/usr/bin/screen"
+	OSShellTmuxExePath     = "/usr/bin/tmux"
 )
 
 var OSShellReferences = map[string]string{
@@ -56,6 +59,9 @@ var OSShellReferences = map[string]string{
 	OSShellXonshExePath:          OSShellXonshExePath,
 	OSShellYashExePath:           OSShellYashExePath,
 	OSShellAshExePath:            OSShellAshExePath,
+	OSShellGitShellExePath:       OSShellGitShellExePath,
+	OSShellScreenExePath:         OSShellScreenExePath,
+	OSShellTmuxExePath:           OSShellTmuxExePath,
 }
 
 var OSShells = map[string]OSShell{
@@ -118,6 +124,23 @@ var OSShells = map[string]OSShell{
 		FullName:  "Ash shell",
 		ShortName: "ash",
 		ExePath:   OSShellAshExePath,
+	},
+	//Restricted login shell for Git-only SSH access
+	//installed with git
+	OSShellGitShellExePath: {
+		FullName:  "Git shell",
+		ShortName: "git-shell",
+		ExePath:   OSShellGitShellExePath,
+	},
+	OSShellScreenExePath: {
+		FullName:  "Screen",
+		ShortName: "screen",
+		ExePath:   OSShellScreenExePath,
+	},
+	OSShellTmuxExePath: {
+		FullName:  "Tmux",
+		ShortName: "tmux",
+		ExePath:   OSShellTmuxExePath,
 	},
 }
 
