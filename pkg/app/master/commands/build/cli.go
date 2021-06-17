@@ -484,7 +484,7 @@ var CLI = cli.Command{
 			errutil.FailOn(err)
 
 			if !strings.Contains(continueAfter.Mode, config.CAMExec) {
-				continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMExec)
+				continueAfter.Mode = config.CAMExec
 				xc.Out.Info("exec",
 					ovars{
 						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
@@ -493,7 +493,7 @@ var CLI = cli.Command{
 
 		} else if len(execCmd) > 0 {
 			if !strings.Contains(continueAfter.Mode, config.CAMExec) {
-				continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMExec)
+				continueAfter.Mode = config.CAMExec
 				xc.Out.Info("exec",
 					ovars{
 						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
