@@ -458,6 +458,14 @@ var CLI = cli.Command{
 			xc.Exit(-1)
 		}
 
+		if continueAfter.Mode == config.CAMProbe && !doHTTPProbe {
+			continueAfter.Mode = ""
+			xc.Out.Info("exec",
+				ovars{
+					"message": "changing continue-after from probe to nothing because http-probe is disabled",
+				})
+		}
+
 		execCmd := ctx.String(commands.FlagExec)
 		execFile := ctx.String(commands.FlagExecFile)
 		if strings.Contains(continueAfter.Mode, config.CAMExec) &&
@@ -484,7 +492,12 @@ var CLI = cli.Command{
 			errutil.FailOn(err)
 
 			if !strings.Contains(continueAfter.Mode, config.CAMExec) {
-				continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMExec)
+				if continueAfter.Mode == "" {
+					continueAfter.Mode = config.CAMExec
+				} else {
+					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMExec)
+				}
+
 				xc.Out.Info("exec",
 					ovars{
 						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
@@ -493,17 +506,24 @@ var CLI = cli.Command{
 
 		} else if len(execCmd) > 0 {
 			if !strings.Contains(continueAfter.Mode, config.CAMExec) {
-				continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMExec)
+				if continueAfter.Mode == "" {
+					continueAfter.Mode = config.CAMExec
+				} else {
+					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMExec)
+				}
+
 				xc.Out.Info("exec",
 					ovars{
 						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
 					})
 			}
-		} else if !doHTTPProbe && continueAfter.Mode == "probe" {
+		}
+
+		if continueAfter.Mode == "" {
 			continueAfter.Mode = config.CAMEnter
 			xc.Out.Info("exec",
 				ovars{
-					"message": "changing continue-after from probe to enter because http-probe is disabled",
+					"message": "changing continue-after to enter",
 				})
 		}
 

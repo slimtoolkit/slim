@@ -403,21 +403,23 @@ func cloneDirPath(src, dst string) {
 	for _, dir := range dirs {
 		//fmt.Printf("cloning dir path = %#v\n", dir)
 		err = os.Mkdir(dir.dst, 0777)
-		if err != nil {
+		if err != nil && !os.IsExist(err) {
 			errutil.FailOn(err)
 		}
 
-		if err := os.Chmod(dir.dst, dir.perms); err != nil {
-			log.Warnf("cloneDirPath() - unable to set perms (%v) - %v", dir.dst, err)
-		}
-
-		if dir.sys.Ok {
-			if err := UpdateFileTimes(dir.dst, dir.sys.Atime, dir.sys.Mtime); err != nil {
-				log.Warnf("cloneDirPath() - UpdateFileTimes error (%v) - %v", dir.dst, err)
+		if err == nil {
+			if err := os.Chmod(dir.dst, dir.perms); err != nil {
+				log.Warnf("cloneDirPath() - unable to set perms (%v) - %v", dir.dst, err)
 			}
 
-			if err := os.Chown(dir.dst, int(dir.sys.Uid), int(dir.sys.Gid)); err != nil {
-				log.Warnln("cloneDirPath()- unable to change owner (%v) - %v", dir.dst, err)
+			if dir.sys.Ok {
+				if err := UpdateFileTimes(dir.dst, dir.sys.Atime, dir.sys.Mtime); err != nil {
+					log.Warnf("cloneDirPath() - UpdateFileTimes error (%v) - %v", dir.dst, err)
+				}
+
+				if err := os.Chown(dir.dst, int(dir.sys.Uid), int(dir.sys.Gid)); err != nil {
+					log.Warnln("cloneDirPath()- unable to change owner (%v) - %v", dir.dst, err)
+				}
 			}
 		}
 	}

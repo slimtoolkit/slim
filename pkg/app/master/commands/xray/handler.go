@@ -330,6 +330,15 @@ func OnCommand(
 					break
 				}
 			}
+		} else {
+			object := findChange(imagePkg, cmdReport.SourceImage.ContainerEntry.ExePath)
+			if object != nil {
+				cmdReport.SourceImage.ContainerEntry.FullExePath =
+					&report.ContainerFileInfo{
+						Name:  cmdReport.SourceImage.ContainerEntry.ExePath,
+						Layer: object.LayerIndex,
+					}
+			}
 		}
 
 		//find files in exe args
