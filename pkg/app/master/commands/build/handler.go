@@ -119,6 +119,8 @@ func OnCommand(
 		}
 	}
 
+	logger.Debugf("customImageTag='%s', additionalTags=%#v", customImageTag, additionalTags)
+
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
 		exitMsg := "missing Docker connection info"
@@ -149,6 +151,7 @@ func OnCommand(
 				"continue.mode": continueAfter.Mode,
 				"rt.as.user":    doRunTargetAsUser,
 				"keep.perms":    doKeepPerms,
+				"tags":          strings.Join(outputTags, ","),
 			})
 	} else {
 		xc.Out.Info("params",
