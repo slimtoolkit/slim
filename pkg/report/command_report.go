@@ -8,6 +8,8 @@ import (
 	"os"
 	"path/filepath"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/docker-slim/docker-slim/pkg/command"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
@@ -16,6 +18,11 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/version"
 )
+
+// DefaultFilename is the default name for the command report
+const DefaultFilename = "slim.report.json"
+
+const tmpPath = "/tmp"
 
 // Command is the common command report data
 type Command struct {
@@ -426,6 +433,17 @@ func (p *Command) saveInfo(info interface{}) bool {
 		errutil.FailOn(err)
 
 		err = ioutil.WriteFile(p.reportLocation, reportData.Bytes(), 0644)
+		if err != nil && os.IsPermission(err) {
+			if pinfo, tmpErr := os.Stat(tmpPath); tmpErr == nil && pinfo.IsDir() {
+				p.reportLocation = filepath.Join(tmpPath, DefaultFilename)
+				log.Debugf("report.saveInfo - overriding command report file path to %v", p.reportLocation)
+				err = ioutil.WriteFile(p.reportLocation, reportData.Bytes(), 0644)
+			} else {
+				fmt.Printf("report.Command.saveInfo: not saving report file - '%s'\n", p.reportLocation)
+				return false
+			}
+		}
+
 		errutil.FailOn(err)
 		return true
 	}
