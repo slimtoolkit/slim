@@ -1,10 +1,23 @@
 # Releases
 
+## 1.36.1 (6/20/2021)
+
+### Improvements
+
+- Ability to detect additional shells.
+- Saving command report to /tmp directory if it's not possible to save it in the current working directory.
+- Printing tag information for build command.
+
+### Bug Fixes
+
+- Default `continue-after` value handling fix (remove `probe` mode if http probing is disabled).
+- Sensor not exiting when it's trying to copy a directory it already copied.
+
 ## 1.36.0 (6/12/2021)
 
 ### New Features
 
-- Ability to find duplicate files for xray (`--detect-duplicates`, `--show-duplicates`)
+- Ability to find duplicate files for xray (`--detect-duplicates`, `--show-duplicates`).
 - Ability to find all utf8 encoded files for xray using the `--detect-utf8` flag  (optionally dumping them to console, directory or tar file).
 - Ability to find the files with special permissions (`--show-special-perms`).
 - Ability to find all installed shells for xray.
