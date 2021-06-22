@@ -20,6 +20,16 @@ func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, erro
 	var cro config.ContainerRunOptions
 
 	cro.Runtime = ctx.String(FlagCRORuntime)
+	sysctlList := ctx.StringSlice(FlagCROSysctl)
+	if len(sysctlList) > 0 {
+		params, err := ParseTokenMap(sysctlList)
+		if err != nil {
+			fmt.Printf("invalid sysctl options %v\n", err)
+			return nil, err
+		}
+
+		cro.SysctlParams = params
+	}
 
 	return &cro, nil
 }

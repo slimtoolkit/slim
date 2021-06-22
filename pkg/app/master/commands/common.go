@@ -72,9 +72,6 @@ const (
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
 
-	//Container Run Options (for build, profile and run commands)
-	FlagCRORuntime = "cro-runtime"
-
 	FlagHTTPProbe                 = "http-probe"
 	FlagHTTPProbeOff              = "http-probe-off" //alternative way to disable http probing
 	FlagHTTPProbeCmd              = "http-probe-cmd"
@@ -100,29 +97,34 @@ const (
 	FlagRunTargetAsUser   = "run-target-as-user"
 	FlagShowContainerLogs = "show-clogs"
 
-	FlagExec       = "exec"
-	FlagExecFile   = "exec-file"
-	FlagEntrypoint = "entrypoint"
-	FlagCmd        = "cmd"
-	FlagWorkdir    = "workdir"
-	FlagEnv        = "env"
-	FlagLabel      = "label"
-	FlagVolume     = "volume"
-	FlagExpose     = "expose"
+	FlagExcludePattern  = "exclude-pattern"
+	FlagExcludeMounts   = "exclude-mounts"
+	FlagUseLocalMounts  = "use-local-mounts"
+	FlagUseSensorVolume = "use-sensor-volume"
+	FlagContinueAfter   = "continue-after"
 
-	FlagLink    = "link"
-	FlagNetwork = "network"
+	FlagExec     = "exec"
+	FlagExecFile = "exec-file"
 
+	//Container Run Options (for build, profile and run commands)
+	FlagCRORuntime = "cro-runtime"
+	FlagCROSysctl  = "cro-sysctl"
+
+	//Original Container Runtime Options (without cro- prefix)
+	FlagEntrypoint         = "entrypoint"
+	FlagCmd                = "cmd"
+	FlagWorkdir            = "workdir"
+	FlagEnv                = "env"
+	FlagLabel              = "label"
+	FlagVolume             = "volume"
+	FlagExpose             = "expose"
+	FlagLink               = "link"
+	FlagNetwork            = "network"
 	FlagHostname           = "hostname"
 	FlagEtcHostsMap        = "etc-hosts-map"
 	FlagContainerDNS       = "container-dns"
 	FlagContainerDNSSearch = "container-dns-search"
-	FlagExcludePattern     = "exclude-pattern"
-	FlagExcludeMounts      = "exclude-mounts"
-	FlagUseLocalMounts     = "use-local-mounts"
-	FlagUseSensorVolume    = "use-sensor-volume"
 	FlagMount              = "mount"
-	FlagContinueAfter      = "continue-after"
 )
 
 // Shared command flag usage info
@@ -133,9 +135,6 @@ const (
 
 	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
 	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
-
-	//Container Run Options (for build, profile and run commands)
-	FlagCRORuntimeUsage = "Runtime to use with the created containers"
 
 	FlagHTTPProbeUsage                 = "Enable or disable HTTP probing"
 	FlagHTTPProbeOffUsage              = "Alternative way to disable HTTP probing"
@@ -162,30 +161,33 @@ const (
 	FlagRunTargetAsUserUsage   = "Run target app as USER"
 	FlagShowContainerLogsUsage = "Show container logs"
 
-	FlagExecUsage       = "A shell script snippet to run via Docker exec"
-	FlagExecFileUsage   = "A shell script file to run via Docker exec"
-	FlagEntrypointUsage = "Override ENTRYPOINT analyzing image at runtime"
-	FlagCmdUsage        = "Override CMD analyzing image at runtime"
-	FlagWorkdirUsage    = "Override WORKDIR analyzing image at runtime"
-	FlagEnvUsage        = "Override or add ENV analyzing image at runtime"
-	FlagLabelUsage      = "Override or add LABEL analyzing image at runtime"
-	FlagVolumeUsage     = "Add VOLUME analyzing image at runtime"
-	FlagExposeUsage     = "Use additional EXPOSE instructions analyzing image at runtime"
-
-	FlagLinkUsage    = "Add link to another container analyzing image at runtime"
-	FlagNetworkUsage = "Override default container network settings analyzing image at runtime"
-
-	FlagHostnameUsage           = "Override default container hostname analyzing image at runtime"
-	FlagEtcHostsMapUsage        = "Add a host to IP mapping to /etc/hosts analyzing image at runtime"
-	FlagContainerDNSUsage       = "Add a dns server analyzing image at runtime"
-	FlagContainerDNSSearchUsage = "Add a dns search domain for unqualified hostnames analyzing image at runtime"
-
 	FlagExcludeMountsUsage   = "Exclude mounted volumes from image"
 	FlagExcludePatternUsage  = "Exclude path pattern (Glob/Match in Go and **) from image"
 	FlagUseLocalMountsUsage  = "Mount local paths for target container artifact input and output"
 	FlagUseSensorVolumeUsage = "Sensor volume name to use"
-	FlagMountUsage           = "Mount volume analyzing image"
 	FlagContinueAfterUsage   = "Select continue mode: enter | signal | probe | timeout or numberInSeconds"
+
+	FlagExecUsage     = "A shell script snippet to run via Docker exec"
+	FlagExecFileUsage = "A shell script file to run via Docker exec"
+
+	//Container Run Options (for build, profile and run commands)
+	FlagCRORuntimeUsage = "Runtime to use with the created containers"
+	FlagCROSysctlUsage  = "Set namespaced kernel parameters in the created container"
+
+	FlagEntrypointUsage         = "Override ENTRYPOINT analyzing image at runtime"
+	FlagCmdUsage                = "Override CMD analyzing image at runtime"
+	FlagWorkdirUsage            = "Override WORKDIR analyzing image at runtime"
+	FlagEnvUsage                = "Override or add ENV analyzing image at runtime"
+	FlagLabelUsage              = "Override or add LABEL analyzing image at runtime"
+	FlagVolumeUsage             = "Add VOLUME analyzing image at runtime"
+	FlagExposeUsage             = "Use additional EXPOSE instructions analyzing image at runtime"
+	FlagLinkUsage               = "Add link to another container analyzing image at runtime"
+	FlagNetworkUsage            = "Override default container network settings analyzing image at runtime"
+	FlagHostnameUsage           = "Override default container hostname analyzing image at runtime"
+	FlagEtcHostsMapUsage        = "Add a host to IP mapping to /etc/hosts analyzing image at runtime"
+	FlagContainerDNSUsage       = "Add a dns server analyzing image at runtime"
+	FlagContainerDNSSearchUsage = "Add a dns search domain for unqualified hostnames analyzing image at runtime"
+	FlagMountUsage              = "Mount volume analyzing image"
 )
 
 ///////////////////////////////////
@@ -289,13 +291,6 @@ var CommonFlags = map[string]cli.Flag{
 		Name:   FlagCopyMetaArtifacts,
 		Usage:  FlagCopyMetaArtifactsUsage,
 		EnvVar: "DSLIM_CP_META_ARTIFACTS",
-	},
-	//Container Run Options
-	FlagCRORuntime: cli.StringFlag{
-		Name:   FlagCRORuntime,
-		Value:  "",
-		Usage:  FlagCRORuntimeUsage,
-		EnvVar: "DSLIM_CRO_RUNTIME",
 	},
 	//
 	FlagHTTPProbe: cli.BoolTFlag{ //true by default
@@ -434,6 +429,47 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:  FlagExecFileUsage,
 		EnvVar: "DSLIM_RC_EXE_FILE",
 	},
+	FlagExcludeMounts: cli.BoolTFlag{
+		Name:   FlagExcludeMounts, //true by default
+		Usage:  FlagExcludeMountsUsage,
+		EnvVar: "DSLIM_EXCLUDE_MOUNTS",
+	},
+	FlagExcludePattern: cli.StringSliceFlag{
+		Name:   FlagExcludePattern,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagExcludePatternUsage,
+		EnvVar: "DSLIM_EXCLUDE_PATTERN",
+	},
+	FlagUseLocalMounts: cli.BoolFlag{
+		Name:   FlagUseLocalMounts,
+		Usage:  FlagUseLocalMountsUsage,
+		EnvVar: "DSLIM_USE_LOCAL_MOUNTS",
+	},
+	FlagUseSensorVolume: cli.StringFlag{
+		Name:   FlagUseSensorVolume,
+		Value:  "",
+		Usage:  FlagUseSensorVolumeUsage,
+		EnvVar: "DSLIM_USE_SENSOR_VOLUME",
+	},
+	FlagContinueAfter: cli.StringFlag{
+		Name:   FlagContinueAfter,
+		Value:  "probe",
+		Usage:  FlagContinueAfterUsage,
+		EnvVar: "DSLIM_CONTINUE_AFTER",
+	},
+	//Container Run Options
+	FlagCRORuntime: cli.StringFlag{
+		Name:   FlagCRORuntime,
+		Value:  "",
+		Usage:  FlagCRORuntimeUsage,
+		EnvVar: "DSLIM_CRO_RUNTIME",
+	},
+	FlagCROSysctl: cli.StringSliceFlag{
+		Name:   FlagCROSysctl,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagCROSysctlUsage,
+		EnvVar: "DSLIM_CRO_SYSCTL",
+	},
 	FlagEntrypoint: cli.StringFlag{
 		Name:   FlagEntrypoint,
 		Value:  "",
@@ -512,39 +548,11 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:  FlagExposeUsage,
 		EnvVar: "DSLIM_RC_EXPOSE",
 	},
-	FlagExcludeMounts: cli.BoolTFlag{
-		Name:   FlagExcludeMounts, //true by default
-		Usage:  FlagExcludeMountsUsage,
-		EnvVar: "DSLIM_EXCLUDE_MOUNTS",
-	},
-	FlagExcludePattern: cli.StringSliceFlag{
-		Name:   FlagExcludePattern,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagExcludePatternUsage,
-		EnvVar: "DSLIM_EXCLUDE_PATTERN",
-	},
-	FlagUseLocalMounts: cli.BoolFlag{
-		Name:   FlagUseLocalMounts,
-		Usage:  FlagUseLocalMountsUsage,
-		EnvVar: "DSLIM_USE_LOCAL_MOUNTS",
-	},
-	FlagUseSensorVolume: cli.StringFlag{
-		Name:   FlagUseSensorVolume,
-		Value:  "",
-		Usage:  FlagUseSensorVolumeUsage,
-		EnvVar: "DSLIM_USE_SENSOR_VOLUME",
-	},
 	FlagMount: cli.StringSliceFlag{
 		Name:   FlagMount,
 		Value:  &cli.StringSlice{},
 		Usage:  FlagMountUsage,
 		EnvVar: "DSLIM_MOUNT",
-	},
-	FlagContinueAfter: cli.StringFlag{
-		Name:   FlagContinueAfter,
-		Value:  "probe",
-		Usage:  FlagContinueAfterUsage,
-		EnvVar: "DSLIM_CONTINUE_AFTER",
 	},
 }
 

@@ -365,9 +365,16 @@ func (i *Inspector) RunContainer() error {
 		},
 	}
 
-	if i.crOpts != nil && i.crOpts.Runtime != "" {
-		containerOptions.HostConfig.Runtime = i.crOpts.Runtime
-		i.logger.Debugf("RunContainer: using custom runtime => %s", containerOptions.HostConfig.Runtime)
+	if i.crOpts != nil {
+		if i.crOpts.Runtime != "" {
+			containerOptions.HostConfig.Runtime = i.crOpts.Runtime
+			i.logger.Debugf("RunContainer: using custom runtime => %s", containerOptions.HostConfig.Runtime)
+		}
+
+		if len(i.crOpts.SysctlParams) > 0 {
+			containerOptions.HostConfig.Sysctls = i.crOpts.SysctlParams
+			i.logger.Debugf("RunContainer: using sysctl params => %#v", containerOptions.HostConfig.Sysctls)
+		}
 	}
 
 	if len(configVolumes) > 0 {

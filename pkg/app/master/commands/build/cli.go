@@ -51,8 +51,8 @@ var CLI = cli.Command{
 		cflag(FlagShowBuildLogs),
 		commands.Cflag(commands.FlagCopyMetaArtifacts),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
-		//Container Run Options
-		commands.Cflag(commands.FlagCRORuntime),
+		commands.Cflag(commands.FlagExec),
+		commands.Cflag(commands.FlagExecFile),
 		//
 		cflag(FlagTag),
 		cli.StringFlag{
@@ -61,8 +61,9 @@ var CLI = cli.Command{
 			Usage:  FlagImageOverridesUsage,
 			EnvVar: "DSLIM_TARGET_OVERRIDES",
 		},
-		commands.Cflag(commands.FlagExec),
-		commands.Cflag(commands.FlagExecFile),
+		//Container Run Options
+		commands.Cflag(commands.FlagCRORuntime),
+		commands.Cflag(commands.FlagCROSysctl),
 		commands.Cflag(commands.FlagEntrypoint),
 		commands.Cflag(commands.FlagCmd),
 		commands.Cflag(commands.FlagWorkdir),
@@ -76,6 +77,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagNetwork),
 		commands.Cflag(commands.FlagHostname),
 		commands.Cflag(commands.FlagExpose),
+		commands.Cflag(commands.FlagMount),
 		//Container Build Options
 		cflag(FlagBuildFromDockerfile),
 		cflag(FlagTagFat),
@@ -142,7 +144,6 @@ var CLI = cli.Command{
 		cflag(FlagKeepPerms),
 		cflag(FlagPathPerms),
 		cflag(FlagPathPermsFile),
-		commands.Cflag(commands.FlagMount),
 		commands.Cflag(commands.FlagContinueAfter),
 		commands.Cflag(commands.FlagUseLocalMounts),
 		commands.Cflag(commands.FlagUseSensorVolume),

@@ -61,7 +61,8 @@ type CBOBuildArg struct {
 
 // ContainerRunOptions provides the options to use running a container
 type ContainerRunOptions struct {
-	Runtime string
+	Runtime      string
+	SysctlParams map[string]string
 }
 
 // VolumeMount provides the volume mount configuration information
