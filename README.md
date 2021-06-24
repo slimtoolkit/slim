@@ -7,6 +7,7 @@
 
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod&style=for-the-badge)](https://gitpod.io/#https://github.com/docker-slim/docker-slim)
 [![Download DockerSlim](https://img.shields.io/badge/download-docker--slim-blue?style=for-the-badge)](https://github.com/docker-slim/docker-slim#installation)
+[![Get Examples](https://img.shields.io/badge/docker--slim-app%20examples-red?style=for-the-badge)](https://github.com/docker-slim/examples)
 
 
 
