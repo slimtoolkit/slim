@@ -6,7 +6,7 @@
 [![Youtube](https://img.shields.io/badge/-YouTube-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA?sub_confirmation=1)
 
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod&style=for-the-badge)](https://gitpod.io/#https://github.com/docker-slim/docker-slim)
-[![Download DockerSlim](https://img.shields.io/badge/download-docker--slim-blue?style=for-the-badge)](https://github.com/docker-slim/docker-slim#installation)
+[![Install DockerSlim](https://img.shields.io/badge/install-docker--slim-blue?style=for-the-badge)](https://github.com/docker-slim/docker-slim#installation)
 [![Get Examples](https://img.shields.io/badge/docker--slim-app%20examples-red?style=for-the-badge)](https://github.com/docker-slim/examples)
 
 
@@ -190,6 +190,8 @@ For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
 ## INSTALLATION
 
+### Downloads
+
 1. Download the zip package for your platform.
 
    - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.36.1/dist_mac.zip)
@@ -206,9 +208,22 @@ For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
 If the directory where you extracted the binaries is not in your PATH then you'll need to run your `docker-slim` commands from that directory.
 
-To use the Docker image distribution just start using the `dslim/docker-slim` container image.
+### Homebrew
 
-The OS-specific installers for `docker-slim` will be available soon (there's already a couple of community `Homebrew` formulas for Mac and Linux, but they need to be enhanced to work properly).
+```
+brew install docker-slim
+```
+
+The Homebrew installer: https://formulae.brew.sh/formula/docker-slim
+
+### Docker
+
+```
+docker pull dslim/docker-slim
+```
+
+See the [RUNNING CONTAINERIZED](#running-containerized) section for more usage info.
+
 
 ## BASIC USAGE INFO
 
