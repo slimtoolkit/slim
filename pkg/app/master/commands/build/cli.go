@@ -64,6 +64,7 @@ var CLI = cli.Command{
 		//Container Run Options
 		commands.Cflag(commands.FlagCRORuntime),
 		commands.Cflag(commands.FlagCROSysctl),
+		commands.Cflag(commands.FlagCROHostConfigFile),
 		commands.Cflag(commands.FlagEntrypoint),
 		commands.Cflag(commands.FlagCmd),
 		commands.Cflag(commands.FlagWorkdir),

@@ -50,6 +50,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
 		//Container Run Options
 		commands.Cflag(commands.FlagCRORuntime),
+		commands.Cflag(commands.FlagCROHostConfigFile),
 		//
 		commands.Cflag(commands.FlagEntrypoint),
 		commands.Cflag(commands.FlagCmd),
