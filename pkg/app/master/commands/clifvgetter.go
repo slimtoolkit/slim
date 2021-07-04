@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"io/ioutil"
+	"encoding/json"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
@@ -18,7 +20,6 @@ import (
 
 func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, error) {
 	var cro config.ContainerRunOptions
-
 	cro.Runtime = ctx.String(FlagCRORuntime)
 	sysctlList := ctx.StringSlice(FlagCROSysctl)
 	if len(sysctlList) > 0 {
@@ -30,7 +31,19 @@ func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, erro
 
 		cro.SysctlParams = params
 	}
-
+	hostConfigFileName := ctx.String(FlagCROHostConfigFile)
+	if len(hostConfigFileName) > 0 {
+		hostConfigFile, err := os.Open(hostConfigFileName)
+		if err != nil {
+			fmt.Printf("could not open host config file %v: %v\n", hostConfigFileName, err)
+		}
+		hostConfigBytes, err := ioutil.ReadAll(hostConfigFile)
+		if err != nil {
+			fmt.Printf("could not read host config file %v: %v\n", hostConfigFileName, err)
+		}
+		json.Unmarshal(hostConfigBytes, &cro.HostConfig)
+		defer hostConfigFile.Close()
+	}
 	return &cro, nil
 }
 

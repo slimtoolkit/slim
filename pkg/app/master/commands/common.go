@@ -109,6 +109,7 @@ const (
 	//Container Run Options (for build, profile and run commands)
 	FlagCRORuntime = "cro-runtime"
 	FlagCROSysctl  = "cro-sysctl"
+	FlagCROHostConfigFile  = "cro-host-config-file"
 
 	//Original Container Runtime Options (without cro- prefix)
 	FlagEntrypoint         = "entrypoint"
@@ -173,6 +174,7 @@ const (
 	//Container Run Options (for build, profile and run commands)
 	FlagCRORuntimeUsage = "Runtime to use with the created containers"
 	FlagCROSysctlUsage  = "Set namespaced kernel parameters in the created container"
+	FlagCROHostConfigFileUsage  = "Base Docker host configuration file (JSON format) to use when running the container"
 
 	FlagEntrypointUsage         = "Override ENTRYPOINT analyzing image at runtime"
 	FlagCmdUsage                = "Override CMD analyzing image at runtime"
@@ -469,6 +471,12 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  FlagCROSysctlUsage,
 		EnvVar: "DSLIM_CRO_SYSCTL",
+	},
+	FlagCROHostConfigFile: cli.StringFlag{
+		Name:   FlagCROHostConfigFile,
+		Value:  "",
+		Usage:  FlagCROHostConfigFileUsage,
+		EnvVar: "DSLIM_CRO_HOST_CONFIG_FILE",
 	},
 	FlagEntrypoint: cli.StringFlag{
 		Name:   FlagEntrypoint,

@@ -385,7 +385,6 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--path-perms-file` - File with path permissions to set (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 - `--exclude-pattern` - Exclude path pattern ([Glob/Match in Go](https://golang.org/pkg/path/filepath/#Match) and `**`) from image
 - `--exclude-mounts` - Exclude mounted volumes from image (default value: true)
-- `--env` - Override or add ENV analyzing image at runtime [can use this flag multiple times]
 - `--label` - Override or add LABEL analyzing image at runtime [can use this flag multiple times]
 - `--volume` - Add VOLUME analyzing image at runtime [can use this flag multiple times]
 - `--env` - Override ENV analyzing image at runtime [can use this flag multiple times]
@@ -408,6 +407,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--cbo-network` - Networking mode to use for the RUN instructions at build-time (Container Build Option).
 - `--cbo-cache-from` - Add an image to the build cache (Container Build Option).
 - `--cro-runtime` - Runtime to use with the created containers (Container Runtime Option).
+- `--cro-host-config-file` - Base Docker host configuration file (JSON format) to use when running the container. See [here](https://pkg.go.dev/github.com/fsouza/go-dockerclient#HostConfig) for configuration details. Note that docker-slim will automatically add `SYS_ADMIN` to the list of capabilities and run the container in privileged mode, which are required to generate the seccomp profiles.
 - `--use-local-mounts` - Mount local paths for target container artifact input and output (off, by default)
 - `--use-sensor-volume` - Sensor volume name to use (set it to your Docker volume name if you manage your own `docker-slim` sensor volume).
 - `--keep-tmp-artifacts` - Keep temporary artifacts when command is done (off, by default).

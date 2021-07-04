@@ -293,6 +293,9 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	var volumeBinds []string
+	if i.crOpts != nil {
+		volumeBinds = i.crOpts.HostConfig.Binds
+	}
 
 	configVolumes := i.Overrides.Volumes
 	if configVolumes == nil {
@@ -343,6 +346,15 @@ func (i *Inspector) RunContainer() error {
 
 	labels["runtime.container.type"] = LabelName
 
+	var hostConfig dockerapi.HostConfig
+	if i.crOpts != nil {
+		hostConfig = i.crOpts.HostConfig
+	}
+	hostConfig.Binds = volumeBinds
+	hostConfig.Privileged = true
+	hostConfig.UsernsMode = "host"
+	hostConfig.CapAdd = append(hostConfig.CapAdd,"SYS_ADMIN")
+
 	containerOptions := dockerapi.CreateContainerOptions{
 		Name: i.ContainerName,
 		Config: &dockerapi.Config{
@@ -357,12 +369,7 @@ func (i *Inspector) RunContainer() error {
 			Labels:     labels,
 			Hostname:   i.Overrides.Hostname,
 		},
-		HostConfig: &dockerapi.HostConfig{
-			Binds:      volumeBinds,
-			CapAdd:     []string{"SYS_ADMIN"},
-			Privileged: true,
-			UsernsMode: "host",
-		},
+		HostConfig: &hostConfig,
 	}
 
 	if i.crOpts != nil {
