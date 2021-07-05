@@ -18,6 +18,9 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagShowPullLogs), Description: commands.FlagShowPullLogsUsage},
 		{Text: commands.FullFlagName(commands.FlagShowContainerLogs), Description: commands.FlagShowContainerLogsUsage},
 		{Text: commands.FullFlagName(commands.FlagCRORuntime), Description: commands.FlagCRORuntimeUsage},
+		{Text: commands.FullFlagName(commands.FlagCROHostConfigFile), Description: commands.FlagCROHostConfigFileUsage},
+		{Text: commands.FullFlagName(commands.FlagCROSysctl), Description: commands.FlagCROSysctlUsage},
+		{Text: commands.FullFlagName(commands.FlagCROShmSize), Description: commands.FlagCROShmSizeUsage},
 		{Text: commands.FullFlagName(commands.FlagHTTPProbeOff), Description: commands.FlagHTTPProbeOffUsage},
 		{Text: commands.FullFlagName(commands.FlagHTTPProbe), Description: commands.FlagHTTPProbeUsage},
 		{Text: commands.FullFlagName(commands.FlagHTTPProbeCmd), Description: commands.FlagHTTPProbeCmdUsage},
@@ -96,5 +99,6 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(commands.FlagUseLocalMounts):  commands.CompleteBool,
 		commands.FullFlagName(commands.FlagUseSensorVolume): commands.CompleteVolume,
 		//commands.FullFlagName(commands.FlagKeepTmpArtifacts):       commands.CompleteBool,
+		commands.FullFlagName(commands.FlagCROHostConfigFile): commands.CompleteFile,
 	},
 }

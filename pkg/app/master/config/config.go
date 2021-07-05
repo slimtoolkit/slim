@@ -61,9 +61,13 @@ type CBOBuildArg struct {
 
 // ContainerRunOptions provides the options to use running a container
 type ContainerRunOptions struct {
+	HostConfig *docker.HostConfig
+	//Explicit overrides for the base and host config fields
+	//Host config field override are applied
+	//on top of the fields in the HostConfig struct if it's provided (volume mounts are merged though)
 	Runtime      string
 	SysctlParams map[string]string
-	HostConfig   *docker.HostConfig
+	ShmSize      int64
 }
 
 // VolumeMount provides the volume mount configuration information

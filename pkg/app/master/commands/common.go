@@ -108,8 +108,9 @@ const (
 
 	//Container Run Options (for build, profile and run commands)
 	FlagCRORuntime        = "cro-runtime"
-	FlagCROSysctl         = "cro-sysctl"
 	FlagCROHostConfigFile = "cro-host-config-file"
+	FlagCROSysctl         = "cro-sysctl"
+	FlagCROShmSize        = "cro-shm-size"
 
 	//Original Container Runtime Options (without cro- prefix)
 	FlagEntrypoint         = "entrypoint"
@@ -173,8 +174,9 @@ const (
 
 	//Container Run Options (for build, profile and run commands)
 	FlagCRORuntimeUsage        = "Runtime to use with the created containers"
-	FlagCROSysctlUsage         = "Set namespaced kernel parameters in the created container"
 	FlagCROHostConfigFileUsage = "Base Docker host configuration file (JSON format) to use when running the container"
+	FlagCROSysctlUsage         = "Set namespaced kernel parameters in the created container"
+	FlagCROShmSizeUsage        = "Shared memory size for /dev/shm in the created container"
 
 	FlagEntrypointUsage         = "Override ENTRYPOINT analyzing image at runtime"
 	FlagCmdUsage                = "Override CMD analyzing image at runtime"
@@ -466,17 +468,23 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:  FlagCRORuntimeUsage,
 		EnvVar: "DSLIM_CRO_RUNTIME",
 	},
+	FlagCROHostConfigFile: cli.StringFlag{
+		Name:   FlagCROHostConfigFile,
+		Value:  "",
+		Usage:  FlagCROHostConfigFileUsage,
+		EnvVar: "DSLIM_CRO_HOST_CONFIG_FILE",
+	},
 	FlagCROSysctl: cli.StringSliceFlag{
 		Name:   FlagCROSysctl,
 		Value:  &cli.StringSlice{},
 		Usage:  FlagCROSysctlUsage,
 		EnvVar: "DSLIM_CRO_SYSCTL",
 	},
-	FlagCROHostConfigFile: cli.StringFlag{
-		Name:   FlagCROHostConfigFile,
-		Value:  "",
-		Usage:  FlagCROHostConfigFileUsage,
-		EnvVar: "DSLIM_CRO_HOST_CONFIG_FILE",
+	FlagCROShmSize: cli.Int64Flag{
+		Name:   FlagCROShmSize,
+		Value:  -1,
+		Usage:  FlagCROShmSizeUsage,
+		EnvVar: "DSLIM_CRO_SHM_SIZE",
 	},
 	FlagEntrypoint: cli.StringFlag{
 		Name:   FlagEntrypoint,

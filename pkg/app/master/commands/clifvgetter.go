@@ -39,6 +39,8 @@ func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, erro
 		}
 		json.Unmarshal(hostConfigBytes, &cro.HostConfig)
 	}
+
+	cro.ShmSize = ctx.Int64(FlagCROShmSize)
 	return &cro, nil
 }
 

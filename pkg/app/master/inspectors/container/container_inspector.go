@@ -397,6 +397,11 @@ func (i *Inspector) RunContainer() error {
 			containerOptions.HostConfig.Sysctls = i.crOpts.SysctlParams
 			i.logger.Debugf("RunContainer: using sysctl params => %#v", containerOptions.HostConfig.Sysctls)
 		}
+
+		if i.crOpts.ShmSize > -1 {
+			containerOptions.HostConfig.ShmSize = i.crOpts.ShmSize
+			i.logger.Debugf("RunContainer: using shm-size params => %#v", containerOptions.HostConfig.ShmSize)
+		}
 	}
 
 	if len(configVolumes) > 0 {

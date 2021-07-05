@@ -408,6 +408,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--cbo-cache-from` - Add an image to the build cache (Container Build Option).
 - `--cro-runtime` - Runtime to use with the created containers (Container Runtime Option).
 - `--cro-host-config-file` - File to load the Docker host configuration data (JSON format) to use when running the container. See the [HostConfig](https://pkg.go.dev/github.com/fsouza/go-dockerclient#HostConfig) struct definition from the `go-dockerclient` package for configuration details. Note that docker-slim will automatically add `SYS_ADMIN` to the list of capabilities and run the container in privileged mode, which are required to generate the seccomp profiles. The host config parameters specified using their standalone build or profile command flags overwrite the values in the host config file (volume binds are merged).
+- `--cro-sysctl` - Set namespaced kernel parameters in the created container (Container Runtime Option).
+- `--cro-shm-size` - Shared memory size for /dev/shm in the created container (Container Runtime Option).
 - `--use-local-mounts` - Mount local paths for target container artifact input and output (off, by default)
 - `--use-sensor-volume` - Sensor volume name to use (set it to your Docker volume name if you manage your own `docker-slim` sensor volume).
 - `--keep-tmp-artifacts` - Keep temporary artifacts when command is done (off, by default).
