@@ -308,10 +308,10 @@ func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, 
 		if len(parts) == 2 {
 			if strings.HasPrefix(parts[0], "\"") {
 				parts[0] = strings.Trim(parts[0], "\"")
-				parts[1] = strings.Trim(parts[0], "\"")
+				parts[1] = strings.Trim(parts[1], "\"")
 			} else {
 				parts[0] = strings.Trim(parts[0], "'")
-				parts[1] = strings.Trim(parts[0], "'")
+				parts[1] = strings.Trim(parts[1], "'")
 			}
 			ba := config.CBOBuildArg{
 				Name:  parts[0],
@@ -328,10 +328,10 @@ func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, 
 		if len(parts) == 2 {
 			if strings.HasPrefix(parts[0], "\"") {
 				parts[0] = strings.Trim(parts[0], "\"")
-				parts[1] = strings.Trim(parts[0], "\"")
+				parts[1] = strings.Trim(parts[1], "\"")
 			} else {
 				parts[0] = strings.Trim(parts[0], "'")
-				parts[1] = strings.Trim(parts[0], "'")
+				parts[1] = strings.Trim(parts[1], "'")
 			}
 
 			cbo.Labels[parts[0]] = parts[1]
