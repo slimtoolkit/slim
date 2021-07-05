@@ -3,13 +3,13 @@ package commands
 //Flag value getters
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 	"time"
-	"io/ioutil"
-	"encoding/json"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
@@ -33,16 +33,11 @@ func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, erro
 	}
 	hostConfigFileName := ctx.String(FlagCROHostConfigFile)
 	if len(hostConfigFileName) > 0 {
-		hostConfigFile, err := os.Open(hostConfigFileName)
-		if err != nil {
-			fmt.Printf("could not open host config file %v: %v\n", hostConfigFileName, err)
-		}
-		hostConfigBytes, err := ioutil.ReadAll(hostConfigFile)
+		hostConfigBytes, err := ioutil.ReadFile(hostConfigFileName)
 		if err != nil {
 			fmt.Printf("could not read host config file %v: %v\n", hostConfigFileName, err)
 		}
 		json.Unmarshal(hostConfigBytes, &cro.HostConfig)
-		defer hostConfigFile.Close()
 	}
 	return &cro, nil
 }

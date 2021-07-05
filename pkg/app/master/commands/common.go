@@ -107,9 +107,9 @@ const (
 	FlagExecFile = "exec-file"
 
 	//Container Run Options (for build, profile and run commands)
-	FlagCRORuntime = "cro-runtime"
-	FlagCROSysctl  = "cro-sysctl"
-	FlagCROHostConfigFile  = "cro-host-config-file"
+	FlagCRORuntime        = "cro-runtime"
+	FlagCROSysctl         = "cro-sysctl"
+	FlagCROHostConfigFile = "cro-host-config-file"
 
 	//Original Container Runtime Options (without cro- prefix)
 	FlagEntrypoint         = "entrypoint"
@@ -172,9 +172,9 @@ const (
 	FlagExecFileUsage = "A shell script file to run via Docker exec"
 
 	//Container Run Options (for build, profile and run commands)
-	FlagCRORuntimeUsage = "Runtime to use with the created containers"
-	FlagCROSysctlUsage  = "Set namespaced kernel parameters in the created container"
-	FlagCROHostConfigFileUsage  = "Base Docker host configuration file (JSON format) to use when running the container"
+	FlagCRORuntimeUsage        = "Runtime to use with the created containers"
+	FlagCROSysctlUsage         = "Set namespaced kernel parameters in the created container"
+	FlagCROHostConfigFileUsage = "Base Docker host configuration file (JSON format) to use when running the container"
 
 	FlagEntrypointUsage         = "Override ENTRYPOINT analyzing image at runtime"
 	FlagCmdUsage                = "Override CMD analyzing image at runtime"

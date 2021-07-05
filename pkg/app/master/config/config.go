@@ -63,7 +63,7 @@ type CBOBuildArg struct {
 type ContainerRunOptions struct {
 	Runtime      string
 	SysctlParams map[string]string
-	HostConfig   docker.HostConfig
+	HostConfig   *docker.HostConfig
 }
 
 // VolumeMount provides the volume mount configuration information

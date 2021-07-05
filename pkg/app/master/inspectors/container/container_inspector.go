@@ -293,7 +293,7 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	var volumeBinds []string
-	if i.crOpts != nil {
+	if i.crOpts != nil && i.crOpts.HostConfig != nil {
 		volumeBinds = i.crOpts.HostConfig.Binds
 	}
 
@@ -346,14 +346,29 @@ func (i *Inspector) RunContainer() error {
 
 	labels["runtime.container.type"] = LabelName
 
-	var hostConfig dockerapi.HostConfig
-	if i.crOpts != nil {
+	var hostConfig *dockerapi.HostConfig
+	if i.crOpts != nil && i.crOpts.HostConfig != nil {
 		hostConfig = i.crOpts.HostConfig
 	}
+
+	if hostConfig == nil {
+		hostConfig = &dockerapi.HostConfig{}
+	}
+
 	hostConfig.Binds = volumeBinds
 	hostConfig.Privileged = true
 	hostConfig.UsernsMode = "host"
-	hostConfig.CapAdd = append(hostConfig.CapAdd,"SYS_ADMIN")
+
+	hasSysAdminCap := false
+	for _, cap := range hostConfig.CapAdd {
+		if cap == "SYS_ADMIN" {
+			hasSysAdminCap = true
+		}
+	}
+
+	if !hasSysAdminCap {
+		hostConfig.CapAdd = append(hostConfig.CapAdd, "SYS_ADMIN")
+	}
 
 	containerOptions := dockerapi.CreateContainerOptions{
 		Name: i.ContainerName,
@@ -369,7 +384,7 @@ func (i *Inspector) RunContainer() error {
 			Labels:     labels,
 			Hostname:   i.Overrides.Hostname,
 		},
-		HostConfig: &hostConfig,
+		HostConfig: hostConfig,
 	}
 
 	if i.crOpts != nil {

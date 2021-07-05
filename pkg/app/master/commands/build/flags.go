@@ -2,6 +2,7 @@ package build
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
@@ -303,9 +304,10 @@ func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, 
 		//need to handle:
 		//NAME=VALUE
 		//"NAME"="VALUE"
-		//NAME <- value is copied from the env var with the same name (TODO)
+		//NAME <- value is copied from the env var with the same name
 		parts := strings.SplitN(rba, "=", 2)
-		if len(parts) == 2 {
+		switch len(parts) {
+		case 2:
 			if strings.HasPrefix(parts[0], "\"") {
 				parts[0] = strings.Trim(parts[0], "\"")
 				parts[1] = strings.Trim(parts[1], "\"")
@@ -319,13 +321,25 @@ func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, 
 			}
 
 			cbo.BuildArgs = append(cbo.BuildArgs, ba)
+		case 1:
+			if envVal := os.Getenv(parts[0]); envVal != "" {
+				ba := config.CBOBuildArg{
+					Name:  parts[0],
+					Value: envVal,
+				}
+
+				cbo.BuildArgs = append(cbo.BuildArgs, ba)
+			}
+		default:
+			fmt.Printf("GetContainerBuildOptions(): unexpected build arg format - '%v'\n", rba)
 		}
 	}
 
 	rawLabels := ctx.StringSlice(FlagCBOLabel)
 	for _, rlabel := range rawLabels {
 		parts := strings.SplitN(rlabel, "=", 2)
-		if len(parts) == 2 {
+		switch len(parts) {
+		case 2:
 			if strings.HasPrefix(parts[0], "\"") {
 				parts[0] = strings.Trim(parts[0], "\"")
 				parts[1] = strings.Trim(parts[1], "\"")
@@ -335,6 +349,12 @@ func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, 
 			}
 
 			cbo.Labels[parts[0]] = parts[1]
+		case 1:
+			if envVal := os.Getenv(parts[0]); envVal != "" {
+				cbo.Labels[parts[0]] = envVal
+			}
+		default:
+			fmt.Printf("GetContainerBuildOptions(): unexpected label format - '%v'\n", rlabel)
 		}
 	}
 
