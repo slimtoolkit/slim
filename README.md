@@ -190,6 +190,12 @@ For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
 ## INSTALLATION
 
+If you already have `docker-slim` installed use the `update` command to get the latest version:
+
+```
+docker-slim update
+```
+
 ### Downloads
 
 1. Download the zip package for your platform.
