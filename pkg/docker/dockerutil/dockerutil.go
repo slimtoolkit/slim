@@ -332,7 +332,13 @@ func HasVolume(dclient *dockerapi.Client, name string) error {
 		return ErrNotFound
 	}
 
-	return nil
+	for _, info := range volumes {
+		if info.Name == name {
+			return nil
+		}
+	}
+
+	return ErrNotFound
 }
 
 func DeleteVolume(dclient *dockerapi.Client, name string) error {
