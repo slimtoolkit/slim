@@ -4,8 +4,15 @@ build_in_docker:   ## build docker-slim in docker
 	rm -rfv bin
 	'$(CURDIR)/scripts/docker-builder.run.sh'
 
+build_m1_in_docker:
+	rm -rfv bin
+	'$(CURDIR)/scripts/docker-builder-m1.run.sh'
+
 build:  ## build docker-slim
 	'$(CURDIR)/scripts/src.build.sh'
+
+build_m1:  ## build docker-slim
+	'$(CURDIR)/scripts/src.build.m1.sh'
 
 fmt:  ## format all golang files
 	'$(CURDIR)/scripts/src.fmt.sh'
@@ -22,4 +29,4 @@ tools: ## install necessary tools
 clean: ## clean up
 	'$(CURDIR)/scripts/src.cleanup.sh'
 
-.PHONY: default help build_in_docker build fmt inspect tools clean
+.PHONY: default help build_in_docker build_m1_in_docker build build_m1 fmt inspect tools clean

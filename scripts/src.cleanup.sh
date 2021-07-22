@@ -15,4 +15,6 @@ rm -rfv $BDIR/dist_linux_arm64
 rm -fv $BDIR/dist_linux_arm64.tar.gz
 rm -rfv $BDIR/dist_mac
 rm -fv $BDIR/dist_mac.zip
+rm -rfv $BDIR/dist_mac_m1
+rm -fv $BDIR/dist_mac_m1.zip
 rm -rfv $BDIR/bin
