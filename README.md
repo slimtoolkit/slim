@@ -7,7 +7,9 @@
 
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod&style=for-the-badge)](https://gitpod.io/#https://github.com/docker-slim/docker-slim)
 [![Install DockerSlim](https://img.shields.io/badge/install-docker--slim-blue?style=for-the-badge)](https://github.com/docker-slim/docker-slim#installation)
-[![Get Examples](https://img.shields.io/badge/docker--slim-app%20examples-red?style=for-the-badge)](https://github.com/docker-slim/examples)
+[![Get Examples](https://img.shields.io/badge/docker--slim-app%20examples-green?style=for-the-badge)](https://github.com/docker-slim/examples)
+
+[![Try Slim SaaS](https://img.shields.io/badge/try-Slim%20SaaS-red?style=for-the-badge)](https://portal.slim.dev/login?invitecode=invite.1s85zlfnYX0p5TT1XKja49pAHbL)
 
 
 
