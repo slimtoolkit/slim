@@ -2,6 +2,7 @@ package xray
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
@@ -420,6 +421,19 @@ func parseDetectUTF8(ctx *cli.Context) (*dockerimage.UTF8Detector, error) {
 		if len(outTarget) == 0 || outTarget == dockerimage.CDMDumpToConsole {
 			detector.DumpConsole = true
 		} else {
+			if strings.Contains(outTarget, ":") {
+				parts = strings.SplitN(outTarget, ":", 2)
+				if len(parts) != 2 {
+					return nil, fmt.Errorf("malformed find utf8: %s", raw)
+				}
+				outTarget = parts[0]
+				maxSizeBytes := parts[1]
+				var err error
+				detector.MaxSizeBytes, err = strconv.Atoi(maxSizeBytes)
+				if err != nil {
+					return nil, err
+				}
+			}
 			if strings.HasSuffix(outTarget, ".tgz") ||
 				strings.HasSuffix(outTarget, ".tar.gz") {
 				detector.DumpArchive = outTarget
