@@ -232,6 +232,10 @@ docker pull dslim/docker-slim
 
 See the [RUNNING CONTAINERIZED](#running-containerized) section for more usage info.
 
+### SaaS
+
+Powered by DockerSlim. It will help you understand and troubleshoot your application containers and a lot more. If you use the `xray` command you'll want to try the SaaS. Understanding image changes is easy with its container diff capabilities. Connect your own registry and you can do the same with your own containers. Try it [here](https://portal.slim.dev/login?invitecode=invite.1s85zlfnYX0p5TT1XKja49pAHbL) without installing anything locally.
+
 
 ## BASIC USAGE INFO
 
