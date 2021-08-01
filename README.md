@@ -905,4 +905,4 @@ Apache License v2, see [LICENSE](https://github.com/docker-slim/docker-slim/blob
 ---
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/docker-slim/docker-slim)](https://goreportcard.com/report/github.com/docker-slim/docker-slim)
-[![Codacy Badge](https://api.codacy.com/project/badge/Grade/84c0786a23a444d49aa6f09e5cfd260b)](https://www.codacy.com/manual/edumco/docker-slim?utm_source=github.com&utm_medium=referral&utm_content=edumco/docker-slim&utm_campaign=Badge_Grade)
+
