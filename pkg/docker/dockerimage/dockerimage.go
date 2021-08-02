@@ -1135,10 +1135,9 @@ func inspectFile(
 				if utf8Detector.Dump {
 					if utf8Detector.Archive != nil {
 						if utf8Detector.MaxSizeBytes != 0 && object.Size > int64(utf8Detector.MaxSizeBytes) {
-							data = []byte(fmt.Sprintf("hash: %s size: %d [content omitted because too large]", hash, object.Size))
 							fileInfo := &utf8FileInfo{
 								name:    hash,
-								size:    int64(len(data)),
+								size:    int64(utf8Detector.MaxSizeBytes),
 								modtime: object.ModTime,
 							}
 							header, err := tar.FileInfoHeader(fileInfo, hash)
@@ -1150,7 +1149,7 @@ func inspectFile(
 							if err != nil {
 								return err
 							}
-							_, err = utf8Detector.Archive.Writer.Write(data)
+							_, err = utf8Detector.Archive.Writer.Write(data[:utf8Detector.MaxSizeBytes])
 							if err != nil {
 								return err
 							}
