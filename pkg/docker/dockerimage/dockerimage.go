@@ -762,30 +762,26 @@ func LoadPackage(archivePath string,
 	}
 
 	if len(pkg.Layers) > 0 {
-		var currentLayerIndex int
+		currentLayerIndex := 0
+		isFirstLayer := true
 		for hidx := range pkg.Config.History {
-			var currentLayer *Layer
-			switch pkg.Config.History[hidx].EmptyLayer {
-			case false:
-				currentLayer = pkg.Layers[currentLayerIndex]
-
-				if currentLayerIndex < (len(pkg.Layers) - 1) {
+			if !pkg.Config.History[hidx].EmptyLayer {
+				if currentLayerIndex < (len(pkg.Layers)-1) &&
+					!isFirstLayer {
 					currentLayerIndex++
 				}
-			case true:
-				if currentLayerIndex == 0 {
-					//no previous layer to reference (use the first layer)...
-					currentLayer = pkg.Layers[currentLayerIndex]
-				} else {
-					//for empty layers add instructions to the previous layer
-					currentLayer = pkg.Layers[currentLayerIndex-1]
-				}
 			}
+
+			currentLayer := pkg.Layers[currentLayerIndex]
 
 			if currentLayer != nil {
 				pkg.Config.History[hidx].LayerFSDiffID = currentLayer.FSDiffID
 				pkg.Config.History[hidx].LayerID = currentLayer.ID
 				pkg.Config.History[hidx].LayerIndex = currentLayer.Index
+			}
+
+			if !pkg.Config.History[hidx].EmptyLayer && isFirstLayer {
+				isFirstLayer = false
 			}
 		}
 	}
