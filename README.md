@@ -321,7 +321,7 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--target` - Target container image (name or ID)
 - `--pull` - Try pulling target if it's not available locally (default: false).
 - `--show-plogs` - Show image pull logs (default: false).
-- `--changes value` - Show layer change details for the selected change type (values: none, all, delete, modify, add). 
+- `--changes value` - Show layer change details for the selected change type (values: none, all, delete, modify, add).
 - `--changes-output value` - Where to show the changes (values: all, report, console).
 - `--layer value` - Show details for the selected layer (using layer index or ID)
 - `--add-image-manifest` - Add raw image manifest to the command execution report file
@@ -339,7 +339,7 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--hash-data` - Generate file data hashes (default: false).
 - `--detect-duplicates` - Detect duplicate files based on their hashes (default: false).
 - `--show-duplicates` - Show all discovered duplicate file paths (default: true).
-- `--detect-utf8` - Detect utf8 files and optionally extract the discovered utf8 file content (possible values: "true" or "dump" or "dump:output_target").
+- `--detect-utf8` - Detect utf8 files and optionally extract the discovered utf8 file content (possible values: "true" or "dump" or "dump:output_target.tgz" or "dump:output_target.tgz::max_size_bytes" or "dump:output_target.tgz:::max_size_bytes").
 - `--change-match-layers-only` - Show only layers with change matches (default: false).
 - `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
 
@@ -880,7 +880,7 @@ Some of the advanced analysis options require a number of Linux kernel features 
 - Build/use a custom Boot2docker kernel with every required feature turned on.
 - "Live" image create mode - to create new images from containers where users install their applications interactively.
 
-The [`WISHLIST`](WISHLIST.md) doc includes even more potential improvements. 
+The [`WISHLIST`](WISHLIST.md) doc includes even more potential improvements.
 
 ## ORIGINS
 

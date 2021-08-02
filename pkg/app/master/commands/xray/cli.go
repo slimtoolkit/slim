@@ -2,6 +2,7 @@ package xray
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
@@ -420,6 +421,34 @@ func parseDetectUTF8(ctx *cli.Context) (*dockerimage.UTF8Detector, error) {
 		if len(outTarget) == 0 || outTarget == dockerimage.CDMDumpToConsole {
 			detector.DumpConsole = true
 		} else {
+			if strings.Count(outTarget, ":") == 2 {
+				parts = strings.SplitN(outTarget, ":", 3)
+				if len(parts) != 3 {
+					return nil, fmt.Errorf("malformed find utf8: %s", raw)
+				}
+				outTarget = parts[0]
+				_ = parts[1] // TODO implemement path pattern matcher
+				maxSizeBytes := parts[2]
+				var err error
+				detector.MaxSizeBytes, err = strconv.Atoi(maxSizeBytes)
+				if err != nil {
+					return nil, err
+				}
+			} else if strings.Count(outTarget, ":") == 3 {
+				parts = strings.SplitN(outTarget, ":", 4)
+				if len(parts) != 4 {
+					return nil, fmt.Errorf("malformed find utf8: %s", raw)
+				}
+				outTarget = parts[0]
+				_ = parts[1] // TODO implemement path pattern matcher
+				_ = parts[2] // TODO implemement data regex matcher
+				maxSizeBytes := parts[3]
+				var err error
+				detector.MaxSizeBytes, err = strconv.Atoi(maxSizeBytes)
+				if err != nil {
+					return nil, err
+				}
+			}
 			if strings.HasSuffix(outTarget, ".tgz") ||
 				strings.HasSuffix(outTarget, ".tar.gz") {
 				detector.DumpArchive = outTarget

@@ -236,12 +236,13 @@ type ChangePathMatcher struct {
 }
 
 type UTF8Detector struct {
-	Dump        bool
-	DumpConsole bool
-	DumpDir     string
-	DumpArchive string
-	Archive     *TarWriter
-	Filters     []UTF8DetectorMatcher
+	Dump         bool
+	DumpConsole  bool
+	DumpDir      string
+	DumpArchive  string
+	MaxSizeBytes int
+	Archive      *TarWriter
+	Filters      []UTF8DetectorMatcher
 }
 
 type UTF8DetectorMatcher struct {
@@ -1129,23 +1130,44 @@ func inspectFile(
 				object.ContentType = ContentTypeUTF8
 				if utf8Detector.Dump {
 					if utf8Detector.Archive != nil {
-						fileInfo := &utf8FileInfo{
-							name:    hash,
-							size:    object.Size,
-							modtime: object.ModTime,
-						}
-						header, err := tar.FileInfoHeader(fileInfo, hash)
-						if err != nil {
-							return err
-						}
-						header.Name = hash
-						err = utf8Detector.Archive.Writer.WriteHeader(header)
-						if err != nil {
-							return err
-						}
-						_, err = utf8Detector.Archive.Writer.Write(data)
-						if err != nil {
-							return err
+						if utf8Detector.MaxSizeBytes != 0 && object.Size > int64(utf8Detector.MaxSizeBytes) {
+							fileInfo := &utf8FileInfo{
+								name:    hash,
+								size:    int64(utf8Detector.MaxSizeBytes),
+								modtime: object.ModTime,
+							}
+							header, err := tar.FileInfoHeader(fileInfo, hash)
+							if err != nil {
+								return err
+							}
+							header.Name = hash
+							err = utf8Detector.Archive.Writer.WriteHeader(header)
+							if err != nil {
+								return err
+							}
+							_, err = utf8Detector.Archive.Writer.Write(data[:utf8Detector.MaxSizeBytes])
+							if err != nil {
+								return err
+							}
+						} else {
+							fileInfo := &utf8FileInfo{
+								name:    hash,
+								size:    object.Size,
+								modtime: object.ModTime,
+							}
+							header, err := tar.FileInfoHeader(fileInfo, hash)
+							if err != nil {
+								return err
+							}
+							header.Name = hash
+							err = utf8Detector.Archive.Writer.WriteHeader(header)
+							if err != nil {
+								return err
+							}
+							_, err = utf8Detector.Archive.Writer.Write(data)
+							if err != nil {
+								return err
+							}
 						}
 					}
 
