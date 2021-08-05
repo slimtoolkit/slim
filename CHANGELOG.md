@@ -1,6 +1,17 @@
 # Releases
 
+## 1.36.2 (8/5/2021)
+
 ## 1.36.1 (6/20/2021)
+
+### Improvements
+
+- `--cro-host-config-file`, `--cro-sysctl` and `--cro-shm-size` flags.
+- M1 builds.
+
+### Bug Fixes
+
+- xray and sensor volume detection bug fixes.
 
 ### Improvements
 
