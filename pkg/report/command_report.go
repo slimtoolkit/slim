@@ -53,6 +53,7 @@ type ImageMetadata struct {
 	SizeHuman             string             `json:"size_human"`
 	CreateTime            string             `json:"create_time"`
 	Author                string             `json:"author,omitempty"`
+	Maintainers           []string           `json:"maintainers,omitempty"`
 	DockerVersion         string             `json:"docker_version"`
 	Architecture          string             `json:"architecture"`
 	User                  string             `json:"user,omitempty"`

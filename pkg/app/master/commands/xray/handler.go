@@ -249,6 +249,21 @@ func OnCommand(
 		}
 	}
 
+	maintainers := map[string]struct{}{}
+	for _, m := range imageInspector.DockerfileInfo.Maintainers {
+		maintainers[m] = struct{}{}
+	}
+
+	for k, v := range cmdReport.SourceImage.Labels {
+		if strings.ToLower(k) == "maintainer" {
+			maintainers[v] = struct{}{}
+		}
+	}
+
+	for m := range maintainers {
+		cmdReport.SourceImage.Maintainers = append(cmdReport.SourceImage.Maintainers, m)
+	}
+
 	cmdReport.ArtifactLocation = imageInspector.ArtifactLocation
 
 	xc.Out.State("image.api.inspection.done")

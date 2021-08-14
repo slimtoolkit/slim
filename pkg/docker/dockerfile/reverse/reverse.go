@@ -21,6 +21,7 @@ import (
 // Dockerfile represents the reverse engineered Dockerfile info
 type Dockerfile struct {
 	Lines           []string
+	Maintainers     []string
 	AllUsers        []string
 	ExeUser         string
 	ExposedPorts    []string
@@ -177,6 +178,17 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 					instData := strings.TrimPrefix(cleanInst, "CMD ")
 					instData = fixJSONArray(instData)
 					cleanInst = "CMD " + instData
+				}
+			}
+
+			if strings.HasPrefix(cleanInst, "MAINTAINER ") {
+				parts := strings.SplitN(cleanInst, " ", 2)
+				if len(parts) == 2 {
+					maintainer := strings.TrimSpace(parts[1])
+
+					out.Maintainers = append(out.Maintainers, maintainer)
+				} else {
+					log.Infof("ReverseDockerfileFromHistory - MAINTAINER - unexpected number of user parts - %v", len(parts))
 				}
 			}
 
@@ -380,14 +392,6 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 	}
 
 	return &out, nil
-
-	/*
-	   NOTE:
-	   Usually "MAINTAINER" is the first instruction,
-	   so it can be used to detect a base image.
-	   NOTE2:
-	   "MAINTAINER" is now depricated
-	*/
 
 	/*
 	   TODO:
