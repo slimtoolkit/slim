@@ -204,17 +204,30 @@ docker-slim update
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.36.2/dist_mac.zip)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.36.2/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.36.2/dist_mac.zip`)
 
-   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.36.2/dist_mac_m1.zip)
+   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.36.2/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.36.2/dist_mac_m1.zip`)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.36.2/dist_linux.tar.gz)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.36.2/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.36.2/dist_linux.tar.gz`)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.36.2/dist_linux_arm.tar.gz)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.36.2/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.36.2/dist_linux_arm.tar.gz`)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.36.2/dist_linux_arm64.tar.gz)
+   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.36.2/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.36.2/dist_linux_arm64.tar.gz`)
 
-2. Unzip the package.
+2. Unzip the package and optionally move it to your bin directory.
+
+Linux (for non-intel replace `dist_linux` with the platform-specific extracted path):
+```
+tar -xvf ds.tar.gz
+mv  dist_linux/docker-slim /usr/local/bin/
+mv  dist_linux/docker-slim-sensor /usr/local/bin/
+```
+Mac:
+```
+unzip ds.zip
+mv  dist_mac/docker-slim /usr/local/bin/
+mv  dist_mac/docker-slim-sensor /usr/local/bin/
+```
 
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
 
