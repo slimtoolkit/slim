@@ -161,7 +161,7 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	return overrides, nil
 }
 
-func GlobalCommandFlagValues(ctx *cli.Context) (*GenericParams, error) {
+func GlobalFlagValues(ctx *cli.Context) (*GenericParams, error) {
 	values := GenericParams{
 		CheckVersion:   ctx.GlobalBool(FlagCheckVersion),
 		Debug:          ctx.GlobalBool(FlagDebug),

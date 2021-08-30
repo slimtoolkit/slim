@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/command"
@@ -18,11 +19,11 @@ import (
 
 const appName = commands.AppName
 
-type ovars = commands.OutVars
+type ovars = app.OutVars
 
 // OnCommand implements the 'lint' docker-slim command
 func OnCommand(
-	xc *commands.ExecutionContext,
+	xc *app.ExecutionContext,
 	gparams *commands.GenericParams,
 	targetRef string,
 	targetType string,
@@ -119,7 +120,7 @@ func OnCommand(
 }
 
 func printLintChecks(
-	xc *commands.ExecutionContext,
+	xc *app.ExecutionContext,
 	checks []*check.Info,
 	appName string,
 	cmdName command.Type) {
@@ -150,7 +151,7 @@ func kvMapString(m map[string]string) string {
 }
 
 func printLintResults(
-	xc *commands.ExecutionContext,
+	xc *app.ExecutionContext,
 	lintResults *linter.Report,
 	appName string,
 	cmdName command.Type,

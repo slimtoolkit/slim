@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
@@ -82,6 +83,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagMount),
 		//Container Build Options
 		cflag(FlagBuildFromDockerfile),
+		cflag(FlagDockerfileContext),
 		cflag(FlagTagFat),
 		cflag(FlagCBOAddHost),
 		cflag(FlagCBOBuildArg),
@@ -151,24 +153,11 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagUseSensorVolume),
 	},
 	Action: func(ctx *cli.Context) error {
-		commands.ShowCommunityInfo()
-		xc := commands.NewExecutionContext(Name)
+		xc := app.NewExecutionContext(Name)
 
-		targetRef := ctx.String(commands.FlagTarget)
-
-		if targetRef == "" {
-			if len(ctx.Args()) < 1 {
-				xc.Out.Error("param.target", "missing image ID/name")
-				cli.ShowCommandHelp(ctx, Name)
-				return nil
-			} else {
-				targetRef = ctx.Args().First()
-			}
-		}
-
-		gcvalues, err := commands.GlobalCommandFlagValues(ctx)
+		cbOpts, err := GetContainerBuildOptions(ctx)
 		if err != nil {
-			xc.Out.Error("param.global", err.Error())
+			xc.Out.Error("param.error.container.build.options", err.Error())
 			xc.Out.State("exited",
 				ovars{
 					"exit.code": -1,
@@ -176,9 +165,36 @@ var CLI = cli.Command{
 			xc.Exit(-1)
 		}
 
-		cbOpts, err := GetContainerBuildOptions(ctx)
+		var targetRef string
+
+		if cbOpts.Dockerfile == "" {
+			targetRef = ctx.String(commands.FlagTarget)
+
+			if targetRef == "" {
+				if len(ctx.Args()) < 1 {
+					xc.Out.Error("param.target", "missing image ID/name")
+					cli.ShowCommandHelp(ctx, Name)
+					return nil
+				} else {
+					targetRef = ctx.Args().First()
+				}
+			}
+		} else {
+			targetRef = cbOpts.DockerfileContext
+			if targetRef == "" {
+				if len(ctx.Args()) < 1 {
+					xc.Out.Error("param.target", "missing image ID/name")
+					cli.ShowCommandHelp(ctx, Name)
+					return nil
+				} else {
+					targetRef = ctx.Args().First()
+				}
+			}
+		}
+
+		gcvalues, err := commands.GlobalFlagValues(ctx)
 		if err != nil {
-			xc.Out.Error("param.error.container.build.options", err.Error())
+			xc.Out.Error("param.global", err.Error())
 			xc.Out.State("exited",
 				ovars{
 					"exit.code": -1,
@@ -587,7 +603,7 @@ var CLI = cli.Command{
 			continueAfter,
 			execCmd,
 			string(execFileCmd))
-		commands.ShowCommunityInfo()
+
 		return nil
 	},
 }

@@ -307,9 +307,49 @@ func ParseVolumeMounts(values []string) (map[string]config.VolumeMount, error) {
 			mount.Options = parts[2]
 		}
 
+		//NOTE: also need to support volume bindings
+		//with the same source, but different destinations
 		volumeMounts[mount.Source] = mount
 	}
 	return volumeMounts, nil
+}
+
+func ParseVolumeMountsAsList(values []string) ([]config.VolumeMount, error) {
+	volumeMounts := map[string]config.VolumeMount{}
+
+	for _, raw := range values {
+		if !strings.Contains(raw, ":") {
+			return nil, fmt.Errorf("invalid volume mount format: %s", raw)
+		}
+
+		parts := strings.Split(raw, ":")
+		if (len(parts) > 3) ||
+			(len(parts[0]) < 1) ||
+			(len(parts[1]) < 1) ||
+			((len(parts) == 3) && (len(parts[2]) < 1)) {
+			return nil, fmt.Errorf("invalid volume mount format: %s", raw)
+		}
+
+		mount := config.VolumeMount{
+			Source:      parts[0],
+			Destination: parts[1],
+			Options:     "rw",
+		}
+
+		if len(parts) == 3 {
+			mount.Options = parts[2]
+		}
+
+		key := fmt.Sprintf("%s:%s", mount.Source, mount.Destination)
+		volumeMounts[key] = mount
+	}
+
+	var volumeList []config.VolumeMount
+	for _, m := range volumeMounts {
+		volumeList = append(volumeList, m)
+	}
+
+	return volumeList, nil
 }
 
 func ParsePathPerms(raw string) (string, *fsutil.AccessInfo, error) {

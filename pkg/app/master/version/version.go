@@ -12,7 +12,8 @@ import (
 	"github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
+	"github.com/docker-slim/docker-slim/pkg/app"
+	//"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
@@ -36,7 +37,7 @@ type CheckVersionInfo struct {
 
 // PrintCheckVersion shows if the current version is outdated
 func PrintCheckVersion(
-	xc *commands.ExecutionContext,
+	xc *app.ExecutionContext,
 	printPrefix string,
 	info *CheckVersionInfo) {
 	if info != nil && info.Status == "success" && info.Outdated {
@@ -46,7 +47,7 @@ func PrintCheckVersion(
 			fmt.Printf("%s info=message message='%s'\n", printPrefix, msg)
 		} else {
 			xc.Out.Info("version",
-				commands.OutVars{
+				app.OutVars{
 					"status":  "OUTDATED",
 					"local":   v.Tag(),
 					"current": info.Current,

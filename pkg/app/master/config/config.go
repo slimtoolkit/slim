@@ -44,14 +44,15 @@ type ImageNewInstructions struct {
 // ContainerBuildOptions provides the options to use when
 // building container images from Dockerfiles
 type ContainerBuildOptions struct {
-	Dockerfile  string
-	Tag         string
-	ExtraHosts  string
-	BuildArgs   []CBOBuildArg
-	Labels      map[string]string
-	CacheFrom   []string
-	Target      string
-	NetworkMode string
+	Dockerfile        string
+	DockerfileContext string
+	Tag               string
+	ExtraHosts        string
+	BuildArgs         []CBOBuildArg
+	Labels            map[string]string
+	CacheFrom         []string
+	Target            string
+	NetworkMode       string
 }
 
 type CBOBuildArg struct {

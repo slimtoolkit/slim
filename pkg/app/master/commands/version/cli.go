@@ -1,6 +1,7 @@
 package version
 
 import (
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 
 	"github.com/urfave/cli"
@@ -21,7 +22,7 @@ var CLI = cli.Command{
 		inContainer, isDSImage := commands.IsInContainer(ctx.GlobalBool(commands.FlagInContainer))
 		clientConfig := commands.GetDockerClientConfig(ctx)
 
-		xc := commands.NewExecutionContext(Name)
+		xc := app.NewExecutionContext(Name)
 
 		OnCommand(xc,
 			doDebug,
@@ -29,7 +30,7 @@ var CLI = cli.Command{
 			isDSImage,
 			clientConfig)
 
-		commands.ShowCommunityInfo()
+		//app.ShowCommunityInfo()
 		return nil
 	},
 }

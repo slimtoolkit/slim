@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/builder"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
@@ -43,11 +44,11 @@ const (
 	ecbNoEntrypoint
 )
 
-type ovars = commands.OutVars
+type ovars = app.OutVars
 
 // OnCommand implements the 'build' docker-slim command
 func OnCommand(
-	xc *commands.ExecutionContext,
+	xc *app.ExecutionContext,
 	gparams *commands.GenericParams,
 	targetRef string,
 	doPull bool,

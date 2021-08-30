@@ -18,7 +18,8 @@ import (
 	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
+	"github.com/docker-slim/docker-slim/pkg/app"
+	//"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/container"
 )
@@ -29,7 +30,7 @@ const (
 	httpsPortStr    = "443"
 )
 
-type ovars = commands.OutVars
+type ovars = app.OutVars
 
 // CustomProbe is a custom HTTP probe
 type CustomProbe struct {
@@ -57,12 +58,12 @@ type CustomProbe struct {
 	crawlConcurrency      int
 	maxConcurrentCrawlers int
 	concurrentCrawlers    chan struct{}
-	xc                    *commands.ExecutionContext
+	xc                    *app.ExecutionContext
 }
 
 // NewCustomProbe creates a new custom HTTP probe
 func NewCustomProbe(
-	xc *commands.ExecutionContext,
+	xc *app.ExecutionContext,
 	inspector *container.Inspector,
 	cmds []config.HTTPProbeCmd,
 	retryCount int,

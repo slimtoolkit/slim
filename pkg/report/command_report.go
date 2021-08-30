@@ -224,6 +224,7 @@ const OVRunCommand = "1.0"
 // RunCommand is the 'run' command report data
 type RunCommand struct {
 	Command
+	TargetReference string `json:"target_reference"`
 }
 
 func (cmd *Command) init(containerized bool) {

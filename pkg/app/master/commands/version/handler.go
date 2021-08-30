@@ -5,7 +5,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
+	"github.com/docker-slim/docker-slim/pkg/app"
+	//"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/app/master/version"
@@ -15,11 +16,11 @@ import (
 	v "github.com/docker-slim/docker-slim/pkg/version"
 )
 
-type ovars = commands.OutVars
+type ovars = app.OutVars
 
 // OnCommand implements the 'version' docker-slim command
 func OnCommand(
-	xc *commands.ExecutionContext,
+	xc *app.ExecutionContext,
 	doDebug, inContainer, isDSImage bool,
 	clientConfig *config.DockerClient) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": command.Version})
@@ -43,7 +44,7 @@ func OnCommand(
 				"version":   v.Current(),
 				"location":  fsutil.ExeDir(),
 			})
-		commands.Exit(exitCode)
+		xc.Exit(exitCode)
 	}
 	errutil.FailOn(err)
 

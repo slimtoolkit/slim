@@ -91,6 +91,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagUseSensorVolume), Description: commands.FlagUseSensorVolumeUsage},
 		{Text: commands.FullFlagName(FlagKeepTmpArtifacts), Description: FlagKeepTmpArtifactsUsage},
 		{Text: commands.FullFlagName(FlagBuildFromDockerfile), Description: FlagBuildFromDockerfileUsage},
+		{Text: commands.FullFlagName(FlagDockerfileContext), Description: FlagDockerfileContextUsage},
 		{Text: commands.FullFlagName(FlagTagFat), Description: FlagTagFatUsage},
 		{Text: commands.FullFlagName(FlagCBOAddHost), Description: FlagCBOAddHostUsage},
 		{Text: commands.FullFlagName(FlagCBOBuildArg), Description: FlagCBOBuildArgUsage},
@@ -131,5 +132,6 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(commands.FlagUseSensorVolume):        commands.CompleteVolume,
 		commands.FullFlagName(FlagKeepTmpArtifacts):                commands.CompleteBool,
 		commands.FullFlagName(commands.FlagCROHostConfigFile):      commands.CompleteFile,
+		commands.FullFlagName(FlagDockerfileContext):               commands.CompleteFile,
 	},
 }

@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/image"
@@ -27,7 +28,7 @@ import (
 
 const appName = commands.AppName
 
-type ovars = commands.OutVars
+type ovars = app.OutVars
 
 // Xray command exit codes
 const (
@@ -37,7 +38,7 @@ const (
 
 // OnCommand implements the 'xray' docker-slim command
 func OnCommand(
-	xc *commands.ExecutionContext,
+	xc *app.ExecutionContext,
 	gparams *commands.GenericParams,
 	targetRef string,
 	doPull bool,
@@ -465,7 +466,7 @@ func findChange(pkg *dockerimage.Package, filepath string) *dockerimage.ObjectMe
 }
 
 func printImagePackage(
-	xc *commands.ExecutionContext,
+	xc *app.ExecutionContext,
 	pkg *dockerimage.Package,
 	appName string,
 	cmdName command.Type,
@@ -1133,7 +1134,7 @@ func objectHistoryString(history *dockerimage.ObjectHistory) string {
 	return builder.String()
 }
 
-func printObject(xc *commands.ExecutionContext, object *dockerimage.ObjectMetadata) {
+func printObject(xc *app.ExecutionContext, object *dockerimage.ObjectMetadata) {
 	var hashInfo string
 	if object.Hash != "" {
 		hashInfo = fmt.Sprintf(" hash=%s", object.Hash)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/build"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/containerize"
@@ -55,20 +56,20 @@ func registerCommands() {
 func newCLI() *cli.App {
 	registerCommands()
 
-	app := cli.NewApp()
-	app.Version = v.Current()
-	app.Name = AppName
-	app.Usage = AppUsage
-	app.CommandNotFound = func(ctx *cli.Context, command string) {
+	cliApp := cli.NewApp()
+	cliApp.Version = v.Current()
+	cliApp.Name = AppName
+	cliApp.Usage = AppUsage
+	cliApp.CommandNotFound = func(ctx *cli.Context, command string) {
 		fmt.Printf("unknown command - %v \n\n", command)
 		cli.ShowAppHelp(ctx)
 	}
 
-	app.Flags = commands.GlobalFlags()
+	cliApp.Flags = commands.GlobalFlags()
 
-	app.Before = func(ctx *cli.Context) error {
+	cliApp.Before = func(ctx *cli.Context) error {
 		if ctx.GlobalBool(commands.FlagNoColor) {
-			commands.NoColor()
+			app.NoColor()
 		}
 
 		if ctx.GlobalBool(commands.FlagDebug) {
@@ -122,20 +123,26 @@ func newCLI() *cli.App {
 
 		log.Debugf("sysinfo => %#v", system.GetSystemInfo())
 
+		app.ShowCommunityInfo()
 		return nil
 	}
 
-	app.Action = func(ctx *cli.Context) error {
-		gcvalues, err := commands.GlobalCommandFlagValues(ctx)
+	cliApp.After = func(ctx *cli.Context) error {
+		app.ShowCommunityInfo()
+		return nil
+	}
+
+	cliApp.Action = func(ctx *cli.Context) error {
+		gcvalues, err := commands.GlobalFlagValues(ctx)
 		if err != nil {
 			return err
 		}
 
-		ia := commands.NewInteractiveApp(app, gcvalues)
+		ia := commands.NewInteractiveApp(cliApp, gcvalues)
 		ia.Run()
 		return nil
 	}
 
-	app.Commands = commands.CLI
-	return app
+	cliApp.Commands = commands.CLI
+	return cliApp
 }

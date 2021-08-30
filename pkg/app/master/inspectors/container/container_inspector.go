@@ -13,7 +13,8 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
+	"github.com/docker-slim/docker-slim/pkg/app"
+	//"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerhost"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/container/ipc"
@@ -53,7 +54,7 @@ const (
 	LabelName               = "dockerslim"
 )
 
-type ovars = commands.OutVars
+type ovars = app.OutVars
 
 var (
 	cmdPortStrDefault  = fmt.Sprintf("%d", channel.CmdPort)
@@ -113,7 +114,7 @@ type Inspector struct {
 	dockerEventStopCh     chan struct{}
 	ipcClient             *ipc.Client
 	logger                *log.Entry
-	xc                    *commands.ExecutionContext
+	xc                    *app.ExecutionContext
 	crOpts                *config.ContainerRunOptions
 }
 
@@ -132,7 +133,7 @@ func pathMapKeys(m map[string]*fsutil.AccessInfo) []string {
 
 // NewInspector creates a new container execution inspector
 func NewInspector(
-	xc *commands.ExecutionContext,
+	xc *app.ExecutionContext,
 	crOpts *config.ContainerRunOptions,
 	logger *log.Entry,
 	client *dockerapi.Client,

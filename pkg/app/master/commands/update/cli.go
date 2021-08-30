@@ -23,7 +23,6 @@ var CLI = cli.Command{
 		initFlagShowProgress(),
 	},
 	Action: func(ctx *cli.Context) error {
-		commands.ShowCommunityInfo()
 		doDebug := ctx.GlobalBool(commands.FlagDebug)
 		statePath := ctx.GlobalString(commands.FlagStatePath)
 		inContainer, isDSImage := commands.IsInContainer(ctx.GlobalBool(commands.FlagInContainer))
@@ -31,7 +30,6 @@ var CLI = cli.Command{
 		doShowProgress := ctx.Bool(commands.FlagShowProgress)
 
 		OnCommand(doDebug, statePath, archiveState, inContainer, isDSImage, doShowProgress)
-		commands.ShowCommunityInfo()
 		return nil
 	},
 }

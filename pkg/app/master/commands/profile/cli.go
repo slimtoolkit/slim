@@ -3,6 +3,7 @@ package profile
 import (
 	"fmt"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 
@@ -83,11 +84,9 @@ var CLI = cli.Command{
 		//commands.Cflag(commands.FlagKeepTmpArtifacts),
 	},
 	Action: func(ctx *cli.Context) error {
-		commands.ShowCommunityInfo()
-		xc := commands.NewExecutionContext(Name)
+		xc := app.NewExecutionContext(Name)
 
 		targetRef := ctx.String(commands.FlagTarget)
-
 		if targetRef == "" {
 			if len(ctx.Args()) < 1 {
 				xc.Out.Error("param.target", "missing target image ID/name")
@@ -98,7 +97,7 @@ var CLI = cli.Command{
 			}
 		}
 
-		gcvalues, err := commands.GlobalCommandFlagValues(ctx)
+		gcvalues, err := commands.GlobalFlagValues(ctx)
 		if err != nil {
 			return err
 		}
@@ -378,7 +377,7 @@ var CLI = cli.Command{
 			doUseSensorVolume,
 			//doKeepTmpArtifacts,
 			continueAfter)
-		commands.ShowCommunityInfo()
+
 		return nil
 	},
 }

@@ -1,6 +1,7 @@
 package server
 
 import (
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 
 	"github.com/urfave/cli"
@@ -17,19 +18,19 @@ var CLI = cli.Command{
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Action: func(ctx *cli.Context) error {
-		commands.ShowCommunityInfo()
+		//app.ShowCommunityInfo()
 
-		gcvalues, err := commands.GlobalCommandFlagValues(ctx)
+		gcvalues, err := commands.GlobalFlagValues(ctx)
 		if err != nil {
 			return err
 		}
 
-		xc := commands.NewExecutionContext(Name)
+		xc := app.NewExecutionContext(Name)
 
 		OnCommand(
 			xc,
 			gcvalues)
-		commands.ShowCommunityInfo()
+		//app.ShowCommunityInfo()
 		return nil
 	},
 }

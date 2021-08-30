@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
@@ -34,11 +35,11 @@ const (
 	ecpImageNotFound
 )
 
-type ovars = commands.OutVars
+type ovars = app.OutVars
 
 // OnCommand implements the 'profile' docker-slim command
 func OnCommand(
-	xc *commands.ExecutionContext,
+	xc *app.ExecutionContext,
 	gparams *commands.GenericParams,
 	targetRef string,
 	doPull bool,

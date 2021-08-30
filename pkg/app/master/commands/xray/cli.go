@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
 
@@ -49,8 +50,8 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
 	},
 	Action: func(ctx *cli.Context) error {
-		commands.ShowCommunityInfo()
-		xc := commands.NewExecutionContext(Name)
+		//app.ShowCommunityInfo()
+		xc := app.NewExecutionContext(Name)
 
 		targetRef := ctx.String(commands.FlagTarget)
 
@@ -64,7 +65,7 @@ var CLI = cli.Command{
 			}
 		}
 
-		gcvalues, err := commands.GlobalCommandFlagValues(ctx)
+		gcvalues, err := commands.GlobalFlagValues(ctx)
 		if err != nil {
 			xc.Out.Error("param.global", err.Error())
 			xc.Out.State("exited",
@@ -209,7 +210,7 @@ var CLI = cli.Command{
 			utf8Detector,
 		)
 
-		commands.ShowCommunityInfo()
+		//app.ShowCommunityInfo()
 		return nil
 	},
 }

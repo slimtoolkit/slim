@@ -1,9 +1,10 @@
 package lint
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-
 	"github.com/urfave/cli"
+
+	"github.com/docker-slim/docker-slim/pkg/app"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 )
 
 const (
@@ -33,8 +34,7 @@ var CLI = cli.Command{
 		cflag(FlagListChecks),
 	},
 	Action: func(ctx *cli.Context) error {
-		commands.ShowCommunityInfo()
-		xc := commands.NewExecutionContext(Name)
+		xc := app.NewExecutionContext(Name)
 
 		doListChecks := ctx.Bool(FlagListChecks)
 
@@ -51,7 +51,7 @@ var CLI = cli.Command{
 			}
 		}
 
-		gcvalues, err := commands.GlobalCommandFlagValues(ctx)
+		gcvalues, err := commands.GlobalFlagValues(ctx)
 		if err != nil {
 			xc.Out.Error("param.global", err.Error())
 			xc.Out.State("exited",
@@ -154,7 +154,7 @@ var CLI = cli.Command{
 			doShowNoHits,
 			doShowSnippet,
 			doListChecks)
-		commands.ShowCommunityInfo()
+
 		return nil
 	},
 }

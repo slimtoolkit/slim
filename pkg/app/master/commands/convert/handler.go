@@ -3,6 +3,7 @@ package convert
 import (
 	"fmt"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/app/master/version"
@@ -17,11 +18,11 @@ import (
 
 const appName = commands.AppName
 
-type ovars = commands.OutVars
+type ovars = app.OutVars
 
 // OnCommand implements the 'convert' docker-slim command
 func OnCommand(
-	xc *commands.ExecutionContext,
+	xc *app.ExecutionContext,
 	gparams *commands.GenericParams,
 	targetRef string) {
 	const cmdName = Name

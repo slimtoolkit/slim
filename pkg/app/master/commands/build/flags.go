@@ -27,6 +27,9 @@ const (
 	FlagIncludeExe       = "include-exe"
 	FlagIncludeExeFile   = "include-exe-file"
 	FlagIncludeShell     = "include-shell"
+	FlagIncludeCerts     = "include-certs"
+	FlagIncludeCertsAll  = "include-certs-all"
+	//FlagIncludeLicenses  = "include-licenses"
 
 	FlagKeepTmpArtifacts = "keep-tmp-artifacts"
 
@@ -52,6 +55,7 @@ const (
 	//Flags to build fat images from Dockerfile
 	FlagTagFat              = "tag-fat"
 	FlagBuildFromDockerfile = "dockerfile"
+	FlagDockerfileContext   = "dockerfile-context"
 	FlagCBOAddHost          = "cbo-add-host"
 	FlagCBOBuildArg         = "cbo-build-arg"
 	FlagCBOLabel            = "cbo-label"
@@ -99,6 +103,7 @@ const (
 
 	FlagTagFatUsage              = "Custom tag for the fat image built from Dockerfile"
 	FlagBuildFromDockerfileUsage = "The source Dockerfile name to build the fat image before it's optimized"
+	FlagDockerfileContextUsage   = "The build context directory when building source Dockerfile"
 	FlagCBOAddHostUsage          = "Add an extra host-to-IP mapping in /etc/hosts to use when building an image"
 	FlagCBOBuildArgUsage         = "Add a build-time variable"
 	FlagCBOLabelUsage            = "Add a label when building from Dockerfiles"
@@ -231,6 +236,12 @@ var Flags = map[string]cli.Flag{
 		Usage:  FlagBuildFromDockerfileUsage,
 		EnvVar: "DSLIM_BUILD_DOCKERFILE",
 	},
+	FlagDockerfileContext: cli.StringFlag{
+		Name:   FlagDockerfileContext,
+		Value:  "",
+		Usage:  FlagDockerfileContextUsage,
+		EnvVar: "DSLIM_BUILD_DOCKERFILE_CTX",
+	},
 	FlagTagFat: cli.StringFlag{
 		Name:   FlagTagFat,
 		Value:  "",
@@ -290,6 +301,7 @@ func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, 
 	}
 
 	cbo.Dockerfile = ctx.String(FlagBuildFromDockerfile)
+	cbo.DockerfileContext = ctx.String(FlagDockerfileContext)
 	cbo.Tag = ctx.String(FlagTagFat)
 	cbo.Target = ctx.String(FlagCBOTarget)
 	cbo.NetworkMode = ctx.String(FlagCBONetwork)
