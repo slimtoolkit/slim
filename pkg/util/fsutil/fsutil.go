@@ -1064,6 +1064,70 @@ func createDummyFile(src, dst string) error {
 
 ///////////////////////////////////////////////////////////////////////////////
 
+func ArchiveFiles(afname string,
+	files []string,
+	removePath bool,
+	addPrefix string) error {
+	tf, err := os.Create(afname)
+	if err != nil {
+		return err
+	}
+
+	defer close(tf)
+
+	tw := tar.NewWriter(tf)
+	defer close(tw)
+
+	fpRewrite := func(filePath string,
+		removePath bool,
+		addPrefix string) string {
+		if removePath {
+			filePath = filepath.Base(filePath)
+		}
+
+		if addPrefix != "" {
+			filePath = fmt.Sprintf("%s%s", addPrefix, filePath)
+		}
+
+		return filePath
+	}
+
+	for _, fname := range files {
+		if Exists(fname) && IsRegularFile(fname) {
+			info, err := os.Stat(fname)
+			if err != nil {
+				log.Errorf("fsutil.ArchiveFiles: bad file - %s - %v", fname, err)
+				return err
+			}
+
+			th, err := tar.FileInfoHeader(info, "")
+			if err != nil {
+				return err
+			}
+
+			th.Name = fpRewrite(fname, true, addPrefix)
+			if err := tw.WriteHeader(th); err != nil {
+				return err
+			}
+
+			f, err := os.Open(fname)
+			if err != nil {
+				return err
+			}
+
+			defer close(f)
+			if _, err := io.Copy(tw, f); err != nil {
+				return err
+			}
+		} else {
+			log.Errorf("fsutil.ArchiveFiles: bad file - %s", fname)
+			return fmt.Errorf("bad file - %s", fname)
+		}
+	}
+
+	return nil
+}
+
 func ArchiveDir(afname string,
 	d2aname string,
 	trimPrefix string,

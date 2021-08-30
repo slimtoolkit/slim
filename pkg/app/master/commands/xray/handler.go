@@ -36,6 +36,10 @@ const (
 	ecxImageNotFound
 )
 
+const (
+	fatDockerfileName = "Dockerfile.fat"
+)
+
 // OnCommand implements the 'xray' docker-slim command
 func OnCommand(
 	xc *app.ExecutionContext,
@@ -65,6 +69,7 @@ func OnCommand(
 	doReuseSavedImage bool,
 	doRmFileArtifacts bool,
 	utf8Detector *dockerimage.UTF8Detector,
+	xdArtifactsPath string,
 ) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
@@ -453,6 +458,27 @@ func OnCommand(
 			})
 	}
 
+	if xdArtifactsPath != "" {
+		var filesToExport []string
+		filesToExport = append(filesToExport, cmdReport.ReportLocation())
+		filesToExport = append(filesToExport, filepath.Join(cmdReport.ArtifactLocation, fatDockerfileName))
+		if utf8Detector.DumpArchive != "" {
+			filesToExport = append(filesToExport, utf8Detector.DumpArchive)
+		}
+
+		if xdArtifactsPath == "." {
+			xdArtifactsPath = "data-artifacts.tar"
+		}
+
+		if err := fsutil.ArchiveFiles(xdArtifactsPath, filesToExport, true, ""); err == nil {
+			xc.Out.Info("exported-data-artifacts",
+				ovars{
+					"file": xdArtifactsPath,
+				})
+		} else {
+			logger.Errorf("error exporting data artifacts (%s) - %v", xdArtifactsPath, err)
+		}
+	}
 }
 
 func findChange(pkg *dockerimage.Package, filepath string) *dockerimage.ObjectMetadata {

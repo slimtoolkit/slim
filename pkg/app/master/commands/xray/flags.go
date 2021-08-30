@@ -7,52 +7,54 @@ import (
 
 // Xray command flag names
 const (
-	FlagChanges               = "changes"
-	FlagChangesOutput         = "changes-output"
-	FlagLayer                 = "layer"
-	FlagAddImageManifest      = "add-image-manifest"
-	FlagAddImageConfig        = "add-image-config"
-	FlagLayerChangesMax       = "layer-changes-max"
-	FlagAllChangesMax         = "all-changes-max"
-	FlagAddChangesMax         = "add-changes-max"
-	FlagModifyChangesMax      = "modify-changes-max"
-	FlagDeleteChangesMax      = "delete-changes-max"
-	FlagChangePath            = "change-path"
-	FlagChangeData            = "change-data"
-	FlagChangeDataHash        = "change-data-hash"
-	FlagReuseSavedImage       = "reuse-saved-image"
-	FlagTopChangesMax         = "top-changes-max"
-	FlagHashData              = "hash-data"
-	FlagDetectUTF8            = "detect-utf8"
-	FlagDetectDuplicates      = "detect-duplicates"
-	FlagShowDuplicates        = "show-duplicates"
-	FlagShowSpecialPerms      = "show-special-perms"
-	FlagChangeMatchLayersOnly = "change-match-layers-only"
+	FlagChanges                = "changes"
+	FlagChangesOutput          = "changes-output"
+	FlagLayer                  = "layer"
+	FlagAddImageManifest       = "add-image-manifest"
+	FlagAddImageConfig         = "add-image-config"
+	FlagLayerChangesMax        = "layer-changes-max"
+	FlagAllChangesMax          = "all-changes-max"
+	FlagAddChangesMax          = "add-changes-max"
+	FlagModifyChangesMax       = "modify-changes-max"
+	FlagDeleteChangesMax       = "delete-changes-max"
+	FlagChangePath             = "change-path"
+	FlagChangeData             = "change-data"
+	FlagChangeDataHash         = "change-data-hash"
+	FlagReuseSavedImage        = "reuse-saved-image"
+	FlagTopChangesMax          = "top-changes-max"
+	FlagHashData               = "hash-data"
+	FlagDetectUTF8             = "detect-utf8"
+	FlagDetectDuplicates       = "detect-duplicates"
+	FlagShowDuplicates         = "show-duplicates"
+	FlagShowSpecialPerms       = "show-special-perms"
+	FlagChangeMatchLayersOnly  = "change-match-layers-only"
+	FlagExportAllDataArtifacts = "export-all-data-artifacts"
 )
 
 // Xray command flag usage info
 const (
-	FlagChangesUsage               = "Show layer change details for the selected change type (values: none, all, delete, modify, add)"
-	FlagChangesOutputUsage         = "Where to show the changes (values: all, report, console)"
-	FlagLayerUsage                 = "Show details for the selected layer (using layer index or ID)"
-	FlagAddImageManifestUsage      = "Add raw image manifest to the command execution report file"
-	FlagAddImageConfigUsage        = "Add raw image config object to the command execution report file"
-	FlagLayerChangesMaxUsage       = "Maximum number of changes to show for each layer"
-	FlagAllChangesMaxUsage         = "Maximum number of changes to show for all layers"
-	FlagAddChangesMaxUsage         = "Maximum number of 'add' changes to show for all layers"
-	FlagModifyChangesMaxUsage      = "Maximum number of 'modify' changes to show for all layers"
-	FlagDeleteChangesMaxUsage      = "Maximum number of 'delete' changes to show for all layers"
-	FlagChangePathUsage            = "Include changes for the files that match the path pattern (Glob/Match in Go and **)"
-	FlagChangeDataUsage            = "Include changes for the files that match the data pattern (regex)"
-	FlagReuseSavedImageUsage       = "Reuse saved container image"
-	FlagTopChangesMaxUsage         = "Maximum number of top changes to track"
-	FlagChangeDataHashUsage        = "Include changes for the files that match the provided data hashes (sha1)"
-	FlagHashDataUsage              = "Generate file data hashes"
-	FlagDetectUTF8Usage            = "Detect utf8 files and optionally extract the discovered utf8 file content"
-	FlagDetectDuplicatesUsage      = "Detect duplicate files based on their hashes"
-	FlagShowDuplicatesUsage        = "Show discovered duplicate file paths"
-	FlagShowSpecialPermsUsage      = "Show files with special permissions (setuid,setgid,sticky)"
-	FlagChangeMatchLayersOnlyUsage = "Show only layers with change matches"
+	FlagChangesUsage                = "Show layer change details for the selected change type (values: none, all, delete, modify, add)"
+	FlagChangesOutputUsage          = "Where to show the changes (values: all, report, console)"
+	FlagLayerUsage                  = "Show details for the selected layer (using layer index or ID)"
+	FlagAddImageManifestUsage       = "Add raw image manifest to the command execution report file"
+	FlagAddImageConfigUsage         = "Add raw image config object to the command execution report file"
+	FlagLayerChangesMaxUsage        = "Maximum number of changes to show for each layer"
+	FlagAllChangesMaxUsage          = "Maximum number of changes to show for all layers"
+	FlagAddChangesMaxUsage          = "Maximum number of 'add' changes to show for all layers"
+	FlagModifyChangesMaxUsage       = "Maximum number of 'modify' changes to show for all layers"
+	FlagDeleteChangesMaxUsage       = "Maximum number of 'delete' changes to show for all layers"
+	FlagChangePathUsage             = "Include changes for the files that match the path pattern (Glob/Match in Go and **)"
+	FlagChangeDataUsage             = "Include changes for the files that match the data pattern (regex)"
+	FlagReuseSavedImageUsage        = "Reuse saved container image"
+	FlagTopChangesMaxUsage          = "Maximum number of top changes to track"
+	FlagChangeDataHashUsage         = "Include changes for the files that match the provided data hashes (sha1)"
+	FlagHashDataUsage               = "Generate file data hashes"
+	FlagDetectUTF8Usage             = "Detect utf8 files and optionally extract the discovered utf8 file content"
+	FlagDetectDuplicatesUsage       = "Detect duplicate files based on their hashes"
+	FlagShowDuplicatesUsage         = "Show discovered duplicate file paths"
+	FlagShowSpecialPermsUsage       = "Show files with special permissions (setuid,setgid,sticky)"
+	FlagChangeMatchLayersOnlyUsage  = "Show only layers with change matches"
+	FlagExportAllDataArtifactsUsage = "Archive path to export all data artifacts enabling the related flags if not set (if set to . then path defaults to ./data-artifacts.tar)"
 )
 
 var Flags = map[string]cli.Flag{
@@ -172,6 +174,11 @@ var Flags = map[string]cli.Flag{
 		Name:   FlagChangeMatchLayersOnly,
 		Usage:  FlagChangeMatchLayersOnlyUsage,
 		EnvVar: "DSLIM_XRAY_CHANGE_MATCH_LAYERS_ONLY",
+	},
+	FlagExportAllDataArtifacts: cli.StringFlag{
+		Name:   FlagExportAllDataArtifacts,
+		Usage:  FlagExportAllDataArtifactsUsage,
+		EnvVar: "DSLIM_XRAY_EXPORT_ALL_DARTIFACTS",
 	},
 }
 

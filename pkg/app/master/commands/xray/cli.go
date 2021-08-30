@@ -47,10 +47,10 @@ var CLI = cli.Command{
 		cflag(FlagShowDuplicates),
 		cflag(FlagShowSpecialPerms),
 		cflag(FlagChangeDataHash),
+		cflag(FlagExportAllDataArtifacts),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
 	},
 	Action: func(ctx *cli.Context) error {
-		//app.ShowCommunityInfo()
 		xc := app.NewExecutionContext(Name)
 
 		targetRef := ctx.String(commands.FlagTarget)
@@ -75,6 +75,8 @@ var CLI = cli.Command{
 			xc.Exit(-1)
 		}
 
+		xdArtifactsPath := ctx.String(FlagExportAllDataArtifacts)
+
 		doPull := ctx.Bool(commands.FlagPull)
 		doShowPullLogs := ctx.Bool(commands.FlagShowPullLogs)
 
@@ -88,6 +90,13 @@ var CLI = cli.Command{
 			xc.Exit(-1)
 		}
 
+		if xdArtifactsPath != "" {
+			//need 'changes all' when exporting all data artifacts
+			changes["delete"] = struct{}{}
+			changes["modify"] = struct{}{}
+			changes["add"] = struct{}{}
+		}
+
 		changesOutputs, err := parseChangeOutputTypes(ctx.StringSlice(FlagChangesOutput))
 		if err != nil {
 			xc.Out.Error("param.error.change.output", err.Error())
@@ -96,6 +105,10 @@ var CLI = cli.Command{
 					"exit.code": -1,
 				})
 			xc.Exit(-1)
+		}
+
+		if xdArtifactsPath != "" {
+			changesOutputs["report"] = struct{}{}
 		}
 
 		layers, err := commands.ParseTokenSet(ctx.StringSlice(FlagLayer))
@@ -136,17 +149,34 @@ var CLI = cli.Command{
 		}
 
 		doAddImageManifest := ctx.Bool(FlagAddImageManifest)
+		if xdArtifactsPath != "" {
+			doAddImageManifest = true
+		}
+
 		doAddImageConfig := ctx.Bool(FlagAddImageConfig)
+		if xdArtifactsPath != "" {
+			doAddImageConfig = true
+		}
+
 		doRmFileArtifacts := ctx.Bool(commands.FlagRemoveFileArtifacts)
 		doReuseSavedImage := ctx.Bool(FlagReuseSavedImage)
 
 		doHashData := ctx.Bool(FlagHashData)
+		if xdArtifactsPath != "" {
+			doHashData = true
+		}
+
 		doDetectDuplicates := ctx.Bool(FlagDetectDuplicates)
 		if doDetectDuplicates {
 			doHashData = true
 		}
 
-		utf8Detector, err := parseDetectUTF8(ctx)
+		rawDetectUTF8 := ctx.String(FlagDetectUTF8)
+		if xdArtifactsPath != "" && rawDetectUTF8 == "" {
+			rawDetectUTF8 = "dump:utf8.tgz::10000000"
+		}
+
+		utf8Detector, err := parseDetectUTF8(rawDetectUTF8)
 		if err != nil {
 			xc.Out.Error("param.error.detect.utf8", err.Error())
 			xc.Out.State("exited",
@@ -208,9 +238,9 @@ var CLI = cli.Command{
 			doReuseSavedImage,
 			doRmFileArtifacts,
 			utf8Detector,
+			xdArtifactsPath,
 		)
 
-		//app.ShowCommunityInfo()
 		return nil
 	},
 }
@@ -400,8 +430,7 @@ func parseChangeDataHashMatchers(values []string) ([]*dockerimage.ChangeDataHash
 	return matchers, nil
 }
 
-func parseDetectUTF8(ctx *cli.Context) (*dockerimage.UTF8Detector, error) {
-	raw := ctx.String(FlagDetectUTF8)
+func parseDetectUTF8(raw string) (*dockerimage.UTF8Detector, error) {
 	if raw == "" {
 		return nil, nil
 	}

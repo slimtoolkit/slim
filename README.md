@@ -266,6 +266,7 @@ If you don't specify any command `docker-slim` will start in the interactive pro
 - `xray` - Performs static analysis for the target container image (including 'reverse engineering' the Dockerfile for the image). Use this command if you want to know what's inside of your container image and what makes it fat.
 - `lint` - Analyzes container instructions in Dockerfiles (Docker image support is WIP)
 - `profile` - Performs basic container image analysis and dynamic container analysis, but it doesn't generate an optimized image.
+- `run` - Runs one or more containers (for now runs a single container similar to `docker run`)
 - `version` - Shows the version information.
 - `update` - Updates `docker-slim` to the latest version.
 - `help` - Show the available commands and global flags
@@ -356,6 +357,7 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--show-duplicates` - Show all discovered duplicate file paths (default: true).
 - `--detect-utf8` - Detect utf8 files and optionally extract the discovered utf8 file content (possible values: "true" or "dump" or "dump:output_target.tgz" or "dump:output_target.tgz::max_size_bytes" or "dump:output_target.tgz:::max_size_bytes").
 - `--change-match-layers-only` - Show only layers with change matches (default: false).
+- `--export-all-data-artifacts` - Archive path to export all data artifacts enabling the related flags if not set (if set to `.` then path defaults to `./data-artifacts.tar`)
 - `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
 
 Change Types:
