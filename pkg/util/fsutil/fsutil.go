@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/docker-slim/docker-slim/pkg/pdiscover"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
@@ -170,6 +171,36 @@ func NewAccessInfo() *AccessInfo {
 // Remove removes the artifacts generated during the current application execution
 func Remove(artifactLocation string) error {
 	return os.RemoveAll(artifactLocation)
+}
+
+// Touch creates the target file or updates its timestamp
+func Touch(target string) error {
+	targetDirPath := FileDir(target)
+	if _, err := os.Stat(targetDirPath); err != nil {
+		if os.IsNotExist(err) {
+			err = os.MkdirAll(targetDirPath, 0777)
+			if err != nil {
+				return err
+			}
+		} else {
+			return err
+		}
+	}
+
+	tf, err := os.OpenFile(target, os.O_RDONLY|os.O_CREATE, 0644)
+	if err != nil {
+		return err
+	}
+
+	tf.Close()
+
+	tnow := time.Now().UTC()
+	err = os.Chtimes(target, tnow, tnow)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 // Exists returns true if the target file system object exists

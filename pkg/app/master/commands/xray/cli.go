@@ -97,7 +97,12 @@ var CLI = cli.Command{
 			changes["add"] = struct{}{}
 		}
 
-		changesOutputs, err := parseChangeOutputTypes(ctx.StringSlice(FlagChangesOutput))
+		rawChangesOutputs := ctx.StringSlice(FlagChangesOutput)
+		if xdArtifactsPath != "" && len(rawChangesOutputs) == 0 {
+			rawChangesOutputs = append(rawChangesOutputs, "report")
+		}
+
+		changesOutputs, err := parseChangeOutputTypes(rawChangesOutputs)
 		if err != nil {
 			xc.Out.Error("param.error.change.output", err.Error())
 			xc.Out.State("exited",

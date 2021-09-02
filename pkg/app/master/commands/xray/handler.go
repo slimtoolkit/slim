@@ -278,10 +278,15 @@ func OnCommand(
 	imageID := dockerutil.CleanImageID(imageInspector.ImageInfo.ID)
 	iaName := fmt.Sprintf("%s.tar", imageID)
 	iaPath := filepath.Join(localVolumePath, "image", iaName)
+	iaPathReady := fmt.Sprintf("%s.ready", iaPath)
 
 	var doSave bool
 	if fsutil.IsRegularFile(iaPath) {
 		if !doReuseSavedImage {
+			doSave = true
+		}
+
+		if !fsutil.Exists(iaPathReady) {
 			doSave = true
 		}
 	} else {
@@ -289,9 +294,17 @@ func OnCommand(
 	}
 
 	if doSave {
+		if fsutil.Exists(iaPathReady) {
+			fsutil.Remove(iaPathReady)
+		}
+
 		xc.Out.Info("image.data.inspection.save.image.start")
 		err = dockerutil.SaveImage(client, imageID, iaPath, false, false)
 		errutil.FailOn(err)
+
+		err = fsutil.Touch(iaPathReady)
+		errutil.WarnOn(err)
+
 		xc.Out.Info("image.data.inspection.save.image.end")
 	} else {
 		logger.Debugf("exported image already exists - %s", iaPath)
