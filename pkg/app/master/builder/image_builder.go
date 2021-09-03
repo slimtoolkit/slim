@@ -11,7 +11,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -170,15 +170,23 @@ func NewImageBuilder(client *docker.Client,
 		}
 	}
 
+	var platform string
+	if imageInfo != nil && imageInfo.OS != "" && imageInfo.Architecture != "" {
+		platform = fmt.Sprintf("%s/%s", imageInfo.OS, imageInfo.Architecture)
+	}
+	// omitempty will remove platform if empty on marshalled request to engine
+
 	builder := &ImageBuilder{
 		BasicImageBuilder: BasicImageBuilder{
 			ShowBuildLogs: showBuildLogs,
 			APIClient:     client,
+			// extract platform - from image inspector
 			BuildOptions: docker.BuildImageOptions{
 				Name:           imageRepoNameTag,
 				RmTmpContainer: true,
 				ContextDir:     artifactLocation,
 				Dockerfile:     "Dockerfile",
+				Platform:       platform,
 				//SuppressOutput: true,
 			},
 		},
