@@ -174,6 +174,7 @@ func NewImageBuilder(client *docker.Client,
 	if imageInfo != nil && imageInfo.OS != "" && imageInfo.Architecture != "" {
 		platform = fmt.Sprintf("%s/%s", imageInfo.OS, imageInfo.Architecture)
 	}
+	// omitempty will remove platform if empty on marshalled request to engine
 
 	builder := &ImageBuilder{
 		BasicImageBuilder: BasicImageBuilder{
