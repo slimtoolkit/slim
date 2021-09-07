@@ -185,7 +185,7 @@ Elixir application images:
 
 ## RECENT UPDATES
 
-Latest version: 1.36.3 (8/30/2021)
+Latest version: 1.36.4 (9/7/2021)
 
 The 1.36.x releases add many new `xray` capabilities including duplicate file, utf8 file and shell detection.
 
@@ -204,15 +204,15 @@ docker-slim update
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.36.3/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.36.3/dist_mac.zip`)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.36.4/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.36.4/dist_mac.zip`)
 
-   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.36.3/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.36.3/dist_mac_m1.zip`)
+   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.36.4/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.36.4/dist_mac_m1.zip`)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.36.3/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.36.3/dist_linux.tar.gz`)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.36.4/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.36.4/dist_linux.tar.gz`)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.36.3/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.36.3/dist_linux_arm.tar.gz`)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.36.4/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.36.4/dist_linux_arm.tar.gz`)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.36.3/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.36.3/dist_linux_arm64.tar.gz`)
+   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.36.4/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.36.4/dist_linux_arm64.tar.gz`)
 
 2. Unzip the package and optionally move it to your bin directory.
 
@@ -356,6 +356,8 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--detect-duplicates` - Detect duplicate files based on their hashes (default: false).
 - `--show-duplicates` - Show all discovered duplicate file paths (default: true).
 - `--detect-utf8` - Detect utf8 files and optionally extract the discovered utf8 file content (possible values: "true" or "dump" or "dump:output_target.tgz" or "dump:output_target.tgz::max_size_bytes" or "dump:output_target.tgz:::max_size_bytes").
+- `--detect-all-certs` - Detect all certifcate files
+- `--detect-all-cert-pks` - Detect all certifcate private key files
 - `--change-match-layers-only` - Show only layers with change matches (default: false).
 - `--export-all-data-artifacts` - Archive path to export all data artifacts enabling the related flags if not set (if set to `.` then path defaults to `./data-artifacts.tar`)
 - `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
@@ -694,7 +696,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.36.3/dist_mac.zip), [Mac M1](https://downloads.dockerslim.com/releases/1.36.3/dist_mac_m1.zip), [Linux](https://downloads.dockerslim.com/releases/1.36.3/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.36.3/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.36.3/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.36.4/dist_mac.zip), [Mac M1](https://downloads.dockerslim.com/releases/1.36.4/dist_mac_m1.zip), [Linux](https://downloads.dockerslim.com/releases/1.36.4/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.36.4/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.36.4/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
 The extracted directory contains two binaries:
 
