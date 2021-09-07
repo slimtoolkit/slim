@@ -38,6 +38,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagTopChangesMax), Description: FlagTopChangesMaxUsage},
 		{Text: commands.FullFlagName(FlagDetectAllCertFiles), Description: FlagDetectAllCertFilesUsage},
 		{Text: commands.FullFlagName(FlagDetectAllCertPKFiles), Description: FlagDetectAllCertPKFilesUsage},
+		{Text: commands.FullFlagName(FlagExportAllDataArtifacts), Description: FlagExportAllDataArtifactsUsage},
 		{Text: commands.FullFlagName(commands.FlagRemoveFileArtifacts), Description: commands.FlagRemoveFileArtifactsUsage},
 	},
 	Values: map[string]commands.CompleteValue{
