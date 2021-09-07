@@ -69,6 +69,8 @@ func OnCommand(
 	doReuseSavedImage bool,
 	doRmFileArtifacts bool,
 	utf8Detector *dockerimage.UTF8Detector,
+	doDetectAllCertFiles bool,
+	doDetectAllCertPKFiles bool,
 	xdArtifactsPath string,
 ) {
 	const cmdName = Name
@@ -311,7 +313,20 @@ func OnCommand(
 	}
 
 	xc.Out.Info("image.data.inspection.process.image.start")
-	imagePkg, err := dockerimage.LoadPackage(iaPath, imageID, false, topChangesMax, doHashData, doDetectDuplicates, changeDataHashMatchers, changePathMatchers, changeDataMatchers, utf8Detector)
+	imagePkg, err := dockerimage.LoadPackage(
+		iaPath,
+		imageID,
+		false,
+		topChangesMax,
+		doHashData,
+		doDetectDuplicates,
+		changeDataHashMatchers,
+		changePathMatchers,
+		changeDataMatchers,
+		utf8Detector,
+		doDetectAllCertFiles,
+		doDetectAllCertPKFiles)
+
 	errutil.FailOn(err)
 	xc.Out.Info("image.data.inspection.process.image.end")
 
@@ -540,6 +555,46 @@ func printImagePackage(
 	cmdReport.ImageReport = &dockerimage.ImageReport{
 		Stats: pkg.Stats,
 	}
+
+	for k := range pkg.Certs.Bundles {
+		cmdReport.ImageReport.Certs.Bundles =
+			append(cmdReport.ImageReport.Certs.Bundles, k)
+	}
+
+	for k := range pkg.Certs.Files {
+		cmdReport.ImageReport.Certs.Files =
+			append(cmdReport.ImageReport.Certs.Files, k)
+	}
+
+	cmdReport.ImageReport.Certs.Links = pkg.Certs.Links
+	cmdReport.ImageReport.Certs.Hashes = pkg.Certs.Hashes
+
+	for k := range pkg.Certs.PrivateKeys {
+		cmdReport.ImageReport.Certs.PrivateKeys =
+			append(cmdReport.ImageReport.Certs.PrivateKeys, k)
+	}
+
+	cmdReport.ImageReport.Certs.PrivateKeyLinks = pkg.Certs.PrivateKeyLinks
+
+	for k := range pkg.CACerts.Bundles {
+		cmdReport.ImageReport.CACerts.Bundles =
+			append(cmdReport.ImageReport.CACerts.Bundles, k)
+	}
+
+	for k := range pkg.CACerts.Files {
+		cmdReport.ImageReport.CACerts.Files =
+			append(cmdReport.ImageReport.CACerts.Files, k)
+	}
+
+	cmdReport.ImageReport.CACerts.Links = pkg.CACerts.Links
+	cmdReport.ImageReport.CACerts.Hashes = pkg.CACerts.Hashes
+
+	for k := range pkg.CACerts.PrivateKeys {
+		cmdReport.ImageReport.CACerts.PrivateKeys =
+			append(cmdReport.ImageReport.CACerts.PrivateKeys, k)
+	}
+
+	cmdReport.ImageReport.CACerts.PrivateKeyLinks = pkg.CACerts.PrivateKeyLinks
 
 	if doDetectDuplicates && pkg.Stats.DuplicateFileCount > 0 {
 		xc.Out.Info("image.stats.duplicates",

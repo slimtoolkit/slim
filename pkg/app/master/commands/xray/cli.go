@@ -43,6 +43,8 @@ var CLI = cli.Command{
 		cflag(FlagChangeMatchLayersOnly),
 		cflag(FlagHashData),
 		cflag(FlagDetectUTF8),
+		cflag(FlagDetectAllCertFiles),
+		cflag(FlagDetectAllCertPKFiles),
 		cflag(FlagDetectDuplicates),
 		cflag(FlagShowDuplicates),
 		cflag(FlagShowSpecialPerms),
@@ -74,6 +76,9 @@ var CLI = cli.Command{
 				})
 			xc.Exit(-1)
 		}
+
+		doDetectAllCertFiles := ctx.Bool(FlagDetectAllCertFiles)
+		doDetectAllCertPKFiles := ctx.Bool(FlagDetectAllCertPKFiles)
 
 		xdArtifactsPath := ctx.String(FlagExportAllDataArtifacts)
 
@@ -243,6 +248,8 @@ var CLI = cli.Command{
 			doReuseSavedImage,
 			doRmFileArtifacts,
 			utf8Detector,
+			doDetectAllCertFiles,
+			doDetectAllCertPKFiles,
 			xdArtifactsPath,
 		)
 

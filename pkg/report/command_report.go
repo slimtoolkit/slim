@@ -48,25 +48,31 @@ type ImageIdentity struct {
 
 // ImageMetadata provides basic image metadata
 type ImageMetadata struct {
-	Identity              ImageIdentity      `json:"identity"`
-	Size                  int64              `json:"size"`
-	SizeHuman             string             `json:"size_human"`
-	CreateTime            string             `json:"create_time"`
-	Author                string             `json:"author,omitempty"`
-	Maintainers           []string           `json:"maintainers,omitempty"`
-	DockerVersion         string             `json:"docker_version"`
-	Architecture          string             `json:"architecture"`
-	User                  string             `json:"user,omitempty"`
-	ExposedPorts          []string           `json:"exposed_ports,omitempty"`
-	Distro                *DistroInfo        `json:"distro,omitempty"`
-	OS                    string             `json:"os,omitempty"`
-	Volumes               []string           `json:"volumes,omitempty"`
-	Labels                map[string]string  `json:"labels,omitempty"`
-	EnvVars               []string           `json:"env_vars,omitempty"`
-	Buildpack             *BuildpackInfo     `json:"buildpack,omitempty"`
-	WorkDir               string             `json:"workdir,omitempty"`
-	ContainerEntry        ContainerEntryInfo `json:"container_entry"`
-	InheritedInstructions []string           `json:"inherited_instructions,omitempty"`
+	Identity              ImageIdentity     `json:"identity"`
+	Size                  int64             `json:"size"`
+	SizeHuman             string            `json:"size_human"`
+	CreateTime            string            `json:"create_time"`
+	Author                string            `json:"author,omitempty"`
+	Maintainers           []string          `json:"maintainers,omitempty"`
+	DockerVersion         string            `json:"docker_version"`
+	Architecture          string            `json:"architecture"`
+	User                  string            `json:"user,omitempty"`
+	ExposedPorts          []string          `json:"exposed_ports,omitempty"`
+	OS                    string            `json:"os,omitempty"`
+	Volumes               []string          `json:"volumes,omitempty"`
+	Labels                map[string]string `json:"labels,omitempty"`
+	EnvVars               []string          `json:"env_vars,omitempty"`
+	WorkDir               string            `json:"workdir,omitempty"`
+	InheritedInstructions []string          `json:"inherited_instructions,omitempty"`
+
+	//TODO:
+	//Should be in ImageReport dockerimage.ImageReport
+	//because it's additional info discovered during analysis
+	//BUT also need to find a way to make it available
+	//for the 'build' command (at least, distro)
+	Distro         *DistroInfo        `json:"distro,omitempty"`
+	Buildpack      *BuildpackInfo     `json:"buildpack,omitempty"`
+	ContainerEntry ContainerEntryInfo `json:"container_entry"`
 }
 
 type ContainerEntryInfo struct {

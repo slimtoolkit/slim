@@ -29,6 +29,8 @@ const (
 	FlagShowSpecialPerms       = "show-special-perms"
 	FlagChangeMatchLayersOnly  = "change-match-layers-only"
 	FlagExportAllDataArtifacts = "export-all-data-artifacts"
+	FlagDetectAllCertFiles     = "detect-all-certs"
+	FlagDetectAllCertPKFiles   = "detect-all-cert-pks"
 )
 
 // Xray command flag usage info
@@ -55,6 +57,8 @@ const (
 	FlagShowSpecialPermsUsage       = "Show files with special permissions (setuid,setgid,sticky)"
 	FlagChangeMatchLayersOnlyUsage  = "Show only layers with change matches"
 	FlagExportAllDataArtifactsUsage = "Archive path to export all data artifacts enabling the related flags if not set (if set to . then path defaults to ./data-artifacts.tar)"
+	FlagDetectAllCertFilesUsage     = "Detect all certifcate files"
+	FlagDetectAllCertPKFilesUsage   = "Detect all certifcate private key files"
 )
 
 var Flags = map[string]cli.Flag{
@@ -179,6 +183,16 @@ var Flags = map[string]cli.Flag{
 		Name:   FlagExportAllDataArtifacts,
 		Usage:  FlagExportAllDataArtifactsUsage,
 		EnvVar: "DSLIM_XRAY_EXPORT_ALL_DARTIFACTS",
+	},
+	FlagDetectAllCertFiles: cli.BoolFlag{
+		Name:   FlagDetectAllCertFiles,
+		Usage:  FlagDetectAllCertFilesUsage,
+		EnvVar: "DSLIM_XRAY_DETECT_ALL_CERTS",
+	},
+	FlagDetectAllCertPKFiles: cli.BoolFlag{
+		Name:   FlagDetectAllCertPKFiles,
+		Usage:  FlagDetectAllCertPKFilesUsage,
+		EnvVar: "DSLIM_XRAY_DETECT_ALL_CERT_PKS",
 	},
 }
 

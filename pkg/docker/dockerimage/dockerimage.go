@@ -22,6 +22,7 @@ import (
 	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/pkg/certdiscover"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
@@ -42,6 +43,26 @@ type Package struct {
 	Stats           PackageStats
 	OSShells        map[string]*system.OSShell
 	SpecialPermRefs SpecialPermsRefsInfo
+	Certs           CertsRefInfo
+	CACerts         CertsRefInfo
+}
+
+type CertsRefInfo struct {
+	Bundles         map[string]struct{} `json:"bundles,omitempty"`
+	Files           map[string]struct{} `json:"files,omitempty"`
+	Links           map[string]string   `json:"links,omitempty"`
+	Hashes          map[string]string   `json:"hashes,omitempty"`
+	PrivateKeys     map[string]struct{} `json:"private_keys,omitempty"`
+	PrivateKeyLinks map[string]string   `json:"private_key_links,omitempty"`
+}
+
+type CertsInfo struct {
+	Bundles         []string          `json:"bundles,omitempty"`
+	Files           []string          `json:"files,omitempty"`
+	Links           map[string]string `json:"links,omitempty"`
+	Hashes          map[string]string `json:"hashes,omitempty"`
+	PrivateKeys     []string          `json:"private_keys,omitempty"`
+	PrivateKeyLinks map[string]string `json:"private_key_links,omitempty"`
 }
 
 type SpecialPermsRefsInfo struct {
@@ -61,6 +82,8 @@ type ImageReport struct {
 	Duplicates   map[string]*DuplicateFilesReport `json:"duplicates,omitempty"`
 	SpecialPerms *SpecialPermsInfo                `json:"special_perms,omitempty"`
 	OSShells     []*system.OSShell                `json:"shells,omitempty"`
+	Certs        CertsInfo                        `json:"certs"`
+	CACerts      CertsInfo                        `json:"ca_certs"`
 }
 
 type DuplicateFilesReport struct {
@@ -390,6 +413,22 @@ func newPackage() *Package {
 			Setgid: map[string]*ObjectMetadata{},
 			Sticky: map[string]*ObjectMetadata{},
 		},
+		Certs: CertsRefInfo{
+			Bundles:         map[string]struct{}{},
+			Files:           map[string]struct{}{},
+			Links:           map[string]string{},
+			Hashes:          map[string]string{},
+			PrivateKeys:     map[string]struct{}{},
+			PrivateKeyLinks: map[string]string{},
+		},
+		CACerts: CertsRefInfo{
+			Bundles:         map[string]struct{}{},
+			Files:           map[string]struct{}{},
+			Links:           map[string]string{},
+			Hashes:          map[string]string{},
+			PrivateKeys:     map[string]struct{}{},
+			PrivateKeyLinks: map[string]string{},
+		},
 	}
 
 	return &pkg
@@ -425,6 +464,8 @@ func LoadPackage(archivePath string,
 	changePathMatchers []*ChangePathMatcher,
 	changeDataMatchers map[string]*ChangeDataMatcher,
 	utf8Detector *UTF8Detector,
+	doDetectAllCertFiles bool,
+	doDetectAllCertPKFiles bool,
 ) (*Package, error) {
 	imageID = dockerutil.CleanImageID(imageID)
 
@@ -537,6 +578,8 @@ func LoadPackage(archivePath string,
 						cpmDumps,
 						changeDataMatchers,
 						utf8Detector,
+						doDetectAllCertFiles,
+						doDetectAllCertPKFiles,
 					)
 					if err != nil {
 						log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
@@ -821,6 +864,20 @@ func hasChangePathMatcherDumps(changePathMatchers []*ChangePathMatcher) bool {
 	return false
 }
 
+func linkTargetToFullPath(fullPath, target string) string {
+	if filepath.IsAbs(target) {
+		return target
+	}
+
+	if target == "." {
+		return ""
+	}
+
+	d := filepath.Dir(fullPath)
+
+	return filepath.Clean(filepath.Join(d, target))
+}
+
 func layerFromStream(
 	pkg *Package,
 	layerPath string,
@@ -834,6 +891,8 @@ func layerFromStream(
 	cpmDumps bool,
 	changeDataMatchers map[string]*ChangeDataMatcher,
 	utf8Detector *UTF8Detector,
+	doDetectAllCertFiles bool,
+	doDetectAllCertPKFiles bool,
 ) (*Layer, error) {
 
 	layer := newLayer(layerID, topChangesMax)
@@ -925,6 +984,58 @@ func layerFromStream(
 				layer.Stats.DeletedLinkCount++
 				pkg.Stats.DeletedLinkCount++
 			}
+
+			nameOnly := filepath.Base(object.Name)
+			if certdiscover.IsCertHashName(nameOnly) {
+				if certdiscover.IsCertPKDirPath(object.Name) {
+					pkg.CACerts.Hashes[object.Name] = object.LinkTarget
+				} else if certdiscover.IsCertDirPath(object.Name) {
+					pkg.Certs.Hashes[object.Name] = object.LinkTarget
+				}
+			} else {
+				linkFullPath := linkTargetToFullPath(object.Name, object.LinkTarget)
+				if certdiscover.IsCertFile(object.Name) {
+					pkg.Certs.Bundles[object.Name] = struct{}{}
+					if linkFullPath != "" {
+						pkg.Certs.Bundles[linkFullPath] = struct{}{}
+					}
+				} else if certdiscover.IsAppCertFile(object.Name) {
+					pkg.Certs.Bundles[object.Name] = struct{}{}
+					if linkFullPath != "" {
+						pkg.Certs.Bundles[linkFullPath] = struct{}{}
+					}
+				} else if certdiscover.IsCACertFile(object.Name) {
+					pkg.CACerts.Bundles[object.Name] = struct{}{}
+					if linkFullPath != "" {
+						pkg.CACerts.Bundles[linkFullPath] = struct{}{}
+					}
+				} else if certdiscover.IsCACertPKFile(object.Name) {
+					pkg.CACerts.PrivateKeys[object.Name] = struct{}{}
+					if linkFullPath != "" {
+						pkg.CACerts.PrivateKeys[linkFullPath] = struct{}{}
+					}
+				} else {
+					//NOTE: Links require post-processing
+					if certdiscover.IsCertDir(object.Name) {
+						pkg.Certs.Links[object.Name] = linkFullPath
+					} else if certdiscover.IsCertPKDir(object.Name) {
+						pkg.Certs.PrivateKeyLinks[object.Name] = linkFullPath
+					} else if certdiscover.IsCACertDir(object.Name) {
+						pkg.CACerts.Links[object.Name] = linkFullPath
+					} else if certdiscover.IsCACertPKDir(object.Name) {
+						pkg.CACerts.PrivateKeyLinks[object.Name] = linkFullPath
+					} else if certdiscover.IsCertDirPath(object.Name) {
+						pkg.Certs.Links[object.Name] = linkFullPath
+					} else if certdiscover.IsCACertDirPath(object.Name) {
+						pkg.CACerts.Links[object.Name] = linkFullPath
+					} else if certdiscover.IsCertPKDirPath(object.Name) {
+						pkg.Certs.PrivateKeyLinks[object.Name] = linkFullPath
+					} else if certdiscover.IsCACertPKDirPath(object.Name) {
+						pkg.CACerts.PrivateKeyLinks[object.Name] = linkFullPath
+					}
+				}
+			}
+
 		case tar.TypeReg:
 			layer.Stats.FileCount++
 			if uint64(object.Size) > layer.Stats.MaxFileSize {
@@ -968,6 +1079,8 @@ func layerFromStream(
 					cpmDumps,
 					changeDataMatchers,
 					utf8Detector,
+					doDetectAllCertFiles,
+					doDetectAllCertPKFiles,
 				)
 				if err != nil {
 					log.Errorf("layerFromStream: error inspecting layer file (%s) - (%v) - %v", object.Name, layerID, err)
@@ -1051,6 +1164,8 @@ func inspectFile(
 	cpmDumps bool,
 	changeDataMatchers map[string]*ChangeDataMatcher,
 	utf8Detector *UTF8Detector,
+	doDetectAllCertFiles bool,
+	doDetectAllCertPKFiles bool,
 ) error {
 	//TODO: refactor and enhance the OS Distro detection logic
 	fullPath := object.Name
@@ -1063,15 +1178,58 @@ func inspectFile(
 		}
 	}
 
+	var isKnownCertFile bool
+	if certdiscover.IsCertFile(fullPath) {
+		pkg.Certs.Bundles[fullPath] = struct{}{}
+		isKnownCertFile = true
+	} else if certdiscover.IsAppCertFile(fullPath) {
+		pkg.Certs.Bundles[fullPath] = struct{}{}
+		isKnownCertFile = true
+	} else if certdiscover.IsCACertFile(fullPath) {
+		pkg.CACerts.Bundles[fullPath] = struct{}{}
+		isKnownCertFile = true
+	} else if certdiscover.IsCACertPKFile(fullPath) {
+		pkg.CACerts.PrivateKeys[fullPath] = struct{}{}
+		isKnownCertFile = true
+	}
+
 	if system.IsOSReleaseFile(fullPath) ||
 		system.IsOSShellsFile(fullPath) ||
 		len(changeDataMatchers) > 0 ||
 		cpmDumps ||
 		cdhmDumps ||
-		utf8Detector != nil {
+		utf8Detector != nil ||
+		(!isKnownCertFile && doDetectAllCertFiles) ||
+		(!isKnownCertFile && doDetectAllCertPKFiles) {
 		data, err := ioutil.ReadAll(reader)
 		if err != nil {
 			return err
+		}
+
+		if !isKnownCertFile {
+			if doDetectAllCertFiles {
+				//NOTE:
+				//not limiting detection to the main cert directories,
+				//but checking the CA cert dir prefix to know where to put it
+				if certdiscover.IsCertData(data) {
+					if certdiscover.IsCACertDirPath(fullPath) {
+						pkg.CACerts.Files[fullPath] = struct{}{}
+					} else {
+						pkg.Certs.Files[fullPath] = struct{}{}
+					}
+				}
+			}
+
+			if doDetectAllCertPKFiles {
+				//NOTE: not limiting detection to the main cert private key directories
+				if certdiscover.IsPrivateKeyData(data) {
+					if certdiscover.IsCACertPKDirPath(fullPath) {
+						pkg.CACerts.PrivateKeys[fullPath] = struct{}{}
+					} else {
+						pkg.Certs.PrivateKeys[fullPath] = struct{}{}
+					}
+				}
+			}
 		}
 
 		if system.IsOSShellsFile(fullPath) {
