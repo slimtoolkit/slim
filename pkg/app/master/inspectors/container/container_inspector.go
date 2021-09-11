@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
-	//"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerhost"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/container/ipc"
@@ -106,6 +105,11 @@ type Inspector struct {
 	IncludeBins           map[string]*fsutil.AccessInfo
 	IncludeExes           map[string]*fsutil.AccessInfo
 	DoIncludeShell        bool
+	DoIncludeCertAll      bool
+	DoIncludeCertBundles  bool
+	DoIncludeCertDirs     bool
+	DoIncludeCertPKAll    bool
+	DoIncludeCertPKDirs   bool
 	DoDebug               bool
 	PrintState            bool
 	PrintPrefix           string
@@ -161,6 +165,11 @@ func NewInspector(
 	includeBins map[string]*fsutil.AccessInfo,
 	includeExes map[string]*fsutil.AccessInfo,
 	doIncludeShell bool,
+	doIncludeCertAll bool,
+	doIncludeCertBundles bool,
+	doIncludeCertDirs bool,
+	doIncludeCertPKAll bool,
+	doIncludeCertPKDirs bool,
 	doDebug bool,
 	inContainer bool,
 	printState bool,
@@ -196,6 +205,11 @@ func NewInspector(
 		IncludeBins:           includeBins,
 		IncludeExes:           includeExes,
 		DoIncludeShell:        doIncludeShell,
+		DoIncludeCertAll:      doIncludeCertAll,
+		DoIncludeCertBundles:  doIncludeCertBundles,
+		DoIncludeCertDirs:     doIncludeCertDirs,
+		DoIncludeCertPKAll:    doIncludeCertPKAll,
+		DoIncludeCertPKDirs:   doIncludeCertPKDirs,
 		DoDebug:               doDebug,
 		PrintState:            printState,
 		PrintPrefix:           printPrefix,
@@ -700,6 +714,11 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	cmd.IncludeShell = i.DoIncludeShell
+	cmd.IncludeCertAll = i.DoIncludeCertAll
+	cmd.IncludeCertBundles = i.DoIncludeCertBundles
+	cmd.IncludeCertDirs = i.DoIncludeCertDirs
+	cmd.IncludeCertPKAll = i.DoIncludeCertPKAll
+	cmd.IncludeCertPKDirs = i.DoIncludeCertPKDirs
 
 	if runAsUser != "" {
 		cmd.AppUser = runAsUser

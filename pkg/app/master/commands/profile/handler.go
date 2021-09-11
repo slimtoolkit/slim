@@ -243,6 +243,11 @@ func OnCommand(
 		nil,   //includeBins,
 		nil,   //includeExes,
 		false, //doIncludeShell,
+		false, //doIncludeCertAll
+		false, //doIncludeCertBundles
+		false, //doIncludeCertDirs
+		false, //doIncludeCertPKAll
+		false, //doIncludeCertPKDirs
 		gparams.Debug,
 		gparams.InContainer,
 		true,

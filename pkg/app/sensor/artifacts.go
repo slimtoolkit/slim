@@ -330,6 +330,23 @@ func getRecordsWithPerms(m map[string]*fsutil.AccessInfo) map[string]*fsutil.Acc
 	return perms
 }
 
+func (p *artifactStore) saveCertsData() {
+	if p.cmd.IncludeCertAll {
+	}
+
+	if !p.cmd.IncludeCertAll && p.cmd.IncludeCertBundles {
+	}
+
+	if p.cmd.IncludeCertDirs {
+	}
+
+	if p.cmd.IncludeCertPKAll {
+	}
+
+	if p.cmd.IncludeCertPKDirs {
+	}
+}
+
 func (p *artifactStore) saveArtifacts() {
 	var includePaths map[string]bool
 	var newPerms map[string]*fsutil.AccessInfo
@@ -561,6 +578,8 @@ copyIncludes:
 		}
 
 	}
+
+	p.saveCertsData()
 
 	if fsutil.DirExists("/tmp") {
 		tdTargetPath := fmt.Sprintf("%s/files/tmp", p.storeLocation)
