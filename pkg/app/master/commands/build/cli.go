@@ -144,6 +144,11 @@ var CLI = cli.Command{
 			EnvVar: "DSLIM_INCLUDE_EXE_FILE",
 		},
 		cflag(FlagIncludeShell),
+		cflag(FlagIncludeCertAll),
+		cflag(FlagIncludeCertBundles),
+		cflag(FlagIncludeCertDirs),
+		cflag(FlagIncludeCertPKAll),
+		cflag(FlagIncludeCertPKDirs),
 		cflag(FlagKeepTmpArtifacts),
 		cflag(FlagKeepPerms),
 		cflag(FlagPathPerms),
@@ -453,6 +458,12 @@ var CLI = cli.Command{
 
 		doIncludeShell := ctx.Bool(FlagIncludeShell)
 
+		doIncludeCertAll := ctx.Bool(FlagIncludeCertAll)
+		doIncludeCertBundles := ctx.Bool(FlagIncludeCertBundles)
+		doIncludeCertDirs := ctx.Bool(FlagIncludeCertDirs)
+		doIncludeCertPKAll := ctx.Bool(FlagIncludeCertPKAll)
+		doIncludeCertPKDirs := ctx.Bool(FlagIncludeCertPKDirs)
+
 		doUseLocalMounts := ctx.Bool(commands.FlagUseLocalMounts)
 		doUseSensorVolume := ctx.String(commands.FlagUseSensorVolume)
 
@@ -597,6 +608,11 @@ var CLI = cli.Command{
 			includeBins,
 			includeExes,
 			doIncludeShell,
+			doIncludeCertAll,
+			doIncludeCertBundles,
+			doIncludeCertDirs,
+			doIncludeCertPKAll,
+			doIncludeCertPKDirs,
 			doUseLocalMounts,
 			doUseSensorVolume,
 			doKeepTmpArtifacts,

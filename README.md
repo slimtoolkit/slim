@@ -169,6 +169,7 @@ Elixir application images:
   - [DockerSlim fails with a 'no permission to read from' error](#dockerslim-fails-with-a-no-permission-to-read-from-error)
 - [BUILD PROCESS](#build-process)
   - [Build Steps](#build-steps)
+- [CONTRIBUTING](#contributing)
 - [DESIGN](#design)
   - [CORE CONCEPTS](#core-concepts)
   - [DYNAMIC ANALYSIS OPTIONS](#dynamic-analysis-options)
@@ -178,7 +179,6 @@ Elixir application images:
   - [TODO](#todo)
 - [ORIGINS](#origins)
 - [MINIFIED DOCKER HUB IMAGES](#minified-docker-hub-images)
-- [CONTRIBUTING](#contributing)
 - [LICENSE](#license)
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
@@ -826,7 +826,7 @@ DockerSlim copies the relevant image artifacts trying to preserve their permissi
 
 #### Build Options
 
-Picke one of the build options that works best for you.
+Pick one of the build options that works best for you.
 
 ##### Containerized
 
@@ -858,6 +858,9 @@ Notes:
 
 - Make sure you have `golint` if you intend to run the `src.inspect.sh` or `mac.src.inspect.command` scripts.
 
+## CONTRIBUTING
+
+If the project sounds interesting or if you found a bug see [`CONTRIBUTING.md`](https://github.com/docker-slim/docker-slim/blob/master/CONTRIBUTING.md) and submit a PR!
 
 ## DESIGN
 
@@ -896,7 +899,6 @@ Some of the advanced analysis options require a number of Linux kernel features 
 - Discover HTTP endpoints to make the HTTP probe more intelligent.
 - Scripting language dependency discovery in the "scanner" app.
 - Explore additional dependency discovery methods.
-- Build/use a custom Boot2docker kernel with every required feature turned on.
 - "Live" image create mode - to create new images from containers where users install their applications interactively.
 
 The [`WISHLIST`](WISHLIST.md) doc includes even more potential improvements.
@@ -912,10 +914,6 @@ Since then it's been improved and it works pretty well for its core use cases. I
 ## MINIFIED DOCKER HUB IMAGES
 
 - [`container-transform`](https://hub.docker.com/r/dslim/container-transform.slim/)
-
-## CONTRIBUTING
-
-If the project sounds interesting or if you found a bug see [`CONTRIBUTING.md`](https://github.com/docker-slim/docker-slim/blob/master/CONTRIBUTING.md) and submit a PR!
 
 ## LICENSE
 

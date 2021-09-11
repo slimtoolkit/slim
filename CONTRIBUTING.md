@@ -6,6 +6,10 @@ If you want to contribute submit a GitHub pull request or open an issue. Thank y
 
 Any contribution is better than no contribution :-) Submit a [pull request](https://help.github.com/articles/using-pull-requests) or open an issue even if you are not sure or if you feel the contribution is not significant enough. If you want to accelerate the process you can follow the guidelines below.
 
+## Code
+
+To learn more about the code take a look at the `DockerSlim Code` videos on ['YouTube'](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA?sub_confirmation=1)
+
 ## Guidelines
 
 ### Reporting Issues

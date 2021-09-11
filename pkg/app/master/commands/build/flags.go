@@ -27,8 +27,13 @@ const (
 	FlagIncludeExe       = "include-exe"
 	FlagIncludeExeFile   = "include-exe-file"
 	FlagIncludeShell     = "include-shell"
-	FlagIncludeCerts     = "include-certs"
-	FlagIncludeCertsAll  = "include-certs-all"
+
+	FlagIncludeCertAll     = "include-cert-all"
+	FlagIncludeCertBundles = "include-cert-bundles-only"
+	FlagIncludeCertDirs    = "include-cert-dirs"
+	FlagIncludeCertPKAll   = "include-cert-pk-all"
+	FlagIncludeCertPKDirs  = "include-cert-pk-dirs"
+
 	//FlagIncludeLicenses  = "include-licenses"
 
 	FlagKeepTmpArtifacts = "keep-tmp-artifacts"
@@ -77,6 +82,12 @@ const (
 	FlagIncludeBinUsage       = "Keep binary from original image (executable or shared object using its absolute path)"
 	FlagIncludeExeUsage       = "Keep executable from original image (by executable name)"
 	FlagIncludeShellUsage     = "Keep basic shell functionality"
+
+	FlagIncludeCertAllUsage     = "Keep all discovered cert files"
+	FlagIncludeCertBundlesUsage = "Keep only cert bundles"
+	FlagIncludeCertDirsUsage    = "Keep known cert directories and all files in them"
+	FlagIncludeCertPKAllUsage   = "Keep all discovered cert private keys"
+	FlagIncludeCertPKDirsUsage  = "Keep known cert private key directories and all files in them"
 
 	FlagKeepTmpArtifactsUsage = "Keep temporary artifacts when command is done"
 
@@ -171,6 +182,33 @@ var Flags = map[string]cli.Flag{
 		Usage:  FlagIncludeShellUsage,
 		EnvVar: "DSLIM_INCLUDE_SHELL",
 	},
+	////
+	FlagIncludeCertAll: cli.BoolFlag{
+		Name:   FlagIncludeCertAll,
+		Usage:  FlagIncludeCertAllUsage,
+		EnvVar: "DSLIM_INCLUDE_CERT_ALL",
+	},
+	FlagIncludeCertBundles: cli.BoolFlag{
+		Name:   FlagIncludeCertBundles,
+		Usage:  FlagIncludeCertBundlesUsage,
+		EnvVar: "DSLIM_INCLUDE_CERT_BUNDLES",
+	},
+	FlagIncludeCertDirs: cli.BoolFlag{
+		Name:   FlagIncludeCertDirs,
+		Usage:  FlagIncludeCertDirsUsage,
+		EnvVar: "DSLIM_INCLUDE_CERT_DIRS",
+	},
+	FlagIncludeCertPKAll: cli.BoolFlag{
+		Name:   FlagIncludeCertPKAll,
+		Usage:  FlagIncludeCertPKAllUsage,
+		EnvVar: "DSLIM_INCLUDE_CERT_PK_ALL",
+	},
+	FlagIncludeCertPKDirs: cli.BoolFlag{
+		Name:   FlagIncludeCertPKDirs,
+		Usage:  FlagIncludeCertPKDirsUsage,
+		EnvVar: "DSLIM_INCLUDE_CERT_PK_DIRS",
+	},
+	////
 	FlagKeepTmpArtifacts: cli.BoolFlag{
 		Name:   FlagKeepTmpArtifacts,
 		Usage:  FlagKeepTmpArtifactsUsage,
