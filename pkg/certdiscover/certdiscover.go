@@ -98,6 +98,10 @@ var caCertPKDirectories = []string{
 
 var caCertPKDirsSet map[string]struct{}
 
+func CertFileList() []string {
+	return certFiles
+}
+
 func IsCertFile(name string) bool {
 	_, found := certFilesSet[name]
 	return found
@@ -112,6 +116,10 @@ func IsCertDirPath(name string) bool {
 	}
 
 	return false
+}
+
+func CertDirList() []string {
+	return certDirectories
 }
 
 func IsCertDir(name string) bool {
@@ -135,9 +143,17 @@ func IsCertPKDirPath(name string) bool {
 	return false
 }
 
+func CACertFileList() []string {
+	return caCertFiles
+}
+
 func IsCACertFile(name string) bool {
 	_, found := caCertFilesSet[name]
 	return found
+}
+
+func CACertDirList() []string {
+	return caCertDirectories
 }
 
 func IsCACertDir(name string) bool {

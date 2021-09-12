@@ -20,6 +20,7 @@ import (
 	"syscall"
 
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/inspectors/sodeps"
+	"github.com/docker-slim/docker-slim/pkg/certdiscover"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/system"
@@ -331,13 +332,53 @@ func getRecordsWithPerms(m map[string]*fsutil.AccessInfo) map[string]*fsutil.Acc
 }
 
 func (p *artifactStore) saveCertsData() {
+	copyCertBundles := func(list []string) {
+		for _, fname := range list {
+			if fsutil.Exists(fname) {
+				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, fname)
+				if err := fsutil.CopyFile(p.cmd.KeepPerms, fname, dstPath, true); err != nil {
+					log.Warnf("cert file bundle: fsutil.CopyFile(%v,%v) error - %v", fname, dstPath, err)
+				}
+			}
+		}
+	}
+
+	copyDirs := func(list []string) {
+		for _, fname := range list {
+			if fsutil.Exists(fname) {
+				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, fname)
+
+				if fsutil.IsDir(fname) {
+					err, errs := fsutil.CopyDir(p.cmd.KeepPerms, fname, dstPath, true, true, nil, nil, nil)
+					if err != nil {
+						log.Warnf("cert dir: fsutil.CopyDir(%v,%v) error: %v", fname, dstPath, err)
+					}
+
+					if len(errs) > 0 {
+						log.Warnf("cert dir: fsutil.CopyDir(%v,%v) copy errors: %+v", fname, dstPath, errs)
+					}
+				} else if fsutil.IsSymlink(fname) {
+					if err := fsutil.CopySymlinkFile(p.cmd.KeepPerms, fname, dstPath, true); err != nil {
+						log.Warnf("cert dir link: fsutil.CopySymlinkFile(%v,%v) error - %v", fname, dstPath, err)
+					}
+				}
+			}
+		}
+	}
+
 	if p.cmd.IncludeCertAll {
+		copyCertBundles(certdiscover.CertFileList())
+		copyCertBundles(certdiscover.CACertFileList())
 	}
 
 	if !p.cmd.IncludeCertAll && p.cmd.IncludeCertBundles {
+		copyCertBundles(certdiscover.CertFileList())
+		copyCertBundles(certdiscover.CACertFileList())
 	}
 
 	if p.cmd.IncludeCertDirs {
+		copyDirs(certdiscover.CertDirList())
+		copyDirs(certdiscover.CACertDirList())
 	}
 
 	if p.cmd.IncludeCertPKAll {
