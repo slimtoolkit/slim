@@ -465,10 +465,10 @@ func (ref *Execution) monitorSysExit() {
 	go func() {
 		<-signals
 		ref.isInterrupted = true
-		//_ = ref.APIClient.KillContainer(dockerapi.KillContainerOptions{ID: ref.ContainerID})
-		//if ref.logger != nil {
-		//	ref.logger.Debugf("Execution.monitorSysExit: received SIGINT, killing container %s", ref.ContainerID)
-		//}
+		_ = ref.APIClient.KillContainer(dockerapi.KillContainerOptions{ID: ref.ContainerID})
+		if ref.logger != nil {
+			ref.logger.Debugf("Execution.monitorSysExit: received SIGINT, killing container %s", ref.ContainerID)
+		}
 
 		if ref.eventCh != nil {
 			ref.eventCh <- &ExecutionEvenInfo{
