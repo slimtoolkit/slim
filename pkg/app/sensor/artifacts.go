@@ -34,24 +34,6 @@ import (
 const (
 	pidFileSuffix          = ".pid"
 	varRunDir              = "/var/run/"
-	ngxBinName             = "/nginx"
-	ngxSubDir              = "/nginx/"
-	ngxCommonTemp          = "/var/lib/nginx"
-	ngxLogTemp             = "/var/log/nginx"
-	ngxCacheTemp           = "/var/cache/nginx"
-	rbGemSpecExt           = ".gemspec"
-	rbGemsSubDir           = "/gems/"
-	rbDefaultSpecSubDir    = "/specifications/default/"
-	rbSpecSubDir           = "/specifications/"
-	rgExtSibDir            = "extensions"
-	rbGemBuildFlag         = "gem.build_complete"
-	pycExt                 = ".pyc"
-	pyoExt                 = ".pyo"
-	pycacheDir             = "/__pycache__/"
-	pycache                = "__pycache__"
-	nodePackageFile        = "package.json"
-	nodeNPMNodeGypPackage  = "/npm/node_modules/node-gyp/package.json"
-	nodeNPMNodeGypFile     = "bin/node-gyp.js"
 	fileTypeCmdName        = "file"
 	defaultReportName      = "creport.json"
 	defaultArtifactDirName = "/opt/dockerslim/artifacts"
@@ -59,6 +41,86 @@ const (
 	filesArchiveName       = "files.tar"
 	preservedDirName       = "preserved"
 )
+
+//TODO: extract these app, framework and language specific login into separate packages
+
+// Nginx related consts
+const (
+	ngxBinName    = "/nginx"
+	ngxSubDir     = "/nginx/"
+	ngxCommonTemp = "/var/lib/nginx"
+	ngxLogTemp    = "/var/log/nginx"
+	ngxCacheTemp  = "/var/cache/nginx"
+)
+
+// Ruby related consts
+const (
+	rbBinName           = "/ruby"
+	rbIrbBinName        = "/irb"
+	rbGemBinName        = "/gem"
+	rbBundleBinName     = "/bundle"
+	rbRbenvBinName      = "/rbenv"
+	rbSrcFileExt        = ".rb"
+	rbGemSpecExt        = ".gemspec"
+	rbGemsSubDir        = "/gems/"
+	rbGemfile           = "Gemfile"
+	rbGemfileLockFile   = "Gemfile.lock"
+	rbDefaultSpecSubDir = "/specifications/default/"
+	rbSpecSubDir        = "/specifications/"
+	rgExtSibDir         = "extensions"
+	rbGemBuildFlag      = "gem.build_complete"
+)
+
+// Python related consts
+const (
+	pyBinName            = "/python"
+	py2BinName           = "/python2"
+	py3BinName           = "/python3"
+	pyPipBinName         = "/pip"
+	pyPip2BinName        = "/pip2"
+	pyPip3BinName        = "/pip3"
+	pyPoetryBinName      = "/poetry"
+	pyCondaBinName       = "/conda"
+	pyPipEnvBinName      = "/pipenv"
+	pyEasyInstallBinName = "/easy_install"
+	pyPipxBinName        = "/pipx"
+	pyVirtEnvBinName     = "/virtualenv"
+	pySrcFileExt         = ".py"
+	pycExt               = ".pyc"
+	pyoExt               = ".pyo"
+	pycacheDir           = "/__pycache__/"
+	pycache              = "__pycache__"
+	pyReqsFile           = "/requirements.txt"
+	pyPoetryProjectFile  = "/pyproject.toml"
+	pyPipEnvProjectFile  = "/Pipfile"
+	pyPipEnvLockFile     = "/Pipfile.lock"
+	pyDistPkgDir         = "/dist-packages/"
+	pySitePkgDir         = "/site-packages/"
+)
+
+// Node.js related consts
+const (
+	nodeBinName           = "/node"
+	nodeNpmBinName        = "/npm"
+	nodeYarnBinName       = "/yarn"
+	nodePnpmBinName       = "/pnpm"
+	nodeRushBinName       = "/rush"
+	nodeLernaBinName      = "/lerna"
+	nodeSrcFileExt        = ".js"
+	nodePackageFile       = "package.json"
+	nodePackageLockFile   = "package-lock.json"
+	nodeNpmShrinkwrapFile = "npm-shrinkwrap.json"
+	nodeYarnLockFile      = "yarn.lock"
+	nodePackageDir        = "/node_modules/"
+	nodeNPMNodeGypPackage = "/npm/node_modules/node-gyp/package.json"
+	nodeNPMNodeGypFile    = "bin/node-gyp.js"
+)
+
+type appStackInfo struct {
+	language    string //will be reusing language consts from certdiscover (todo: replace it later)
+	codeFiles   uint
+	packageDirs map[string]struct{}
+}
 
 var fileTypeCmd string
 
@@ -156,6 +218,7 @@ type artifactStore struct {
 	linkMap       map[string]*report.ArtifactProps
 	fileMap       map[string]*report.ArtifactProps
 	cmd           *command.StartMonitor
+	appStacks     map[string]*appStackInfo
 }
 
 func newArtifactStore(storeLocation string,
@@ -175,6 +238,7 @@ func newArtifactStore(storeLocation string,
 		linkMap:       map[string]*report.ArtifactProps{},
 		fileMap:       map[string]*report.ArtifactProps{},
 		cmd:           cmd,
+		appStacks:     map[string]*appStackInfo{},
 	}
 
 	return store
@@ -331,19 +395,36 @@ func getRecordsWithPerms(m map[string]*fsutil.AccessInfo) map[string]*fsutil.Acc
 	return perms
 }
 
+//copied from dockerimage.go
+func linkTargetToFullPath(fullPath, target string) string {
+	if filepath.IsAbs(target) {
+		return target
+	}
+
+	if target == "." {
+		return ""
+	}
+
+	d := filepath.Dir(fullPath)
+
+	return filepath.Clean(filepath.Join(d, target))
+}
+
 func (p *artifactStore) saveCertsData() {
-	copyCertBundles := func(list []string) {
+	copyCertFiles := func(list []string) {
+		log.Debugf("sensor.artifactStore.saveCertsData.copyCertFiles(list=%+v)", list)
 		for _, fname := range list {
 			if fsutil.Exists(fname) {
 				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, fname)
 				if err := fsutil.CopyFile(p.cmd.KeepPerms, fname, dstPath, true); err != nil {
-					log.Warnf("cert file bundle: fsutil.CopyFile(%v,%v) error - %v", fname, dstPath, err)
+					log.Warnf("sensor.artifactStore.saveCertsData.copyCertFiles: fsutil.CopyFile(%v,%v) error - %v", fname, dstPath, err)
 				}
 			}
 		}
 	}
 
-	copyDirs := func(list []string) {
+	copyDirs := func(list []string, copyLinkTargets bool) {
+		log.Debugf("sensor.artifactStore.saveCertsData.copyDirs(list=%+v,copyLinkTargets=%v)", list, copyLinkTargets)
 		for _, fname := range list {
 			if fsutil.Exists(fname) {
 				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, fname)
@@ -351,40 +432,162 @@ func (p *artifactStore) saveCertsData() {
 				if fsutil.IsDir(fname) {
 					err, errs := fsutil.CopyDir(p.cmd.KeepPerms, fname, dstPath, true, true, nil, nil, nil)
 					if err != nil {
-						log.Warnf("cert dir: fsutil.CopyDir(%v,%v) error: %v", fname, dstPath, err)
+						log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyDir(%v,%v) error: %v", fname, dstPath, err)
+					} else if copyLinkTargets {
+						foList, err := ioutil.ReadDir(fname)
+						if err == nil {
+							log.Debugf("sensor.artifactStore.saveCertsData.copyDirs(): dir=%v fcount=%v", fname, len(foList))
+							for _, fo := range foList {
+								fullPath := filepath.Join(fname, fo.Name())
+								log.Debugf("sensor.artifactStore.saveCertsData.copyDirs(): dir=%v fullPath=%v", fname, fullPath)
+								if fsutil.IsSymlink(fullPath) {
+									linkRef, err := os.Readlink(fullPath)
+									if err != nil {
+										log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: os.Readlink(%v) error - %v", fullPath, err)
+										continue
+									}
+
+									log.Debugf("sensor.artifactStore.saveCertsData.copyDirs(): dir=%v fullPath=%v linkRef=%v",
+										fname, fullPath, linkRef)
+									if strings.Contains(linkRef, "/") {
+										targetFilePath := linkTargetToFullPath(fullPath, linkRef)
+										if targetFilePath != "" && fsutil.Exists(targetFilePath) {
+											log.Debugf("sensor.artifactStore.saveCertsData.copyDirs(): dir=%v fullPath=%v linkRef=%v targetFilePath=%v",
+												fname, fullPath, linkRef, targetFilePath)
+											dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, targetFilePath)
+											if err := fsutil.CopyFile(p.cmd.KeepPerms, targetFilePath, dstPath, true); err != nil {
+												log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyFile(%v,%v) error - %v", targetFilePath, dstPath, err)
+											}
+										} else {
+											log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: targetFilePath does not exist - %v", targetFilePath)
+										}
+									}
+								}
+							}
+						} else {
+							log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: os.ReadDir(%v) error - %v", fname, err)
+						}
 					}
 
 					if len(errs) > 0 {
-						log.Warnf("cert dir: fsutil.CopyDir(%v,%v) copy errors: %+v", fname, dstPath, errs)
+						log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyDir(%v,%v) copy errors: %+v", fname, dstPath, errs)
 					}
 				} else if fsutil.IsSymlink(fname) {
 					if err := fsutil.CopySymlinkFile(p.cmd.KeepPerms, fname, dstPath, true); err != nil {
-						log.Warnf("cert dir link: fsutil.CopySymlinkFile(%v,%v) error - %v", fname, dstPath, err)
+						log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopySymlinkFile(%v,%v) error - %v", fname, dstPath, err)
 					}
+				} else {
+					log.Warnf("artifactStore.saveCertsData.copyDir: unexpected obect type - %s", fname)
 				}
 			}
 		}
 	}
 
+	copyAppCertFiles := func(suffix string, dirs []string, subdirPrefix string) {
+		//NOTE: dirs end with "/" (need to revisit the formatting to make it consistent)
+		log.Debugf("sensor.artifactStore.saveCertsData.copyAppCertFiles(suffix=%v,dirs=%+v,subdirPrefix=%v)",
+			suffix, dirs, subdirPrefix)
+		for _, dirName := range dirs {
+			if subdirPrefix != "" {
+				foList, err := ioutil.ReadDir(dirName)
+				if err != nil {
+					log.Warnf("sensor.artifactStore.saveCertsData.copyAppCertFiles: os.ReadDir(%v) error - %v", dirName, err)
+					continue
+				}
+
+				for _, fo := range foList {
+					if strings.HasPrefix(fo.Name(), subdirPrefix) {
+						dirName = fmt.Sprintf("%s%s/", dirName, fo.Name())
+						break
+					}
+				}
+			}
+
+			srcFilePath := fmt.Sprintf("%s%s", dirName, suffix)
+			if fsutil.Exists(srcFilePath) {
+				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFilePath)
+				if err := fsutil.CopyFile(p.cmd.KeepPerms, srcFilePath, dstPath, true); err != nil {
+					log.Warnf("sensor.artifactStore.saveCertsData.copyAppCertFiles: fsutil.CopyFile(%v,%v) error - %v", srcFilePath, dstPath, err)
+				}
+			}
+		}
+	}
+
+	setToList := func(in map[string]struct{}) []string {
+		var out []string
+		for k := range in {
+			out = append(out, k)
+		}
+
+		return out
+	}
+
 	if p.cmd.IncludeCertAll {
-		copyCertBundles(certdiscover.CertFileList())
-		copyCertBundles(certdiscover.CACertFileList())
+		copyCertFiles(certdiscover.CertFileList())
+		copyCertFiles(certdiscover.CACertFileList())
+		//TODO:
+		//need to 'walk' these directories detecting cert files
+		//and only copying those files instead of copying all files
+		copyDirs(certdiscover.CertDirList(), true)
+		copyDirs(certdiscover.CACertDirList(), true)
+		//shouldn't copy the extra dirs explicitly here
+		//the actual cert files should be copied through links above
+		copyDirs(certdiscover.CertExtraDirList(), false)
+
+		for _, appStack := range p.appStacks {
+			switch appStack.language {
+			case certdiscover.LanguagePython:
+				copyAppCertFiles(certdiscover.AppCertPathSuffixPython, setToList(appStack.packageDirs), "")
+			case certdiscover.LanguageNode:
+				copyAppCertFiles(certdiscover.AppCertPathSuffixNode, setToList(appStack.packageDirs), "")
+			case certdiscover.LanguageRuby:
+				//ruby needs the versioned package name too <prefix>certifi-zzzzz/<suffix>
+				copyAppCertFiles(certdiscover.AppCertPathSuffixRuby,
+					setToList(appStack.packageDirs),
+					certdiscover.AppCertPackageName)
+				//case certdiscover.LanguageJava:
+			}
+		}
 	}
 
 	if !p.cmd.IncludeCertAll && p.cmd.IncludeCertBundles {
-		copyCertBundles(certdiscover.CertFileList())
-		copyCertBundles(certdiscover.CACertFileList())
+		copyCertFiles(certdiscover.CertFileList())
+		copyCertFiles(certdiscover.CACertFileList())
+
+		for _, appStack := range p.appStacks {
+			switch appStack.language {
+			case certdiscover.LanguagePython:
+				copyAppCertFiles(certdiscover.AppCertPathSuffixPython, setToList(appStack.packageDirs), "")
+			case certdiscover.LanguageNode:
+				copyAppCertFiles(certdiscover.AppCertPathSuffixNode, setToList(appStack.packageDirs), "")
+			case certdiscover.LanguageRuby:
+				//ruby needs the versioned package name too <prefix>certifi-zzzzz/<suffix>
+				copyAppCertFiles(certdiscover.AppCertPathSuffixRuby,
+					setToList(appStack.packageDirs),
+					certdiscover.AppCertPackageName)
+				//case certdiscover.LanguageJava:
+			}
+		}
 	}
 
-	if p.cmd.IncludeCertDirs {
-		copyDirs(certdiscover.CertDirList())
-		copyDirs(certdiscover.CACertDirList())
+	if !p.cmd.IncludeCertAll && p.cmd.IncludeCertDirs {
+		copyDirs(certdiscover.CertDirList(), true)
+		copyDirs(certdiscover.CACertDirList(), true)
+		copyDirs(certdiscover.CertExtraDirList(), false)
 	}
 
 	if p.cmd.IncludeCertPKAll {
+		copyCertFiles(certdiscover.CACertPKFileList())
+		//TODO:
+		//need to 'walk' these directories detecting cert PK files
+		//and only copying those files instead of copying all files
+		copyDirs(certdiscover.CertPKDirList(), true)
+		copyDirs(certdiscover.CACertPKDirList(), true)
 	}
 
-	if p.cmd.IncludeCertPKDirs {
+	if !p.cmd.IncludeCertPKAll && p.cmd.IncludeCertPKDirs {
+		copyDirs(certdiscover.CertPKDirList(), true)
+		copyDirs(certdiscover.CACertPKDirList(), true)
 	}
 }
 
@@ -490,6 +693,8 @@ copyLinks:
 	ngxEnsured := false
 	for fileName := range p.fileMap {
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
+
+		p.detectAppStack(fileName)
 
 		if isRbGemSpecFile(fileName) {
 			log.Debug("saveArtifacts - processing ruby gem spec ==>", fileName)
@@ -692,6 +897,180 @@ copyIncludes:
 			log.Debug("saveArtifacts(): preserved root path doesnt exist")
 		}
 	}
+}
+
+func (p *artifactStore) detectAppStack(fileName string) {
+	isPython := detectPythonCodeFile(fileName)
+	if isPython {
+		appStack, ok := p.appStacks[certdiscover.LanguagePython]
+		if !ok {
+			appStack = &appStackInfo{
+				language:    certdiscover.LanguagePython,
+				packageDirs: map[string]struct{}{},
+			}
+
+			p.appStacks[certdiscover.LanguagePython] = appStack
+		}
+
+		appStack.codeFiles++
+	}
+
+	pyPkgDir := detectPythonPkgDir(fileName)
+	if pyPkgDir != "" {
+		appStack, ok := p.appStacks[certdiscover.LanguagePython]
+		if !ok {
+			appStack = &appStackInfo{
+				language:    certdiscover.LanguagePython,
+				packageDirs: map[string]struct{}{},
+			}
+
+			p.appStacks[certdiscover.LanguagePython] = appStack
+		}
+
+		appStack.packageDirs[pyPkgDir] = struct{}{}
+	}
+
+	if isPython || pyPkgDir != "" {
+		return
+	}
+
+	isRuby := detectRubyCodeFile(fileName)
+	if isRuby {
+		appStack, ok := p.appStacks[certdiscover.LanguageRuby]
+		if !ok {
+			appStack = &appStackInfo{
+				language:    certdiscover.LanguageRuby,
+				packageDirs: map[string]struct{}{},
+			}
+
+			p.appStacks[certdiscover.LanguageRuby] = appStack
+		}
+
+		appStack.codeFiles++
+	}
+
+	rbPkgDir := detectRubyPkgDir(fileName)
+	if rbPkgDir != "" {
+		appStack, ok := p.appStacks[certdiscover.LanguageRuby]
+		if !ok {
+			appStack = &appStackInfo{
+				language:    certdiscover.LanguageRuby,
+				packageDirs: map[string]struct{}{},
+			}
+
+			p.appStacks[certdiscover.LanguageRuby] = appStack
+		}
+
+		appStack.packageDirs[rbPkgDir] = struct{}{}
+	}
+
+	if isRuby || rbPkgDir != "" {
+		return
+	}
+
+	isNode := detectNodeCodeFile(fileName)
+	if isNode {
+		appStack, ok := p.appStacks[certdiscover.LanguageNode]
+		if !ok {
+			appStack = &appStackInfo{
+				language:    certdiscover.LanguageNode,
+				packageDirs: map[string]struct{}{},
+			}
+
+			p.appStacks[certdiscover.LanguageNode] = appStack
+		}
+
+		appStack.codeFiles++
+	}
+
+	nodePkgDir := detectNodePkgDir(fileName)
+	if nodePkgDir != "" {
+		appStack, ok := p.appStacks[certdiscover.LanguageNode]
+		if !ok {
+			appStack = &appStackInfo{
+				language:    certdiscover.LanguageNode,
+				packageDirs: map[string]struct{}{},
+			}
+
+			p.appStacks[certdiscover.LanguageNode] = appStack
+		}
+
+		appStack.packageDirs[nodePkgDir] = struct{}{}
+	}
+}
+
+func isFileExt(filePath, match string) bool {
+	fileExt := filepath.Ext(filePath)
+	return fileExt == match
+}
+
+func getPathElementPrefix(filePath, match string) string {
+	if !strings.Contains(filePath, match) {
+		return ""
+	}
+
+	parts := strings.Split(filePath, match)
+	if len(parts) > 0 {
+		return parts[0]
+	}
+
+	return ""
+}
+
+func getPathElementPrefixLast(filePath, match string) string {
+	if !strings.Contains(filePath, match) {
+		return ""
+	}
+
+	if idx := strings.LastIndex(filePath, match); idx != -1 {
+		return filePath[0:idx]
+	}
+
+	return ""
+}
+
+func detectPythonCodeFile(fileName string) bool {
+	return isFileExt(fileName, pySrcFileExt)
+}
+
+func detectPythonPkgDir(fileName string) string {
+	dpPrefix := getPathElementPrefix(fileName, pyDistPkgDir)
+	if dpPrefix != "" {
+		return fmt.Sprintf("%s%s", dpPrefix, pyDistPkgDir)
+	}
+
+	spPrefix := getPathElementPrefix(fileName, pySitePkgDir)
+	if spPrefix != "" {
+		return fmt.Sprintf("%s%s", spPrefix, pySitePkgDir)
+	}
+
+	return ""
+}
+
+func detectRubyCodeFile(fileName string) bool {
+	return isFileExt(fileName, rbSrcFileExt)
+}
+
+func detectRubyPkgDir(fileName string) string {
+	prefix := getPathElementPrefixLast(fileName, rbGemsSubDir)
+	if prefix != "" {
+		return fmt.Sprintf("%s%s", prefix, rbGemsSubDir)
+	}
+
+	return ""
+}
+
+func detectNodeCodeFile(fileName string) bool {
+	return isFileExt(fileName, nodeSrcFileExt)
+}
+
+func detectNodePkgDir(fileName string) string {
+	prefix := getPathElementPrefix(fileName, nodePackageDir)
+	if prefix != "" {
+		return fmt.Sprintf("%s%s", prefix, nodePackageDir)
+	}
+
+	return ""
 }
 
 func (p *artifactStore) archiveArtifacts() {

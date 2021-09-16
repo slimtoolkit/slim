@@ -33,6 +33,14 @@ var certDirectories = []string{
 
 var certDirsSet map[string]struct{}
 
+// Cert Extra Directories (directories that container the actual standalone certs)
+var certExtraDirectories = []string{
+	"/usr/share/ca-certificates",
+	"/usr/local/share/ca-certificates",
+	"/usr/lib/ca-certificates",
+	"/usr/share/pki/trust/anchors",
+}
+
 // Cert File Env Vars (TODO: use these)
 var certFileEnvVars = []string{
 	"SSL_CERT_FILE",
@@ -127,6 +135,14 @@ func IsCertDir(name string) bool {
 	return found
 }
 
+func CertExtraDirList() []string {
+	return certExtraDirectories
+}
+
+func CertPKDirList() []string {
+	return certPKDirectories
+}
+
 func IsCertPKDir(name string) bool {
 	_, found := certPKDirsSet[name]
 	return found
@@ -172,6 +188,10 @@ func IsCACertDirPath(name string) bool {
 	return false
 }
 
+func CACertPKFileList() []string {
+	return caCertPKFiles
+}
+
 func IsCACertPKFile(name string) bool {
 	_, found := caCertPKFilesSet[name]
 	return found
@@ -193,22 +213,60 @@ func IsCACertPKDirPath(name string) bool {
 	return false
 }
 
+func CACertPKDirList() []string {
+	return caCertPKDirectories
+}
+
+const (
+	LanguageNomatch = "nomatch"
+	LanguagePython  = "python"
+	LanguageNode    = "node.js"
+	LanguageRuby    = "ruby"
+	LanguageJava    = "java"
+)
+
+const AppCertPackageName = "certifi"
+
+const (
+	AppCertPathSuffixPython = "certifi/cacert.pem"
+	AppCertPathSuffixNode   = "certifi/cacert.pem"
+	AppCertPathSuffixRuby   = "lib/certifi/vendor/cacert.pem"
+	AppCertPathSuffixJava   = "security/cacerts"
+)
+
+const (
+	AppCertPathMatcherPython = "-packages/certifi/cacert.pem"
+	AppCertPathMatcherNode   = "/node_modules/certifi/cacert.pem"
+	AppCertPathMatcherRuby   = "/lib/certifi/vendor/cacert.pem"
+	AppCertPathMatcherJava   = "/jre/lib/security/cacerts"
+)
+
 // Certifi package cert file (bundle) path matchers (+ Java Keystore)
-var certifiCertPathMatchers = []string{
-	"-packages/certifi/cacert.pem",
-	"/node_modules/certifi/cacert.pem",
-	"/lib/certifi/vendor/cacert.pem", //also should include "gems/"
-	"/jre/lib/security/cacerts",      //Java Keystore
+var certifiCertPathMatchers = map[string]string{
+	AppCertPathMatcherPython: LanguagePython,
+	AppCertPathMatcherNode:   LanguageNode,
+	AppCertPathMatcherRuby:   LanguageRuby, //also should include "gems/"
+	AppCertPathMatcherJava:   LanguageJava, //Java Keystore
 }
 
 func IsAppCertFile(name string) bool {
-	for _, pat := range certifiCertPathMatchers {
+	for pat := range certifiCertPathMatchers {
 		if strings.HasSuffix(name, pat) {
 			return true
 		}
 	}
 
 	return false
+}
+
+func IsAppCertFileWithInfo(name string) string {
+	for pat, info := range certifiCertPathMatchers {
+		if strings.HasSuffix(name, pat) {
+			return info
+		}
+	}
+
+	return LanguageNomatch
 }
 
 const (
