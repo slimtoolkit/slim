@@ -14,6 +14,12 @@ var CommandSuggestion = prompt.Suggest{
 var CommandFlagSuggestions = &commands.FlagSuggestions{
 	Names: []prompt.Suggest{
 		{Text: commands.FullFlagName(commands.FlagTarget), Description: commands.FlagTargetUsage},
+		{Text: commands.FullFlagName(commands.FlagComposeFile), Description: commands.FlagComposeFileUsage},
+		{Text: commands.FullFlagName(commands.FlagTargetComposeSvc), Description: commands.FlagTargetComposeSvcUsage},
+		{Text: commands.FullFlagName(commands.FlagDepIncludeComposeSvc), Description: commands.FlagDepIncludeComposeSvcUsage},
+		{Text: commands.FullFlagName(commands.FlagDepExcludeComposeSvc), Description: commands.FlagDepExcludeComposeSvcUsage},
+		{Text: commands.FullFlagName(commands.FlagDepIncludeComposeSvcDeps), Description: commands.FlagDepIncludeComposeSvcDepsUsage},
+		{Text: commands.FullFlagName(commands.FlagComposeNet), Description: commands.FlagComposeNetUsage},
 		{Text: commands.FullFlagName(commands.FlagPull), Description: commands.FlagPullUsage},
 		{Text: commands.FullFlagName(commands.FlagShowPullLogs), Description: commands.FlagShowPullLogsUsage},
 		{Text: commands.FullFlagName(FlagShowBuildLogs), Description: FlagShowBuildLogsUsage},
@@ -110,6 +116,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(commands.FlagPull):                   commands.CompleteBool,
 		commands.FullFlagName(commands.FlagShowPullLogs):           commands.CompleteBool,
 		commands.FullFlagName(commands.FlagTarget):                 commands.CompleteTarget,
+		commands.FullFlagName(commands.FlagComposeFile):            commands.CompleteFile,
 		commands.FullFlagName(FlagShowBuildLogs):                   commands.CompleteBool,
 		commands.FullFlagName(commands.FlagShowContainerLogs):      commands.CompleteBool,
 		commands.FullFlagName(commands.FlagPublishExposedPorts):    commands.CompleteBool,

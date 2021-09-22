@@ -27,6 +27,12 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagTarget),
 		commands.Cflag(commands.FlagPull),
 		commands.Cflag(commands.FlagShowPullLogs),
+		commands.Cflag(commands.FlagComposeFile),
+		commands.Cflag(commands.FlagTargetComposeSvc),
+		commands.Cflag(commands.FlagDepIncludeComposeSvc),
+		commands.Cflag(commands.FlagDepExcludeComposeSvc),
+		commands.Cflag(commands.FlagDepIncludeComposeSvcDeps),
+		commands.Cflag(commands.FlagComposeNet),
 		commands.Cflag(commands.FlagHTTPProbeOff),
 		commands.Cflag(commands.FlagHTTPProbe),
 		commands.Cflag(commands.FlagHTTPProbeCmd),
@@ -170,29 +176,41 @@ var CLI = cli.Command{
 			xc.Exit(-1)
 		}
 
+		composeFile := ctx.String(commands.FlagComposeFile)
+		//todo: load/parse compose file and then use it to validate the related compose params
+		targetComposeSvc := ctx.String(commands.FlagTargetComposeSvc)
+		depIncludeComposeSvcDeps := ctx.String(commands.FlagDepIncludeComposeSvcDeps)
+		depIncludeComposeSvcs := ctx.StringSlice(commands.FlagDepIncludeComposeSvc)
+		depExcludeComposeSvcs := ctx.StringSlice(commands.FlagDepExcludeComposeSvc)
+		composeNets := ctx.StringSlice(commands.FlagComposeNet)
+
 		var targetRef string
 
-		if cbOpts.Dockerfile == "" {
-			targetRef = ctx.String(commands.FlagTarget)
-
-			if targetRef == "" {
-				if len(ctx.Args()) < 1 {
-					xc.Out.Error("param.target", "missing image ID/name")
-					cli.ShowCommandHelp(ctx, Name)
-					return nil
-				} else {
-					targetRef = ctx.Args().First()
-				}
-			}
+		if composeFile != "" && targetComposeSvc != "" {
+			targetRef = targetComposeSvc
 		} else {
-			targetRef = cbOpts.DockerfileContext
-			if targetRef == "" {
-				if len(ctx.Args()) < 1 {
-					xc.Out.Error("param.target", "missing image ID/name")
-					cli.ShowCommandHelp(ctx, Name)
-					return nil
-				} else {
-					targetRef = ctx.Args().First()
+			if cbOpts.Dockerfile == "" {
+				targetRef = ctx.String(commands.FlagTarget)
+
+				if targetRef == "" {
+					if len(ctx.Args()) < 1 {
+						xc.Out.Error("param.target", "missing image ID/name")
+						cli.ShowCommandHelp(ctx, Name)
+						return nil
+					} else {
+						targetRef = ctx.Args().First()
+					}
+				}
+			} else {
+				targetRef = cbOpts.DockerfileContext
+				if targetRef == "" {
+					if len(ctx.Args()) < 1 {
+						xc.Out.Error("param.target", "missing Dockerfile build context directory")
+						cli.ShowCommandHelp(ctx, Name)
+						return nil
+					} else {
+						targetRef = ctx.Args().First()
+					}
 				}
 			}
 		}
@@ -568,6 +586,12 @@ var CLI = cli.Command{
 			targetRef,
 			doPull,
 			doShowPullLogs,
+			composeFile,
+			targetComposeSvc,
+			depIncludeComposeSvcDeps,
+			depIncludeComposeSvcs,
+			depExcludeComposeSvcs,
+			composeNets,
 			cbOpts,
 			crOpts,
 			outputTags,

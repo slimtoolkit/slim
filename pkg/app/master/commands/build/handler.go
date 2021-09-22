@@ -15,6 +15,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/builder"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
+	"github.com/docker-slim/docker-slim/pkg/app/master/compose"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/container"
@@ -53,6 +54,12 @@ func OnCommand(
 	targetRef string,
 	doPull bool,
 	doShowPullLogs bool,
+	composeFile string,
+	targetComposeSvc string,
+	depIncludeComposeSvcDeps string,
+	depIncludeComposeSvcs []string,
+	depExcludeComposeSvcs []string,
+	composeNets []string,
 	cbOpts *config.ContainerBuildOptions,
 	crOpts *config.ContainerRunOptions,
 	outputTags []string,
@@ -150,9 +157,10 @@ func OnCommand(
 
 	xc.Out.State("started")
 
-	if cbOpts.Dockerfile == "" {
+	if composeFile != "" && targetComposeSvc != "" {
 		xc.Out.Info("params",
 			ovars{
+				"target.type":   "compose.service",
 				"target":        targetRef,
 				"continue.mode": continueAfter.Mode,
 				"rt.as.user":    doRunTargetAsUser,
@@ -160,14 +168,27 @@ func OnCommand(
 				"tags":          strings.Join(outputTags, ","),
 			})
 	} else {
-		xc.Out.Info("params",
-			ovars{
-				"context":       targetRef,
-				"file":          cbOpts.Dockerfile,
-				"continue.mode": continueAfter.Mode,
-				"rt.as.user":    doRunTargetAsUser,
-				"keep.perms":    doKeepPerms,
-			})
+		if cbOpts.Dockerfile == "" {
+			xc.Out.Info("params",
+				ovars{
+					"target.type":   "image",
+					"target":        targetRef,
+					"continue.mode": continueAfter.Mode,
+					"rt.as.user":    doRunTargetAsUser,
+					"keep.perms":    doKeepPerms,
+					"tags":          strings.Join(outputTags, ","),
+				})
+		} else {
+			xc.Out.Info("params",
+				ovars{
+					"target.type":   "dockerfile",
+					"context":       targetRef,
+					"file":          cbOpts.Dockerfile,
+					"continue.mode": continueAfter.Mode,
+					"rt.as.user":    doRunTargetAsUser,
+					"keep.perms":    doKeepPerms,
+				})
+		}
 	}
 
 	if cbOpts.Dockerfile != "" {
@@ -259,6 +280,22 @@ func OnCommand(
 
 		targetRef = fatImageRepoNameTag
 		//todo: remove the temporary fat image (should have a flag for it in case users want the fat image too)
+	}
+
+	if composeFile != "" {
+		composeSelectors := compose.NewServiceSelectors(depIncludeComposeSvcDeps,
+			depIncludeComposeSvcs,
+			depExcludeComposeSvcs)
+
+		logger.Debugf("compose: file='%s' selectors='%+v'\n",
+			composeFile, composeSelectors)
+		/*
+			cx, err := compose.NewExecution(xc,
+				logger,
+				client,
+				composeFile
+				)
+		*/
 	}
 
 	logger.Infof("image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v",

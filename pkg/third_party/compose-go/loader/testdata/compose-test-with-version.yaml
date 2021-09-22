@@ -1,0 +1,23 @@
+version: "2"
+
+volumes:
+  data:
+    driver: local
+
+networks:
+  front: {}
+
+services:
+  web:
+    build: ./Dockerfile
+    networks:
+      - front
+      - default
+    volumes_from:
+      - other
+
+  other:
+    image: busybox:1.31.0-uclibc
+    command: top
+    volumes:
+      - /data

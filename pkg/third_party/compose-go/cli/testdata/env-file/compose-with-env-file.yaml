@@ -1,0 +1,8 @@
+version: "3"
+services:
+  simple:
+    image: nginx
+    env_file:
+      - ./simple-env
+    ports:
+    - 8000:80

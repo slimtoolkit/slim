@@ -1,0 +1,13 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v1*"
+
+jobs:
+  release:
+    runs-on: ubuntu-latest      
+    steps:
+      - uses: ncipollo/release-action@v1
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}

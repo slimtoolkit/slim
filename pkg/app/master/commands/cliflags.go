@@ -53,6 +53,14 @@ const (
 	FlagPull         = "pull"
 	FlagShowPullLogs = "show-plogs"
 
+	//Compose-related flags
+	FlagComposeFile              = "compose-file"
+	FlagTargetComposeSvc         = "target-compose-svc"
+	FlagDepIncludeComposeSvc     = "dep-include-compose-svc"
+	FlagDepExcludeComposeSvc     = "dep-exclude-compose-svc"
+	FlagDepIncludeComposeSvcDeps = "dep-include-compose-svc-deps"
+	FlagComposeNet               = "compose-net"
+
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
 
@@ -118,6 +126,14 @@ const (
 	FlagTargetUsage       = "Target container image (name or ID)"
 	FlagPullUsage         = "Try pulling target if it's not available locally"
 	FlagShowPullLogsUsage = "Show image pull logs"
+
+	//Compose-related flags
+	FlagComposeFileUsage              = "Load container info from selected compose file"
+	FlagTargetComposeSvcUsage         = "Target service from compose file"
+	FlagDepIncludeComposeSvcUsage     = "Include specific compose service as a target dependency (only selected services will be started)"
+	FlagDepExcludeComposeSvcUsage     = "Exclude specific service from the compose services that will be started as target dependencies"
+	FlagDepIncludeComposeSvcDepsUsage = "Include all dependencies for the selected compose service (excluding the service itself) as target dependencies"
+	FlagComposeNetUsage               = "Attach target to the selected compose network(s) otherwise all networks will be attached"
 
 	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
 	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
@@ -269,6 +285,42 @@ var CommonFlags = map[string]cli.Flag{
 		Name:   FlagShowPullLogs,
 		Usage:  FlagShowPullLogsUsage,
 		EnvVar: "DSLIM_PLOG",
+	},
+	FlagComposeFile: cli.StringFlag{
+		Name:   FlagComposeFile,
+		Value:  "",
+		Usage:  FlagComposeFileUsage,
+		EnvVar: "DSLIM_COMPOSE_FILE",
+	},
+	FlagTargetComposeSvc: cli.StringFlag{
+		Name:   FlagTargetComposeSvc,
+		Value:  "",
+		Usage:  FlagTargetComposeSvcUsage,
+		EnvVar: "DSLIM_TARGET_COMPOSE_SVC",
+	},
+	FlagDepIncludeComposeSvcDeps: cli.StringFlag{
+		Name:   FlagDepIncludeComposeSvcDeps,
+		Value:  "",
+		Usage:  FlagDepIncludeComposeSvcDepsUsage,
+		EnvVar: "DSLIM_DEP_INCLUDE_COMPOSE_SVC_DEPS",
+	},
+	FlagDepIncludeComposeSvc: cli.StringSliceFlag{
+		Name:   FlagDepIncludeComposeSvc,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagDepIncludeComposeSvcUsage,
+		EnvVar: "DSLIM_DEP_INCLUDE_COMPOSE_SVC",
+	},
+	FlagDepExcludeComposeSvc: cli.StringSliceFlag{
+		Name:   FlagDepExcludeComposeSvc,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagDepExcludeComposeSvcUsage,
+		EnvVar: "DSLIM_DEP_EXCLUDE_COMPOSE_SVC",
+	},
+	FlagComposeNet: cli.StringSliceFlag{
+		Name:   FlagComposeNet,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagComposeNetUsage,
+		EnvVar: "DSLIM_COMPOSE_NET",
 	},
 	FlagRemoveFileArtifacts: cli.BoolFlag{
 		Name:   FlagRemoveFileArtifacts,
