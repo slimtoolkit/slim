@@ -377,6 +377,14 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--target` - Target container image (name or ID). It's an alternative way to provide the target information. The standard way to provide the target information is by putting as the last value in the `build` command CLI call.
 - `--pull` - Try pulling target if it's not available locally (default: false).
 - `--show-plogs` - Show image pull logs (default: false).
+- `compose-file` - Load container info from selected compose file
+- `target-compose-svc` - Target service from compose file
+- `target-compose-svc-no-ports` - Do not publish ports for target service from compose file
+- `dep-exclude-compose-svc-all` - Do not start any compose services as target dependencies
+- `dep-include-compose-svc` - Include specific compose service as a target dependency (only selected services will be started)
+- `dep-exclude-compose-svc` - Exclude specific service from the compose services that will be started as target dependencies
+- `dep-include-compose-svc-deps` - Include all dependencies for the selected compose service (excluding the service itself) as target dependencies
+- `compose-net` - Attach target to the selected compose network(s) otherwise all networks will be attached
 - `--http-probe` - Enables/disables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`: `--http-probe=false`)
 - `--http-probe-off` - Alternative way to disable HTTP probing
 - `--http-probe-cmd` - Additional HTTP probe command [can use this flag multiple times]
@@ -412,6 +420,11 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-exe value` - Include executable from image (by executable name)
 - `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
 - `--include-shell` - Include basic shell functionality (default value: false)
+- `include-cert-all` - Keep all discovered cert files
+- `include-cert-bundles-only` - Keep only cert bundles
+- `include-cert-dirs` - Keep known cert directories and all files in them
+- `include-cert-pk-all` - Keep all discovered cert private keys
+- `include-cert-pk-dirs` - Keep known cert private key directories and all files in them
 - `--preserve-path` - Keep path from orignal image in its initial state. [can use this flag multiple times]
 - `--preserve-path-file` - File with paths to keep from original image in their original state.
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
