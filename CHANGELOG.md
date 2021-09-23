@@ -1,5 +1,18 @@
 # Releases
 
+## 1.37.0 (8/30/2021)
+
+### New Features
+
+- Experimental docker-compose support for the build command
+- Include cert flags to make it easier to keep certificate data in the optimized images
+
+### Improvements
+
+- Install script
+
+## 1.36.4
+
 ## 1.36.3 (8/30/2021)
 
 ## 1.36.2 (8/5/2021)
