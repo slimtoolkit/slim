@@ -233,6 +233,14 @@ mv  dist_mac/docker-slim-sensor /usr/local/bin/
 
 If the directory where you extracted the binaries is not in your PATH then you'll need to run your `docker-slim` commands from that directory.
 
+### Scripted Install
+
+We provide a script to automatically install the current release of DockerSlim on Linux (x86 and ARM) and macOS (x86 and Apple Silicon)
+
+```bash
+curl -sL https://github.com/docker-slim/docker-slim/blob/master/scripts/install_dockerslim.sh | sudo -E bash -
+```
+
 ### Homebrew
 
 ```
