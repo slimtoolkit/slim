@@ -56,6 +56,7 @@ const (
 	//Compose-related flags
 	FlagComposeFile              = "compose-file"
 	FlagTargetComposeSvc         = "target-compose-svc"
+	FlagDepExcludeComposeSvcAll  = "dep-exclude-compose-svc-all" //wip
 	FlagDepIncludeComposeSvc     = "dep-include-compose-svc"
 	FlagDepExcludeComposeSvc     = "dep-exclude-compose-svc"
 	FlagDepIncludeComposeSvcDeps = "dep-include-compose-svc-deps"

@@ -76,16 +76,12 @@ type ExecutionOptions struct {
 }
 
 type Execution struct {
+	*ConfigInfo
 	State           ExecutionState
 	Selectors       *ServiceSelectors
 	BuildImages     bool
 	PullImages      bool
 	OwnAllResources bool
-	BaseComposeDir  string
-	Version         uint
-	FullVersion     string
-	Project         *types.Project
-	Raw             map[string]interface{}
 	AllServices     map[string]*ServiceInfo
 	AllNetworks     map[string]*NetworkInfo
 	PendingServices map[string]struct{}
@@ -100,6 +96,14 @@ type Execution struct {
 	xc         *app.ExecutionContext
 	logger     *log.Entry
 	apiClient  *dockerapi.Client
+}
+
+type ConfigInfo struct {
+	BaseComposeDir string
+	Version        uint
+	FullVersion    string
+	Project        *types.Project
+	Raw            map[string]interface{}
 }
 
 type ServiceSelectors struct {
@@ -152,33 +156,18 @@ type ActiveVolume struct {
 }
 
 type ActiveNetwork struct {
-	Name    string
+	Name    string //full network name
 	ID      string
 	Created bool
 }
 
 const defaultStopTimeout = 7 //7 seconds
 
-func NewExecution(
-	xc *app.ExecutionContext,
-	logger *log.Entry,
-	apiClient *dockerapi.Client,
+func NewConfigInfo(
 	composeFile string,
-	selectors *ServiceSelectors,
 	projectName string,
 	workingDir string,
-	environment map[string]string,
-	buildImages bool,
-	pullImages bool,
-	pullExcludes []string,
-	ownAllResources bool,
-	options *ExecutionOptions,
-	eventCh chan *ExecutionEvenInfo,
-	printState bool) (*Execution, error) {
-	if logger != nil {
-		logger = logger.WithFields(log.Fields{"com": "compose.execution"})
-	}
-
+	environment map[string]string) (*ConfigInfo, error) {
 	fullComposeFilePath, err := filepath.Abs(composeFile)
 	if err != nil {
 		panic(err)
@@ -226,15 +215,54 @@ func NewExecution(
 	}
 
 	//not supporting compose profiles for now
+	cv := &ConfigInfo{
+		BaseComposeDir: baseComposeDir,
+		Project:        project,
+		Raw:            rawConfig,
+	}
+
+	return cv, nil
+}
+
+func NewExecution(
+	xc *app.ExecutionContext,
+	logger *log.Entry,
+	apiClient *dockerapi.Client,
+	composeFile string,
+	selectors *ServiceSelectors,
+	projectName string,
+	workingDir string,
+	environment map[string]string,
+	buildImages bool,
+	pullImages bool,
+	pullExcludes []string,
+	ownAllResources bool,
+	options *ExecutionOptions,
+	eventCh chan *ExecutionEvenInfo,
+	printState bool) (*Execution, error) {
+	if logger != nil {
+		logger = logger.WithFields(log.Fields{"com": "compose.execution"})
+	}
+
+	configInfo, err := NewConfigInfo(composeFile,
+		projectName,
+		workingDir,
+		environment)
+	if err != nil {
+		return nil, err
+	}
+
+	//not supporting compose profiles for now
 	exe := &Execution{
+		ConfigInfo:      configInfo,
 		State:           XSNone,
 		Selectors:       selectors,
 		OwnAllResources: ownAllResources,
 		BuildImages:     buildImages,
 		PullImages:      pullImages,
-		BaseComposeDir:  baseComposeDir,
-		Project:         project,
-		Raw:             rawConfig,
+		//BaseComposeDir:  baseComposeDir,
+		//Project:         project,
+		//Raw:             rawConfig,
 		AllServices:     map[string]*ServiceInfo{},
 		AllNetworks:     map[string]*NetworkInfo{},
 		PendingServices: map[string]struct{}{},
@@ -288,6 +316,20 @@ func (ref *Execution) ProjectWorkingDir() string {
 	return ref.Project.WorkingDir
 }
 
+func (ref *Execution) Service(name string) *ServiceInfo {
+	return ref.AllServices[name]
+}
+
+func (ref *Execution) SelectedHaveImages() bool {
+	for _, svc := range ref.AllServices {
+		if svc.Selected && svc.Config.Image == "" {
+			return false
+		}
+	}
+
+	return true
+}
+
 func (ref *Execution) ActiveServiceNetworks(svcName string) map[string]string {
 	networks := map[string]string{}
 
@@ -302,28 +344,21 @@ func (ref *Execution) ActiveServiceNetworks(svcName string) map[string]string {
 	return networks
 }
 
+func (ref *Execution) ActiveNetworkNames() map[string]string {
+	networks := map[string]string{}
+
+	for netKey, netInfo := range ref.AllNetworks {
+		if netInfo != nil {
+			networks[netKey] = netInfo.Name
+		}
+	}
+
+	return networks
+}
+
 //////////
 
 func (ref *Execution) initServices() error {
-	///////////////////////////////////////
-	fmt.Println("Execution.initServices: TMP EXPERIMENT")
-	fmt.Println("Execution.initServices: raw ref.Project.Services")
-	for _, service := range ref.Project.Services {
-		fmt.Printf("service.Name='%s' (deps=%+v)\n", service.Name, service.GetDependencies())
-	}
-
-	fmt.Println("Execution.initServices: raw ref.Project.WithServices")
-	var serviceNames []string //nil - means all
-	if err := ref.Project.WithServices(serviceNames,
-		func(service types.ServiceConfig) error {
-			fmt.Printf("service.Name='%s' (deps=%+v)\n", service.Name, service.GetDependencies())
-			return nil
-		}); err != nil {
-		fmt.Println("ref.Project.WithServices error =", err)
-	}
-	fmt.Println("Execution.initServices: raw ref.Project.WithServices = DONE")
-
-	///////////////////////////////////////
 	for _, service := range ref.Project.Services {
 		name := service.Name
 		info := &ServiceInfo{
@@ -339,7 +374,6 @@ func (ref *Execution) initServices() error {
 				}
 				return nil
 			}); err != nil {
-			fmt.Println("[2] ref.Project.WithServices error =", err)
 			return err
 		}
 
@@ -380,7 +414,6 @@ func (ref *Execution) initServices() error {
 
 	//TMP
 	fmt.Println("Execution.initServices: checking ref.AllServices[x].Selected")
-
 	for shortName, svc := range ref.AllServices {
 		fmt.Printf("sname=%s/%s name=%s SELECTED?=%v\n",
 			shortName,
@@ -977,7 +1010,7 @@ func pullImage(ctx context.Context, apiClient *dockerapi.Client, imageRef string
 		Context:       ctx,
 	}
 	/*
-	{"status":"","progressDetail":{"current":NUM,"total":NUM},progress:"","id":""}
+		{"status":"","progressDetail":{"current":NUM,"total":NUM},progress:"","id":""}
 	*/
 
 	//TODO: add support for auth

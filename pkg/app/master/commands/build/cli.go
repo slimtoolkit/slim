@@ -215,6 +215,12 @@ var CLI = cli.Command{
 			}
 		}
 
+		if targetRef == "" {
+			xc.Out.Error("param.target", "missing target - make sure to set one of the target params")
+			cli.ShowCommandHelp(ctx, Name)
+			return nil
+		}
+
 		gcvalues, err := commands.GlobalFlagValues(ctx)
 		if err != nil {
 			xc.Out.Error("param.global", err.Error())

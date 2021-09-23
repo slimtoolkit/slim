@@ -110,6 +110,7 @@ type Inspector struct {
 	DoIncludeCertDirs     bool
 	DoIncludeCertPKAll    bool
 	DoIncludeCertPKDirs   bool
+	SelectedNetNames      map[string]string
 	DoDebug               bool
 	PrintState            bool
 	PrintPrefix           string
@@ -170,6 +171,7 @@ func NewInspector(
 	doIncludeCertDirs bool,
 	doIncludeCertPKAll bool,
 	doIncludeCertPKDirs bool,
+	selectedNetNames map[string]string,
 	doDebug bool,
 	inContainer bool,
 	printState bool,
@@ -210,6 +212,7 @@ func NewInspector(
 		DoIncludeCertDirs:     doIncludeCertDirs,
 		DoIncludeCertPKAll:    doIncludeCertPKAll,
 		DoIncludeCertPKDirs:   doIncludeCertPKDirs,
+		SelectedNetNames:      selectedNetNames,
 		DoDebug:               doDebug,
 		PrintState:            printState,
 		PrintPrefix:           printPrefix,
@@ -579,6 +582,17 @@ func (i *Inspector) RunContainer() error {
 				"name":   containerInfo.Name,
 				"id":     i.ContainerID,
 			})
+	}
+
+	if len(i.SelectedNetNames) > 0 {
+		i.logger.Debugf("RunContainer: SelectedNetNames => %#v", i.SelectedNetNames)
+		for key, netName := range i.SelectedNetNames {
+			err = attachContainerToNetwork(i.logger, i.APIClient, i.ContainerID, netName)
+			if err != nil {
+				i.logger.Debugf("RunContainer: AttachContainerToNetwork(%s,%s) key=%s error => %#v", i.ContainerID, netName, key, err)
+				return err
+			}
+		}
 	}
 
 	i.APIClient.AddEventListener(i.dockerEventCh)
@@ -1026,4 +1040,20 @@ func ensureSensorVolume(logger *log.Entry, client *dockerapi.Client, localSensor
 	}
 
 	return volumeName, nil
+}
+
+func attachContainerToNetwork(logger *log.Entry, apiClient *dockerapi.Client, containerID string, networkName string) error {
+	//might need network IDs instead of network names
+	//might need alias info too
+	options := dockerapi.NetworkConnectionOptions{
+		Container: containerID,
+	}
+
+	if err := apiClient.ConnectNetwork(networkName, options); err != nil {
+		logger.Debugf("attachContainerToNetwork(%s): container network connect error - %v",
+			containerID, networkName, err)
+		return err
+	}
+
+	return nil
 }

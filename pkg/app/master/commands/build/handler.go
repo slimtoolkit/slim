@@ -36,6 +36,7 @@ import (
 )
 
 const appName = commands.AppName
+const composeProjectNamePat = "dsbuild_%v_%v"
 
 // Build command exit codes
 const (
@@ -43,6 +44,8 @@ const (
 	ecbBadCustomImageTag
 	ecbImageBuildError
 	ecbNoEntrypoint
+	ecbBadTargetComposeSvc
+	ecbComposeSvcNoImage
 )
 
 type ovars = app.OutVars
@@ -282,20 +285,91 @@ func OnCommand(
 		//todo: remove the temporary fat image (should have a flag for it in case users want the fat image too)
 	}
 
+	var depServicesExe *compose.Execution
 	if composeFile != "" {
-		composeSelectors := compose.NewServiceSelectors(depIncludeComposeSvcDeps,
+		if targetComposeSvc != "" && depIncludeComposeSvcDeps != targetComposeSvc {
+			var found bool
+			for _, svcName := range depExcludeComposeSvcs {
+				if svcName == targetComposeSvc {
+					found = true
+					break
+				}
+			}
+
+			if !found {
+				depExcludeComposeSvcs = append(depExcludeComposeSvcs, targetComposeSvc)
+			}
+		}
+
+		selectors := compose.NewServiceSelectors(depIncludeComposeSvcDeps,
 			depIncludeComposeSvcs,
 			depExcludeComposeSvcs)
 
+		//todo: move compose flags to options
+		options := &compose.ExecutionOptions{}
+
 		logger.Debugf("compose: file='%s' selectors='%+v'\n",
-			composeFile, composeSelectors)
-		/*
-			cx, err := compose.NewExecution(xc,
-				logger,
-				client,
-				composeFile
-				)
-		*/
+			composeFile, selectors)
+
+		composeProjectName := fmt.Sprintf(composeProjectNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))
+
+		exe, err := compose.NewExecution(xc,
+			logger,
+			client,
+			composeFile,
+			selectors,
+			composeProjectName,
+			"",    //workingDir (todo: add a flag)
+			nil,   //environment (todo: add a flag)
+			false, //buildImages
+			doPull,
+			nil,  //pullExcludes (todo: add a flag)
+			true, //ownAllResources
+			options,
+			nil,  //eventCh
+			true) //printState
+
+		errutil.FailOn(err)
+
+		if !exe.SelectedHaveImages() {
+			xc.Out.Info("compose.file.error",
+				ovars{
+					"status": "service.no.image",
+					"file":   composeFile,
+				})
+
+			exitCode := commands.ECTBuild | ecbComposeSvcNoImage
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": exitCode,
+					"version":   v.Current(),
+					"location":  fsutil.ExeDir(),
+				})
+
+			xc.Exit(exitCode)
+		}
+
+		targetSvcInfo := exe.Service(targetComposeSvc)
+		if targetSvcInfo == nil {
+			xc.Out.Info("target.compose.svc.error",
+				ovars{
+					"status": "unknown.compose.service",
+					"target": targetComposeSvc,
+				})
+
+			exitCode := commands.ECTBuild | ecbBadTargetComposeSvc
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": exitCode,
+					"version":   v.Current(),
+					"location":  fsutil.ExeDir(),
+				})
+
+			xc.Exit(exitCode)
+		}
+
+		targetRef = targetSvcInfo.Config.Image
+		depServicesExe = exe
 	}
 
 	logger.Infof("image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v",
@@ -432,6 +506,47 @@ func OnCommand(
 	}
 
 	xc.Out.State("image.inspection.done")
+
+	selectedNetNames := map[string]string{}
+	if depServicesExe != nil {
+		xc.Out.State("container.dependencies.init.start")
+		err = depServicesExe.Prepare()
+		errutil.FailOn(err)
+		err = depServicesExe.Start()
+		errutil.FailOn(err)
+
+		//todo:
+		//need a better way to make sure the dependencies are ready
+		//monitor docker events
+		//use basic application level checks (probing)
+		time.Sleep(3 * time.Second)
+		xc.Out.State("container.dependencies.init.done")
+
+		var selectedNetworks bool
+		//might need more info (including alias info) when targeting compose services
+		allNetNames := depServicesExe.ActiveNetworkNames()
+		if len(composeNets) > 0 {
+			for _, key := range composeNets {
+				if net, found := allNetNames[key]; found {
+					selectedNetworks = true
+					selectedNetNames[key] = net
+				}
+			}
+		}
+
+		if targetComposeSvc != "" {
+			svcNets := depServicesExe.ActiveServiceNetworks(targetComposeSvc)
+			for key, name := range svcNets {
+				selectedNetworks = true
+				selectedNetNames[key] = name
+			}
+		}
+
+		if !selectedNetworks {
+			selectedNetNames = allNetNames
+		}
+	}
+
 	xc.Out.State("container.inspection.start")
 
 	containerInspector, err := container.NewInspector(
@@ -468,6 +583,7 @@ func OnCommand(
 		doIncludeCertDirs,
 		doIncludeCertPKAll,
 		doIncludeCertPKDirs,
+		selectedNetNames,
 		gparams.Debug,
 		gparams.InContainer,
 		true,
@@ -681,6 +797,15 @@ func OnCommand(
 			})
 
 		xc.Exit(exitCode)
+	}
+
+	if depServicesExe != nil {
+		xc.Out.State("container.dependencies.shutdown.start")
+		err = depServicesExe.Stop()
+		errutil.WarnOn(err)
+		err = depServicesExe.Cleanup()
+		errutil.WarnOn(err)
+		xc.Out.State("container.dependencies.shutdown.done")
 	}
 
 	xc.Out.State("container.inspection.artifact.processing")
