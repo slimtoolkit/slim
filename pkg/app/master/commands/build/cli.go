@@ -29,6 +29,8 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagShowPullLogs),
 		commands.Cflag(commands.FlagComposeFile),
 		commands.Cflag(commands.FlagTargetComposeSvc),
+		commands.Cflag(commands.FlagComposeSvcNoPorts),
+		commands.Cflag(commands.FlagDepExcludeComposeSvcAll),
 		commands.Cflag(commands.FlagDepIncludeComposeSvc),
 		commands.Cflag(commands.FlagDepExcludeComposeSvc),
 		commands.Cflag(commands.FlagDepIncludeComposeSvcDeps),
@@ -179,6 +181,8 @@ var CLI = cli.Command{
 		composeFile := ctx.String(commands.FlagComposeFile)
 		//todo: load/parse compose file and then use it to validate the related compose params
 		targetComposeSvc := ctx.String(commands.FlagTargetComposeSvc)
+		composeSvcNoPorts := ctx.Bool(commands.FlagComposeSvcNoPorts)
+		depExcludeComposeSvcAll := ctx.Bool(commands.FlagDepExcludeComposeSvcAll)
 		depIncludeComposeSvcDeps := ctx.String(commands.FlagDepIncludeComposeSvcDeps)
 		depIncludeComposeSvcs := ctx.StringSlice(commands.FlagDepIncludeComposeSvc)
 		depExcludeComposeSvcs := ctx.StringSlice(commands.FlagDepExcludeComposeSvc)
@@ -594,6 +598,8 @@ var CLI = cli.Command{
 			doShowPullLogs,
 			composeFile,
 			targetComposeSvc,
+			composeSvcNoPorts,
+			depExcludeComposeSvcAll,
 			depIncludeComposeSvcDeps,
 			depIncludeComposeSvcs,
 			depExcludeComposeSvcs,

@@ -59,6 +59,8 @@ func OnCommand(
 	doShowPullLogs bool,
 	composeFile string,
 	targetComposeSvc string,
+	composeSvcNoPorts bool,
+	depExcludeComposeSvcAll bool,
 	depIncludeComposeSvcDeps string,
 	depIncludeComposeSvcs []string,
 	depExcludeComposeSvcs []string,
@@ -331,7 +333,7 @@ func OnCommand(
 
 		errutil.FailOn(err)
 
-		if !exe.SelectedHaveImages() {
+		if !depExcludeComposeSvcAll && !exe.SelectedHaveImages() {
 			xc.Out.Info("compose.file.error",
 				ovars{
 					"status": "service.no.image",
@@ -349,27 +351,75 @@ func OnCommand(
 			xc.Exit(exitCode)
 		}
 
-		targetSvcInfo := exe.Service(targetComposeSvc)
-		if targetSvcInfo == nil {
-			xc.Out.Info("target.compose.svc.error",
-				ovars{
-					"status": "unknown.compose.service",
-					"target": targetComposeSvc,
-				})
+		if targetComposeSvc != "" {
+			targetSvcInfo := exe.Service(targetComposeSvc)
+			if targetSvcInfo == nil {
+				xc.Out.Info("target.compose.svc.error",
+					ovars{
+						"status": "unknown.compose.service",
+						"target": targetComposeSvc,
+						"file":   composeFile,
+					})
 
-			exitCode := commands.ECTBuild | ecbBadTargetComposeSvc
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": exitCode,
-					"version":   v.Current(),
-					"location":  fsutil.ExeDir(),
-				})
+				exitCode := commands.ECTBuild | ecbBadTargetComposeSvc
+				xc.Out.State("exited",
+					ovars{
+						"exit.code": exitCode,
+						"version":   v.Current(),
+						"location":  fsutil.ExeDir(),
+					})
 
-			xc.Exit(exitCode)
+				xc.Exit(exitCode)
+			}
+
+			targetRef = targetSvcInfo.Config.Image
+
+			if len(targetSvcInfo.Config.Entrypoint) > 0 {
+				logger.Debug("using targetSvcInfo.Config.Entrypoint")
+				overrides.Entrypoint = []string(targetSvcInfo.Config.Entrypoint)
+			}
+
+			if len(targetSvcInfo.Config.Command) > 0 {
+				logger.Debug("using targetSvcInfo.Config.Command")
+				overrides.Cmd = []string(targetSvcInfo.Config.Command)
+			}
+
+			if !composeSvcNoPorts {
+				logger.Debug("using targetSvcInfo.Config.Ports")
+				for _, p := range targetSvcInfo.Config.Ports {
+					portKey := fmt.Sprintf("%v/%v", p.Target, p.Protocol)
+					pbSet, found := portBindings[docker.Port(portKey)]
+					if found {
+						found := false
+						hostPort := fmt.Sprintf("%v", p.Published)
+						for _, pinfo := range pbSet {
+							if pinfo.HostIP == p.HostIP && pinfo.HostPort == hostPort {
+								found = true
+								break
+							}
+						}
+
+						if !found {
+							pbSet = append(pbSet, docker.PortBinding{
+								HostIP:   p.HostIP,
+								HostPort: hostPort,
+							})
+
+							portBindings[docker.Port(portKey)] = pbSet
+						}
+					} else {
+						portBindings[docker.Port(portKey)] = []docker.PortBinding{{
+							HostIP:   p.HostIP,
+							HostPort: fmt.Sprintf("%v", p.Published),
+						}}
+					}
+				}
+			}
 		}
 
-		targetRef = targetSvcInfo.Config.Image
-		depServicesExe = exe
+		if !depExcludeComposeSvcAll {
+			depServicesExe = exe
+		}
 	}
 
 	logger.Infof("image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v",

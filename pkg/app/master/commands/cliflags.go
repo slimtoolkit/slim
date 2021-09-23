@@ -56,7 +56,8 @@ const (
 	//Compose-related flags
 	FlagComposeFile              = "compose-file"
 	FlagTargetComposeSvc         = "target-compose-svc"
-	FlagDepExcludeComposeSvcAll  = "dep-exclude-compose-svc-all" //wip
+	FlagComposeSvcNoPorts        = "target-compose-svc-no-ports"
+	FlagDepExcludeComposeSvcAll  = "dep-exclude-compose-svc-all"
 	FlagDepIncludeComposeSvc     = "dep-include-compose-svc"
 	FlagDepExcludeComposeSvc     = "dep-exclude-compose-svc"
 	FlagDepIncludeComposeSvcDeps = "dep-include-compose-svc-deps"
@@ -131,6 +132,8 @@ const (
 	//Compose-related flags
 	FlagComposeFileUsage              = "Load container info from selected compose file"
 	FlagTargetComposeSvcUsage         = "Target service from compose file"
+	FlagComposeSvcNoPortsUsage        = "Do not publish ports for target service from compose file"
+	FlagDepExcludeComposeSvcAllUsage  = "Do not start any compose services as target dependencies"
 	FlagDepIncludeComposeSvcUsage     = "Include specific compose service as a target dependency (only selected services will be started)"
 	FlagDepExcludeComposeSvcUsage     = "Exclude specific service from the compose services that will be started as target dependencies"
 	FlagDepIncludeComposeSvcDepsUsage = "Include all dependencies for the selected compose service (excluding the service itself) as target dependencies"
@@ -298,6 +301,16 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  "",
 		Usage:  FlagTargetComposeSvcUsage,
 		EnvVar: "DSLIM_TARGET_COMPOSE_SVC",
+	},
+	FlagComposeSvcNoPorts: cli.BoolFlag{
+		Name:   FlagComposeSvcNoPorts,
+		Usage:  FlagComposeSvcNoPortsUsage,
+		EnvVar: "DSLIM_COMPOSE_SVC_NO_PORTS",
+	},
+	FlagDepExcludeComposeSvcAll: cli.BoolFlag{
+		Name:   FlagDepExcludeComposeSvcAll,
+		Usage:  FlagDepExcludeComposeSvcAllUsage,
+		EnvVar: "DSLIM_DEP_INCLUDE_COMPOSE_SVC_ALL",
 	},
 	FlagDepIncludeComposeSvcDeps: cli.StringFlag{
 		Name:   FlagDepIncludeComposeSvcDeps,

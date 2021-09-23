@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
+	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	//"github.com/docker-slim/docker-slim/pkg/app/master/config"
 
 	"github.com/compose-spec/compose-go/loader"
@@ -252,6 +253,9 @@ func NewExecution(
 		return nil, err
 	}
 
+	//todo: explicitly check for invalid/unknown service dependencies
+	//todo: have an option to ignore/cleanup invalid/unknown service dependencies
+
 	//not supporting compose profiles for now
 	exe := &Execution{
 		ConfigInfo:      configInfo,
@@ -260,9 +264,6 @@ func NewExecution(
 		OwnAllResources: ownAllResources,
 		BuildImages:     buildImages,
 		PullImages:      pullImages,
-		//BaseComposeDir:  baseComposeDir,
-		//Project:         project,
-		//Raw:             rawConfig,
 		AllServices:     map[string]*ServiceInfo{},
 		AllNetworks:     map[string]*NetworkInfo{},
 		PendingServices: map[string]struct{}{},
@@ -279,7 +280,11 @@ func NewExecution(
 	}
 
 	exe.initVersion()
-	exe.initServices()
+
+	err = exe.initServices()
+	if err != nil {
+		return nil, err
+	}
 	exe.initNetworks()
 
 	return exe, nil
@@ -412,10 +417,9 @@ func (ref *Execution) initServices() error {
 		}
 	}
 
-	//TMP
-	fmt.Println("Execution.initServices: checking ref.AllServices[x].Selected")
+	ref.logger.Debug("Execution.initServices: checking ref.AllServices[x].Selected")
 	for shortName, svc := range ref.AllServices {
-		fmt.Printf("sname=%s/%s name=%s SELECTED?=%v\n",
+		ref.logger.Debugf("sname=%s/%s name=%s SELECTED?=%v\n",
 			shortName,
 			svc.ShortName,
 			svc.Name,
@@ -474,7 +478,7 @@ func fullNetworkName(project, networkKey, networkName string) string {
 }
 
 func (ref *Execution) Prepare() error {
-	fmt.Println("Execution.Prepare")
+	ref.logger.Debug("Execution.Prepare")
 
 	if err := ref.PrepareServices(); err != nil {
 		return err
@@ -492,8 +496,6 @@ func (ref *Execution) Prepare() error {
 }
 
 func (ref *Execution) PrepareServices() error {
-	fmt.Println("Execution.Prepare")
-
 	errCh := make(chan error, len(ref.AllServices))
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
@@ -501,11 +503,11 @@ func (ref *Execution) PrepareServices() error {
 		wg.Add(1)
 		go func(svcName string) {
 			defer wg.Done()
-			fmt.Printf("Execution.Prepare: service=%s\n", svcName)
+			ref.logger.Debugf("Execution.Prepare: service=%s", svcName)
 			if err := ref.PrepareService(ctx, svcName); err != nil {
-				fmt.Printf("Execution.Prepare: PrepareService(%s) error - %v\n", svcName, err)
+				ref.logger.Debugf("Execution.Prepare: PrepareService(%s) error - %v", svcName, err)
 				errCh <- err
-				fmt.Printf("Execution.Prepare: PrepareService(%s) - CANCEL ALL PREPARE SVC\n", svcName)
+				ref.logger.Debugf("Execution.Prepare: PrepareService(%s) - CANCEL ALL PREPARE SVC", svcName)
 				cancel()
 			}
 		}(name)
@@ -523,14 +525,14 @@ func (ref *Execution) PrepareServices() error {
 }
 
 func (ref *Execution) PrepareService(ctx context.Context, name string) error {
-	fmt.Printf("Execution.PrepareService(%s)\n", name)
+	ref.logger.Debugf("Execution.PrepareService(%s)", name)
 	serviceInfo, ok := ref.AllServices[name]
 	if !ok {
 		return fmt.Errorf("unknown service - %s", name)
 	}
 
 	service := serviceInfo.Config
-	fmt.Printf("Execution.PrepareService(%s): image=%s\n", name, service.Image)
+	ref.logger.Debugf("Execution.PrepareService(%s): image=%s", name, service.Image)
 
 	if service.Image == "" {
 		imageName := fmt.Sprintf("%s_%s", ref.Project.Name, name)
@@ -584,13 +586,13 @@ func (ref *Execution) PrepareService(ctx context.Context, name string) error {
 }
 
 func (ref *Execution) DiscoverResources() error {
-	fmt.Println("Execution.DiscoverResources")
+	ref.logger.Debug("Execution.DiscoverResources")
 	//discover existing containers, volumes, networks for project
 	return nil
 }
 
 func (ref *Execution) Start() error {
-	fmt.Println("Execution.Start")
+	ref.logger.Debug("Execution.Start")
 	if err := ref.StartServices(); err != nil {
 		return err
 	}
@@ -599,26 +601,26 @@ func (ref *Execution) Start() error {
 }
 
 func (ref *Execution) StartServices() error {
-	fmt.Println("Execution.StartServices")
+	ref.logger.Debug("Execution.StartServices")
 
 	if err := ref.Project.WithServices(nil,
 		func(service types.ServiceConfig) error {
-			fmt.Printf("Execution.StartServices: service.Name='%s'\n", service.Name)
+			ref.logger.Debugf("Execution.StartServices: service.Name='%s'", service.Name)
 			fullSvcInfo, found := ref.AllServices[service.Name]
 			if !found {
 				return fmt.Errorf("unknown service - %s", service.Name)
 			}
 
-			fmt.Printf("Execution.StartServices: starting service=%s (image=%s)\n", service.Name, fullSvcInfo.Config.Image)
+			ref.logger.Debugf("Execution.StartServices: starting service=%s (image=%s)", service.Name, fullSvcInfo.Config.Image)
 			err := ref.StartService(service.Name)
 			if err != nil {
-				fmt.Printf("Execution.StartServices: ref.StartService() error = %v\n", err)
+				ref.logger.Debugf("Execution.StartServices: ref.StartService() error = %v", err)
 				return err
 			}
 
 			return nil
 		}); err != nil {
-		fmt.Println("Execution.StartServices: ref.Project.WithServices error =", err)
+		ref.logger.Debugf("Execution.StartServices: ref.Project.WithServices error = %v", err)
 		return err
 	}
 
@@ -626,17 +628,17 @@ func (ref *Execution) StartServices() error {
 }
 
 func (ref *Execution) StartService(name string) error {
-	fmt.Printf("Execution.StartService(%s)\n", name)
+	ref.logger.Debug("Execution.StartService(%s)\n", name)
 
 	_, running := ref.RunningServices[name]
 	if running {
-		fmt.Printf("Execution.StartService(%s) - already running\n", name)
+		ref.logger.Debugf("Execution.StartService(%s) - already running", name)
 		return nil
 	}
 
 	_, pending := ref.PendingServices[name]
 	if pending {
-		fmt.Printf("Execution.StartService(%s) - already starting\n", name)
+		ref.logger.Debugf("Execution.StartService(%s) - already starting", name)
 		return nil
 	}
 
@@ -646,10 +648,10 @@ func (ref *Execution) StartService(name string) error {
 	}
 
 	if !serviceInfo.Selected {
-		fmt.Printf("Execution.StartService(%s) - NOT SELECTED\n", name)
+		ref.logger.Debugf("Execution.StartService(%s) - NOT SELECTED", name)
 		return nil
 	} else {
-		fmt.Printf("Execution.StartService(%s) - selected\n", name)
+		ref.logger.Debugf("Execution.StartService(%s) - selected", name)
 	}
 
 	service := serviceInfo.Config
@@ -660,9 +662,8 @@ func (ref *Execution) StartService(name string) error {
 	//is called in reverse dependency order
 	dependencies := service.GetDependencies()
 	for _, dep := range dependencies {
-		fmt.Printf("Execution.StartService(%s): start dependency=%s\n", name, dep)
+		ref.logger.Debugf("Execution.StartService(%s): start dependency=%s", name, dep)
 		err := ref.StartService(dep)
-		fmt.Printf("\n\n")
 		if err != nil {
 			return err
 		}
@@ -685,7 +686,7 @@ func (ref *Execution) StartService(name string) error {
 		ref.ActiveNetworks,
 		service)
 	if err != nil {
-		fmt.Printf("Execution.StartService(%s): startContainer() error - %v\n", name, err)
+		ref.logger.Debugf("Execution.StartService(%s): startContainer() error - %v", name, err)
 		return err
 	}
 
@@ -701,7 +702,7 @@ func (ref *Execution) StartService(name string) error {
 }
 
 func (ref *Execution) StopServices() error {
-	fmt.Println("Execution.StopServices")
+	ref.logger.Debug("Execution.StopServices")
 
 	for key := range ref.RunningServices {
 		err := ref.StopService(key)
@@ -713,7 +714,7 @@ func (ref *Execution) StopServices() error {
 }
 
 func (ref *Execution) CleanupServices() error {
-	fmt.Println("Execution.CleanupServices")
+	ref.logger.Debug("Execution.CleanupServices")
 
 	for key := range ref.RunningServices {
 		err := ref.CleanupService(key)
@@ -725,20 +726,20 @@ func (ref *Execution) CleanupServices() error {
 }
 
 func (ref *Execution) StopService(key string) error {
-	fmt.Printf("Execution.StopService(%s)\n", key)
+	ref.logger.Debug("Execution.StopService(%s)\n", key)
 	service, running := ref.RunningServices[key]
 	if !running {
-		fmt.Printf("Execution.StopService(%s) - no running service\n", key)
+		ref.logger.Debugf("Execution.StopService(%s) - no running service", key)
 		if serviceInfo, found := ref.AllServices[key]; found && serviceInfo != nil {
 			if !serviceInfo.Selected {
-				fmt.Printf("Execution.StopService(%s) - service not selected\n", key)
+				ref.logger.Debugf("Execution.StopService(%s) - service not selected", key)
 				return nil
 			}
 		}
 		return nil
 	}
 
-	fmt.Printf("Execution.StopService(%s): service=%+v\n", key, service)
+	ref.logger.Debugf("Execution.StopService(%s): service=%+v", key, service)
 
 	timeout := uint(defaultStopTimeout)
 	if err := ref.apiClient.StopContainer(service.ID, timeout); err != nil {
@@ -749,20 +750,20 @@ func (ref *Execution) StopService(key string) error {
 }
 
 func (ref *Execution) CleanupService(key string) error {
-	fmt.Printf("Execution.CleanupService(%s)\n", key)
+	ref.logger.Debugf("Execution.CleanupService(%s)", key)
 	service, running := ref.RunningServices[key]
 	if !running {
-		fmt.Printf("Execution.CleanupService(%s) - no running service\n", key)
+		ref.logger.Debugf("Execution.CleanupService(%s) - no running service", key)
 		if serviceInfo, found := ref.AllServices[key]; found && serviceInfo != nil {
 			if !serviceInfo.Selected {
-				fmt.Printf("Execution.CleanupService(%s) - service not selected\n", key)
+				ref.logger.Debugf("Execution.CleanupService(%s) - service not selected", key)
 				return nil
 			}
 		}
 		return nil
 	}
 
-	fmt.Printf("Execution.CleanupService(%s): service=%+v\n", key, service)
+	ref.logger.Debugf("Execution.CleanupService(%s): service=%+v", key, service)
 
 	options := dockerapi.RemoveContainerOptions{
 		ID:    service.ID,
@@ -887,7 +888,7 @@ func HasImage(dclient *dockerapi.Client, imageRef string) (bool, error) {
 		return false, fmt.Errorf("bad image reference")
 	}
 
-	info, err := HasImageX(dclient, imageRef)
+	info, err := dockerutil.HasImage(dclient, imageRef)
 	if err != nil {
 		if err == dockerapi.ErrNoSuchImage {
 			return false, nil
@@ -896,7 +897,7 @@ func HasImage(dclient *dockerapi.Client, imageRef string) (bool, error) {
 		return false, err
 	}
 
-	fmt.Printf("HasImage(%s): image identity - %#v\n", imageRef, info)
+	log.Debugf("HasImage(%s): image identity - %#v", imageRef, info)
 
 	var repo string
 	var tag string
@@ -917,34 +918,13 @@ func HasImage(dclient *dockerapi.Client, imageRef string) (bool, error) {
 
 	for _, t := range info.ShortTags {
 		if t == tag {
-			fmt.Printf("HasImage(%s): FOUND IT - %s (%s)\n", imageRef, t, repo)
+			log.Debugf("HasImage(%s): FOUND IT - %s (%s)", imageRef, t, repo)
 			return true, nil
 		}
 	}
 
-	fmt.Printf("HasImage(%s): NOT FOUND IT\n", imageRef)
+	log.Debugf("HasImage(%s): NOT FOUND IT", imageRef)
 	return false, nil
-}
-
-func HasImageX(dclient *dockerapi.Client, imageRef string) (*ImageIdentity, error) {
-	//NOTES:
-	//ListImages doesn't filter by image ID (must use ImageInspect instead)
-	//Check images by name:tag, full or partial image ID or name@digest
-	if imageRef == "" || imageRef == "." || imageRef == ".." {
-		return nil, fmt.Errorf("bad image reference")
-	}
-
-	imageInfo, err := dclient.InspectImage(imageRef)
-	if err != nil {
-		if err == dockerapi.ErrNoSuchImage {
-			fmt.Printf("HasImage(%s): dclient.InspectImage - dockerapi.ErrNoSuchImage", imageRef)
-			return nil, err
-		}
-
-		return nil, err
-	}
-
-	return ImageToIdentity(imageInfo), nil
 }
 
 type ImageIdentity struct {
@@ -980,7 +960,7 @@ func ImageToIdentity(info *dockerapi.Image) *ImageIdentity {
 }
 
 func pullImage(ctx context.Context, apiClient *dockerapi.Client, imageRef string) error {
-	fmt.Printf("pullImage(%s)\n", imageRef)
+	log.Debugf("pullImage(%s)", imageRef)
 
 	var repo string
 	var tag string
@@ -1016,9 +996,9 @@ func pullImage(ctx context.Context, apiClient *dockerapi.Client, imageRef string
 	//TODO: add support for auth
 	auth := dockerapi.AuthConfiguration{}
 
-	fmt.Printf("pullImage(%s) repo=%s tag=%s\n", imageRef, repo, tag)
+	log.Debugf("pullImage(%s) repo=%s tag=%s", imageRef, repo, tag)
 	if err := apiClient.PullImage(options, auth); err != nil {
-		fmt.Printf("pullImage: dockerapi.PullImage() error = %v\n", err)
+		log.Debugf("pullImage: dockerapi.PullImage() error = %v", err)
 		return err
 	}
 
@@ -1031,7 +1011,7 @@ func pullImage(ctx context.Context, apiClient *dockerapi.Client, imageRef string
 
 //TODO: move builder into pkg
 func buildImage(ctx context.Context, apiClient *dockerapi.Client, basePath, imageName string, config *types.BuildConfig) error {
-	fmt.Printf("buildImage(%s,%s)\n", basePath, imageName)
+	log.Debugf("buildImage(%s,%s)", basePath, imageName)
 
 	var output bytes.Buffer
 	buildOptions := dockerapi.BuildImageOptions{
@@ -1096,7 +1076,7 @@ func buildImage(ctx context.Context, apiClient *dockerapi.Client, basePath, imag
 	}
 
 	if err := apiClient.BuildImage(buildOptions); err != nil {
-		fmt.Printf("buildImage: dockerapi.BuildImage() error = %v\n", err)
+		log.Debugf("buildImage: dockerapi.BuildImage() error = %v", err)
 		return err
 	}
 
@@ -1124,12 +1104,12 @@ func startContainer(
 	activeVolumes map[string]*ActiveVolume,
 	activeNetworks map[string]*ActiveNetwork,
 	service types.ServiceConfig) (string, error) {
-	fmt.Printf("startContainer(%s)\n", service.Name)
-	fmt.Printf("service.Image=%s\n", service.Image)
-	fmt.Printf("service.Entrypoint=%s\n", service.Entrypoint)
-	fmt.Printf("service.Command=%s\n", service.Command)
-	fmt.Printf("service.Ports=%#v\n", service.Ports)
-	fmt.Printf("service.Environment=%#v\n", service.Environment)
+	log.Debugf("startContainer(%s)", service.Name)
+	log.Debugf("service.Image=%s", service.Image)
+	log.Debugf("service.Entrypoint=%s", service.Entrypoint)
+	log.Debugf("service.Command=%s", service.Command)
+	log.Debugf("service.Ports=%#v", service.Ports)
+	log.Debugf("service.Environment=%#v", service.Environment)
 
 	labels := map[string]string{}
 	for name, val := range service.Labels {
@@ -1155,14 +1135,14 @@ func startContainer(
 	var netModeKey string
 	netMode := service.NetworkMode
 	if netMode == "" {
-		fmt.Printf("startContainer(): activeNetworks[%d]=%+v\n",
+		log.Debugf("startContainer(): activeNetworks[%d]=%+v",
 			len(activeNetworks), activeNetworks)
 
 		if len(activeNetworks) > 0 {
 			serviceNetworks := service.Networks
-			fmt.Printf("startContainer(): configured service network count - %d\n", len(serviceNetworks))
+			log.Debugf("startContainer(): configured service network count - %d", len(serviceNetworks))
 			if len(serviceNetworks) == 0 {
-				fmt.Printf("startContainer(): adding default service network config\n")
+				log.Debug("startContainer(): adding default service network config")
 				defaultNet := fmt.Sprintf("%s_default", projectName)
 				serviceNetworks = map[string]*types.ServiceNetworkConfig{
 					defaultNet: nil,
@@ -1170,11 +1150,11 @@ func startContainer(
 			}
 
 			for name := range serviceNetworks {
-				fmt.Printf("startContainer(): service network config - %s\n", name)
+				log.Debugf("startContainer(): service network config - %s", name)
 				if _, ok := activeNetworks[name]; ok {
 					netMode = activeNetworks[name].Name
 					netModeKey = name
-					fmt.Printf("startContainer(): found active network config - %s (netMode=%s)\n", name, netMode)
+					log.Debugf("startContainer(): found active network config - %s (netMode=%s)", name, netMode)
 					break
 				}
 			}
@@ -1182,7 +1162,7 @@ func startContainer(
 
 		if netMode == "" {
 			netMode = "none"
-			fmt.Printf("startContainer(): default netMode to none\n")
+			log.Debug("startContainer(): default netMode to none")
 		}
 	}
 
@@ -1208,7 +1188,7 @@ func startContainer(
 		},
 	}
 
-	fmt.Printf("startContainer(%s): endpointsConfig=%+v\n", service.Name, endpointsConfig)
+	log.Debugf("startContainer(%s): endpointsConfig=%+v", service.Name, endpointsConfig)
 
 	volumes, mounts, err := hostMountsFromVolumeConfigs(baseComposeDir, service.Volumes, activeVolumes)
 	if err != nil {
@@ -1248,8 +1228,8 @@ func startContainer(
 		Name: serviceName,
 		Config: &dockerapi.Config{
 			Image:        getServiceImage(),
-			Entrypoint:   []string(service.Entrypoint), //strslice.StrSlice(s.Entrypoint), <- CHECK!!!
-			Cmd:          []string(service.Command),    //strslice.StrSlice(s.Command), <- CHECK!!!
+			Entrypoint:   []string(service.Entrypoint),
+			Cmd:          []string(service.Command),
 			WorkingDir:   service.WorkingDir,
 			Env:          envVars,
 			Hostname:     service.Hostname,
@@ -1310,7 +1290,7 @@ func startContainer(
 			ShmSize: int64(service.ShmSize),
 			//Tmpfs: ,//map[string]string
 			Sysctls:  service.Sysctls,
-			CPUCount: service.CPUCount, //shuld c
+			CPUCount: service.CPUCount,
 			//CPUPercent: ,///int64 <- service.CPUPercent
 			Runtime: service.Runtime, //string
 		},
@@ -1331,23 +1311,23 @@ func startContainer(
 		containerOptions.HostConfig.Init = *service.Init
 	}
 
-	fmt.Printf("startContainer(%s): creating container...\n", service.Name)
+	log.Debugf("startContainer(%s): creating container...", service.Name)
 	containerInfo, err := apiClient.CreateContainer(containerOptions)
 	if err != nil {
-		fmt.Printf("startContainer(%s): create container error - %v\n", service.Name, err)
+		log.Debugf("startContainer(%s): create container error - %v", service.Name, err)
 		return "", err
 	}
 
-	fmt.Printf("startContainer(%s): connecting container to networks...\n", service.Name)
+	log.Debugf("startContainer(%s): connecting container to networks...", service.Name)
 	for key, serviceNet := range service.Networks {
-		fmt.Printf("startContainer(%s): service network key=%s info=%v\n", service.Name, key, serviceNet)
+		log.Debugf("startContainer(%s): service network key=%s info=%v", service.Name, key, serviceNet)
 		netInfo, found := activeNetworks[key]
 		if !found || netInfo == nil {
-			fmt.Printf("startContainer(%s): skipping network = '%s'\n", service.Name, key)
+			log.Debugf("startContainer(%s): skipping network = '%s'", service.Name, key)
 			continue
 		}
 
-		fmt.Printf("startContainer(%s): found network key=%s netInfo=%#v\n", service.Name, key, netInfo)
+		log.Debugf("startContainer(%s): found network key=%s netInfo=%#v", service.Name, key, netInfo)
 
 		options := dockerapi.NetworkConnectionOptions{
 			Container: containerInfo.ID,
@@ -1365,15 +1345,15 @@ func startContainer(
 		options.EndpointConfig.Aliases = append(options.EndpointConfig.Aliases, containerInfo.ID[:12])
 
 		if err := apiClient.ConnectNetwork(netInfo.ID, options); err != nil {
-			fmt.Printf("startContainer(%s): container network connect error - %v\n", service.Name, err)
-			fmt.Printf("startContainer(%s): netInfo.ID=%s options=%#v\n", service.Name, netInfo.ID, options)
+			log.Debugf("startContainer(%s): container network connect error - %v", service.Name, err)
+			log.Debugf("startContainer(%s): netInfo.ID=%s options=%#v", service.Name, netInfo.ID, options)
 			return "", err
 		}
 	}
 
-	fmt.Printf("startContainer(%s): starting container id=%s\n", service.Name, containerInfo.ID)
+	log.Debugf("startContainer(%s): starting container id=%s", service.Name, containerInfo.ID)
 	if err := apiClient.StartContainer(containerInfo.ID, nil); err != nil {
-		fmt.Printf("startContainer(%s): start container error - %v\n", service.Name, err)
+		log.Debugf("startContainer(%s): start container error - %v", service.Name, err)
 		return "", err
 	}
 
@@ -1414,7 +1394,7 @@ func createVolume(apiClient *dockerapi.Client, projectName, name string, config 
 
 	volumeInfo, err := apiClient.CreateVolume(volumeOptions)
 	if err != nil {
-		fmt.Printf("dclient.CreateVolume() error = %v\n", err)
+		log.Debugf("dclient.CreateVolume() error = %v", err)
 		return "", err
 	}
 
@@ -1425,7 +1405,7 @@ func (ref *Execution) CreateVolumes() error {
 	projectName := strings.Trim(ref.Project.Name, "-_")
 
 	for key, volume := range ref.Project.Volumes {
-		fmt.Printf("CreateVolumes: key=%s name=%s\n", key, volume.Name)
+		ref.logger.Debugf("CreateVolumes: key=%s name=%s", key, volume.Name)
 		name := key
 		if volume.Name != "" {
 			name = volume.Name
@@ -1447,7 +1427,7 @@ func (ref *Execution) CreateVolumes() error {
 
 func (ref *Execution) DeleteVolumes() error {
 	for key, volume := range ref.ActiveVolumes {
-		fmt.Printf("DeleteVolumes: key/name=%s ID=%s\n", key, volume.ID)
+		ref.logger.Debugf("DeleteVolumes: key/name=%s ID=%s", key, volume.ID)
 
 		err := deleteVolume(ref.apiClient, volume.ID)
 		if err != nil {
@@ -1468,7 +1448,7 @@ func deleteVolume(apiClient *dockerapi.Client, id string) error {
 
 	err := apiClient.RemoveVolumeWithOptions(removeOptions)
 	if err != nil {
-		fmt.Printf("dclient.RemoveVolumeWithOptions() error = %v\n", err)
+		log.Debugf("dclient.RemoveVolumeWithOptions() error = %v", err)
 		return err
 	}
 
@@ -1478,12 +1458,12 @@ func deleteVolume(apiClient *dockerapi.Client, id string) error {
 const defaultNetName = "default"
 
 func (ref *Execution) CreateNetworks() error {
-	fmt.Printf("Execution.CreateNetworks\n")
+	ref.logger.Debugf("Execution.CreateNetworks")
 	projectName := strings.Trim(ref.Project.Name, "-_")
 
 	for key, networkInfo := range ref.AllNetworks {
 		network := networkInfo.Config
-		fmt.Printf("Execution.CreateNetworks: key=%s name=%s\n", key, network.Name)
+		ref.logger.Debugf("Execution.CreateNetworks: key=%s name=%s", key, network.Name)
 
 		created, id, err := createNetwork(ref.apiClient, projectName, key, networkInfo.Name, network)
 		if err != nil {
@@ -1519,7 +1499,7 @@ func (ref *Execution) CreateNetworks() error {
 }
 
 func createNetwork(apiClient *dockerapi.Client, projectName, name, fullName string, config types.NetworkConfig) (bool, string, error) {
-	fmt.Printf("createNetwork(%s,%s)\n", projectName, name)
+	log.Debugf("createNetwork(%s,%s)", projectName, name)
 
 	//fullName := fullNetworkName(projectName, name, config.Name)
 	//fullName := fmt.Sprintf("%s_%s", projectName, name)
@@ -1568,11 +1548,11 @@ func createNetwork(apiClient *dockerapi.Client, projectName, name, fullName stri
 		},
 	}
 
-	fmt.Printf("createNetwork(%s,%s): lookup '%s'\n", projectName, name, fullName)
+	log.Debugf("createNetwork(%s,%s): lookup '%s'", projectName, name, fullName)
 
 	networkList, err := apiClient.FilteredListNetworks(filter)
 	if err != nil {
-		fmt.Printf("listNetworks(%s): dockerapi.FilteredListNetworks() error = %v", name, err)
+		log.Debugf("listNetworks(%s): dockerapi.FilteredListNetworks() error = %v", name, err)
 		return false, "", err
 	}
 
@@ -1581,25 +1561,25 @@ func createNetwork(apiClient *dockerapi.Client, projectName, name, fullName stri
 			return false, "", fmt.Errorf("no external network - %s", fullName)
 		}
 
-		fmt.Printf("createNetwork(%s,%s): create '%s'\n", projectName, name, options.Name)
+		log.Debugf("createNetwork(%s,%s): create '%s'", projectName, name, options.Name)
 		networkInfo, err := apiClient.CreateNetwork(options)
 		if err != nil {
-			fmt.Printf("apiClient.CreateNetwork() error = %v\n", err)
+			log.Debugf("apiClient.CreateNetwork() error = %v", err)
 			return false, "", err
 		}
 
 		return true, networkInfo.ID, nil
 	}
 
-	fmt.Printf("createNetwork(%s,%s): found network '%s' (id=%s)\n", projectName, name, fullName, networkList[0].ID)
+	log.Debugf("createNetwork(%s,%s): found network '%s' (id=%s)", projectName, name, fullName, networkList[0].ID)
 	return false, networkList[0].ID, nil
 }
 
 func (ref *Execution) DeleteNetworks() error {
 	for key, network := range ref.ActiveNetworks {
-		fmt.Printf("DeleteNetworks: key=%s name=%s ID=%s\n", key, network.Name, network.ID)
+		ref.logger.Debugf("DeleteNetworks: key=%s name=%s ID=%s", key, network.Name, network.ID)
 		if !network.Created {
-			fmt.Printf("DeleteNetworks: skipping...\n")
+			ref.logger.Debug("DeleteNetworks: skipping...")
 			continue
 		}
 
@@ -1617,7 +1597,7 @@ func (ref *Execution) DeleteNetworks() error {
 func deleteNetwork(apiClient *dockerapi.Client, id string) error {
 	err := apiClient.RemoveNetwork(id)
 	if err != nil {
-		fmt.Printf("dclient.RemoveNetwork() error = %v\n", err)
+		log.Debugf("dclient.RemoveNetwork() error = %v", err)
 		return err
 	}
 
@@ -1642,7 +1622,7 @@ func dumpConfig(config *types.Config) {
 }
 
 func (ref *Execution) Stop() error {
-	fmt.Println("Execution.Stop")
+	ref.logger.Debugf("Execution.Stop")
 
 	if err := ref.StopServices(); err != nil {
 		return err
@@ -1652,7 +1632,7 @@ func (ref *Execution) Stop() error {
 }
 
 func (ref *Execution) Cleanup() error {
-	fmt.Println("Execution.Cleanup")
+	ref.logger.Debugf("Execution.Cleanup")
 	//todo:
 	//pass 'force'/'all' param to clean the spec resources
 	//not created by this instance (except external resources)
