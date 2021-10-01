@@ -286,7 +286,7 @@ func OnCommand(
 		targetRef = fatImageRepoNameTag
 		//todo: remove the temporary fat image (should have a flag for it in case users want the fat image too)
 	}
-
+	serviceAliases := []string{}
 	var depServicesExe *compose.Execution
 	if composeFile != "" {
 		if targetComposeSvc != "" && depIncludeComposeSvcDeps != targetComposeSvc {
@@ -302,6 +302,11 @@ func OnCommand(
 				depExcludeComposeSvcs = append(depExcludeComposeSvcs, targetComposeSvc)
 			}
 		}
+
+		// when more than one target is supported
+		// this should be done per service name
+		serviceAliases = depExcludeComposeSvcs
+		logger.Debugf("compose: serviceAliases='%s'\n", serviceAliases)
 
 		selectors := compose.NewServiceSelectors(depIncludeComposeSvcDeps,
 			depIncludeComposeSvcs,
@@ -634,6 +639,7 @@ func OnCommand(
 		doIncludeCertPKAll,
 		doIncludeCertPKDirs,
 		selectedNetNames,
+		serviceAliases,
 		gparams.Debug,
 		gparams.InContainer,
 		true,

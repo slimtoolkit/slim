@@ -22,7 +22,7 @@ import (
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	"github.com/dustin/go-humanize"
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -249,6 +249,7 @@ func OnCommand(
 		false, //doIncludeCertPKAll
 		false, //doIncludeCertPKDirs
 		nil,   //selectedNetNames
+		nil,
 		gparams.Debug,
 		gparams.InContainer,
 		true,

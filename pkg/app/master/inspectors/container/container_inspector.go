@@ -111,6 +111,7 @@ type Inspector struct {
 	DoIncludeCertPKAll    bool
 	DoIncludeCertPKDirs   bool
 	SelectedNetNames      map[string]string
+	ServiceAliases        []string
 	DoDebug               bool
 	PrintState            bool
 	PrintPrefix           string
@@ -172,6 +173,7 @@ func NewInspector(
 	doIncludeCertPKAll bool,
 	doIncludeCertPKDirs bool,
 	selectedNetNames map[string]string,
+	serviceAliases []string,
 	doDebug bool,
 	inContainer bool,
 	printState bool,
@@ -213,6 +215,7 @@ func NewInspector(
 		DoIncludeCertPKAll:    doIncludeCertPKAll,
 		DoIncludeCertPKDirs:   doIncludeCertPKDirs,
 		SelectedNetNames:      selectedNetNames,
+		ServiceAliases:        serviceAliases,
 		DoDebug:               doDebug,
 		PrintState:            printState,
 		PrintPrefix:           printPrefix,
@@ -587,7 +590,7 @@ func (i *Inspector) RunContainer() error {
 	if len(i.SelectedNetNames) > 0 {
 		i.logger.Debugf("RunContainer: SelectedNetNames => %#v", i.SelectedNetNames)
 		for key, netName := range i.SelectedNetNames {
-			err = attachContainerToNetwork(i.logger, i.APIClient, i.ContainerID, netName)
+			err = attachContainerToNetwork(i.logger, i.APIClient, i.ContainerID, netName, i.ServiceAliases)
 			if err != nil {
 				i.logger.Debugf("RunContainer: AttachContainerToNetwork(%s,%s) key=%s error => %#v", i.ContainerID, netName, key, err)
 				return err
@@ -1042,11 +1045,14 @@ func ensureSensorVolume(logger *log.Entry, client *dockerapi.Client, localSensor
 	return volumeName, nil
 }
 
-func attachContainerToNetwork(logger *log.Entry, apiClient *dockerapi.Client, containerID string, networkName string) error {
+func attachContainerToNetwork(logger *log.Entry, apiClient *dockerapi.Client, containerID string, networkName string, aliases []string) error {
 	//might need network IDs instead of network names
 	//might need alias info too
 	options := dockerapi.NetworkConnectionOptions{
 		Container: containerID,
+		EndpointConfig: &dockerapi.EndpointConfig{
+			Aliases: aliases,
+		},
 	}
 
 	if err := apiClient.ConnectNetwork(networkName, options); err != nil {
