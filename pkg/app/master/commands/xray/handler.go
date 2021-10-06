@@ -255,7 +255,8 @@ func OnCommand(
 	if buildpackinfo.HasBuildbackLabels(imageInspector.ImageInfo.Config.Labels) {
 		for k, v := range imageInspector.ImageInfo.Config.Labels {
 			if k == "io.buildpacks.stack.maintainer" {
-				maintainers[v] = struct{}{}
+				buildpackMaintainer := v + " (buildpack)"
+				maintainers[buildpackMaintainer] = struct{}{}
 			}
 		}
 
