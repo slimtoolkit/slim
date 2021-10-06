@@ -377,6 +377,23 @@ func OnCommand(
 				xc.Exit(exitCode)
 			}
 
+			// sort and override, add environment variables
+			for _, env := range overrides.Env {
+				envComponents := strings.SplitN(env, "=", 1)
+				if len(envComponents) == 2 {
+					targetSvcInfo.Config.Environment[envComponents[0]] = &envComponents[1]
+				}
+			}
+			// combine into overrides
+			combineEnv := make([]string, 0)
+			for key := range targetSvcInfo.Config.Environment {
+				variable := fmt.Sprintf("%s=%s", key, *targetSvcInfo.Config.Environment[key])
+				combineEnv = append(combineEnv, variable)
+			}
+			overrides.Env = combineEnv
+
+			logger.Debugf("compose: Environment_Variables='%v'\n", overrides.Env)
+
 			targetRef = targetSvcInfo.Config.Image
 
 			if len(targetSvcInfo.Config.Entrypoint) > 0 {
