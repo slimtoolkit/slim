@@ -263,7 +263,7 @@ func OnCommand(
 	}
 
 	for k, v := range cmdReport.SourceImage.Labels {
-		if strings.ToLower(k) == "maintainer" {
+		if strings.ToLower(k) == "maintainer" || k == "org.opencontainers.image.authors" {
 			maintainers[v] = struct{}{}
 		}
 	}
