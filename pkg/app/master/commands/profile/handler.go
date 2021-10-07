@@ -22,7 +22,7 @@ import (
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	"github.com/dustin/go-humanize"
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -43,6 +43,8 @@ func OnCommand(
 	gparams *commands.GenericParams,
 	targetRef string,
 	doPull bool,
+	registryUsername string,
+	registryPassword string,
 	doShowPullLogs bool,
 	crOpts *config.ContainerRunOptions,
 	doHTTPProbe bool,
@@ -171,7 +173,7 @@ func OnCommand(
 					"message": "trying to pull target image",
 				})
 
-			err := imageInspector.Pull(doShowPullLogs)
+			err := imageInspector.Pull(doShowPullLogs, registryUsername, registryPassword)
 			errutil.FailOn(err)
 		} else {
 			xc.Out.Info("target.image.error",

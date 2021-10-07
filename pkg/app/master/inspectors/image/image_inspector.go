@@ -10,7 +10,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -81,7 +81,7 @@ func (i *Inspector) NoImage() bool {
 }
 
 // Pull tries to download the target image
-func (i *Inspector) Pull(showPullLog bool) error {
+func (i *Inspector) Pull(showPullLog bool, username, password string) error {
 	var pullLog bytes.Buffer
 	var repo string
 	var tag string
@@ -103,7 +103,25 @@ func (i *Inspector) Pull(showPullLog bool) error {
 		input.OutputStream = &pullLog
 	}
 
-	err := i.APIClient.PullImage(input, docker.AuthConfiguration{})
+	var err error
+	var authConfig *docker.AuthConfiguration
+	if username != "" && password != "" {
+		authConfig = &docker.AuthConfiguration{Username: username, Password: password}
+	} else {
+		registry := strings.Split(repo, "/")[0]
+		authConfig, err = docker.NewAuthConfigurationsFromCredsHelpers(registry)
+		if err != nil {
+			log.Debugf(
+				"image.inspector.Pull: failed to acquire local docker credentials for %s err=%s",
+				registry,
+				err.Error(),
+			)
+			return err
+		}
+	}
+	log.Debugf("loaded registry auth config %+v", authConfig)
+
+	err = i.APIClient.PullImage(input, docker.AuthConfiguration{})
 	if err != nil {
 		log.Debugf("image.inspector.Pull: client.PullImage err=%v", err)
 		return err

@@ -25,6 +25,8 @@ var CLI = cli.Command{
 	Flags: []cli.Flag{
 		commands.Cflag(commands.FlagTarget),
 		commands.Cflag(commands.FlagPull),
+		commands.Cflag(commands.FlagRegistryUsername),
+		commands.Cflag(commands.FlagRegistryPassword),
 		commands.Cflag(commands.FlagShowPullLogs),
 		cflag(FlagChanges),
 		cflag(FlagChangesOutput),
@@ -83,6 +85,8 @@ var CLI = cli.Command{
 		xdArtifactsPath := ctx.String(FlagExportAllDataArtifacts)
 
 		doPull := ctx.Bool(commands.FlagPull)
+		registryUsername := ctx.String(commands.FlagRegistryUsername)
+		registryPassword := ctx.String(commands.FlagRegistryPassword)
 		doShowPullLogs := ctx.Bool(commands.FlagShowPullLogs)
 
 		changes, err := parseChangeTypes(ctx.StringSlice(FlagChanges))
@@ -225,6 +229,8 @@ var CLI = cli.Command{
 			gcvalues,
 			targetRef,
 			doPull,
+			registryUsername,
+			registryPassword,
 			doShowPullLogs,
 			changes,
 			changesOutputs,

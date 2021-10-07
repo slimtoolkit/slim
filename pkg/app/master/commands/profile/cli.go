@@ -23,6 +23,8 @@ var CLI = cli.Command{
 	Flags: []cli.Flag{
 		commands.Cflag(commands.FlagTarget),
 		commands.Cflag(commands.FlagPull),
+		commands.Cflag(commands.FlagRegistryUsername),
+		commands.Cflag(commands.FlagRegistryPassword),
 		commands.Cflag(commands.FlagShowPullLogs),
 		commands.Cflag(commands.FlagShowContainerLogs),
 		commands.Cflag(commands.FlagHTTPProbeOff),
@@ -113,6 +115,8 @@ var CLI = cli.Command{
 		}
 
 		doPull := ctx.Bool(commands.FlagPull)
+		registryUsername := ctx.String(commands.FlagRegistryUsername)
+		registryPassword := ctx.String(commands.FlagRegistryPassword)
 		doShowPullLogs := ctx.Bool(commands.FlagShowPullLogs)
 
 		doRmFileArtifacts := ctx.Bool(commands.FlagRemoveFileArtifacts)
@@ -338,6 +342,8 @@ var CLI = cli.Command{
 			gcvalues,
 			targetRef,
 			doPull,
+			registryUsername,
+			registryPassword,
 			doShowPullLogs,
 			crOpts,
 			doHTTPProbe,
