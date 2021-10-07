@@ -121,7 +121,7 @@ func (i *Inspector) Pull(showPullLog bool, username, password string) error {
 	}
 	log.Debugf("loaded registry auth config %+v", authConfig)
 
-	err = i.APIClient.PullImage(input, docker.AuthConfiguration{})
+	err = i.APIClient.PullImage(input, *authConfig)
 	if err != nil {
 		log.Debugf("image.inspector.Pull: client.PullImage err=%v", err)
 		return err
