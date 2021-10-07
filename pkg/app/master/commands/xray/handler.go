@@ -250,20 +250,28 @@ func OnCommand(
 
 	cmdReport.SourceImage.Labels = imageInspector.ImageInfo.Config.Labels
 
+	maintainers := map[string]struct{}{}
+
 	if buildpackinfo.HasBuildbackLabels(imageInspector.ImageInfo.Config.Labels) {
+		for k, v := range imageInspector.ImageInfo.Config.Labels {
+			if k == "io.buildpacks.stack.maintainer" {
+				buildpackMaintainer := v + " (buildpack)"
+				maintainers[buildpackMaintainer] = struct{}{}
+			}
+		}
+
 		bpStack := imageInspector.ImageInfo.Config.Labels[buildpackinfo.LabelKeyStackID]
 		cmdReport.SourceImage.Buildpack = &report.BuildpackInfo{
 			Stack: bpStack,
 		}
 	}
 
-	maintainers := map[string]struct{}{}
 	for _, m := range imageInspector.DockerfileInfo.Maintainers {
 		maintainers[m] = struct{}{}
 	}
 
 	for k, v := range cmdReport.SourceImage.Labels {
-		if strings.ToLower(k) == "maintainer" {
+		if strings.ToLower(k) == "maintainer" || strings.ToLower(k) == "author" || strings.ToLower(k) == "authors" || k == "org.opencontainers.image.authors" {
 			maintainers[v] = struct{}{}
 		}
 	}
