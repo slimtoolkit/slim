@@ -653,7 +653,8 @@ func (i *Inspector) RunContainer() error {
 		return err
 	}
 
-	if i.ContainerInfo, err = i.APIClient.InspectContainer(i.ContainerID); err != nil {
+	inspectContainerOpts := dockerapi.InspectContainerOptions{ID: i.ContainerID, Size: true}
+	if i.ContainerInfo, err = i.APIClient.InspectContainerWithOptions(inspectContainerOpts); err != nil {
 		return err
 	}
 
