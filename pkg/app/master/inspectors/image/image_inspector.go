@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
@@ -105,10 +106,10 @@ func (i *Inspector) Pull(showPullLog bool, username, password string) error {
 
 	var err error
 	var authConfig *docker.AuthConfiguration
+	registry := extractRegistry(repo)
 	if username != "" && password != "" {
 		authConfig = &docker.AuthConfiguration{Username: username, Password: password}
 	} else {
-		registry := strings.Split(repo, "/")[0]
 		authConfig, err = docker.NewAuthConfigurationsFromCredsHelpers(registry)
 		if err != nil {
 			log.Debugf(
@@ -116,8 +117,17 @@ func (i *Inspector) Pull(showPullLog bool, username, password string) error {
 				registry,
 				err.Error(),
 			)
-			return err
 		}
+	}
+
+	// could not find a credentials' helper, check auth configs
+	if authConfig == nil {
+		dConfigs, err := docker.NewAuthConfigurationsFromDockerCfg()
+		if err != nil {
+			log.Debugf("err extracting auth configs - %s", err.Error())
+		}
+		r := dConfigs.Configs[registry]
+		authConfig = &r
 	}
 	log.Debugf("loaded registry auth config %+v", authConfig)
 
@@ -134,6 +144,21 @@ func (i *Inspector) Pull(showPullLog bool, username, password string) error {
 	}
 
 	return nil
+}
+
+func extractRegistry(repo string) string {
+	repo = strings.TrimPrefix(repo, "https://")
+	repo = strings.TrimPrefix(repo, "http://")
+
+	registry := strings.Split(repo, "/")[0]
+	re := `^(www\.|www\.)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$`
+	var validURL = regexp.MustCompile(re)
+
+	// when target does not contain registry domain, assume dockerhub
+	if !validURL.MatchString(repo) {
+		registry = "index.docker.io"
+	}
+	return registry
 }
 
 // Inspect starts the target image inspection
