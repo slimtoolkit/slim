@@ -2,6 +2,7 @@ package image
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -124,9 +125,13 @@ func (i *Inspector) Pull(showPullLog bool, username, password string) error {
 	if authConfig == nil {
 		dConfigs, err := docker.NewAuthConfigurationsFromDockerCfg()
 		if err != nil {
-			log.Debugf("err extracting auth configs - %s", err.Error())
+			log.Debugf("err extracting docker auth configs - %s", err.Error())
+			return err
 		}
-		r := dConfigs.Configs[registry]
+		r, found := dConfigs.Configs[registry]
+		if !found {
+			return errors.New("could not find an auth config for registry")
+		}
 		authConfig = &r
 	}
 	log.Debugf("loaded registry auth config %+v", authConfig)
@@ -151,11 +156,11 @@ func extractRegistry(repo string) string {
 	repo = strings.TrimPrefix(repo, "http://")
 
 	registry := strings.Split(repo, "/")[0]
-	re := `^(www\.|www\.)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$`
-	var validURL = regexp.MustCompile(re)
+	re := `^(www\.)?[a-z0-9]+([\-\.]{1}[a-z0-9]+)*\.[a-z]{2,5}(:[0-9]{1,5})?(\/.*)?$`
+	var validDomain = regexp.MustCompile(re)
 
 	// when target does not contain registry domain, assume dockerhub
-	if !validURL.MatchString(repo) {
+	if !validDomain.MatchString(repo) {
 		registry = "index.docker.io"
 	}
 	return registry
