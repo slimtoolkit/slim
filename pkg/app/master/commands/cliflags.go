@@ -49,11 +49,11 @@ const (
 
 // Shared command flag names
 const (
-	FlagTarget           = "target"
-	FlagPull             = "pull"
-	FlagRegistryUsername = "registry-username"
-	FlagRegistryPassword = "registry-password"
-	FlagShowPullLogs     = "show-plogs"
+	FlagTarget          = "target"
+	FlagPull            = "pull"
+	FlagRegistryAccount = "registry-account"
+	FlagRegistrySecret  = "registry-secret"
+	FlagShowPullLogs    = "show-plogs"
 
 	//Compose-related flags
 	FlagComposeFile              = "compose-file"
@@ -127,11 +127,11 @@ const (
 
 // Shared command flag usage info
 const (
-	FlagTargetUsage           = "Target container image (name or ID)"
-	FlagPullUsage             = "Try pulling target if it's not available locally"
-	FlagRegistryUsernameUsage = "Target registry username used when pulling an image from a private registry"
-	FlagRegistryPasswordUsage = "Target registry password used when pulling an image from a private registry"
-	FlagShowPullLogsUsage     = "Show image pull logs"
+	FlagTargetUsage          = "Target container image (name or ID)"
+	FlagPullUsage            = "Try pulling target if it's not available locally"
+	FlagRegistryAccountUsage = "Target registry account used when pulling an image from a private registry"
+	FlagRegistrySecretUsage  = "Target registry secret used when pulling an image from a private registry"
+	FlagShowPullLogsUsage    = "Show image pull logs"
 
 	//Compose-related flags
 	FlagComposeFileUsage              = "Load container info from selected compose file"
@@ -289,15 +289,15 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:  FlagPullUsage,
 		EnvVar: "DSLIM_PULL",
 	},
-	FlagRegistryUsername: cli.StringFlag{
-		Name:   FlagRegistryUsername,
-		Usage:  FlagRegistryUsernameUsage,
-		EnvVar: "DSLIM_REGISTRY_USERNAME",
+	FlagRegistryAccount: cli.StringFlag{
+		Name:   FlagRegistryAccount,
+		Usage:  FlagRegistryAccountUsage,
+		EnvVar: "DSLIM_REGISTRY_ACCOUNT",
 	},
-	FlagRegistryPassword: cli.StringFlag{
-		Name:   FlagRegistryPassword,
-		Usage:  FlagRegistryPasswordUsage,
-		EnvVar: "DSLIM_REGISTRY_PASSWORD",
+	FlagRegistrySecret: cli.StringFlag{
+		Name:   FlagRegistrySecret,
+		Usage:  FlagRegistrySecretUsage,
+		EnvVar: "DSLIM_REGISTRY_SECRET",
 	},
 	FlagShowPullLogs: cli.BoolFlag{
 		Name:   FlagShowPullLogs,

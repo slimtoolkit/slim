@@ -83,7 +83,7 @@ func (i *Inspector) NoImage() bool {
 }
 
 // Pull tries to download the target image
-func (i *Inspector) Pull(showPullLog bool, username, password string) error {
+func (i *Inspector) Pull(showPullLog bool, registryAccount, registrySecret string) error {
 	var pullLog bytes.Buffer
 	var repo string
 	var tag string
@@ -108,8 +108,8 @@ func (i *Inspector) Pull(showPullLog bool, username, password string) error {
 	var err error
 	var authConfig *docker.AuthConfiguration
 	registry := extractRegistry(repo)
-	if username != "" && password != "" {
-		authConfig = &docker.AuthConfiguration{Username: username, Password: password}
+	if registryAccount != "" && registrySecret != "" {
+		authConfig = &docker.AuthConfiguration{Username: registryAccount, Password: registrySecret}
 	} else {
 		authConfig, err = docker.NewAuthConfigurationsFromCredsHelpers(registry)
 		if err != nil {
