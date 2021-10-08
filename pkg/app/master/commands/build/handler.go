@@ -286,7 +286,7 @@ func OnCommand(
 		targetRef = fatImageRepoNameTag
 		//todo: remove the temporary fat image (should have a flag for it in case users want the fat image too)
 	}
-
+	serviceAliases := []string{}
 	var depServicesExe *compose.Execution
 	if composeFile != "" {
 		if targetComposeSvc != "" && depIncludeComposeSvcDeps != targetComposeSvc {
@@ -302,6 +302,11 @@ func OnCommand(
 				depExcludeComposeSvcs = append(depExcludeComposeSvcs, targetComposeSvc)
 			}
 		}
+
+		// when more than one target is supported
+		// this should be done per service name
+		serviceAliases = depExcludeComposeSvcs
+		logger.Debugf("compose: serviceAliases='%s'\n", serviceAliases)
 
 		selectors := compose.NewServiceSelectors(depIncludeComposeSvcDeps,
 			depIncludeComposeSvcs,
@@ -371,6 +376,23 @@ func OnCommand(
 
 				xc.Exit(exitCode)
 			}
+
+			// sort and override, add environment variables
+			for _, env := range overrides.Env {
+				envComponents := strings.SplitN(env, "=", 1)
+				if len(envComponents) == 2 {
+					targetSvcInfo.Config.Environment[envComponents[0]] = &envComponents[1]
+				}
+			}
+			// combine into overrides
+			combineEnv := make([]string, 0)
+			for key := range targetSvcInfo.Config.Environment {
+				variable := fmt.Sprintf("%s=%s", key, *targetSvcInfo.Config.Environment[key])
+				combineEnv = append(combineEnv, variable)
+			}
+			overrides.Env = combineEnv
+
+			logger.Debugf("compose: Environment_Variables='%v'\n", overrides.Env)
 
 			targetRef = targetSvcInfo.Config.Image
 
@@ -634,6 +656,7 @@ func OnCommand(
 		doIncludeCertPKAll,
 		doIncludeCertPKDirs,
 		selectedNetNames,
+		serviceAliases,
 		gparams.Debug,
 		gparams.InContainer,
 		true,
