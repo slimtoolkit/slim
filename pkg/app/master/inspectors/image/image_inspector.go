@@ -138,6 +138,8 @@ func getDockerCredential(registryAccount, registrySecret, dockerConfigPath, regi
 		}
 		return
 	}
+
+	missingAuthConfigErr := errors.New(fmt.Sprintf("could not find an auth config for registry - %s", registry))
 	if dockerConfigPath != "" {
 		dAuthConfigs, err := docker.NewAuthConfigurationsFromFile(dockerConfigPath)
 		if err != nil {
@@ -146,11 +148,11 @@ func getDockerCredential(registryAccount, registrySecret, dockerConfigPath, regi
 				dockerConfigPath,
 				err.Error(),
 			)
-			return
+			return nil, err
 		}
 		r, found := dAuthConfigs.Configs[registry]
 		if !found {
-			return nil, errors.New("could not find an auth config for registry")
+			return nil, missingAuthConfigErr
 		}
 		cred = &r
 		return cred, nil
@@ -175,7 +177,7 @@ func getDockerCredential(registryAccount, registrySecret, dockerConfigPath, regi
 		}
 		r, found := dConfigs.Configs[registry]
 		if !found {
-			return nil, errors.New("could not find an auth config for registry")
+			return nil, missingAuthConfigErr
 		}
 		cred = &r
 	}
@@ -206,11 +208,11 @@ func extractRegistry(repo string) string {
 		return scheme + registry
 	}
 
-	var validDomain = regexp.MustCompile(domain)
-	var validIpv6 = regexp.MustCompile(ipv6)
-	var validIpv4 = regexp.MustCompile(ipv4)
-	var validIpv4WithPort = regexp.MustCompile(ipv4Port)
-	var validIpv6WithPort = regexp.MustCompile(ipv6Port)
+	validDomain := regexp.MustCompile(domain)
+	validIpv4 := regexp.MustCompile(ipv4)
+	validIpv6 := regexp.MustCompile(ipv6)
+	validIpv4WithPort := regexp.MustCompile(ipv4Port)
+	validIpv6WithPort := regexp.MustCompile(ipv6Port)
 
 	if validIpv6WithPort.MatchString(registry) {
 		return scheme + registry
