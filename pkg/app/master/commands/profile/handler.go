@@ -43,6 +43,7 @@ func OnCommand(
 	gparams *commands.GenericParams,
 	targetRef string,
 	doPull bool,
+	dockerConfigPath string,
 	registryAccount string,
 	registrySecret string,
 	doShowPullLogs bool,
@@ -173,7 +174,7 @@ func OnCommand(
 					"message": "trying to pull target image",
 				})
 
-			err := imageInspector.Pull(doShowPullLogs, registryAccount, registrySecret)
+			err := imageInspector.Pull(doShowPullLogs, dockerConfigPath, registryAccount, registrySecret)
 			errutil.FailOn(err)
 		} else {
 			xc.Out.Info("target.image.error",
