@@ -26,6 +26,9 @@ var CLI = cli.Command{
 	Flags: []cli.Flag{
 		commands.Cflag(commands.FlagTarget),
 		commands.Cflag(commands.FlagPull),
+		commands.Cflag(commands.FlagDockerConfigPath),
+		commands.Cflag(commands.FlagRegistryAccount),
+		commands.Cflag(commands.FlagRegistrySecret),
 		commands.Cflag(commands.FlagShowPullLogs),
 		commands.Cflag(commands.FlagComposeFile),
 		commands.Cflag(commands.FlagTargetComposeSvc),
@@ -246,6 +249,9 @@ var CLI = cli.Command{
 		}
 
 		doPull := ctx.Bool(commands.FlagPull)
+		dockerConfigPath := ctx.String(commands.FlagDockerConfigPath)
+		registryAccount := ctx.String(commands.FlagRegistryAccount)
+		registrySecret := ctx.String(commands.FlagRegistrySecret)
 		doShowPullLogs := ctx.Bool(commands.FlagShowPullLogs)
 
 		doRmFileArtifacts := ctx.Bool(commands.FlagRemoveFileArtifacts)
@@ -595,6 +601,9 @@ var CLI = cli.Command{
 			gcvalues,
 			targetRef,
 			doPull,
+			dockerConfigPath,
+			registryAccount,
+			registrySecret,
 			doShowPullLogs,
 			composeFile,
 			targetComposeSvc,

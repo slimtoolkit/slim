@@ -16,30 +16,36 @@ const (
 )
 
 type CommandParams struct {
-	TargetRef      string
-	DoPull         bool
-	DoShowPullLogs bool
-	Entrypoint     []string
-	Cmd            []string
-	DoLiveLogs     bool
-	DoTerminal     bool
-	PublishPorts   map[dockerapi.Port][]dockerapi.PortBinding
-	EnvVars        []string
-	Volumes        []config.VolumeMount
-	DoRemoveOnExit bool
-	DoDetach       bool
+	TargetRef        string
+	DoPull           bool
+	DockerConfigPath string
+	RegistryAccount  string
+	RegistrySecret   string
+	DoShowPullLogs   bool
+	Entrypoint       []string
+	Cmd              []string
+	DoLiveLogs       bool
+	DoTerminal       bool
+	PublishPorts     map[dockerapi.Port][]dockerapi.PortBinding
+	EnvVars          []string
+	Volumes          []config.VolumeMount
+	DoRemoveOnExit   bool
+	DoDetach         bool
 }
 
 func CommandFlagValues(ctx *cli.Context) (*CommandParams, error) {
 	values := &CommandParams{
-		TargetRef:      ctx.String(commands.FlagTarget),
-		DoPull:         ctx.Bool(commands.FlagPull),
-		DoShowPullLogs: ctx.Bool(commands.FlagShowPullLogs),
-		DoLiveLogs:     ctx.Bool(FlagLiveLogs),
-		DoTerminal:     ctx.Bool(FlagTerminal),
-		EnvVars:        ctx.StringSlice(commands.FlagEnv),
-		DoRemoveOnExit: ctx.Bool(FlagRemove),
-		DoDetach:       ctx.Bool(FlagDetach),
+		TargetRef:        ctx.String(commands.FlagTarget),
+		DoPull:           ctx.Bool(commands.FlagPull),
+		DockerConfigPath: ctx.String(commands.FlagDockerConfigPath),
+		RegistryAccount:  ctx.String(commands.FlagRegistryAccount),
+		RegistrySecret:   ctx.String(commands.FlagRegistrySecret),
+		DoShowPullLogs:   ctx.Bool(commands.FlagShowPullLogs),
+		DoLiveLogs:       ctx.Bool(FlagLiveLogs),
+		DoTerminal:       ctx.Bool(FlagTerminal),
+		EnvVars:          ctx.StringSlice(commands.FlagEnv),
+		DoRemoveOnExit:   ctx.Bool(FlagRemove),
+		DoDetach:         ctx.Bool(FlagDetach),
 	}
 
 	var err error
@@ -78,6 +84,9 @@ var CLI = cli.Command{
 	Flags: []cli.Flag{
 		commands.Cflag(commands.FlagTarget),
 		commands.Cflag(commands.FlagPull),
+		commands.Cflag(commands.FlagDockerConfigPath),
+		commands.Cflag(commands.FlagRegistryAccount),
+		commands.Cflag(commands.FlagRegistrySecret),
 		commands.Cflag(commands.FlagShowPullLogs),
 		commands.Cflag(commands.FlagEntrypoint),
 		commands.Cflag(commands.FlagCmd),

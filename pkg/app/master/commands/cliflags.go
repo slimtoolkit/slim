@@ -49,9 +49,12 @@ const (
 
 // Shared command flag names
 const (
-	FlagTarget       = "target"
-	FlagPull         = "pull"
-	FlagShowPullLogs = "show-plogs"
+	FlagTarget           = "target"
+	FlagPull             = "pull"
+	FlagDockerConfigPath = "docker-config-path"
+	FlagRegistryAccount  = "registry-account"
+	FlagRegistrySecret   = "registry-secret"
+	FlagShowPullLogs     = "show-plogs"
 
 	//Compose-related flags
 	FlagComposeFile              = "compose-file"
@@ -125,9 +128,12 @@ const (
 
 // Shared command flag usage info
 const (
-	FlagTargetUsage       = "Target container image (name or ID)"
-	FlagPullUsage         = "Try pulling target if it's not available locally"
-	FlagShowPullLogsUsage = "Show image pull logs"
+	FlagTargetUsage           = "Target container image (name or ID)"
+	FlagPullUsage             = "Try pulling target if it's not available locally"
+	FlagDockerConfigPathUsage = "Specify a custom path for a docker config to be used in pilling images from a private registry"
+	FlagRegistryAccountUsage  = "Target registry account used when pulling an image from a private registry"
+	FlagRegistrySecretUsage   = "Target registry secret used when pulling an image from a private registry"
+	FlagShowPullLogsUsage     = "Show image pull logs"
 
 	//Compose-related flags
 	FlagComposeFileUsage              = "Load container info from selected compose file"
@@ -284,6 +290,21 @@ var CommonFlags = map[string]cli.Flag{
 		Name:   FlagPull,
 		Usage:  FlagPullUsage,
 		EnvVar: "DSLIM_PULL",
+	},
+	FlagDockerConfigPath: cli.StringFlag{
+		Name:   FlagDockerConfigPath,
+		Usage:  FlagDockerConfigPathUsage,
+		EnvVar: "DSLIM_DOCKER_CONFIG_PATH",
+	},
+	FlagRegistryAccount: cli.StringFlag{
+		Name:   FlagRegistryAccount,
+		Usage:  FlagRegistryAccountUsage,
+		EnvVar: "DSLIM_REGISTRY_ACCOUNT",
+	},
+	FlagRegistrySecret: cli.StringFlag{
+		Name:   FlagRegistrySecret,
+		Usage:  FlagRegistrySecretUsage,
+		EnvVar: "DSLIM_REGISTRY_SECRET",
 	},
 	FlagShowPullLogs: cli.BoolFlag{
 		Name:   FlagShowPullLogs,
