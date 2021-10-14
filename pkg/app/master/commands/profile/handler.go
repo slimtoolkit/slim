@@ -252,6 +252,7 @@ func OnCommand(
 		false, //doIncludeCertPKAll
 		false, //doIncludeCertPKDirs
 		nil,   //selectedNetNames
+		nil,
 		gparams.Debug,
 		gparams.InContainer,
 		true,
