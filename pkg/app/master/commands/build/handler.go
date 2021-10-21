@@ -963,6 +963,22 @@ func OnCommand(
 	xc.Out.State("completed")
 	cmdReport.State = command.StateCompleted
 
+	if cbOpts.Dockerfile != "" {
+		var deleteFatImage bool = false
+		if deleteFatImage {
+			xc.Out.Info("Dockerfile", ovars{
+				"image.name":        cbOpts.Tag,
+				"image.big.deleted": "true",
+			})
+			client.RemoveImage(cbOpts.Tag)
+		} else {
+			xc.Out.Info("Dockerfile", ovars{
+				"image.name":        cbOpts.Tag,
+				"image.big.deleted": "true",
+			})
+		}
+	}
+
 	/////////////////////////////
 	newImageInspector, err := image.NewInspector(client, builder.RepoName)
 	errutil.FailOn(err)
