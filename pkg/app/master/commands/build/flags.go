@@ -14,6 +14,8 @@ import (
 
 // Build command flag names
 const (
+	FlagDeleteFatImage = "delete-fat-image"
+
 	FlagShowBuildLogs = "show-blogs"
 
 	FlagPathPerms        = "path-perms"
@@ -71,6 +73,8 @@ const (
 
 // Build command flag usage info
 const (
+	FlagDeleteFatImageUsage = "Delete fat image requires --dockerfile flag"
+
 	FlagShowBuildLogsUsage = "Show image build logs"
 
 	FlagPathPermsUsage        = "Set path permissions in optimized image"
@@ -321,6 +325,11 @@ var Flags = map[string]cli.Flag{
 		Value:  "",
 		Usage:  FlagCBONetworkUsage,
 		EnvVar: "DSLIM_CBO_NETWORK",
+	},
+	FlagDeleteFatImage: cli.BoolFlag{
+		Name:   FlagDeleteFatImage,
+		Usage:  FlagDeleteFatImageUsage,
+		EnvVar: "DSLIM_DELETE_FAT",
 	},
 }
 

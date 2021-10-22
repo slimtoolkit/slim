@@ -118,7 +118,8 @@ func OnCommand(
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
 	execCmd string,
-	execFileCmd string) {
+	execFileCmd string,
+	FlagDeleteFatImage bool) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
@@ -964,8 +965,7 @@ func OnCommand(
 	cmdReport.State = command.StateCompleted
 
 	if cbOpts.Dockerfile != "" {
-		var deleteFatImage bool = false
-		if deleteFatImage {
+		if FlagDeleteFatImage {
 			xc.Out.Info("Dockerfile", ovars{
 				"image.name":        cbOpts.Tag,
 				"image.big.deleted": "true",
@@ -974,7 +974,7 @@ func OnCommand(
 		} else {
 			xc.Out.Info("Dockerfile", ovars{
 				"image.name":        cbOpts.Tag,
-				"image.big.deleted": "true",
+				"image.big.deleted": "false",
 			})
 		}
 	}
