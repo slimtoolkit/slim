@@ -119,7 +119,8 @@ func OnCommand(
 	continueAfter *config.ContinueAfter,
 	execCmd string,
 	execFileCmd string,
-	FlagDeleteFatImage bool) {
+	deleteFatImage bool) {
+
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
@@ -965,7 +966,7 @@ func OnCommand(
 	cmdReport.State = command.StateCompleted
 
 	if cbOpts.Dockerfile != "" {
-		if FlagDeleteFatImage {
+		if deleteFatImage {
 			xc.Out.Info("Dockerfile", ovars{
 				"image.name":        cbOpts.Tag,
 				"image.big.deleted": "true",
