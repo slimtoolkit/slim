@@ -971,7 +971,8 @@ func OnCommand(
 				"image.name":        cbOpts.Tag,
 				"image.fat.deleted": "true",
 			})
-			client.RemoveImage(cbOpts.Tag)
+			var err = client.RemoveImage(cbOpts.Tag)
+			errutil.WarnOn(err)
 		} else {
 			xc.Out.Info("Dockerfile", ovars{
 				"image.name":        cbOpts.Tag,
