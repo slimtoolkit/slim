@@ -14,7 +14,7 @@ import (
 
 // Build command flag names
 const (
-	FlagDeleteFatImage = "delete-fat-image"
+	FlagDeleteFatImage = "delete-generated-fat-image"
 
 	FlagShowBuildLogs = "show-blogs"
 
@@ -73,7 +73,7 @@ const (
 
 // Build command flag usage info
 const (
-	FlagDeleteFatImageUsage = "Delete fat image requires --dockerfile flag"
+	FlagDeleteFatImageUsage = "Delete generated fat image requires --dockerfile flag"
 
 	FlagShowBuildLogsUsage = "Show image build logs"
 

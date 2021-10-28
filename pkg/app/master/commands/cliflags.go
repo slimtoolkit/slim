@@ -124,7 +124,7 @@ const (
 	FlagContainerDNS       = "container-dns"
 	FlagContainerDNSSearch = "container-dns-search"
 	FlagMount              = "mount"
-	FlagDeleteFatImage     = "delete-fat-image"
+	FlagDeleteFatImage     = "delete-generated-fat-image"
 )
 
 // Shared command flag usage info
@@ -203,7 +203,7 @@ const (
 	FlagContainerDNSUsage       = "Add a dns server analyzing image at runtime"
 	FlagContainerDNSSearchUsage = "Add a dns search domain for unqualified hostnames analyzing image at runtime"
 	FlagMountUsage              = "Mount volume analyzing image"
-	FlagDeleteFatImageUsage     = "Delete fat image requires --dockerfile flag"
+	FlagDeleteFatImageUsage     = "Delete generated fat image requires --dockerfile flag"
 )
 
 ///////////////////////////////////
