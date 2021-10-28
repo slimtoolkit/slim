@@ -969,13 +969,13 @@ func OnCommand(
 		if deleteFatImage {
 			xc.Out.Info("Dockerfile", ovars{
 				"image.name":        cbOpts.Tag,
-				"image.big.deleted": "true",
+				"image.fat.deleted": "true",
 			})
 			client.RemoveImage(cbOpts.Tag)
 		} else {
 			xc.Out.Info("Dockerfile", ovars{
 				"image.name":        cbOpts.Tag,
-				"image.big.deleted": "false",
+				"image.fat.deleted": "false",
 			})
 		}
 	}
