@@ -289,7 +289,6 @@ func OnCommand(
 		xc.Out.State("basic.image.build.completed")
 
 		targetRef = fatImageRepoNameTag
-		//todo: remove the temporary fat image (should have a flag for it in case users want the fat image too)
 	}
 	serviceAliases := []string{}
 	var depServicesExe *compose.Execution
