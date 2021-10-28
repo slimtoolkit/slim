@@ -192,7 +192,7 @@ var CLI = cli.Command{
 		depExcludeComposeSvcs := ctx.StringSlice(commands.FlagDepExcludeComposeSvc)
 		composeNets := ctx.StringSlice(commands.FlagComposeNet)
 		var targetRef string
-		deleteFatImage := ctx.Bool((commands.FlagDeleteFatImage))
+		deleteFatImage := ctx.Bool(commands.FlagDeleteFatImage)
 
 		if composeFile != "" && targetComposeSvc != "" {
 			targetRef = targetComposeSvc
