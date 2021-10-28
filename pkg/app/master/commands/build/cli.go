@@ -194,6 +194,10 @@ var CLI = cli.Command{
 		var targetRef string
 		deleteFatImage := ctx.Bool(commands.FlagDeleteFatImage)
 
+		if cbOpts.Dockerfile == "" {
+			deleteFatImage = false
+		}
+
 		if composeFile != "" && targetComposeSvc != "" {
 			targetRef = targetComposeSvc
 		} else {
