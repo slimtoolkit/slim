@@ -102,6 +102,7 @@ var CLI = cli.Command{
 		cflag(FlagCBOLabel),
 		cflag(FlagCBOTarget),
 		cflag(FlagCBONetwork),
+		cflag(FlagDeleteFatImage),
 		//New/Optimized Build Options
 		cflag(FlagNewEntrypoint),
 		cflag(FlagNewCmd),
@@ -190,8 +191,12 @@ var CLI = cli.Command{
 		depIncludeComposeSvcs := ctx.StringSlice(commands.FlagDepIncludeComposeSvc)
 		depExcludeComposeSvcs := ctx.StringSlice(commands.FlagDepExcludeComposeSvc)
 		composeNets := ctx.StringSlice(commands.FlagComposeNet)
-
 		var targetRef string
+		deleteFatImage := ctx.Bool(commands.FlagDeleteFatImage)
+
+		if cbOpts.Dockerfile == "" {
+			deleteFatImage = false
+		}
 
 		if composeFile != "" && targetComposeSvc != "" {
 			targetRef = targetComposeSvc
@@ -663,7 +668,8 @@ var CLI = cli.Command{
 			doKeepTmpArtifacts,
 			continueAfter,
 			execCmd,
-			string(execFileCmd))
+			string(execFileCmd),
+			deleteFatImage)
 
 		return nil
 	},

@@ -124,6 +124,7 @@ const (
 	FlagContainerDNS       = "container-dns"
 	FlagContainerDNSSearch = "container-dns-search"
 	FlagMount              = "mount"
+	FlagDeleteFatImage     = "delete-generated-fat-image"
 )
 
 // Shared command flag usage info
@@ -202,6 +203,7 @@ const (
 	FlagContainerDNSUsage       = "Add a dns server analyzing image at runtime"
 	FlagContainerDNSSearchUsage = "Add a dns search domain for unqualified hostnames analyzing image at runtime"
 	FlagMountUsage              = "Mount volume analyzing image"
+	FlagDeleteFatImageUsage     = "Delete generated fat image requires --dockerfile flag"
 )
 
 ///////////////////////////////////
@@ -640,6 +642,11 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  FlagMountUsage,
 		EnvVar: "DSLIM_MOUNT",
+	},
+	FlagDeleteFatImage: cli.BoolFlag{
+		Name:   FlagDeleteFatImage,
+		Usage:  FlagDeleteFatImageUsage,
+		EnvVar: "DSLIM_DELETE_FAT",
 	},
 }
 
