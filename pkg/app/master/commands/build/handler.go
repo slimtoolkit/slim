@@ -118,7 +118,9 @@ func OnCommand(
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
 	execCmd string,
-	execFileCmd string) {
+	execFileCmd string,
+	deleteFatImage bool) {
+
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
@@ -287,7 +289,6 @@ func OnCommand(
 		xc.Out.State("basic.image.build.completed")
 
 		targetRef = fatImageRepoNameTag
-		//todo: remove the temporary fat image (should have a flag for it in case users want the fat image too)
 	}
 	serviceAliases := []string{}
 	var depServicesExe *compose.Execution
@@ -962,6 +963,22 @@ func OnCommand(
 
 	xc.Out.State("completed")
 	cmdReport.State = command.StateCompleted
+
+	if cbOpts.Dockerfile != "" {
+		if deleteFatImage {
+			xc.Out.Info("Dockerfile", ovars{
+				"image.name":        cbOpts.Tag,
+				"image.fat.deleted": "true",
+			})
+			var err = client.RemoveImage(cbOpts.Tag)
+			errutil.WarnOn(err)
+		} else {
+			xc.Out.Info("Dockerfile", ovars{
+				"image.name":        cbOpts.Tag,
+				"image.fat.deleted": "false",
+			})
+		}
+	}
 
 	/////////////////////////////
 	newImageInspector, err := image.NewInspector(client, builder.RepoName)
