@@ -25,6 +25,9 @@ var CLI = cli.Command{
 	Flags: []cli.Flag{
 		commands.Cflag(commands.FlagTarget),
 		commands.Cflag(commands.FlagPull),
+		commands.Cflag(commands.FlagDockerConfigPath),
+		commands.Cflag(commands.FlagRegistryAccount),
+		commands.Cflag(commands.FlagRegistrySecret),
 		commands.Cflag(commands.FlagShowPullLogs),
 		cflag(FlagChanges),
 		cflag(FlagChangesOutput),
@@ -83,6 +86,9 @@ var CLI = cli.Command{
 		xdArtifactsPath := ctx.String(FlagExportAllDataArtifacts)
 
 		doPull := ctx.Bool(commands.FlagPull)
+		dockerConfigPath := ctx.String(commands.FlagDockerConfigPath)
+		registryAccount := ctx.String(commands.FlagRegistryAccount)
+		registrySecret := ctx.String(commands.FlagRegistrySecret)
 		doShowPullLogs := ctx.Bool(commands.FlagShowPullLogs)
 
 		changes, err := parseChangeTypes(ctx.StringSlice(FlagChanges))
@@ -225,6 +231,9 @@ var CLI = cli.Command{
 			gcvalues,
 			targetRef,
 			doPull,
+			dockerConfigPath,
+			registryAccount,
+			registrySecret,
 			doShowPullLogs,
 			changes,
 			changesOutputs,

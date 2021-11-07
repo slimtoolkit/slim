@@ -46,6 +46,9 @@ func OnCommand(
 	gparams *commands.GenericParams,
 	targetRef string,
 	doPull bool,
+	dockerConfigPath string,
+	registryAccount string,
+	registrySecret string,
 	doShowPullLogs bool,
 	changes map[string]struct{},
 	changesOutputs map[string]struct{},
@@ -142,7 +145,7 @@ func OnCommand(
 					"message": "trying to pull target image",
 				})
 
-			err := imageInspector.Pull(doShowPullLogs)
+			err := imageInspector.Pull(doShowPullLogs, dockerConfigPath, registryAccount, registrySecret)
 			errutil.FailOn(err)
 		} else {
 			xc.Out.Error("image.not.found", "make sure the target image already exists locally (use --pull flag to auto-download it from registry)")

@@ -344,6 +344,9 @@ To disable the version checks set the global `--check-version` flag to `false` (
 
 - `--target` - Target container image (name or ID)
 - `--pull` - Try pulling target if it's not available locally (default: false).
+- `--docker-config-path` - Set the docker config path used to fetch credentials. Must be used with the `--pull` flag.
+- `--registry-username` - Set the username to be used for an image pull on a private registry. Must be used with the `--pull` flag.
+- `--registry-password` - Set the password to be used for an image pull on a private registry. Must be used with the `--pull` flag.
 - `--show-plogs` - Show image pull logs (default: false).
 - `--changes value` - Show layer change details for the selected change type (values: none, all, delete, modify, add).
 - `--changes-output value` - Where to show the changes (values: all, report, console).
@@ -384,6 +387,9 @@ In the interactive CLI prompt mode you must specify the target image using the `
 
 - `--target` - Target container image (name or ID). It's an alternative way to provide the target information. The standard way to provide the target information is by putting as the last value in the `build` command CLI call.
 - `--pull` - Try pulling target if it's not available locally (default: false).
+- `--docker-config-path` - Set the docker config path used to fetch credentials. Must be used with the `--pull` flag.
+- `--registry-username` - Set the username to be used for an image pull on a private registry. Must be used with the `--pull` flag.
+- `--registry-password` - Set the password to be used for an image pull on a private registry. Must be used with the `--pull` flag.
 - `--show-plogs` - Show image pull logs (default: false).
 - `compose-file` - Load container info from selected compose file
 - `target-compose-svc` - Target service from compose file

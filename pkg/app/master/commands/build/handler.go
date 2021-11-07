@@ -56,6 +56,9 @@ func OnCommand(
 	gparams *commands.GenericParams,
 	targetRef string,
 	doPull bool,
+	dockerConfigPath string,
+	registryAccount string,
+	registrySecret string,
 	doShowPullLogs bool,
 	composeFile string,
 	targetComposeSvc string,
@@ -118,7 +121,9 @@ func OnCommand(
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
 	execCmd string,
-	execFileCmd string) {
+	execFileCmd string,
+	deleteFatImage bool) {
+
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
@@ -551,8 +556,13 @@ func OnCommand(
 					"message": "trying to pull target image",
 				})
 
+<<<<<<< HEAD
 			err := imageInspector.Pull(doShowPullLogs)
 			xc.FailOn(err)
+=======
+			err := imageInspector.Pull(doShowPullLogs, dockerConfigPath, registryAccount, registrySecret)
+			errutil.FailOn(err)
+>>>>>>> 08b59eb97862c35be12ffb05cee6025dd26e6b7a
 		} else {
 			xc.Out.Info("target.image.error",
 				ovars{
@@ -1084,6 +1094,22 @@ func OnCommand(
 
 	xc.Out.State("completed")
 	cmdReport.State = command.StateCompleted
+
+	if cbOpts.Dockerfile != "" {
+		if deleteFatImage {
+			xc.Out.Info("Dockerfile", ovars{
+				"image.name":        cbOpts.Tag,
+				"image.fat.deleted": "true",
+			})
+			var err = client.RemoveImage(cbOpts.Tag)
+			errutil.WarnOn(err)
+		} else {
+			xc.Out.Info("Dockerfile", ovars{
+				"image.name":        cbOpts.Tag,
+				"image.fat.deleted": "false",
+			})
+		}
+	}
 
 	/////////////////////////////
 	newImageInspector, err := image.NewInspector(client, builder.RepoName)

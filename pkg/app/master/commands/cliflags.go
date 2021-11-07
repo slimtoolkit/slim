@@ -49,9 +49,12 @@ const (
 
 // Shared command flag names
 const (
-	FlagTarget       = "target"
-	FlagPull         = "pull"
-	FlagShowPullLogs = "show-plogs"
+	FlagTarget           = "target"
+	FlagPull             = "pull"
+	FlagDockerConfigPath = "docker-config-path"
+	FlagRegistryAccount  = "registry-account"
+	FlagRegistrySecret   = "registry-secret"
+	FlagShowPullLogs     = "show-plogs"
 
 	//Compose-related flags
 	FlagComposeFile                    = "compose-file"
@@ -124,13 +127,17 @@ const (
 	FlagContainerDNS       = "container-dns"
 	FlagContainerDNSSearch = "container-dns-search"
 	FlagMount              = "mount"
+	FlagDeleteFatImage     = "delete-generated-fat-image"
 )
 
 // Shared command flag usage info
 const (
-	FlagTargetUsage       = "Target container image (name or ID)"
-	FlagPullUsage         = "Try pulling target if it's not available locally"
-	FlagShowPullLogsUsage = "Show image pull logs"
+	FlagTargetUsage           = "Target container image (name or ID)"
+	FlagPullUsage             = "Try pulling target if it's not available locally"
+	FlagDockerConfigPathUsage = "Specify a custom path for a docker config to be used in pilling images from a private registry"
+	FlagRegistryAccountUsage  = "Target registry account used when pulling an image from a private registry"
+	FlagRegistrySecretUsage   = "Target registry secret used when pulling an image from a private registry"
+	FlagShowPullLogsUsage     = "Show image pull logs"
 
 	//Compose-related flags
 	FlagComposeFileUsage                    = "Load container info from selected compose file"
@@ -202,6 +209,7 @@ const (
 	FlagContainerDNSUsage       = "Add a dns server analyzing image at runtime"
 	FlagContainerDNSSearchUsage = "Add a dns search domain for unqualified hostnames analyzing image at runtime"
 	FlagMountUsage              = "Mount volume analyzing image"
+	FlagDeleteFatImageUsage     = "Delete generated fat image requires --dockerfile flag"
 )
 
 ///////////////////////////////////
@@ -290,6 +298,21 @@ var CommonFlags = map[string]cli.Flag{
 		Name:   FlagPull,
 		Usage:  FlagPullUsage,
 		EnvVar: "DSLIM_PULL",
+	},
+	FlagDockerConfigPath: cli.StringFlag{
+		Name:   FlagDockerConfigPath,
+		Usage:  FlagDockerConfigPathUsage,
+		EnvVar: "DSLIM_DOCKER_CONFIG_PATH",
+	},
+	FlagRegistryAccount: cli.StringFlag{
+		Name:   FlagRegistryAccount,
+		Usage:  FlagRegistryAccountUsage,
+		EnvVar: "DSLIM_REGISTRY_ACCOUNT",
+	},
+	FlagRegistrySecret: cli.StringFlag{
+		Name:   FlagRegistrySecret,
+		Usage:  FlagRegistrySecretUsage,
+		EnvVar: "DSLIM_REGISTRY_SECRET",
 	},
 	FlagShowPullLogs: cli.BoolFlag{
 		Name:   FlagShowPullLogs,
@@ -641,6 +664,11 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  FlagMountUsage,
 		EnvVar: "DSLIM_MOUNT",
+	},
+	FlagDeleteFatImage: cli.BoolFlag{
+		Name:   FlagDeleteFatImage,
+		Usage:  FlagDeleteFatImageUsage,
+		EnvVar: "DSLIM_DELETE_FAT",
 	},
 }
 
