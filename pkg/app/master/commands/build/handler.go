@@ -556,13 +556,8 @@ func OnCommand(
 					"message": "trying to pull target image",
 				})
 
-<<<<<<< HEAD
-			err := imageInspector.Pull(doShowPullLogs)
-			xc.FailOn(err)
-=======
 			err := imageInspector.Pull(doShowPullLogs, dockerConfigPath, registryAccount, registrySecret)
-			errutil.FailOn(err)
->>>>>>> 08b59eb97862c35be12ffb05cee6025dd26e6b7a
+			xc.FailOn(err)
 		} else {
 			xc.Out.Info("target.image.error",
 				ovars{
