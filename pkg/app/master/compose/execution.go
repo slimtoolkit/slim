@@ -83,6 +83,7 @@ type Execution struct {
 	BuildImages     bool
 	PullImages      bool
 	OwnAllResources bool
+	AllServiceNames map[string]struct{}
 	AllServices     map[string]*ServiceInfo
 	AllNetworks     map[string]*NetworkInfo
 	PendingServices map[string]struct{}
@@ -168,7 +169,9 @@ func NewConfigInfo(
 	composeFile string,
 	projectName string,
 	workingDir string,
-	environment map[string]string) (*ConfigInfo, error) {
+	envVars []string,
+	environmentNoHost bool,
+) (*ConfigInfo, error) {
 	fullComposeFilePath, err := filepath.Abs(composeFile)
 	if err != nil {
 		panic(err)
@@ -198,12 +201,35 @@ func NewConfigInfo(
 	projectConfig := types.ConfigDetails{
 		WorkingDir: workingDir,
 		ConfigFiles: []types.ConfigFile{
-			{Filename: composeFile, Config: rawConfig},
+			{
+				Filename: composeFile,
+				Content:  b, //pass raw bytes, so loader parses and interpolates
+			},
 		},
 	}
 
-	if len(environment) > 0 {
-		projectConfig.Environment = environment
+	if len(envVars) > 0 {
+		projectConfig.Environment = map[string]string{}
+		for _, evar := range envVars {
+			parts := strings.SplitN(evar, "=", 2)
+			if len(parts) == 2 {
+				projectConfig.Environment[parts[0]] = parts[1]
+			}
+		}
+	}
+
+	if !environmentNoHost {
+		if projectConfig.Environment == nil {
+			projectConfig.Environment = map[string]string{}
+		}
+
+		//host env vars override explicit vars
+		for _, evar := range os.Environ() {
+			parts := strings.SplitN(evar, "=", 2)
+			if len(parts) == 2 {
+				projectConfig.Environment[parts[0]] = parts[1]
+			}
+		}
 	}
 
 	project, err := loader.Load(projectConfig, withProjectName(projectName))
@@ -233,7 +259,8 @@ func NewExecution(
 	selectors *ServiceSelectors,
 	projectName string,
 	workingDir string,
-	environment map[string]string,
+	envVars []string,
+	environmentNoHost bool,
 	buildImages bool,
 	pullImages bool,
 	pullExcludes []string,
@@ -248,7 +275,8 @@ func NewExecution(
 	configInfo, err := NewConfigInfo(composeFile,
 		projectName,
 		workingDir,
-		environment)
+		envVars,
+		environmentNoHost)
 	if err != nil {
 		return nil, err
 	}
@@ -264,6 +292,7 @@ func NewExecution(
 		OwnAllResources: ownAllResources,
 		BuildImages:     buildImages,
 		PullImages:      pullImages,
+		AllServiceNames: map[string]struct{}{},
 		AllServices:     map[string]*ServiceInfo{},
 		AllNetworks:     map[string]*NetworkInfo{},
 		PendingServices: map[string]struct{}{},
@@ -335,13 +364,26 @@ func (ref *Execution) SelectedHaveImages() bool {
 	return true
 }
 
-func (ref *Execution) ActiveServiceNetworks(svcName string) map[string]string {
-	networks := map[string]string{}
+type NetNameInfo struct {
+	FullName string
+	Aliases  []string
+}
+
+func (ref *Execution) ActiveServiceNetworks(svcName string) map[string]NetNameInfo {
+	networks := map[string]NetNameInfo{}
 
 	if svc, found := ref.AllServices[svcName]; found {
-		for netKey := range svc.Config.Networks {
+		for netKey, netConfig := range svc.Config.Networks {
 			if netInfo, found := ref.AllNetworks[netKey]; found && netInfo != nil {
-				networks[netKey] = netInfo.Name
+				info := NetNameInfo{
+					FullName: netInfo.Name,
+				}
+
+				if netConfig != nil {
+					info.Aliases = netConfig.Aliases
+				}
+
+				networks[netKey] = info
 			}
 		}
 	}
@@ -360,8 +402,6 @@ func (ref *Execution) ActiveNetworkNames() map[string]string {
 
 	return networks
 }
-
-//////////
 
 func (ref *Execution) initServices() error {
 	for _, service := range ref.Project.Services {
@@ -399,6 +439,7 @@ func (ref *Execution) initServices() error {
 		}
 
 		ref.AllServices[name] = info
+		ref.AllServiceNames[name] = struct{}{}
 	}
 
 	if ref.Selectors != nil {
@@ -466,10 +507,12 @@ func (ref *Execution) initVersion() {
 }
 
 func fullServiceName(project, service string) string {
+	//todo: lower case
 	return fmt.Sprintf("%s_%s", project, service)
 }
 
 func fullNetworkName(project, networkKey, networkName string) string {
+	//todo: lower case
 	fullName := fmt.Sprintf("%s_%s", project, networkKey)
 	if networkName != "" && networkName != defaultNetName {
 		fullName = networkName
@@ -669,18 +712,13 @@ func (ref *Execution) StartService(name string) error {
 		}
 	}
 
-	serviceNames := map[string]struct{}{}
-	for n := range ref.AllServices {
-		serviceNames[n] = struct{}{}
-	}
-
 	delete(ref.PendingServices, name)
 	//todo: need to refactor to use container.Execution
 	id, err := startContainer(
 		ref.apiClient,
 		ref.Project.Name,
-		serviceInfo.Name,
-		serviceNames,
+		serviceInfo.Name, //full service name
+		ref.AllServiceNames,
 		ref.BaseComposeDir,
 		ref.ActiveVolumes,
 		ref.ActiveNetworks,
@@ -779,14 +817,14 @@ func (ref *Execution) CleanupService(key string) error {
 
 const (
 	rtLabelAppVersion = "tmp.version"
-	rtLabelApp        = "runtime.container.type"
+	rtLabelApp        = "ds.runtime.container.type"
 	rtLabelProject    = "ds.engine.compose.project"
 	rtLabelService    = "ds.engine.compose.service"
 	rtLabelVolume     = "ds.engine.compose.volume"
 	rtLabelNetwork    = "ds.engine.compose.network"
 )
 
-func exposedPorts(expose types.StringOrNumberList, ports []types.ServicePortConfig) map[dockerapi.Port]struct{} {
+func ExposedPorts(expose types.StringOrNumberList, ports []types.ServicePortConfig) map[dockerapi.Port]struct{} {
 	exposed := map[dockerapi.Port]struct{}{}
 	for _, key := range expose {
 		exposed[dockerapi.Port(key)] = struct{}{}
@@ -800,25 +838,35 @@ func exposedPorts(expose types.StringOrNumberList, ports []types.ServicePortConf
 	return exposed
 }
 
-func hostMountsFromVolumeConfigs(
+func MountsFromVolumeConfigs(
 	baseComposeDir string,
 	configs []types.ServiceVolumeConfig,
-	activeVolumes map[string]*ActiveVolume) (map[string]struct{}, []dockerapi.HostMount, error) {
-	volumes := map[string]struct{}{}
+	tmpfsConfigs []string,
+	activeVolumes map[string]*ActiveVolume) ([]dockerapi.HostMount, error) {
 	mounts := []dockerapi.HostMount{}
 	for _, c := range configs {
-		source := c.Source
-		if _, ok := activeVolumes[source]; !ok {
-			if !strings.HasPrefix(source, "~/") && !filepath.IsAbs(source) {
-				source = filepath.Join(baseComposeDir, source)
-			}
-		}
-
 		mount := dockerapi.HostMount{
 			Type:     c.Type,
 			Target:   c.Target,
-			Source:   c.Source,
 			ReadOnly: c.ReadOnly,
+		}
+
+		if c.Source == "" {
+			mount.Type = types.VolumeTypeVolume
+		} else {
+			source := c.Source
+			_, found := activeVolumes[source]
+			if !found {
+				if !strings.HasPrefix(source, "~/") && !filepath.IsAbs(source) {
+					source = filepath.Join(baseComposeDir, source)
+				}
+
+				mount.Type = types.VolumeTypeBind
+			} else {
+				mount.Type = types.VolumeTypeVolume
+			}
+
+			mount.Source = source
 		}
 
 		if c.Bind != nil {
@@ -839,15 +887,22 @@ func hostMountsFromVolumeConfigs(
 			}
 		}
 
-		if mount.Target != "" {
-			volumes[mount.Target] = struct{}{}
-		}
+		mounts = append(mounts, mount)
 	}
 
-	return volumes, mounts, nil
+	for _, tc := range tmpfsConfigs {
+		mount := dockerapi.HostMount{
+			Type:   types.VolumeTypeTmpfs,
+			Target: tc,
+		}
+
+		mounts = append(mounts, mount)
+	}
+
+	return mounts, nil
 }
 
-func envVarsFromService(varMap types.MappingWithEquals, varFiles types.StringList) []string {
+func EnvVarsFromService(varMap types.MappingWithEquals, varFiles types.StringList) []string {
 	var result []string
 	for k, v := range varMap {
 		record := k
@@ -861,7 +916,7 @@ func envVarsFromService(varMap types.MappingWithEquals, varFiles types.StringLis
 	for _, file := range varFiles {
 		data, err := ioutil.ReadFile(file)
 		if err != nil {
-			fmt.Printf("envVarsFromService: error reading '%s' - %v\n", err)
+			fmt.Printf("EnvVarsFromService: error reading '%s' - %v\n", err)
 			continue
 		}
 
@@ -1095,16 +1150,44 @@ func durationToSeconds(d *types.Duration) int {
 	return int(time.Duration(*d).Seconds())
 }
 
+func VolumesFrom(serviceNames map[string]struct{},
+	volumesFrom []string) []string {
+	var vfList []string
+	for _, vf := range volumesFrom {
+		//service_name
+		//service_name:ro
+		//container:container_name
+		//container:container_name:rw
+		if strings.HasPrefix(vf, "container:") {
+			vfList = append(vfList, vf[len("container:"):])
+		}
+
+		if len(serviceNames) > 0 {
+			if strings.Contains(vf, ":") {
+				parts := strings.Split(vf, ":")
+				vf = parts[0]
+			}
+
+			//todo: check that we get the right names here
+			if _, found := serviceNames[vf]; found {
+				vfList = append(vfList, vf)
+			}
+		}
+	}
+
+	return vfList
+}
+
 func startContainer(
 	apiClient *dockerapi.Client,
 	projectName string,
-	serviceName string,
+	fullServiceName string,
 	serviceNames map[string]struct{},
 	baseComposeDir string,
 	activeVolumes map[string]*ActiveVolume,
 	activeNetworks map[string]*ActiveNetwork,
 	service types.ServiceConfig) (string, error) {
-	log.Debugf("startContainer(%s)", service.Name)
+	log.Debugf("startContainer(%s/%s/%s)", fullServiceName, service.Name, service.ContainerName)
 	log.Debugf("service.Image=%s", service.Image)
 	log.Debugf("service.Entrypoint=%s", service.Entrypoint)
 	log.Debugf("service.Command=%s", service.Command)
@@ -1190,42 +1273,21 @@ func startContainer(
 
 	log.Debugf("startContainer(%s): endpointsConfig=%+v", service.Name, endpointsConfig)
 
-	volumes, mounts, err := hostMountsFromVolumeConfigs(baseComposeDir, service.Volumes, activeVolumes)
+	mounts, err := MountsFromVolumeConfigs(baseComposeDir, service.Volumes, service.Tmpfs, activeVolumes)
 	if err != nil {
 		panic(err)
 	}
 
-	getVolumesFrom := func() []string {
-		var vfList []string
-		for _, vf := range service.VolumesFrom {
-			//service_name
-			//service_name:ro
-			//container:container_name
-			//container:container_name:rw
-			if strings.HasPrefix(vf, "container:") {
-				vfList = append(vfList, vf[len("container:"):])
-			}
-
-			if len(serviceNames) > 0 {
-				if strings.Contains(vf, ":") {
-					parts := strings.Split(vf, ":")
-					vf = parts[0]
-				}
-
-				if _, found := serviceNames[vf]; found {
-					vfList = append(vfList, vf)
-				}
-			}
-		}
-
-		return vfList
-	}
-
 	//todo: use service.ContainerName instead of serviceName when available
 	//need to make it work with all container name checks
-	envVars := envVarsFromService(service.Environment, service.EnvFile)
+	containerName := fullServiceName
+	if service.ContainerName != "" {
+		containerName = service.ContainerName
+	}
+
+	envVars := EnvVarsFromService(service.Environment, service.EnvFile)
 	containerOptions := dockerapi.CreateContainerOptions{
-		Name: serviceName,
+		Name: containerName,
 		Config: &dockerapi.Config{
 			Image:        getServiceImage(),
 			Entrypoint:   []string(service.Entrypoint),
@@ -1236,11 +1298,11 @@ func startContainer(
 			Domainname:   service.DomainName,
 			DNS:          []string(service.DNS),
 			User:         service.User,
-			ExposedPorts: exposedPorts(service.Expose, service.Ports),
+			ExposedPorts: ExposedPorts(service.Expose, service.Ports),
 			Labels:       labels,
-			Volumes:      volumes,
-			StopSignal:   service.StopSignal,
-			StopTimeout:  durationToSeconds(service.StopGracePeriod),
+			//Volumes:    - covered by "volume" HostConfig.Mounts,
+			StopSignal:  service.StopSignal,
+			StopTimeout: durationToSeconds(service.StopGracePeriod),
 			//Healthcheck *HealthConfig -> service.HealthCheck *HealthCheckConfig - todo
 			SecurityOpts: service.SecurityOpt,
 			//AttachStdout: true, //todo: revisit
@@ -1254,10 +1316,10 @@ func startContainer(
 		},
 		HostConfig: &dockerapi.HostConfig{
 			Mounts:         mounts,
-			VolumesFrom:    getVolumesFrom(),
+			VolumesFrom:    VolumesFrom(serviceNames, service.VolumesFrom),
 			VolumeDriver:   service.VolumeDriver,
 			ReadonlyRootfs: service.ReadOnly,
-			//Binds: todo
+			//Binds: - covered by "bind" HostConfig.Mounts
 			CapAdd:       []string(service.CapAdd),
 			CapDrop:      []string(service.CapDrop),
 			PortBindings: portBindingsFromServicePortConfigs(service.Ports), //map[Port][]PortBinding  -> Ports []ServicePortConfig
@@ -1288,7 +1350,7 @@ func startContainer(
 			//MemorySwappiness: ,//*int64
 			//OOMKillDisable: ,//*bool
 			ShmSize: int64(service.ShmSize),
-			//Tmpfs: ,//map[string]string
+			//Tmpfs: - covered by "tmpfs" HostConfig.Mounts
 			Sysctls:  service.Sysctls,
 			CPUCount: service.CPUCount,
 			//CPUPercent: ,///int64 <- service.CPUPercent

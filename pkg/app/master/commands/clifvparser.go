@@ -735,3 +735,41 @@ func ParseHTTPProbeExecFile(filePath string) ([]string, error) {
 
 	return appCalls, nil
 }
+
+func ParseEnvFile(filePath string) ([]string, error) {
+	var envVars []string
+
+	if filePath == "" {
+		return envVars, nil
+	}
+
+	fullPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return envVars, err
+	}
+
+	_, err = os.Stat(fullPath)
+	if err != nil {
+		return envVars, err
+	}
+
+	fileData, err := ioutil.ReadFile(fullPath)
+	if err != nil {
+		return envVars, err
+	}
+
+	if len(fileData) == 0 {
+		return envVars, nil
+	}
+
+	lines := strings.Split(string(fileData), "\n")
+
+	for _, envVar := range lines {
+		envVar = strings.TrimSpace(envVar)
+		if len(envVar) != 0 && !strings.HasPrefix(envVar, "#") {
+			envVars = append(envVars, envVar)
+		}
+	}
+
+	return envVars, nil
+}

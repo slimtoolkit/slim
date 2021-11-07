@@ -8,6 +8,8 @@ import (
 	"io"
 	"os"
 	"os/signal"
+	"path/filepath"
+	"strings"
 	"syscall"
 	"time"
 
@@ -171,16 +173,42 @@ func (ref *Execution) Start() error {
 		}
 
 		if len(ref.options.Volumes) > 0 {
-			var volumeBinds []string
+			mounts := []dockerapi.HostMount{}
 			for _, vol := range ref.options.Volumes {
-				if vol.Options == "" {
-					vol.Options = "rw"
+				mount := dockerapi.HostMount{
+					Target: vol.Destination,
 				}
 
-				bindInfo := fmt.Sprintf("%s:%s:%s", vol.Source, vol.Destination, vol.Options)
-				volumeBinds = append(volumeBinds, bindInfo)
+				if vol.Source == "" {
+					mount.Type = "volume"
+				} else {
+					if strings.HasPrefix(vol.Source, "/") {
+						mount.Source = vol.Source
+						mount.Type = "bind"
+					} else if strings.HasPrefix(vol.Source, "~/") {
+						hd, _ := os.UserHomeDir()
+						mount.Source = filepath.Join(hd, vol.Source[2:])
+						mount.Type = "bind"
+					} else if strings.HasPrefix(vol.Source, "./") ||
+						strings.HasPrefix(vol.Source, "../") ||
+						(vol.Source == "..") ||
+						(vol.Source == ".") {
+						mount.Source, _ = filepath.Abs(vol.Source)
+						mount.Type = "bind"
+					} else {
+						//todo: list volumes and check vol.Source instead of defaulting to named volume
+						mount.Source = vol.Source
+						mount.Type = "volume"
+					}
+				}
+
+				if vol.Options == "ro" {
+					mount.ReadOnly = true
+				}
+
+				mounts = append(mounts, mount)
 			}
-			containerOptions.HostConfig.Binds = volumeBinds
+			containerOptions.HostConfig.Mounts = mounts
 		}
 
 		if len(ref.options.PublishPorts) > 0 {

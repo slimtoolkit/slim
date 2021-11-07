@@ -34,7 +34,10 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagDepIncludeComposeSvc),
 		commands.Cflag(commands.FlagDepExcludeComposeSvc),
 		commands.Cflag(commands.FlagDepIncludeComposeSvcDeps),
+		commands.Cflag(commands.FlagDepIncludeTargetComposeSvcDeps),
 		commands.Cflag(commands.FlagComposeNet),
+		commands.Cflag(commands.FlagComposeEnvNoHost),
+		commands.Cflag(commands.FlagComposeEnvFile),
 		commands.Cflag(commands.FlagHTTPProbeOff),
 		commands.Cflag(commands.FlagHTTPProbe),
 		commands.Cflag(commands.FlagHTTPProbeCmd),
@@ -184,9 +187,21 @@ var CLI = cli.Command{
 		composeSvcNoPorts := ctx.Bool(commands.FlagComposeSvcNoPorts)
 		depExcludeComposeSvcAll := ctx.Bool(commands.FlagDepExcludeComposeSvcAll)
 		depIncludeComposeSvcDeps := ctx.String(commands.FlagDepIncludeComposeSvcDeps)
+		depIncludeTargetComposeSvcDeps := ctx.Bool(commands.FlagDepIncludeTargetComposeSvcDeps)
 		depIncludeComposeSvcs := ctx.StringSlice(commands.FlagDepIncludeComposeSvc)
 		depExcludeComposeSvcs := ctx.StringSlice(commands.FlagDepExcludeComposeSvc)
 		composeNets := ctx.StringSlice(commands.FlagComposeNet)
+
+		composeEnvNoHost := ctx.Bool(commands.FlagComposeEnvNoHost)
+		composeEnvVars, err := commands.ParseEnvFile(ctx.String(commands.FlagComposeEnvFile))
+		if err != nil {
+			xc.Out.Error("param.error.compose.env.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
 
 		var targetRef string
 
@@ -601,9 +616,12 @@ var CLI = cli.Command{
 			composeSvcNoPorts,
 			depExcludeComposeSvcAll,
 			depIncludeComposeSvcDeps,
+			depIncludeTargetComposeSvcDeps,
 			depIncludeComposeSvcs,
 			depExcludeComposeSvcs,
 			composeNets,
+			composeEnvVars,
+			composeEnvNoHost,
 			cbOpts,
 			crOpts,
 			outputTags,

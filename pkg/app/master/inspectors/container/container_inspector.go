@@ -69,6 +69,12 @@ const (
 	sensorVolumeBaseName = "docker-slim-sensor"
 )
 
+type NetNameInfo struct {
+	Name     string
+	FullName string
+	Aliases  []string
+}
+
 // Inspector is a container execution inspector
 type Inspector struct {
 	ContainerInfo         *dockerapi.Container
@@ -88,6 +94,9 @@ type Inspector struct {
 	ImageInspector        *image.Inspector
 	APIClient             *dockerapi.Client
 	Overrides             *config.ContainerOverrides
+	ExplicitVolumeMounts  map[string]config.VolumeMount
+	BaseMounts            []dockerapi.HostMount
+	BaseVolumesFrom       []string
 	PortBindings          map[dockerapi.Port][]dockerapi.PortBinding
 	DoPublishExposedPorts bool
 	Links                 []string
@@ -96,7 +105,6 @@ type Inspector struct {
 	DNSSearchDomains      []string
 	DoShowContainerLogs   bool
 	RunTargetAsUser       bool
-	VolumeMounts          map[string]config.VolumeMount
 	KeepPerms             bool
 	PathPerms             map[string]*fsutil.AccessInfo
 	ExcludePatterns       map[string]*fsutil.AccessInfo
@@ -110,8 +118,7 @@ type Inspector struct {
 	DoIncludeCertDirs     bool
 	DoIncludeCertPKAll    bool
 	DoIncludeCertPKDirs   bool
-	SelectedNetNames      map[string]string
-	ServiceAliases        []string
+	SelectedNetworks      map[string]NetNameInfo
 	DoDebug               bool
 	PrintState            bool
 	PrintPrefix           string
@@ -150,6 +157,9 @@ func NewInspector(
 	sensorVolumeName string,
 	doKeepTmpArtifacts bool,
 	overrides *config.ContainerOverrides,
+	explicitVolumeMounts map[string]config.VolumeMount,
+	baseMounts []dockerapi.HostMount,
+	baseVolumesFrom []string,
 	portBindings map[dockerapi.Port][]dockerapi.PortBinding,
 	doPublishExposedPorts bool,
 	links []string,
@@ -158,7 +168,6 @@ func NewInspector(
 	dnsSearchDomains []string,
 	runTargetAsUser bool,
 	showContainerLogs bool,
-	volumeMounts map[string]config.VolumeMount,
 	keepPerms bool,
 	pathPerms map[string]*fsutil.AccessInfo,
 	excludePatterns map[string]*fsutil.AccessInfo,
@@ -172,8 +181,8 @@ func NewInspector(
 	doIncludeCertDirs bool,
 	doIncludeCertPKAll bool,
 	doIncludeCertPKDirs bool,
-	selectedNetNames map[string]string,
-	serviceAliases []string,
+	selectedNetworks map[string]NetNameInfo,
+	//serviceAliases []string,
 	doDebug bool,
 	inContainer bool,
 	printState bool,
@@ -192,6 +201,9 @@ func NewInspector(
 		ImageInspector:        imageInspector,
 		APIClient:             client,
 		Overrides:             overrides,
+		ExplicitVolumeMounts:  explicitVolumeMounts,
+		BaseMounts:            baseMounts,
+		BaseVolumesFrom:       baseVolumesFrom,
 		PortBindings:          portBindings,
 		DoPublishExposedPorts: doPublishExposedPorts,
 		Links:                 links,
@@ -200,7 +212,6 @@ func NewInspector(
 		DNSSearchDomains:      dnsSearchDomains,
 		DoShowContainerLogs:   showContainerLogs,
 		RunTargetAsUser:       runTargetAsUser,
-		VolumeMounts:          volumeMounts,
 		KeepPerms:             keepPerms,
 		PathPerms:             pathPerms,
 		ExcludePatterns:       excludePatterns,
@@ -214,14 +225,14 @@ func NewInspector(
 		DoIncludeCertDirs:     doIncludeCertDirs,
 		DoIncludeCertPKAll:    doIncludeCertPKAll,
 		DoIncludeCertPKDirs:   doIncludeCertPKDirs,
-		SelectedNetNames:      selectedNetNames,
-		ServiceAliases:        serviceAliases,
-		DoDebug:               doDebug,
-		PrintState:            printState,
-		PrintPrefix:           printPrefix,
-		InContainer:           inContainer,
-		xc:                    xc,
-		crOpts:                crOpts,
+		SelectedNetworks:      selectedNetworks,
+		//ServiceAliases:        serviceAliases,
+		DoDebug:     doDebug,
+		PrintState:  printState,
+		PrintPrefix: printPrefix,
+		InContainer: inContainer,
+		xc:          xc,
+		crOpts:      crOpts,
 	}
 
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
@@ -313,14 +324,109 @@ func (i *Inspector) RunContainer() error {
 		i.logger.Errorf("RunContainer: error getting sensor (%s) info => %#v", sensorPath, err)
 	}
 
-	var volumeBinds []string
-	if i.crOpts != nil && i.crOpts.HostConfig != nil {
-		volumeBinds = i.crOpts.HostConfig.Binds
+	allMountsMap := map[string]dockerapi.HostMount{}
+
+	//start with the base mounts (usually come from compose)
+	if len(i.BaseMounts) > 0 {
+		for _, m := range i.BaseMounts {
+			mkey := fmt.Sprintf("%s:%s:%s", m.Type, m.Source, m.Target)
+			allMountsMap[mkey] = m
+		}
 	}
 
-	configVolumes := i.Overrides.Volumes
-	if configVolumes == nil {
-		configVolumes = map[string]struct{}{}
+	//var volumeBinds []string
+	//then add binds and mounts from the host config param
+	if i.crOpts != nil && i.crOpts.HostConfig != nil {
+		//volumeBinds = i.crOpts.HostConfig.Binds
+		for _, vb := range i.crOpts.HostConfig.Binds {
+			parts := strings.Split(vb, ":")
+			if len(parts) < 2 {
+				i.logger.Errorf("RunContainer: invalid bind format in crOpts.HostConfig.Binds => %s", vb)
+				continue
+			}
+
+			vm := dockerapi.HostMount{
+				Type:   "bind",
+				Source: parts[0],
+				Target: parts[1],
+			}
+
+			if strings.HasPrefix(vm.Source, "~/") {
+				hd, _ := os.UserHomeDir()
+				vm.Source = filepath.Join(hd, vm.Source[2:])
+			} else if strings.HasPrefix(vm.Source, "./") ||
+				strings.HasPrefix(vm.Source, "../") ||
+				(vm.Source == "..") ||
+				(vm.Source == ".") {
+				vm.Source, _ = filepath.Abs(vm.Source)
+			}
+
+			if len(parts) == 3 && parts[2] == "ro" {
+				vm.ReadOnly = true
+			}
+
+			mkey := fmt.Sprintf("%s:%s:%s", vm.Type, vm.Source, vm.Target)
+			allMountsMap[mkey] = vm
+		}
+
+		for _, vm := range i.crOpts.HostConfig.Mounts {
+			mkey := fmt.Sprintf("%s:%s:%s", vm.Type, vm.Source, vm.Target)
+			allMountsMap[mkey] = vm
+		}
+	}
+
+	//configVolumes := i.Overrides.Volumes
+	//if configVolumes == nil {
+	//	configVolumes = map[string]struct{}{}
+	//}
+
+	//then add volumes from overrides
+	if i.Overrides != nil && len(i.Overrides.Volumes) > 0 {
+		for vol := range i.Overrides.Volumes {
+			vm := dockerapi.HostMount{
+				Type:   "volume",
+				Target: vol,
+			}
+
+			mkey := fmt.Sprintf("%s:%s:%s", vm.Type, vm.Source, vm.Target)
+			allMountsMap[mkey] = vm
+		}
+	}
+
+	//now handle the explicit volume mounts
+	for _, vol := range i.ExplicitVolumeMounts {
+		//mountInfo := fmt.Sprintf("%s:%s:%s", volumeMount.Source, volumeMount.Destination, volumeMount.Options)
+		//volumeBinds = append(volumeBinds, mountInfo)
+
+		vm := dockerapi.HostMount{
+			Target: vol.Destination,
+		}
+
+		if strings.HasPrefix(vol.Source, "/") {
+			vm.Source = vol.Source
+			vm.Type = "bind"
+		} else if strings.HasPrefix(vol.Source, "~/") {
+			hd, _ := os.UserHomeDir()
+			vm.Source = filepath.Join(hd, vol.Source[2:])
+			vm.Type = "bind"
+		} else if strings.HasPrefix(vol.Source, "./") ||
+			strings.HasPrefix(vol.Source, "../") ||
+			(vol.Source == "..") ||
+			(vol.Source == ".") {
+			vm.Source, _ = filepath.Abs(vol.Source)
+			vm.Type = "bind"
+		} else {
+			//todo: list volumes and check vol.Source instead of defaulting to named volume
+			vm.Source = vol.Source
+			vm.Type = "volume"
+		}
+
+		if vol.Options == "ro" {
+			vm.ReadOnly = true
+		}
+
+		mkey := fmt.Sprintf("%s:%s:%s", vm.Type, vm.Source, vm.Target)
+		allMountsMap[mkey] = vm
 	}
 
 	var err error
@@ -330,28 +436,57 @@ func (i *Inspector) RunContainer() error {
 		errutil.FailOn(err)
 	}
 
-	var artifactsMountInfo string
+	//var artifactsMountInfo string
 	if i.DoUseLocalMounts {
-		artifactsMountInfo = fmt.Sprintf(ArtifactsMountPat, artifactsPath)
-		volumeBinds = append(volumeBinds, artifactsMountInfo)
+		//"%s:/opt/dockerslim/artifacts"
+		//artifactsMountInfo = fmt.Sprintf(ArtifactsMountPat, artifactsPath)
+		//volumeBinds = append(volumeBinds, artifactsMountInfo)
+		vm := dockerapi.HostMount{
+			Type:   "bind",
+			Source: artifactsPath,
+			Target: "/opt/dockerslim/artifacts",
+		}
+
+		mkey := fmt.Sprintf("%s:%s:%s", vm.Type, vm.Source, vm.Target)
+		allMountsMap[mkey] = vm
 	} else {
-		artifactsMountInfo = ArtifactsVolumePath
-		configVolumes[artifactsMountInfo] = struct{}{}
+		//artifactsMountInfo = ArtifactsVolumePath
+		//configVolumes[artifactsMountInfo] = struct{}{}
+		vm := dockerapi.HostMount{
+			Type:   "volume",
+			Target: ArtifactsVolumePath,
+		}
+
+		mkey := fmt.Sprintf("%s:%s:%s", vm.Type, vm.Source, vm.Target)
+		allMountsMap[mkey] = vm
 	}
 
-	var sensorMountInfo string
+	//var sensorMountInfo string
 	if i.DoUseLocalMounts {
-		sensorMountInfo = fmt.Sprintf(SensorMountPat, sensorPath)
+		//sensorMountInfo = fmt.Sprintf(SensorMountPat, sensorPath)
+		vm := dockerapi.HostMount{
+			Type:     "bind",
+			Source:   sensorPath,
+			Target:   "/opt/dockerslim/bin/docker-slim-sensor",
+			ReadOnly: true,
+		}
+
+		mkey := fmt.Sprintf("%s:%s:%s", vm.Type, vm.Source, vm.Target)
+		allMountsMap[mkey] = vm
 	} else {
-		sensorMountInfo = fmt.Sprintf(VolumeSensorMountPat, volumeName)
+		//sensorMountInfo = fmt.Sprintf(VolumeSensorMountPat, volumeName)
+		vm := dockerapi.HostMount{
+			Type:     "volume",
+			Source:   volumeName,
+			Target:   "/opt/dockerslim/bin",
+			ReadOnly: true,
+		}
+
+		mkey := fmt.Sprintf("%s:%s:%s", vm.Type, vm.Source, vm.Target)
+		allMountsMap[mkey] = vm
 	}
 
-	volumeBinds = append(volumeBinds, sensorMountInfo)
-
-	for _, volumeMount := range i.VolumeMounts {
-		mountInfo := fmt.Sprintf("%s:%s:%s", volumeMount.Source, volumeMount.Destination, volumeMount.Options)
-		volumeBinds = append(volumeBinds, mountInfo)
-	}
+	//volumeBinds = append(volumeBinds, sensorMountInfo)
 
 	var containerCmd []string
 	if i.DoDebug {
@@ -376,7 +511,13 @@ func (i *Inspector) RunContainer() error {
 		hostConfig = &dockerapi.HostConfig{}
 	}
 
-	hostConfig.Binds = volumeBinds
+	//hostConfig.Binds = volumeBinds
+	mountsList := []dockerapi.HostMount{}
+	for _, m := range allMountsMap {
+		mountsList = append(mountsList, m)
+	}
+	hostConfig.Mounts = mountsList
+
 	hostConfig.Privileged = true
 	hostConfig.UsernsMode = "host"
 
@@ -425,9 +566,9 @@ func (i *Inspector) RunContainer() error {
 		}
 	}
 
-	if len(configVolumes) > 0 {
-		containerOptions.Config.Volumes = configVolumes
-	}
+	//if len(configVolumes) > 0 {
+	//	containerOptions.Config.Volumes = configVolumes
+	//}
 
 	runAsUser := i.ImageInspector.ImageInfo.Config.User
 	containerOptions.Config.User = "0:0"
@@ -587,12 +728,12 @@ func (i *Inspector) RunContainer() error {
 			})
 	}
 
-	if len(i.SelectedNetNames) > 0 {
-		i.logger.Debugf("RunContainer: SelectedNetNames => %#v", i.SelectedNetNames)
-		for key, netName := range i.SelectedNetNames {
-			err = attachContainerToNetwork(i.logger, i.APIClient, i.ContainerID, netName, i.ServiceAliases)
+	if len(i.SelectedNetworks) > 0 {
+		i.logger.Debugf("RunContainer: SelectedNetworks => %#v", i.SelectedNetworks)
+		for key, netNameInfo := range i.SelectedNetworks {
+			err = attachContainerToNetwork(i.logger, i.APIClient, i.ContainerID, netNameInfo /*, i.ServiceAliases*/)
 			if err != nil {
-				i.logger.Debugf("RunContainer: AttachContainerToNetwork(%s,%s) key=%s error => %#v", i.ContainerID, netName, key, err)
+				i.logger.Debugf("RunContainer: AttachContainerToNetwork(%s,%+v) key=%s error => %#v", i.ContainerID, netNameInfo, key, err)
 				return err
 			}
 		}
@@ -760,7 +901,6 @@ func (i *Inspector) RunContainer() error {
 	for idx := 0; idx < 3; idx++ {
 		evt, err := i.ipcClient.GetEvent()
 
-		//don't want to expose mangos here...
 		if err != nil {
 			if os.IsTimeout(err) || err == channel.ErrWaitTimeout {
 				if i.PrintState {
@@ -1045,19 +1185,18 @@ func ensureSensorVolume(logger *log.Entry, client *dockerapi.Client, localSensor
 	return volumeName, nil
 }
 
-func attachContainerToNetwork(logger *log.Entry, apiClient *dockerapi.Client, containerID string, networkName string, aliases []string) error {
-	//might need network IDs instead of network names
-	//might need alias info too
+func attachContainerToNetwork(logger *log.Entry, apiClient *dockerapi.Client, containerID string, netNameInfo NetNameInfo /*networkName string*/ /*, aliases []string*/) error {
+	//network names seem to work ok (no need to use need network IDs)
 	options := dockerapi.NetworkConnectionOptions{
 		Container: containerID,
 		EndpointConfig: &dockerapi.EndpointConfig{
-			Aliases: aliases,
+			Aliases: netNameInfo.Aliases,
 		},
 	}
 
-	if err := apiClient.ConnectNetwork(networkName, options); err != nil {
+	if err := apiClient.ConnectNetwork(netNameInfo.FullName, options); err != nil {
 		logger.Debugf("attachContainerToNetwork(%s): container network connect error - %v",
-			containerID, networkName, err)
+			containerID, netNameInfo.FullName, err)
 		return err
 	}
 

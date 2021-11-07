@@ -54,14 +54,17 @@ const (
 	FlagShowPullLogs = "show-plogs"
 
 	//Compose-related flags
-	FlagComposeFile              = "compose-file"
-	FlagTargetComposeSvc         = "target-compose-svc"
-	FlagComposeSvcNoPorts        = "target-compose-svc-no-ports"
-	FlagDepExcludeComposeSvcAll  = "dep-exclude-compose-svc-all"
-	FlagDepIncludeComposeSvc     = "dep-include-compose-svc"
-	FlagDepExcludeComposeSvc     = "dep-exclude-compose-svc"
-	FlagDepIncludeComposeSvcDeps = "dep-include-compose-svc-deps"
-	FlagComposeNet               = "compose-net"
+	FlagComposeFile                    = "compose-file"
+	FlagTargetComposeSvc               = "target-compose-svc"
+	FlagComposeSvcNoPorts              = "target-compose-svc-no-ports"
+	FlagDepExcludeComposeSvcAll        = "dep-exclude-compose-svc-all"
+	FlagDepIncludeComposeSvc           = "dep-include-compose-svc"
+	FlagDepExcludeComposeSvc           = "dep-exclude-compose-svc"
+	FlagDepIncludeComposeSvcDeps       = "dep-include-compose-svc-deps"
+	FlagDepIncludeTargetComposeSvcDeps = "dep-include-target-compose-svc-deps"
+	FlagComposeNet                     = "compose-net"
+	FlagComposeEnvNoHost               = "compose-env-nohost"
+	FlagComposeEnvFile                 = "compose-env-file"
 
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
@@ -130,14 +133,17 @@ const (
 	FlagShowPullLogsUsage = "Show image pull logs"
 
 	//Compose-related flags
-	FlagComposeFileUsage              = "Load container info from selected compose file"
-	FlagTargetComposeSvcUsage         = "Target service from compose file"
-	FlagComposeSvcNoPortsUsage        = "Do not publish ports for target service from compose file"
-	FlagDepExcludeComposeSvcAllUsage  = "Do not start any compose services as target dependencies"
-	FlagDepIncludeComposeSvcUsage     = "Include specific compose service as a target dependency (only selected services will be started)"
-	FlagDepExcludeComposeSvcUsage     = "Exclude specific service from the compose services that will be started as target dependencies"
-	FlagDepIncludeComposeSvcDepsUsage = "Include all dependencies for the selected compose service (excluding the service itself) as target dependencies"
-	FlagComposeNetUsage               = "Attach target to the selected compose network(s) otherwise all networks will be attached"
+	FlagComposeFileUsage                    = "Load container info from selected compose file"
+	FlagTargetComposeSvcUsage               = "Target service from compose file"
+	FlagComposeSvcNoPortsUsage              = "Do not publish ports for target service from compose file"
+	FlagDepExcludeComposeSvcAllUsage        = "Do not start any compose services as target dependencies"
+	FlagDepIncludeComposeSvcUsage           = "Include specific compose service as a target dependency (only selected services will be started)"
+	FlagDepExcludeComposeSvcUsage           = "Exclude specific service from the compose services that will be started as target dependencies"
+	FlagDepIncludeComposeSvcDepsUsage       = "Include all dependencies for the selected compose service (excluding the service itself) as target dependencies"
+	FlagDepIncludeTargetComposeSvcDepsUsage = "Include all dependencies for the target compose service (excluding the service itself) as target dependencies"
+	FlagComposeNetUsage                     = "Attach target to the selected compose network(s) otherwise all networks will be attached"
+	FlagComposeEnvNoHostUsage               = "Don't include the env vars from the host to compose"
+	FlagComposeEnvFileUsage                 = "Load compose env vars from file"
 
 	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
 	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
@@ -335,6 +341,22 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  FlagComposeNetUsage,
 		EnvVar: "DSLIM_COMPOSE_NET",
+	},
+	FlagDepIncludeTargetComposeSvcDeps: cli.BoolFlag{
+		Name:   FlagDepIncludeTargetComposeSvcDeps,
+		Usage:  FlagDepIncludeTargetComposeSvcDepsUsage,
+		EnvVar: "DSLIM_DEP_INCLUDE_TARGET_COMPOSE_SVC_DEPS",
+	},
+	FlagComposeEnvNoHost: cli.BoolFlag{
+		Name:   FlagComposeEnvNoHost,
+		Usage:  FlagComposeEnvNoHostUsage,
+		EnvVar: "DSLIM_COMPOSE_ENV_NOHOST",
+	},
+	FlagComposeEnvFile: cli.StringFlag{
+		Name:   FlagComposeEnvFile,
+		Value:  "",
+		Usage:  FlagComposeEnvFileUsage,
+		EnvVar: "DSLIM_COMPOSE_ENV_FILE",
 	},
 	FlagRemoveFileArtifacts: cli.BoolFlag{
 		Name:   FlagRemoveFileArtifacts,

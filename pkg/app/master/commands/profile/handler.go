@@ -70,7 +70,7 @@ func OnCommand(
 	etcHostsMaps []string,
 	dnsServers []string,
 	dnsSearchDomains []string,
-	volumeMounts map[string]config.VolumeMount,
+	explicitVolumeMounts map[string]config.VolumeMount,
 	//doKeepPerms bool,
 	//pathPerms map[string]*fsutil.AccessInfo,
 	excludePatterns map[string]*fsutil.AccessInfo,
@@ -226,6 +226,9 @@ func OnCommand(
 		doUseSensorVolume,
 		false, //doKeepTmpArtifacts,
 		overrides,
+		explicitVolumeMounts,
+		nil, //baseMounts,
+		nil, //baseVolumesFrom,
 		portBindings,
 		doPublishExposedPorts,
 		links,
@@ -234,7 +237,6 @@ func OnCommand(
 		dnsSearchDomains,
 		doRunTargetAsUser,
 		doShowContainerLogs,
-		volumeMounts,
 		false, //doKeepPerms,
 		nil,   //pathPerms,
 		excludePatterns,
@@ -249,7 +251,7 @@ func OnCommand(
 		false, //doIncludeCertPKAll
 		false, //doIncludeCertPKDirs
 		nil,   //selectedNetNames
-		nil,
+		//nil,
 		gparams.Debug,
 		gparams.InContainer,
 		true,

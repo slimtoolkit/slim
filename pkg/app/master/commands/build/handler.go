@@ -31,7 +31,7 @@ import (
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	"github.com/dustin/go-humanize"
-	docker "github.com/fsouza/go-dockerclient"
+	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -62,9 +62,12 @@ func OnCommand(
 	composeSvcNoPorts bool,
 	depExcludeComposeSvcAll bool,
 	depIncludeComposeSvcDeps string,
+	depIncludeTargetComposeSvcDeps bool,
 	depIncludeComposeSvcs []string,
 	depExcludeComposeSvcs []string,
 	composeNets []string,
+	composeEnvVars []string,
+	composeEnvNoHost bool,
 	cbOpts *config.ContainerBuildOptions,
 	crOpts *config.ContainerRunOptions,
 	outputTags []string,
@@ -82,7 +85,7 @@ func OnCommand(
 	httpProbeAPISpecs []string,
 	httpProbeAPISpecFiles []string,
 	httpProbeApps []string,
-	portBindings map[docker.Port][]docker.PortBinding,
+	portBindings map[dockerapi.Port][]dockerapi.PortBinding,
 	doPublishExposedPorts bool,
 	doRmFileArtifacts bool,
 	copyMetaArtifactsLocation string,
@@ -96,7 +99,7 @@ func OnCommand(
 	etcHostsMaps []string,
 	dnsServers []string,
 	dnsSearchDomains []string,
-	volumeMounts map[string]config.VolumeMount,
+	explicitVolumeMounts map[string]config.VolumeMount,
 	doKeepPerms bool,
 	pathPerms map[string]*fsutil.AccessInfo,
 	excludePatterns map[string]*fsutil.AccessInfo,
@@ -158,7 +161,7 @@ func OnCommand(
 
 		xc.Exit(exitCode)
 	}
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	xc.Out.State("started")
 
@@ -252,7 +255,7 @@ func OnCommand(
 			cbOpts,
 			targetRef,
 			doShowBuildLogs)
-		errutil.FailOn(err)
+		xc.FailOn(err)
 
 		err = fatBuilder.Build()
 
@@ -284,10 +287,12 @@ func OnCommand(
 		xc.Out.State("basic.image.build.completed")
 
 		targetRef = fatImageRepoNameTag
-		//todo: remove the temporary fat image (should have a flag for it in case users want the fat image too)
 	}
-	serviceAliases := []string{}
+
+	var serviceAliases []string
 	var depServicesExe *compose.Execution
+	var baseVolumesFrom []string
+	var baseMounts []dockerapi.HostMount
 	if composeFile != "" {
 		if targetComposeSvc != "" && depIncludeComposeSvcDeps != targetComposeSvc {
 			var found bool
@@ -299,16 +304,17 @@ func OnCommand(
 			}
 
 			if !found {
+				//exclude the target service if the target service is not excluded already
 				depExcludeComposeSvcs = append(depExcludeComposeSvcs, targetComposeSvc)
 			}
 		}
 
-		// when more than one target is supported
-		// this should be done per service name
-		serviceAliases = depExcludeComposeSvcs
-		logger.Debugf("compose: serviceAliases='%s'\n", serviceAliases)
+		if depIncludeTargetComposeSvcDeps {
+			depIncludeComposeSvcDeps = targetComposeSvc
+		}
 
-		selectors := compose.NewServiceSelectors(depIncludeComposeSvcDeps,
+		selectors := compose.NewServiceSelectors(
+			depIncludeComposeSvcDeps,
 			depIncludeComposeSvcs,
 			depExcludeComposeSvcs)
 
@@ -326,8 +332,9 @@ func OnCommand(
 			composeFile,
 			selectors,
 			composeProjectName,
-			"",    //workingDir (todo: add a flag)
-			nil,   //environment (todo: add a flag)
+			"", //workingDir (todo: add a flag)
+			composeEnvVars,
+			composeEnvNoHost,
 			false, //buildImages
 			doPull,
 			nil,  //pullExcludes (todo: add a flag)
@@ -336,7 +343,7 @@ func OnCommand(
 			nil,  //eventCh
 			true) //printState
 
-		errutil.FailOn(err)
+		xc.FailOn(err)
 
 		if !depExcludeComposeSvcAll && !exe.SelectedHaveImages() {
 			xc.Out.Info("compose.file.error",
@@ -377,22 +384,7 @@ func OnCommand(
 				xc.Exit(exitCode)
 			}
 
-			// sort and override, add environment variables
-			for _, env := range overrides.Env {
-				envComponents := strings.SplitN(env, "=", 1)
-				if len(envComponents) == 2 {
-					targetSvcInfo.Config.Environment[envComponents[0]] = &envComponents[1]
-				}
-			}
-			// combine into overrides
-			combineEnv := make([]string, 0)
-			for key := range targetSvcInfo.Config.Environment {
-				variable := fmt.Sprintf("%s=%s", key, *targetSvcInfo.Config.Environment[key])
-				combineEnv = append(combineEnv, variable)
-			}
-			overrides.Env = combineEnv
-
-			logger.Debugf("compose: Environment_Variables='%v'\n", overrides.Env)
+			serviceAliases = append(serviceAliases, targetSvcInfo.Config.Name)
 
 			targetRef = targetSvcInfo.Config.Image
 
@@ -406,11 +398,54 @@ func OnCommand(
 				overrides.Cmd = []string(targetSvcInfo.Config.Command)
 			}
 
+			//env vars
+			//the env vars from compose are already "resolved" and must be "k=v"
+			svcEnvVars := compose.EnvVarsFromService(
+				targetSvcInfo.Config.Environment,
+				targetSvcInfo.Config.EnvFile)
+
+			emap := map[string]string{}
+			//start with compose env vars
+			for _, env := range svcEnvVars {
+				envComponents := strings.SplitN(env, "=", 2)
+				if len(envComponents) == 2 {
+					emap[envComponents[0]] = envComponents[1]
+				} else {
+					logger.Debugf("svcEnvVars - unexpected env var: '%s'", env)
+				}
+			}
+			//then use env vars from overrides
+			for _, env := range overrides.Env {
+				envComponents := strings.SplitN(env, "=", 2)
+				if len(envComponents) == 2 {
+					emap[envComponents[0]] = envComponents[1]
+				} else {
+					logger.Debugf("overrides.Env - unexpected env var: '%s'", env)
+				}
+			}
+
+			// combine into overrides
+			var combineEnv []string
+			for key, val := range emap {
+				variable := fmt.Sprintf("%s=%s", key, val)
+				combineEnv = append(combineEnv, variable)
+			}
+			overrides.Env = combineEnv
+
+			logger.Debugf("compose: Environment_Variables='%v'\n", overrides.Env)
+
+			//expose ports
+			svcExposedPorts := compose.ExposedPorts(targetSvcInfo.Config.Expose, targetSvcInfo.Config.Ports)
+			for k, v := range svcExposedPorts {
+				overrides.ExposedPorts[k] = v
+			}
+
+			//publish ports
 			if !composeSvcNoPorts {
 				logger.Debug("using targetSvcInfo.Config.Ports")
 				for _, p := range targetSvcInfo.Config.Ports {
 					portKey := fmt.Sprintf("%v/%v", p.Target, p.Protocol)
-					pbSet, found := portBindings[docker.Port(portKey)]
+					pbSet, found := portBindings[dockerapi.Port(portKey)]
 					if found {
 						found := false
 						hostPort := fmt.Sprintf("%v", p.Published)
@@ -422,21 +457,35 @@ func OnCommand(
 						}
 
 						if !found {
-							pbSet = append(pbSet, docker.PortBinding{
+							pbSet = append(pbSet, dockerapi.PortBinding{
 								HostIP:   p.HostIP,
 								HostPort: hostPort,
 							})
 
-							portBindings[docker.Port(portKey)] = pbSet
+							portBindings[dockerapi.Port(portKey)] = pbSet
 						}
 					} else {
-						portBindings[docker.Port(portKey)] = []docker.PortBinding{{
+						portBindings[dockerapi.Port(portKey)] = []dockerapi.PortBinding{{
 							HostIP:   p.HostIP,
 							HostPort: fmt.Sprintf("%v", p.Published),
 						}}
 					}
 				}
 			}
+
+			baseMounts, err := compose.MountsFromVolumeConfigs(
+				exe.BaseComposeDir,
+				targetSvcInfo.Config.Volumes,
+				targetSvcInfo.Config.Tmpfs,
+				exe.ActiveVolumes)
+			xc.FailOn(err)
+
+			logger.Debugf("compose targetSvcInfo - baseMounts(%d)", len(baseMounts))
+
+			baseVolumesFrom = compose.VolumesFrom(exe.AllServiceNames,
+				targetSvcInfo.Config.VolumesFrom)
+
+			logger.Debugf("compose targetSvcInfo - baseVolumesFrom(%d)", len(baseVolumesFrom))
 		}
 
 		if !depExcludeComposeSvcAll {
@@ -491,7 +540,7 @@ func OnCommand(
 	}
 
 	imageInspector, err := image.NewInspector(client, targetRef)
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	if imageInspector.NoImage() {
 		if doPull {
@@ -503,7 +552,7 @@ func OnCommand(
 				})
 
 			err := imageInspector.Pull(doShowPullLogs)
-			errutil.FailOn(err)
+			xc.FailOn(err)
 		} else {
 			xc.Out.Info("target.image.error",
 				ovars{
@@ -530,7 +579,7 @@ func OnCommand(
 
 	logger.Info("inspecting 'fat' image metadata...")
 	err = imageInspector.Inspect()
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	localVolumePath, artifactLocation, statePath, stateKey := fsutil.PrepareImageStateDirs(gparams.StatePath, imageInspector.ImageInfo.ID)
 	imageInspector.ArtifactLocation = artifactLocation
@@ -545,7 +594,7 @@ func OnCommand(
 
 	logger.Info("processing 'fat' image info...")
 	err = imageInspector.ProcessCollectedData()
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	if imageInspector.DockerfileInfo != nil {
 		if imageInspector.DockerfileInfo.ExeUser != "" {
@@ -579,13 +628,29 @@ func OnCommand(
 
 	xc.Out.State("image.inspection.done")
 
-	selectedNetNames := map[string]string{}
+	selectedNetNames := map[string]compose.NetNameInfo{}
 	if depServicesExe != nil {
 		xc.Out.State("container.dependencies.init.start")
 		err = depServicesExe.Prepare()
-		errutil.FailOn(err)
+		xc.FailOn(err)
 		err = depServicesExe.Start()
-		errutil.FailOn(err)
+		if err != nil {
+			depServicesExe.Cleanup()
+		}
+		xc.FailOn(err)
+
+		exeCleanup := func() {
+			if depServicesExe != nil {
+				xc.Out.State("container.dependencies.shutdown.start")
+				err = depServicesExe.Stop()
+				errutil.WarnOn(err)
+				err = depServicesExe.Cleanup()
+				errutil.WarnOn(err)
+				xc.Out.State("container.dependencies.shutdown.done")
+			}
+		}
+
+		xc.AddCleanupHandler(exeCleanup)
 
 		//todo:
 		//need a better way to make sure the dependencies are ready
@@ -594,28 +659,72 @@ func OnCommand(
 		time.Sleep(3 * time.Second)
 		xc.Out.State("container.dependencies.init.done")
 
-		var selectedNetworks bool
 		//might need more info (including alias info) when targeting compose services
 		allNetNames := depServicesExe.ActiveNetworkNames()
-		if len(composeNets) > 0 {
+
+		if targetComposeSvc != "" {
+			//if we are targetting a compose service and
+			//we have explicitly selected compose networks (composeNets)
+			//we use the selected subset of the configured networks for the target service
+			composeNetsSet := map[string]struct{}{}
 			for _, key := range composeNets {
-				if net, found := allNetNames[key]; found {
-					selectedNetworks = true
-					selectedNetNames[key] = net
+				composeNetsSet[key] = struct{}{}
+			}
+
+			svcNets := depServicesExe.ActiveServiceNetworks(targetComposeSvc)
+			for key, netNameInfo := range svcNets {
+				if len(composeNets) > 0 {
+					if _, found := composeNetsSet[key]; !found {
+						continue
+					}
+				}
+
+				selectedNetNames[key] = netNameInfo
+			}
+		} else {
+			//we are not targetting a compose service,
+			//but we do want to connect to the networks in compose
+			if len(composeNets) > 0 {
+				for _, key := range composeNets {
+					if net, found := allNetNames[key]; found {
+						selectedNetNames[key] = compose.NetNameInfo{
+							FullName: net,
+							//Aliases: serviceAliases, - we merge serviceAliases later
+						}
+					}
+				}
+			} else {
+				//select/use all networks if specific networks are not selected
+				for key, fullName := range allNetNames {
+					selectedNetNames[key] = compose.NetNameInfo{
+						FullName: fullName,
+						//Aliases: serviceAliases, - we merge serviceAliases later
+					}
 				}
 			}
 		}
+	}
 
-		if targetComposeSvc != "" {
-			svcNets := depServicesExe.ActiveServiceNetworks(targetComposeSvc)
-			for key, name := range svcNets {
-				selectedNetworks = true
-				selectedNetNames[key] = name
-			}
+	selectedNetworks := map[string]container.NetNameInfo{}
+	for key, info := range selectedNetNames {
+		aset := map[string]struct{}{}
+		for _, a := range info.Aliases {
+			aset[a] = struct{}{}
 		}
 
-		if !selectedNetworks {
-			selectedNetNames = allNetNames
+		//merge serviceAliases with the main set of aliases
+		for _, a := range serviceAliases {
+			aset[a] = struct{}{}
+		}
+		var alist []string
+		for a := range aset {
+			alist = append(alist, a)
+		}
+
+		selectedNetworks[key] = container.NetNameInfo{
+			Name:     key,
+			FullName: info.FullName,
+			Aliases:  alist,
 		}
 	}
 
@@ -633,6 +742,9 @@ func OnCommand(
 		doUseSensorVolume,
 		doKeepTmpArtifacts,
 		overrides,
+		explicitVolumeMounts,
+		baseMounts,
+		baseVolumesFrom,
 		portBindings,
 		doPublishExposedPorts,
 		links,
@@ -641,7 +753,6 @@ func OnCommand(
 		dnsSearchDomains,
 		doRunTargetAsUser,
 		doShowContainerLogs,
-		volumeMounts,
 		doKeepPerms,
 		pathPerms,
 		excludePatterns,
@@ -655,13 +766,13 @@ func OnCommand(
 		doIncludeCertDirs,
 		doIncludeCertPKAll,
 		doIncludeCertPKDirs,
-		selectedNetNames,
-		serviceAliases,
+		selectedNetworks,
+		//serviceAliases,
 		gparams.Debug,
 		gparams.InContainer,
 		true,
 		prefix)
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	if len(containerInspector.FatContainerCmd) == 0 {
 		xc.Out.Info("target.image.error",
@@ -678,7 +789,18 @@ func OnCommand(
 
 	logger.Info("starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
-	errutil.FailOn(err)
+	xc.FailOn(err)
+
+	inspectorCleanup := func() {
+		if containerInspector != nil {
+			xc.Out.State("container.target.shutdown.start")
+			containerInspector.FinishMonitoring()
+			_ = containerInspector.ShutdownContainer()
+			xc.Out.State("container.target.shutdown.done")
+		}
+	}
+
+	xc.AddCleanupHandler(inspectorCleanup)
 
 	xc.Out.Info("container",
 		ovars{
@@ -716,7 +838,7 @@ func OnCommand(
 			httpProbeApps,
 			true,
 			prefix)
-		errutil.FailOn(err)
+		xc.FailOn(err)
 
 		if len(probe.Ports) == 0 {
 			xc.Out.State("http.probe.error",
@@ -725,9 +847,10 @@ func OnCommand(
 					"message": "expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services",
 				})
 
-			logger.Info("shutting down 'fat' container...")
-			containerInspector.FinishMonitoring()
-			_ = containerInspector.ShutdownContainer()
+			//note: should be handled by inspectorCleanup
+			//logger.Info("shutting down 'fat' container...")
+			//containerInspector.FinishMonitoring()
+			//_ = containerInspector.ShutdownContainer()
 
 			exitCode := commands.ECTBuild | ecbImageBuildError
 			xc.Out.State("exited",
@@ -791,22 +914,24 @@ func OnCommand(
 						"shell": execCmd,
 					})
 			}
-			exec, err := containerInspector.APIClient.CreateExec(docker.CreateExecOptions{
+			exec, err := containerInspector.APIClient.CreateExec(dockerapi.CreateExecOptions{
 				Container:    containerInspector.ContainerID,
 				Cmd:          cmd,
 				AttachStdin:  true,
 				AttachStdout: true,
 				AttachStderr: true,
 			})
-			errutil.FailOn(err)
+			xc.FailOn(err)
+
 			buffer := &printbuffer.PrintBuffer{Prefix: fmt.Sprintf("%s[%s][exec]: output:", appName, cmdName)}
-			errutil.FailOn(containerInspector.APIClient.StartExec(exec.ID, docker.StartExecOptions{
+			xc.FailOn(containerInspector.APIClient.StartExec(exec.ID, dockerapi.StartExecOptions{
 				InputStream:  input,
 				OutputStream: buffer,
 				ErrorStream:  buffer,
 			}))
+
 			inspect, err := containerInspector.APIClient.InspectExec(exec.ID)
-			errutil.FailOn(err)
+			xc.FailOn(err)
 			errutil.FailWhen(inspect.Running, "still running")
 			if inspect.ExitCode != 0 {
 				execFail = true
@@ -903,7 +1028,7 @@ func OnCommand(
 
 	logger.Info("processing instrumented 'fat' container info...")
 	err = containerInspector.ProcessCollectedData()
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	if customImageTag == "" {
 		customImageTag = imageInspector.SlimImageRepo
@@ -924,7 +1049,7 @@ func OnCommand(
 		imageOverrideSelectors,
 		overrides,
 		instructions)
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	if !builder.HasData {
 		logger.Info("WARNING - no data artifacts")
@@ -962,7 +1087,7 @@ func OnCommand(
 
 	/////////////////////////////
 	newImageInspector, err := image.NewInspector(client, builder.RepoName)
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	if newImageInspector.NoImage() {
 		xc.Out.Info("results",
