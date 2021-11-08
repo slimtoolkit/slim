@@ -71,6 +71,8 @@ func OnCommand(
 	composeNets []string,
 	composeEnvVars []string,
 	composeEnvNoHost bool,
+	composeWorkdir string,
+	composeProjectName string,
 	cbOpts *config.ContainerBuildOptions,
 	crOpts *config.ContainerRunOptions,
 	outputTags []string,
@@ -329,7 +331,9 @@ func OnCommand(
 		logger.Debugf("compose: file='%s' selectors='%+v'\n",
 			composeFile, selectors)
 
-		composeProjectName := fmt.Sprintf(composeProjectNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))
+		if composeProjectName == "" {
+			composeProjectName = fmt.Sprintf(composeProjectNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))
+		}
 
 		exe, err := compose.NewExecution(xc,
 			logger,
@@ -337,7 +341,7 @@ func OnCommand(
 			composeFile,
 			selectors,
 			composeProjectName,
-			"", //workingDir (todo: add a flag)
+			composeWorkdir,
 			composeEnvVars,
 			composeEnvNoHost,
 			false, //buildImages

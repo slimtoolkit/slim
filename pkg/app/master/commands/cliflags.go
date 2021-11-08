@@ -68,6 +68,10 @@ const (
 	FlagComposeNet                     = "compose-net"
 	FlagComposeEnvNoHost               = "compose-env-nohost"
 	FlagComposeEnvFile                 = "compose-env-file"
+	FlagComposeWorkdir                 = "compose-workdir"
+	FlagComposeProjectName             = "compose-project-name"
+	FlagPrestartComposeSvc             = "prestart-compose-svc"
+	FlagPoststartComposeSvc            = "poststart-compose-svc"
 
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
@@ -134,9 +138,9 @@ const (
 const (
 	FlagTargetUsage           = "Target container image (name or ID)"
 	FlagPullUsage             = "Try pulling target if it's not available locally"
-	FlagDockerConfigPathUsage = "Specify a custom path for a docker config to be used in pilling images from a private registry"
-	FlagRegistryAccountUsage  = "Target registry account used when pulling an image from a private registry"
-	FlagRegistrySecretUsage   = "Target registry secret used when pulling an image from a private registry"
+	FlagDockerConfigPathUsage = "Docker config path (used to fetch registry credentials)"
+	FlagRegistryAccountUsage  = "Target registry account used when pulling images from private registries"
+	FlagRegistrySecretUsage   = "Target registry secret used when pulling images from private registries"
 	FlagShowPullLogsUsage     = "Show image pull logs"
 
 	//Compose-related flags
@@ -150,7 +154,11 @@ const (
 	FlagDepIncludeTargetComposeSvcDepsUsage = "Include all dependencies for the target compose service (excluding the service itself) as target dependencies"
 	FlagComposeNetUsage                     = "Attach target to the selected compose network(s) otherwise all networks will be attached"
 	FlagComposeEnvNoHostUsage               = "Don't include the env vars from the host to compose"
-	FlagComposeEnvFileUsage                 = "Load compose env vars from file"
+	FlagComposeEnvFileUsage                 = "Load compose env vars from file (host env vars override the values loaded from this file)"
+	FlagComposeWorkdirUsage                 = "Set custom work directory for compose"
+	FlagComposeProjectNameUsage             = "Use custom project name for compose"
+	FlagPrestartComposeSvcUsage             = "Run selected compose service(s) before any other compose services or target container"
+	FlagPoststartComposeSvcUsage            = "Run selected compose service(s) after the target container is running (need a new continue after mode too)"
 
 	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
 	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
@@ -380,6 +388,30 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  "",
 		Usage:  FlagComposeEnvFileUsage,
 		EnvVar: "DSLIM_COMPOSE_ENV_FILE",
+	},
+	FlagComposeProjectName: cli.StringFlag{
+		Name:   FlagComposeProjectName,
+		Value:  "",
+		Usage:  FlagComposeProjectNameUsage,
+		EnvVar: "DSLIM_COMPOSE_PROJECT_NAME",
+	},
+	FlagComposeWorkdir: cli.StringFlag{
+		Name:   FlagComposeWorkdir,
+		Value:  "",
+		Usage:  FlagComposeWorkdirUsage,
+		EnvVar: "DSLIM_COMPOSE_WORKDIR",
+	},
+	FlagPrestartComposeSvc: cli.StringSliceFlag{
+		Name:   FlagPrestartComposeSvc,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagPrestartComposeSvcUsage,
+		EnvVar: "DSLIM_PRESTART_COMPOSE_SVC",
+	},
+	FlagPoststartComposeSvc: cli.StringSliceFlag{
+		Name:   FlagPoststartComposeSvc,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagPoststartComposeSvcUsage,
+		EnvVar: "DSLIM_POSTSTART_COMPOSE_SVC",
 	},
 	FlagRemoveFileArtifacts: cli.BoolFlag{
 		Name:   FlagRemoveFileArtifacts,

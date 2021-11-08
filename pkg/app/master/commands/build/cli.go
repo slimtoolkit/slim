@@ -41,6 +41,8 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagComposeNet),
 		commands.Cflag(commands.FlagComposeEnvNoHost),
 		commands.Cflag(commands.FlagComposeEnvFile),
+		commands.Cflag(commands.FlagComposeProjectName),
+		commands.Cflag(commands.FlagComposeWorkdir),
 		commands.Cflag(commands.FlagHTTPProbeOff),
 		commands.Cflag(commands.FlagHTTPProbe),
 		commands.Cflag(commands.FlagHTTPProbeCmd),
@@ -189,7 +191,7 @@ var CLI = cli.Command{
 		if cbOpts.Dockerfile == "" {
 			deleteFatImage = false
 		}
-		
+
 		composeFile := ctx.String(commands.FlagComposeFile)
 		//todo: load/parse compose file and then use it to validate the related compose params
 		targetComposeSvc := ctx.String(commands.FlagTargetComposeSvc)
@@ -211,6 +213,9 @@ var CLI = cli.Command{
 				})
 			xc.Exit(-1)
 		}
+
+		composeProjectName := ctx.String(commands.FlagComposeProjectName)
+		composeWorkdir := ctx.String(commands.FlagComposeWorkdir)
 
 		var targetRef string
 
@@ -637,6 +642,8 @@ var CLI = cli.Command{
 			composeNets,
 			composeEnvVars,
 			composeEnvNoHost,
+			composeWorkdir,
+			composeProjectName,
 			cbOpts,
 			crOpts,
 			outputTags,

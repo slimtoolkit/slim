@@ -344,9 +344,9 @@ To disable the version checks set the global `--check-version` flag to `false` (
 
 - `--target` - Target container image (name or ID)
 - `--pull` - Try pulling target if it's not available locally (default: false).
-- `--docker-config-path` - Set the docker config path used to fetch credentials. Must be used with the `--pull` flag.
-- `--registry-username` - Set the username to be used for an image pull on a private registry. Must be used with the `--pull` flag.
-- `--registry-password` - Set the password to be used for an image pull on a private registry. Must be used with the `--pull` flag.
+- `--docker-config-path` - Set the docker config path used to fetch registry credentials (used with the `--pull` flag).
+- `--registry-account` - Account to be used when pulling images from private registries (used with the `--pull` flag).
+- `--registry-secret` - Account secret to be used when pulling images from private registries (used with the `--pull` and `--registry-account` flags).
 - `--show-plogs` - Show image pull logs (default: false).
 - `--changes value` - Show layer change details for the selected change type (values: none, all, delete, modify, add).
 - `--changes-output value` - Where to show the changes (values: all, report, console).
@@ -387,10 +387,11 @@ In the interactive CLI prompt mode you must specify the target image using the `
 
 - `--target` - Target container image (name or ID). It's an alternative way to provide the target information. The standard way to provide the target information is by putting as the last value in the `build` command CLI call.
 - `--pull` - Try pulling target if it's not available locally (default: false).
-- `--docker-config-path` - Set the docker config path used to fetch credentials. Must be used with the `--pull` flag.
-- `--registry-username` - Set the username to be used for an image pull on a private registry. Must be used with the `--pull` flag.
-- `--registry-password` - Set the password to be used for an image pull on a private registry. Must be used with the `--pull` flag.
+- `--docker-config-path` - Set the docker config path used to fetch registry credentials (used with the `--pull` flag).
+- `--registry-account` - Account to be used when pulling images from private registries (used with the `--pull` flag).
+- `--registry-secret` - Account secret to be used when pulling images from private registries (used with the `--pull` and `--registry-account` flags).
 - `--show-plogs` - Show image pull logs (default: false).
+
 - `compose-file` - Load container info from selected compose file
 - `target-compose-svc` - Target service from compose file
 - `target-compose-svc-no-ports` - Do not publish ports for target service from compose file
@@ -398,7 +399,14 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `dep-include-compose-svc` - Include specific compose service as a target dependency (only selected services will be started)
 - `dep-exclude-compose-svc` - Exclude specific service from the compose services that will be started as target dependencies
 - `dep-include-compose-svc-deps` - Include all dependencies for the selected compose service (excluding the service itself) as target dependencies
+- `dep-include-target-compose-svc-deps` - Include all dependencies for the target compose service (excluding the service itself) as target dependencies. This is a shortcut flag to avoid repeating the service name (it's a pretty long flag name though :-))
 - `compose-net` - Attach target to the selected compose network(s) otherwise all networks will be attached
+- `compose-env-nohost` - Don't include the env vars from the host to compose
+- `compose-env-file` - Load compose env vars from file (host env vars override the values loaded from this file)
+- `compose-workdir` - Set custom work directory for compose
+- `compose-project-name` - Use custom project name for compose
+- `prestart-compose-svc` - placeholder for now
+- `poststart-compose-svc` - placeholder for now
 - `--http-probe` - Enables/disables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`: `--http-probe=false`)
 - `--http-probe-off` - Alternative way to disable HTTP probing
 - `--http-probe-cmd` - Additional HTTP probe command [can use this flag multiple times]

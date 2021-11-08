@@ -16,6 +16,9 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagTarget), Description: commands.FlagTargetUsage},
 		{Text: commands.FullFlagName(commands.FlagPull), Description: commands.FlagPullUsage},
 		{Text: commands.FullFlagName(commands.FlagShowPullLogs), Description: commands.FlagShowPullLogsUsage},
+		{Text: commands.FullFlagName(commands.FlagRegistryAccount), Description: commands.FlagRegistryAccountUsage},
+		{Text: commands.FullFlagName(commands.FlagRegistrySecret), Description: commands.FlagRegistrySecretUsage},
+		{Text: commands.FullFlagName(commands.FlagDockerConfigPath), Description: commands.FlagDockerConfigPathUsage},
 		{Text: commands.FullFlagName(FlagChanges), Description: FlagChangesUsage},
 		{Text: commands.FullFlagName(FlagChangesOutput), Description: FlagChangesOutputUsage},
 		{Text: commands.FullFlagName(FlagLayer), Description: FlagLayerUsage},
@@ -44,6 +47,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 	Values: map[string]commands.CompleteValue{
 		commands.FullFlagName(commands.FlagPull):                commands.CompleteBool,
 		commands.FullFlagName(commands.FlagShowPullLogs):        commands.CompleteBool,
+		commands.FullFlagName(commands.FlagDockerConfigPath):    commands.CompleteFile,
 		commands.FullFlagName(commands.FlagTarget):              commands.CompleteTarget,
 		commands.FullFlagName(FlagChanges):                      completeLayerChanges,
 		commands.FullFlagName(FlagChangesOutput):                completeOutputs,
