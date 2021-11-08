@@ -1,6 +1,25 @@
 # Releases
 
-## 1.37.0 (8/30/2021)
+## 1.37.1 (11/7/2021)
+
+### New Features
+
+- Ability to pull images from private registries (`--registry-account`, `--registry-secret`, `--docker-config-path` flags)
+
+### Improvements
+
+- Additional flags for compose (`dep-include-target-compose-svc-deps`, `compose-env-nohost`, `compose-env-file`, `compose-workdir`, `compose-project-name`)
+- Variable substitution support in compose
+- Detect duplicates by default in xray
+- Resource cleanup when the build command exits
+- `delete-generated-fat-image` flag to cleanup the non-optimized images when `docker-slim` builds images from source/Dockerfile
+- Improved `maintainer` info collection for xray
+
+### Bug Fixes
+
+- Volume mounting bug fixes for compose
+
+## 1.37.0 (9/23/2021)
 
 ### New Features
 
