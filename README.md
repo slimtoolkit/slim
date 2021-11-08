@@ -879,7 +879,7 @@ Use Go 1.13 or higher. You can use earlier version of Go, but it can't be lower 
 
 If you have a web browser, you can get a fully pre-configured development environment in one click:
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://gitpod.io/#https://github.com/docker-slim/docker-slim)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/docker-slim/docker-slim)
 
 
 ##### Additional Tools
