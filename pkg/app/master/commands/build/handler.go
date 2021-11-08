@@ -445,6 +445,10 @@ func OnCommand(
 
 			//expose ports
 			svcExposedPorts := compose.ExposedPorts(targetSvcInfo.Config.Expose, targetSvcInfo.Config.Ports)
+			if len(svcExposedPorts) > 0 && overrides.ExposedPorts == nil {
+				overrides.ExposedPorts = map[dockerapi.Port]struct{}{}
+			}
+
 			for k, v := range svcExposedPorts {
 				overrides.ExposedPorts[k] = v
 			}
