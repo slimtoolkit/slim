@@ -1162,7 +1162,7 @@ func printImagePackage(
 		}
 	}
 
-	if doDetectDuplicates && doShowDuplicates && len(pkg.HashReferences) > 0 {
+	if doDetectDuplicates && len(pkg.HashReferences) > 0 {
 		cmdReport.ImageReport.Duplicates = map[string]*dockerimage.DuplicateFilesReport{}
 
 		//TODO: show duplicates by duplicate total size (biggest waste first)
@@ -1181,30 +1181,37 @@ func printImagePackage(
 					dfr.WastedSize = dfr.AllFileSize - dfr.FileSize
 					cmdReport.ImageReport.Duplicates[hash] = dfr
 
-					xc.Out.Info("image.duplicates.set.start",
-						ovars{
-							"hash":             hash,
-							"count":            dfr.FileCount,
-							"size.bytes":       dfr.FileSize,
-							"size.human":       humanize.Bytes(uint64(dfr.FileSize)),
-							"all_size.bytes":   dfr.AllFileSize,
-							"size_total.human": humanize.Bytes(dfr.AllFileSize),
-							"wasted.bytes":     dfr.WastedSize,
-							"wasted.human":     humanize.Bytes(dfr.WastedSize),
-						})
+					if doShowDuplicates {
+						xc.Out.Info("image.duplicates.set.start",
+							ovars{
+								"hash":             hash,
+								"count":            dfr.FileCount,
+								"size.bytes":       dfr.FileSize,
+								"size.human":       humanize.Bytes(uint64(dfr.FileSize)),
+								"all_size.bytes":   dfr.AllFileSize,
+								"size_total.human": humanize.Bytes(dfr.AllFileSize),
+								"wasted.bytes":     dfr.WastedSize,
+								"wasted.human":     humanize.Bytes(dfr.WastedSize),
+							})
+					}
 
 					showStart = false
 				}
 
 				dfr.Files[fpath] = info.LayerIndex
-				xc.Out.Info("image.duplicates.object",
-					ovars{
-						"name":  fpath,
-						"layer": info.LayerIndex,
-					})
+
+				if doShowDuplicates {
+					xc.Out.Info("image.duplicates.object",
+						ovars{
+							"name":  fpath,
+							"layer": info.LayerIndex,
+						})
+				}
 			}
 
-			xc.Out.Info("image.duplicates.set.end")
+			if doShowDuplicates {
+				xc.Out.Info("image.duplicates.set.end")
+			}
 		}
 	}
 }

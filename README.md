@@ -447,8 +447,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `include-cert-dirs` - Keep known cert directories and all files in them
 - `include-cert-pk-all` - Keep all discovered cert private keys
 - `include-cert-pk-dirs` - Keep known cert private key directories and all files in them
-- `--preserve-path` - Keep path from orignal image in its initial state. [can use this flag multiple times]
-- `--preserve-path-file` - File with paths to keep from original image in their original state.
+- `--preserve-path` - Keep path from orignal image in its initial state (changes to the selected container image files when it runs will be discarded). [can use this flag multiple times]
+- `--preserve-path-file` - File with paths to keep from original image in their original state (changes to the selected container image files when it runs will be discarded).
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 - `--path-perms-file` - File with path permissions to set (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 - `--exclude-pattern` - Exclude path pattern ([Glob/Match in Go](https://golang.org/pkg/path/filepath/#Match) and `**`) from image

@@ -153,12 +153,12 @@ var Flags = map[string]cli.Flag{
 		Usage:  FlagDetectUTF8Usage,
 		EnvVar: "DSLIM_XRAY_DETECT_UTF8",
 	},
-	FlagDetectDuplicates: cli.BoolFlag{
+	FlagDetectDuplicates: cli.BoolTFlag{
 		Name:   FlagDetectDuplicates,
 		Usage:  FlagDetectDuplicatesUsage,
 		EnvVar: "DSLIM_XRAY_DETECT_DUP",
 	},
-	FlagShowDuplicates: cli.BoolTFlag{
+	FlagShowDuplicates: cli.BoolFlag{
 		Name:   FlagShowDuplicates,
 		Usage:  FlagShowDuplicatesUsage,
 		EnvVar: "DSLIM_XRAY_SHOW_DUP",
