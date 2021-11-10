@@ -235,19 +235,15 @@ func NewInspector(
 		crOpts:      crOpts,
 	}
 
-	fmt.Println("wot is initial fat container cmd?", inspector.FatContainerCmd)
-
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
 		logger.Debugf("overriding Entrypoint %+v => %+v (%v)",
 			imageInspector.ImageInfo.Config.Entrypoint, overrides.Entrypoint, overrides.ClearEntrypoint)
 		if len(overrides.Entrypoint) > 0 {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Entrypoint...)
-			fmt.Println("wot is fat container cmd - point A.1", inspector.FatContainerCmd)
 		}
 
 	} else if len(imageInspector.ImageInfo.Config.Entrypoint) > 0 {
 		inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Entrypoint...)
-		fmt.Println("wot is fat container cmd - point A.2", inspector.FatContainerCmd)
 	}
 
 	if overrides != nil && ((len(overrides.Cmd) > 0) || overrides.ClearCmd) {
@@ -255,7 +251,6 @@ func NewInspector(
 			imageInspector.ImageInfo.Config.Cmd, overrides.Cmd, overrides.ClearCmd)
 		if len(overrides.Cmd) > 0 {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
-			fmt.Println("wot is fat container cmd - point B", inspector.FatContainerCmd)
 		}
 
 	} else if len(imageInspector.ImageInfo.Config.Cmd) > 0 {
