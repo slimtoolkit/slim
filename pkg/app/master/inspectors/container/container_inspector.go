@@ -254,7 +254,11 @@ func NewInspector(
 		}
 
 	} else if len(imageInspector.ImageInfo.Config.Cmd) > 0 {
-		inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Cmd...)
+		for _, cmd := range imageInspector.ImageInfo.Config.Cmd {
+			if cmd != "sh" {
+				inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Cmd...)
+			}
+		}
 	}
 
 	emptyIdx := -1
