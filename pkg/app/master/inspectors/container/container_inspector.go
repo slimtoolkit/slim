@@ -235,15 +235,19 @@ func NewInspector(
 		crOpts:      crOpts,
 	}
 
+	fmt.Println("wot is initial fat container cmd?", inspector.FatContainerCmd)
+
 	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
 		logger.Debugf("overriding Entrypoint %+v => %+v (%v)",
 			imageInspector.ImageInfo.Config.Entrypoint, overrides.Entrypoint, overrides.ClearEntrypoint)
 		if len(overrides.Entrypoint) > 0 {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Entrypoint...)
+			fmt.Println("wot is fat container cmd - point A.1", inspector.FatContainerCmd)
 		}
 
 	} else if len(imageInspector.ImageInfo.Config.Entrypoint) > 0 {
 		inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Entrypoint...)
+		fmt.Println("wot is fat container cmd - point A.2", inspector.FatContainerCmd)
 	}
 
 	if overrides != nil && ((len(overrides.Cmd) > 0) || overrides.ClearCmd) {
@@ -251,12 +255,13 @@ func NewInspector(
 			imageInspector.ImageInfo.Config.Cmd, overrides.Cmd, overrides.ClearCmd)
 		if len(overrides.Cmd) > 0 {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
+			fmt.Println("wot is fat container cmd - point B", inspector.FatContainerCmd)
 		}
 
 	} else if len(imageInspector.ImageInfo.Config.Cmd) > 0 {
-		for index, cmd := range imageInspector.ImageInfo.Config.Cmd {
+		for _, cmd := range imageInspector.ImageInfo.Config.Cmd {
 			if cmd != "sh" {
-				inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Cmd[index])
+				inspector.FatContainerCmd = append(inspector.FatContainerCmd, cmd)
 			}
 		}
 	}
@@ -273,6 +278,7 @@ func NewInspector(
 
 	if emptyIdx > -1 {
 		inspector.FatContainerCmd = inspector.FatContainerCmd[emptyIdx+1:]
+		fmt.Println("wot is fat container cmd - point D", inspector.FatContainerCmd)
 	}
 
 	logger.Debugf("FatContainerCmd - %+v", inspector.FatContainerCmd)
@@ -280,10 +286,13 @@ func NewInspector(
 	inspector.dockerEventCh = make(chan *dockerapi.APIEvents)
 	inspector.dockerEventStopCh = make(chan struct{})
 
+	fmt.Println("wot is fat container cmd - point E", inspector.FatContainerCmd)
+
 	return inspector, nil
 }
 
 // RunContainer starts the container inspector instance execution
+// ends at line 970.
 func (i *Inspector) RunContainer() error {
 	artifactsPath := filepath.Join(i.LocalVolumePath, ArtifactsDir)
 	sensorPath := filepath.Join(fsutil.ExeDir(), SensorBinLocal)
@@ -850,6 +859,18 @@ func (i *Inspector) RunContainer() error {
 		cmd.AppArgs = i.FatContainerCmd[1:]
 	}
 
+	fmt.Println("checking out the command AppName: ", cmd.AppName)
+	fmt.Println("checking out the command len(AppName): ", len(cmd.AppName))
+	fmt.Println("checking out the commands AppArgs: ", cmd.AppArgs)
+	// fmt.Println("checking out the commands len(AppArgs): ", len(cmd.AppArgs))
+	// fmt.Println("first app arg", cmd.AppArgs[0])
+	// fmt.Println("first app arg length", len(cmd.AppArgs[0])) // we expect the length to be 2
+	// cnd,AppArgs is an array of strings
+	// the len is only 1; and that entry appears to be the string 'sh'
+
+	// checking out the command AppName:  whoami
+	// checking out the commands AppArgs:  [sh]
+
 	if len(i.ExcludePatterns) > 0 {
 		cmd.Excludes = pathMapKeys(i.ExcludePatterns)
 	}
@@ -891,6 +912,8 @@ func (i *Inspector) RunContainer() error {
 		}
 	}
 
+	// question - curious what the cmd looks like here?
+	fmt.Println("das cmd", cmd)
 	_, err = i.ipcClient.SendCommand(cmd)
 	if err != nil {
 		return err
