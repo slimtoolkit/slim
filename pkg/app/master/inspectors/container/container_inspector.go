@@ -278,7 +278,6 @@ func NewInspector(
 
 	if emptyIdx > -1 {
 		inspector.FatContainerCmd = inspector.FatContainerCmd[emptyIdx+1:]
-		fmt.Println("wot is fat container cmd - point D", inspector.FatContainerCmd)
 	}
 
 	logger.Debugf("FatContainerCmd - %+v", inspector.FatContainerCmd)
@@ -286,13 +285,10 @@ func NewInspector(
 	inspector.dockerEventCh = make(chan *dockerapi.APIEvents)
 	inspector.dockerEventStopCh = make(chan struct{})
 
-	fmt.Println("wot is fat container cmd - point E", inspector.FatContainerCmd)
-
 	return inspector, nil
 }
 
 // RunContainer starts the container inspector instance execution
-// ends at line 970.
 func (i *Inspector) RunContainer() error {
 	artifactsPath := filepath.Join(i.LocalVolumePath, ArtifactsDir)
 	sensorPath := filepath.Join(fsutil.ExeDir(), SensorBinLocal)
@@ -859,18 +855,6 @@ func (i *Inspector) RunContainer() error {
 		cmd.AppArgs = i.FatContainerCmd[1:]
 	}
 
-	fmt.Println("checking out the command AppName: ", cmd.AppName)
-	fmt.Println("checking out the command len(AppName): ", len(cmd.AppName))
-	fmt.Println("checking out the commands AppArgs: ", cmd.AppArgs)
-	// fmt.Println("checking out the commands len(AppArgs): ", len(cmd.AppArgs))
-	// fmt.Println("first app arg", cmd.AppArgs[0])
-	// fmt.Println("first app arg length", len(cmd.AppArgs[0])) // we expect the length to be 2
-	// cnd,AppArgs is an array of strings
-	// the len is only 1; and that entry appears to be the string 'sh'
-
-	// checking out the command AppName:  whoami
-	// checking out the commands AppArgs:  [sh]
-
 	if len(i.ExcludePatterns) > 0 {
 		cmd.Excludes = pathMapKeys(i.ExcludePatterns)
 	}
@@ -912,8 +896,6 @@ func (i *Inspector) RunContainer() error {
 		}
 	}
 
-	// question - curious what the cmd looks like here?
-	fmt.Println("das cmd", cmd)
 	_, err = i.ipcClient.SendCommand(cmd)
 	if err != nil {
 		return err
