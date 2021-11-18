@@ -1077,6 +1077,9 @@ func (i *Inspector) ShutdownContainer() error {
 
 // FinishMonitoring ends the target container monitoring activities
 func (i *Inspector) FinishMonitoring() {
+	if i.dockerEventStopCh == nil {
+		errutil.FailOn(fmt.Errorf("docker event stop chanel is nil"))
+	}
 	close(i.dockerEventStopCh)
 	i.dockerEventStopCh = nil
 
