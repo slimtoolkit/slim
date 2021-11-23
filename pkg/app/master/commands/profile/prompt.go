@@ -45,6 +45,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagRunTargetAsUser), Description: commands.FlagRunTargetAsUserUsage},
 		{Text: commands.FullFlagName(commands.FlagCopyMetaArtifacts), Description: commands.FlagCopyMetaArtifactsUsage},
 		{Text: commands.FullFlagName(commands.FlagRemoveFileArtifacts), Description: commands.FlagRemoveFileArtifactsUsage},
+		{Text: commands.FullFlagName(commands.FlagUser), Description: commands.FlagUserUsage},
 		{Text: commands.FullFlagName(commands.FlagEntrypoint), Description: commands.FlagEntrypointUsage},
 		{Text: commands.FullFlagName(commands.FlagCmd), Description: commands.FlagCmdUsage},
 		{Text: commands.FullFlagName(commands.FlagWorkdir), Description: commands.FlagWorkdirUsage},

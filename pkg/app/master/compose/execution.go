@@ -15,7 +15,6 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
-	//"github.com/docker-slim/docker-slim/pkg/app/master/config"
 
 	"github.com/compose-spec/compose-go/loader"
 	"github.com/compose-spec/compose-go/types"
@@ -106,6 +105,7 @@ type ConfigInfo struct {
 	FullVersion    string
 	Project        *types.Project
 	Raw            map[string]interface{}
+	RawList        []map[string]interface{}
 }
 
 type ServiceSelectors struct {
@@ -138,6 +138,7 @@ type ServiceInfo struct {
 	Selected        bool
 	ShortName       string
 	Name            string
+	ContainerName   string
 	AllDependencies []string
 	Config          types.ServiceConfig
 }
@@ -150,6 +151,7 @@ type NetworkInfo struct {
 type RunningService struct {
 	Name string
 	ID   string
+	ContainerName string
 }
 
 type ActiveVolume struct {
@@ -166,46 +168,66 @@ type ActiveNetwork struct {
 const defaultStopTimeout = 7 //7 seconds
 
 func NewConfigInfo(
-	composeFile string,
+	composeFiles []string,
 	projectName string,
 	workingDir string,
 	envVars []string,
 	environmentNoHost bool,
 ) (*ConfigInfo, error) {
-	fullComposeFilePath, err := filepath.Abs(composeFile)
-	if err != nil {
-		panic(err)
-	}
+	//not supporting compose profiles for now
+	cv := &ConfigInfo{}
 
-	baseComposeDir := filepath.Dir(fullComposeFilePath)
+	var pcConfigFiles []types.ConfigFile
+	for idx, composeFile := range composeFiles { 
+		fullComposeFilePath, err := filepath.Abs(composeFile)
+		if err != nil {
+			panic(err)
+		}
 
-	if projectName == "" {
-		//default project name to the dir name for compose file
-		projectName = filepath.Base(baseComposeDir)
-	}
+		if idx == 0 {
+			baseComposeDir := filepath.Dir(fullComposeFilePath)
+			if projectName == "" {
+				//default project name to the dir name for compose file
+				projectName = filepath.Base(baseComposeDir)
+			}
 
-	b, err := ioutil.ReadFile(composeFile)
-	if err != nil {
-		return nil, err
-	}
+			if workingDir == "" {
+				//all paths in the compose files are relative 
+				//to the base path of the first compose file
+				//unless there's an explicitly provided working directory
+				workingDir = baseComposeDir
+			}
 
-	rawConfig, err := loader.ParseYAML(b)
-	if err != nil {
-		return nil, err
-	}
+			cv.BaseComposeDir = workingDir
+		}
 
-	if workingDir == "" {
-		workingDir = baseComposeDir
+		b, err := ioutil.ReadFile(fullComposeFilePath)
+		if err != nil {
+			return nil, err
+		}
+
+		rawConfig, err := loader.ParseYAML(b)
+		if err != nil {
+			return nil, err
+		}
+
+		if idx == 0 {
+			cv.Raw = rawConfig
+		}
+
+		cv.RawList = append(cv.RawList, rawConfig)
+
+		cf := types.ConfigFile{
+			Filename: composeFile,
+			Content:  b, //pass raw bytes, so loader parses and interpolates
+		}
+
+		pcConfigFiles = append(pcConfigFiles, cf)
 	}
 
 	projectConfig := types.ConfigDetails{
 		WorkingDir: workingDir,
-		ConfigFiles: []types.ConfigFile{
-			{
-				Filename: composeFile,
-				Content:  b, //pass raw bytes, so loader parses and interpolates
-			},
-		},
+		ConfigFiles: pcConfigFiles,
 	}
 
 	if len(envVars) > 0 {
@@ -241,12 +263,7 @@ func NewConfigInfo(
 		return nil, fmt.Errorf("no project info")
 	}
 
-	//not supporting compose profiles for now
-	cv := &ConfigInfo{
-		BaseComposeDir: baseComposeDir,
-		Project:        project,
-		Raw:            rawConfig,
-	}
+	cv.Project = project
 
 	return cv, nil
 }
@@ -255,7 +272,7 @@ func NewExecution(
 	xc *app.ExecutionContext,
 	logger *log.Entry,
 	apiClient *dockerapi.Client,
-	composeFile string,
+	composeFiles []string,
 	selectors *ServiceSelectors,
 	projectName string,
 	workingDir string,
@@ -272,7 +289,7 @@ func NewExecution(
 		logger = logger.WithFields(log.Fields{"com": "compose.execution"})
 	}
 
-	configInfo, err := NewConfigInfo(composeFile,
+	configInfo, err := NewConfigInfo(composeFiles,
 		projectName,
 		workingDir,
 		envVars,
@@ -671,7 +688,7 @@ func (ref *Execution) StartServices() error {
 }
 
 func (ref *Execution) StartService(name string) error {
-	ref.logger.Debug("Execution.StartService(%s)\n", name)
+	ref.logger.Debugf("Execution.StartService(%s)", name)
 
 	_, running := ref.RunningServices[name]
 	if running {
@@ -717,12 +734,13 @@ func (ref *Execution) StartService(name string) error {
 	id, err := startContainer(
 		ref.apiClient,
 		ref.Project.Name,
-		serviceInfo.Name, //full service name
+		//serviceInfo.Name, //full service name
 		ref.AllServiceNames,
 		ref.BaseComposeDir,
 		ref.ActiveVolumes,
 		ref.ActiveNetworks,
-		service)
+		serviceInfo)
+		//service)
 	if err != nil {
 		ref.logger.Debugf("Execution.StartService(%s): startContainer() error - %v", name, err)
 		return err
@@ -732,10 +750,15 @@ func (ref *Execution) StartService(name string) error {
 	//	return fmt.Errorf("mismatching service name: %s/%s", fullName, serviceInfo.Name)
 	//}
 
-	ref.RunningServices[name] = &RunningService{
+	rsvc := &RunningService{
 		Name: serviceInfo.Name,
 		ID:   id,
+		ContainerName: serviceInfo.ContainerName,
 	}
+
+	ref.RunningServices[name] = rsvc
+	ref.logger.Debugf("Execution.StartService(%s): runningService=%#v", name, rsvc)
+
 	return nil
 }
 
@@ -1181,13 +1204,15 @@ func VolumesFrom(serviceNames map[string]struct{},
 func startContainer(
 	apiClient *dockerapi.Client,
 	projectName string,
-	fullServiceName string,
+	//fullServiceName string,
 	serviceNames map[string]struct{},
 	baseComposeDir string,
 	activeVolumes map[string]*ActiveVolume,
 	activeNetworks map[string]*ActiveNetwork,
-	service types.ServiceConfig) (string, error) {
-	log.Debugf("startContainer(%s/%s/%s)", fullServiceName, service.Name, service.ContainerName)
+	//service types.ServiceConfig
+	serviceInfo *ServiceInfo) (string, error) {
+	service := serviceInfo.Config //todo - cleanup
+	log.Debugf("startContainer(%s/%s/%s)", serviceInfo.Name, service.Name, service.ContainerName)
 	log.Debugf("service.Image=%s", service.Image)
 	log.Debugf("service.Entrypoint=%s", service.Entrypoint)
 	log.Debugf("service.Command=%s", service.Command)
@@ -1278,16 +1303,15 @@ func startContainer(
 		panic(err)
 	}
 
-	//todo: use service.ContainerName instead of serviceName when available
 	//need to make it work with all container name checks
-	containerName := fullServiceName
+	serviceInfo.ContainerName = serviceInfo.Name
 	if service.ContainerName != "" {
-		containerName = service.ContainerName
+		serviceInfo.ContainerName = service.ContainerName
 	}
 
 	envVars := EnvVarsFromService(service.Environment, service.EnvFile)
 	containerOptions := dockerapi.CreateContainerOptions{
-		Name: containerName,
+		Name: serviceInfo.ContainerName,
 		Config: &dockerapi.Config{
 			Image:        getServiceImage(),
 			Entrypoint:   []string(service.Entrypoint),
@@ -1413,7 +1437,9 @@ func startContainer(
 		}
 	}
 
-	log.Debugf("startContainer(%s): starting container id=%s", service.Name, containerInfo.ID)
+	log.Debugf("startContainer(%s): starting container id='%s' cn='%s'", 
+		service.Name, containerInfo.ID, serviceInfo.ContainerName)
+
 	if err := apiClient.StartContainer(containerInfo.ID, nil); err != nil {
 		log.Debugf("startContainer(%s): start container error - %v", service.Name, err)
 		return "", err

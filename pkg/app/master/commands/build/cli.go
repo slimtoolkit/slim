@@ -30,6 +30,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagRegistryAccount),
 		commands.Cflag(commands.FlagRegistrySecret),
 		commands.Cflag(commands.FlagShowPullLogs),
+		
 		commands.Cflag(commands.FlagComposeFile),
 		commands.Cflag(commands.FlagTargetComposeSvc),
 		commands.Cflag(commands.FlagComposeSvcNoPorts),
@@ -43,6 +44,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagComposeEnvFile),
 		commands.Cflag(commands.FlagComposeProjectName),
 		commands.Cflag(commands.FlagComposeWorkdir),
+
 		commands.Cflag(commands.FlagHTTPProbeOff),
 		commands.Cflag(commands.FlagHTTPProbe),
 		commands.Cflag(commands.FlagHTTPProbeCmd),
@@ -83,6 +85,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagCROHostConfigFile),
 		commands.Cflag(commands.FlagCROSysctl),
 		commands.Cflag(commands.FlagCROShmSize),
+		commands.Cflag(commands.FlagUser),
 		commands.Cflag(commands.FlagEntrypoint),
 		commands.Cflag(commands.FlagCmd),
 		commands.Cflag(commands.FlagWorkdir),
@@ -192,7 +195,8 @@ var CLI = cli.Command{
 			deleteFatImage = false
 		}
 
-		composeFile := ctx.String(commands.FlagComposeFile)
+		composeFiles := ctx.StringSlice(commands.FlagComposeFile)
+
 		//todo: load/parse compose file and then use it to validate the related compose params
 		targetComposeSvc := ctx.String(commands.FlagTargetComposeSvc)
 		composeSvcNoPorts := ctx.Bool(commands.FlagComposeSvcNoPorts)
@@ -219,7 +223,7 @@ var CLI = cli.Command{
 
 		var targetRef string
 
-		if composeFile != "" && targetComposeSvc != "" {
+		if len(composeFiles) > 0 && targetComposeSvc != "" {
 			targetRef = targetComposeSvc
 		} else {
 			if cbOpts.Dockerfile == "" {
@@ -631,7 +635,7 @@ var CLI = cli.Command{
 			registryAccount,
 			registrySecret,
 			doShowPullLogs,
-			composeFile,
+			composeFiles,
 			targetComposeSvc,
 			composeSvcNoPorts,
 			depExcludeComposeSvcAll,

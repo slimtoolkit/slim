@@ -2,6 +2,7 @@ package app
 
 import (
 	"fmt"
+	"strings"
 	"os"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
@@ -20,6 +21,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/update"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/version"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/xray"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/dockerclipm"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
@@ -51,6 +53,7 @@ func registerCommands() {
 	server.RegisterCommand()
 	debug.RegisterCommand()
 	containerize.RegisterCommand()
+	dockerclipm.RegisterCommand()
 }
 
 func newCLI() *cli.App {
@@ -123,12 +126,18 @@ func newCLI() *cli.App {
 
 		log.Debugf("sysinfo => %#v", system.GetSystemInfo())
 
-		app.ShowCommunityInfo()
+		//tmp hack
+		if !strings.Contains(strings.Join(os.Args," "), " docker-cli-plugin-metadata") {
+			app.ShowCommunityInfo()
+		}
 		return nil
 	}
 
 	cliApp.After = func(ctx *cli.Context) error {
-		app.ShowCommunityInfo()
+		//tmp hack
+		if !strings.Contains(strings.Join(os.Args," "), " docker-cli-plugin-metadata") {
+			app.ShowCommunityInfo()
+		}
 		return nil
 	}
 

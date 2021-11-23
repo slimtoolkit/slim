@@ -60,7 +60,7 @@ func OnCommand(
 	registryAccount string,
 	registrySecret string,
 	doShowPullLogs bool,
-	composeFile string,
+	composeFiles []string,
 	targetComposeSvc string,
 	composeSvcNoPorts bool,
 	depExcludeComposeSvcAll bool,
@@ -172,7 +172,7 @@ func OnCommand(
 
 	xc.Out.State("started")
 
-	if composeFile != "" && targetComposeSvc != "" {
+	if len(composeFiles) > 0 && targetComposeSvc != "" {
 		xc.Out.Info("params",
 			ovars{
 				"target.type":   "compose.service",
@@ -300,7 +300,7 @@ func OnCommand(
 	var depServicesExe *compose.Execution
 	var baseVolumesFrom []string
 	var baseMounts []dockerapi.HostMount
-	if composeFile != "" {
+	if len(composeFiles) > 0 {
 		if targetComposeSvc != "" && depIncludeComposeSvcDeps != targetComposeSvc {
 			var found bool
 			for _, svcName := range depExcludeComposeSvcs {
@@ -328,8 +328,8 @@ func OnCommand(
 		//todo: move compose flags to options
 		options := &compose.ExecutionOptions{}
 
-		logger.Debugf("compose: file='%s' selectors='%+v'\n",
-			composeFile, selectors)
+		logger.Debugf("compose: file(s)='%s' selectors='%+v'\n",
+			strings.Join(composeFiles,","), selectors)
 
 		if composeProjectName == "" {
 			composeProjectName = fmt.Sprintf(composeProjectNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))
@@ -338,7 +338,7 @@ func OnCommand(
 		exe, err := compose.NewExecution(xc,
 			logger,
 			client,
-			composeFile,
+			composeFiles,
 			selectors,
 			composeProjectName,
 			composeWorkdir,
@@ -358,7 +358,7 @@ func OnCommand(
 			xc.Out.Info("compose.file.error",
 				ovars{
 					"status": "service.no.image",
-					"file":   composeFile,
+					"files":   strings.Join(composeFiles,","),
 				})
 
 			exitCode := commands.ECTBuild | ecbComposeSvcNoImage
@@ -379,7 +379,7 @@ func OnCommand(
 					ovars{
 						"status": "unknown.compose.service",
 						"target": targetComposeSvc,
-						"file":   composeFile,
+						"files":  strings.Join(composeFiles,","),
 					})
 
 				exitCode := commands.ECTBuild | ecbBadTargetComposeSvc
@@ -406,6 +406,32 @@ func OnCommand(
 				logger.Debug("using targetSvcInfo.Config.Command")
 				overrides.Cmd = []string(targetSvcInfo.Config.Command)
 			}
+
+			if overrides.Workdir ==  "" {
+				overrides.Workdir = targetSvcInfo.Config.WorkingDir
+			}
+
+			if overrides.Hostname ==  "" {
+				overrides.Hostname = targetSvcInfo.Config.Hostname
+			}
+
+			labelMap := map[string]string{}
+			for k, v := range targetSvcInfo.Config.Labels {
+				labelMap[k] = v
+			}
+
+			for k, v := range overrides.Labels {
+				labelMap[k] = v
+			}
+
+			overrides.Labels = labelMap
+
+			if overrides.User != "" {
+				overrides.User = targetSvcInfo.Config.User
+			}
+			
+			//todo: add command flags for these fields too
+			//targetSvcInfo.Config.DomainName
 
 			//env vars
 			//the env vars from compose are already "resolved" and must be "k=v"
@@ -641,6 +667,12 @@ func OnCommand(
 
 	xc.Out.State("image.inspection.done")
 
+	//validate links (check if target container exists, ignore&log if not)
+	svcLinkMap := map[string]struct{}{}
+	for _, linkInfo := range links {
+		svcLinkMap[linkInfo] = struct{}{}
+	}
+
 	selectedNetNames := map[string]compose.NetNameInfo{}
 	if depServicesExe != nil {
 		xc.Out.State("container.dependencies.init.start")
@@ -718,6 +750,54 @@ func OnCommand(
 		}
 	}
 
+	links = []string{} //reset&reuse
+	if targetComposeSvc != "" && depServicesExe != nil {
+		targetSvcInfo := depServicesExe.Service(targetComposeSvc)
+		//convert service links to container links (after deps are started)
+		targetSvcLinkMap := map[string]struct{}{}
+		for _, linkInfo := range targetSvcInfo.Config.Links {
+			var linkTarget string
+			var linkName string
+			parts := strings.Split(linkInfo,":")
+			switch len(parts) {
+			case 1:
+				linkTarget = parts[0]
+				linkName   = parts[0]
+			case 2:
+				linkTarget = parts[0]
+				linkName   = parts[1]
+			default:
+				logger.Debugf("targetSvcInfo.Config.Links: malformed link - %s", linkInfo)
+				continue
+			}
+
+			linkSvcInfo := depServicesExe.Service(linkTarget)
+			if linkSvcInfo == nil {
+				logger.Debugf("targetSvcInfo.Config.Links: unknown service in link - %s", linkInfo)
+				continue
+			}
+
+			logger.Debugf("targetSvcInfo.Config.Links: linkInfo=%s linkSvcInfo=%#v", linkInfo, linkSvcInfo)
+			if linkSvcInfo.ContainerName == "" {
+				logger.Debugf("targetSvcInfo.Config.Links: no container name - linkInfo=%s", linkInfo)
+				continue
+			}
+
+			clink := fmt.Sprintf("%s:%s", linkSvcInfo.ContainerName,linkSvcInfo.ContainerName)
+			targetSvcLinkMap[clink] = struct{}{}
+			clink = fmt.Sprintf("%s:%s", linkSvcInfo.ContainerName,linkName)
+			targetSvcLinkMap[clink] = struct{}{}
+		}
+		
+		for k := range targetSvcLinkMap {
+			links = append(links, k)
+		}
+	}
+
+	for k := range svcLinkMap {
+		links = append(links, k)
+	}
+
 	selectedNetworks := map[string]container.NetNameInfo{}
 	for key, info := range selectedNetNames {
 		aset := map[string]struct{}{}
@@ -743,6 +823,13 @@ func OnCommand(
 
 	xc.Out.State("container.inspection.start")
 
+	hasClassicLinks := true
+	if targetComposeSvc != "" || 
+	   len(composeNets) > 0   ||
+	   overrides.Network != "" {
+	   	hasClassicLinks = false
+	}
+
 	containerInspector, err := container.NewInspector(
 		xc,
 		crOpts,
@@ -760,6 +847,7 @@ func OnCommand(
 		baseVolumesFrom,
 		portBindings,
 		doPublishExposedPorts,
+		hasClassicLinks,
 		links,
 		etcHostsMaps,
 		dnsServers,
@@ -780,7 +868,6 @@ func OnCommand(
 		doIncludeCertPKAll,
 		doIncludeCertPKDirs,
 		selectedNetworks,
-		//serviceAliases,
 		gparams.Debug,
 		gparams.InContainer,
 		true,

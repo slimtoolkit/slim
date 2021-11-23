@@ -117,6 +117,7 @@ const (
 	FlagCROShmSize        = "cro-shm-size"
 
 	//Original Container Runtime Options (without cro- prefix)
+	FlagUser               = "user"
 	FlagEntrypoint         = "entrypoint"
 	FlagCmd                = "cmd"
 	FlagWorkdir            = "workdir"
@@ -144,7 +145,7 @@ const (
 	FlagShowPullLogsUsage     = "Show image pull logs"
 
 	//Compose-related flags
-	FlagComposeFileUsage                    = "Load container info from selected compose file"
+	FlagComposeFileUsage                    = "Load container info from selected compose file(s)"
 	FlagTargetComposeSvcUsage               = "Target service from compose file"
 	FlagComposeSvcNoPortsUsage              = "Do not publish ports for target service from compose file"
 	FlagDepExcludeComposeSvcAllUsage        = "Do not start any compose services as target dependencies"
@@ -203,6 +204,7 @@ const (
 	FlagCROSysctlUsage         = "Set namespaced kernel parameters in the created container"
 	FlagCROShmSizeUsage        = "Shared memory size for /dev/shm in the created container"
 
+	FlagUserUsage               = "Override USER analyzing image at runtime"
 	FlagEntrypointUsage         = "Override ENTRYPOINT analyzing image at runtime"
 	FlagCmdUsage                = "Override CMD analyzing image at runtime"
 	FlagWorkdirUsage            = "Override WORKDIR analyzing image at runtime"
@@ -327,9 +329,9 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:  FlagShowPullLogsUsage,
 		EnvVar: "DSLIM_PLOG",
 	},
-	FlagComposeFile: cli.StringFlag{
+	FlagComposeFile: cli.StringSliceFlag{
 		Name:   FlagComposeFile,
-		Value:  "",
+		Value:  &cli.StringSlice{},
 		Usage:  FlagComposeFileUsage,
 		EnvVar: "DSLIM_COMPOSE_FILE",
 	},
@@ -612,6 +614,12 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  -1,
 		Usage:  FlagCROShmSizeUsage,
 		EnvVar: "DSLIM_CRO_SHM_SIZE",
+	},
+	FlagUser: cli.StringFlag{
+		Name:   FlagUser,
+		Value:  "",
+		Usage:  FlagUserUsage,
+		EnvVar: "DSLIM_RC_USER",
 	},
 	FlagEntrypoint: cli.StringFlag{
 		Name:   FlagEntrypoint,

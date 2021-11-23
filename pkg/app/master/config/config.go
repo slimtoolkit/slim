@@ -11,6 +11,7 @@ import (
 // It can also be used to update the image instructions when
 // the "image-overrides" flag is provided
 type ContainerOverrides struct {
+	User            string
 	Entrypoint      []string
 	ClearEntrypoint bool
 	Cmd             []string

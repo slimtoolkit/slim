@@ -99,6 +99,7 @@ type Inspector struct {
 	BaseVolumesFrom       []string
 	PortBindings          map[dockerapi.Port][]dockerapi.PortBinding
 	DoPublishExposedPorts bool
+	HasClassicLinks       bool
 	Links                 []string
 	EtcHostsMaps          []string
 	DNSServers            []string
@@ -162,6 +163,7 @@ func NewInspector(
 	baseVolumesFrom []string,
 	portBindings map[dockerapi.Port][]dockerapi.PortBinding,
 	doPublishExposedPorts bool,
+	hasClassicLinks bool,
 	links []string,
 	etcHostsMaps []string,
 	dnsServers []string,
@@ -206,6 +208,7 @@ func NewInspector(
 		BaseVolumesFrom:       baseVolumesFrom,
 		PortBindings:          portBindings,
 		DoPublishExposedPorts: doPublishExposedPorts,
+		HasClassicLinks:       hasClassicLinks,
 		Links:                 links,
 		EtcHostsMaps:          etcHostsMaps,
 		DNSServers:            dnsServers,
@@ -226,7 +229,6 @@ func NewInspector(
 		DoIncludeCertPKAll:    doIncludeCertPKAll,
 		DoIncludeCertPKDirs:   doIncludeCertPKDirs,
 		SelectedNetworks:      selectedNetworks,
-		//ServiceAliases:        serviceAliases,
 		DoDebug:     doDebug,
 		PrintState:  printState,
 		PrintPrefix: printPrefix,
@@ -235,28 +237,24 @@ func NewInspector(
 		crOpts:      crOpts,
 	}
 
-	if overrides != nil && ((len(overrides.Entrypoint) > 0) || overrides.ClearEntrypoint) {
-		logger.Debugf("overriding Entrypoint %+v => %+v (%v)",
-			imageInspector.ImageInfo.Config.Entrypoint, overrides.Entrypoint, overrides.ClearEntrypoint)
-		if len(overrides.Entrypoint) > 0 {
-			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Entrypoint...)
-		}
-
-	} else if len(imageInspector.ImageInfo.Config.Entrypoint) > 0 {
+	if overrides == nil {
 		inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Entrypoint...)
-	}
+		inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Cmd...)
+	} else {
+		if len(overrides.Entrypoint) > 0 || overrides.ClearEntrypoint {
+			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Entrypoint...)
+			
+			if len(overrides.Cmd) > 0 || overrides.ClearCmd {
+				inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
+			}
+			//note: not using CMD from image if there's an override for ENTRYPOINT
+		} else {
+			inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Entrypoint...)
 
-	if overrides != nil && ((len(overrides.Cmd) > 0) || overrides.ClearCmd) {
-		logger.Debugf("overriding Cmd %+v => %+v (%v)",
-			imageInspector.ImageInfo.Config.Cmd, overrides.Cmd, overrides.ClearCmd)
-		if len(overrides.Cmd) > 0 {
-			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
-		}
-
-	} else if len(imageInspector.ImageInfo.Config.Cmd) > 0 {
-		for _, cmd := range imageInspector.ImageInfo.Config.Cmd {
-			if cmd != "sh" {
-				inspector.FatContainerCmd = append(inspector.FatContainerCmd, cmd)
+			if len(overrides.Cmd) > 0 || overrides.ClearCmd {
+				inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
+			} else {
+				inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Cmd...)
 			}
 		}
 	}
@@ -549,6 +547,7 @@ func (i *Inspector) RunContainer() error {
 			Env:        i.Overrides.Env,
 			Labels:     labels,
 			Hostname:   i.Overrides.Hostname,
+			WorkingDir: i.Overrides.Workdir,
 		},
 		HostConfig: hostConfig,
 	}
@@ -575,6 +574,10 @@ func (i *Inspector) RunContainer() error {
 	//}
 
 	runAsUser := i.ImageInspector.ImageInfo.Config.User
+	if i.Overrides.User != "" {
+		runAsUser = i.Overrides.User
+	}
+
 	containerOptions.Config.User = "0:0"
 
 	if runAsUser != "" && strings.ToLower(runAsUser) != "root" {
@@ -691,7 +694,7 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	// adding this separately for better visibility...
-	if len(i.Links) > 0 {
+	if i.HasClassicLinks && len(i.Links) > 0 {
 		containerOptions.HostConfig.Links = i.Links
 		i.logger.Debugf("RunContainer: HostConfig.Links => %v", i.Links)
 	}
@@ -733,9 +736,14 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	if len(i.SelectedNetworks) > 0 {
+		var networkLinks []string
+		if !i.HasClassicLinks && len(i.Links) > 0 {
+			networkLinks = i.Links
+		}
+
 		i.logger.Debugf("RunContainer: SelectedNetworks => %#v", i.SelectedNetworks)
 		for key, netNameInfo := range i.SelectedNetworks {
-			err = attachContainerToNetwork(i.logger, i.APIClient, i.ContainerID, netNameInfo /*, i.ServiceAliases*/)
+			err = attachContainerToNetwork(i.logger, i.APIClient, i.ContainerID, netNameInfo, networkLinks)
 			if err != nil {
 				i.logger.Debugf("RunContainer: AttachContainerToNetwork(%s,%+v) key=%s error => %#v", i.ContainerID, netNameInfo, key, err)
 				return err
@@ -1190,13 +1198,22 @@ func ensureSensorVolume(logger *log.Entry, client *dockerapi.Client, localSensor
 	return volumeName, nil
 }
 
-func attachContainerToNetwork(logger *log.Entry, apiClient *dockerapi.Client, containerID string, netNameInfo NetNameInfo /*networkName string*/ /*, aliases []string*/) error {
+func attachContainerToNetwork(
+	logger *log.Entry, 
+	apiClient *dockerapi.Client, 
+	containerID string, 
+	netNameInfo NetNameInfo,
+	networkLinks []string) error {
 	//network names seem to work ok (no need to use need network IDs)
 	options := dockerapi.NetworkConnectionOptions{
 		Container: containerID,
 		EndpointConfig: &dockerapi.EndpointConfig{
 			Aliases: netNameInfo.Aliases,
 		},
+	}
+
+	if len(networkLinks) > 0 {
+		options.EndpointConfig.Links = networkLinks
 	}
 
 	if err := apiClient.ConnectNetwork(netNameInfo.FullName, options); err != nil {

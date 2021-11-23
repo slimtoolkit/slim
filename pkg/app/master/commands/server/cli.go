@@ -18,8 +18,6 @@ var CLI = cli.Command{
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Action: func(ctx *cli.Context) error {
-		//app.ShowCommunityInfo()
-
 		gcvalues, err := commands.GlobalFlagValues(ctx)
 		if err != nil {
 			return err
@@ -30,7 +28,7 @@ var CLI = cli.Command{
 		OnCommand(
 			xc,
 			gcvalues)
-		//app.ShowCommunityInfo()
+		
 		return nil
 	},
 }
