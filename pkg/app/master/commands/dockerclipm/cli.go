@@ -1,8 +1,8 @@
 package dockerclipm
 
 import (
-	"os"
 	"encoding/json"
+	"os"
 
 	"github.com/urfave/cli"
 
@@ -24,15 +24,15 @@ type pluginMetadata struct {
 
 var CLI = cli.Command{
 	Category: "internal.metadata",
-	Name:    Name,
-	Usage:   Usage,
+	Name:     Name,
+	Usage:    Usage,
 	Action: func(ctx *cli.Context) error {
 		metadata := pluginMetadata{
-			SchemaVersion: "0.1.0",
-			Vendor: "DockerSlim",
-			Version: version.Current(),
+			SchemaVersion:    "0.1.0",
+			Vendor:           "DockerSlim",
+			Version:          version.Current(),
 			ShortDescription: "DockerSlim commands (build=minify, xray=static analyze, profile=dynamic analyze, lint=validate, more)",
-			URL: "https://dockersl.im",
+			URL:              "https://dockersl.im",
 		}
 
 		encoder := json.NewEncoder(os.Stdout)

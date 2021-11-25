@@ -229,12 +229,12 @@ func NewInspector(
 		DoIncludeCertPKAll:    doIncludeCertPKAll,
 		DoIncludeCertPKDirs:   doIncludeCertPKDirs,
 		SelectedNetworks:      selectedNetworks,
-		DoDebug:     doDebug,
-		PrintState:  printState,
-		PrintPrefix: printPrefix,
-		InContainer: inContainer,
-		xc:          xc,
-		crOpts:      crOpts,
+		DoDebug:               doDebug,
+		PrintState:            printState,
+		PrintPrefix:           printPrefix,
+		InContainer:           inContainer,
+		xc:                    xc,
+		crOpts:                crOpts,
 	}
 
 	if overrides == nil {
@@ -243,7 +243,7 @@ func NewInspector(
 	} else {
 		if len(overrides.Entrypoint) > 0 || overrides.ClearEntrypoint {
 			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Entrypoint...)
-			
+
 			if len(overrides.Cmd) > 0 || overrides.ClearCmd {
 				inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
 			}
@@ -1202,9 +1202,9 @@ func ensureSensorVolume(logger *log.Entry, client *dockerapi.Client, localSensor
 }
 
 func attachContainerToNetwork(
-	logger *log.Entry, 
-	apiClient *dockerapi.Client, 
-	containerID string, 
+	logger *log.Entry,
+	apiClient *dockerapi.Client,
+	containerID string,
 	netNameInfo NetNameInfo,
 	networkLinks []string) error {
 	//network names seem to work ok (no need to use need network IDs)

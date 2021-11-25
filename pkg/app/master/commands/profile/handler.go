@@ -217,9 +217,9 @@ func OnCommand(
 	xc.Out.State("image.inspection.done")
 	xc.Out.State("container.inspection.start")
 
-	//note: 
+	//note:
 	//not pre-processing links for 'profile' yet
-	//need to copy the logic from 'build' 
+	//need to copy the logic from 'build'
 	//(better yet refactor to share code)
 	hasClassicLinks := true //placeholder for now
 

@@ -28,7 +28,7 @@ var CLI = cli.Command{
 		OnCommand(
 			xc,
 			gcvalues)
-		
+
 		return nil
 	},
 }

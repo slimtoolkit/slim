@@ -337,6 +337,26 @@ func (p *artifactStore) prepareArtifacts() {
 		p.prepareArtifact(artifactFileName)
 	}
 
+	for artifactFileName, fsaInfo := range p.ptMonReport.FSActivity {
+		artifactInfo, found := p.rawNames[artifactFileName]
+		if found {
+			artifactInfo.FSActivity = fsaInfo
+		} else {
+			log.Debugf("prepareArtifacts - fsa artifact => %v", artifactFileName)
+			p.prepareArtifact(artifactFileName)
+			artifactInfo, found := p.rawNames[artifactFileName]
+			if found {
+				artifactInfo.FSActivity = fsaInfo
+			} else {
+				log.Errorf("prepareArtifacts - fsa artifact - missing in rawNames => %v", artifactFileName)
+			}
+
+			//TMP:
+			//fsa might include directories, which we'll need to copy (dir only)
+			//but p.prepareArtifact() doesn't do anything with dirs for now
+		}
+	}
+
 	p.resolveLinks()
 }
 
@@ -623,7 +643,7 @@ func (p *artifactStore) saveArtifacts() {
 
 	log.Debugf("saveArtifacts - copy files (%v)", len(p.fileMap))
 copyFiles:
-	for srcFileName := range p.fileMap {
+	for srcFileName, artifactInfo := range p.fileMap {
 		for _, xpattern := range excludePatterns {
 			found, err := doublestar.Match(xpattern, srcFileName)
 			if err != nil {
@@ -652,7 +672,14 @@ copyFiles:
 
 		dstFilePath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFileName)
 		log.Debug("saveArtifacts - saving file data => ", dstFilePath)
-		//err := cpFile(fileName, filePath)
+
+		if artifactInfo != nil &&
+			artifactInfo.FSActivity != nil &&
+			artifactInfo.FSActivity.OpsCheckFile > 0 {
+			log.Debug("saveArtifacts - saving 'checked' file => ", srcFileName)
+			//NOTE: later have an option to save 'checked' only files without data
+		}
+
 		err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, dstFilePath, true)
 		if err != nil {
 			log.Warn("saveArtifacts - error saving file => ", err)
@@ -683,6 +710,13 @@ copyLinks:
 			log.Warn("saveArtifacts - dir error => ", err)
 			continue
 		}
+
+		if linkProps != nil &&
+			linkProps.FSActivity != nil &&
+			linkProps.FSActivity.OpsCheckFile > 0 {
+			log.Debug("saveArtifacts - saving 'checked' symlink => ", linkName)
+		}
+
 		err = os.Symlink(linkProps.LinkRef, linkPath)
 		if err != nil {
 			log.Warn("saveArtifacts - symlink create error ==> ", err)

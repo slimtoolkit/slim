@@ -329,7 +329,7 @@ func OnCommand(
 		options := &compose.ExecutionOptions{}
 
 		logger.Debugf("compose: file(s)='%s' selectors='%+v'\n",
-			strings.Join(composeFiles,","), selectors)
+			strings.Join(composeFiles, ","), selectors)
 
 		if composeProjectName == "" {
 			composeProjectName = fmt.Sprintf(composeProjectNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))
@@ -358,7 +358,7 @@ func OnCommand(
 			xc.Out.Info("compose.file.error",
 				ovars{
 					"status": "service.no.image",
-					"files":   strings.Join(composeFiles,","),
+					"files":  strings.Join(composeFiles, ","),
 				})
 
 			exitCode := commands.ECTBuild | ecbComposeSvcNoImage
@@ -379,7 +379,7 @@ func OnCommand(
 					ovars{
 						"status": "unknown.compose.service",
 						"target": targetComposeSvc,
-						"files":  strings.Join(composeFiles,","),
+						"files":  strings.Join(composeFiles, ","),
 					})
 
 				exitCode := commands.ECTBuild | ecbBadTargetComposeSvc
@@ -407,11 +407,11 @@ func OnCommand(
 				overrides.Cmd = []string(targetSvcInfo.Config.Command)
 			}
 
-			if overrides.Workdir ==  "" {
+			if overrides.Workdir == "" {
 				overrides.Workdir = targetSvcInfo.Config.WorkingDir
 			}
 
-			if overrides.Hostname ==  "" {
+			if overrides.Hostname == "" {
 				overrides.Hostname = targetSvcInfo.Config.Hostname
 			}
 
@@ -429,7 +429,7 @@ func OnCommand(
 			if overrides.User != "" {
 				overrides.User = targetSvcInfo.Config.User
 			}
-			
+
 			//todo: add command flags for these fields too
 			//targetSvcInfo.Config.DomainName
 
@@ -758,14 +758,14 @@ func OnCommand(
 		for _, linkInfo := range targetSvcInfo.Config.Links {
 			var linkTarget string
 			var linkName string
-			parts := strings.Split(linkInfo,":")
+			parts := strings.Split(linkInfo, ":")
 			switch len(parts) {
 			case 1:
 				linkTarget = parts[0]
-				linkName   = parts[0]
+				linkName = parts[0]
 			case 2:
 				linkTarget = parts[0]
-				linkName   = parts[1]
+				linkName = parts[1]
 			default:
 				logger.Debugf("targetSvcInfo.Config.Links: malformed link - %s", linkInfo)
 				continue
@@ -783,12 +783,12 @@ func OnCommand(
 				continue
 			}
 
-			clink := fmt.Sprintf("%s:%s", linkSvcInfo.ContainerName,linkSvcInfo.ContainerName)
+			clink := fmt.Sprintf("%s:%s", linkSvcInfo.ContainerName, linkSvcInfo.ContainerName)
 			targetSvcLinkMap[clink] = struct{}{}
-			clink = fmt.Sprintf("%s:%s", linkSvcInfo.ContainerName,linkName)
+			clink = fmt.Sprintf("%s:%s", linkSvcInfo.ContainerName, linkName)
 			targetSvcLinkMap[clink] = struct{}{}
 		}
-		
+
 		for k := range targetSvcLinkMap {
 			links = append(links, k)
 		}
@@ -824,10 +824,10 @@ func OnCommand(
 	xc.Out.State("container.inspection.start")
 
 	hasClassicLinks := true
-	if targetComposeSvc != "" || 
-	   len(composeNets) > 0   ||
-	   overrides.Network != "" {
-	   	hasClassicLinks = false
+	if targetComposeSvc != "" ||
+		len(composeNets) > 0 ||
+		overrides.Network != "" {
+		hasClassicLinks = false
 	}
 
 	containerInspector, err := container.NewInspector(

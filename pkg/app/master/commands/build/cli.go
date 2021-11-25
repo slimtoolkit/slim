@@ -30,7 +30,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagRegistryAccount),
 		commands.Cflag(commands.FlagRegistrySecret),
 		commands.Cflag(commands.FlagShowPullLogs),
-		
+
 		commands.Cflag(commands.FlagComposeFile),
 		commands.Cflag(commands.FlagTargetComposeSvc),
 		commands.Cflag(commands.FlagComposeSvcNoPorts),

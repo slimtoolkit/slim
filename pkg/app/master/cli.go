@@ -2,8 +2,8 @@ package app
 
 import (
 	"fmt"
-	"strings"
 	"os"
+	"strings"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
@@ -11,6 +11,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/containerize"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/convert"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/debug"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/dockerclipm"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/edit"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/help"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/lint"
@@ -21,7 +22,6 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/update"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/version"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/xray"
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands/dockerclipm"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
@@ -127,7 +127,7 @@ func newCLI() *cli.App {
 		log.Debugf("sysinfo => %#v", system.GetSystemInfo())
 
 		//tmp hack
-		if !strings.Contains(strings.Join(os.Args," "), " docker-cli-plugin-metadata") {
+		if !strings.Contains(strings.Join(os.Args, " "), " docker-cli-plugin-metadata") {
 			app.ShowCommunityInfo()
 		}
 		return nil
@@ -135,7 +135,7 @@ func newCLI() *cli.App {
 
 	cliApp.After = func(ctx *cli.Context) error {
 		//tmp hack
-		if !strings.Contains(strings.Join(os.Args," "), " docker-cli-plugin-metadata") {
+		if !strings.Contains(strings.Join(os.Args, " "), " docker-cli-plugin-metadata") {
 			app.ShowCommunityInfo()
 		}
 		return nil

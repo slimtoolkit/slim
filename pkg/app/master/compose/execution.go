@@ -149,8 +149,8 @@ type NetworkInfo struct {
 }
 
 type RunningService struct {
-	Name string
-	ID   string
+	Name          string
+	ID            string
 	ContainerName string
 }
 
@@ -178,7 +178,7 @@ func NewConfigInfo(
 	cv := &ConfigInfo{}
 
 	var pcConfigFiles []types.ConfigFile
-	for idx, composeFile := range composeFiles { 
+	for idx, composeFile := range composeFiles {
 		fullComposeFilePath, err := filepath.Abs(composeFile)
 		if err != nil {
 			panic(err)
@@ -192,7 +192,7 @@ func NewConfigInfo(
 			}
 
 			if workingDir == "" {
-				//all paths in the compose files are relative 
+				//all paths in the compose files are relative
 				//to the base path of the first compose file
 				//unless there's an explicitly provided working directory
 				workingDir = baseComposeDir
@@ -226,7 +226,7 @@ func NewConfigInfo(
 	}
 
 	projectConfig := types.ConfigDetails{
-		WorkingDir: workingDir,
+		WorkingDir:  workingDir,
 		ConfigFiles: pcConfigFiles,
 	}
 
@@ -740,7 +740,7 @@ func (ref *Execution) StartService(name string) error {
 		ref.ActiveVolumes,
 		ref.ActiveNetworks,
 		serviceInfo)
-		//service)
+	//service)
 	if err != nil {
 		ref.logger.Debugf("Execution.StartService(%s): startContainer() error - %v", name, err)
 		return err
@@ -751,8 +751,8 @@ func (ref *Execution) StartService(name string) error {
 	//}
 
 	rsvc := &RunningService{
-		Name: serviceInfo.Name,
-		ID:   id,
+		Name:          serviceInfo.Name,
+		ID:            id,
 		ContainerName: serviceInfo.ContainerName,
 	}
 
@@ -1437,7 +1437,7 @@ func startContainer(
 		}
 	}
 
-	log.Debugf("startContainer(%s): starting container id='%s' cn='%s'", 
+	log.Debugf("startContainer(%s): starting container id='%s' cn='%s'",
 		service.Name, containerInfo.ID, serviceInfo.ContainerName)
 
 	if err := apiClient.StartContainer(containerInfo.ID, nil); err != nil {
