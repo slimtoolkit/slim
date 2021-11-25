@@ -658,7 +658,7 @@ You can use the `--http-probe-exec` and `--http-probe-exec-file` options to run 
 
 You can create dedicated debugging side-car container images loaded with the tools you need for debugging target containers. This allows you to keep your production container images small. The debugging side-car containers attach to the running target containers.
 
-Assuming you have a running container named `node_app_alpine` you can attach your debugging side-car with a command like this: `docker run --rm -it --pid=container:node_app_alpine --net=container:node_app_alpine --cap-add sys_admin alpine sh`. In this example, the debugging side-car is a regular alphine image. This is exactly what happens with the `node_alpine` app sample (located in the `node_alpine` directory of the `examples` repo) and the `run_debug_sidecar.command` helper script.
+Assuming you have a running container named `node_app_alpine` you can attach your debugging side-car with a command like this: `docker run --rm -it --pid=container:node_app_alpine --net=container:node_app_alpine --cap-add sys_admin alpine sh`. In this example, the debugging side-car is a regular alpine image. This is exactly what happens with the `node_alpine` app sample (located in the `node_alpine` directory of the `examples` repo) and the `run_debug_sidecar.command` helper script.
 
 If you run the `ps` command in the side-car you'll see the application from the target container:
 
