@@ -142,13 +142,19 @@ func (p *ArtifactProps) UnmarshalJSON(data []byte) error {
 // MarshalJSON encodes artifact property data
 func (p *ArtifactProps) MarshalJSON() ([]byte, error) {
 	type artifactPropsType ArtifactProps
-	return json.Marshal(&struct {
-		FileTypeStr string `json:"file_type"`
-		*artifactPropsType
-	}{
-		FileTypeStr:       p.FileType.String(),
-		artifactPropsType: (*artifactPropsType)(p),
-	})
+	var out bytes.Buffer
+	encoder := json.NewEncoder(&out)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(
+		&struct {
+			FileTypeStr string `json:"file_type"`
+			*artifactPropsType
+		}{
+			FileTypeStr:       p.FileType.String(),
+			artifactPropsType: (*artifactPropsType)(p),
+		})
+
+	return out.Bytes(), err
 }
 
 // ImageReport contains image report fields

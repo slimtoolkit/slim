@@ -193,36 +193,45 @@ func (app *App) processSyscallActivity(e *syscallEvent) {
 }
 
 func (app *App) processFileActivity(e *syscallEvent) {
-	if e.pathParam != "" && e.retVal == 0 {
-		//todo: replace hardcoded e.retVal check
-		//todo: filter "/proc/", "/sys/", "/dev/" externally
-		if e.pathParam != "." &&
-			!strings.HasPrefix(e.pathParam, "/proc/") &&
-			!strings.HasPrefix(e.pathParam, "/sys/") &&
-			!strings.HasPrefix(e.pathParam, "/dev/") {
-			if fsa, ok := app.fsActivity[e.pathParam]; ok {
-				fsa.OpsAll++
-				fsa.Pids[e.pid] = struct{}{}
-				fsa.Syscalls[int(e.callNum)] = struct{}{}
+	if e.pathParam != "" {
+		p, found := syscallProcessors[int(e.callNum)]
+		if !found {
+			log.Debug("ptrace.App.processFileActivity - no syscall processor - %#v", e)
+			//shouldn't happen
+			return
+		}
 
-				if processor, found := syscallProcessors[int(e.callNum)]; found {
-					switch processor.SyscallType() {
-					case CheckFileType:
-						fsa.OpsCheckFile++
+		if p.SyscallType() == CheckFileType && !p.FailedReturnStatus(e.retVal) {
+			//todo: filter "/proc/", "/sys/", "/dev/" externally
+			if e.pathParam != "." &&
+				e.pathParam != "/proc" &&
+				!strings.HasPrefix(e.pathParam, "/proc/") &&
+				!strings.HasPrefix(e.pathParam, "/sys/") &&
+				!strings.HasPrefix(e.pathParam, "/dev/") {
+				if fsa, ok := app.fsActivity[e.pathParam]; ok {
+					fsa.OpsAll++
+					fsa.Pids[e.pid] = struct{}{}
+					fsa.Syscalls[int(e.callNum)] = struct{}{}
+
+					if processor, found := syscallProcessors[int(e.callNum)]; found {
+						switch processor.SyscallType() {
+						case CheckFileType:
+							fsa.OpsCheckFile++
+						}
 					}
-				}
-			} else {
-				fsa := &report.FSActivityInfo{
-					OpsAll:       1,
-					OpsCheckFile: 1,
-					Pids:         map[int]struct{}{},
-					Syscalls:     map[int]struct{}{},
-				}
+				} else {
+					fsa := &report.FSActivityInfo{
+						OpsAll:       1,
+						OpsCheckFile: 1,
+						Pids:         map[int]struct{}{},
+						Syscalls:     map[int]struct{}{},
+					}
 
-				fsa.Pids[e.pid] = struct{}{}
-				fsa.Syscalls[int(e.callNum)] = struct{}{}
+					fsa.Pids[e.pid] = struct{}{}
+					fsa.Syscalls[int(e.callNum)] = struct{}{}
 
-				app.fsActivity[e.pathParam] = fsa
+					app.fsActivity[e.pathParam] = fsa
+				}
 			}
 		}
 	}
@@ -462,7 +471,7 @@ func (app *App) collect() {
 	callPid := app.MainPID()
 	prevPid := callPid
 
-	log.Tracef("ptrace.App.collect: trace syscall mainPID=%v", callPid)
+	log.Debugf("ptrace.App.collect: trace syscall mainPID=%v", callPid)
 
 	pidSyscallState := map[int]*syscallState{}
 	pidSyscallState[callPid] = &syscallState{pid: callPid}
@@ -750,6 +759,7 @@ type SyscallProcessor interface {
 	OnCall(pid int, regs syscall.PtraceRegs, cstate *syscallState)
 	OnReturn(pid int, regs syscall.PtraceRegs, cstate *syscallState)
 	FailedCall(cstate *syscallState) bool
+	FailedReturnStatus(retVal uint64) bool
 }
 
 type syscallProcessorCore struct {
@@ -786,14 +796,18 @@ func (ref *checkFileSyscallProcessor) OnReturn(pid int, regs syscall.PtraceRegs,
 	//-2 => -ENOENT (No such file or directory)
 	//TODO: get/use error code enums
 	if cstate.pathParamErr == nil {
-		log.Tracef("checkFileSyscallProcessor.OnReturn: [%d] %s('%s') = %d", pid, ref.Name, cstate.pathParam, int(cstate.retVal))
+		log.Debugf("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s('%s') = %d", pid, cstate.callNum, ref.Name, cstate.pathParam, int(cstate.retVal))
 	} else {
-		log.Tracef("checkFileSyscallProcessor.OnReturn: [%d] %s(<unknown>/'%s') = %d [pp err => %v]", pid, ref.Name, cstate.pathParam, int(cstate.retVal), cstate.pathParamErr)
+		log.Debugf("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s(<unknown>/'%s') = %d [pp err => %v]", pid, cstate.callNum, ref.Name, cstate.pathParam, int(cstate.retVal), cstate.pathParamErr)
 	}
 }
 
 func (ref *checkFileSyscallProcessor) FailedCall(cstate *syscallState) bool {
 	return cstate.retVal != 0
+}
+
+func (ref *checkFileSyscallProcessor) FailedReturnStatus(retVal uint64) bool {
+	return retVal != 0
 }
 
 //TODO: introduce syscall num and name consts to use instead of liternal values

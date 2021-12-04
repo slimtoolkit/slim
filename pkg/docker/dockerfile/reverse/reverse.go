@@ -139,8 +139,12 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				isExecForm = true
 				inst = "RUN " + rawLine
 				if outArray, err := shlex.Split(rawLine); err == nil {
-					if outJson, err := json.Marshal(outArray); err == nil {
-						inst = fmt.Sprintf("RUN %s", string(outJson))
+					var outJson bytes.Buffer
+					encoder := json.NewEncoder(&outJson)
+					encoder.SetEscapeHTML(false)
+					err := encoder.Encode(outArray)
+					if err == nil {
+						inst = fmt.Sprintf("RUN %s", outJson.String())
 					}
 				}
 			}
@@ -435,8 +439,11 @@ func GenerateFromInfo(location string,
 
 	if len(labels) > 0 {
 		for name, value := range labels {
-			encoded, _ := json.Marshal(value)
-			labelInfo := fmt.Sprintf("LABEL %s=%s\n", name, encoded)
+			var encoded bytes.Buffer
+			encoder := json.NewEncoder(&encoded)
+			encoder.SetEscapeHTML(false)
+			encoder.Encode(value)
+			labelInfo := fmt.Sprintf("LABEL %s=%s\n", name, encoded.String())
 			dfData.WriteString(labelInfo)
 		}
 		dfData.WriteByte('\n')
@@ -532,12 +539,15 @@ func fixJSONArray(in string) string {
 		return in
 	}
 
-	out, err := json.Marshal(outArray)
+	var out bytes.Buffer
+	encoder := json.NewEncoder(&out)
+	encoder.SetEscapeHTML(false)
+	err = encoder.Encode(outArray)
 	if err != nil {
 		return in
 	}
 
-	return string(out)
+	return out.String()
 }
 
 //
