@@ -21,6 +21,7 @@ import (
 	"github.com/bmatcuk/doublestar/v3"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/detectors/binfile"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/inspectors/sodeps"
 	"github.com/docker-slim/docker-slim/pkg/certdiscover"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
@@ -216,6 +217,7 @@ type artifactStore struct {
 	resolve       map[string]struct{}
 	linkMap       map[string]*report.ArtifactProps
 	fileMap       map[string]*report.ArtifactProps
+	saFileMap     map[string]*report.ArtifactProps
 	cmd           *command.StartMonitor
 	appStacks     map[string]*appStackInfo
 }
@@ -236,6 +238,7 @@ func newArtifactStore(storeLocation string,
 		resolve:       map[string]struct{}{},
 		linkMap:       map[string]*report.ArtifactProps{},
 		fileMap:       map[string]*report.ArtifactProps{},
+		saFileMap:     map[string]*report.ArtifactProps{},
 		cmd:           cmd,
 		appStacks:     map[string]*appStackInfo{},
 	}
@@ -382,6 +385,71 @@ func (p *artifactStore) prepareArtifacts() {
 			//TMP:
 			//fsa might include directories, which we'll need to copy (dir only)
 			//but p.prepareArtifact() doesn't do anything with dirs for now
+		}
+	}
+
+	for artifactFileName := range p.fileMap {
+		//TODO: conditionally detect binary files and their deps
+		if isBin, _ := binfile.Detected(artifactFileName); !isBin {
+			continue
+		}
+
+		binArtifacts, err := sodeps.AllDependencies(artifactFileName)
+		if err != nil {
+			if err == sodeps.ErrDepResolverNotFound {
+				log.Debug("prepareArtifacts.binArtifacts[bsa] - no static bin dep resolver")
+			} else {
+				log.Warnf("prepareArtifacts.binArtifacts[bsa] - %v - error getting bin artifacts => %v\n", artifactFileName, err)
+			}
+			continue
+		}
+
+		for idx, bpath := range binArtifacts {
+			if artifactFileName == bpath {
+				continue
+			}
+
+			_, found := p.rawNames[bpath]
+			if found {
+				log.Debugf("prepareArtifacts.binArtifacts[bsa] - known file path (%s)", bpath)
+				continue
+			}
+
+			bpathFileInfo, err := os.Lstat(bpath)
+			if err != nil {
+				log.Warnf("prepareArtifacts.binArtifacts[bsa] - artifact doesn't exist: %v (%v)", bpath, os.IsNotExist(err))
+				continue
+			}
+
+			bprops := &report.ArtifactProps{
+				FilePath: bpath,
+				Mode:     bpathFileInfo.Mode(),
+				ModeText: bpathFileInfo.Mode().String(),
+				FileSize: bpathFileInfo.Size(),
+			}
+
+			bprops.Flags = p.getArtifactFlags(bpath)
+
+			fsType := "unknown"
+			switch {
+			case bpathFileInfo.Mode().IsRegular():
+				fsType = "file"
+				p.rawNames[bpath] = bprops
+				//use a separate file map, so we can save them last
+				//in case we are dealing with intemedate symlinks
+				//and to better track what bin deps are not covered by dynamic analysis
+				p.saFileMap[bpath] = bprops
+			case (bpathFileInfo.Mode() & os.ModeSymlink) != 0:
+				fsType = "symlink"
+				p.linkMap[bpath] = bprops
+				p.rawNames[bpath] = bprops
+			default:
+				fsType = "unexpected"
+				log.Warnf("prepareArtifacts.binArtifacts[bsa] - unexpected ft - %s", bpath)
+
+			}
+
+			log.Debugf("prepareArtifacts.binArtifacts[bsa] - bin artifact (%s) fsType=%s [%d]bdep=%s", artifactFileName, fsType, idx, bpath)
 		}
 	}
 
@@ -946,6 +1014,38 @@ copyFiles:
 			err := fixPy3CacheFile(fileName, filePath)
 			if err != nil {
 				log.Warn("saveArtifacts - error fixing py3 cache file => ", err)
+			}
+		}
+	}
+
+	log.Debugf("saveArtifacts[bsa] - copy files (%v)", len(p.saFileMap))
+copyBsaFiles:
+	for srcFileName := range p.saFileMap {
+		for _, xpattern := range excludePatterns {
+			found, err := doublestar.Match(xpattern, srcFileName)
+			if err != nil {
+				log.Warnf("saveArtifacts[bsa] - copy files - [%v] excludePatterns Match error - %v\n", srcFileName, err)
+				//should only happen when the pattern is malformed
+				continue
+			}
+			if found {
+				log.Debugf("saveArtifacts[bsa] - copy files - [%v] - excluding (%s) ", srcFileName, xpattern)
+				continue copyBsaFiles
+			}
+		}
+
+		dstFilePath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFileName)
+		log.Debug("saveArtifacts[bsa] - saving file data => ", dstFilePath)
+		if fsutil.Exists(dstFilePath) {
+			//we might already have the target file
+			//when we have intermediate symlinks in the path
+			log.Debugf("saveArtifacts[bsa] - target file already exists (%s)", dstFilePath)
+		} else {
+			err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, dstFilePath, true)
+			if err != nil {
+				log.Warn("saveArtifacts[bsa] - error saving file => ", err)
+			} else {
+				log.Debugf("saveArtifacts[bsa] - saved file (%s)", dstFilePath)
 			}
 		}
 	}
