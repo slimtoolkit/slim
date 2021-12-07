@@ -512,7 +512,8 @@ func OnCommand(
 				}
 			}
 
-			baseMounts, err := compose.MountsFromVolumeConfigs(
+			//make sure not to shadow baseMounts
+			baseMounts, err = compose.MountsFromVolumeConfigs(
 				exe.BaseComposeDir,
 				targetSvcInfo.Config.Volumes,
 				targetSvcInfo.Config.Tmpfs,
