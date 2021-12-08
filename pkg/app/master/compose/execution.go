@@ -1348,16 +1348,16 @@ func startContainer(
 			CapAdd:       []string(service.CapAdd),
 			CapDrop:      []string(service.CapDrop),
 			PortBindings: portBindingsFromServicePortConfigs(service.Ports), //map[Port][]PortBinding  -> Ports []ServicePortConfig
-			Links:        service.Links,
-			DNS:          service.DNS,
-			DNSOptions:   service.DNSOpts,
-			DNSSearch:    service.DNSSearch,
-			ExtraHosts:   service.ExtraHosts,
-			UsernsMode:   service.UserNSMode,
-			NetworkMode:  netMode,
-			IpcMode:      service.Ipc,
-			Isolation:    service.Isolation,
-			PidMode:      service.Pid,
+			//Links:        service.Links, - not the same links
+			DNS:         service.DNS,
+			DNSOptions:  service.DNSOpts,
+			DNSSearch:   service.DNSSearch,
+			ExtraHosts:  service.ExtraHosts,
+			UsernsMode:  service.UserNSMode,
+			NetworkMode: netMode,
+			IpcMode:     service.Ipc,
+			Isolation:   service.Isolation,
+			PidMode:     service.Pid,
 			//RestartPolicy: dockerapi.RestartPolicy{Name: service.Restart},//RestartPolicy - todo: handle it the right way
 			//Devices: ,//[]Device <- service.Devices
 			//LogConfig: ,//LogConfig <- service.Logging
@@ -1430,6 +1430,30 @@ func startContainer(
 		}
 
 		options.EndpointConfig.Aliases = append(options.EndpointConfig.Aliases, containerInfo.ID[:12])
+
+		if len(service.Links) > 0 {
+			var networkLinks []string
+			for _, linkInfo := range service.Links {
+				var linkTarget string
+				var linkName string
+				parts := strings.Split(linkInfo, ":")
+				switch len(parts) {
+				case 1:
+					linkTarget = parts[0]
+					linkName = parts[0]
+				case 2:
+					linkTarget = parts[0]
+					linkName = parts[1]
+				default:
+					log.Debugf("startContainer(%s): service.Links: malformed link - %s", service.Name, linkInfo)
+					continue
+				}
+
+				networkLinks = append(networkLinks, fmt.Sprintf("%s:%s", linkTarget, linkName))
+			}
+
+			options.EndpointConfig.Links = networkLinks
+		}
 
 		if err := apiClient.ConnectNetwork(netInfo.ID, options); err != nil {
 			log.Debugf("startContainer(%s): container network connect error - %v", service.Name, err)
