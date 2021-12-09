@@ -880,8 +880,13 @@ func MountsFromVolumeConfigs(
 			source := c.Source
 			_, found := activeVolumes[source]
 			if !found {
-				if !strings.HasPrefix(source, "~/") && !filepath.IsAbs(source) {
-					source = filepath.Join(baseComposeDir, source)
+				if !filepath.IsAbs(source) {
+					if strings.HasPrefix(source, "~/") {
+						hd, _ := os.UserHomeDir()
+						source = filepath.Join(hd, source[2:])
+					} else {
+						source = filepath.Join(baseComposeDir, source)
+					}
 				}
 
 				mount.Type = types.VolumeTypeBind

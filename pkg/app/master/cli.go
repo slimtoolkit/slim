@@ -14,6 +14,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/dockerclipm"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/edit"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/help"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/install"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/lint"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/probe"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/profile"
@@ -46,6 +47,7 @@ func registerCommands() {
 	version.RegisterCommand()
 	help.RegisterCommand()
 	update.RegisterCommand()
+	install.RegisterCommand()
 	edit.RegisterCommand()
 	probe.RegisterCommand()
 	convert.RegisterCommand()

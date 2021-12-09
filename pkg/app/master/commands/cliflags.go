@@ -72,6 +72,7 @@ const (
 	FlagComposeProjectName             = "compose-project-name"
 	FlagPrestartComposeSvc             = "prestart-compose-svc"
 	FlagPoststartComposeSvc            = "poststart-compose-svc"
+	FlagPrestartComposeWaitExit        = "prestart-compose-wait-exit"
 
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
@@ -160,6 +161,7 @@ const (
 	FlagComposeProjectNameUsage             = "Use custom project name for compose"
 	FlagPrestartComposeSvcUsage             = "Run selected compose service(s) before any other compose services or target container"
 	FlagPoststartComposeSvcUsage            = "Run selected compose service(s) after the target container is running (need a new continue after mode too)"
+	FlagPrestartComposeWaitExitUsage        = "Wait for selected prestart compose services to exit before starting other compose services or target container"
 
 	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
 	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
@@ -408,6 +410,11 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  FlagPrestartComposeSvcUsage,
 		EnvVar: "DSLIM_PRESTART_COMPOSE_SVC",
+	},
+	FlagPrestartComposeWaitExit: cli.BoolFlag{
+		Name:   FlagPrestartComposeWaitExit,
+		Usage:  FlagPrestartComposeWaitExitUsage,
+		EnvVar: "DSLIM_PRESTART_COMPOSE_WAIT",
 	},
 	FlagPoststartComposeSvc: cli.StringSliceFlag{
 		Name:   FlagPoststartComposeSvc,
