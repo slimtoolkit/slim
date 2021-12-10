@@ -405,6 +405,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `compose-env-file` - Load compose env vars from file (host env vars override the values loaded from this file)
 - `compose-workdir` - Set custom work directory for compose
 - `compose-project-name` - Use custom project name for compose
+- `container-probe-compose-svc` - Set container probe to compose service
 - `prestart-compose-svc` - placeholder for now
 - `poststart-compose-svc` - placeholder for now
 - `--http-probe` - Enables/disables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`: `--http-probe=false`)
