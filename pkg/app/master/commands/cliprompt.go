@@ -240,6 +240,7 @@ var continueAfterValues = []prompt.Suggest{
 	{Text: config.CAMEnter, Description: "Use the <enter> key to indicate you that you are done using the container"},
 	{Text: config.CAMSignal, Description: "Use SIGUSR1 to signal that you are done using the container"},
 	{Text: config.CAMTimeout, Description: "Automatically continue after the default timeout (60 seconds)"},
+	{Text: config.CAMContainerProbe, Description: "Automatically continue after the probed container exits"},
 	{Text: "<seconds>", Description: "Enter the number of seconds to wait instead of <seconds>"},
 }
 

@@ -197,7 +197,7 @@ const (
 	FlagExcludePatternUsage  = "Exclude path pattern (Glob/Match in Go and **) from image"
 	FlagUseLocalMountsUsage  = "Mount local paths for target container artifact input and output"
 	FlagUseSensorVolumeUsage = "Sensor volume name to use"
-	FlagContinueAfterUsage   = "Select continue mode: enter | signal | probe | timeout or numberInSeconds"
+	FlagContinueAfterUsage   = "Select continue mode: enter | signal | probe | timeout-number-in-seconds | container.probe"
 
 	FlagExecUsage     = "A shell script snippet to run via Docker exec"
 	FlagExecFileUsage = "A shell script file to run via Docker exec"
