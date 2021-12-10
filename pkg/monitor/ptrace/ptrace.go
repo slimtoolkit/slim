@@ -2,7 +2,9 @@ package ptrace
 
 import (
 	"bytes"
+	"path"
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
@@ -188,11 +190,7 @@ func (app *App) trace() {
 }
 
 func (app *App) processSyscallActivity(e *syscallEvent) {
-	if _, ok := app.syscallActivity[e.callNum]; ok {
-		app.syscallActivity[e.callNum]++
-	} else {
-		app.syscallActivity[e.callNum] = 1
-	}
+	app.syscallActivity[e.callNum]++
 }
 
 func (app *App) processFileActivity(e *syscallEvent) {
@@ -726,15 +724,18 @@ func onSyscallReturn(pid int, cstate *syscallState) error {
 
 ///////////////////////////////////
 
+func getIntParam(pid int, ptr uint64) int {
+	return int(int32(ptr))
+}
+
 func getStringParam(pid int, ptr uint64) string {
-	var out [256]byte
+	var out [4096]byte
 	var data []byte
 	for {
 		count, err := syscall.PtracePeekData(pid, uintptr(ptr), out[:])
 		if err != nil && err != syscall.EIO {
 			fmt.Printf("readString: syscall.PtracePeekData error - '%v'\v", err)
 		}
-
 		idx := bytes.IndexByte(out[:count], 0)
 		var foundNull bool
 		if idx == -1 {
@@ -769,9 +770,10 @@ type SyscallProcessor interface {
 }
 
 type syscallProcessorCore struct {
-	Num  uint64
-	Name string
-	Type SyscallTypeName
+	Num         uint64
+	Name        string
+	Type        SyscallTypeName
+	StringParam int
 }
 
 func (ref *syscallProcessorCore) SyscallNumber() uint64 {
@@ -795,7 +797,29 @@ type checkFileSyscallProcessor struct {
 }
 
 func (ref *checkFileSyscallProcessor) OnCall(pid int, regs syscall.PtraceRegs, cstate *syscallState) {
-	cstate.pathParam = getStringParam(pid, system.CallFirstParam(regs))
+	pth := ""
+	dir := ""
+	cwd, _ := os.Readlink(fmt.Sprintf("/proc/%d/cwd", pid))
+	switch ref.StringParam {
+	case 1:
+		pth = getStringParam(pid, system.CallFirstParam(regs))
+	case 2:
+		fd := getIntParam(pid, system.CallFirstParam(regs))
+		if fd > 0 {
+			dir, _ = os.Readlink(fmt.Sprintf("/proc/%d/fd/%d", pid, fd))
+		}
+		pth = getStringParam(pid, system.CallSecondParam(regs))
+	default:
+		panic("unreachable")
+	}
+	if len(pth) > 0 && pth[0] != '/' {
+		if dir != "" {
+			pth = path.Join(dir, pth)
+		} else if cwd != "" {
+			pth = path.Join(cwd, pth)
+		}
+	}
+	cstate.pathParam = pth
 }
 
 func (ref *checkFileSyscallProcessor) OnReturn(pid int, regs syscall.PtraceRegs, cstate *syscallState) {
@@ -822,31 +846,116 @@ var syscallProcessors = map[int]SyscallProcessor{}
 func init() {
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
-			Name: "stat",
-			Type: CheckFileType,
+			Name:        "stat",
+			Type:        CheckFileType,
+			StringParam: 1,
 		},
 	})
 
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
-			Name: "lstat",
-			Type: CheckFileType,
+			Name:        "lstat",
+			Type:        CheckFileType,
+			StringParam: 1,
 		},
 	})
 
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
-			Name: "access",
-			Type: CheckFileType,
+			Name:        "access",
+			Type:        CheckFileType,
+			StringParam: 1,
 		},
 	})
 
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
-			Name: "statfs",
-			Type: CheckFileType,
+			Name:        "statfs",
+			Type:        CheckFileType,
+			StringParam: 1,
 		},
 	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "readlink",
+			Type:        CheckFileType,
+			StringParam: 1,
+		},
+	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "utime",
+			Type:        CheckFileType,
+			StringParam: 1,
+		},
+	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "utimes",
+			Type:        CheckFileType,
+			StringParam: 1,
+		},
+	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "chdir",
+			Type:        CheckFileType,
+			StringParam: 1,
+		},
+	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "open",
+			Type:        CheckFileType,
+			StringParam: 1,
+		},
+	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "readlinkat",
+			Type:        CheckFileType,
+			StringParam: 2,
+		},
+	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "faccessat",
+			Type:        CheckFileType,
+			StringParam: 2,
+		},
+	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "openat",
+			Type:        CheckFileType,
+			StringParam: 2,
+		},
+	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "futimesat",
+			Type:        CheckFileType,
+			StringParam: 2,
+		},
+	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "statx",
+			Type:        CheckFileType,
+			StringParam: 2,
+		},
+	})
+
 }
 
 func addSyscallProcessor(p SyscallProcessor) {
