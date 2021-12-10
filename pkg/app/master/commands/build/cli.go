@@ -44,6 +44,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagComposeEnvFile),
 		commands.Cflag(commands.FlagComposeProjectName),
 		commands.Cflag(commands.FlagComposeWorkdir),
+		commands.Cflag(commands.FlagContainerProbeComposeSvc),
 
 		commands.Cflag(commands.FlagHTTPProbeOff),
 		commands.Cflag(commands.FlagHTTPProbe),
@@ -220,6 +221,7 @@ var CLI = cli.Command{
 
 		composeProjectName := ctx.String(commands.FlagComposeProjectName)
 		composeWorkdir := ctx.String(commands.FlagComposeWorkdir)
+		containerProbeComposeSvc := ctx.String(commands.FlagContainerProbeComposeSvc)
 
 		var targetRef string
 
@@ -613,6 +615,19 @@ var CLI = cli.Command{
 			}
 		}
 
+		if containerProbeComposeSvc != "" {
+			continueAfter.Mode = config.CAMContainerProbe
+			xc.Out.Info("exec",
+				ovars{
+					"message": "changing continue-after to container-probe",
+				})
+			doHTTPProbe = false
+			xc.Out.Info("exec",
+				ovars{
+					"message": "changing http-probe to false",
+				})
+		}
+
 		if continueAfter.Mode == "" {
 			continueAfter.Mode = config.CAMEnter
 			xc.Out.Info("exec",
@@ -648,6 +663,7 @@ var CLI = cli.Command{
 			composeEnvNoHost,
 			composeWorkdir,
 			composeProjectName,
+			containerProbeComposeSvc,
 			cbOpts,
 			crOpts,
 			outputTags,

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -50,6 +51,33 @@ const (
 
 type ovars = app.OutVars
 
+func NewLogWriter(name string) *chanWriter {
+	r, w := io.Pipe()
+	cw := &chanWriter{
+		Name: name,
+		r:    r,
+		w:    w,
+	}
+	go func() {
+		s := bufio.NewScanner(cw.r)
+		for s.Scan() {
+			fmt.Println(name + ": " + string(s.Bytes()))
+		}
+	}()
+	return cw
+}
+
+type chanWriter struct {
+	Name string
+	Chan chan string
+	w    *io.PipeWriter
+	r    *io.PipeReader
+}
+
+func (w *chanWriter) Write(p []byte) (n int, err error) {
+	return w.w.Write(p)
+}
+
 // OnCommand implements the 'build' docker-slim command
 func OnCommand(
 	xc *app.ExecutionContext,
@@ -73,6 +101,7 @@ func OnCommand(
 	composeEnvNoHost bool,
 	composeWorkdir string,
 	composeProjectName string,
+	containerProbeComposeSvc string,
 	cbOpts *config.ContainerBuildOptions,
 	crOpts *config.ContainerRunOptions,
 	outputTags []string,
@@ -344,6 +373,7 @@ func OnCommand(
 			composeWorkdir,
 			composeEnvVars,
 			composeEnvNoHost,
+			containerProbeComposeSvc,
 			false, //buildImages
 			doPull,
 			nil,  //pullExcludes (todo: add a flag)
@@ -914,8 +944,11 @@ func OnCommand(
 
 	logger.Info("watching container monitor...")
 
-	if strings.Contains(continueAfter.Mode, config.CAMProbe) {
-		doHTTPProbe = true
+	for _, mode := range strings.Split(continueAfter.Mode, "&") {
+		if mode == config.CAMProbe {
+			doHTTPProbe = true
+			break
+		}
 	}
 
 	var probe *http.CustomProbe
@@ -971,8 +1004,11 @@ func OnCommand(
 		continueAfterMsg = "no input required, execution will resume after the timeout"
 	}
 
-	if strings.Contains(continueAfter.Mode, config.CAMProbe) {
-		continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
+	for _, mode := range strings.Split(continueAfter.Mode, "&") {
+		if mode == config.CAMProbe {
+			continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
+			break
+		}
 	}
 
 	xc.Out.Info("continue.after",
@@ -989,6 +1025,50 @@ func OnCommand(
 		//when probe and signal are combined
 		//because both need channels (TODO: fix)
 		switch mode {
+		case config.CAMContainerProbe:
+
+			idsToLog := make(map[string]string)
+			idsToLog[targetRef] = containerInspector.ContainerID
+			for name, svc := range depServicesExe.RunningServices {
+				idsToLog[name] = svc.ID
+			}
+			for name, id := range idsToLog {
+				name := name
+				id := id
+				go func() {
+					err := client.Logs(dockerapi.LogsOptions{
+						Container:    id,
+						OutputStream: NewLogWriter(name + "-stdout"),
+						ErrorStream:  NewLogWriter(name + "-stderr"),
+						Follow:       true,
+						Stdout:       true,
+						Stderr:       true,
+					})
+					xc.FailOn(err)
+				}()
+			}
+
+			svc, ok := depServicesExe.RunningServices[containerProbeComposeSvc]
+			if !ok {
+				xc.Out.State("error", ovars{"message": "container-prove-compose-svc not found in running services"})
+				xc.Exit(1)
+			}
+			for {
+				c, err := client.InspectContainerWithOptions(dockerapi.InspectContainerOptions{
+					ID: svc.ID,
+				})
+				xc.FailOn(err)
+				if c.State.Running {
+					xc.Out.Info("wait for container.probe to finish")
+				} else {
+					if c.State.ExitCode != 0 {
+						xc.Out.State("exited", ovars{"container.probe exit.code": c.State.ExitCode})
+						xc.Exit(1)
+					}
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
 		case config.CAMEnter:
 			xc.Out.Prompt("USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER")
 			creader := bufio.NewReader(os.Stdin)

@@ -131,11 +131,12 @@ type DockerClient struct {
 }
 
 const (
-	CAMProbe   = "probe"
-	CAMEnter   = "enter"
-	CAMTimeout = "timeout"
-	CAMSignal  = "signal"
-	CAMExec    = "exec"
+	CAMContainerProbe = "container-probe"
+	CAMProbe          = "probe"
+	CAMEnter          = "enter"
+	CAMTimeout        = "timeout"
+	CAMSignal         = "signal"
+	CAMExec           = "exec"
 )
 
 // ContinueAfter provides the command execution mode parameters

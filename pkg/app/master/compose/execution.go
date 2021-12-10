@@ -77,19 +77,20 @@ type ExecutionOptions struct {
 
 type Execution struct {
 	*ConfigInfo
-	State           ExecutionState
-	Selectors       *ServiceSelectors
-	BuildImages     bool
-	PullImages      bool
-	OwnAllResources bool
-	AllServiceNames map[string]struct{}
-	AllServices     map[string]*ServiceInfo
-	AllNetworks     map[string]*NetworkInfo
-	PendingServices map[string]struct{}
-	RunningServices map[string]*RunningService
-	ActiveVolumes   map[string]*ActiveVolume
-	ActiveNetworks  map[string]*ActiveNetwork
-	StopTimeout     uint
+	State             ExecutionState
+	Selectors         *ServiceSelectors
+	BuildImages       bool
+	PullImages        bool
+	OwnAllResources   bool
+	AllServiceNames   map[string]struct{}
+	AllServices       map[string]*ServiceInfo
+	AllNetworks       map[string]*NetworkInfo
+	PendingServices   map[string]struct{}
+	RunningServices   map[string]*RunningService
+	ActiveVolumes     map[string]*ActiveVolume
+	ActiveNetworks    map[string]*ActiveNetwork
+	StopTimeout       uint
+	ContainerProbeSvc string
 
 	options    *ExecutionOptions
 	eventCh    chan *ExecutionEvenInfo
@@ -278,6 +279,7 @@ func NewExecution(
 	workingDir string,
 	envVars []string,
 	environmentNoHost bool,
+	containerProbeComposeSvc string,
 	buildImages bool,
 	pullImages bool,
 	pullExcludes []string,
@@ -303,26 +305,27 @@ func NewExecution(
 
 	//not supporting compose profiles for now
 	exe := &Execution{
-		ConfigInfo:      configInfo,
-		State:           XSNone,
-		Selectors:       selectors,
-		OwnAllResources: ownAllResources,
-		BuildImages:     buildImages,
-		PullImages:      pullImages,
-		AllServiceNames: map[string]struct{}{},
-		AllServices:     map[string]*ServiceInfo{},
-		AllNetworks:     map[string]*NetworkInfo{},
-		PendingServices: map[string]struct{}{},
-		RunningServices: map[string]*RunningService{},
-		ActiveVolumes:   map[string]*ActiveVolume{},
-		ActiveNetworks:  map[string]*ActiveNetwork{},
-		StopTimeout:     defaultStopTimeout,
-		apiClient:       apiClient,
-		options:         options,
-		eventCh:         eventCh,
-		printState:      printState,
-		xc:              xc,
-		logger:          logger,
+		ConfigInfo:        configInfo,
+		State:             XSNone,
+		Selectors:         selectors,
+		OwnAllResources:   ownAllResources,
+		BuildImages:       buildImages,
+		PullImages:        pullImages,
+		AllServiceNames:   map[string]struct{}{},
+		AllServices:       map[string]*ServiceInfo{},
+		AllNetworks:       map[string]*NetworkInfo{},
+		PendingServices:   map[string]struct{}{},
+		RunningServices:   map[string]*RunningService{},
+		ActiveVolumes:     map[string]*ActiveVolume{},
+		ActiveNetworks:    map[string]*ActiveNetwork{},
+		ContainerProbeSvc: containerProbeComposeSvc,
+		StopTimeout:       defaultStopTimeout,
+		apiClient:         apiClient,
+		options:           options,
+		eventCh:           eventCh,
+		printState:        printState,
+		xc:                xc,
+		logger:            logger,
 	}
 
 	exe.initVersion()
@@ -473,6 +476,11 @@ func (ref *Execution) initServices() error {
 				ref.AllServices[name].Selected = true
 			}
 		}
+	}
+
+	if ref.ContainerProbeSvc != "" {
+		ref.AllServices[ref.ContainerProbeSvc].Selected = true
+		ref.Selectors.Includes[ref.ContainerProbeSvc] = struct{}{}
 	}
 
 	ref.logger.Debug("Execution.initServices: checking ref.AllServices[x].Selected")
@@ -767,7 +775,7 @@ func (ref *Execution) StopServices() error {
 
 	for key := range ref.RunningServices {
 		err := ref.StopService(key)
-		if err != nil {
+		if err != nil && key != ref.ContainerProbeSvc {
 			return err
 		}
 	}
@@ -779,7 +787,7 @@ func (ref *Execution) CleanupServices() error {
 
 	for key := range ref.RunningServices {
 		err := ref.CleanupService(key)
-		if err != nil {
+		if err != nil && key != ref.ContainerProbeSvc {
 			return err
 		}
 	}
@@ -1548,7 +1556,7 @@ func (ref *Execution) DeleteVolumes() error {
 		ref.logger.Debugf("DeleteVolumes: key/name=%s ID=%s", key, volume.ID)
 
 		err := deleteVolume(ref.apiClient, volume.ID)
-		if err != nil {
+		if err != nil && key != ref.ContainerProbeSvc {
 			return err
 		}
 
@@ -1702,7 +1710,7 @@ func (ref *Execution) DeleteNetworks() error {
 		}
 
 		err := deleteNetwork(ref.apiClient, network.ID)
-		if err != nil {
+		if err != nil && key != ref.ContainerProbeSvc {
 			return err
 		}
 
