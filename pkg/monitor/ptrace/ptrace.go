@@ -729,13 +729,14 @@ func getIntParam(pid int, ptr uint64) int {
 }
 
 func getStringParam(pid int, ptr uint64) string {
-	var out [4096]byte
+	var out [256]byte
 	var data []byte
 	for {
 		count, err := syscall.PtracePeekData(pid, uintptr(ptr), out[:])
 		if err != nil && err != syscall.EIO {
 			fmt.Printf("readString: syscall.PtracePeekData error - '%v'\v", err)
 		}
+
 		idx := bytes.IndexByte(out[:count], 0)
 		var foundNull bool
 		if idx == -1 {
