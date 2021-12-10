@@ -38,9 +38,10 @@ func Run(
 	errorCh chan error,
 	stateCh chan AppState,
 	stopCh chan struct{},
+	origPaths map[string]interface{},
 ) (*App, error) {
 	log.Debug("ptrace.Run")
-	app, err := newApp(cmd, args, dir, user, runAsUser, reportCh, errorCh, stateCh, stopCh)
+	app, err := newApp(cmd, args, dir, user, runAsUser, reportCh, errorCh, stateCh, stopCh, origPaths)
 	if err != nil {
 		app.StateCh <- AppFailed
 		return nil, err
@@ -91,6 +92,7 @@ type App struct {
 	pgid            int
 	eventCh         chan syscallEvent
 	collectorDoneCh chan int
+	origPaths       map[string]interface{}
 }
 
 func (a *App) MainPID() int {
@@ -118,7 +120,8 @@ func newApp(cmd string,
 	reportCh chan *report.PtMonitorReport,
 	errorCh chan error,
 	stateCh chan AppState,
-	stopCh chan struct{}) (*App, error) {
+	stopCh chan struct{},
+	origPaths map[string]interface{}) (*App, error) {
 	log.Debug("ptrace.newApp")
 	if reportCh == nil {
 		reportCh = make(chan *report.PtMonitorReport, 1)
@@ -622,10 +625,13 @@ func (app *App) collect() {
 				cstate.pathParam = ""
 				cstate.pathParamErr = nil
 
-				select {
-				case app.eventCh <- evt:
-				default:
-					log.Debugf("ptrace.App.collect: app.eventCh send error (%#v)", evt)
+				_, ok := app.origPaths[evt.pathParam]
+				if ok {
+					select {
+					case app.eventCh <- evt:
+					default:
+						log.Debugf("ptrace.App.collect: app.eventCh send error (%#v)", evt)
+					}
 				}
 			}
 		}
