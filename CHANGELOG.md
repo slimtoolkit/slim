@@ -1,6 +1,25 @@
 # Releases
 
-## 1.37.1 (11/7/2021)
+## 1.37.3 (12/10/2021)
+
+### New Features
+
+- Install command / docker cli plugin install option (preview version)
+
+### Improvements
+
+- Container and compose link handling enhancements
+- Volume mounting enhancements
+- Static analysis improvements
+- Symlink handling improvements for builds
+- Collecting file check filesystem activity
+- Entrypoint/cmd override handling improvements
+
+### Bug Fixes
+
+- Volume mounting bug fixes for compose
+
+## 1.37.1/1.37.2 (11/7/2021)
 
 ### New Features
 
