@@ -309,7 +309,7 @@ func (i *Inspector) RunContainer() error {
 				})
 		}
 
-		os.Exit(-125)
+		i.xc.Exit(-125)
 	}
 
 	if finfo, err := os.Lstat(sensorPath); err == nil {
@@ -629,7 +629,7 @@ func (i *Inspector) RunContainer() error {
 					})
 			}
 
-			os.Exit(-126)
+			i.xc.Exit(-126)
 		}
 
 		i.PortBindings[dockerapi.Port(cmdPortSpecDefault)] = []dockerapi.PortBinding{{
@@ -653,7 +653,7 @@ func (i *Inspector) RunContainer() error {
 					})
 			}
 
-			os.Exit(-127)
+			i.xc.Exit(-127)
 		}
 
 		i.PortBindings[dockerapi.Port(evtPortSpecDefault)] = []dockerapi.PortBinding{{
@@ -785,7 +785,7 @@ func (i *Inspector) RunContainer() error {
 										"version":   v.Current(),
 									})
 							}
-							os.Exit(-123)
+							i.xc.Exit(-123)
 						}
 					}
 				}
@@ -961,7 +961,7 @@ func (i *Inspector) RunContainer() error {
 					})
 			}
 
-			os.Exit(-124)
+			i.xc.Exit(-124)
 		}
 
 		if evt.Name != event.StartMonitorDone {

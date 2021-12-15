@@ -681,6 +681,7 @@ func OnCommand(
 		xc.FailOn(err)
 		err = depServicesExe.Start()
 		if err != nil {
+			depServicesExe.Stop()
 			depServicesExe.Cleanup()
 		}
 		xc.FailOn(err)

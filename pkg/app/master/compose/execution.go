@@ -1281,8 +1281,8 @@ func startContainer(
 	}
 
 	if (netMode == "none" || netMode == "host") && len(service.Networks) > 0 {
-		fmt.Printf("startContainer(%s): incompatible network_mode and networks config\n", service.Name)
-		os.Exit(-1)
+		log.Debugf("startContainer(%s): incompatible network_mode and networks config", service.Name)
+		return "", fmt.Errorf("startContainer(%s): incompatible network_mode and networks config", service.Name)
 	}
 
 	netAliases := []string{
@@ -1306,7 +1306,7 @@ func startContainer(
 
 	mounts, err := MountsFromVolumeConfigs(baseComposeDir, service.Volumes, service.Tmpfs, activeVolumes)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	//need to make it work with all container name checks

@@ -596,7 +596,7 @@ func (p *CustomProbe) Start() {
 				ovars{
 					"exit.code": -1,
 				})
-			os.Exit(-1)
+			p.xc.Exit(-1)
 		}
 
 		p.workers.Wait()
