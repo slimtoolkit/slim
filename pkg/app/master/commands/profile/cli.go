@@ -46,6 +46,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagHTTPProbe),
 		commands.Cflag(commands.FlagHTTPProbeCmd),
 		commands.Cflag(commands.FlagHTTPProbeCmdFile),
+		commands.Cflag(commands.FlagHTTPProbeStartWait),
 		commands.Cflag(commands.FlagHTTPProbeRetryCount),
 		commands.Cflag(commands.FlagHTTPProbeRetryWait),
 		commands.Cflag(commands.FlagHTTPProbePorts),
@@ -197,6 +198,7 @@ var CLI = cli.Command{
 			doHTTPProbe = true
 		}
 
+		httpProbeStartWait := ctx.Int(commands.FlagHTTPProbeStartWait)
 		httpProbeRetryCount := ctx.Int(commands.FlagHTTPProbeRetryCount)
 		httpProbeRetryWait := ctx.Int(commands.FlagHTTPProbeRetryWait)
 		httpProbePorts, err := commands.ParseHTTPProbesPorts(ctx.String(commands.FlagHTTPProbePorts))
@@ -368,6 +370,7 @@ var CLI = cli.Command{
 			crOpts,
 			doHTTPProbe,
 			httpProbeCmds,
+			httpProbeStartWait,
 			httpProbeRetryCount,
 			httpProbeRetryWait,
 			httpProbePorts,

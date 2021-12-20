@@ -38,6 +38,7 @@ type CustomProbe struct {
 	PrintPrefix           string
 	Ports                 []string
 	Cmds                  []config.HTTPProbeCmd
+	StartWait             int
 	RetryCount            int
 	RetryWait             int
 	TargetPorts           []uint16
@@ -66,6 +67,7 @@ func NewCustomProbe(
 	xc *app.ExecutionContext,
 	inspector *container.Inspector,
 	cmds []config.HTTPProbeCmd,
+	startWait int,
 	retryCount int,
 	retryWait int,
 	targetPorts []uint16,
@@ -106,6 +108,7 @@ func NewCustomProbe(
 		PrintState:            printState,
 		PrintPrefix:           printPrefix,
 		Cmds:                  cmds,
+		StartWait:             startWait,
 		RetryCount:            retryCount,
 		RetryWait:             retryWait,
 		TargetPorts:           targetPorts,
@@ -222,7 +225,19 @@ func (p *CustomProbe) Start() {
 
 	go func() {
 		//TODO: need to do a better job figuring out if the target app is ready to accept connections
-		time.Sleep(9 * time.Second)
+		time.Sleep(9 * time.Second) //base start wait time
+		if p.StartWait > 0 {
+			if p.PrintState {
+				p.xc.Out.State("http.probe.start.wait", ovars{"time": p.StartWait})
+			}
+
+			//additional wait time
+			time.Sleep(time.Duration(p.StartWait) * time.Second)
+
+			if p.PrintState {
+				p.xc.Out.State("http.probe.start.wait.done")
+			}
+		}
 
 		if p.PrintState {
 			p.xc.Out.State("http.probe.running")

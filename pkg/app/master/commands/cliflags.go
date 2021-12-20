@@ -81,6 +81,7 @@ const (
 	FlagHTTPProbeOff              = "http-probe-off" //alternative way to disable http probing
 	FlagHTTPProbeCmd              = "http-probe-cmd"
 	FlagHTTPProbeCmdFile          = "http-probe-cmd-file"
+	FlagHTTPProbeStartWait        = "http-probe-start-wait"
 	FlagHTTPProbeRetryCount       = "http-probe-retry-count"
 	FlagHTTPProbeRetryWait        = "http-probe-retry-wait"
 	FlagHTTPProbePorts            = "http-probe-ports"
@@ -170,6 +171,7 @@ const (
 	FlagHTTPProbeOffUsage              = "Alternative way to disable HTTP probing"
 	FlagHTTPProbeCmdUsage              = "User defined HTTP probes"
 	FlagHTTPProbeCmdFileUsage          = "File with user defined HTTP probes"
+	FlagHTTPProbeStartWaitUsage        = "Number of seconds to wait before starting HTTP probing"
 	FlagHTTPProbeRetryCountUsage       = "Number of retries for each HTTP probe"
 	FlagHTTPProbeRetryWaitUsage        = "Number of seconds to wait before retrying HTTP probe (doubles when target is not ready)"
 	FlagHTTPProbePortsUsage            = "Explicit list of ports to probe (in the order you want them to be probed)"
@@ -466,6 +468,12 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  FlagHTTPProbeAPISpecFileUsage,
 		EnvVar: "DSLIM_HTTP_PROBE_API_SPEC_FILE",
+	},
+	FlagHTTPProbeStartWait: cli.IntFlag{
+		Name:   FlagHTTPProbeStartWait,
+		Value:  0,
+		Usage:  FlagHTTPProbeStartWaitUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_START_WAIT",
 	},
 	FlagHTTPProbeRetryCount: cli.IntFlag{
 		Name:   FlagHTTPProbeRetryCount,
