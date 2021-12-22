@@ -125,7 +125,8 @@ func OnCommand(
 	continueAfter *config.ContinueAfter,
 	execCmd string,
 	execFileCmd string,
-	deleteFatImage bool) {
+	deleteFatImage bool,
+	sensorLogLevel string) {
 
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
@@ -872,6 +873,7 @@ func OnCommand(
 		doIncludeCertPKDirs,
 		selectedNetworks,
 		gparams.Debug,
+		sensorLogLevel,
 		gparams.InContainer,
 		true,
 		prefix)

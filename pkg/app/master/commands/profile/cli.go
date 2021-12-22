@@ -405,7 +405,8 @@ var CLI = cli.Command{
 			doUseLocalMounts,
 			doUseSensorVolume,
 			//doKeepTmpArtifacts,
-			continueAfter)
+			continueAfter,
+			ctx.GlobalString(commands.FlagLogLevel))
 
 		return nil
 	},
