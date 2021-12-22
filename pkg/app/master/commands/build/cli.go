@@ -668,7 +668,8 @@ var CLI = cli.Command{
 			execCmd,
 			string(execFileCmd),
 			deleteFatImage,
-			ctx.GlobalString(commands.FlagLogLevel))
+			ctx.GlobalString(commands.FlagLogLevel),
+			ctx.GlobalString(commands.FlagLogFormat))
 
 		return nil
 	},

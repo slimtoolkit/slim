@@ -406,7 +406,8 @@ var CLI = cli.Command{
 			doUseSensorVolume,
 			//doKeepTmpArtifacts,
 			continueAfter,
-			ctx.GlobalString(commands.FlagLogLevel))
+			ctx.GlobalString(commands.FlagLogLevel),
+			ctx.GlobalString(commands.FlagLogFormat))
 
 		return nil
 	},
