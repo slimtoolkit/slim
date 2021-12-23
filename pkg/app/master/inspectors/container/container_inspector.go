@@ -121,6 +121,8 @@ type Inspector struct {
 	DoIncludeCertPKDirs   bool
 	SelectedNetworks      map[string]NetNameInfo
 	DoDebug               bool
+	LogLevel              string
+	LogFormat             string
 	PrintState            bool
 	PrintPrefix           string
 	InContainer           bool
@@ -186,6 +188,8 @@ func NewInspector(
 	selectedNetworks map[string]NetNameInfo,
 	//serviceAliases []string,
 	doDebug bool,
+	logLevel string,
+	logFormat string,
 	inContainer bool,
 	printState bool,
 	printPrefix string) (*Inspector, error) {
@@ -230,6 +234,8 @@ func NewInspector(
 		DoIncludeCertPKDirs:   doIncludeCertPKDirs,
 		SelectedNetworks:      selectedNetworks,
 		DoDebug:               doDebug,
+		LogLevel:              logLevel,
+		LogFormat:             logFormat,
 		PrintState:            printState,
 		PrintPrefix:           printPrefix,
 		InContainer:           inContainer,
@@ -493,6 +499,14 @@ func (i *Inspector) RunContainer() error {
 	var containerCmd []string
 	if i.DoDebug {
 		containerCmd = append(containerCmd, "-d")
+	}
+
+	if i.LogLevel != "" {
+		containerCmd = append(containerCmd, "-log-level", i.LogLevel)
+	}
+
+	if i.LogFormat != "" {
+		containerCmd = append(containerCmd, "-log-format", i.LogFormat)
 	}
 
 	i.ContainerName = fmt.Sprintf(ContainerNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))

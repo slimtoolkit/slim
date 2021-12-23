@@ -98,10 +98,16 @@ func startMonitor(errorCh chan error,
 
 /////////
 
-var enableDebug bool
+var (
+	enableDebug  bool
+	logLevelName string
+	logFormat    string
+)
 
 func init() {
 	flag.BoolVar(&enableDebug, "d", false, "enable debug logging")
+	flag.StringVar(&logLevelName, "log-level", "info", "set the logging level ('debug', 'info' (default), 'warn', 'error', 'fatal', 'panic')")
+	flag.StringVar(&logFormat, "log-format", "text", "set the format used by logs ('text' (default), or 'json')")
 }
 
 /////////
@@ -110,9 +116,8 @@ func init() {
 func Run() {
 	flag.Parse()
 
-	if enableDebug {
-		log.SetLevel(log.DebugLevel)
-	}
+	err := configureLogger(enableDebug, logLevelName, logFormat)
+	errutil.FailOn(err)
 
 	activeCaps, maxCaps, err := sysenv.Capabilities(0)
 	log.Debugf("sensor: uid=%v euid=%v", os.Getuid(), os.Geteuid())

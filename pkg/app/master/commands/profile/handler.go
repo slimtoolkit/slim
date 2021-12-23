@@ -85,7 +85,9 @@ func OnCommand(
 	doUseLocalMounts bool,
 	doUseSensorVolume string,
 	//doKeepTmpArtifacts bool,
-	continueAfter *config.ContinueAfter) {
+	continueAfter *config.ContinueAfter,
+	logLevel string,
+	logFormat string) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
@@ -264,6 +266,8 @@ func OnCommand(
 		nil,   //selectedNetNames
 		//nil,
 		gparams.Debug,
+		logLevel,
+		logFormat,
 		gparams.InContainer,
 		true,
 		prefix)
