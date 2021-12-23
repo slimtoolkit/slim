@@ -8,14 +8,39 @@ import (
 	"github.com/fatih/color"
 
 	"github.com/docker-slim/docker-slim/pkg/consts"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
 
 type ExecutionContext struct {
-	Out *Output
+	Out             *Output
+	cleanupHandlers []func()
 }
 
 func (ref *ExecutionContext) Exit(exitCode int) {
+	ref.doCleanup()
 	exit(exitCode)
+}
+
+func (ref *ExecutionContext) AddCleanupHandler(handler func()) {
+	if handler != nil {
+		ref.cleanupHandlers = append(ref.cleanupHandlers, handler)
+	}
+}
+
+func (ref *ExecutionContext) doCleanup() {
+	for _, cleanup := range ref.cleanupHandlers {
+		if cleanup != nil {
+			cleanup()
+		}
+	}
+}
+
+func (ref *ExecutionContext) FailOn(err error) {
+	if err != nil {
+		ref.doCleanup()
+	}
+
+	errutil.FailOn(err)
 }
 
 func exit(exitCode int) {

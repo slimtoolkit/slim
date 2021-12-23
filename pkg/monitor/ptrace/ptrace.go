@@ -1,12 +1,15 @@
 package ptrace
 
 import (
+	"bytes"
 	"fmt"
 	"os/exec"
 	"runtime"
 	"strconv"
+	"strings"
 	"syscall"
 
+	"github.com/armon/go-radix"
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
@@ -66,6 +69,8 @@ type syscallState struct {
 	gotRetVal    bool
 	started      bool
 	exiting      bool
+	pathParam    string
+	pathParamErr error
 }
 
 type App struct {
@@ -79,8 +84,9 @@ type App struct {
 	ErrorCh         chan error
 	StateCh         chan AppState
 	StopCh          chan struct{}
-	syscallCounters map[uint32]uint64
-	syscallResolver system.NumberResolverFunc
+	fsActivity      map[string]*report.FSActivityInfo
+	syscallActivity map[uint32]uint64
+	//syscallResolver system.NumberResolverFunc
 	cmd             *exec.Cmd
 	pgid            int
 	eventCh         chan syscallEvent
@@ -98,9 +104,10 @@ func (a *App) PGID() int {
 const eventBufSize = 2000
 
 type syscallEvent struct {
-	pid     int
-	callNum uint32
-	retVal  uint64
+	pid       int
+	callNum   uint32
+	retVal    uint64
+	pathParam string
 }
 
 func newApp(cmd string,
@@ -142,13 +149,15 @@ func newApp(cmd string,
 		ErrorCh:         errorCh,
 		StateCh:         stateCh,
 		StopCh:          stopCh,
-		syscallCounters: map[uint32]uint64{},
+		fsActivity:      map[string]*report.FSActivityInfo{},
+		syscallActivity: map[uint32]uint64{},
 		eventCh:         make(chan syscallEvent, eventBufSize),
 		collectorDoneCh: make(chan int, 1),
-		syscallResolver: system.CallNumberResolver(archName),
+		//syscallResolver: system.CallNumberResolver(archName),
 		Report: report.PtMonitorReport{
 			ArchName:     string(archName),
 			SyscallStats: map[string]report.SyscallStatInfo{},
+			FSActivity:   map[string]*report.FSActivityInfo{},
 		},
 	}
 
@@ -173,6 +182,59 @@ func (app *App) trace() {
 
 	app.StateCh <- AppStarted
 	app.collect()
+}
+
+func (app *App) processSyscallActivity(e *syscallEvent) {
+	if _, ok := app.syscallActivity[e.callNum]; ok {
+		app.syscallActivity[e.callNum]++
+	} else {
+		app.syscallActivity[e.callNum] = 1
+	}
+}
+
+func (app *App) processFileActivity(e *syscallEvent) {
+	if e.pathParam != "" {
+		p, found := syscallProcessors[int(e.callNum)]
+		if !found {
+			log.Debug("ptrace.App.processFileActivity - no syscall processor - %#v", e)
+			//shouldn't happen
+			return
+		}
+
+		if p.SyscallType() == CheckFileType && !p.FailedReturnStatus(e.retVal) {
+			//todo: filter "/proc/", "/sys/", "/dev/" externally
+			if e.pathParam != "." &&
+				e.pathParam != "/proc" &&
+				!strings.HasPrefix(e.pathParam, "/proc/") &&
+				!strings.HasPrefix(e.pathParam, "/sys/") &&
+				!strings.HasPrefix(e.pathParam, "/dev/") {
+				if fsa, ok := app.fsActivity[e.pathParam]; ok {
+					fsa.OpsAll++
+					fsa.Pids[e.pid] = struct{}{}
+					fsa.Syscalls[int(e.callNum)] = struct{}{}
+
+					if processor, found := syscallProcessors[int(e.callNum)]; found {
+						switch processor.SyscallType() {
+						case CheckFileType:
+							fsa.OpsCheckFile++
+						}
+					}
+				} else {
+					fsa := &report.FSActivityInfo{
+						OpsAll:       1,
+						OpsCheckFile: 1,
+						Pids:         map[int]struct{}{},
+						Syscalls:     map[int]struct{}{},
+					}
+
+					fsa.Pids[e.pid] = struct{}{}
+					fsa.Syscalls[int(e.callNum)] = struct{}{}
+
+					app.fsActivity[e.pathParam] = fsa
+				}
+			}
+		}
+	}
 }
 
 func (app *App) process() {
@@ -203,19 +265,24 @@ done:
 			app.Report.SyscallCount++
 			log.Debugf("ptrace.App.process: event ==> {pid=%v cn=%d}", e.pid, e.callNum)
 
-			if _, ok := app.syscallCounters[e.callNum]; ok {
-				app.syscallCounters[e.callNum]++
-			} else {
-				app.syscallCounters[e.callNum] = 1
-			}
+			/*
+				if _, ok := app.syscallActivity[e.callNum]; ok {
+					app.syscallActivity[e.callNum]++
+				} else {
+					app.syscallActivity[e.callNum] = 1
+				}
+			*/
+			app.processSyscallActivity(&e)
+			app.processFileActivity(&e)
 		}
 	}
 
 	log.Debugf("ptrace.App.process: - executed syscall count = %d", app.Report.SyscallCount)
-	log.Debugf("ptrace.App.process: - number of syscalls: %v", len(app.syscallCounters))
+	log.Debugf("ptrace.App.process: - number of syscalls: %v", len(app.syscallActivity))
 
-	for scNum, scCount := range app.syscallCounters {
-		syscallName := app.syscallResolver(scNum)
+	for scNum, scCount := range app.syscallActivity {
+		//syscallName := app.syscallResolver(scNum)
+		syscallName := system.LookupCallName(scNum)
 		log.Debugf("[%v] %v = %v", scNum, syscallName, scCount)
 		scKey := strconv.FormatInt(int64(scNum), 10)
 		app.Report.SyscallStats[scKey] = report.SyscallStatInfo{
@@ -226,9 +293,57 @@ done:
 	}
 
 	app.Report.SyscallNum = uint32(len(app.Report.SyscallStats))
+	app.Report.FSActivity = app.FileActivity()
 
 	app.StateCh <- state
 	app.ReportCh <- &app.Report
+}
+
+func (app *App) FileActivity() map[string]*report.FSActivityInfo {
+	log.Debugf("ptrace.App.FileActivity [all records - %d]", len(app.fsActivity))
+	//get the file activity info (ignore intermediate directories)
+	t := radix.New()
+	for k, v := range app.fsActivity {
+		t.Insert(k, v)
+	}
+
+	walk := func(wkey string, wv interface{}) bool {
+		wdata, ok := wv.(*report.FSActivityInfo)
+		if !ok {
+			return false
+		}
+
+		walkAfter := func(akey string, av interface{}) bool {
+			//adata, ok := av.(*report.FSActivityInfo)
+			//if !ok {
+			//    return false
+			//}
+
+			if wkey == akey {
+				return false
+			}
+
+			wdata.IsSubdir = true
+			return true
+		}
+
+		t.WalkPrefix(wkey, walkAfter)
+		return false
+	}
+
+	t.Walk(walk)
+
+	result := map[string]*report.FSActivityInfo{}
+	for k, v := range app.fsActivity {
+		if v.IsSubdir {
+			continue
+		}
+
+		result[k] = v
+	}
+
+	log.Debugf("ptrace.App.FileActivity [file records - %d]", len(result))
+	return result
 }
 
 func (app *App) start() error {
@@ -356,7 +471,7 @@ func (app *App) collect() {
 	callPid := app.MainPID()
 	prevPid := callPid
 
-	log.Tracef("ptrace.App.collect: trace syscall mainPID=%v", callPid)
+	log.Debugf("ptrace.App.collect: trace syscall mainPID=%v", callPid)
 
 	pidSyscallState := map[int]*syscallState{}
 	pidSyscallState[callPid] = &syscallState{pid: callPid}
@@ -495,14 +610,17 @@ func (app *App) collect() {
 			}
 
 			if cstate.gotCallNum && cstate.gotRetVal {
+				evt := syscallEvent{
+					pid:       wpid,
+					callNum:   uint32(cstate.callNum),
+					retVal:    cstate.retVal,
+					pathParam: cstate.pathParam,
+				}
+
 				cstate.gotCallNum = false
 				cstate.gotRetVal = false
-
-				evt := syscallEvent{
-					pid:     wpid,
-					callNum: uint32(cstate.callNum),
-					retVal:  cstate.retVal,
-				}
+				cstate.pathParam = ""
+				cstate.pathParamErr = nil
 
 				select {
 				case app.eventCh <- evt:
@@ -575,6 +693,11 @@ func onSyscall(pid int, cstate *syscallState) error {
 	cstate.callNum = system.CallNumber(regs)
 	cstate.expectReturn = true
 	cstate.gotCallNum = true
+
+	if processor, found := syscallProcessors[int(cstate.callNum)]; found {
+		processor.OnCall(pid, regs, cstate)
+	}
+
 	return nil
 }
 
@@ -587,7 +710,148 @@ func onSyscallReturn(pid int, cstate *syscallState) error {
 	cstate.retVal = system.CallReturnValue(regs)
 	cstate.expectReturn = false
 	cstate.gotRetVal = true
+
+	if processor, found := syscallProcessors[int(cstate.callNum)]; found {
+		processor.OnReturn(pid, regs, cstate)
+	}
+
 	return nil
+}
+
+///////////////////////////////////
+
+func getStringParam(pid int, ptr uint64) string {
+	var out [256]byte
+	var data []byte
+	for {
+		count, err := syscall.PtracePeekData(pid, uintptr(ptr), out[:])
+		if err != nil && err != syscall.EIO {
+			fmt.Printf("readString: syscall.PtracePeekData error - '%v'\v", err)
+		}
+
+		idx := bytes.IndexByte(out[:count], 0)
+		var foundNull bool
+		if idx == -1 {
+			idx = count
+			ptr += uint64(count)
+		} else {
+			foundNull = true
+		}
+
+		data = append(data, out[:idx]...)
+		if foundNull {
+			return string(data)
+		}
+	}
+}
+
+type SyscallTypeName string
+
+const (
+	CheckFileType SyscallTypeName = "type.checkfile"
+)
+
+type SyscallProcessor interface {
+	SyscallNumber() uint64
+	SetSyscallNumber(uint64)
+	SyscallType() SyscallTypeName
+	SyscallName() string
+	OnCall(pid int, regs syscall.PtraceRegs, cstate *syscallState)
+	OnReturn(pid int, regs syscall.PtraceRegs, cstate *syscallState)
+	FailedCall(cstate *syscallState) bool
+	FailedReturnStatus(retVal uint64) bool
+}
+
+type syscallProcessorCore struct {
+	Num  uint64
+	Name string
+	Type SyscallTypeName
+}
+
+func (ref *syscallProcessorCore) SyscallNumber() uint64 {
+	return ref.Num
+}
+
+func (ref *syscallProcessorCore) SetSyscallNumber(num uint64) {
+	ref.Num = num
+}
+
+func (ref *syscallProcessorCore) SyscallType() SyscallTypeName {
+	return ref.Type
+}
+
+func (ref *syscallProcessorCore) SyscallName() string {
+	return ref.Name
+}
+
+type checkFileSyscallProcessor struct {
+	*syscallProcessorCore
+}
+
+func (ref *checkFileSyscallProcessor) OnCall(pid int, regs syscall.PtraceRegs, cstate *syscallState) {
+	cstate.pathParam = getStringParam(pid, system.CallFirstParam(regs))
+}
+
+func (ref *checkFileSyscallProcessor) OnReturn(pid int, regs syscall.PtraceRegs, cstate *syscallState) {
+	//-2 => -ENOENT (No such file or directory)
+	//TODO: get/use error code enums
+	if cstate.pathParamErr == nil {
+		log.Debugf("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s('%s') = %d", pid, cstate.callNum, ref.Name, cstate.pathParam, int(cstate.retVal))
+	} else {
+		log.Debugf("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s(<unknown>/'%s') = %d [pp err => %v]", pid, cstate.callNum, ref.Name, cstate.pathParam, int(cstate.retVal), cstate.pathParamErr)
+	}
+}
+
+func (ref *checkFileSyscallProcessor) FailedCall(cstate *syscallState) bool {
+	return cstate.retVal != 0
+}
+
+func (ref *checkFileSyscallProcessor) FailedReturnStatus(retVal uint64) bool {
+	return retVal != 0
+}
+
+//TODO: introduce syscall num and name consts to use instead of liternal values
+var syscallProcessors = map[int]SyscallProcessor{}
+
+func init() {
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name: "stat",
+			Type: CheckFileType,
+		},
+	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name: "lstat",
+			Type: CheckFileType,
+		},
+	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name: "access",
+			Type: CheckFileType,
+		},
+	})
+
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name: "statfs",
+			Type: CheckFileType,
+		},
+	})
+}
+
+func addSyscallProcessor(p SyscallProcessor) {
+	num, found := system.LookupCallNumber(p.SyscallName())
+	if !found {
+		log.Errorf("addSyscallProcessor: unknown syscall='%s'", p.SyscallName())
+		return
+	}
+
+	p.SetSyscallNumber(uint64(num))
+	syscallProcessors[int(p.SyscallNumber())] = p
 }
 
 ///////////////////////////////////

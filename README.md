@@ -185,9 +185,9 @@ Elixir application images:
 
 ## RECENT UPDATES
 
-Latest version: 1.37.0 (9/23/2021)
+Latest version: 1.37.3 (12/10/2021)
 
-The 1.37.0 releases adds experimental docker-compose support for the build command.
+The 1.37.x releases add an experimental docker-compose support for the build command.
 
 For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
@@ -204,15 +204,15 @@ docker-slim update
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.37.0/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.37.0/dist_mac.zip`)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.37.3/dist_mac.zip`)
 
-   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.37.0/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.37.0/dist_mac_m1.zip`)
+   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.37.3/dist_mac_m1.zip`)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.37.0/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.0/dist_linux.tar.gz`)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.3/dist_linux.tar.gz`)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.37.0/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.0/dist_linux_arm.tar.gz`)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm.tar.gz`)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.37.0/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.0/dist_linux_arm64.tar.gz`)
+   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm64.tar.gz`)
 
 2. Unzip the package and optionally move it to your bin directory.
 
@@ -344,9 +344,9 @@ To disable the version checks set the global `--check-version` flag to `false` (
 
 - `--target` - Target container image (name or ID)
 - `--pull` - Try pulling target if it's not available locally (default: false).
-- `--docker-config-path` - Set the docker config path used to fetch credentials. Must be used with the `--pull` flag.
-- `--registry-username` - Set the username to be used for an image pull on a private registry. Must be used with the `--pull` flag.
-- `--registry-password` - Set the password to be used for an image pull on a private registry. Must be used with the `--pull` flag.
+- `--docker-config-path` - Set the docker config path used to fetch registry credentials (used with the `--pull` flag).
+- `--registry-account` - Account to be used when pulling images from private registries (used with the `--pull` flag).
+- `--registry-secret` - Account secret to be used when pulling images from private registries (used with the `--pull` and `--registry-account` flags).
 - `--show-plogs` - Show image pull logs (default: false).
 - `--changes value` - Show layer change details for the selected change type (values: none, all, delete, modify, add).
 - `--changes-output value` - Where to show the changes (values: all, report, console).
@@ -387,10 +387,11 @@ In the interactive CLI prompt mode you must specify the target image using the `
 
 - `--target` - Target container image (name or ID). It's an alternative way to provide the target information. The standard way to provide the target information is by putting as the last value in the `build` command CLI call.
 - `--pull` - Try pulling target if it's not available locally (default: false).
-- `--docker-config-path` - Set the docker config path used to fetch credentials. Must be used with the `--pull` flag.
-- `--registry-username` - Set the username to be used for an image pull on a private registry. Must be used with the `--pull` flag.
-- `--registry-password` - Set the password to be used for an image pull on a private registry. Must be used with the `--pull` flag.
+- `--docker-config-path` - Set the docker config path used to fetch registry credentials (used with the `--pull` flag).
+- `--registry-account` - Account to be used when pulling images from private registries (used with the `--pull` flag).
+- `--registry-secret` - Account secret to be used when pulling images from private registries (used with the `--pull` and `--registry-account` flags).
 - `--show-plogs` - Show image pull logs (default: false).
+
 - `compose-file` - Load container info from selected compose file
 - `target-compose-svc` - Target service from compose file
 - `target-compose-svc-no-ports` - Do not publish ports for target service from compose file
@@ -398,7 +399,14 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `dep-include-compose-svc` - Include specific compose service as a target dependency (only selected services will be started)
 - `dep-exclude-compose-svc` - Exclude specific service from the compose services that will be started as target dependencies
 - `dep-include-compose-svc-deps` - Include all dependencies for the selected compose service (excluding the service itself) as target dependencies
+- `dep-include-target-compose-svc-deps` - Include all dependencies for the target compose service (excluding the service itself) as target dependencies. This is a shortcut flag to avoid repeating the service name (it's a pretty long flag name though :-))
 - `compose-net` - Attach target to the selected compose network(s) otherwise all networks will be attached
+- `compose-env-nohost` - Don't include the env vars from the host to compose
+- `compose-env-file` - Load compose env vars from file (host env vars override the values loaded from this file)
+- `compose-workdir` - Set custom work directory for compose
+- `compose-project-name` - Use custom project name for compose
+- `prestart-compose-svc` - placeholder for now
+- `poststart-compose-svc` - placeholder for now
 - `--http-probe` - Enables/disables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`: `--http-probe=false`)
 - `--http-probe-off` - Alternative way to disable HTTP probing
 - `--http-probe-cmd` - Additional HTTP probe command [can use this flag multiple times]
@@ -439,8 +447,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `include-cert-dirs` - Keep known cert directories and all files in them
 - `include-cert-pk-all` - Keep all discovered cert private keys
 - `include-cert-pk-dirs` - Keep known cert private key directories and all files in them
-- `--preserve-path` - Keep path from orignal image in its initial state. [can use this flag multiple times]
-- `--preserve-path-file` - File with paths to keep from original image in their original state.
+- `--preserve-path` - Keep path from orignal image in its initial state (changes to the selected container image files when it runs will be discarded). [can use this flag multiple times]
+- `--preserve-path-file` - File with paths to keep from original image in their original state (changes to the selected container image files when it runs will be discarded).
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 - `--path-perms-file` - File with path permissions to set (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 - `--exclude-pattern` - Exclude path pattern ([Glob/Match in Go](https://golang.org/pkg/path/filepath/#Match) and `**`) from image
@@ -650,7 +658,7 @@ You can use the `--http-probe-exec` and `--http-probe-exec-file` options to run 
 
 You can create dedicated debugging side-car container images loaded with the tools you need for debugging target containers. This allows you to keep your production container images small. The debugging side-car containers attach to the running target containers.
 
-Assuming you have a running container named `node_app_alpine` you can attach your debugging side-car with a command like this: `docker run --rm -it --pid=container:node_app_alpine --net=container:node_app_alpine --cap-add sys_admin alpine sh`. In this example, the debugging side-car is a regular alphine image. This is exactly what happens with the `node_alpine` app sample (located in the `node_alpine` directory of the `examples` repo) and the `run_debug_sidecar.command` helper script.
+Assuming you have a running container named `node_app_alpine` you can attach your debugging side-car with a command like this: `docker run --rm -it --pid=container:node_app_alpine --net=container:node_app_alpine --cap-add sys_admin alpine sh`. In this example, the debugging side-car is a regular alpine image. This is exactly what happens with the `node_alpine` app sample (located in the `node_alpine` directory of the `examples` repo) and the `run_debug_sidecar.command` helper script.
 
 If you run the `ps` command in the side-car you'll see the application from the target container:
 
@@ -723,7 +731,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.37.0/dist_mac.zip), [Mac M1](https://downloads.dockerslim.com/releases/1.37.0/dist_mac_m1.zip), [Linux](https://downloads.dockerslim.com/releases/1.37.0/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.37.0/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.37.0/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.37.3/dist_mac.zip), [Mac M1](https://downloads.dockerslim.com/releases/1.37.3/dist_mac_m1.zip), [Linux](https://downloads.dockerslim.com/releases/1.37.3/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
 The extracted directory contains two binaries:
 
@@ -871,7 +879,7 @@ Use Go 1.13 or higher. You can use earlier version of Go, but it can't be lower 
 
 If you have a web browser, you can get a fully pre-configured development environment in one click:
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://gitpod.io/#https://github.com/docker-slim/docker-slim)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/docker-slim/docker-slim)
 
 
 ##### Additional Tools

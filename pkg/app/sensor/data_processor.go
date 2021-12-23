@@ -79,7 +79,8 @@ func filterFileEvents(fileEvents map[fanotify.Event]bool, targetPidList map[int]
 func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 	log.Debugf("findSymlinks(%v,%v)", len(files), mp)
 
-	result := make(map[string]*report.ArtifactProps, 0)
+	result := map[string]*report.ArtifactProps{}
+	symlinks := map[string]string{}
 
 	checkPathSymlinks := func(symlinkFileName string) {
 		if _, ok := result[symlinkFileName]; ok {
@@ -96,7 +97,7 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 		var absLinkRef string
 		if !filepath.IsAbs(linkRef) {
 			linkDir := filepath.Dir(symlinkFileName)
-			log.Debugf("findSymlinks.checkPathSymlinks - relative linkRef (adding symlink's path) %v / %v -> %v", symlinkFileName, linkDir, linkRef)
+			log.Debugf("findSymlinks.checkPathSymlinks - relative linkRef %v -> %v +/+ %v", symlinkFileName, linkDir, linkRef)
 			fullLinkRef := filepath.Join(linkDir, linkRef)
 			var err error
 			absLinkRef, err = filepath.Abs(fullLinkRef)
@@ -119,14 +120,26 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 			log.Warnf("findSymlinks.checkPathSymlinks - error evaluating symlink (%v) -> %v => %v", err, symlinkFileName, absLinkRef)
 		}
 
+		//detecting intermediate dir symlinks
+		symlinkPrefix := fmt.Sprintf("%s/", symlinkFileName)
 		absPrefix := fmt.Sprintf("%s/", absLinkRef)
 		evalPrefix := fmt.Sprintf("%s/", evalLinkRef)
 
+		//TODO:
+		//have an option not to resolve intermediate dir symlinks
+		//it'll result in file duplication, but the symlinks
+		//resolution logic will be less complicated and faster
 		for _, fname := range files {
 			added := false
+			if strings.HasPrefix(fname, symlinkPrefix) {
+				result[symlinkFileName] = nil
+				log.Debugf("findSymlinks.checkPathSymlinks - added path symlink to files (0) -> %v", symlinkFileName)
+				added = true
+			}
+
 			if strings.HasPrefix(fname, absPrefix) {
 				result[symlinkFileName] = nil
-				log.Debugf("findSymlinks.checkPathSymlinks - added path symlink to files -> %v", symlinkFileName)
+				log.Debugf("findSymlinks.checkPathSymlinks - added path symlink to files (1) -> %v", symlinkFileName)
 				added = true
 			}
 
@@ -142,6 +155,8 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 				return
 			}
 		}
+
+		symlinks[symlinkFileName] = linkRef
 	}
 
 	//getting the root device is a leftover from the legacy code (not really necessary anymore)
@@ -238,6 +253,70 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 		for _, f := range v {
 			//result[f] = inodeID
 			result[f] = nil
+		}
+	}
+
+	//NOTE/TODO:
+	//Might need multiple passes until no new symlinks are added to result
+	//(with the current approach)
+	//Should REDESIGN to use a reverse/target radix and a radix-based result
+	for symlinkFileName, linkRef := range symlinks {
+		var absLinkRef string
+		if !filepath.IsAbs(linkRef) {
+			linkDir := filepath.Dir(symlinkFileName)
+			log.Debugf("findSymlinks.walkSymlinks - relative linkRef %v -> %v +/+ %v", symlinkFileName, linkDir, linkRef)
+			fullLinkRef := filepath.Join(linkDir, linkRef)
+			var err error
+			absLinkRef, err = filepath.Abs(fullLinkRef)
+			if err != nil {
+				log.Warnf("findSymlinks.walkSymlinks - error getting absolute path for symlink ref (1) (%v) -> %v => %v", err, symlinkFileName, fullLinkRef)
+				break
+			}
+		} else {
+			var err error
+			absLinkRef, err = filepath.Abs(linkRef)
+			if err != nil {
+				log.Warnf("findSymlinks.walkSymlinks - error getting absolute path for symlink ref (2) (%v) -> %v => %v", err, symlinkFileName, linkRef)
+				break
+			}
+		}
+
+		//todo: skip "/proc/..." references
+		evalLinkRef, err := filepath.EvalSymlinks(absLinkRef)
+		if err != nil {
+			log.Warnf("findSymlinks.walkSymlinks - error evaluating symlink (%v) -> %v => %v", err, symlinkFileName, absLinkRef)
+		}
+
+		//detecting intermediate dir symlinks
+		symlinkPrefix := fmt.Sprintf("%s/", symlinkFileName)
+		absPrefix := fmt.Sprintf("%s/", absLinkRef)
+		evalPrefix := fmt.Sprintf("%s/", evalLinkRef)
+
+		for fname := range result {
+			added := false
+			if strings.HasPrefix(fname, symlinkPrefix) {
+				result[symlinkFileName] = nil
+				log.Debugf("findSymlinks.walkSymlinks - added path symlink to files (0) -> %v", symlinkFileName)
+				added = true
+			}
+
+			if strings.HasPrefix(fname, absPrefix) {
+				result[symlinkFileName] = nil
+				log.Debugf("findSymlinks.walkSymlinks - added path symlink to files (1) -> %v", symlinkFileName)
+				added = true
+			}
+
+			if evalLinkRef != "" &&
+				absPrefix != evalPrefix &&
+				strings.HasPrefix(fname, evalPrefix) {
+				result[symlinkFileName] = nil
+				log.Debugf("findSymlinks.walkSymlinks - added path symlink to files (2) -> %v", symlinkFileName)
+				added = true
+			}
+
+			if added {
+				break
+			}
 		}
 	}
 

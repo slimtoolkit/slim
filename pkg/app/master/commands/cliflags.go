@@ -57,14 +57,22 @@ const (
 	FlagShowPullLogs     = "show-plogs"
 
 	//Compose-related flags
-	FlagComposeFile              = "compose-file"
-	FlagTargetComposeSvc         = "target-compose-svc"
-	FlagComposeSvcNoPorts        = "target-compose-svc-no-ports"
-	FlagDepExcludeComposeSvcAll  = "dep-exclude-compose-svc-all"
-	FlagDepIncludeComposeSvc     = "dep-include-compose-svc"
-	FlagDepExcludeComposeSvc     = "dep-exclude-compose-svc"
-	FlagDepIncludeComposeSvcDeps = "dep-include-compose-svc-deps"
-	FlagComposeNet               = "compose-net"
+	FlagComposeFile                    = "compose-file"
+	FlagTargetComposeSvc               = "target-compose-svc"
+	FlagComposeSvcNoPorts              = "target-compose-svc-no-ports"
+	FlagDepExcludeComposeSvcAll        = "dep-exclude-compose-svc-all"
+	FlagDepIncludeComposeSvc           = "dep-include-compose-svc"
+	FlagDepExcludeComposeSvc           = "dep-exclude-compose-svc"
+	FlagDepIncludeComposeSvcDeps       = "dep-include-compose-svc-deps"
+	FlagDepIncludeTargetComposeSvcDeps = "dep-include-target-compose-svc-deps"
+	FlagComposeNet                     = "compose-net"
+	FlagComposeEnvNoHost               = "compose-env-nohost"
+	FlagComposeEnvFile                 = "compose-env-file"
+	FlagComposeWorkdir                 = "compose-workdir"
+	FlagComposeProjectName             = "compose-project-name"
+	FlagPrestartComposeSvc             = "prestart-compose-svc"
+	FlagPoststartComposeSvc            = "poststart-compose-svc"
+	FlagPrestartComposeWaitExit        = "prestart-compose-wait-exit"
 
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
@@ -73,6 +81,7 @@ const (
 	FlagHTTPProbeOff              = "http-probe-off" //alternative way to disable http probing
 	FlagHTTPProbeCmd              = "http-probe-cmd"
 	FlagHTTPProbeCmdFile          = "http-probe-cmd-file"
+	FlagHTTPProbeStartWait        = "http-probe-start-wait"
 	FlagHTTPProbeRetryCount       = "http-probe-retry-count"
 	FlagHTTPProbeRetryWait        = "http-probe-retry-wait"
 	FlagHTTPProbePorts            = "http-probe-ports"
@@ -110,6 +119,7 @@ const (
 	FlagCROShmSize        = "cro-shm-size"
 
 	//Original Container Runtime Options (without cro- prefix)
+	FlagUser               = "user"
 	FlagEntrypoint         = "entrypoint"
 	FlagCmd                = "cmd"
 	FlagWorkdir            = "workdir"
@@ -131,20 +141,28 @@ const (
 const (
 	FlagTargetUsage           = "Target container image (name or ID)"
 	FlagPullUsage             = "Try pulling target if it's not available locally"
-	FlagDockerConfigPathUsage = "Specify a custom path for a docker config to be used in pilling images from a private registry"
-	FlagRegistryAccountUsage  = "Target registry account used when pulling an image from a private registry"
-	FlagRegistrySecretUsage   = "Target registry secret used when pulling an image from a private registry"
+	FlagDockerConfigPathUsage = "Docker config path (used to fetch registry credentials)"
+	FlagRegistryAccountUsage  = "Target registry account used when pulling images from private registries"
+	FlagRegistrySecretUsage   = "Target registry secret used when pulling images from private registries"
 	FlagShowPullLogsUsage     = "Show image pull logs"
 
 	//Compose-related flags
-	FlagComposeFileUsage              = "Load container info from selected compose file"
-	FlagTargetComposeSvcUsage         = "Target service from compose file"
-	FlagComposeSvcNoPortsUsage        = "Do not publish ports for target service from compose file"
-	FlagDepExcludeComposeSvcAllUsage  = "Do not start any compose services as target dependencies"
-	FlagDepIncludeComposeSvcUsage     = "Include specific compose service as a target dependency (only selected services will be started)"
-	FlagDepExcludeComposeSvcUsage     = "Exclude specific service from the compose services that will be started as target dependencies"
-	FlagDepIncludeComposeSvcDepsUsage = "Include all dependencies for the selected compose service (excluding the service itself) as target dependencies"
-	FlagComposeNetUsage               = "Attach target to the selected compose network(s) otherwise all networks will be attached"
+	FlagComposeFileUsage                    = "Load container info from selected compose file(s)"
+	FlagTargetComposeSvcUsage               = "Target service from compose file"
+	FlagComposeSvcNoPortsUsage              = "Do not publish ports for target service from compose file"
+	FlagDepExcludeComposeSvcAllUsage        = "Do not start any compose services as target dependencies"
+	FlagDepIncludeComposeSvcUsage           = "Include specific compose service as a target dependency (only selected services will be started)"
+	FlagDepExcludeComposeSvcUsage           = "Exclude specific service from the compose services that will be started as target dependencies"
+	FlagDepIncludeComposeSvcDepsUsage       = "Include all dependencies for the selected compose service (excluding the service itself) as target dependencies"
+	FlagDepIncludeTargetComposeSvcDepsUsage = "Include all dependencies for the target compose service (excluding the service itself) as target dependencies"
+	FlagComposeNetUsage                     = "Attach target to the selected compose network(s) otherwise all networks will be attached"
+	FlagComposeEnvNoHostUsage               = "Don't include the env vars from the host to compose"
+	FlagComposeEnvFileUsage                 = "Load compose env vars from file (host env vars override the values loaded from this file)"
+	FlagComposeWorkdirUsage                 = "Set custom work directory for compose"
+	FlagComposeProjectNameUsage             = "Use custom project name for compose"
+	FlagPrestartComposeSvcUsage             = "Run selected compose service(s) before any other compose services or target container"
+	FlagPoststartComposeSvcUsage            = "Run selected compose service(s) after the target container is running (need a new continue after mode too)"
+	FlagPrestartComposeWaitExitUsage        = "Wait for selected prestart compose services to exit before starting other compose services or target container"
 
 	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
 	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
@@ -153,6 +171,7 @@ const (
 	FlagHTTPProbeOffUsage              = "Alternative way to disable HTTP probing"
 	FlagHTTPProbeCmdUsage              = "User defined HTTP probes"
 	FlagHTTPProbeCmdFileUsage          = "File with user defined HTTP probes"
+	FlagHTTPProbeStartWaitUsage        = "Number of seconds to wait before starting HTTP probing"
 	FlagHTTPProbeRetryCountUsage       = "Number of retries for each HTTP probe"
 	FlagHTTPProbeRetryWaitUsage        = "Number of seconds to wait before retrying HTTP probe (doubles when target is not ready)"
 	FlagHTTPProbePortsUsage            = "Explicit list of ports to probe (in the order you want them to be probed)"
@@ -189,6 +208,7 @@ const (
 	FlagCROSysctlUsage         = "Set namespaced kernel parameters in the created container"
 	FlagCROShmSizeUsage        = "Shared memory size for /dev/shm in the created container"
 
+	FlagUserUsage               = "Override USER analyzing image at runtime"
 	FlagEntrypointUsage         = "Override ENTRYPOINT analyzing image at runtime"
 	FlagCmdUsage                = "Override CMD analyzing image at runtime"
 	FlagWorkdirUsage            = "Override WORKDIR analyzing image at runtime"
@@ -313,9 +333,9 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:  FlagShowPullLogsUsage,
 		EnvVar: "DSLIM_PLOG",
 	},
-	FlagComposeFile: cli.StringFlag{
+	FlagComposeFile: cli.StringSliceFlag{
 		Name:   FlagComposeFile,
-		Value:  "",
+		Value:  &cli.StringSlice{},
 		Usage:  FlagComposeFileUsage,
 		EnvVar: "DSLIM_COMPOSE_FILE",
 	},
@@ -358,6 +378,51 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  FlagComposeNetUsage,
 		EnvVar: "DSLIM_COMPOSE_NET",
+	},
+	FlagDepIncludeTargetComposeSvcDeps: cli.BoolFlag{
+		Name:   FlagDepIncludeTargetComposeSvcDeps,
+		Usage:  FlagDepIncludeTargetComposeSvcDepsUsage,
+		EnvVar: "DSLIM_DEP_INCLUDE_TARGET_COMPOSE_SVC_DEPS",
+	},
+	FlagComposeEnvNoHost: cli.BoolFlag{
+		Name:   FlagComposeEnvNoHost,
+		Usage:  FlagComposeEnvNoHostUsage,
+		EnvVar: "DSLIM_COMPOSE_ENV_NOHOST",
+	},
+	FlagComposeEnvFile: cli.StringFlag{
+		Name:   FlagComposeEnvFile,
+		Value:  "",
+		Usage:  FlagComposeEnvFileUsage,
+		EnvVar: "DSLIM_COMPOSE_ENV_FILE",
+	},
+	FlagComposeProjectName: cli.StringFlag{
+		Name:   FlagComposeProjectName,
+		Value:  "",
+		Usage:  FlagComposeProjectNameUsage,
+		EnvVar: "DSLIM_COMPOSE_PROJECT_NAME",
+	},
+	FlagComposeWorkdir: cli.StringFlag{
+		Name:   FlagComposeWorkdir,
+		Value:  "",
+		Usage:  FlagComposeWorkdirUsage,
+		EnvVar: "DSLIM_COMPOSE_WORKDIR",
+	},
+	FlagPrestartComposeSvc: cli.StringSliceFlag{
+		Name:   FlagPrestartComposeSvc,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagPrestartComposeSvcUsage,
+		EnvVar: "DSLIM_PRESTART_COMPOSE_SVC",
+	},
+	FlagPrestartComposeWaitExit: cli.BoolFlag{
+		Name:   FlagPrestartComposeWaitExit,
+		Usage:  FlagPrestartComposeWaitExitUsage,
+		EnvVar: "DSLIM_PRESTART_COMPOSE_WAIT",
+	},
+	FlagPoststartComposeSvc: cli.StringSliceFlag{
+		Name:   FlagPoststartComposeSvc,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagPoststartComposeSvcUsage,
+		EnvVar: "DSLIM_POSTSTART_COMPOSE_SVC",
 	},
 	FlagRemoveFileArtifacts: cli.BoolFlag{
 		Name:   FlagRemoveFileArtifacts,
@@ -403,6 +468,12 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  &cli.StringSlice{},
 		Usage:  FlagHTTPProbeAPISpecFileUsage,
 		EnvVar: "DSLIM_HTTP_PROBE_API_SPEC_FILE",
+	},
+	FlagHTTPProbeStartWait: cli.IntFlag{
+		Name:   FlagHTTPProbeStartWait,
+		Value:  0,
+		Usage:  FlagHTTPProbeStartWaitUsage,
+		EnvVar: "DSLIM_HTTP_PROBE_START_WAIT",
 	},
 	FlagHTTPProbeRetryCount: cli.IntFlag{
 		Name:   FlagHTTPProbeRetryCount,
@@ -558,6 +629,12 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  -1,
 		Usage:  FlagCROShmSizeUsage,
 		EnvVar: "DSLIM_CRO_SHM_SIZE",
+	},
+	FlagUser: cli.StringFlag{
+		Name:   FlagUser,
+		Value:  "",
+		Usage:  FlagUserUsage,
+		EnvVar: "DSLIM_RC_USER",
 	},
 	FlagEntrypoint: cli.StringFlag{
 		Name:   FlagEntrypoint,

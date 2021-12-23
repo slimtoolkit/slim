@@ -9,6 +9,7 @@ require (
 	github.com/antchfx/htmlquery v1.2.3 // indirect
 	github.com/antchfx/xmlquery v1.2.4 // indirect
 	github.com/antchfx/xpath v1.1.8 // indirect
+	github.com/armon/go-radix v1.0.0
 	github.com/bmatcuk/doublestar v1.3.4
 	github.com/bmatcuk/doublestar/v3 v3.0.0
 	github.com/bradfitz/iter v0.0.0-20191230175014-e8f45d346db8 // indirect

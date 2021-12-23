@@ -79,8 +79,8 @@ const (
 
 	FlagPathPermsUsage        = "Set path permissions in optimized image"
 	FlagPathPermsFileUsage    = "File with path permissions to set"
-	FlagPreservePathUsage     = "Keep path from orignal image in its initial state"
-	FlagPreservePathFileUsage = "File with paths to keep from original image in their original state"
+	FlagPreservePathUsage     = "Keep path from orignal image in its initial state (changes to the selected container image files when it runs will be discarded)"
+	FlagPreservePathFileUsage = "File with paths to keep from original image in their original state (changes to the selected container image files when it runs will be discarded)"
 	FlagIncludePathUsage      = "Keep path from original image"
 	FlagIncludePathFileUsage  = "File with paths to keep from original image"
 	FlagIncludeBinUsage       = "Keep binary from original image (executable or shared object using its absolute path)"
@@ -271,6 +271,12 @@ var Flags = map[string]cli.Flag{
 		Usage:  FlagTagUsage,
 		EnvVar: "DSLIM_TARGET_TAG",
 	},
+	FlagImageOverrides: cli.StringFlag{
+		Name:   FlagImageOverrides,
+		Value:  "",
+		Usage:  FlagImageOverridesUsage,
+		EnvVar: "DSLIM_TARGET_OVERRIDES",
+	},
 	//Container Build Options
 	FlagBuildFromDockerfile: cli.StringFlag{
 		Name:   FlagBuildFromDockerfile,
@@ -330,6 +336,42 @@ var Flags = map[string]cli.Flag{
 		Name:   FlagDeleteFatImage,
 		Usage:  FlagDeleteFatImageUsage,
 		EnvVar: "DSLIM_DELETE_FAT",
+	},
+	FlagRemoveExpose: cli.StringSliceFlag{
+		Name:   FlagRemoveExpose,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagRemoveExposeUsage,
+		EnvVar: "DSLIM_RM_EXPOSE",
+	},
+	FlagRemoveEnv: cli.StringSliceFlag{
+		Name:   FlagRemoveEnv,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagRemoveEnvUsage,
+		EnvVar: "DSLIM_RM_ENV",
+	},
+	FlagRemoveLabel: cli.StringSliceFlag{
+		Name:   FlagRemoveLabel,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagRemoveLabelUsage,
+		EnvVar: "DSLIM_RM_LABEL",
+	},
+	FlagRemoveVolume: cli.StringSliceFlag{
+		Name:   FlagRemoveVolume,
+		Value:  &cli.StringSlice{},
+		Usage:  FlagRemoveVolumeUsage,
+		EnvVar: "DSLIM_RM_VOLUME",
+	},
+	FlagIncludeBinFile: cli.StringFlag{
+		Name:   FlagIncludeBinFile,
+		Value:  "",
+		Usage:  FlagIncludeBinFileUsage,
+		EnvVar: "DSLIM_INCLUDE_BIN_FILE",
+	},
+	FlagIncludeExeFile: cli.StringFlag{
+		Name:   FlagIncludeExeFile,
+		Value:  "",
+		Usage:  FlagIncludeExeFileUsage,
+		EnvVar: "DSLIM_INCLUDE_EXE_FILE",
 	},
 }
 

@@ -106,6 +106,7 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	labelsList := ctx.StringSlice(FlagLabel)
 
 	overrides := &config.ContainerOverrides{
+		User:     ctx.String(FlagUser),
 		Workdir:  ctx.String(FlagWorkdir),
 		Env:      ctx.StringSlice(FlagEnv),
 		Network:  ctx.String(FlagNetwork),

@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -16,9 +15,13 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
-
 	"syscall"
 
+	"github.com/armon/go-radix"
+	"github.com/bmatcuk/doublestar/v3"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/detectors/binfile"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/inspectors/sodeps"
 	"github.com/docker-slim/docker-slim/pkg/certdiscover"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
@@ -26,9 +29,6 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
-
-	"github.com/bmatcuk/doublestar/v3"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -217,6 +217,7 @@ type artifactStore struct {
 	resolve       map[string]struct{}
 	linkMap       map[string]*report.ArtifactProps
 	fileMap       map[string]*report.ArtifactProps
+	saFileMap     map[string]*report.ArtifactProps
 	cmd           *command.StartMonitor
 	appStacks     map[string]*appStackInfo
 }
@@ -237,6 +238,7 @@ func newArtifactStore(storeLocation string,
 		resolve:       map[string]struct{}{},
 		linkMap:       map[string]*report.ArtifactProps{},
 		fileMap:       map[string]*report.ArtifactProps{},
+		saFileMap:     map[string]*report.ArtifactProps{},
 		cmd:           cmd,
 		appStacks:     map[string]*appStackInfo{},
 	}
@@ -314,8 +316,37 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 		//		err, artifactFileName, linkRef)
 		//}
 
-		if _, ok := p.rawNames[linkRef]; !ok {
-			p.resolve[linkRef] = struct{}{}
+		//build absolute and evaluated symlink target paths
+		var absLinkRef string
+		if !filepath.IsAbs(linkRef) {
+			linkDir := filepath.Dir(artifactFileName)
+			fullLinkRef := filepath.Join(linkDir, linkRef)
+			absLinkRef, err = filepath.Abs(fullLinkRef)
+			if err != nil {
+				log.Warnf("prepareArtifact - error getting absolute path for symlink ref (%v) -> %v => %v", err, artifactFileName, fullLinkRef)
+			}
+		} else {
+			absLinkRef, err = filepath.Abs(linkRef)
+			if err != nil {
+				log.Warnf("prepareArtifact - error getting absolute path for symlink ref 2 (%v) -> %v => %v", err, artifactFileName, linkRef)
+			}
+		}
+
+		if absLinkRef != "" {
+			evalLinkRef, err := filepath.EvalSymlinks(absLinkRef)
+			if err != nil {
+				log.Warnf("prepareArtifact - error evaluating symlink (%v) -> %v => %v", err, artifactFileName, absLinkRef)
+			} else {
+				if evalLinkRef != absLinkRef {
+					if _, ok := p.rawNames[evalLinkRef]; !ok {
+						p.resolve[evalLinkRef] = struct{}{}
+					}
+				}
+			}
+
+			if _, ok := p.rawNames[absLinkRef]; !ok {
+				p.resolve[absLinkRef] = struct{}{}
+			}
 		}
 
 		p.linkMap[artifactFileName] = props
@@ -337,14 +368,204 @@ func (p *artifactStore) prepareArtifacts() {
 		p.prepareArtifact(artifactFileName)
 	}
 
+	for artifactFileName, fsaInfo := range p.ptMonReport.FSActivity {
+		artifactInfo, found := p.rawNames[artifactFileName]
+		if found {
+			artifactInfo.FSActivity = fsaInfo
+		} else {
+			log.Debugf("prepareArtifacts - fsa artifact => %v", artifactFileName)
+			p.prepareArtifact(artifactFileName)
+			artifactInfo, found := p.rawNames[artifactFileName]
+			if found {
+				artifactInfo.FSActivity = fsaInfo
+			} else {
+				log.Errorf("prepareArtifacts - fsa artifact - missing in rawNames => %v", artifactFileName)
+			}
+
+			//TMP:
+			//fsa might include directories, which we'll need to copy (dir only)
+			//but p.prepareArtifact() doesn't do anything with dirs for now
+		}
+	}
+
+	for artifactFileName := range p.fileMap {
+		//TODO: conditionally detect binary files and their deps
+		if isBin, _ := binfile.Detected(artifactFileName); !isBin {
+			continue
+		}
+
+		binArtifacts, err := sodeps.AllDependencies(artifactFileName)
+		if err != nil {
+			if err == sodeps.ErrDepResolverNotFound {
+				log.Debug("prepareArtifacts.binArtifacts[bsa] - no static bin dep resolver")
+			} else {
+				log.Warnf("prepareArtifacts.binArtifacts[bsa] - %v - error getting bin artifacts => %v\n", artifactFileName, err)
+			}
+			continue
+		}
+
+		for idx, bpath := range binArtifacts {
+			if artifactFileName == bpath {
+				continue
+			}
+
+			_, found := p.rawNames[bpath]
+			if found {
+				log.Debugf("prepareArtifacts.binArtifacts[bsa] - known file path (%s)", bpath)
+				continue
+			}
+
+			bpathFileInfo, err := os.Lstat(bpath)
+			if err != nil {
+				log.Warnf("prepareArtifacts.binArtifacts[bsa] - artifact doesn't exist: %v (%v)", bpath, os.IsNotExist(err))
+				continue
+			}
+
+			bprops := &report.ArtifactProps{
+				FilePath: bpath,
+				Mode:     bpathFileInfo.Mode(),
+				ModeText: bpathFileInfo.Mode().String(),
+				FileSize: bpathFileInfo.Size(),
+			}
+
+			bprops.Flags = p.getArtifactFlags(bpath)
+
+			fsType := "unknown"
+			switch {
+			case bpathFileInfo.Mode().IsRegular():
+				fsType = "file"
+				p.rawNames[bpath] = bprops
+				//use a separate file map, so we can save them last
+				//in case we are dealing with intemedate symlinks
+				//and to better track what bin deps are not covered by dynamic analysis
+				p.saFileMap[bpath] = bprops
+			case (bpathFileInfo.Mode() & os.ModeSymlink) != 0:
+				fsType = "symlink"
+				p.linkMap[bpath] = bprops
+				p.rawNames[bpath] = bprops
+			default:
+				fsType = "unexpected"
+				log.Warnf("prepareArtifacts.binArtifacts[bsa] - unexpected ft - %s", bpath)
+
+			}
+
+			log.Debugf("prepareArtifacts.binArtifacts[bsa] - bin artifact (%s) fsType=%s [%d]bdep=%s", artifactFileName, fsType, idx, bpath)
+		}
+	}
+
 	p.resolveLinks()
 }
 
 func (p *artifactStore) resolveLinks() {
+	//note:
+	//the links should be resolved in findSymlinks, but
+	//the current design needs to be improved to catch all symlinks
+	//this is a backup to catch the root level symlinks
+	files, err := ioutil.ReadDir("/")
+	if err != nil {
+		log.Debug("resolveLinks - ioutil.ReadDir error: ", err)
+		return
+	}
+
+	for _, file := range files {
+		fpath := fmt.Sprintf("/%s", file.Name())
+		log.Debugf("resolveLinks.files - fpath='%s'", fpath)
+
+		if fpath == "/proc" ||
+			fpath == "/sys" ||
+			fpath == "/dev" {
+			continue
+		}
+
+		fileInfo, err := os.Lstat(fpath)
+		if err != nil {
+			log.Debugf("resolveLinks.files - os.Lstat(%s) error: ", fpath, err)
+			continue
+		}
+
+		if fileInfo.Mode()&os.ModeSymlink == 0 {
+			log.Debug("resolveLinks.files - skipping non-symlink")
+			continue
+		}
+
+		linkRef, err := os.Readlink(fpath)
+		if err != nil {
+			log.Debugf("resolveLinks.files - os.Readlink(%s) error: ", fpath, err)
+			continue
+		}
+
+		var absLinkRef string
+		if !filepath.IsAbs(linkRef) {
+			linkDir := filepath.Dir(fpath)
+			log.Debugf("resolveLinks.files - relative linkRef %v -> %v +/+ %v", fpath, linkDir, linkRef)
+			fullLinkRef := filepath.Join(linkDir, linkRef)
+			var err error
+			absLinkRef, err = filepath.Abs(fullLinkRef)
+			if err != nil {
+				log.Warnf("resolveLinks.files - error getting absolute path for symlink ref (1) (%v) -> %v => %v", err, fpath, fullLinkRef)
+				continue
+			}
+		} else {
+			var err error
+			absLinkRef, err = filepath.Abs(linkRef)
+			if err != nil {
+				log.Warnf("resolveLinks.files - error getting absolute path for symlink ref (2) (%v) -> %v => %v", err, fpath, linkRef)
+				continue
+			}
+		}
+
+		//todo: skip "/proc/..." references
+		evalLinkRef, err := filepath.EvalSymlinks(absLinkRef)
+		if err != nil {
+			log.Warnf("resolveLinks.files - error evaluating symlink (%v) -> %v => %v", err, fpath, absLinkRef)
+		}
+
+		//detecting intermediate dir symlinks
+		symlinkPrefix := fmt.Sprintf("%s/", fpath)
+		absPrefix := fmt.Sprintf("%s/", absLinkRef)
+		evalPrefix := fmt.Sprintf("%s/", evalLinkRef)
+		for rawName := range p.rawNames {
+			if strings.HasPrefix(rawName, symlinkPrefix) {
+				if _, found := p.rawNames[fpath]; found {
+					log.Debugf("resolveLinks.files - rawNames - known symlink: name=%s target=%s", fpath, symlinkPrefix)
+				} else {
+					p.rawNames[fpath] = nil
+					log.Debugf("resolveLinks.files - added path symlink to p.rawNames (0) -> %v", fpath)
+					p.prepareArtifact(fpath)
+				}
+				break
+			}
+
+			if strings.HasPrefix(rawName, absPrefix) {
+				if _, found := p.rawNames[fpath]; found {
+					log.Debugf("resolveLinks.files - rawNames - known symlink: name=%s target=%s", fpath, absPrefix)
+				} else {
+					p.rawNames[fpath] = nil
+					log.Debugf("resolveLinks.files - added path symlink to p.rawNames (1) -> %v", fpath)
+					p.prepareArtifact(fpath)
+				}
+				break
+			}
+
+			if evalLinkRef != "" &&
+				absPrefix != evalPrefix &&
+				strings.HasPrefix(rawName, evalPrefix) {
+				if _, found := p.rawNames[fpath]; found {
+					log.Debugf("resolveLinks.files - rawNames - known symlink: name=%s target=%s", fpath, evalPrefix)
+				} else {
+					p.rawNames[fpath] = nil
+					log.Debugf("resolveLinks.files - added path symlink to p.rawNames (2) -> %v", fpath)
+					p.prepareArtifact(fpath)
+				}
+				break
+			}
+		}
+	}
+
+	//note: resolve these extra symlinks after the the root level symlinks
 	for name := range p.resolve {
-		_ = name
 		log.Debug("resolveLinks - resolving: ", name)
-		//TODO
+		p.prepareArtifact(name)
 	}
 }
 
@@ -620,10 +841,109 @@ func (p *artifactStore) saveArtifacts() {
 	//errutil.FailOn(err)
 
 	extraDirs := map[string]struct{}{}
+	symlinkFailed := map[string]*report.ArtifactProps{}
+
+	log.Debugf("saveArtifacts - copy links (%v)", len(p.linkMap))
+	//copyLinks:
+	//NOTE: MUST copy the links FIRST, so the dir symlinks get created before their files are copied
+	symlinkMap := radix.New()
+	for linkName, linkProps := range p.linkMap {
+		symlinkMap.Insert(linkName, linkProps)
+	}
+
+	symlinkWalk := func(linkName string, val interface{}) bool {
+		linkProps, ok := val.(*report.ArtifactProps)
+		if !ok {
+			log.Warnf("saveArtifacts.symlinkWalk: could not convert data - %s\n", linkName)
+			return false
+		}
+
+		for _, xpattern := range excludePatterns {
+			found, err := doublestar.Match(xpattern, linkName)
+			if err != nil {
+				log.Warnf("saveArtifacts.symlinkWalk - copy links - [%v] excludePatterns Match error - %v\n", linkName, err)
+				//should only happen when the pattern is malformed
+				return false
+			}
+			if found {
+				log.Debugf("saveArtifacts.symlinkWalk - copy links - [%v] - excluding (%s) ", linkName, xpattern)
+				return false
+			}
+		}
+
+		//TODO: review
+		linkPath := fmt.Sprintf("%s/files%s", p.storeLocation, linkName)
+		linkDir := fsutil.FileDir(linkPath)
+		//NOTE:
+		//The symlink target dir might not exist, which means
+		//the dir create calls that start with the current symlink prefix will fail.
+		//We'll save the failed links to try again
+		//later when the symlink target is already created.
+		//Another option is to create the symlink targets,
+		//but it might be tricky if the target is a symlink (potentially to another symlink, etc)
+
+		//log.Debugf("saveArtifacts.symlinkWalk - saving symlink - create subdir: linkName=%s linkDir=%s linkPath=%s", linkName, linkDir, linkPath)
+		err := os.MkdirAll(linkDir, 0777)
+		if err != nil {
+			log.Warnf("saveArtifacts.symlinkWalk - dir error (linkName=%s linkDir=%s linkPath=%s) => error=%v", linkName, linkDir, linkPath, err)
+			//save it and try again later
+			symlinkFailed[linkName] = linkProps
+			return false
+		}
+
+		if linkProps != nil &&
+			linkProps.FSActivity != nil &&
+			linkProps.FSActivity.OpsCheckFile > 0 {
+			log.Debug("saveArtifacts.symlinkWalk - saving 'checked' symlink => ", linkName)
+		}
+
+		//log.Debugf("saveArtifacts.symlinkWalk - saving symlink: name=%s target=%s", linkName, linkProps.LinkRef)
+		err = os.Symlink(linkProps.LinkRef, linkPath)
+		if err != nil {
+			if os.IsExist(err) {
+				log.Debug("saveArtifacts.symlinkWalk - symlink already exists")
+			} else {
+				log.Warn("saveArtifacts.symlinkWalk - symlink create error ==> ", err)
+			}
+		}
+
+		return false
+	}
+
+	symlinkMap.Walk(symlinkWalk)
+
+	for linkName, linkProps := range symlinkFailed {
+		linkPath := fmt.Sprintf("%s/files%s", p.storeLocation, linkName)
+		linkDir := fsutil.FileDir(linkPath)
+
+		//log.Debugf("saveArtifacts.symlinkFailed - saving symlink - create subdir: linkName=%s linkDir=%s linkPath=%s", linkName, linkDir, linkPath)
+		err := os.MkdirAll(linkDir, 0777)
+		if err != nil {
+			log.Warnf("saveArtifacts.symlinkFailed - dir error (linkName=%s linkDir=%s linkPath=%s) => error=%v", linkName, linkDir, linkPath, err)
+			continue
+		}
+
+		if linkProps != nil &&
+			linkProps.FSActivity != nil &&
+			linkProps.FSActivity.OpsCheckFile > 0 {
+			log.Debug("saveArtifacts.symlinkFailed - saving 'checked' symlink => ", linkName)
+		}
+
+		//log.Debugf("saveArtifacts.symlinkFailed - saving symlink: name=%s target=%s", linkName, linkProps.LinkRef)
+
+		err = os.Symlink(linkProps.LinkRef, linkPath)
+		if err != nil {
+			if os.IsExist(err) {
+				log.Debug("saveArtifacts.symlinkFailed - symlink already exists")
+			} else {
+				log.Warn("saveArtifacts.symlinkFailed - symlink create error ==> ", err)
+			}
+		}
+	}
 
 	log.Debugf("saveArtifacts - copy files (%v)", len(p.fileMap))
 copyFiles:
-	for srcFileName := range p.fileMap {
+	for srcFileName, artifactInfo := range p.fileMap {
 		for _, xpattern := range excludePatterns {
 			found, err := doublestar.Match(xpattern, srcFileName)
 			if err != nil {
@@ -652,43 +972,21 @@ copyFiles:
 
 		dstFilePath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFileName)
 		log.Debug("saveArtifacts - saving file data => ", dstFilePath)
-		//err := cpFile(fileName, filePath)
+
+		if artifactInfo != nil &&
+			artifactInfo.FSActivity != nil &&
+			artifactInfo.FSActivity.OpsCheckFile > 0 {
+			log.Debug("saveArtifacts - saving 'checked' file => ", srcFileName)
+			//NOTE: later have an option to save 'checked' only files without data
+		}
+
 		err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, dstFilePath, true)
 		if err != nil {
 			log.Warn("saveArtifacts - error saving file => ", err)
 		}
 	}
 
-	log.Debugf("saveArtifacts - copy links (%v)", len(p.linkMap))
-copyLinks:
-	for linkName, linkProps := range p.linkMap {
-		for _, xpattern := range excludePatterns {
-			found, err := doublestar.Match(xpattern, linkName)
-			if err != nil {
-				log.Warnf("saveArtifacts - copy links - [%v] excludePatterns Match error - %v\n", linkName, err)
-				//should only happen when the pattern is malformed
-				continue
-			}
-			if found {
-				log.Debugf("saveArtifacts - copy links - [%v] - excluding (%s) ", linkName, xpattern)
-				continue copyLinks
-			}
-		}
-
-		//TODO: review
-		linkPath := fmt.Sprintf("%s/files%s", p.storeLocation, linkName)
-		linkDir := fsutil.FileDir(linkPath)
-		err := os.MkdirAll(linkDir, 0777)
-		if err != nil {
-			log.Warn("saveArtifacts - dir error => ", err)
-			continue
-		}
-		err = os.Symlink(linkProps.LinkRef, linkPath)
-		if err != nil {
-			log.Warn("saveArtifacts - symlink create error ==> ", err)
-		}
-	}
-
+	//NOTE: need to copy the files after the links are copied
 	log.Debug("saveArtifacts - copy additional files checked at runtime....")
 	ngxEnsured := false
 	for fileName := range p.fileMap {
@@ -716,6 +1014,38 @@ copyLinks:
 			err := fixPy3CacheFile(fileName, filePath)
 			if err != nil {
 				log.Warn("saveArtifacts - error fixing py3 cache file => ", err)
+			}
+		}
+	}
+
+	log.Debugf("saveArtifacts[bsa] - copy files (%v)", len(p.saFileMap))
+copyBsaFiles:
+	for srcFileName := range p.saFileMap {
+		for _, xpattern := range excludePatterns {
+			found, err := doublestar.Match(xpattern, srcFileName)
+			if err != nil {
+				log.Warnf("saveArtifacts[bsa] - copy files - [%v] excludePatterns Match error - %v\n", srcFileName, err)
+				//should only happen when the pattern is malformed
+				continue
+			}
+			if found {
+				log.Debugf("saveArtifacts[bsa] - copy files - [%v] - excluding (%s) ", srcFileName, xpattern)
+				continue copyBsaFiles
+			}
+		}
+
+		dstFilePath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFileName)
+		log.Debug("saveArtifacts[bsa] - saving file data => ", dstFilePath)
+		if fsutil.Exists(dstFilePath) {
+			//we might already have the target file
+			//when we have intermediate symlinks in the path
+			log.Debugf("saveArtifacts[bsa] - target file already exists (%s)", dstFilePath)
+		} else {
+			err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, dstFilePath, true)
+			if err != nil {
+				log.Warn("saveArtifacts[bsa] - error saving file => ", err)
+			} else {
+				log.Debugf("saveArtifacts[bsa] - saved file (%s)", dstFilePath)
 			}
 		}
 	}
@@ -1120,10 +1450,14 @@ func (p *artifactStore) saveReport() {
 	reportFilePath := filepath.Join(p.storeLocation, reportName)
 	log.Debugf("sensor: monitor - saving report to '%s'", reportFilePath)
 
-	reportData, err := json.MarshalIndent(creport, "", "  ")
+	var reportData bytes.Buffer
+	encoder := json.NewEncoder(&reportData)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent("", "  ")
+	err = encoder.Encode(creport)
 	errutil.FailOn(err)
 
-	err = ioutil.WriteFile(reportFilePath, reportData, 0644)
+	err = ioutil.WriteFile(reportFilePath, reportData.Bytes(), 0644)
 	errutil.FailOn(err)
 }
 

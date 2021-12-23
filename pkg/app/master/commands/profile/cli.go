@@ -27,11 +27,26 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagRegistryAccount),
 		commands.Cflag(commands.FlagRegistrySecret),
 		commands.Cflag(commands.FlagShowPullLogs),
-		commands.Cflag(commands.FlagShowContainerLogs),
+		//Compose support
+		commands.Cflag(commands.FlagComposeFile),
+		commands.Cflag(commands.FlagTargetComposeSvc),
+		commands.Cflag(commands.FlagComposeSvcNoPorts),
+		commands.Cflag(commands.FlagDepExcludeComposeSvcAll),
+		commands.Cflag(commands.FlagDepIncludeComposeSvc),
+		commands.Cflag(commands.FlagDepExcludeComposeSvc),
+		commands.Cflag(commands.FlagDepIncludeComposeSvcDeps),
+		commands.Cflag(commands.FlagDepIncludeTargetComposeSvcDeps),
+		commands.Cflag(commands.FlagComposeNet),
+		commands.Cflag(commands.FlagComposeEnvNoHost),
+		commands.Cflag(commands.FlagComposeEnvFile),
+		commands.Cflag(commands.FlagComposeProjectName),
+		commands.Cflag(commands.FlagComposeWorkdir),
+		//http probes
 		commands.Cflag(commands.FlagHTTPProbeOff),
 		commands.Cflag(commands.FlagHTTPProbe),
 		commands.Cflag(commands.FlagHTTPProbeCmd),
 		commands.Cflag(commands.FlagHTTPProbeCmdFile),
+		commands.Cflag(commands.FlagHTTPProbeStartWait),
 		commands.Cflag(commands.FlagHTTPProbeRetryCount),
 		commands.Cflag(commands.FlagHTTPProbeRetryWait),
 		commands.Cflag(commands.FlagHTTPProbePorts),
@@ -50,14 +65,17 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagPublishExposedPorts),
 		//commands.Cflag(commands.FlagKeepPerms),
 		commands.Cflag(commands.FlagRunTargetAsUser),
+		commands.Cflag(commands.FlagShowContainerLogs),
 		commands.Cflag(commands.FlagCopyMetaArtifacts),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
+		commands.Cflag(commands.FlagExec),
+		commands.Cflag(commands.FlagExecFile),
 		//Container Run Options
 		commands.Cflag(commands.FlagCRORuntime),
 		commands.Cflag(commands.FlagCROHostConfigFile),
 		commands.Cflag(commands.FlagCROSysctl),
 		commands.Cflag(commands.FlagCROShmSize),
-		//
+		commands.Cflag(commands.FlagUser),
 		commands.Cflag(commands.FlagEntrypoint),
 		commands.Cflag(commands.FlagCmd),
 		commands.Cflag(commands.FlagWorkdir),
@@ -180,6 +198,7 @@ var CLI = cli.Command{
 			doHTTPProbe = true
 		}
 
+		httpProbeStartWait := ctx.Int(commands.FlagHTTPProbeStartWait)
 		httpProbeRetryCount := ctx.Int(commands.FlagHTTPProbeRetryCount)
 		httpProbeRetryWait := ctx.Int(commands.FlagHTTPProbeRetryWait)
 		httpProbePorts, err := commands.ParseHTTPProbesPorts(ctx.String(commands.FlagHTTPProbePorts))
@@ -351,6 +370,7 @@ var CLI = cli.Command{
 			crOpts,
 			doHTTPProbe,
 			httpProbeCmds,
+			httpProbeStartWait,
 			httpProbeRetryCount,
 			httpProbeRetryWait,
 			httpProbePorts,

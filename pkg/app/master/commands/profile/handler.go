@@ -50,6 +50,7 @@ func OnCommand(
 	crOpts *config.ContainerRunOptions,
 	doHTTPProbe bool,
 	httpProbeCmds []config.HTTPProbeCmd,
+	httpProbeStartWait int,
 	httpProbeRetryCount int,
 	httpProbeRetryWait int,
 	httpProbePorts []uint16,
@@ -73,7 +74,7 @@ func OnCommand(
 	etcHostsMaps []string,
 	dnsServers []string,
 	dnsSearchDomains []string,
-	volumeMounts map[string]config.VolumeMount,
+	explicitVolumeMounts map[string]config.VolumeMount,
 	//doKeepPerms bool,
 	//pathPerms map[string]*fsutil.AccessInfo,
 	excludePatterns map[string]*fsutil.AccessInfo,
@@ -217,6 +218,12 @@ func OnCommand(
 	xc.Out.State("image.inspection.done")
 	xc.Out.State("container.inspection.start")
 
+	//note:
+	//not pre-processing links for 'profile' yet
+	//need to copy the logic from 'build'
+	//(better yet refactor to share code)
+	hasClassicLinks := true //placeholder for now
+
 	containerInspector, err := container.NewInspector(
 		xc,
 		crOpts,
@@ -229,15 +236,18 @@ func OnCommand(
 		doUseSensorVolume,
 		false, //doKeepTmpArtifacts,
 		overrides,
+		explicitVolumeMounts,
+		nil, //baseMounts,
+		nil, //baseVolumesFrom,
 		portBindings,
 		doPublishExposedPorts,
+		hasClassicLinks,
 		links,
 		etcHostsMaps,
 		dnsServers,
 		dnsSearchDomains,
 		doRunTargetAsUser,
 		doShowContainerLogs,
-		volumeMounts,
 		false, //doKeepPerms,
 		nil,   //pathPerms,
 		excludePatterns,
@@ -252,7 +262,7 @@ func OnCommand(
 		false, //doIncludeCertPKAll
 		false, //doIncludeCertPKDirs
 		nil,   //selectedNetNames
-		nil,
+		//nil,
 		gparams.Debug,
 		gparams.InContainer,
 		true,
@@ -296,6 +306,7 @@ func OnCommand(
 			xc,
 			containerInspector,
 			httpProbeCmds,
+			httpProbeStartWait,
 			httpProbeRetryCount,
 			httpProbeRetryWait,
 			httpProbePorts,

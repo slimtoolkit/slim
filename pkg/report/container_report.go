@@ -94,21 +94,31 @@ type PtMonitorReport struct {
 	SyscallCount uint64                     `json:"syscall_count"`
 	SyscallNum   uint32                     `json:"syscall_num"`
 	SyscallStats map[string]SyscallStatInfo `json:"syscall_stats"`
+	FSActivity   map[string]*FSActivityInfo `json:"fs_activity"`
+}
+
+type FSActivityInfo struct {
+	OpsAll       uint64           `json:"ops_all"`
+	OpsCheckFile uint64           `json:"ops_checkfile"`
+	Syscalls     map[int]struct{} `json:"syscalls"`
+	Pids         map[int]struct{} `json:"pids"`
+	IsSubdir     bool             `json:"is_subdir"`
 }
 
 // ArtifactProps contains various file system artifact properties
 type ArtifactProps struct {
-	FileType  ArtifactType    `json:"-"` //todo
-	FilePath  string          `json:"file_path"`
-	Mode      os.FileMode     `json:"-"` //todo
-	ModeText  string          `json:"mode"`
-	LinkRef   string          `json:"link_ref,omitempty"`
-	Flags     map[string]bool `json:"flags,omitempty"`
-	DataType  string          `json:"data_type,omitempty"`
-	FileSize  int64           `json:"file_size"`
-	Sha1Hash  string          `json:"sha1_hash,omitempty"`
-	AppType   string          `json:"app_type,omitempty"`
-	FileInode uint64          `json:"-"` //todo
+	FileType   ArtifactType    `json:"-"` //todo
+	FilePath   string          `json:"file_path"`
+	Mode       os.FileMode     `json:"-"` //todo
+	ModeText   string          `json:"mode"`
+	LinkRef    string          `json:"link_ref,omitempty"`
+	Flags      map[string]bool `json:"flags,omitempty"`
+	DataType   string          `json:"data_type,omitempty"`
+	FileSize   int64           `json:"file_size"`
+	Sha1Hash   string          `json:"sha1_hash,omitempty"`
+	AppType    string          `json:"app_type,omitempty"`
+	FileInode  uint64          `json:"-"` //todo
+	FSActivity *FSActivityInfo `json:"-"`
 }
 
 // UnmarshalJSON decodes artifact property data
@@ -132,13 +142,19 @@ func (p *ArtifactProps) UnmarshalJSON(data []byte) error {
 // MarshalJSON encodes artifact property data
 func (p *ArtifactProps) MarshalJSON() ([]byte, error) {
 	type artifactPropsType ArtifactProps
-	return json.Marshal(&struct {
-		FileTypeStr string `json:"file_type"`
-		*artifactPropsType
-	}{
-		FileTypeStr:       p.FileType.String(),
-		artifactPropsType: (*artifactPropsType)(p),
-	})
+	var out bytes.Buffer
+	encoder := json.NewEncoder(&out)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(
+		&struct {
+			FileTypeStr string `json:"file_type"`
+			*artifactPropsType
+		}{
+			FileTypeStr:       p.FileType.String(),
+			artifactPropsType: (*artifactPropsType)(p),
+		})
+
+	return out.Bytes(), err
 }
 
 // ImageReport contains image report fields

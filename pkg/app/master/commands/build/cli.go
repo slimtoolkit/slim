@@ -30,6 +30,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagRegistryAccount),
 		commands.Cflag(commands.FlagRegistrySecret),
 		commands.Cflag(commands.FlagShowPullLogs),
+
 		commands.Cflag(commands.FlagComposeFile),
 		commands.Cflag(commands.FlagTargetComposeSvc),
 		commands.Cflag(commands.FlagComposeSvcNoPorts),
@@ -37,11 +38,18 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagDepIncludeComposeSvc),
 		commands.Cflag(commands.FlagDepExcludeComposeSvc),
 		commands.Cflag(commands.FlagDepIncludeComposeSvcDeps),
+		commands.Cflag(commands.FlagDepIncludeTargetComposeSvcDeps),
 		commands.Cflag(commands.FlagComposeNet),
+		commands.Cflag(commands.FlagComposeEnvNoHost),
+		commands.Cflag(commands.FlagComposeEnvFile),
+		commands.Cflag(commands.FlagComposeProjectName),
+		commands.Cflag(commands.FlagComposeWorkdir),
+
 		commands.Cflag(commands.FlagHTTPProbeOff),
 		commands.Cflag(commands.FlagHTTPProbe),
 		commands.Cflag(commands.FlagHTTPProbeCmd),
 		commands.Cflag(commands.FlagHTTPProbeCmdFile),
+		commands.Cflag(commands.FlagHTTPProbeStartWait),
 		commands.Cflag(commands.FlagHTTPProbeRetryCount),
 		commands.Cflag(commands.FlagHTTPProbeRetryWait),
 		commands.Cflag(commands.FlagHTTPProbePorts),
@@ -67,17 +75,13 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagExecFile),
 		//
 		cflag(FlagTag),
-		cli.StringFlag{
-			Name:   FlagImageOverrides,
-			Value:  "",
-			Usage:  FlagImageOverridesUsage,
-			EnvVar: "DSLIM_TARGET_OVERRIDES",
-		},
+		cflag(FlagImageOverrides),
 		//Container Run Options
 		commands.Cflag(commands.FlagCRORuntime),
 		commands.Cflag(commands.FlagCROHostConfigFile),
 		commands.Cflag(commands.FlagCROSysctl),
 		commands.Cflag(commands.FlagCROShmSize),
+		commands.Cflag(commands.FlagUser),
 		commands.Cflag(commands.FlagEntrypoint),
 		commands.Cflag(commands.FlagCmd),
 		commands.Cflag(commands.FlagWorkdir),
@@ -111,30 +115,10 @@ var CLI = cli.Command{
 		cflag(FlagNewEnv),
 		cflag(FlagNewVolume),
 		cflag(FlagNewLabel),
-		cli.StringSliceFlag{
-			Name:   FlagRemoveExpose,
-			Value:  &cli.StringSlice{},
-			Usage:  FlagRemoveExposeUsage,
-			EnvVar: "DSLIM_RM_EXPOSE",
-		},
-		cli.StringSliceFlag{
-			Name:   FlagRemoveEnv,
-			Value:  &cli.StringSlice{},
-			Usage:  FlagRemoveEnvUsage,
-			EnvVar: "DSLIM_RM_ENV",
-		},
-		cli.StringSliceFlag{
-			Name:   FlagRemoveLabel,
-			Value:  &cli.StringSlice{},
-			Usage:  FlagRemoveLabelUsage,
-			EnvVar: "DSLIM_RM_LABEL",
-		},
-		cli.StringSliceFlag{
-			Name:   FlagRemoveVolume,
-			Value:  &cli.StringSlice{},
-			Usage:  FlagRemoveVolumeUsage,
-			EnvVar: "DSLIM_RM_VOLUME",
-		},
+		cflag(FlagRemoveExpose),
+		cflag(FlagRemoveEnv),
+		cflag(FlagRemoveLabel),
+		cflag(FlagRemoveVolume),
 		commands.Cflag(commands.FlagExcludeMounts),
 		commands.Cflag(commands.FlagExcludePattern),
 		cflag(FlagPreservePath),
@@ -142,19 +126,9 @@ var CLI = cli.Command{
 		cflag(FlagIncludePath),
 		cflag(FlagIncludePathFile),
 		cflag(FlagIncludeBin),
-		cli.StringFlag{
-			Name:   FlagIncludeBinFile,
-			Value:  "",
-			Usage:  FlagIncludeBinFileUsage,
-			EnvVar: "DSLIM_INCLUDE_BIN_FILE",
-		},
+		cflag(FlagIncludeBinFile),
+		cflag(FlagIncludeExeFile),
 		cflag(FlagIncludeExe),
-		cli.StringFlag{
-			Name:   FlagIncludeExeFile,
-			Value:  "",
-			Usage:  FlagIncludeExeFileUsage,
-			EnvVar: "DSLIM_INCLUDE_EXE_FILE",
-		},
 		cflag(FlagIncludeShell),
 		cflag(FlagIncludeCertAll),
 		cflag(FlagIncludeCertBundles),
@@ -182,23 +156,40 @@ var CLI = cli.Command{
 			xc.Exit(-1)
 		}
 
-		composeFile := ctx.String(commands.FlagComposeFile)
+		deleteFatImage := ctx.Bool(commands.FlagDeleteFatImage)
+		if cbOpts.Dockerfile == "" {
+			deleteFatImage = false
+		}
+
+		composeFiles := ctx.StringSlice(commands.FlagComposeFile)
+
 		//todo: load/parse compose file and then use it to validate the related compose params
 		targetComposeSvc := ctx.String(commands.FlagTargetComposeSvc)
 		composeSvcNoPorts := ctx.Bool(commands.FlagComposeSvcNoPorts)
 		depExcludeComposeSvcAll := ctx.Bool(commands.FlagDepExcludeComposeSvcAll)
 		depIncludeComposeSvcDeps := ctx.String(commands.FlagDepIncludeComposeSvcDeps)
+		depIncludeTargetComposeSvcDeps := ctx.Bool(commands.FlagDepIncludeTargetComposeSvcDeps)
 		depIncludeComposeSvcs := ctx.StringSlice(commands.FlagDepIncludeComposeSvc)
 		depExcludeComposeSvcs := ctx.StringSlice(commands.FlagDepExcludeComposeSvc)
 		composeNets := ctx.StringSlice(commands.FlagComposeNet)
-		var targetRef string
-		deleteFatImage := ctx.Bool(commands.FlagDeleteFatImage)
 
-		if cbOpts.Dockerfile == "" {
-			deleteFatImage = false
+		composeEnvNoHost := ctx.Bool(commands.FlagComposeEnvNoHost)
+		composeEnvVars, err := commands.ParseEnvFile(ctx.String(commands.FlagComposeEnvFile))
+		if err != nil {
+			xc.Out.Error("param.error.compose.env.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
 		}
 
-		if composeFile != "" && targetComposeSvc != "" {
+		composeProjectName := ctx.String(commands.FlagComposeProjectName)
+		composeWorkdir := ctx.String(commands.FlagComposeWorkdir)
+
+		var targetRef string
+
+		if len(composeFiles) > 0 && targetComposeSvc != "" {
 			targetRef = targetComposeSvc
 		} else {
 			if cbOpts.Dockerfile == "" {
@@ -318,6 +309,7 @@ var CLI = cli.Command{
 			doHTTPProbe = true
 		}
 
+		httpProbeStartWait := ctx.Int(commands.FlagHTTPProbeStartWait)
 		httpProbeRetryCount := ctx.Int(commands.FlagHTTPProbeRetryCount)
 		httpProbeRetryWait := ctx.Int(commands.FlagHTTPProbeRetryWait)
 		httpProbePorts, err := commands.ParseHTTPProbesPorts(ctx.String(commands.FlagHTTPProbePorts))
@@ -610,19 +602,25 @@ var CLI = cli.Command{
 			registryAccount,
 			registrySecret,
 			doShowPullLogs,
-			composeFile,
+			composeFiles,
 			targetComposeSvc,
 			composeSvcNoPorts,
 			depExcludeComposeSvcAll,
 			depIncludeComposeSvcDeps,
+			depIncludeTargetComposeSvcDeps,
 			depIncludeComposeSvcs,
 			depExcludeComposeSvcs,
 			composeNets,
+			composeEnvVars,
+			composeEnvNoHost,
+			composeWorkdir,
+			composeProjectName,
 			cbOpts,
 			crOpts,
 			outputTags,
 			doHTTPProbe,
 			httpProbeCmds,
+			httpProbeStartWait,
 			httpProbeRetryCount,
 			httpProbeRetryWait,
 			httpProbePorts,
