@@ -15,6 +15,7 @@ import (
 	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/pkg/consts"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 )
 
@@ -434,7 +435,7 @@ func GenerateFromInfo(location string,
 	var dfData bytes.Buffer
 	dfData.WriteString("FROM scratch\n")
 
-	dsInfoLabel := fmt.Sprintf("LABEL docker-slim.version=\"%s\"\n", v.Current())
+	dsInfoLabel := fmt.Sprintf("LABEL %s=\"%s\"\n", consts.ContainerLabelName, v.Current())
 	dfData.WriteString(dsInfoLabel)
 
 	if len(labels) > 0 {

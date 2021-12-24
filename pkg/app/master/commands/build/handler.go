@@ -23,6 +23,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/pkg/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/command"
+	"github.com/docker-slim/docker-slim/pkg/consts"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
@@ -43,6 +44,7 @@ const (
 	ecbOther = iota + 1
 	ecbBadCustomImageTag
 	ecbImageBuildError
+	ecbImageAlreadyOptimized
 	ecbNoEntrypoint
 	ecbBadTargetComposeSvc
 	ecbComposeSvcNoImage
@@ -139,6 +141,18 @@ func OnCommand(
 	cmdReport.State = command.StateStarted
 	cmdReport.TargetReference = targetRef
 
+	cmdReportOnExit := func() {
+		cmdReport.State = command.StateError
+		if cmdReport.Save() {
+			xc.Out.Info("report",
+				ovars{
+					"file": cmdReport.ReportLocation(),
+				})
+		}
+	}
+
+	xc.AddCleanupHandler(cmdReportOnExit)
+
 	var customImageTag string
 	var additionalTags []string
 
@@ -169,6 +183,7 @@ func OnCommand(
 				"location":  fsutil.ExeDir(),
 			})
 
+		cmdReport.Error = "docker.connect.error"
 		xc.Exit(exitCode)
 	}
 	xc.FailOn(err)
@@ -244,6 +259,7 @@ func OnCommand(
 						"location":  fsutil.ExeDir(),
 					})
 
+				cmdReport.Error = "malformed.custom.image.tag"
 				xc.Exit(exitCode)
 			}
 		} else {
@@ -635,6 +651,29 @@ func OnCommand(
 			"size.human": humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
 		})
 
+	if imageInspector.ImageInfo.Config != nil &&
+		len(imageInspector.ImageInfo.Config.Labels) > 0 {
+		for labelName := range imageInspector.ImageInfo.Config.Labels {
+			if labelName == consts.ContainerLabelName {
+				xc.Out.Info("target.image.error",
+					ovars{
+						"status":  "image.already.optimized",
+						"image":   targetRef,
+						"message": "the target image is already optimized",
+					})
+
+				exitCode := commands.ECTBuild | ecbImageAlreadyOptimized
+				xc.Out.State("exited",
+					ovars{
+						"exit.code": exitCode,
+					})
+
+				cmdReport.Error = "image.already.optimized"
+				xc.Exit(exitCode)
+			}
+		}
+	}
+
 	logger.Info("processing 'fat' image info...")
 	err = imageInspector.ProcessCollectedData()
 	xc.FailOn(err)
@@ -891,6 +930,8 @@ func OnCommand(
 
 		exitCode := commands.ECTBuild | ecbNoEntrypoint
 		xc.Out.State("exited", ovars{"exit.code": exitCode})
+
+		cmdReport.Error = "no.entrypoint.cmd"
 		xc.Exit(exitCode)
 	}
 
@@ -966,6 +1007,7 @@ func OnCommand(
 					"exit.code": exitCode,
 				})
 
+			cmdReport.Error = "no.exposed.ports"
 			xc.Exit(exitCode)
 		}
 
@@ -1102,6 +1144,7 @@ func OnCommand(
 				"exit.code": exitCode,
 			})
 
+		cmdReport.Error = "exec.cmd.failure"
 		xc.Exit(exitCode)
 	}
 
@@ -1131,6 +1174,7 @@ func OnCommand(
 				"exit.code": exitCode,
 			})
 
+		cmdReport.Error = "no.data.collected"
 		xc.Exit(exitCode)
 	}
 
@@ -1187,6 +1231,7 @@ func OnCommand(
 				"location":  fsutil.ExeDir(),
 			})
 
+		cmdReport.Error = "optimized.image.build.error"
 		xc.Exit(exitCode)
 	}
 
@@ -1226,6 +1271,7 @@ func OnCommand(
 				"exit.code": exitCode,
 			})
 
+		cmdReport.Error = "minified.image.not.found"
 		xc.Exit(exitCode)
 	}
 
