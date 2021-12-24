@@ -6,6 +6,8 @@
 [![Youtube](https://img.shields.io/badge/-YouTube-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA?sub_confirmation=1)
 
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod&style=for-the-badge)](https://gitpod.io/#https://github.com/docker-slim/docker-slim)
+[![View Code Diagram badge for CodeSee](https://codesee-docs.s3.amazonaws.com/badge.svg)](https://app.codesee.io/maps/public/1cedd540-6451-11ec-a279-0572ca5abbdc)
+
 [![Install DockerSlim](https://img.shields.io/badge/install-docker--slim-blue?style=for-the-badge)](https://github.com/docker-slim/docker-slim#installation)
 [![Get Examples](https://img.shields.io/badge/docker--slim-app%20examples-green?style=for-the-badge)](https://github.com/docker-slim/examples)
 
@@ -14,6 +16,8 @@
 
 
 # Optimize Your Experience with Containers. Make Your Containers Better, Smaller, More Secure and Do Less to Get There (free and open source!)
+
+DockerSlim is a tool for developers that provides a set of commands (`build`, `xray`, `lint` and others) to simplify and optimize your developer experience with containers. It makes your containers betters, smaller and more secure.
 
 Don't change anything in your Docker container image and minify it by up to 30x making it secure too! Optimizing images isn't the only thing it can do though. It can also help you understand and author better container images.
 
