@@ -857,7 +857,9 @@ If you see `nginx: [emerg] mkdir() "/var/lib/nginx/body" failed` it means your n
 
 ### DockerSlim fails with a 'no permission to read from' error
 
-You can get around this problem by running DockerSlim from a root shell. That way it will have access to all exported files.
+This problem shouldn't happen anymore because the exported artifacts are saved in a tar file and the master app doesn't need to access the files directly anymore.
+
+If you run older versions of DockerSlim you can get around this problem by running DockerSlim from a root shell. That way it will have access to all exported files.
 
 DockerSlim copies the relevant image artifacts trying to preserve their permissions. If the permissions are too restrictive the master app might not have sufficient priviledge to access these files when it's building the new minified image.
 
@@ -902,6 +904,8 @@ Notes:
 If the project sounds interesting or if you found a bug see [`CONTRIBUTING.md`](https://github.com/docker-slim/docker-slim/blob/master/CONTRIBUTING.md) and submit a PR!
 
 ## DESIGN
+
+To learn more about the code take a look at this [interactive code diagram](https://app.codesee.io/maps/public/1cedd540-6451-11ec-a279-0572ca5abbdc) generated using [CodeSee](https://www.codesee.io) and watch the `DockerSlim Code` videos on ['YouTube'](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA?sub_confirmation=1).
 
 ### CORE CONCEPTS
 
