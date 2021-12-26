@@ -220,6 +220,7 @@ type artifactStore struct {
 	saFileMap     map[string]*report.ArtifactProps
 	cmd           *command.StartMonitor
 	appStacks     map[string]*appStackInfo
+	origPaths     map[string]interface{}
 }
 
 func newArtifactStore(storeLocation string,
@@ -241,6 +242,7 @@ func newArtifactStore(storeLocation string,
 		saFileMap:     map[string]*report.ArtifactProps{},
 		cmd:           cmd,
 		appStacks:     map[string]*appStackInfo{},
+		origPaths:     cmd.OrigPaths,
 	}
 
 	return store

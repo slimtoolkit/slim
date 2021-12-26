@@ -73,6 +73,7 @@ const (
 	FlagPrestartComposeSvc             = "prestart-compose-svc"
 	FlagPoststartComposeSvc            = "poststart-compose-svc"
 	FlagPrestartComposeWaitExit        = "prestart-compose-wait-exit"
+	FlagContainerProbeComposeSvc       = "container-probe-compose-svc"
 
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
@@ -159,6 +160,7 @@ const (
 	FlagComposeEnvNoHostUsage               = "Don't include the env vars from the host to compose"
 	FlagComposeEnvFileUsage                 = "Load compose env vars from file (host env vars override the values loaded from this file)"
 	FlagComposeWorkdirUsage                 = "Set custom work directory for compose"
+	FlagContainerProbeComposeSvcUsage       = "Set container probe to compose service"
 	FlagComposeProjectNameUsage             = "Use custom project name for compose"
 	FlagPrestartComposeSvcUsage             = "Run selected compose service(s) before any other compose services or target container"
 	FlagPoststartComposeSvcUsage            = "Run selected compose service(s) after the target container is running (need a new continue after mode too)"
@@ -197,7 +199,7 @@ const (
 	FlagExcludePatternUsage  = "Exclude path pattern (Glob/Match in Go and **) from image"
 	FlagUseLocalMountsUsage  = "Mount local paths for target container artifact input and output"
 	FlagUseSensorVolumeUsage = "Sensor volume name to use"
-	FlagContinueAfterUsage   = "Select continue mode: enter | signal | probe | timeout or numberInSeconds"
+	FlagContinueAfterUsage   = "Select continue mode: enter | signal | probe | timeout-number-in-seconds | container.probe"
 
 	FlagExecUsage     = "A shell script snippet to run via Docker exec"
 	FlagExecFileUsage = "A shell script file to run via Docker exec"
@@ -406,6 +408,12 @@ var CommonFlags = map[string]cli.Flag{
 		Value:  "",
 		Usage:  FlagComposeWorkdirUsage,
 		EnvVar: "DSLIM_COMPOSE_WORKDIR",
+	},
+	FlagContainerProbeComposeSvc: cli.StringFlag{
+		Name:   FlagContainerProbeComposeSvc,
+		Value:  "",
+		Usage:  FlagContainerProbeComposeSvcUsage,
+		EnvVar: "DSLIM_CONTAINER_PROBE_COMPOSE_SVC",
 	},
 	FlagPrestartComposeSvc: cli.StringSliceFlag{
 		Name:   FlagPrestartComposeSvc,

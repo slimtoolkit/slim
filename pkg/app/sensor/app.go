@@ -4,7 +4,10 @@ package app
 
 import (
 	"flag"
+	"io/fs"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/ipc"
@@ -33,6 +36,21 @@ func startMonitor(errorCh chan error,
 	ptmonStartChan chan int,
 	cmd *command.StartMonitor,
 	dirName string) bool {
+
+	cmd.OrigPaths = make(map[string]interface{})
+	err := filepath.WalkDir("/", func(pth string, d fs.DirEntry, err error) error {
+		if d.Type().IsRegular() && !strings.HasPrefix(pth, "/proc/") && !strings.HasPrefix(pth, "/sys/") {
+			pth, err := filepath.Abs(pth)
+			if err == nil {
+				cmd.OrigPaths[pth] = nil
+			}
+		}
+		return nil
+	})
+	if err != nil {
+	    panic(err)
+	}
+
 	log.Info("sensor: monitor starting...")
 	mountPoint := "/"
 
@@ -51,12 +69,11 @@ func startMonitor(errorCh chan error,
 
 	prepareEnv(defaultArtifactDirName, cmd)
 
-	fanReportChan := fanotify.Run(errorCh, mountPoint, stopMonitor) //data.AppName, data.AppArgs
+	fanReportChan := fanotify.Run(errorCh, mountPoint, stopMonitor, cmd.OrigPaths) //data.AppName, data.AppArgs
 	if fanReportChan == nil {
 		log.Info("sensor: startMonitor - FAN failed to start running...")
 		return false
 	}
-
 	ptReportChan := ptrace.Run(errorCh,
 		startAckChan,
 		ptmonStartChan,
@@ -65,7 +82,8 @@ func startMonitor(errorCh chan error,
 		cmd.AppArgs,
 		dirName,
 		cmd.AppUser,
-		cmd.RunTargetAsUser)
+		cmd.RunTargetAsUser,
+		cmd.OrigPaths)
 	if ptReportChan == nil {
 		log.Info("sensor: startMonitor - PTAN failed to start running...")
 		close(stopMonitor)

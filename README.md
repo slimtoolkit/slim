@@ -409,6 +409,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `compose-env-file` - Load compose env vars from file (host env vars override the values loaded from this file)
 - `compose-workdir` - Set custom work directory for compose
 - `compose-project-name` - Use custom project name for compose
+- `container-probe-compose-svc` - Set container probe to compose service
 - `prestart-compose-svc` - placeholder for now
 - `poststart-compose-svc` - placeholder for now
 - `--http-probe` - Enables/disables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`: `--http-probe=false`)
@@ -469,7 +470,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--container-dns` - Add a dns server analyzing image at runtime [can use this flag multiple times]
 - `--container-dns-search` - Add a dns search domain for unqualified hostnames analyzing image at runtime [can use this flag multiple times]
 - `--image-overrides` - Save runtime overrides in generated image (values is `all` or a comma delimited list of override types: `entrypoint`, `cmd`, `workdir`, `env`, `expose`, `volume`, `label`). Use this flag if you need to set a runtime value and you want to persist it in the optimized image. If you only want to add, edit or delete an image value in the optimized image use one of the `--new-*` or `--remove-*` flags (define below).
-- `--continue-after` - Select continue mode: `enter` | `signal` | `probe` | `exec` | `timeout` or numberInSeconds (default value if http probes are disabled: `enter`). You can also select `probe` and `exec` together: `'probe&exec'` (make sure to use quotes around the two modes or the `&` will break the shell command).
+- `--continue-after` - Select continue mode: `enter` | `signal` | `probe` | `exec` | `timeout-number-in-seconds` | `container.probe` (default value if http probes are disabled: `enter`). You can also select `probe` and `exec` together: `'probe&exec'` (make sure to use quotes around the two modes or the `&` will break the shell command).
 - `--dockerfile` - The source Dockerfile name to build the fat image before it's optimized.
 - `--tag-fat` - Custom tag for the fat image built from Dockerfile.
 - `--cbo-add-host` - Add an extra host-to-IP mapping in /etc/hosts to use when building an image (Container Build Option).
@@ -965,4 +966,3 @@ Apache License v2, see [LICENSE](https://github.com/docker-slim/docker-slim/blob
 ---
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/docker-slim/docker-slim)](https://goreportcard.com/report/github.com/docker-slim/docker-slim)
-

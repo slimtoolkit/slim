@@ -25,6 +25,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagComposeEnvFile), Description: commands.FlagComposeEnvFileUsage},
 		{Text: commands.FullFlagName(commands.FlagComposeProjectName), Description: commands.FlagComposeProjectNameUsage},
 		{Text: commands.FullFlagName(commands.FlagComposeWorkdir), Description: commands.FlagComposeWorkdirUsage},
+		{Text: commands.FullFlagName(commands.FlagContainerProbeComposeSvc), Description: commands.FlagContainerProbeComposeSvcUsage},
 		{Text: commands.FullFlagName(commands.FlagPull), Description: commands.FlagPullUsage},
 		{Text: commands.FullFlagName(commands.FlagShowPullLogs), Description: commands.FlagShowPullLogsUsage},
 		{Text: commands.FullFlagName(commands.FlagRegistryAccount), Description: commands.FlagRegistryAccountUsage},
