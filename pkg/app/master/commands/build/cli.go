@@ -10,7 +10,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 	Alias = "b"
 )
 
-var CLI = cli.Command{
+var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
@@ -198,7 +198,7 @@ var CLI = cli.Command{
 				targetRef = ctx.String(commands.FlagTarget)
 
 				if targetRef == "" {
-					if len(ctx.Args()) < 1 {
+					if ctx.Args().Len() < 1 {
 						xc.Out.Error("param.target", "missing image ID/name")
 						cli.ShowCommandHelp(ctx, Name)
 						return nil
@@ -209,7 +209,7 @@ var CLI = cli.Command{
 			} else {
 				targetRef = cbOpts.DockerfileContext
 				if targetRef == "" {
-					if len(ctx.Args()) < 1 {
+					if ctx.Args().Len() < 1 {
 						xc.Out.Error("param.target", "missing Dockerfile build context directory")
 						cli.ShowCommandHelp(ctx, Name)
 						return nil
@@ -502,7 +502,7 @@ var CLI = cli.Command{
 
 		doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
 
-		doExcludeMounts := ctx.BoolT(commands.FlagExcludeMounts)
+		doExcludeMounts := ctx.Bool(commands.FlagExcludeMounts)
 		if doExcludeMounts {
 			for mpath := range volumeMounts {
 				excludePatterns[mpath] = nil
@@ -603,7 +603,7 @@ var CLI = cli.Command{
 				})
 		}
 
-		commandReport := ctx.GlobalString(commands.FlagCommandReport)
+		commandReport := ctx.String(commands.FlagCommandReport)
 		if commandReport == "off" {
 			commandReport = ""
 		}
@@ -684,8 +684,8 @@ var CLI = cli.Command{
 			execCmd,
 			string(execFileCmd),
 			deleteFatImage,
-			ctx.GlobalString(commands.FlagLogLevel),
-			ctx.GlobalString(commands.FlagLogFormat))
+			ctx.String(commands.FlagLogLevel),
+			ctx.String(commands.FlagLogFormat))
 
 		return nil
 	},
