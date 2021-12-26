@@ -1,7 +1,7 @@
 package lint
 
 import (
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
@@ -13,7 +13,7 @@ const (
 	Alias = "l"
 )
 
-var CLI = cli.Command{
+var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
@@ -41,7 +41,7 @@ var CLI = cli.Command{
 		targetRef := ctx.String(commands.FlagTarget)
 		if !doListChecks {
 			if targetRef == "" {
-				if len(ctx.Args()) < 1 {
+				if ctx.Args().Len() < 1 {
 					xc.Out.Error("param.target", "missing target Dockerfile")
 					cli.ShowCommandHelp(ctx, Name)
 					return nil

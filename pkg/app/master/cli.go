@@ -27,7 +27,7 @@ import (
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // DockerSlim app CLI constants
@@ -73,18 +73,18 @@ func newCLI() *cli.App {
 	cliApp.Flags = commands.GlobalFlags()
 
 	cliApp.Before = func(ctx *cli.Context) error {
-		if ctx.GlobalBool(commands.FlagNoColor) {
+		if ctx.Bool(commands.FlagNoColor) {
 			app.NoColor()
 		}
 
-		if ctx.GlobalBool(commands.FlagDebug) {
+		if ctx.Bool(commands.FlagDebug) {
 			log.SetLevel(log.DebugLevel)
 		} else {
-			if ctx.GlobalBool(commands.FlagVerbose) {
+			if ctx.Bool(commands.FlagVerbose) {
 				log.SetLevel(log.InfoLevel)
 			} else {
 				logLevel := log.WarnLevel
-				logLevelName := ctx.GlobalString(commands.FlagLogLevel)
+				logLevelName := ctx.String(commands.FlagLogLevel)
 				switch logLevelName {
 				case "trace":
 					logLevel = log.TraceLevel
@@ -108,7 +108,7 @@ func newCLI() *cli.App {
 			}
 		}
 
-		if path := ctx.GlobalString(commands.FlagLog); path != "" {
+		if path := ctx.String(commands.FlagLog); path != "" {
 			f, err := os.Create(path)
 			if err != nil {
 				return err
@@ -116,7 +116,7 @@ func newCLI() *cli.App {
 			log.SetOutput(f)
 		}
 
-		logFormat := ctx.GlobalString(commands.FlagLogFormat)
+		logFormat := ctx.String(commands.FlagLogFormat)
 		switch logFormat {
 		case "text":
 			log.SetFormatter(&log.TextFormatter{DisableColors: true})

@@ -2,7 +2,7 @@ package commands
 
 import (
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 /////////////////////////////////////////////////////////
@@ -232,71 +232,74 @@ const (
 
 func GlobalFlags() []cli.Flag {
 	return []cli.Flag{
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  FlagCommandReport,
 			Value: "slim.report.json",
 			Usage: "command report location (enabled by default; set it to \"off\" to disable it)",
 		},
-		cli.BoolTFlag{
-			Name:   FlagCheckVersion,
-			Usage:  "check if the current version is outdated",
-			EnvVar: "DSLIM_CHECK_VERSION",
+		&cli.BoolFlag{
+			Name:    FlagCheckVersion,
+			Value:   true,
+			Usage:   "check if the current version is outdated",
+			EnvVars: []string{"DSLIM_CHECK_VERSION"},
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  FlagDebug,
 			Usage: FlagDebugUsage,
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  FlagVerbose,
 			Usage: "enable info logs",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  FlagLogLevel,
 			Value: "warn",
 			Usage: "set the logging level ('debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  FlagLog,
 			Usage: "log file to store logs",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  FlagLogFormat,
 			Value: "text",
 			Usage: "set the format used by logs ('text' (default), or 'json')",
 		},
-		cli.BoolTFlag{
+		&cli.BoolFlag{
 			Name:  FlagUseTLS,
+			Value: true,
 			Usage: "use TLS",
 		},
-		cli.BoolTFlag{
+		&cli.BoolFlag{
 			Name:  FlagVerifyTLS,
+			Value: true,
 			Usage: "verify TLS",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  FlagTLSCertPath,
 			Value: "",
 			Usage: "path to TLS cert files",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  FlagHost,
 			Value: "",
 			Usage: "Docker host address",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  FlagStatePath,
 			Value: "",
 			Usage: "DockerSlim state base path",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  FlagInContainer,
 			Usage: "DockerSlim is running in a container",
 		},
-		cli.StringFlag{
+		&cli.StringFlag{
 			Name:  FlagArchiveState,
 			Value: "",
 			Usage: "archive DockerSlim state to the selected Docker volume (default volume - docker-slim-state). By default, enabled when DockerSlim is running in a container (disabled otherwise). Set it to \"off\" to disable explicitly.",
 		},
-		cli.BoolFlag{
+		&cli.BoolFlag{
 			Name:  FlagNoColor,
 			Usage: FlagNoColorUsage,
 		},
@@ -304,434 +307,439 @@ func GlobalFlags() []cli.Flag {
 }
 
 var CommonFlags = map[string]cli.Flag{
-	FlagTarget: cli.StringFlag{
-		Name:   FlagTarget,
-		Value:  "",
-		Usage:  FlagTargetUsage,
-		EnvVar: "DSLIM_TARGET",
+	FlagTarget: &cli.StringFlag{
+		Name:    FlagTarget,
+		Value:   "",
+		Usage:   FlagTargetUsage,
+		EnvVars: []string{"DSLIM_TARGET"},
 	},
-	FlagPull: cli.BoolFlag{
-		Name:   FlagPull,
-		Usage:  FlagPullUsage,
-		EnvVar: "DSLIM_PULL",
+	FlagPull: &cli.BoolFlag{
+		Name:    FlagPull,
+		Usage:   FlagPullUsage,
+		EnvVars: []string{"DSLIM_PULL"},
 	},
-	FlagDockerConfigPath: cli.StringFlag{
-		Name:   FlagDockerConfigPath,
-		Usage:  FlagDockerConfigPathUsage,
-		EnvVar: "DSLIM_DOCKER_CONFIG_PATH",
+	FlagDockerConfigPath: &cli.StringFlag{
+		Name:    FlagDockerConfigPath,
+		Usage:   FlagDockerConfigPathUsage,
+		EnvVars: []string{"DSLIM_DOCKER_CONFIG_PATH"},
 	},
-	FlagRegistryAccount: cli.StringFlag{
-		Name:   FlagRegistryAccount,
-		Usage:  FlagRegistryAccountUsage,
-		EnvVar: "DSLIM_REGISTRY_ACCOUNT",
+	FlagRegistryAccount: &cli.StringFlag{
+		Name:    FlagRegistryAccount,
+		Usage:   FlagRegistryAccountUsage,
+		EnvVars: []string{"DSLIM_REGISTRY_ACCOUNT"},
 	},
-	FlagRegistrySecret: cli.StringFlag{
-		Name:   FlagRegistrySecret,
-		Usage:  FlagRegistrySecretUsage,
-		EnvVar: "DSLIM_REGISTRY_SECRET",
+	FlagRegistrySecret: &cli.StringFlag{
+		Name:    FlagRegistrySecret,
+		Usage:   FlagRegistrySecretUsage,
+		EnvVars: []string{"DSLIM_REGISTRY_SECRET"},
 	},
-	FlagShowPullLogs: cli.BoolFlag{
-		Name:   FlagShowPullLogs,
-		Usage:  FlagShowPullLogsUsage,
-		EnvVar: "DSLIM_PLOG",
+	FlagShowPullLogs: &cli.BoolFlag{
+		Name:    FlagShowPullLogs,
+		Usage:   FlagShowPullLogsUsage,
+		EnvVars: []string{"DSLIM_PLOG"},
 	},
-	FlagComposeFile: cli.StringSliceFlag{
-		Name:   FlagComposeFile,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagComposeFileUsage,
-		EnvVar: "DSLIM_COMPOSE_FILE",
+	FlagComposeFile: &cli.StringSliceFlag{
+		Name:    FlagComposeFile,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagComposeFileUsage,
+		EnvVars: []string{"DSLIM_COMPOSE_FILE"},
 	},
-	FlagTargetComposeSvc: cli.StringFlag{
-		Name:   FlagTargetComposeSvc,
-		Value:  "",
-		Usage:  FlagTargetComposeSvcUsage,
-		EnvVar: "DSLIM_TARGET_COMPOSE_SVC",
+	FlagTargetComposeSvc: &cli.StringFlag{
+		Name:    FlagTargetComposeSvc,
+		Value:   "",
+		Usage:   FlagTargetComposeSvcUsage,
+		EnvVars: []string{"DSLIM_TARGET_COMPOSE_SVC"},
 	},
-	FlagComposeSvcNoPorts: cli.BoolFlag{
-		Name:   FlagComposeSvcNoPorts,
-		Usage:  FlagComposeSvcNoPortsUsage,
-		EnvVar: "DSLIM_COMPOSE_SVC_NO_PORTS",
+	FlagComposeSvcNoPorts: &cli.BoolFlag{
+		Name:    FlagComposeSvcNoPorts,
+		Usage:   FlagComposeSvcNoPortsUsage,
+		EnvVars: []string{"DSLIM_COMPOSE_SVC_NO_PORTS"},
 	},
-	FlagDepExcludeComposeSvcAll: cli.BoolFlag{
-		Name:   FlagDepExcludeComposeSvcAll,
-		Usage:  FlagDepExcludeComposeSvcAllUsage,
-		EnvVar: "DSLIM_DEP_INCLUDE_COMPOSE_SVC_ALL",
+	FlagDepExcludeComposeSvcAll: &cli.BoolFlag{
+		Name:    FlagDepExcludeComposeSvcAll,
+		Usage:   FlagDepExcludeComposeSvcAllUsage,
+		EnvVars: []string{"DSLIM_DEP_INCLUDE_COMPOSE_SVC_ALL"},
 	},
-	FlagDepIncludeComposeSvcDeps: cli.StringFlag{
-		Name:   FlagDepIncludeComposeSvcDeps,
-		Value:  "",
-		Usage:  FlagDepIncludeComposeSvcDepsUsage,
-		EnvVar: "DSLIM_DEP_INCLUDE_COMPOSE_SVC_DEPS",
+	FlagDepIncludeComposeSvcDeps: &cli.StringFlag{
+		Name:    FlagDepIncludeComposeSvcDeps,
+		Value:   "",
+		Usage:   FlagDepIncludeComposeSvcDepsUsage,
+		EnvVars: []string{"DSLIM_DEP_INCLUDE_COMPOSE_SVC_DEPS"},
 	},
-	FlagDepIncludeComposeSvc: cli.StringSliceFlag{
-		Name:   FlagDepIncludeComposeSvc,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagDepIncludeComposeSvcUsage,
-		EnvVar: "DSLIM_DEP_INCLUDE_COMPOSE_SVC",
+	FlagDepIncludeComposeSvc: &cli.StringSliceFlag{
+		Name:    FlagDepIncludeComposeSvc,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagDepIncludeComposeSvcUsage,
+		EnvVars: []string{"DSLIM_DEP_INCLUDE_COMPOSE_SVC"},
 	},
-	FlagDepExcludeComposeSvc: cli.StringSliceFlag{
-		Name:   FlagDepExcludeComposeSvc,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagDepExcludeComposeSvcUsage,
-		EnvVar: "DSLIM_DEP_EXCLUDE_COMPOSE_SVC",
+	FlagDepExcludeComposeSvc: &cli.StringSliceFlag{
+		Name:    FlagDepExcludeComposeSvc,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagDepExcludeComposeSvcUsage,
+		EnvVars: []string{"DSLIM_DEP_EXCLUDE_COMPOSE_SVC"},
 	},
-	FlagComposeNet: cli.StringSliceFlag{
-		Name:   FlagComposeNet,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagComposeNetUsage,
-		EnvVar: "DSLIM_COMPOSE_NET",
+	FlagComposeNet: &cli.StringSliceFlag{
+		Name:    FlagComposeNet,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagComposeNetUsage,
+		EnvVars: []string{"DSLIM_COMPOSE_NET"},
 	},
-	FlagDepIncludeTargetComposeSvcDeps: cli.BoolFlag{
-		Name:   FlagDepIncludeTargetComposeSvcDeps,
-		Usage:  FlagDepIncludeTargetComposeSvcDepsUsage,
-		EnvVar: "DSLIM_DEP_INCLUDE_TARGET_COMPOSE_SVC_DEPS",
+	FlagDepIncludeTargetComposeSvcDeps: &cli.BoolFlag{
+		Name:    FlagDepIncludeTargetComposeSvcDeps,
+		Usage:   FlagDepIncludeTargetComposeSvcDepsUsage,
+		EnvVars: []string{"DSLIM_DEP_INCLUDE_TARGET_COMPOSE_SVC_DEPS"},
 	},
-	FlagComposeEnvNoHost: cli.BoolFlag{
-		Name:   FlagComposeEnvNoHost,
-		Usage:  FlagComposeEnvNoHostUsage,
-		EnvVar: "DSLIM_COMPOSE_ENV_NOHOST",
+	FlagComposeEnvNoHost: &cli.BoolFlag{
+		Name:    FlagComposeEnvNoHost,
+		Usage:   FlagComposeEnvNoHostUsage,
+		EnvVars: []string{"DSLIM_COMPOSE_ENV_NOHOST"},
 	},
-	FlagComposeEnvFile: cli.StringFlag{
-		Name:   FlagComposeEnvFile,
-		Value:  "",
-		Usage:  FlagComposeEnvFileUsage,
-		EnvVar: "DSLIM_COMPOSE_ENV_FILE",
+	FlagComposeEnvFile: &cli.StringFlag{
+		Name:    FlagComposeEnvFile,
+		Value:   "",
+		Usage:   FlagComposeEnvFileUsage,
+		EnvVars: []string{"DSLIM_COMPOSE_ENV_FILE"},
 	},
-	FlagComposeProjectName: cli.StringFlag{
-		Name:   FlagComposeProjectName,
-		Value:  "",
-		Usage:  FlagComposeProjectNameUsage,
-		EnvVar: "DSLIM_COMPOSE_PROJECT_NAME",
+	FlagComposeProjectName: &cli.StringFlag{
+		Name:    FlagComposeProjectName,
+		Value:   "",
+		Usage:   FlagComposeProjectNameUsage,
+		EnvVars: []string{"DSLIM_COMPOSE_PROJECT_NAME"},
 	},
-	FlagComposeWorkdir: cli.StringFlag{
-		Name:   FlagComposeWorkdir,
-		Value:  "",
-		Usage:  FlagComposeWorkdirUsage,
-		EnvVar: "DSLIM_COMPOSE_WORKDIR",
+	FlagComposeWorkdir: &cli.StringFlag{
+		Name:    FlagComposeWorkdir,
+		Value:   "",
+		Usage:   FlagComposeWorkdirUsage,
+		EnvVars: []string{"DSLIM_COMPOSE_WORKDIR"},
 	},
-	FlagContainerProbeComposeSvc: cli.StringFlag{
-		Name:   FlagContainerProbeComposeSvc,
-		Value:  "",
-		Usage:  FlagContainerProbeComposeSvcUsage,
-		EnvVar: "DSLIM_CONTAINER_PROBE_COMPOSE_SVC",
+	FlagContainerProbeComposeSvc: &cli.StringFlag{
+		Name:    FlagContainerProbeComposeSvc,
+		Value:   "",
+		Usage:   FlagContainerProbeComposeSvcUsage,
+		EnvVars: []string{"DSLIM_CONTAINER_PROBE_COMPOSE_SVC"},
 	},
-	FlagPrestartComposeSvc: cli.StringSliceFlag{
-		Name:   FlagPrestartComposeSvc,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagPrestartComposeSvcUsage,
-		EnvVar: "DSLIM_PRESTART_COMPOSE_SVC",
+	FlagPrestartComposeSvc: &cli.StringSliceFlag{
+		Name:    FlagPrestartComposeSvc,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagPrestartComposeSvcUsage,
+		EnvVars: []string{"DSLIM_PRESTART_COMPOSE_SVC"},
 	},
-	FlagPrestartComposeWaitExit: cli.BoolFlag{
-		Name:   FlagPrestartComposeWaitExit,
-		Usage:  FlagPrestartComposeWaitExitUsage,
-		EnvVar: "DSLIM_PRESTART_COMPOSE_WAIT",
+	FlagPrestartComposeWaitExit: &cli.BoolFlag{
+		Name:    FlagPrestartComposeWaitExit,
+		Usage:   FlagPrestartComposeWaitExitUsage,
+		EnvVars: []string{"DSLIM_PRESTART_COMPOSE_WAIT"},
 	},
-	FlagPoststartComposeSvc: cli.StringSliceFlag{
-		Name:   FlagPoststartComposeSvc,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagPoststartComposeSvcUsage,
-		EnvVar: "DSLIM_POSTSTART_COMPOSE_SVC",
+	FlagPoststartComposeSvc: &cli.StringSliceFlag{
+		Name:    FlagPoststartComposeSvc,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagPoststartComposeSvcUsage,
+		EnvVars: []string{"DSLIM_POSTSTART_COMPOSE_SVC"},
 	},
-	FlagRemoveFileArtifacts: cli.BoolFlag{
-		Name:   FlagRemoveFileArtifacts,
-		Usage:  FlagRemoveFileArtifactsUsage,
-		EnvVar: "DSLIM_RM_FILE_ARTIFACTS",
+	FlagRemoveFileArtifacts: &cli.BoolFlag{
+		Name:    FlagRemoveFileArtifacts,
+		Usage:   FlagRemoveFileArtifactsUsage,
+		EnvVars: []string{"DSLIM_RM_FILE_ARTIFACTS"},
 	},
-	FlagCopyMetaArtifacts: cli.StringFlag{
-		Name:   FlagCopyMetaArtifacts,
-		Usage:  FlagCopyMetaArtifactsUsage,
-		EnvVar: "DSLIM_CP_META_ARTIFACTS",
+	FlagCopyMetaArtifacts: &cli.StringFlag{
+		Name:    FlagCopyMetaArtifacts,
+		Usage:   FlagCopyMetaArtifactsUsage,
+		EnvVars: []string{"DSLIM_CP_META_ARTIFACTS"},
 	},
 	//
-	FlagHTTPProbe: cli.BoolTFlag{ //true by default
-		Name:   FlagHTTPProbe,
-		Usage:  FlagHTTPProbeUsage,
-		EnvVar: "DSLIM_HTTP_PROBE",
+	FlagHTTPProbe: &cli.BoolFlag{ //true by default
+		Name:    FlagHTTPProbe,
+		Value:   true,
+		Usage:   FlagHTTPProbeUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE"},
 	},
-	FlagHTTPProbeOff: cli.BoolFlag{
-		Name:   FlagHTTPProbeOff,
-		Usage:  FlagHTTPProbeOffUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_OFF",
+	FlagHTTPProbeOff: &cli.BoolFlag{
+		Name:    FlagHTTPProbeOff,
+		Usage:   FlagHTTPProbeOffUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_OFF"},
 	},
-	FlagHTTPProbeCmd: cli.StringSliceFlag{
-		Name:   FlagHTTPProbeCmd,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagHTTPProbeCmdUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_CMD",
+	FlagHTTPProbeCmd: &cli.StringSliceFlag{
+		Name:    FlagHTTPProbeCmd,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagHTTPProbeCmdUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_CMD"},
 	},
-	FlagHTTPProbeCmdFile: cli.StringFlag{
-		Name:   FlagHTTPProbeCmdFile,
-		Value:  "",
-		Usage:  FlagHTTPProbeCmdFileUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_CMD_FILE",
+	FlagHTTPProbeCmdFile: &cli.StringFlag{
+		Name:    FlagHTTPProbeCmdFile,
+		Value:   "",
+		Usage:   FlagHTTPProbeCmdFileUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_CMD_FILE"},
 	},
-	FlagHTTPProbeAPISpec: cli.StringSliceFlag{
-		Name:   FlagHTTPProbeAPISpec,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagHTTPProbeAPISpecUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_API_SPEC",
+	FlagHTTPProbeAPISpec: &cli.StringSliceFlag{
+		Name:    FlagHTTPProbeAPISpec,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagHTTPProbeAPISpecUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_API_SPEC"},
 	},
-	FlagHTTPProbeAPISpecFile: cli.StringSliceFlag{
-		Name:   FlagHTTPProbeAPISpecFile,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagHTTPProbeAPISpecFileUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_API_SPEC_FILE",
+	FlagHTTPProbeAPISpecFile: &cli.StringSliceFlag{
+		Name:    FlagHTTPProbeAPISpecFile,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagHTTPProbeAPISpecFileUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_API_SPEC_FILE"},
 	},
-	FlagHTTPProbeStartWait: cli.IntFlag{
-		Name:   FlagHTTPProbeStartWait,
-		Value:  0,
-		Usage:  FlagHTTPProbeStartWaitUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_START_WAIT",
+	FlagHTTPProbeStartWait: &cli.IntFlag{
+		Name:    FlagHTTPProbeStartWait,
+		Value:   0,
+		Usage:   FlagHTTPProbeStartWaitUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_START_WAIT"},
 	},
-	FlagHTTPProbeRetryCount: cli.IntFlag{
-		Name:   FlagHTTPProbeRetryCount,
-		Value:  5,
-		Usage:  FlagHTTPProbeRetryCountUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_RETRY_COUNT",
+	FlagHTTPProbeRetryCount: &cli.IntFlag{
+		Name:    FlagHTTPProbeRetryCount,
+		Value:   5,
+		Usage:   FlagHTTPProbeRetryCountUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_RETRY_COUNT"},
 	},
-	FlagHTTPProbeRetryWait: cli.IntFlag{
-		Name:   FlagHTTPProbeRetryWait,
-		Value:  8,
-		Usage:  FlagHTTPProbeRetryWaitUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_RETRY_WAIT",
+	FlagHTTPProbeRetryWait: &cli.IntFlag{
+		Name:    FlagHTTPProbeRetryWait,
+		Value:   8,
+		Usage:   FlagHTTPProbeRetryWaitUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_RETRY_WAIT"},
 	},
-	FlagHTTPProbePorts: cli.StringFlag{
-		Name:   FlagHTTPProbePorts,
-		Value:  "",
-		Usage:  FlagHTTPProbePortsUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_PORTS",
+	FlagHTTPProbePorts: &cli.StringFlag{
+		Name:    FlagHTTPProbePorts,
+		Value:   "",
+		Usage:   FlagHTTPProbePortsUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_PORTS"},
 	},
-	FlagHTTPProbeFull: cli.BoolFlag{
-		Name:   FlagHTTPProbeFull,
-		Usage:  FlagHTTPProbeFullUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_FULL",
+	FlagHTTPProbeFull: &cli.BoolFlag{
+		Name:    FlagHTTPProbeFull,
+		Usage:   FlagHTTPProbeFullUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_FULL"},
 	},
-	FlagHTTPProbeExitOnFailure: cli.BoolTFlag{ //true by default now
-		Name:   FlagHTTPProbeExitOnFailure,
-		Usage:  FlagHTTPProbeExitOnFailureUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_EXIT_ON_FAILURE",
+	FlagHTTPProbeExitOnFailure: &cli.BoolFlag{ //true by default now
+		Name:    FlagHTTPProbeExitOnFailure,
+		Value:   true,
+		Usage:   FlagHTTPProbeExitOnFailureUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_EXIT_ON_FAILURE"},
 	},
-	FlagHTTPProbeCrawl: cli.BoolTFlag{
-		Name:   FlagHTTPProbeCrawl,
-		Usage:  FlagHTTPProbeCrawl,
-		EnvVar: "DSLIM_HTTP_PROBE_CRAWL",
+	FlagHTTPProbeCrawl: &cli.BoolFlag{
+		Name:    FlagHTTPProbeCrawl,
+		Value:   true,
+		Usage:   FlagHTTPProbeCrawl,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_CRAWL"},
 	},
-	FlagHTTPCrawlMaxDepth: cli.IntFlag{
-		Name:   FlagHTTPCrawlMaxDepth,
-		Value:  3,
-		Usage:  FlagHTTPCrawlMaxDepthUsage,
-		EnvVar: "DSLIM_HTTP_CRAWL_MAX_DEPTH",
+	FlagHTTPCrawlMaxDepth: &cli.IntFlag{
+		Name:    FlagHTTPCrawlMaxDepth,
+		Value:   3,
+		Usage:   FlagHTTPCrawlMaxDepthUsage,
+		EnvVars: []string{"DSLIM_HTTP_CRAWL_MAX_DEPTH"},
 	},
-	FlagHTTPCrawlMaxPageCount: cli.IntFlag{
-		Name:   FlagHTTPCrawlMaxPageCount,
-		Value:  1000,
-		Usage:  FlagHTTPCrawlMaxPageCountUsage,
-		EnvVar: "DSLIM_HTTP_CRAWL_MAX_PAGE_COUNT",
+	FlagHTTPCrawlMaxPageCount: &cli.IntFlag{
+		Name:    FlagHTTPCrawlMaxPageCount,
+		Value:   1000,
+		Usage:   FlagHTTPCrawlMaxPageCountUsage,
+		EnvVars: []string{"DSLIM_HTTP_CRAWL_MAX_PAGE_COUNT"},
 	},
-	FlagHTTPCrawlConcurrency: cli.IntFlag{
-		Name:   FlagHTTPCrawlConcurrency,
-		Value:  10,
-		Usage:  FlagHTTPCrawlConcurrencyUsage,
-		EnvVar: "DSLIM_HTTP_CRAWL_CONCURRENCY",
+	FlagHTTPCrawlConcurrency: &cli.IntFlag{
+		Name:    FlagHTTPCrawlConcurrency,
+		Value:   10,
+		Usage:   FlagHTTPCrawlConcurrencyUsage,
+		EnvVars: []string{"DSLIM_HTTP_CRAWL_CONCURRENCY"},
 	},
-	FlagHTTPMaxConcurrentCrawlers: cli.IntFlag{
-		Name:   FlagHTTPMaxConcurrentCrawlers,
-		Value:  1,
-		Usage:  FlagHTTPMaxConcurrentCrawlersUsage,
-		EnvVar: "DSLIM_HTTP_MAX_CONCURRENT_CRAWLERS",
+	FlagHTTPMaxConcurrentCrawlers: &cli.IntFlag{
+		Name:    FlagHTTPMaxConcurrentCrawlers,
+		Value:   1,
+		Usage:   FlagHTTPMaxConcurrentCrawlersUsage,
+		EnvVars: []string{"DSLIM_HTTP_MAX_CONCURRENT_CRAWLERS"},
 	},
-	FlagHTTPProbeExec: cli.StringSliceFlag{
-		Name:   FlagHTTPProbeExec,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagHTTPProbeExecUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_EXEC",
+	FlagHTTPProbeExec: &cli.StringSliceFlag{
+		Name:    FlagHTTPProbeExec,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagHTTPProbeExecUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_EXEC"},
 	},
-	FlagHTTPProbeExecFile: cli.StringFlag{
-		Name:   FlagHTTPProbeExecFile,
-		Value:  "",
-		Usage:  FlagHTTPProbeExecFileUsage,
-		EnvVar: "DSLIM_HTTP_PROBE_EXEC_FILE",
+	FlagHTTPProbeExecFile: &cli.StringFlag{
+		Name:    FlagHTTPProbeExecFile,
+		Value:   "",
+		Usage:   FlagHTTPProbeExecFileUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_EXEC_FILE"},
 	},
-	FlagPublishPort: cli.StringSliceFlag{
-		Name:   FlagPublishPort,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagPublishPortUsage,
-		EnvVar: "DSLIM_PUBLISH_PORT",
+	FlagPublishPort: &cli.StringSliceFlag{
+		Name:    FlagPublishPort,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagPublishPortUsage,
+		EnvVars: []string{"DSLIM_PUBLISH_PORT"},
 	},
-	FlagPublishExposedPorts: cli.BoolFlag{
-		Name:   FlagPublishExposedPorts,
-		Usage:  FlagPublishExposedPortsUsage,
-		EnvVar: "DSLIM_PUBLISH_EXPOSED",
+	FlagPublishExposedPorts: &cli.BoolFlag{
+		Name:    FlagPublishExposedPorts,
+		Usage:   FlagPublishExposedPortsUsage,
+		EnvVars: []string{"DSLIM_PUBLISH_EXPOSED"},
 	},
-	FlagRunTargetAsUser: cli.BoolTFlag{
-		Name:   FlagRunTargetAsUser,
-		Usage:  FlagRunTargetAsUserUsage,
-		EnvVar: "DSLIM_RUN_TAS_USER",
+	FlagRunTargetAsUser: &cli.BoolFlag{
+		Name:    FlagRunTargetAsUser,
+		Value:   true,
+		Usage:   FlagRunTargetAsUserUsage,
+		EnvVars: []string{"DSLIM_RUN_TAS_USER"},
 	},
-	FlagShowContainerLogs: cli.BoolFlag{
-		Name:   FlagShowContainerLogs,
-		Usage:  FlagShowContainerLogsUsage,
-		EnvVar: "DSLIM_SHOW_CLOGS",
+	FlagShowContainerLogs: &cli.BoolFlag{
+		Name:    FlagShowContainerLogs,
+		Usage:   FlagShowContainerLogsUsage,
+		EnvVars: []string{"DSLIM_SHOW_CLOGS"},
 	},
-	FlagExec: cli.StringFlag{
-		Name:   FlagExec,
-		Value:  "",
-		Usage:  FlagExecUsage,
-		EnvVar: "DSLIM_RC_EXE",
+	FlagExec: &cli.StringFlag{
+		Name:    FlagExec,
+		Value:   "",
+		Usage:   FlagExecUsage,
+		EnvVars: []string{"DSLIM_RC_EXE"},
 	},
-	FlagExecFile: cli.StringFlag{
-		Name:   FlagExecFile,
-		Value:  "",
-		Usage:  FlagExecFileUsage,
-		EnvVar: "DSLIM_RC_EXE_FILE",
+	FlagExecFile: &cli.StringFlag{
+		Name:    FlagExecFile,
+		Value:   "",
+		Usage:   FlagExecFileUsage,
+		EnvVars: []string{"DSLIM_RC_EXE_FILE"},
 	},
-	FlagExcludeMounts: cli.BoolTFlag{
-		Name:   FlagExcludeMounts, //true by default
-		Usage:  FlagExcludeMountsUsage,
-		EnvVar: "DSLIM_EXCLUDE_MOUNTS",
+	FlagExcludeMounts: &cli.BoolFlag{
+		Name:    FlagExcludeMounts, //true by default
+		Value:   true,
+		Usage:   FlagExcludeMountsUsage,
+		EnvVars: []string{"DSLIM_EXCLUDE_MOUNTS"},
 	},
-	FlagExcludePattern: cli.StringSliceFlag{
-		Name:   FlagExcludePattern,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagExcludePatternUsage,
-		EnvVar: "DSLIM_EXCLUDE_PATTERN",
+	FlagExcludePattern: &cli.StringSliceFlag{
+		Name:    FlagExcludePattern,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagExcludePatternUsage,
+		EnvVars: []string{"DSLIM_EXCLUDE_PATTERN"},
 	},
-	FlagUseLocalMounts: cli.BoolFlag{
-		Name:   FlagUseLocalMounts,
-		Usage:  FlagUseLocalMountsUsage,
-		EnvVar: "DSLIM_USE_LOCAL_MOUNTS",
+	FlagUseLocalMounts: &cli.BoolFlag{
+		Name:    FlagUseLocalMounts,
+		Usage:   FlagUseLocalMountsUsage,
+		EnvVars: []string{"DSLIM_USE_LOCAL_MOUNTS"},
 	},
-	FlagUseSensorVolume: cli.StringFlag{
-		Name:   FlagUseSensorVolume,
-		Value:  "",
-		Usage:  FlagUseSensorVolumeUsage,
-		EnvVar: "DSLIM_USE_SENSOR_VOLUME",
+	FlagUseSensorVolume: &cli.StringFlag{
+		Name:    FlagUseSensorVolume,
+		Value:   "",
+		Usage:   FlagUseSensorVolumeUsage,
+		EnvVars: []string{"DSLIM_USE_SENSOR_VOLUME"},
 	},
-	FlagContinueAfter: cli.StringFlag{
-		Name:   FlagContinueAfter,
-		Value:  "probe",
-		Usage:  FlagContinueAfterUsage,
-		EnvVar: "DSLIM_CONTINUE_AFTER",
+	FlagContinueAfter: &cli.StringFlag{
+		Name:    FlagContinueAfter,
+		Value:   "probe",
+		Usage:   FlagContinueAfterUsage,
+		EnvVars: []string{"DSLIM_CONTINUE_AFTER"},
 	},
 	//Container Run Options
-	FlagCRORuntime: cli.StringFlag{
-		Name:   FlagCRORuntime,
-		Value:  "",
-		Usage:  FlagCRORuntimeUsage,
-		EnvVar: "DSLIM_CRO_RUNTIME",
+	FlagCRORuntime: &cli.StringFlag{
+		Name:    FlagCRORuntime,
+		Value:   "",
+		Usage:   FlagCRORuntimeUsage,
+		EnvVars: []string{"DSLIM_CRO_RUNTIME"},
 	},
-	FlagCROHostConfigFile: cli.StringFlag{
-		Name:   FlagCROHostConfigFile,
-		Value:  "",
-		Usage:  FlagCROHostConfigFileUsage,
-		EnvVar: "DSLIM_CRO_HOST_CONFIG_FILE",
+	FlagCROHostConfigFile: &cli.StringFlag{
+		Name:    FlagCROHostConfigFile,
+		Value:   "",
+		Usage:   FlagCROHostConfigFileUsage,
+		EnvVars: []string{"DSLIM_CRO_HOST_CONFIG_FILE"},
 	},
-	FlagCROSysctl: cli.StringSliceFlag{
-		Name:   FlagCROSysctl,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagCROSysctlUsage,
-		EnvVar: "DSLIM_CRO_SYSCTL",
+	FlagCROSysctl: &cli.StringSliceFlag{
+		Name:    FlagCROSysctl,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagCROSysctlUsage,
+		EnvVars: []string{"DSLIM_CRO_SYSCTL"},
 	},
-	FlagCROShmSize: cli.Int64Flag{
-		Name:   FlagCROShmSize,
-		Value:  -1,
-		Usage:  FlagCROShmSizeUsage,
-		EnvVar: "DSLIM_CRO_SHM_SIZE",
+	FlagCROShmSize: &cli.Int64Flag{
+		Name:    FlagCROShmSize,
+		Value:   -1,
+		Usage:   FlagCROShmSizeUsage,
+		EnvVars: []string{"DSLIM_CRO_SHM_SIZE"},
 	},
-	FlagUser: cli.StringFlag{
-		Name:   FlagUser,
-		Value:  "",
-		Usage:  FlagUserUsage,
-		EnvVar: "DSLIM_RC_USER",
+	FlagUser: &cli.StringFlag{
+		Name:    FlagUser,
+		Value:   "",
+		Usage:   FlagUserUsage,
+		EnvVars: []string{"DSLIM_RC_USER"},
 	},
-	FlagEntrypoint: cli.StringFlag{
-		Name:   FlagEntrypoint,
-		Value:  "",
-		Usage:  FlagEntrypointUsage,
-		EnvVar: "DSLIM_RC_ENTRYPOINT",
+	FlagEntrypoint: &cli.StringFlag{
+		Name:    FlagEntrypoint,
+		Value:   "",
+		Usage:   FlagEntrypointUsage,
+		EnvVars: []string{"DSLIM_RC_ENTRYPOINT"},
 	},
-	FlagCmd: cli.StringFlag{
-		Name:   FlagCmd,
-		Value:  "",
-		Usage:  FlagCmdUsage,
-		EnvVar: "DSLIM_RC_CMD",
+	FlagCmd: &cli.StringFlag{
+		Name:    FlagCmd,
+		Value:   "",
+		Usage:   FlagCmdUsage,
+		EnvVars: []string{"DSLIM_RC_CMD"},
 	},
-	FlagWorkdir: cli.StringFlag{
-		Name:   FlagWorkdir,
-		Value:  "",
-		Usage:  FlagWorkdirUsage,
-		EnvVar: "DSLIM_RC_WORKDIR",
+	FlagWorkdir: &cli.StringFlag{
+		Name:    FlagWorkdir,
+		Value:   "",
+		Usage:   FlagWorkdirUsage,
+		EnvVars: []string{"DSLIM_RC_WORKDIR"},
 	},
-	FlagEnv: cli.StringSliceFlag{
-		Name:   FlagEnv,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagEnvUsage,
-		EnvVar: "DSLIM_RC_ENV",
+	FlagEnv: &cli.StringSliceFlag{
+		Name:    FlagEnv,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagEnvUsage,
+		EnvVars: []string{"DSLIM_RC_ENV"},
 	},
-	FlagLabel: cli.StringSliceFlag{
-		Name:   FlagLabel,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagLabelUsage,
-		EnvVar: "DSLIM_RC_LABEL",
+	FlagLabel: &cli.StringSliceFlag{
+		Name:    FlagLabel,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagLabelUsage,
+		EnvVars: []string{"DSLIM_RC_LABEL"},
 	},
-	FlagVolume: cli.StringSliceFlag{
-		Name:   FlagVolume,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagVolumeUsage,
-		EnvVar: "DSLIM_RC_VOLUME",
+	FlagVolume: &cli.StringSliceFlag{
+		Name:    FlagVolume,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagVolumeUsage,
+		EnvVars: []string{"DSLIM_RC_VOLUME"},
 	},
-	FlagLink: cli.StringSliceFlag{
-		Name:   FlagLink,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagLinkUsage,
-		EnvVar: "DSLIM_RC_LINK",
+	FlagLink: &cli.StringSliceFlag{
+		Name:    FlagLink,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagLinkUsage,
+		EnvVars: []string{"DSLIM_RC_LINK"},
 	},
-	FlagEtcHostsMap: cli.StringSliceFlag{
-		Name:   FlagEtcHostsMap,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagEtcHostsMapUsage,
-		EnvVar: "DSLIM_RC_ETC_HOSTS_MAP",
+	FlagEtcHostsMap: &cli.StringSliceFlag{
+		Name:    FlagEtcHostsMap,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagEtcHostsMapUsage,
+		EnvVars: []string{"DSLIM_RC_ETC_HOSTS_MAP"},
 	},
-	FlagContainerDNS: cli.StringSliceFlag{
-		Name:   FlagContainerDNS,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagContainerDNSUsage,
-		EnvVar: "DSLIM_RC_DNS",
+	FlagContainerDNS: &cli.StringSliceFlag{
+		Name:    FlagContainerDNS,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagContainerDNSUsage,
+		EnvVars: []string{"DSLIM_RC_DNS"},
 	},
-	FlagContainerDNSSearch: cli.StringSliceFlag{
-		Name:   FlagContainerDNSSearch,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagContainerDNSSearchUsage,
-		EnvVar: "DSLIM_RC_DNS_SEARCH",
+	FlagContainerDNSSearch: &cli.StringSliceFlag{
+		Name:    FlagContainerDNSSearch,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagContainerDNSSearchUsage,
+		EnvVars: []string{"DSLIM_RC_DNS_SEARCH"},
 	},
-	FlagHostname: cli.StringFlag{
-		Name:   FlagHostname,
-		Value:  "",
-		Usage:  FlagHostnameUsage,
-		EnvVar: "DSLIM_RC_HOSTNAME",
+	FlagHostname: &cli.StringFlag{
+		Name:    FlagHostname,
+		Value:   "",
+		Usage:   FlagHostnameUsage,
+		EnvVars: []string{"DSLIM_RC_HOSTNAME"},
 	},
-	FlagNetwork: cli.StringFlag{
-		Name:   FlagNetwork,
-		Value:  "",
-		Usage:  FlagNetworkUsage,
-		EnvVar: "DSLIM_RC_NET",
+	FlagNetwork: &cli.StringFlag{
+		Name:    FlagNetwork,
+		Value:   "",
+		Usage:   FlagNetworkUsage,
+		EnvVars: []string{"DSLIM_RC_NET"},
 	},
-	FlagExpose: cli.StringSliceFlag{
-		Name:   FlagExpose,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagExposeUsage,
-		EnvVar: "DSLIM_RC_EXPOSE",
+	FlagExpose: &cli.StringSliceFlag{
+		Name:    FlagExpose,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagExposeUsage,
+		EnvVars: []string{"DSLIM_RC_EXPOSE"},
 	},
-	FlagMount: cli.StringSliceFlag{
-		Name:   FlagMount,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagMountUsage,
-		EnvVar: "DSLIM_MOUNT",
+	FlagMount: &cli.StringSliceFlag{
+		Name:    FlagMount,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagMountUsage,
+		EnvVars: []string{"DSLIM_MOUNT"},
 	},
-	FlagDeleteFatImage: cli.BoolFlag{
-		Name:   FlagDeleteFatImage,
-		Usage:  FlagDeleteFatImageUsage,
-		EnvVar: "DSLIM_DELETE_FAT",
+	FlagDeleteFatImage: &cli.BoolFlag{
+		Name:    FlagDeleteFatImage,
+		Usage:   FlagDeleteFatImageUsage,
+		EnvVars: []string{"DSLIM_DELETE_FAT"},
 	},
 }
 

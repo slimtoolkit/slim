@@ -3,7 +3,7 @@ package debug
 import (
 	"fmt"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
@@ -17,12 +17,12 @@ const (
 	Alias = "dbg"
 )
 
-var CLI = cli.Command{
+var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Action: func(ctx *cli.Context) error {
-		if len(ctx.Args()) < 1 {
+		if ctx.Args().Len() < 1 {
 			fmt.Printf("docker-slim[%s]: missing target info...\n\n", Name)
 			cli.ShowCommandHelp(ctx, Name)
 			return nil

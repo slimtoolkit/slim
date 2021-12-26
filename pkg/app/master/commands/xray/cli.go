@@ -9,7 +9,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -18,7 +18,7 @@ const (
 	Alias = "x"
 )
 
-var CLI = cli.Command{
+var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
@@ -61,7 +61,7 @@ var CLI = cli.Command{
 		targetRef := ctx.String(commands.FlagTarget)
 
 		if targetRef == "" {
-			if len(ctx.Args()) < 1 {
+			if ctx.Args().Len() < 1 {
 				xc.Out.Error("param.target", "missing image ID/name")
 				cli.ShowCommandHelp(ctx, Name)
 				return nil

@@ -43,7 +43,7 @@ require (
 	github.com/sirupsen/logrus v1.8.1
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 	github.com/ulikunitz/xz v0.5.7 // indirect
-	github.com/urfave/cli v1.22.4
+	github.com/urfave/cli/v2 v2.3.0
 	go.opencensus.io v0.23.0 // indirect
 	golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
 	golang.org/x/sys v0.0.0-20210921065528-437939a70204

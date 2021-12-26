@@ -4,7 +4,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -13,13 +13,13 @@ const (
 	Alias = "v"
 )
 
-var CLI = cli.Command{
+var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Action: func(ctx *cli.Context) error {
-		doDebug := ctx.GlobalBool(commands.FlagDebug)
-		inContainer, isDSImage := commands.IsInContainer(ctx.GlobalBool(commands.FlagInContainer))
+		doDebug := ctx.Bool(commands.FlagDebug)
+		inContainer, isDSImage := commands.IsInContainer(ctx.Bool(commands.FlagInContainer))
 		clientConfig := commands.GetDockerClientConfig(ctx)
 
 		xc := app.NewExecutionContext(Name)
