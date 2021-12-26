@@ -16,11 +16,13 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func processReports(mountPoint string,
+func processReports(
+	cmd *command.StartMonitor,
+	mountPoint string,
+	origPaths map[string]interface{},
 	fanReport *report.FanMonitorReport,
 	ptReport *report.PtMonitorReport,
-	peReport *report.PeMonitorReport,
-	cmd *command.StartMonitor) {
+	peReport *report.PeMonitorReport) {
 
 	fileCount := 0
 	for _, processFileMap := range fanReport.ProcessFiles {
@@ -34,9 +36,8 @@ func processReports(mountPoint string,
 	}
 
 	log.Debugf("processReports(): len(fanReport.ProcessFiles)=%v / fileCount=%v", len(fanReport.ProcessFiles), fileCount)
-
 	allFilesMap := findSymlinks(fileList, mountPoint)
-	saveResults(fanReport, allFilesMap, ptReport, peReport, cmd)
+	saveResults(cmd, origPaths, allFilesMap, fanReport, ptReport, peReport)
 }
 
 func getProcessChildren(pid int, targetPidList map[int]bool, processChildrenMap map[int][]int) {
@@ -175,76 +176,77 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 
 	//native filepath.Walk is a bit slow (compared to the "find" command)
 	//but it's fast enough for now
-	filepath.Walk(mp, func(fullName string, fileInfo os.FileInfo, err error) error {
-		if strings.HasPrefix(fullName, "/proc/") {
-			log.Debugf("findSymlinks: skipping /proc file system objects...")
-			return filepath.SkipDir
-		}
+	filepath.Walk(mp,
+		func(fullName string, fileInfo os.FileInfo, err error) error {
+			if strings.HasPrefix(fullName, "/proc/") {
+				log.Debugf("findSymlinks: skipping /proc file system objects...")
+				return filepath.SkipDir
+			}
 
-		if strings.HasPrefix(fullName, "/sys/") {
-			log.Debugf("findSymlinks: skipping /sys file system objects...")
-			return filepath.SkipDir
-		}
+			if strings.HasPrefix(fullName, "/sys/") {
+				log.Debugf("findSymlinks: skipping /sys file system objects...")
+				return filepath.SkipDir
+			}
 
-		if strings.HasPrefix(fullName, "/dev/") {
-			log.Debugf("findSymlinks: skipping /dev file system objects...")
-			return filepath.SkipDir
-		}
+			if strings.HasPrefix(fullName, "/dev/") {
+				log.Debugf("findSymlinks: skipping /dev file system objects...")
+				return filepath.SkipDir
+			}
 
-		if err != nil {
-			log.Debugf("findSymlinks: error accessing %q: %v\n", fullName, err)
-			//just ignore the error and keep going
-			return nil
-		}
+			if err != nil {
+				log.Debugf("findSymlinks: error accessing %q: %v\n", fullName, err)
+				//just ignore the error and keep going
+				return nil
+			}
 
-		if fileInfo.Sys() == nil {
-			log.Debugf("findSymlinks: fileInfo.Sys() is nil (ignoring)")
-			return nil
-		}
+			if fileInfo.Sys() == nil {
+				log.Debugf("findSymlinks: fileInfo.Sys() is nil (ignoring)")
+				return nil
+			}
 
-		sysStatInfo, ok := fileInfo.Sys().(*syscall.Stat_t)
-		if !ok {
-			return fmt.Errorf("findSymlinks - could not convert fileInfo to Stat_t for %s", fullName)
-		}
+			sysStatInfo, ok := fileInfo.Sys().(*syscall.Stat_t)
+			if !ok {
+				return fmt.Errorf("findSymlinks - could not convert fileInfo to Stat_t for %s", fullName)
+			}
 
-		if _, ok := devices[uint64(sysStatInfo.Dev)]; !ok {
-			log.Debugf("findSymlinks: ignoring %v (by device id - %v)", fullName, sysStatInfo.Dev)
-			//NOTE:
-			//don't return filepath.SkipDir for everything
-			//because we might still need other files in the dir
-			//return filepath.SkipDir
-			//example: "/etc/hostname" Docker mounts from another device
-			//NOTE:
-			//can move the checks for /dev, /sys and /proc here too
-			return nil
-		}
+			if _, ok := devices[uint64(sysStatInfo.Dev)]; !ok {
+				log.Debugf("findSymlinks: ignoring %v (by device id - %v)", fullName, sysStatInfo.Dev)
+				//NOTE:
+				//don't return filepath.SkipDir for everything
+				//because we might still need other files in the dir
+				//return filepath.SkipDir
+				//example: "/etc/hostname" Docker mounts from another device
+				//NOTE:
+				//can move the checks for /dev, /sys and /proc here too
+				return nil
+			}
 
-		if fileInfo.Mode()&os.ModeSymlink != 0 {
-			checkPathSymlinks(fullName)
+			if fileInfo.Mode()&os.ModeSymlink != 0 {
+				checkPathSymlinks(fullName)
 
-			if info, err := getFileSysStats(fullName); err == nil {
+				if info, err := getFileSysStats(fullName); err == nil {
 
-				if _, ok := inodes[info.Ino]; ok {
-					//not using the inode for the link (using the target inode instead)
-					inodeToFiles[info.Ino] = append(inodeToFiles[info.Ino], fullName)
+					if _, ok := inodes[info.Ino]; ok {
+						//not using the inode for the link (using the target inode instead)
+						inodeToFiles[info.Ino] = append(inodeToFiles[info.Ino], fullName)
+					} else {
+						//log.Debugf("findSymlinks - don't care about this symlink (%s)",fullName)
+					}
+
 				} else {
-					//log.Debugf("findSymlinks - don't care about this symlink (%s)",fullName)
+					log.Infof("findSymlinks - could not get target stats info for file (%v) -> %v", err, fullName)
 				}
 
 			} else {
-				log.Infof("findSymlinks - could not get target stats info for file (%v) -> %v", err, fullName)
+				if _, ok := inodes[sysStatInfo.Ino]; ok {
+					inodeToFiles[sysStatInfo.Ino] = append(inodeToFiles[sysStatInfo.Ino], fullName)
+				} else {
+					//log.Debugf("findSymlinks - don't care about this file (%s)",fullName)
+				}
 			}
 
-		} else {
-			if _, ok := inodes[sysStatInfo.Ino]; ok {
-				inodeToFiles[sysStatInfo.Ino] = append(inodeToFiles[sysStatInfo.Ino], fullName)
-			} else {
-				//log.Debugf("findSymlinks - don't care about this file (%s)",fullName)
-			}
-		}
-
-		return nil
-	})
+			return nil
+		})
 
 	log.Debugf("findSymlinks - len(inodeToFiles)=%v", len(inodeToFiles))
 

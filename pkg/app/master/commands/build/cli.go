@@ -136,6 +136,7 @@ var CLI = &cli.Command{
 		cflag(FlagIncludeCertDirs),
 		cflag(FlagIncludeCertPKAll),
 		cflag(FlagIncludeCertPKDirs),
+		cflag(FlagIncludeNew),
 		cflag(FlagKeepTmpArtifacts),
 		cflag(FlagKeepPerms),
 		cflag(FlagPathPerms),
@@ -497,6 +498,8 @@ var CLI = &cli.Command{
 		doIncludeCertPKAll := ctx.Bool(FlagIncludeCertPKAll)
 		doIncludeCertPKDirs := ctx.Bool(FlagIncludeCertPKDirs)
 
+		doIncludeNew := ctx.Bool(FlagIncludeNew)
+
 		doUseLocalMounts := ctx.Bool(commands.FlagUseLocalMounts)
 		doUseSensorVolume := ctx.String(commands.FlagUseSensorVolume)
 
@@ -677,6 +680,7 @@ var CLI = &cli.Command{
 			doIncludeCertDirs,
 			doIncludeCertPKAll,
 			doIncludeCertPKDirs,
+			doIncludeNew,
 			doUseLocalMounts,
 			doUseSensorVolume,
 			doKeepTmpArtifacts,

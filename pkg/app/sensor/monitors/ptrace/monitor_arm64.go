@@ -51,6 +51,7 @@ func Run(
 	dirName string,
 	appUser string,
 	runTargetAsUser bool,
+	includeNew bool,
 	origPaths map[string]interface{}) <-chan *report.PtMonitorReport {
 	log.Info("ptmon: Run")
 

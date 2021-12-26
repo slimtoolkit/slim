@@ -332,17 +332,17 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--target` - target Dockerfile path (or Docker image, in the future; if you don't use this flag you must specify the target as the argument to the command)
 - `--target-type` - explicitly specify the command target type (values: dockerfile, image)
 - `--skip-build-context` - don't try to analyze build context
-- `build-context-dir` - explicitly specify the build context directory
-- `skip-dockerignore` - don't try to analyze .dockerignore
-- `include-check-label` - include checks with the selected label key:value
-- `exclude-check-label` - exclude checks with the selected label key:value
-- `include-check-id` - check ID to include
-- `include-check-id-file` - file with check IDs to include
-- `exclude-check-id` - check ID to exclude
-- `exclude-check-id-file` - file with check IDs to exclude
-- `show-nohits` - show checks with no matches
-- `show-snippet` - show check match snippet (default value: true)
-- `list-checks` - list available checks (don't need to specify the target flag if you just want to list the available checks)
+- `--build-context-dir` - explicitly specify the build context directory
+- `--skip-dockerignore` - don't try to analyze .dockerignore
+- `--include-check-label` - include checks with the selected label key:value
+- `--exclude-check-label` - exclude checks with the selected label key:value
+- `--include-check-id` - check ID to include
+- `--include-check-id-file` - file with check IDs to include
+- `--exclude-check-id` - check ID to exclude
+- `--exclude-check-id-file` - file with check IDs to exclude
+- `--show-nohits` - show checks with no matches
+- `--show-snippet` - show check match snippet (default value: true)
+- `--list-checks` - list available checks (don't need to specify the target flag if you just want to list the available checks)
 
 ### `XRAY` COMMAND OPTIONS
 
@@ -447,11 +447,12 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-exe value` - Include executable from image (by executable name)
 - `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
 - `--include-shell` - Include basic shell functionality (default value: false)
-- `include-cert-all` - Keep all discovered cert files
-- `include-cert-bundles-only` - Keep only cert bundles
-- `include-cert-dirs` - Keep known cert directories and all files in them
-- `include-cert-pk-all` - Keep all discovered cert private keys
-- `include-cert-pk-dirs` - Keep known cert private key directories and all files in them
+- `--include-cert-all` - Keep all discovered cert files
+- `--include-cert-bundles-only` - Keep only cert bundles
+- `--include-cert-dirs` - Keep known cert directories and all files in them
+- `--include-cert-pk-all` - Keep all discovered cert private keys
+- `--include-cert-pk-dirs` - Keep known cert private key directories and all files in them
+- `--include-new` - Keep new files created by target during dynamic analysis
 - `--preserve-path` - Keep path from orignal image in its initial state (changes to the selected container image files when it runs will be discarded). [can use this flag multiple times]
 - `--preserve-path-file` - File with paths to keep from original image in their original state (changes to the selected container image files when it runs will be discarded).
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)

@@ -36,6 +36,8 @@ const (
 	FlagIncludeCertPKAll   = "include-cert-pk-all"
 	FlagIncludeCertPKDirs  = "include-cert-pk-dirs"
 
+	FlagIncludeNew = "include-new"
+
 	//FlagIncludeLicenses  = "include-licenses"
 
 	FlagKeepTmpArtifacts = "keep-tmp-artifacts"
@@ -92,6 +94,8 @@ const (
 	FlagIncludeCertDirsUsage    = "Keep known cert directories and all files in them"
 	FlagIncludeCertPKAllUsage   = "Keep all discovered cert private keys"
 	FlagIncludeCertPKDirsUsage  = "Keep known cert private key directories and all files in them"
+
+	FlagIncludeNewUsage = "Keep new files created by target during dynamic analysis"
 
 	FlagKeepTmpArtifactsUsage = "Keep temporary artifacts when command is done"
 
@@ -211,6 +215,11 @@ var Flags = map[string]cli.Flag{
 		Name:    FlagIncludeCertPKDirs,
 		Usage:   FlagIncludeCertPKDirsUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_CERT_PK_DIRS"},
+	},
+	FlagIncludeNew: &cli.BoolFlag{
+		Name:    FlagIncludeNew,
+		Usage:   FlagIncludeNewUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_NEW"},
 	},
 	////
 	FlagKeepTmpArtifacts: &cli.BoolFlag{

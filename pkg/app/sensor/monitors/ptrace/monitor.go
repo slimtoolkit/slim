@@ -24,6 +24,7 @@ func Run(
 	dirName string,
 	appUser string,
 	runTargetAsUser bool,
+	includeNew bool,
 	origPaths map[string]interface{}) <-chan *report.PtMonitorReport {
 	log.Info("ptmon: Run")
 	ptApp, err := ptrace.Run(
@@ -36,6 +37,7 @@ func Run(
 		errorCh,
 		nil,
 		stopCh,
+		includeNew,
 		origPaths)
 	if err != nil {
 		if ackCh != nil {

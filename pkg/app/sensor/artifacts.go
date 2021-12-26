@@ -191,16 +191,17 @@ func prepareEnv(storeLocation string, cmd *command.StartMonitor) {
 	}
 }
 
-func saveResults(fanMonReport *report.FanMonitorReport,
+func saveResults(
+	cmd *command.StartMonitor,
+	origPaths map[string]interface{},
 	fileNames map[string]*report.ArtifactProps,
+	fanMonReport *report.FanMonitorReport,
 	ptMonReport *report.PtMonitorReport,
-	peReport *report.PeMonitorReport,
-	cmd *command.StartMonitor) {
+	peReport *report.PeMonitorReport) {
 	log.Debugf("saveResults(%v,...)", len(fileNames))
 
 	artifactDirName := defaultArtifactDirName
-
-	artifactStore := newArtifactStore(artifactDirName, fanMonReport, fileNames, ptMonReport, peReport, cmd)
+	artifactStore := newArtifactStore(artifactDirName, origPaths, fileNames, fanMonReport, ptMonReport, peReport, cmd)
 	artifactStore.prepareArtifacts()
 	artifactStore.saveArtifacts()
 	//artifactStore.archiveArtifacts() //alternative way to xfer artifacts
@@ -223,9 +224,11 @@ type artifactStore struct {
 	origPaths     map[string]interface{}
 }
 
-func newArtifactStore(storeLocation string,
-	fanMonReport *report.FanMonitorReport,
+func newArtifactStore(
+	storeLocation string,
+	origPaths map[string]interface{},
 	rawNames map[string]*report.ArtifactProps,
+	fanMonReport *report.FanMonitorReport,
 	ptMonReport *report.PtMonitorReport,
 	peMonReport *report.PeMonitorReport,
 	cmd *command.StartMonitor) *artifactStore {
@@ -242,7 +245,7 @@ func newArtifactStore(storeLocation string,
 		saFileMap:     map[string]*report.ArtifactProps{},
 		cmd:           cmd,
 		appStacks:     map[string]*appStackInfo{},
-		origPaths:     cmd.OrigPaths,
+		origPaths:     origPaths,
 	}
 
 	return store

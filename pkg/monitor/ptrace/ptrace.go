@@ -2,10 +2,10 @@ package ptrace
 
 import (
 	"bytes"
-	"path"
 	"fmt"
 	"os"
 	"os/exec"
+	"path"
 	"runtime"
 	"strconv"
 	"strings"
@@ -40,10 +40,11 @@ func Run(
 	errorCh chan error,
 	stateCh chan AppState,
 	stopCh chan struct{},
+	includeNew bool,
 	origPaths map[string]interface{},
 ) (*App, error) {
 	log.Debug("ptrace.Run")
-	app, err := newApp(cmd, args, dir, user, runAsUser, reportCh, errorCh, stateCh, stopCh, origPaths)
+	app, err := newApp(cmd, args, dir, user, runAsUser, reportCh, errorCh, stateCh, stopCh, includeNew, origPaths)
 	if err != nil {
 		app.StateCh <- AppFailed
 		return nil, err
@@ -94,6 +95,7 @@ type App struct {
 	pgid            int
 	eventCh         chan syscallEvent
 	collectorDoneCh chan int
+	includeNew      bool
 	origPaths       map[string]interface{}
 }
 
@@ -123,6 +125,7 @@ func newApp(cmd string,
 	errorCh chan error,
 	stateCh chan AppState,
 	stopCh chan struct{},
+	includeNew bool,
 	origPaths map[string]interface{}) (*App, error) {
 	log.Debug("ptrace.newApp")
 	if reportCh == nil {
@@ -164,6 +167,8 @@ func newApp(cmd string,
 			SyscallStats: map[string]report.SyscallStatInfo{},
 			FSActivity:   map[string]*report.FSActivityInfo{},
 		},
+		includeNew: includeNew,
+		origPaths:  origPaths,
 	}
 
 	return &a, nil
@@ -624,6 +629,10 @@ func (app *App) collect() {
 				cstate.pathParamErr = nil
 
 				_, ok := app.origPaths[evt.pathParam]
+				if app.includeNew {
+					ok = true
+				}
+
 				if ok {
 					select {
 					case app.eventCh <- evt:

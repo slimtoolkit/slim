@@ -57,7 +57,7 @@ type StartMonitor struct {
 	IncludeCertDirs    bool                          `json:"include_cert_dirs,omitempty"`
 	IncludeCertPKAll   bool                          `json:"include_cert_pk_all,omitempty"`
 	IncludeCertPKDirs  bool                          `json:"include_cert_pk_dirs,omitempty"`
-	OrigPaths          map[string]interface{}        `json:"orig_paths"`
+	IncludeNew         bool                          `json:"include_new,omitempty"`
 }
 
 // GetName returns the command message ID for the start monitor command
