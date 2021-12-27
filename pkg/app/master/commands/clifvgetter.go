@@ -78,6 +78,8 @@ func GetContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 		info.Mode = config.CAMProbe
 	case config.CAMExec:
 		info.Mode = config.CAMExec
+	case config.CAMContainerProbe:
+		info.Mode = config.CAMContainerProbe
 	case config.CAMTimeout:
 		info.Mode = config.CAMTimeout
 		info.Timeout = 60

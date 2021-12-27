@@ -144,6 +144,7 @@ func Run(errorCh chan error,
 				if !ok {
 					continue done
 				}
+
 				if e.ID == 1 {
 					//first event represents the main process
 					if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {

@@ -586,16 +586,18 @@ var CLI = &cli.Command{
 		}
 
 		if containerProbeComposeSvc != "" {
-			continueAfter.Mode = config.CAMContainerProbe
-			xc.Out.Info("exec",
-				ovars{
-					"message": "changing continue-after to container-probe",
-				})
-			doHTTPProbe = false
-			xc.Out.Info("exec",
-				ovars{
-					"message": "changing http-probe to false",
-				})
+			if !strings.Contains(continueAfter.Mode, config.CAMContainerProbe) {
+				if continueAfter.Mode == "" {
+					continueAfter.Mode = config.CAMContainerProbe
+				} else {
+					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMContainerProbe)
+				}
+
+				xc.Out.Info("continue.after",
+					ovars{
+						"message": fmt.Sprintf("updating mode to %s", continueAfter.Mode),
+					})
+			}
 		}
 
 		if continueAfter.Mode == "" {

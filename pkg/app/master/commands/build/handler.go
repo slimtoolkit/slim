@@ -993,11 +993,8 @@ func OnCommand(
 
 	logger.Info("watching container monitor...")
 
-	for _, mode := range strings.Split(continueAfter.Mode, "&") {
-		if mode == config.CAMProbe {
-			doHTTPProbe = true
-			break
-		}
+	if hasContinueAfterMode(continueAfter.Mode, config.CAMProbe) {
+		doHTTPProbe = true
 	}
 
 	var probe *http.CustomProbe
@@ -1055,11 +1052,8 @@ func OnCommand(
 		continueAfterMsg = "no input required, execution will resume after the timeout"
 	}
 
-	for _, mode := range strings.Split(continueAfter.Mode, "&") {
-		if mode == config.CAMProbe {
-			continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
-			break
-		}
+	if hasContinueAfterMode(continueAfter.Mode, config.CAMProbe) {
+		continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
 	}
 
 	xc.Out.Info("continue.after",
@@ -1078,11 +1072,14 @@ func OnCommand(
 		switch mode {
 		case config.CAMContainerProbe:
 
-			idsToLog := make(map[string]string)
+			idsToLog := map[string]string{}
 			idsToLog[targetRef] = containerInspector.ContainerID
 			for name, svc := range depServicesExe.RunningServices {
 				idsToLog[name] = svc.ID
 			}
+			//TODO:
+			//need a flag to control logs for dep services
+			//also good to leverage the logging capabilities in compose (TBD)
 			for name, id := range idsToLog {
 				name := name
 				id := id
@@ -1519,4 +1516,14 @@ func OnCommand(
 				"file": cmdReport.ReportLocation(),
 			})
 	}
+}
+
+func hasContinueAfterMode(modeSet, mode string) bool {
+	for _, current := range strings.Split(modeSet, "&") {
+		if current == mode {
+			return true
+		}
+	}
+
+	return false
 }

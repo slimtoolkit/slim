@@ -779,12 +779,19 @@ type SyscallProcessor interface {
 	FailedReturnStatus(retVal uint64) bool
 }
 
+type StringParamPos int
+
 type syscallProcessorCore struct {
 	Num         uint64
 	Name        string
 	Type        SyscallTypeName
-	StringParam int
+	StringParam StringParamPos
 }
+
+const (
+	SPPOne StringParamPos = 1
+	SPPTwo StringParamPos = 2
+)
 
 func (ref *syscallProcessorCore) SyscallNumber() uint64 {
 	return ref.Num
@@ -810,10 +817,11 @@ func (ref *checkFileSyscallProcessor) OnCall(pid int, regs syscall.PtraceRegs, c
 	pth := ""
 	dir := ""
 	cwd, _ := os.Readlink(fmt.Sprintf("/proc/%d/cwd", pid))
+
 	switch ref.StringParam {
-	case 1:
+	case SPPOne:
 		pth = getStringParam(pid, system.CallFirstParam(regs))
-	case 2:
+	case SPPTwo:
 		fd := getIntParam(pid, system.CallFirstParam(regs))
 		if fd > 0 {
 			dir, _ = os.Readlink(fmt.Sprintf("/proc/%d/fd/%d", pid, fd))
@@ -829,6 +837,7 @@ func (ref *checkFileSyscallProcessor) OnCall(pid int, regs syscall.PtraceRegs, c
 			pth = path.Join(cwd, pth)
 		}
 	}
+
 	cstate.pathParam = pth
 }
 
@@ -854,115 +863,118 @@ func (ref *checkFileSyscallProcessor) FailedReturnStatus(retVal uint64) bool {
 var syscallProcessors = map[int]SyscallProcessor{}
 
 func init() {
+	//stat(const char *filename,struct stat *statbuf)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "stat",
 			Type:        CheckFileType,
-			StringParam: 1,
+			StringParam: SPPOne,
 		},
 	})
-
+	//lstat(fconst char *filename, struct stat *statbuf)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "lstat",
 			Type:        CheckFileType,
-			StringParam: 1,
+			StringParam: SPPOne,
 		},
 	})
-
+	//access(const char *filename, int mode)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "access",
 			Type:        CheckFileType,
-			StringParam: 1,
+			StringParam: SPPOne,
 		},
 	})
-
+	//statfs(const char *pathname, struct statfs *buf)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "statfs",
 			Type:        CheckFileType,
-			StringParam: 1,
+			StringParam: SPPOne,
 		},
 	})
-
+	//readlink(const char *path, char *buf, int bufsiz)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "readlink",
 			Type:        CheckFileType,
-			StringParam: 1,
+			StringParam: SPPOne,
 		},
 	})
-
+	//utime(char *filename, struct utimbuf *times)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "utime",
 			Type:        CheckFileType,
-			StringParam: 1,
+			StringParam: SPPOne,
 		},
 	})
-
+	//utimes(char *filename, struct timeval *utimes)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "utimes",
 			Type:        CheckFileType,
-			StringParam: 1,
+			StringParam: SPPOne,
 		},
 	})
-
+	//chdir(const char *filename)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "chdir",
 			Type:        CheckFileType,
-			StringParam: 1,
+			StringParam: SPPOne,
 		},
 	})
-
+	//open(const char *filename, int flags, int mode)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "open",
 			Type:        CheckFileType,
-			StringParam: 1,
+			StringParam: SPPOne,
 		},
 	})
-
+	//readlinkat(int dfd, const char *pathname, char *buf, int bufsiz)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "readlinkat",
 			Type:        CheckFileType,
-			StringParam: 2,
+			StringParam: SPPTwo,
 		},
 	})
-
+	//faccessat(int dfd, const char *filename, int mode)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "faccessat",
 			Type:        CheckFileType,
-			StringParam: 2,
+			StringParam: SPPTwo,
 		},
 	})
-
+	//openat(int dfd, const char *filename, int flags, int mode)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "openat",
 			Type:        CheckFileType,
-			StringParam: 2,
+			StringParam: SPPTwo,
 		},
 	})
-
+	//futimesat(int dfd, const char *filename, struct timeval *utimes)
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "futimesat",
 			Type:        CheckFileType,
-			StringParam: 2,
+			StringParam: SPPTwo,
 		},
 	})
-
+	//statx(int dirfd, const char *pathname, int flags, unsigned int mask, struct statx *statxbuf)
+	//dirfd: AT_FDCWD
+	//flags: AT_EMPTY_PATH
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "statx",
 			Type:        CheckFileType,
-			StringParam: 2,
+			StringParam: SPPTwo,
 		},
 	})
 
