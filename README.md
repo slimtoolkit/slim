@@ -416,6 +416,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--http-probe-off` - Alternative way to disable HTTP probing
 - `--http-probe-cmd` - Additional HTTP probe command [can use this flag multiple times]
 - `--http-probe-cmd-file` - File with user defined HTTP probe commands
+- `--http-probe-start-wait` - Number of seconds to wait before starting HTTP probing
 - `--http-probe-retry-count` - Number of retries for each HTTP probe (default value: 5)
 - `--http-probe-retry-wait` - Number of seconds to wait before retrying HTTP probe (doubles when target is not ready; default value: 8)
 - `--http-probe-ports` - Explicit list of ports to probe (in the order you want them to be probed; excluded ports are not probed!)
