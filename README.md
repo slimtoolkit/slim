@@ -396,22 +396,22 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--registry-secret` - Account secret to be used when pulling images from private registries (used with the `--pull` and `--registry-account` flags).
 - `--show-plogs` - Show image pull logs (default: false).
 
-- `compose-file` - Load container info from selected compose file
-- `target-compose-svc` - Target service from compose file
-- `target-compose-svc-no-ports` - Do not publish ports for target service from compose file
-- `dep-exclude-compose-svc-all` - Do not start any compose services as target dependencies
-- `dep-include-compose-svc` - Include specific compose service as a target dependency (only selected services will be started)
-- `dep-exclude-compose-svc` - Exclude specific service from the compose services that will be started as target dependencies
-- `dep-include-compose-svc-deps` - Include all dependencies for the selected compose service (excluding the service itself) as target dependencies
-- `dep-include-target-compose-svc-deps` - Include all dependencies for the target compose service (excluding the service itself) as target dependencies. This is a shortcut flag to avoid repeating the service name (it's a pretty long flag name though :-))
-- `compose-net` - Attach target to the selected compose network(s) otherwise all networks will be attached
-- `compose-env-nohost` - Don't include the env vars from the host to compose
-- `compose-env-file` - Load compose env vars from file (host env vars override the values loaded from this file)
-- `compose-workdir` - Set custom work directory for compose
-- `compose-project-name` - Use custom project name for compose
-- `container-probe-compose-svc` - Set container probe to compose service
-- `prestart-compose-svc` - placeholder for now
-- `poststart-compose-svc` - placeholder for now
+- `--compose-file` - Load container info from selected compose file
+- `--target-compose-svc` - Target service from compose file
+- `--target-compose-svc-no-ports` - Do not publish ports for target service from compose file
+- `--dep-exclude-compose-svc-all` - Do not start any compose services as target dependencies
+- `--dep-include-compose-svc` - Include specific compose service as a target dependency (only selected services will be started)
+- `--dep-exclude-compose-svc` - Exclude specific service from the compose services that will be started as target dependencies
+- `--dep-include-compose-svc-deps` - Include all dependencies for the selected compose service (excluding the service itself) as target dependencies
+- `--dep-include-target-compose-svc-deps` - Include all dependencies for the target compose service (excluding the service itself) as target dependencies. This is a shortcut flag to avoid repeating the service name (it's a pretty long flag name though :-))
+- `--compose-net` - Attach target to the selected compose network(s) otherwise all networks will be attached
+- `--compose-env-nohost` - Don't include the env vars from the host to compose
+- `--compose-env-file` - Load compose env vars from file (host env vars override the values loaded from this file)
+- `--compose-workdir` - Set custom work directory for compose
+- `--compose-project-name` - Use custom project name for compose
+- `--container-probe-compose-svc` - Set container probe to compose service
+- `--prestart-compose-svc` - placeholder for now
+- `--poststart-compose-svc` - placeholder for now
 - `--http-probe` - Enables/disables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`: `--http-probe=false`)
 - `--http-probe-off` - Alternative way to disable HTTP probing
 - `--http-probe-cmd` - Additional HTTP probe command [can use this flag multiple times]
