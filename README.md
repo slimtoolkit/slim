@@ -368,8 +368,9 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--reuse-saved-image` - Reuse saved container image (default: true).
 - `--top-changes-max` - Maximum number of top changes to track (defalt: 20).
 - `--hash-data` - Generate file data hashes (default: false).
-- `--detect-duplicates` - Detect duplicate files based on their hashes (default: false).
-- `--show-duplicates` - Show all discovered duplicate file paths (default: true).
+- `--detect-duplicates` - Detect duplicate files based on their hashes (default: true).
+- `--show-duplicates` - Show all discovered duplicate file paths (default: false).
+- `--show-special-perms` - Show files with special permissions (setuid,setgid,sticky) (default: true)
 - `--detect-utf8` - Detect utf8 files and optionally extract the discovered utf8 file content (possible values: "true" or "dump" or "dump:output_target.tgz" or "dump:output_target.tgz::max_size_bytes" or "dump:output_target.tgz:::max_size_bytes").
 - `--detect-all-certs` - Detect all certifcate files
 - `--detect-all-cert-pks` - Detect all certifcate private key files
@@ -448,7 +449,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-exe value` - Include executable from image (by executable name)
 - `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
 - `--include-shell` - Include basic shell functionality (default value: false)
-- `--include-cert-all` - Keep all discovered cert files
+- `--include-cert-all` - Keep all discovered cert files (default: true)
 - `--include-cert-bundles-only` - Keep only cert bundles
 - `--include-cert-dirs` - Keep known cert directories and all files in them
 - `--include-cert-pk-all` - Keep all discovered cert private keys
@@ -488,7 +489,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--use-local-mounts` - Mount local paths for target container artifact input and output (off, by default)
 - `--use-sensor-volume` - Sensor volume name to use (set it to your Docker volume name if you manage your own `docker-slim` sensor volume).
 - `--keep-tmp-artifacts` - Keep temporary artifacts when command is done (off, by default).
-- `--keep-perms` - Keep artifact permissions as-is (true, by default)
+- `--keep-perms` - Keep artifact permissions as-is (default: true)
 - `--run-target-as-user` - Run target app (in the temporary container) as USER from Dockerfile (true, by default)
 - `--new-entrypoint` - New ENTRYPOINT instruction for the optimized image
 - `--new-cmd` - New CMD instruction for the optimized image

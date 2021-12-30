@@ -134,7 +134,7 @@ var Flags = map[string]cli.Flag{
 	},
 	FlagReuseSavedImage: &cli.BoolFlag{
 		Name:    FlagReuseSavedImage,
-		Value:   true,
+		Value:   true, //enabled by default
 		Usage:   FlagReuseSavedImageUsage,
 		EnvVars: []string{"DSLIM_XRAY_REUSE_SAVED"},
 	},
@@ -156,7 +156,7 @@ var Flags = map[string]cli.Flag{
 	},
 	FlagDetectDuplicates: &cli.BoolFlag{
 		Name:    FlagDetectDuplicates,
-		Value:   true,
+		Value:   true, //enabled by default
 		Usage:   FlagDetectDuplicatesUsage,
 		EnvVars: []string{"DSLIM_XRAY_DETECT_DUP"},
 	},
@@ -167,7 +167,7 @@ var Flags = map[string]cli.Flag{
 	},
 	FlagShowSpecialPerms: &cli.BoolFlag{
 		Name:    FlagShowSpecialPerms,
-		Value:   true,
+		Value:   true, //enabled by default
 		Usage:   FlagShowSpecialPermsUsage,
 		EnvVars: []string{"DSLIM_XRAY_SHOW_SPECIAL"},
 	},

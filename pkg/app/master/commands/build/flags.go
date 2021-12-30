@@ -193,6 +193,7 @@ var Flags = map[string]cli.Flag{
 	////
 	FlagIncludeCertAll: &cli.BoolFlag{
 		Name:    FlagIncludeCertAll,
+		Value:   true, //enabled by default
 		Usage:   FlagIncludeCertAllUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_CERT_ALL"},
 	},
@@ -229,7 +230,7 @@ var Flags = map[string]cli.Flag{
 	},
 	FlagKeepPerms: &cli.BoolFlag{
 		Name:    FlagKeepPerms,
-		Value:   true,
+		Value:   true, //enabled by default
 		Usage:   FlagKeepPermsUsage,
 		EnvVars: []string{"DSLIM_KEEP_PERMS"},
 	},
