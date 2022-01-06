@@ -144,6 +144,9 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagContinueAfter),
 		commands.Cflag(commands.FlagUseLocalMounts),
 		commands.Cflag(commands.FlagUseSensorVolume),
+		//Sensor flags:
+		commands.Cflag(commands.FlagSensorIPCEndpoint),
+		commands.Cflag(commands.FlagSensorIPCMode),
 	},
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name)
@@ -690,6 +693,8 @@ var CLI = &cli.Command{
 			execCmd,
 			string(execFileCmd),
 			deleteFatImage,
+			ctx.String(commands.FlagSensorIPCEndpoint),
+			ctx.String(commands.FlagSensorIPCMode),
 			ctx.String(commands.FlagLogLevel),
 			ctx.String(commands.FlagLogFormat))
 

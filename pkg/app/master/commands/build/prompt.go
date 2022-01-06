@@ -122,6 +122,8 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagCBOTarget), Description: FlagCBOTargetUsage},
 		{Text: commands.FullFlagName(FlagCBONetwork), Description: FlagCBONetworkUsage},
 		{Text: commands.FullFlagName(FlagCBOCacheFrom), Description: FlagCBOCacheFromUsage},
+		{Text: commands.FullFlagName(commands.FlagSensorIPCMode), Description: commands.FlagSensorIPCModeUsage},
+		{Text: commands.FullFlagName(commands.FlagSensorIPCEndpoint), Description: commands.FlagSensorIPCEndpointUsage},
 	},
 	Values: map[string]commands.CompleteValue{
 		//NOTE: with FlagPull target complete needs to check remote registries too
@@ -168,5 +170,6 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(FlagKeepTmpArtifacts):                        commands.CompleteBool,
 		commands.FullFlagName(commands.FlagCROHostConfigFile):              commands.CompleteFile,
 		commands.FullFlagName(FlagDockerfileContext):                       commands.CompleteFile,
+		commands.FullFlagName(commands.FlagSensorIPCMode):                  commands.CompleteIPCMode,
 	},
 }

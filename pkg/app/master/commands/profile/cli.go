@@ -90,19 +90,14 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagHostname),
 		commands.Cflag(commands.FlagExpose),
 		commands.Cflag(commands.FlagExcludeMounts),
-		commands.Cflag(commands.FlagExcludePattern),
-		//commands.Cflag(commands.FlagPathPerms),
-		//commands.Cflag(commands.FlagPathPermsFile),
-		//commands.Cflag(commands.FlagIncludePath),
-		//commands.Cflag(commands.FlagIncludePathFile),
-		//commands.Cflag(commands.FlagIncludeBin),
-		//commands.Cflag(commands.FlagIncludeExe),
-		//commands.Cflag(commands.FlagIncludeShell),
+		commands.Cflag(commands.FlagExcludePattern), //should remove too (no need)
 		commands.Cflag(commands.FlagMount),
 		commands.Cflag(commands.FlagContinueAfter),
 		commands.Cflag(commands.FlagUseLocalMounts),
 		commands.Cflag(commands.FlagUseSensorVolume),
-		//commands.Cflag(commands.FlagKeepTmpArtifacts),
+		//Sensor flags:
+		commands.Cflag(commands.FlagSensorIPCEndpoint),
+		commands.Cflag(commands.FlagSensorIPCMode),
 	},
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name)
@@ -406,6 +401,8 @@ var CLI = &cli.Command{
 			doUseSensorVolume,
 			//doKeepTmpArtifacts,
 			continueAfter,
+			ctx.String(commands.FlagSensorIPCEndpoint),
+			ctx.String(commands.FlagSensorIPCMode),
 			ctx.String(commands.FlagLogLevel),
 			ctx.String(commands.FlagLogFormat))
 

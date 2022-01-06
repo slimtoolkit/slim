@@ -86,6 +86,8 @@ func OnCommand(
 	doUseSensorVolume string,
 	//doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
+	sensorIPCEndpoint string,
+	sensorIPCMode string,
 	logLevel string,
 	logFormat string) {
 	const cmdName = Name
@@ -270,6 +272,8 @@ func OnCommand(
 		logLevel,
 		logFormat,
 		gparams.InContainer,
+		sensorIPCEndpoint,
+		sensorIPCMode,
 		true,
 		prefix)
 	errutil.FailOn(err)

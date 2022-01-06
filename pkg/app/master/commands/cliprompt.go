@@ -244,6 +244,11 @@ var continueAfterValues = []prompt.Suggest{
 	{Text: "<seconds>", Description: "Enter the number of seconds to wait instead of <seconds>"},
 }
 
+var ipcModeValues = []prompt.Suggest{
+	{Text: "proxy", Description: "Proxy sensor ipc mode"},
+	{Text: "direct", Description: "Direct sensor ipc mode"},
+}
+
 func CompleteProgress(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	switch runtime.GOOS {
 	case "darwin":
@@ -263,6 +268,10 @@ func CompleteTBool(ia *InteractiveApp, token string, params prompt.Document) []p
 
 func CompleteContinueAfter(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(continueAfterValues, token, true)
+}
+
+func CompleteIPCMode(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	return prompt.FilterHasPrefix(ipcModeValues, token, true)
 }
 
 func CompleteTarget(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {

@@ -504,6 +504,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--remove-expose` - Remove EXPOSE instructions for the optimized image
 - `--exec` - A shell script snippet to run via Docker exec
 - `--exec-file` - A shell script file to run via Docker exec
+- `--sensor-ipc-mode` - Select sensor IPC mode: proxy | direct (useful for containerized CI/CD environments)
+- `--sensor-ipc-endpoint` - Override sensor IPC endpoint
 
 In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.
 

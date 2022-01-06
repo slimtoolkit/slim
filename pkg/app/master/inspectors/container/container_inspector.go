@@ -35,6 +35,8 @@ import (
 
 // Container inspector constants
 const (
+	SensorIPCModeDirect     = "direct"
+	SensorIPCModeProxy      = "proxy"
 	SensorBinPath           = "/opt/dockerslim/bin/docker-slim-sensor"
 	ContainerNamePat        = "dockerslimk_%v_%v"
 	ArtifactsDir            = "artifacts"
@@ -127,6 +129,9 @@ type Inspector struct {
 	PrintState            bool
 	PrintPrefix           string
 	InContainer           bool
+	SensorIPCEndpoint     string
+	SensorIPCMode         string
+	TargetHost            string
 	dockerEventCh         chan *dockerapi.APIEvents
 	dockerEventStopCh     chan struct{}
 	ipcClient             *ipc.Client
@@ -193,6 +198,8 @@ func NewInspector(
 	logLevel string,
 	logFormat string,
 	inContainer bool,
+	sensorIPCEndpoint string,
+	sensorIPCMode string,
 	printState bool,
 	printPrefix string) (*Inspector, error) {
 
@@ -242,6 +249,8 @@ func NewInspector(
 		PrintState:            printState,
 		PrintPrefix:           printPrefix,
 		InContainer:           inContainer,
+		SensorIPCEndpoint:     sensorIPCEndpoint,
+		SensorIPCMode:         sensorIPCMode,
 		xc:                    xc,
 		crOpts:                crOpts,
 	}
@@ -742,7 +751,6 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	i.ContainerID = containerInfo.ID
-
 	if i.PrintState {
 		i.xc.Out.Info("container",
 			ovars{
@@ -861,6 +869,20 @@ func (i *Inspector) RunContainer() error {
 
 		i.ContainerPortList = strings.Join(portList, ",")
 		i.ContainerPortsInfo = strings.Join(portKeys, ",")
+	}
+
+	if i.PrintState {
+		var containerIP string
+		if i.ContainerInfo.NetworkSettings != nil {
+			containerIP = i.ContainerInfo.NetworkSettings.IPAddress
+		}
+		i.xc.Out.Info("container",
+			ovars{
+				"status": "running",
+				"name":   containerInfo.Name,
+				"id":     i.ContainerID,
+				"ip":     containerIP,
+			})
 	}
 
 	if err = i.initContainerChannels(); err != nil {
@@ -1131,25 +1153,58 @@ func (i *Inspector) FinishMonitoring() {
 }
 
 func (i *Inspector) initContainerChannels() error {
-	var targetHost string
+	const op = "container.Inspector.initContainerChannels"
 	var cmdPort string
 	var evtPort string
+	var ipcMode string
+	var cn string
 
-	if i.InContainer || i.Overrides.Network == "host" {
-		targetHost = i.ContainerInfo.NetworkSettings.IPAddress
+	if i.Overrides != nil {
+		cn = i.Overrides.Network
+	}
+
+	switch i.SensorIPCMode {
+	case SensorIPCModeDirect, SensorIPCModeProxy:
+		ipcMode = i.SensorIPCMode
+	default:
+		if i.InContainer || cn == "host" {
+			ipcMode = SensorIPCModeDirect
+		} else {
+			ipcMode = SensorIPCModeProxy
+		}
+	}
+
+	switch ipcMode {
+	case SensorIPCModeDirect:
+		i.TargetHost = i.ContainerInfo.NetworkSettings.IPAddress
 		cmdPort = cmdPortStrDefault
 		evtPort = evtPortStrDefault
-	} else {
+	case SensorIPCModeProxy:
+		i.DockerHostIP = dockerhost.GetIP()
+		i.TargetHost = i.DockerHostIP
 		cmdPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.CmdPort]
 		evtPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.EvtPort]
-		i.DockerHostIP = dockerhost.GetIP()
-
-		targetHost = i.DockerHostIP
 		cmdPort = cmdPortBindings[0].HostPort
 		evtPort = evtPortBindings[0].HostPort
 	}
 
-	ipcClient, err := ipc.NewClient(targetHost, cmdPort, evtPort, defaultConnectWait)
+	i.SensorIPCMode = ipcMode
+
+	if i.SensorIPCEndpoint != "" {
+		i.TargetHost = i.SensorIPCEndpoint
+	}
+
+	i.logger.WithFields(log.Fields{
+		"op":                op,
+		"in.container":      i.InContainer,
+		"container.network": cn,
+		"ipc.mode":          ipcMode,
+		"target":            i.TargetHost,
+		"port.cmd":          cmdPort,
+		"port.evt":          evtPort,
+	}).Debugf("target.container.ipc.connect")
+
+	ipcClient, err := ipc.NewClient(i.TargetHost, cmdPort, evtPort, defaultConnectWait)
 	if err != nil {
 		return err
 	}

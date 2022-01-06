@@ -110,6 +110,10 @@ const (
 	FlagUseSensorVolume = "use-sensor-volume"
 	FlagContinueAfter   = "continue-after"
 
+	//Sensor IPC Options (for build and profile commands)
+	FlagSensorIPCEndpoint = "sensor-ipc-endpoint"
+	FlagSensorIPCMode     = "sensor-ipc-mode"
+
 	FlagExec     = "exec"
 	FlagExecFile = "exec-file"
 
@@ -200,6 +204,9 @@ const (
 	FlagUseLocalMountsUsage  = "Mount local paths for target container artifact input and output"
 	FlagUseSensorVolumeUsage = "Sensor volume name to use"
 	FlagContinueAfterUsage   = "Select continue mode: enter | signal | probe | timeout-number-in-seconds | container.probe"
+
+	FlagSensorIPCEndpointUsage = "Override sensor IPC endpoint"
+	FlagSensorIPCModeUsage     = "Select sensor IPC mode: proxy | direct"
 
 	FlagExecUsage     = "A shell script snippet to run via Docker exec"
 	FlagExecFileUsage = "A shell script file to run via Docker exec"
@@ -579,6 +586,18 @@ var CommonFlags = map[string]cli.Flag{
 		Name:    FlagShowContainerLogs,
 		Usage:   FlagShowContainerLogsUsage,
 		EnvVars: []string{"DSLIM_SHOW_CLOGS"},
+	},
+	FlagSensorIPCMode: &cli.StringFlag{
+		Name:    FlagSensorIPCMode,
+		Value:   "",
+		Usage:   FlagSensorIPCModeUsage,
+		EnvVars: []string{"DSLIM_SENSOR_IPC_MODE"},
+	},
+	FlagSensorIPCEndpoint: &cli.StringFlag{
+		Name:    FlagSensorIPCEndpoint,
+		Value:   "",
+		Usage:   FlagSensorIPCEndpointUsage,
+		EnvVars: []string{"DSLIM_SENSOR_IPC_ENDPOINT"},
 	},
 	FlagExec: &cli.StringFlag{
 		Name:    FlagExec,

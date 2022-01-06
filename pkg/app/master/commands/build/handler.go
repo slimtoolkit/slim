@@ -158,6 +158,8 @@ func OnCommand(
 	execCmd string,
 	execFileCmd string,
 	deleteFatImage bool,
+	sensorIPCEndpoint string,
+	sensorIPCMode string,
 	logLevel string,
 	logFormat string) {
 
@@ -948,6 +950,8 @@ func OnCommand(
 		logLevel,
 		logFormat,
 		gparams.InContainer,
+		sensorIPCEndpoint,
+		sensorIPCMode,
 		true,
 		prefix)
 	xc.FailOn(err)
@@ -969,6 +973,10 @@ func OnCommand(
 
 	logger.Info("starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
+	if err != nil && containerInspector.DoShowContainerLogs {
+		containerInspector.ShowContainerLogs()
+	}
+
 	xc.FailOn(err)
 
 	inspectorCleanup := func() {
