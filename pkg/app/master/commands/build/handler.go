@@ -979,7 +979,15 @@ func OnCommand(
 
 	xc.FailOn(err)
 
+	containerName := containerInspector.ContainerName
+	containerID := containerInspector.ContainerID
 	inspectorCleanup := func() {
+		xc.Out.Info("container.inspector.cleanup",
+			ovars{
+				"name": containerName,
+				"id":   containerID,
+			})
+
 		if containerInspector != nil {
 			xc.Out.State("container.target.shutdown.start")
 			containerInspector.FinishMonitoring()

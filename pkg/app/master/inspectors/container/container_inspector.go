@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/docker-slim/docker-slim/pkg/aflag"
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerhost"
@@ -134,6 +135,7 @@ type Inspector struct {
 	TargetHost            string
 	dockerEventCh         chan *dockerapi.APIEvents
 	dockerEventStopCh     chan struct{}
+	isDone                aflag.Type
 	ipcClient             *ipc.Client
 	logger                *log.Entry
 	xc                    *app.ExecutionContext
@@ -1050,6 +1052,11 @@ func (i *Inspector) ShowContainerLogs() {
 
 // ShutdownContainer terminates the container inspector instance execution
 func (i *Inspector) ShutdownContainer() error {
+	if i.isDone.IsOn() {
+		return nil
+	}
+
+	i.isDone.On()
 	if !i.DoUseLocalMounts {
 		deleteOrig := true
 		if i.DoKeepTmpArtifacts {
@@ -1126,8 +1133,16 @@ func (i *Inspector) ShutdownContainer() error {
 // FinishMonitoring ends the target container monitoring activities
 func (i *Inspector) FinishMonitoring() {
 	if i.dockerEventStopCh == nil {
-		errutil.FailOn(fmt.Errorf("docker event stop chanel is nil"))
+		if i.PrintState {
+			i.xc.Out.Info("container.inspector",
+				ovars{
+					"message": "already finished monitoring",
+				})
+		}
+
+		return
 	}
+
 	close(i.dockerEventStopCh)
 	i.dockerEventStopCh = nil
 

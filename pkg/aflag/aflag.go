@@ -1,4 +1,4 @@
-package acounter
+package aflag
 
 import (
 	"sync/atomic"
