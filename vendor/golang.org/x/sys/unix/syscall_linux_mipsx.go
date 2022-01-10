@@ -206,12 +206,3 @@ func (cmsg *Cmsghdr) SetLen(length int) {
 func (rsa *RawSockaddrNFCLLCP) SetServiceNameLen(length int) {
 	rsa.Service_name_len = uint32(length)
 }
-
-//sys	poll(fds *PollFd, nfds int, timeout int) (n int, err error)
-
-func Poll(fds []PollFd, timeout int) (n int, err error) {
-	if len(fds) == 0 {
-		return poll(nil, 0, timeout)
-	}
-	return poll(&fds[0], len(fds), timeout)
-}

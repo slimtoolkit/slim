@@ -131,8 +131,10 @@ func Pipe2(p []int, flags int) error {
 	}
 	var pp [2]_C_int
 	err := pipe2(&pp, flags)
-	p[0] = int(pp[0])
-	p[1] = int(pp[1])
+	if err == nil {
+		p[0] = int(pp[0])
+		p[1] = int(pp[1])
+	}
 	return err
 }
 
@@ -143,6 +145,15 @@ func Ppoll(fds []PollFd, timeout *Timespec, sigmask *Sigset_t) (n int, err error
 		return ppoll(nil, 0, timeout, sigmask)
 	}
 	return ppoll(&fds[0], len(fds), timeout, sigmask)
+}
+
+func Poll(fds []PollFd, timeout int) (n int, err error) {
+	var ts *Timespec
+	if timeout >= 0 {
+		ts = new(Timespec)
+		*ts = NsecToTimespec(int64(timeout) * 1e6)
+	}
+	return Ppoll(fds, ts, nil)
 }
 
 //sys	Readlinkat(dirfd int, path string, buf []byte) (n int, err error)
@@ -363,9 +374,7 @@ func (sa *SockaddrInet4) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	p := (*[2]byte)(unsafe.Pointer(&sa.raw.Port))
 	p[0] = byte(sa.Port >> 8)
 	p[1] = byte(sa.Port)
-	for i := 0; i < len(sa.Addr); i++ {
-		sa.raw.Addr[i] = sa.Addr[i]
-	}
+	sa.raw.Addr = sa.Addr
 	return unsafe.Pointer(&sa.raw), SizeofSockaddrInet4, nil
 }
 
@@ -378,9 +387,7 @@ func (sa *SockaddrInet6) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	p[0] = byte(sa.Port >> 8)
 	p[1] = byte(sa.Port)
 	sa.raw.Scope_id = sa.ZoneId
-	for i := 0; i < len(sa.Addr); i++ {
-		sa.raw.Addr[i] = sa.Addr[i]
-	}
+	sa.raw.Addr = sa.Addr
 	return unsafe.Pointer(&sa.raw), SizeofSockaddrInet6, nil
 }
 
@@ -429,9 +436,7 @@ func (sa *SockaddrLinklayer) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	sa.raw.Hatype = sa.Hatype
 	sa.raw.Pkttype = sa.Pkttype
 	sa.raw.Halen = sa.Halen
-	for i := 0; i < len(sa.Addr); i++ {
-		sa.raw.Addr[i] = sa.Addr[i]
-	}
+	sa.raw.Addr = sa.Addr
 	return unsafe.Pointer(&sa.raw), SizeofSockaddrLinklayer, nil
 }
 
@@ -846,12 +851,10 @@ func (sa *SockaddrTIPC) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	if sa.Addr == nil {
 		return nil, 0, EINVAL
 	}
-
 	sa.raw.Family = AF_TIPC
 	sa.raw.Scope = int8(sa.Scope)
 	sa.raw.Addrtype = sa.Addr.tipcAddrtype()
 	sa.raw.Addr = sa.Addr.tipcAddr()
-
 	return unsafe.Pointer(&sa.raw), SizeofSockaddrTIPC, nil
 }
 
@@ -865,9 +868,7 @@ type SockaddrL2TPIP struct {
 func (sa *SockaddrL2TPIP) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	sa.raw.Family = AF_INET
 	sa.raw.Conn_id = sa.ConnId
-	for i := 0; i < len(sa.Addr); i++ {
-		sa.raw.Addr[i] = sa.Addr[i]
-	}
+	sa.raw.Addr = sa.Addr
 	return unsafe.Pointer(&sa.raw), SizeofSockaddrL2TPIP, nil
 }
 
@@ -883,9 +884,7 @@ func (sa *SockaddrL2TPIP6) sockaddr() (unsafe.Pointer, _Socklen, error) {
 	sa.raw.Family = AF_INET6
 	sa.raw.Conn_id = sa.ConnId
 	sa.raw.Scope_id = sa.ZoneId
-	for i := 0; i < len(sa.Addr); i++ {
-		sa.raw.Addr[i] = sa.Addr[i]
-	}
+	sa.raw.Addr = sa.Addr
 	return unsafe.Pointer(&sa.raw), SizeofSockaddrL2TPIP6, nil
 }
 
@@ -981,9 +980,7 @@ func anyToSockaddr(fd int, rsa *RawSockaddrAny) (Sockaddr, error) {
 		sa.Hatype = pp.Hatype
 		sa.Pkttype = pp.Pkttype
 		sa.Halen = pp.Halen
-		for i := 0; i < len(sa.Addr); i++ {
-			sa.Addr[i] = pp.Addr[i]
-		}
+		sa.Addr = pp.Addr
 		return sa, nil
 
 	case AF_UNIX:
@@ -1022,18 +1019,14 @@ func anyToSockaddr(fd int, rsa *RawSockaddrAny) (Sockaddr, error) {
 			pp := (*RawSockaddrL2TPIP)(unsafe.Pointer(rsa))
 			sa := new(SockaddrL2TPIP)
 			sa.ConnId = pp.Conn_id
-			for i := 0; i < len(sa.Addr); i++ {
-				sa.Addr[i] = pp.Addr[i]
-			}
+			sa.Addr = pp.Addr
 			return sa, nil
 		default:
 			pp := (*RawSockaddrInet4)(unsafe.Pointer(rsa))
 			sa := new(SockaddrInet4)
 			p := (*[2]byte)(unsafe.Pointer(&pp.Port))
 			sa.Port = int(p[0])<<8 + int(p[1])
-			for i := 0; i < len(sa.Addr); i++ {
-				sa.Addr[i] = pp.Addr[i]
-			}
+			sa.Addr = pp.Addr
 			return sa, nil
 		}
 
@@ -1049,9 +1042,7 @@ func anyToSockaddr(fd int, rsa *RawSockaddrAny) (Sockaddr, error) {
 			sa := new(SockaddrL2TPIP6)
 			sa.ConnId = pp.Conn_id
 			sa.ZoneId = pp.Scope_id
-			for i := 0; i < len(sa.Addr); i++ {
-				sa.Addr[i] = pp.Addr[i]
-			}
+			sa.Addr = pp.Addr
 			return sa, nil
 		default:
 			pp := (*RawSockaddrInet6)(unsafe.Pointer(rsa))
@@ -1059,9 +1050,7 @@ func anyToSockaddr(fd int, rsa *RawSockaddrAny) (Sockaddr, error) {
 			p := (*[2]byte)(unsafe.Pointer(&pp.Port))
 			sa.Port = int(p[0])<<8 + int(p[1])
 			sa.ZoneId = pp.Scope_id
-			for i := 0; i < len(sa.Addr); i++ {
-				sa.Addr[i] = pp.Addr[i]
-			}
+			sa.Addr = pp.Addr
 			return sa, nil
 		}
 
@@ -1788,6 +1777,16 @@ func Mount(source string, target string, fstype string, flags uintptr, data stri
 	return mount(source, target, fstype, flags, datap)
 }
 
+//sys	mountSetattr(dirfd int, pathname string, flags uint, attr *MountAttr, size uintptr) (err error) = SYS_MOUNT_SETATTR
+
+// MountSetattr is a wrapper for mount_setattr(2).
+// https://man7.org/linux/man-pages/man2/mount_setattr.2.html
+//
+// Requires kernel >= 5.12.
+func MountSetattr(dirfd int, pathname string, flags uint, attr *MountAttr) error {
+	return mountSetattr(dirfd, pathname, flags, attr, unsafe.Sizeof(*attr))
+}
+
 func Sendfile(outfd int, infd int, offset *int64, count int) (written int, err error) {
 	if raceenabled {
 		raceReleaseMerge(unsafe.Pointer(&ioSync))
@@ -2310,6 +2309,11 @@ type RemoteIovec struct {
 //sys	PidfdOpen(pid int, flags int) (fd int, err error) = SYS_PIDFD_OPEN
 //sys	PidfdGetfd(pidfd int, targetfd int, flags int) (fd int, err error) = SYS_PIDFD_GETFD
 
+//sys	shmat(id int, addr uintptr, flag int) (ret uintptr, err error)
+//sys	shmctl(id int, cmd int, buf *SysvShmDesc) (result int, err error)
+//sys	shmdt(addr uintptr) (err error)
+//sys	shmget(key int, size int, flag int) (id int, err error)
+
 /*
  * Unimplemented
  */
@@ -2391,10 +2395,6 @@ type RemoteIovec struct {
 // SetRobustList
 // SetThreadArea
 // SetTidAddress
-// Shmat
-// Shmctl
-// Shmdt
-// Shmget
 // Sigaltstack
 // Swapoff
 // Swapon

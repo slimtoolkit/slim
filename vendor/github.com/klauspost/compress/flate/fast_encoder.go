@@ -45,7 +45,7 @@ const (
 
 	bTableBits   = 17                                               // Bits used in the big tables
 	bTableSize   = 1 << bTableBits                                  // Size of the table
-	allocHistory = maxStoreBlockSize * 10                           // Size to preallocate for history.
+	allocHistory = maxStoreBlockSize * 5                            // Size to preallocate for history.
 	bufferReset  = (1 << 31) - allocHistory - maxStoreBlockSize - 1 // Reset the buffer offset when reaching this.
 )
 
@@ -215,24 +215,15 @@ func (e *fastGen) Reset() {
 func matchLen(a, b []byte) int {
 	b = b[:len(a)]
 	var checked int
-	if len(a) >= 4 {
-		// Try 4 bytes first
-		if diff := binary.LittleEndian.Uint32(a) ^ binary.LittleEndian.Uint32(b); diff != 0 {
-			return bits.TrailingZeros32(diff) >> 3
+
+	for len(a) >= 8 {
+		b = b[:len(a)]
+		if diff := binary.LittleEndian.Uint64(a) ^ binary.LittleEndian.Uint64(b); diff != 0 {
+			return checked + (bits.TrailingZeros64(diff) >> 3)
 		}
-		// Switch to 8 byte matching.
-		checked = 4
-		a = a[4:]
-		b = b[4:]
-		for len(a) >= 8 {
-			b = b[:len(a)]
-			if diff := binary.LittleEndian.Uint64(a) ^ binary.LittleEndian.Uint64(b); diff != 0 {
-				return checked + (bits.TrailingZeros64(diff) >> 3)
-			}
-			checked += 8
-			a = a[8:]
-			b = b[8:]
-		}
+		checked += 8
+		a = a[8:]
+		b = b[8:]
 	}
 	b = b[:len(a)]
 	for i := range a {
