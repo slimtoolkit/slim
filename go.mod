@@ -32,6 +32,7 @@ require (
 	github.com/gocolly/colly/v2 v2.0.1
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.2 // indirect
+	github.com/google/go-containerregistry v0.8.0
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gorilla/websocket v1.4.2
 	github.com/gosuri/uilive v0.0.3 // indirect

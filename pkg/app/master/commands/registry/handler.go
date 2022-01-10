@@ -3,6 +3,12 @@ package registry
 import (
 	"fmt"
 
+	"github.com/google/go-containerregistry/pkg/crane"
+	"github.com/google/go-containerregistry/pkg/name"
+	gocrv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1/daemon"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
@@ -12,8 +18,6 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const appName = commands.AppName
@@ -33,8 +37,13 @@ func OnPullCommand(
 
 	cmdReport := report.NewRegistryCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
+	cmdReport.TargetReference = cparams.TargetRef
 
 	xc.Out.State("started")
+	xc.Out.Info("params",
+		ovars{
+			"cmd.params": fmt.Sprintf("%+v", cparams),
+		})
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
@@ -61,6 +70,24 @@ func OnPullCommand(
 
 	if gparams.Debug {
 		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+	}
+
+	//todo: pass a custom client to Pull (based on `client` above)
+	targetImage, err := crane.Pull(cparams.TargetRef)
+	errutil.FailOn(err)
+	outImageInfo(xc, targetImage)
+
+	if cparams.SaveToDocker {
+		xc.Out.State("save.docker.start")
+
+		tag, err := name.NewTag(cparams.TargetRef)
+		errutil.FailOn(err)
+
+		rawResponse, err := daemon.Write(tag, targetImage)
+		errutil.FailOn(err)
+		logger.Tracef("Image save to Docker response: %v", rawResponse)
+
+		xc.Out.State("save.docker.done")
 	}
 
 	xc.Out.State("completed")
@@ -193,4 +220,34 @@ func OnCopyCommand(
 				"file": cmdReport.ReportLocation(),
 			})
 	}
+}
+
+func outImageInfo(
+	xc *app.ExecutionContext,
+	targetImage gocrv1.Image) {
+	cn, err := targetImage.ConfigName()
+	errutil.FailOn(err)
+
+	d, err := targetImage.Digest()
+	errutil.FailOn(err)
+
+	cf, err := targetImage.ConfigFile()
+	errutil.FailOn(err)
+
+	m, err := targetImage.Manifest()
+	errutil.FailOn(err)
+
+	xc.Out.Info("image.info",
+		ovars{
+			"id":                         fmt.Sprintf("%s:%s", cn.Algorithm, cn.Hex),
+			"digest":                     fmt.Sprintf("%s:%s", d.Algorithm, d.Hex),
+			"architecture":               cf.Architecture,
+			"os":                         cf.OS,
+			"manifest.schema":            m.SchemaVersion,
+			"manifest.media_type":        m.MediaType,
+			"manifest.config.media_type": m.Config.MediaType,
+			"manifest.config.size":       fmt.Sprintf("%v", m.Config.Size),
+			"manifest.config.digest":     fmt.Sprintf("%s:%s", m.Config.Digest.Algorithm, m.Config.Digest.Hex),
+			"manifest.layers.count":      fmt.Sprintf("%v", len(m.Layers)),
+		})
 }

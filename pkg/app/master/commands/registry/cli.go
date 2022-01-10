@@ -27,11 +27,13 @@ func fullCmdName(subCmdName string) string {
 }
 
 type PullCommandParams struct {
+	TargetRef    string
 	SaveToDocker bool
 }
 
 func PullCommandFlagValues(ctx *cli.Context) (*PullCommandParams, error) {
 	values := &PullCommandParams{
+		TargetRef:    ctx.String(commands.FlagTarget),
 		SaveToDocker: ctx.Bool(FlagSaveToDocker),
 	}
 
@@ -47,9 +49,12 @@ var CLI = &cli.Command{
 			Name:  PullCmdName,
 			Usage: PullCmdNameUsage,
 			Flags: []cli.Flag{
+				commands.Cflag(commands.FlagTarget),
 				cflag(FlagSaveToDocker),
 			},
 			Action: func(ctx *cli.Context) error {
+				xc := app.NewExecutionContext(fullCmdName(PullCmdName))
+
 				gcvalues, err := commands.GlobalFlagValues(ctx)
 				if err != nil {
 					return err
@@ -60,7 +65,16 @@ var CLI = &cli.Command{
 					return err
 				}
 
-				xc := app.NewExecutionContext(fullCmdName(PullCmdName))
+				if cparams.TargetRef == "" {
+					if ctx.Args().Len() < 1 {
+						xc.Out.Error("param.target", "missing target")
+						cli.ShowCommandHelp(ctx, Name)
+						return nil
+					} else {
+						cparams.TargetRef = ctx.Args().First()
+					}
+				}
+
 				OnPullCommand(xc, gcvalues, cparams)
 				return nil
 			},
