@@ -375,7 +375,7 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--detect-all-certs` - Detect all certifcate files
 - `--detect-all-cert-pks` - Detect all certifcate private key files
 - `--change-match-layers-only` - Show only layers with change matches (default: false).
-- `--export-all-data-artifacts` - Archive path to export all data artifacts enabling the related flags if not set (if set to `.` then path defaults to `./data-artifacts.tar`)
+- `--export-all-data-artifacts` - Archive path to export file of all data artifacts, enabling the related flags if not set (if set to `.` then path defaults to `./data-artifacts.tar`, otherwise path must include file name)
 - `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
 
 Change Types:
