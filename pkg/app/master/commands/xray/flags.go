@@ -56,7 +56,7 @@ const (
 	FlagShowDuplicatesUsage         = "Show discovered duplicate file paths"
 	FlagShowSpecialPermsUsage       = "Show files with special permissions (setuid,setgid,sticky)"
 	FlagChangeMatchLayersOnlyUsage  = "Show only layers with change matches"
-	FlagExportAllDataArtifactsUsage = "Archive path to export all data artifacts enabling the related flags if not set (if set to . then path defaults to ./data-artifacts.tar)"
+	FlagExportAllDataArtifactsUsage = "Archive path to export file of all data artifacts, enabling the related flags if not set (if set to `.` then path defaults to `./data-artifacts.tar`, otherwise path must include file name)"
 	FlagDetectAllCertFilesUsage     = "Detect all certifcate files"
 	FlagDetectAllCertPKFilesUsage   = "Detect all certifcate private key files"
 )
