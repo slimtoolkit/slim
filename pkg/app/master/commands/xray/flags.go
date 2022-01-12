@@ -2,7 +2,7 @@ package xray
 
 import (
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // Xray command flag names
@@ -56,143 +56,146 @@ const (
 	FlagShowDuplicatesUsage         = "Show discovered duplicate file paths"
 	FlagShowSpecialPermsUsage       = "Show files with special permissions (setuid,setgid,sticky)"
 	FlagChangeMatchLayersOnlyUsage  = "Show only layers with change matches"
-	FlagExportAllDataArtifactsUsage = "Archive path to export all data artifacts enabling the related flags if not set (if set to . then path defaults to ./data-artifacts.tar)"
+	FlagExportAllDataArtifactsUsage = "Archive path to export file of all data artifacts, enabling the related flags if not set (if set to `.` then path defaults to `./data-artifacts.tar`, otherwise path must include file name)"
 	FlagDetectAllCertFilesUsage     = "Detect all certifcate files"
 	FlagDetectAllCertPKFilesUsage   = "Detect all certifcate private key files"
 )
 
 var Flags = map[string]cli.Flag{
-	FlagChanges: cli.StringSliceFlag{
-		Name:   FlagChanges,
-		Value:  &cli.StringSlice{""},
-		Usage:  FlagChangesUsage,
-		EnvVar: "DSLIM_CHANGES",
+	FlagChanges: &cli.StringSliceFlag{
+		Name:    FlagChanges,
+		Value:   cli.NewStringSlice(""),
+		Usage:   FlagChangesUsage,
+		EnvVars: []string{"DSLIM_CHANGES"},
 	},
-	FlagChangesOutput: cli.StringSliceFlag{
-		Name:   FlagChangesOutput,
-		Value:  &cli.StringSlice{"all"},
-		Usage:  FlagChangesOutputUsage,
-		EnvVar: "DSLIM_CHANGES_OUTPUT",
+	FlagChangesOutput: &cli.StringSliceFlag{
+		Name:    FlagChangesOutput,
+		Value:   cli.NewStringSlice("all"),
+		Usage:   FlagChangesOutputUsage,
+		EnvVars: []string{"DSLIM_CHANGES_OUTPUT"},
 	},
-	FlagLayer: cli.StringSliceFlag{
-		Name:   FlagLayer,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagLayerUsage,
-		EnvVar: "DSLIM_LAYER",
+	FlagLayer: &cli.StringSliceFlag{
+		Name:    FlagLayer,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagLayerUsage,
+		EnvVars: []string{"DSLIM_LAYER"},
 	},
-	FlagAddImageManifest: cli.BoolFlag{
-		Name:   FlagAddImageManifest,
-		Usage:  FlagAddImageManifestUsage,
-		EnvVar: "DSLIM_XRAY_IMAGE_MANIFEST",
+	FlagAddImageManifest: &cli.BoolFlag{
+		Name:    FlagAddImageManifest,
+		Usage:   FlagAddImageManifestUsage,
+		EnvVars: []string{"DSLIM_XRAY_IMAGE_MANIFEST"},
 	},
-	FlagAddImageConfig: cli.BoolFlag{
-		Name:   FlagAddImageConfig,
-		Usage:  FlagAddImageConfigUsage,
-		EnvVar: "DSLIM_XRAY_IMAGE_CONFIG",
+	FlagAddImageConfig: &cli.BoolFlag{
+		Name:    FlagAddImageConfig,
+		Usage:   FlagAddImageConfigUsage,
+		EnvVars: []string{"DSLIM_XRAY_IMAGE_CONFIG"},
 	},
-	FlagLayerChangesMax: cli.IntFlag{
-		Name:   FlagLayerChangesMax,
-		Value:  -1,
-		Usage:  FlagLayerChangesMaxUsage,
-		EnvVar: "DSLIM_XRAY_LAYER_CHANGES_MAX",
+	FlagLayerChangesMax: &cli.IntFlag{
+		Name:    FlagLayerChangesMax,
+		Value:   -1,
+		Usage:   FlagLayerChangesMaxUsage,
+		EnvVars: []string{"DSLIM_XRAY_LAYER_CHANGES_MAX"},
 	},
-	FlagAllChangesMax: cli.IntFlag{
-		Name:   FlagAllChangesMax,
-		Value:  -1,
-		Usage:  FlagAllChangesMaxUsage,
-		EnvVar: "DSLIM_XRAY_ALL_CHANGES_MAX",
+	FlagAllChangesMax: &cli.IntFlag{
+		Name:    FlagAllChangesMax,
+		Value:   -1,
+		Usage:   FlagAllChangesMaxUsage,
+		EnvVars: []string{"DSLIM_XRAY_ALL_CHANGES_MAX"},
 	},
-	FlagAddChangesMax: cli.IntFlag{
-		Name:   FlagAddChangesMax,
-		Value:  -1,
-		Usage:  FlagAddChangesMaxUsage,
-		EnvVar: "DSLIM_XRAY_ADD_CHANGES_MAX",
+	FlagAddChangesMax: &cli.IntFlag{
+		Name:    FlagAddChangesMax,
+		Value:   -1,
+		Usage:   FlagAddChangesMaxUsage,
+		EnvVars: []string{"DSLIM_XRAY_ADD_CHANGES_MAX"},
 	},
-	FlagModifyChangesMax: cli.IntFlag{
-		Name:   FlagModifyChangesMax,
-		Value:  -1,
-		Usage:  FlagModifyChangesMaxUsage,
-		EnvVar: "DSLIM_XRAY_MODIFY_CHANGES_MAX",
+	FlagModifyChangesMax: &cli.IntFlag{
+		Name:    FlagModifyChangesMax,
+		Value:   -1,
+		Usage:   FlagModifyChangesMaxUsage,
+		EnvVars: []string{"DSLIM_XRAY_MODIFY_CHANGES_MAX"},
 	},
-	FlagDeleteChangesMax: cli.IntFlag{
-		Name:   FlagDeleteChangesMax,
-		Value:  -1,
-		Usage:  FlagDeleteChangesMaxUsage,
-		EnvVar: "DSLIM_XRAY_DELETE_CHANGES_MAX",
+	FlagDeleteChangesMax: &cli.IntFlag{
+		Name:    FlagDeleteChangesMax,
+		Value:   -1,
+		Usage:   FlagDeleteChangesMaxUsage,
+		EnvVars: []string{"DSLIM_XRAY_DELETE_CHANGES_MAX"},
 	},
-	FlagChangePath: cli.StringSliceFlag{
-		Name:   FlagChangePath,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagChangePathUsage,
-		EnvVar: "DSLIM_XRAY_CHANGE_PATH",
+	FlagChangePath: &cli.StringSliceFlag{
+		Name:    FlagChangePath,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagChangePathUsage,
+		EnvVars: []string{"DSLIM_XRAY_CHANGE_PATH"},
 	},
-	FlagChangeData: cli.StringSliceFlag{
-		Name:   FlagChangeData,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagChangeDataUsage,
-		EnvVar: "DSLIM_XRAY_CHANGE_DATA",
+	FlagChangeData: &cli.StringSliceFlag{
+		Name:    FlagChangeData,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagChangeDataUsage,
+		EnvVars: []string{"DSLIM_XRAY_CHANGE_DATA"},
 	},
-	FlagReuseSavedImage: cli.BoolTFlag{
-		Name:   FlagReuseSavedImage,
-		Usage:  FlagReuseSavedImageUsage,
-		EnvVar: "DSLIM_XRAY_REUSE_SAVED",
+	FlagReuseSavedImage: &cli.BoolFlag{
+		Name:    FlagReuseSavedImage,
+		Value:   true, //enabled by default
+		Usage:   FlagReuseSavedImageUsage,
+		EnvVars: []string{"DSLIM_XRAY_REUSE_SAVED"},
 	},
-	FlagTopChangesMax: cli.IntFlag{
-		Name:   FlagTopChangesMax,
-		Value:  20,
-		Usage:  FlagTopChangesMaxUsage,
-		EnvVar: "DSLIM_XRAY_TOP_CHANGES_MAX",
+	FlagTopChangesMax: &cli.IntFlag{
+		Name:    FlagTopChangesMax,
+		Value:   20,
+		Usage:   FlagTopChangesMaxUsage,
+		EnvVars: []string{"DSLIM_XRAY_TOP_CHANGES_MAX"},
 	},
-	FlagHashData: cli.BoolFlag{
-		Name:   FlagHashData,
-		Usage:  FlagHashDataUsage,
-		EnvVar: "DSLIM_XRAY_HASH_DATA",
+	FlagHashData: &cli.BoolFlag{
+		Name:    FlagHashData,
+		Usage:   FlagHashDataUsage,
+		EnvVars: []string{"DSLIM_XRAY_HASH_DATA"},
 	},
-	FlagDetectUTF8: cli.StringFlag{
-		Name:   FlagDetectUTF8,
-		Usage:  FlagDetectUTF8Usage,
-		EnvVar: "DSLIM_XRAY_DETECT_UTF8",
+	FlagDetectUTF8: &cli.StringFlag{
+		Name:    FlagDetectUTF8,
+		Usage:   FlagDetectUTF8Usage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_UTF8"},
 	},
-	FlagDetectDuplicates: cli.BoolTFlag{
-		Name:   FlagDetectDuplicates,
-		Usage:  FlagDetectDuplicatesUsage,
-		EnvVar: "DSLIM_XRAY_DETECT_DUP",
+	FlagDetectDuplicates: &cli.BoolFlag{
+		Name:    FlagDetectDuplicates,
+		Value:   true, //enabled by default
+		Usage:   FlagDetectDuplicatesUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_DUP"},
 	},
-	FlagShowDuplicates: cli.BoolFlag{
-		Name:   FlagShowDuplicates,
-		Usage:  FlagShowDuplicatesUsage,
-		EnvVar: "DSLIM_XRAY_SHOW_DUP",
+	FlagShowDuplicates: &cli.BoolFlag{
+		Name:    FlagShowDuplicates,
+		Usage:   FlagShowDuplicatesUsage,
+		EnvVars: []string{"DSLIM_XRAY_SHOW_DUP"},
 	},
-	FlagShowSpecialPerms: cli.BoolTFlag{
-		Name:   FlagShowSpecialPerms,
-		Usage:  FlagShowSpecialPermsUsage,
-		EnvVar: "DSLIM_XRAY_SHOW_SPECIAL",
+	FlagShowSpecialPerms: &cli.BoolFlag{
+		Name:    FlagShowSpecialPerms,
+		Value:   true, //enabled by default
+		Usage:   FlagShowSpecialPermsUsage,
+		EnvVars: []string{"DSLIM_XRAY_SHOW_SPECIAL"},
 	},
-	FlagChangeDataHash: cli.StringSliceFlag{
-		Name:   FlagChangeDataHash,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagChangeDataHashUsage,
-		EnvVar: "DSLIM_XRAY_CHANGE_DATA_HASH",
+	FlagChangeDataHash: &cli.StringSliceFlag{
+		Name:    FlagChangeDataHash,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagChangeDataHashUsage,
+		EnvVars: []string{"DSLIM_XRAY_CHANGE_DATA_HASH"},
 	},
-	FlagChangeMatchLayersOnly: cli.BoolFlag{
-		Name:   FlagChangeMatchLayersOnly,
-		Usage:  FlagChangeMatchLayersOnlyUsage,
-		EnvVar: "DSLIM_XRAY_CHANGE_MATCH_LAYERS_ONLY",
+	FlagChangeMatchLayersOnly: &cli.BoolFlag{
+		Name:    FlagChangeMatchLayersOnly,
+		Usage:   FlagChangeMatchLayersOnlyUsage,
+		EnvVars: []string{"DSLIM_XRAY_CHANGE_MATCH_LAYERS_ONLY"},
 	},
-	FlagExportAllDataArtifacts: cli.StringFlag{
-		Name:   FlagExportAllDataArtifacts,
-		Usage:  FlagExportAllDataArtifactsUsage,
-		EnvVar: "DSLIM_XRAY_EXPORT_ALL_DARTIFACTS",
+	FlagExportAllDataArtifacts: &cli.StringFlag{
+		Name:    FlagExportAllDataArtifacts,
+		Usage:   FlagExportAllDataArtifactsUsage,
+		EnvVars: []string{"DSLIM_XRAY_EXPORT_ALL_DARTIFACTS"},
 	},
-	FlagDetectAllCertFiles: cli.BoolFlag{
-		Name:   FlagDetectAllCertFiles,
-		Usage:  FlagDetectAllCertFilesUsage,
-		EnvVar: "DSLIM_XRAY_DETECT_ALL_CERTS",
+	FlagDetectAllCertFiles: &cli.BoolFlag{
+		Name:    FlagDetectAllCertFiles,
+		Usage:   FlagDetectAllCertFilesUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_ALL_CERTS"},
 	},
-	FlagDetectAllCertPKFiles: cli.BoolFlag{
-		Name:   FlagDetectAllCertPKFiles,
-		Usage:  FlagDetectAllCertPKFilesUsage,
-		EnvVar: "DSLIM_XRAY_DETECT_ALL_CERT_PKS",
+	FlagDetectAllCertPKFiles: &cli.BoolFlag{
+		Name:    FlagDetectAllCertPKFiles,
+		Usage:   FlagDetectAllCertPKFilesUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_ALL_CERT_PKS"},
 	},
 }
 

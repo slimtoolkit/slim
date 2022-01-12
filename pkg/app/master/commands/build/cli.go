@@ -10,7 +10,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 	Alias = "b"
 )
 
-var CLI = cli.Command{
+var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
@@ -44,6 +44,7 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagComposeEnvFile),
 		commands.Cflag(commands.FlagComposeProjectName),
 		commands.Cflag(commands.FlagComposeWorkdir),
+		commands.Cflag(commands.FlagContainerProbeComposeSvc),
 
 		commands.Cflag(commands.FlagHTTPProbeOff),
 		commands.Cflag(commands.FlagHTTPProbe),
@@ -135,6 +136,7 @@ var CLI = cli.Command{
 		cflag(FlagIncludeCertDirs),
 		cflag(FlagIncludeCertPKAll),
 		cflag(FlagIncludeCertPKDirs),
+		cflag(FlagIncludeNew),
 		cflag(FlagKeepTmpArtifacts),
 		cflag(FlagKeepPerms),
 		cflag(FlagPathPerms),
@@ -142,6 +144,9 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagContinueAfter),
 		commands.Cflag(commands.FlagUseLocalMounts),
 		commands.Cflag(commands.FlagUseSensorVolume),
+		//Sensor flags:
+		commands.Cflag(commands.FlagSensorIPCEndpoint),
+		commands.Cflag(commands.FlagSensorIPCMode),
 	},
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name)
@@ -186,6 +191,7 @@ var CLI = cli.Command{
 
 		composeProjectName := ctx.String(commands.FlagComposeProjectName)
 		composeWorkdir := ctx.String(commands.FlagComposeWorkdir)
+		containerProbeComposeSvc := ctx.String(commands.FlagContainerProbeComposeSvc)
 
 		var targetRef string
 
@@ -196,7 +202,7 @@ var CLI = cli.Command{
 				targetRef = ctx.String(commands.FlagTarget)
 
 				if targetRef == "" {
-					if len(ctx.Args()) < 1 {
+					if ctx.Args().Len() < 1 {
 						xc.Out.Error("param.target", "missing image ID/name")
 						cli.ShowCommandHelp(ctx, Name)
 						return nil
@@ -207,7 +213,7 @@ var CLI = cli.Command{
 			} else {
 				targetRef = cbOpts.DockerfileContext
 				if targetRef == "" {
-					if len(ctx.Args()) < 1 {
+					if ctx.Args().Len() < 1 {
 						xc.Out.Error("param.target", "missing Dockerfile build context directory")
 						cli.ShowCommandHelp(ctx, Name)
 						return nil
@@ -495,12 +501,14 @@ var CLI = cli.Command{
 		doIncludeCertPKAll := ctx.Bool(FlagIncludeCertPKAll)
 		doIncludeCertPKDirs := ctx.Bool(FlagIncludeCertPKDirs)
 
+		doIncludeNew := ctx.Bool(FlagIncludeNew)
+
 		doUseLocalMounts := ctx.Bool(commands.FlagUseLocalMounts)
 		doUseSensorVolume := ctx.String(commands.FlagUseSensorVolume)
 
 		doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
 
-		doExcludeMounts := ctx.BoolT(commands.FlagExcludeMounts)
+		doExcludeMounts := ctx.Bool(commands.FlagExcludeMounts)
 		if doExcludeMounts {
 			for mpath := range volumeMounts {
 				excludePatterns[mpath] = nil
@@ -580,6 +588,21 @@ var CLI = cli.Command{
 			}
 		}
 
+		if containerProbeComposeSvc != "" {
+			if !strings.Contains(continueAfter.Mode, config.CAMContainerProbe) {
+				if continueAfter.Mode == "" {
+					continueAfter.Mode = config.CAMContainerProbe
+				} else {
+					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMContainerProbe)
+				}
+
+				xc.Out.Info("continue.after",
+					ovars{
+						"message": fmt.Sprintf("updating mode to %s", continueAfter.Mode),
+					})
+			}
+		}
+
 		if continueAfter.Mode == "" {
 			continueAfter.Mode = config.CAMEnter
 			xc.Out.Info("exec",
@@ -588,7 +611,7 @@ var CLI = cli.Command{
 				})
 		}
 
-		commandReport := ctx.GlobalString(commands.FlagCommandReport)
+		commandReport := ctx.String(commands.FlagCommandReport)
 		if commandReport == "off" {
 			commandReport = ""
 		}
@@ -615,6 +638,7 @@ var CLI = cli.Command{
 			composeEnvNoHost,
 			composeWorkdir,
 			composeProjectName,
+			containerProbeComposeSvc,
 			cbOpts,
 			crOpts,
 			outputTags,
@@ -661,13 +685,18 @@ var CLI = cli.Command{
 			doIncludeCertDirs,
 			doIncludeCertPKAll,
 			doIncludeCertPKDirs,
+			doIncludeNew,
 			doUseLocalMounts,
 			doUseSensorVolume,
 			doKeepTmpArtifacts,
 			continueAfter,
 			execCmd,
 			string(execFileCmd),
-			deleteFatImage)
+			deleteFatImage,
+			ctx.String(commands.FlagSensorIPCEndpoint),
+			ctx.String(commands.FlagSensorIPCMode),
+			ctx.String(commands.FlagLogLevel),
+			ctx.String(commands.FlagLogFormat))
 
 		return nil
 	},

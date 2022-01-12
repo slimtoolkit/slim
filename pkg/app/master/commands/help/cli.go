@@ -1,7 +1,7 @@
 package help
 
 import (
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -10,7 +10,7 @@ const (
 	Alias = "h"
 )
 
-var CLI = cli.Command{
+var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,

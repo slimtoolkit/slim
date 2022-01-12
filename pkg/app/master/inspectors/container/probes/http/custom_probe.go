@@ -153,7 +153,7 @@ func NewCustomProbe(
 		for _, pnum := range probe.TargetPorts {
 			pspec := dockerapi.Port(fmt.Sprintf("%v/tcp", pnum))
 			if _, ok := inspector.ContainerInfo.NetworkSettings.Ports[pspec]; ok {
-				if inspector.InContainer {
+				if inspector.SensorIPCMode == container.SensorIPCModeDirect {
 					probe.Ports = append(probe.Ports, fmt.Sprintf("%d", pnum))
 				} else {
 					probe.Ports = append(probe.Ports, inspector.ContainerInfo.NetworkSettings.Ports[pspec][0].HostPort)
@@ -176,7 +176,7 @@ func NewCustomProbe(
 
 				if _, ok := inspector.ContainerInfo.NetworkSettings.Ports[pspec]; ok {
 					hostPort := inspector.ContainerInfo.NetworkSettings.Ports[pspec][0].HostPort
-					if inspector.InContainer {
+					if inspector.SensorIPCMode == container.SensorIPCModeDirect {
 						if containerPort := availableHostPorts[hostPort]; containerPort != "" {
 							probe.Ports = append(probe.Ports, containerPort)
 						} else {
@@ -197,7 +197,7 @@ func NewCustomProbe(
 		}
 
 		for hostPort, containerPort := range availableHostPorts {
-			if inspector.InContainer {
+			if inspector.SensorIPCMode == container.SensorIPCModeDirect {
 				probe.Ports = append(probe.Ports, containerPort)
 			} else {
 				probe.Ports = append(probe.Ports, hostPort)
@@ -336,12 +336,7 @@ func (p *CustomProbe) Start() {
 				}
 
 				for _, proto := range protocols {
-					var targetHost string
-					if p.ContainerInspector.InContainer {
-						targetHost = p.ContainerInspector.ContainerInfo.NetworkSettings.IPAddress
-					} else {
-						targetHost = p.ContainerInspector.DockerHostIP
-					}
+					targetHost := p.ContainerInspector.TargetHost
 
 					maxRetryCount := probeRetryCount
 					if p.RetryCount > 0 {

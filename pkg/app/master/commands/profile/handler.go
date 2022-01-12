@@ -85,7 +85,11 @@ func OnCommand(
 	doUseLocalMounts bool,
 	doUseSensorVolume string,
 	//doKeepTmpArtifacts bool,
-	continueAfter *config.ContinueAfter) {
+	continueAfter *config.ContinueAfter,
+	sensorIPCEndpoint string,
+	sensorIPCMode string,
+	logLevel string,
+	logFormat string) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
@@ -261,10 +265,15 @@ func OnCommand(
 		false, //doIncludeCertDirs
 		false, //doIncludeCertPKAll
 		false, //doIncludeCertPKDirs
+		false, //doIncludeNew
 		nil,   //selectedNetNames
 		//nil,
 		gparams.Debug,
+		logLevel,
+		logFormat,
 		gparams.InContainer,
+		sensorIPCEndpoint,
+		sensorIPCMode,
 		true,
 		prefix)
 	errutil.FailOn(err)

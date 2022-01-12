@@ -15,7 +15,7 @@ import (
 	dockerapi "github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
@@ -240,7 +240,13 @@ var continueAfterValues = []prompt.Suggest{
 	{Text: config.CAMEnter, Description: "Use the <enter> key to indicate you that you are done using the container"},
 	{Text: config.CAMSignal, Description: "Use SIGUSR1 to signal that you are done using the container"},
 	{Text: config.CAMTimeout, Description: "Automatically continue after the default timeout (60 seconds)"},
+	{Text: config.CAMContainerProbe, Description: "Automatically continue after the probed container exits"},
 	{Text: "<seconds>", Description: "Enter the number of seconds to wait instead of <seconds>"},
+}
+
+var ipcModeValues = []prompt.Suggest{
+	{Text: "proxy", Description: "Proxy sensor ipc mode"},
+	{Text: "direct", Description: "Direct sensor ipc mode"},
 }
 
 func CompleteProgress(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
@@ -262,6 +268,10 @@ func CompleteTBool(ia *InteractiveApp, token string, params prompt.Document) []p
 
 func CompleteContinueAfter(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(continueAfterValues, token, true)
+}
+
+func CompleteIPCMode(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	return prompt.FilterHasPrefix(ipcModeValues, token, true)
 }
 
 func CompleteTarget(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {

@@ -25,6 +25,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagComposeEnvFile), Description: commands.FlagComposeEnvFileUsage},
 		{Text: commands.FullFlagName(commands.FlagComposeProjectName), Description: commands.FlagComposeProjectNameUsage},
 		{Text: commands.FullFlagName(commands.FlagComposeWorkdir), Description: commands.FlagComposeWorkdirUsage},
+		{Text: commands.FullFlagName(commands.FlagContainerProbeComposeSvc), Description: commands.FlagContainerProbeComposeSvcUsage},
 		{Text: commands.FullFlagName(commands.FlagPull), Description: commands.FlagPullUsage},
 		{Text: commands.FullFlagName(commands.FlagShowPullLogs), Description: commands.FlagShowPullLogsUsage},
 		{Text: commands.FullFlagName(commands.FlagRegistryAccount), Description: commands.FlagRegistryAccountUsage},
@@ -106,6 +107,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagIncludeCertDirs), Description: FlagIncludeCertDirsUsage},
 		{Text: commands.FullFlagName(FlagIncludeCertPKAll), Description: FlagIncludeCertPKAllUsage},
 		{Text: commands.FullFlagName(FlagIncludeCertPKDirs), Description: FlagIncludeCertPKDirsUsage},
+		{Text: commands.FullFlagName(FlagIncludeNew), Description: FlagIncludeNewUsage},
 		{Text: commands.FullFlagName(commands.FlagMount), Description: commands.FlagMountUsage},
 		{Text: commands.FullFlagName(commands.FlagContinueAfter), Description: commands.FlagContinueAfterUsage},
 		{Text: commands.FullFlagName(commands.FlagUseLocalMounts), Description: commands.FlagUseLocalMountsUsage},
@@ -120,6 +122,8 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagCBOTarget), Description: FlagCBOTargetUsage},
 		{Text: commands.FullFlagName(FlagCBONetwork), Description: FlagCBONetworkUsage},
 		{Text: commands.FullFlagName(FlagCBOCacheFrom), Description: FlagCBOCacheFromUsage},
+		{Text: commands.FullFlagName(commands.FlagSensorIPCMode), Description: commands.FlagSensorIPCModeUsage},
+		{Text: commands.FullFlagName(commands.FlagSensorIPCEndpoint), Description: commands.FlagSensorIPCEndpointUsage},
 	},
 	Values: map[string]commands.CompleteValue{
 		//NOTE: with FlagPull target complete needs to check remote registries too
@@ -159,11 +163,13 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(FlagIncludeCertDirs):                         commands.CompleteBool,
 		commands.FullFlagName(FlagIncludeCertPKAll):                        commands.CompleteBool,
 		commands.FullFlagName(FlagIncludeCertPKDirs):                       commands.CompleteBool,
+		commands.FullFlagName(FlagIncludeNew):                              commands.CompleteBool,
 		commands.FullFlagName(commands.FlagContinueAfter):                  commands.CompleteContinueAfter,
 		commands.FullFlagName(commands.FlagUseLocalMounts):                 commands.CompleteBool,
 		commands.FullFlagName(commands.FlagUseSensorVolume):                commands.CompleteVolume,
 		commands.FullFlagName(FlagKeepTmpArtifacts):                        commands.CompleteBool,
 		commands.FullFlagName(commands.FlagCROHostConfigFile):              commands.CompleteFile,
 		commands.FullFlagName(FlagDockerfileContext):                       commands.CompleteFile,
+		commands.FullFlagName(commands.FlagSensorIPCMode):                  commands.CompleteIPCMode,
 	},
 }

@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -23,6 +24,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/pkg/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/command"
+	"github.com/docker-slim/docker-slim/pkg/consts"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
@@ -43,12 +45,40 @@ const (
 	ecbOther = iota + 1
 	ecbBadCustomImageTag
 	ecbImageBuildError
+	ecbImageAlreadyOptimized
 	ecbNoEntrypoint
 	ecbBadTargetComposeSvc
 	ecbComposeSvcNoImage
 )
 
 type ovars = app.OutVars
+
+func NewLogWriter(name string) *chanWriter {
+	r, w := io.Pipe()
+	cw := &chanWriter{
+		Name: name,
+		r:    r,
+		w:    w,
+	}
+	go func() {
+		s := bufio.NewScanner(cw.r)
+		for s.Scan() {
+			fmt.Println(name + ": " + string(s.Bytes()))
+		}
+	}()
+	return cw
+}
+
+type chanWriter struct {
+	Name string
+	Chan chan string
+	w    *io.PipeWriter
+	r    *io.PipeReader
+}
+
+func (w *chanWriter) Write(p []byte) (n int, err error) {
+	return w.w.Write(p)
+}
 
 // OnCommand implements the 'build' docker-slim command
 func OnCommand(
@@ -73,6 +103,7 @@ func OnCommand(
 	composeEnvNoHost bool,
 	composeWorkdir string,
 	composeProjectName string,
+	containerProbeComposeSvc string,
 	cbOpts *config.ContainerBuildOptions,
 	crOpts *config.ContainerRunOptions,
 	outputTags []string,
@@ -119,13 +150,18 @@ func OnCommand(
 	doIncludeCertDirs bool,
 	doIncludeCertPKAll bool,
 	doIncludeCertPKDirs bool,
+	doIncludeNew bool,
 	doUseLocalMounts bool,
 	doUseSensorVolume string,
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
 	execCmd string,
 	execFileCmd string,
-	deleteFatImage bool) {
+	deleteFatImage bool,
+	sensorIPCEndpoint string,
+	sensorIPCMode string,
+	logLevel string,
+	logFormat string) {
 
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
@@ -136,6 +172,18 @@ func OnCommand(
 	cmdReport := report.NewBuildCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 	cmdReport.TargetReference = targetRef
+
+	cmdReportOnExit := func() {
+		cmdReport.State = command.StateError
+		if cmdReport.Save() {
+			xc.Out.Info("report",
+				ovars{
+					"file": cmdReport.ReportLocation(),
+				})
+		}
+	}
+
+	xc.AddCleanupHandler(cmdReportOnExit)
 
 	var customImageTag string
 	var additionalTags []string
@@ -167,6 +215,7 @@ func OnCommand(
 				"location":  fsutil.ExeDir(),
 			})
 
+		cmdReport.Error = "docker.connect.error"
 		xc.Exit(exitCode)
 	}
 	xc.FailOn(err)
@@ -242,6 +291,7 @@ func OnCommand(
 						"location":  fsutil.ExeDir(),
 					})
 
+				cmdReport.Error = "malformed.custom.image.tag"
 				xc.Exit(exitCode)
 			}
 		} else {
@@ -345,6 +395,7 @@ func OnCommand(
 			composeWorkdir,
 			composeEnvVars,
 			composeEnvNoHost,
+			containerProbeComposeSvc,
 			false, //buildImages
 			doPull,
 			nil,  //pullExcludes (todo: add a flag)
@@ -633,6 +684,29 @@ func OnCommand(
 			"size.human": humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
 		})
 
+	if imageInspector.ImageInfo.Config != nil &&
+		len(imageInspector.ImageInfo.Config.Labels) > 0 {
+		for labelName := range imageInspector.ImageInfo.Config.Labels {
+			if labelName == consts.ContainerLabelName {
+				xc.Out.Info("target.image.error",
+					ovars{
+						"status":  "image.already.optimized",
+						"image":   targetRef,
+						"message": "the target image is already optimized",
+					})
+
+				exitCode := commands.ECTBuild | ecbImageAlreadyOptimized
+				xc.Out.State("exited",
+					ovars{
+						"exit.code": exitCode,
+					})
+
+				cmdReport.Error = "image.already.optimized"
+				xc.Exit(exitCode)
+			}
+		}
+	}
+
 	logger.Info("processing 'fat' image info...")
 	err = imageInspector.ProcessCollectedData()
 	xc.FailOn(err)
@@ -870,9 +944,14 @@ func OnCommand(
 		doIncludeCertDirs,
 		doIncludeCertPKAll,
 		doIncludeCertPKDirs,
+		doIncludeNew,
 		selectedNetworks,
 		gparams.Debug,
+		logLevel,
+		logFormat,
 		gparams.InContainer,
+		sensorIPCEndpoint,
+		sensorIPCMode,
 		true,
 		prefix)
 	xc.FailOn(err)
@@ -887,14 +966,28 @@ func OnCommand(
 
 		exitCode := commands.ECTBuild | ecbNoEntrypoint
 		xc.Out.State("exited", ovars{"exit.code": exitCode})
+
+		cmdReport.Error = "no.entrypoint.cmd"
 		xc.Exit(exitCode)
 	}
 
 	logger.Info("starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
+	if err != nil && containerInspector.DoShowContainerLogs {
+		containerInspector.ShowContainerLogs()
+	}
+
 	xc.FailOn(err)
 
+	containerName := containerInspector.ContainerName
+	containerID := containerInspector.ContainerID
 	inspectorCleanup := func() {
+		xc.Out.Info("container.inspector.cleanup",
+			ovars{
+				"name": containerName,
+				"id":   containerID,
+			})
+
 		if containerInspector != nil {
 			xc.Out.State("container.target.shutdown.start")
 			containerInspector.FinishMonitoring()
@@ -916,7 +1009,7 @@ func OnCommand(
 
 	logger.Info("watching container monitor...")
 
-	if strings.Contains(continueAfter.Mode, config.CAMProbe) {
+	if hasContinueAfterMode(continueAfter.Mode, config.CAMProbe) {
 		doHTTPProbe = true
 	}
 
@@ -962,6 +1055,7 @@ func OnCommand(
 					"exit.code": exitCode,
 				})
 
+			cmdReport.Error = "no.exposed.ports"
 			xc.Exit(exitCode)
 		}
 
@@ -974,7 +1068,7 @@ func OnCommand(
 		continueAfterMsg = "no input required, execution will resume after the timeout"
 	}
 
-	if strings.Contains(continueAfter.Mode, config.CAMProbe) {
+	if hasContinueAfterMode(continueAfter.Mode, config.CAMProbe) {
 		continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
 	}
 
@@ -992,6 +1086,53 @@ func OnCommand(
 		//when probe and signal are combined
 		//because both need channels (TODO: fix)
 		switch mode {
+		case config.CAMContainerProbe:
+
+			idsToLog := map[string]string{}
+			idsToLog[targetRef] = containerInspector.ContainerID
+			for name, svc := range depServicesExe.RunningServices {
+				idsToLog[name] = svc.ID
+			}
+			//TODO:
+			//need a flag to control logs for dep services
+			//also good to leverage the logging capabilities in compose (TBD)
+			for name, id := range idsToLog {
+				name := name
+				id := id
+				go func() {
+					err := client.Logs(dockerapi.LogsOptions{
+						Container:    id,
+						OutputStream: NewLogWriter(name + "-stdout"),
+						ErrorStream:  NewLogWriter(name + "-stderr"),
+						Follow:       true,
+						Stdout:       true,
+						Stderr:       true,
+					})
+					xc.FailOn(err)
+				}()
+			}
+
+			svc, ok := depServicesExe.RunningServices[containerProbeComposeSvc]
+			if !ok {
+				xc.Out.State("error", ovars{"message": "container-prove-compose-svc not found in running services"})
+				xc.Exit(1)
+			}
+			for {
+				c, err := client.InspectContainerWithOptions(dockerapi.InspectContainerOptions{
+					ID: svc.ID,
+				})
+				xc.FailOn(err)
+				if c.State.Running {
+					xc.Out.Info("wait for container.probe to finish")
+				} else {
+					if c.State.ExitCode != 0 {
+						xc.Out.State("exited", ovars{"container.probe exit.code": c.State.ExitCode})
+						xc.Exit(1)
+					}
+					break
+				}
+				time.Sleep(1 * time.Second)
+			}
 		case config.CAMEnter:
 			xc.Out.Prompt("USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER")
 			creader := bufio.NewReader(os.Stdin)
@@ -1098,6 +1239,7 @@ func OnCommand(
 				"exit.code": exitCode,
 			})
 
+		cmdReport.Error = "exec.cmd.failure"
 		xc.Exit(exitCode)
 	}
 
@@ -1127,6 +1269,7 @@ func OnCommand(
 				"exit.code": exitCode,
 			})
 
+		cmdReport.Error = "no.data.collected"
 		xc.Exit(exitCode)
 	}
 
@@ -1183,6 +1326,7 @@ func OnCommand(
 				"location":  fsutil.ExeDir(),
 			})
 
+		cmdReport.Error = "optimized.image.build.error"
 		xc.Exit(exitCode)
 	}
 
@@ -1222,6 +1366,7 @@ func OnCommand(
 				"exit.code": exitCode,
 			})
 
+		cmdReport.Error = "minified.image.not.found"
 		xc.Exit(exitCode)
 	}
 
@@ -1387,4 +1532,14 @@ func OnCommand(
 				"file": cmdReport.ReportLocation(),
 			})
 	}
+}
+
+func hasContinueAfterMode(modeSet, mode string) bool {
+	for _, current := range strings.Split(modeSet, "&") {
+		if current == mode {
+			return true
+		}
+	}
+
+	return false
 }

@@ -6,7 +6,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 
 	dockerapi "github.com/fsouza/go-dockerclient"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -77,7 +77,7 @@ func CommandFlagValues(ctx *cli.Context) (*CommandParams, error) {
 	return values, nil
 }
 
-var CLI = cli.Command{
+var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
@@ -112,7 +112,7 @@ var CLI = cli.Command{
 		}
 
 		if cparams.TargetRef == "" {
-			if len(ctx.Args()) < 1 {
+			if ctx.Args().Len() < 1 {
 				xc.Out.Error("param.target", "missing target")
 				cli.ShowCommandHelp(ctx, Name)
 				return nil

@@ -5,7 +5,7 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
@@ -136,4 +136,4 @@ func ConfirmNetwork(logger *log.Entry, client *docker.Client, network string) bo
 	return false
 }
 
-var CLI []cli.Command
+var CLI []*cli.Command

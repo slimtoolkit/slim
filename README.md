@@ -6,6 +6,8 @@
 [![Youtube](https://img.shields.io/badge/-YouTube-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA?sub_confirmation=1)
 
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod&style=for-the-badge)](https://gitpod.io/#https://github.com/docker-slim/docker-slim)
+[![View Code Diagram badge for CodeSee](https://codesee-docs.s3.amazonaws.com/badge.svg)](https://app.codesee.io/maps/public/1cedd540-6451-11ec-a279-0572ca5abbdc)
+
 [![Install DockerSlim](https://img.shields.io/badge/install-docker--slim-blue?style=for-the-badge)](https://github.com/docker-slim/docker-slim#installation)
 [![Get Examples](https://img.shields.io/badge/docker--slim-app%20examples-green?style=for-the-badge)](https://github.com/docker-slim/examples)
 
@@ -14,6 +16,8 @@
 
 
 # Optimize Your Experience with Containers. Make Your Containers Better, Smaller, More Secure and Do Less to Get There (free and open source!)
+
+DockerSlim is a tool for developers that provides a set of commands (`build`, `xray`, `lint` and others) to simplify and optimize your developer experience with containers. It makes your containers betters, smaller and more secure.
 
 Don't change anything in your Docker container image and minify it by up to 30x making it secure too! Optimizing images isn't the only thing it can do though. It can also help you understand and author better container images.
 
@@ -328,17 +332,17 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--target` - target Dockerfile path (or Docker image, in the future; if you don't use this flag you must specify the target as the argument to the command)
 - `--target-type` - explicitly specify the command target type (values: dockerfile, image)
 - `--skip-build-context` - don't try to analyze build context
-- `build-context-dir` - explicitly specify the build context directory
-- `skip-dockerignore` - don't try to analyze .dockerignore
-- `include-check-label` - include checks with the selected label key:value
-- `exclude-check-label` - exclude checks with the selected label key:value
-- `include-check-id` - check ID to include
-- `include-check-id-file` - file with check IDs to include
-- `exclude-check-id` - check ID to exclude
-- `exclude-check-id-file` - file with check IDs to exclude
-- `show-nohits` - show checks with no matches
-- `show-snippet` - show check match snippet (default value: true)
-- `list-checks` - list available checks (don't need to specify the target flag if you just want to list the available checks)
+- `--build-context-dir` - explicitly specify the build context directory
+- `--skip-dockerignore` - don't try to analyze .dockerignore
+- `--include-check-label` - include checks with the selected label key:value
+- `--exclude-check-label` - exclude checks with the selected label key:value
+- `--include-check-id` - check ID to include
+- `--include-check-id-file` - file with check IDs to include
+- `--exclude-check-id` - check ID to exclude
+- `--exclude-check-id-file` - file with check IDs to exclude
+- `--show-nohits` - show checks with no matches
+- `--show-snippet` - show check match snippet (default value: true)
+- `--list-checks` - list available checks (don't need to specify the target flag if you just want to list the available checks)
 
 ### `XRAY` COMMAND OPTIONS
 
@@ -364,13 +368,14 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--reuse-saved-image` - Reuse saved container image (default: true).
 - `--top-changes-max` - Maximum number of top changes to track (defalt: 20).
 - `--hash-data` - Generate file data hashes (default: false).
-- `--detect-duplicates` - Detect duplicate files based on their hashes (default: false).
-- `--show-duplicates` - Show all discovered duplicate file paths (default: true).
+- `--detect-duplicates` - Detect duplicate files based on their hashes (default: true).
+- `--show-duplicates` - Show all discovered duplicate file paths (default: false).
+- `--show-special-perms` - Show files with special permissions (setuid,setgid,sticky) (default: true)
 - `--detect-utf8` - Detect utf8 files and optionally extract the discovered utf8 file content (possible values: "true" or "dump" or "dump:output_target.tgz" or "dump:output_target.tgz::max_size_bytes" or "dump:output_target.tgz:::max_size_bytes").
 - `--detect-all-certs` - Detect all certifcate files
 - `--detect-all-cert-pks` - Detect all certifcate private key files
 - `--change-match-layers-only` - Show only layers with change matches (default: false).
-- `--export-all-data-artifacts` - Archive path to export all data artifacts enabling the related flags if not set (if set to `.` then path defaults to `./data-artifacts.tar`)
+- `--export-all-data-artifacts` - Archive path to export file of all data artifacts, enabling the related flags if not set (if set to `.` then path defaults to `./data-artifacts.tar`, otherwise path must include file name)
 - `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
 
 Change Types:
@@ -392,25 +397,27 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--registry-secret` - Account secret to be used when pulling images from private registries (used with the `--pull` and `--registry-account` flags).
 - `--show-plogs` - Show image pull logs (default: false).
 
-- `compose-file` - Load container info from selected compose file
-- `target-compose-svc` - Target service from compose file
-- `target-compose-svc-no-ports` - Do not publish ports for target service from compose file
-- `dep-exclude-compose-svc-all` - Do not start any compose services as target dependencies
-- `dep-include-compose-svc` - Include specific compose service as a target dependency (only selected services will be started)
-- `dep-exclude-compose-svc` - Exclude specific service from the compose services that will be started as target dependencies
-- `dep-include-compose-svc-deps` - Include all dependencies for the selected compose service (excluding the service itself) as target dependencies
-- `dep-include-target-compose-svc-deps` - Include all dependencies for the target compose service (excluding the service itself) as target dependencies. This is a shortcut flag to avoid repeating the service name (it's a pretty long flag name though :-))
-- `compose-net` - Attach target to the selected compose network(s) otherwise all networks will be attached
-- `compose-env-nohost` - Don't include the env vars from the host to compose
-- `compose-env-file` - Load compose env vars from file (host env vars override the values loaded from this file)
-- `compose-workdir` - Set custom work directory for compose
-- `compose-project-name` - Use custom project name for compose
-- `prestart-compose-svc` - placeholder for now
-- `poststart-compose-svc` - placeholder for now
+- `--compose-file` - Load container info from selected compose file
+- `--target-compose-svc` - Target service from compose file
+- `--target-compose-svc-no-ports` - Do not publish ports for target service from compose file
+- `--dep-exclude-compose-svc-all` - Do not start any compose services as target dependencies
+- `--dep-include-compose-svc` - Include specific compose service as a target dependency (only selected services will be started)
+- `--dep-exclude-compose-svc` - Exclude specific service from the compose services that will be started as target dependencies
+- `--dep-include-compose-svc-deps` - Include all dependencies for the selected compose service (excluding the service itself) as target dependencies
+- `--dep-include-target-compose-svc-deps` - Include all dependencies for the target compose service (excluding the service itself) as target dependencies. This is a shortcut flag to avoid repeating the service name (it's a pretty long flag name though :-))
+- `--compose-net` - Attach target to the selected compose network(s) otherwise all networks will be attached
+- `--compose-env-nohost` - Don't include the env vars from the host to compose
+- `--compose-env-file` - Load compose env vars from file (host env vars override the values loaded from this file)
+- `--compose-workdir` - Set custom work directory for compose
+- `--compose-project-name` - Use custom project name for compose
+- `--container-probe-compose-svc` - Set container probe to compose service
+- `--prestart-compose-svc` - placeholder for now
+- `--poststart-compose-svc` - placeholder for now
 - `--http-probe` - Enables/disables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`: `--http-probe=false`)
 - `--http-probe-off` - Alternative way to disable HTTP probing
 - `--http-probe-cmd` - Additional HTTP probe command [can use this flag multiple times]
 - `--http-probe-cmd-file` - File with user defined HTTP probe commands
+- `--http-probe-start-wait` - Number of seconds to wait before starting HTTP probing
 - `--http-probe-retry-count` - Number of retries for each HTTP probe (default value: 5)
 - `--http-probe-retry-wait` - Number of seconds to wait before retrying HTTP probe (doubles when target is not ready; default value: 8)
 - `--http-probe-ports` - Explicit list of ports to probe (in the order you want them to be probed; excluded ports are not probed!)
@@ -442,11 +449,12 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-exe value` - Include executable from image (by executable name)
 - `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
 - `--include-shell` - Include basic shell functionality (default value: false)
-- `include-cert-all` - Keep all discovered cert files
-- `include-cert-bundles-only` - Keep only cert bundles
-- `include-cert-dirs` - Keep known cert directories and all files in them
-- `include-cert-pk-all` - Keep all discovered cert private keys
-- `include-cert-pk-dirs` - Keep known cert private key directories and all files in them
+- `--include-cert-all` - Keep all discovered cert files (default: true)
+- `--include-cert-bundles-only` - Keep only cert bundles
+- `--include-cert-dirs` - Keep known cert directories and all files in them
+- `--include-cert-pk-all` - Keep all discovered cert private keys
+- `--include-cert-pk-dirs` - Keep known cert private key directories and all files in them
+- `--include-new` - Keep new files created by target during dynamic analysis
 - `--preserve-path` - Keep path from orignal image in its initial state (changes to the selected container image files when it runs will be discarded). [can use this flag multiple times]
 - `--preserve-path-file` - File with paths to keep from original image in their original state (changes to the selected container image files when it runs will be discarded).
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
@@ -465,7 +473,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--container-dns` - Add a dns server analyzing image at runtime [can use this flag multiple times]
 - `--container-dns-search` - Add a dns search domain for unqualified hostnames analyzing image at runtime [can use this flag multiple times]
 - `--image-overrides` - Save runtime overrides in generated image (values is `all` or a comma delimited list of override types: `entrypoint`, `cmd`, `workdir`, `env`, `expose`, `volume`, `label`). Use this flag if you need to set a runtime value and you want to persist it in the optimized image. If you only want to add, edit or delete an image value in the optimized image use one of the `--new-*` or `--remove-*` flags (define below).
-- `--continue-after` - Select continue mode: `enter` | `signal` | `probe` | `exec` | `timeout` or numberInSeconds (default value if http probes are disabled: `enter`). You can also select `probe` and `exec` together: `'probe&exec'` (make sure to use quotes around the two modes or the `&` will break the shell command).
+- `--continue-after` - Select continue mode: `enter` | `signal` | `probe` | `exec` | `timeout-number-in-seconds` | `container.probe` (default value if http probes are disabled: `enter`). You can also select `probe` and `exec` together: `'probe&exec'` (make sure to use quotes around the two modes or the `&` will break the shell command).
 - `--dockerfile` - The source Dockerfile name to build the fat image before it's optimized.
 - `--tag-fat` - Custom tag for the fat image built from Dockerfile.
 - `--cbo-add-host` - Add an extra host-to-IP mapping in /etc/hosts to use when building an image (Container Build Option).
@@ -481,7 +489,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--use-local-mounts` - Mount local paths for target container artifact input and output (off, by default)
 - `--use-sensor-volume` - Sensor volume name to use (set it to your Docker volume name if you manage your own `docker-slim` sensor volume).
 - `--keep-tmp-artifacts` - Keep temporary artifacts when command is done (off, by default).
-- `--keep-perms` - Keep artifact permissions as-is (true, by default)
+- `--keep-perms` - Keep artifact permissions as-is (default: true)
 - `--run-target-as-user` - Run target app (in the temporary container) as USER from Dockerfile (true, by default)
 - `--new-entrypoint` - New ENTRYPOINT instruction for the optimized image
 - `--new-cmd` - New CMD instruction for the optimized image
@@ -496,6 +504,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--remove-expose` - Remove EXPOSE instructions for the optimized image
 - `--exec` - A shell script snippet to run via Docker exec
 - `--exec-file` - A shell script file to run via Docker exec
+- `--sensor-ipc-mode` - Select sensor IPC mode: proxy | direct (useful for containerized CI/CD environments)
+- `--sensor-ipc-endpoint` - Override sensor IPC endpoint
 
 In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.
 
@@ -853,7 +863,9 @@ If you see `nginx: [emerg] mkdir() "/var/lib/nginx/body" failed` it means your n
 
 ### DockerSlim fails with a 'no permission to read from' error
 
-You can get around this problem by running DockerSlim from a root shell. That way it will have access to all exported files.
+This problem shouldn't happen anymore because the exported artifacts are saved in a tar file and the master app doesn't need to access the files directly anymore.
+
+If you run older versions of DockerSlim you can get around this problem by running DockerSlim from a root shell. That way it will have access to all exported files.
 
 DockerSlim copies the relevant image artifacts trying to preserve their permissions. If the permissions are too restrictive the master app might not have sufficient priviledge to access these files when it's building the new minified image.
 
@@ -898,6 +910,8 @@ Notes:
 If the project sounds interesting or if you found a bug see [`CONTRIBUTING.md`](https://github.com/docker-slim/docker-slim/blob/master/CONTRIBUTING.md) and submit a PR!
 
 ## DESIGN
+
+To learn more about the code take a look at this [interactive code diagram](https://app.codesee.io/maps/public/1cedd540-6451-11ec-a279-0572ca5abbdc) generated using [CodeSee](https://www.codesee.io) and watch the `DockerSlim Code` videos on ['YouTube'](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA?sub_confirmation=1).
 
 ### CORE CONCEPTS
 
@@ -957,4 +971,3 @@ Apache License v2, see [LICENSE](https://github.com/docker-slim/docker-slim/blob
 ---
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/docker-slim/docker-slim)](https://goreportcard.com/report/github.com/docker-slim/docker-slim)
-

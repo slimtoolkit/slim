@@ -15,7 +15,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/app/master/signals"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, error) {
@@ -78,6 +78,8 @@ func GetContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 		info.Mode = config.CAMProbe
 	case config.CAMExec:
 		info.Mode = config.CAMExec
+	case config.CAMContainerProbe:
+		info.Mode = config.CAMContainerProbe
 	case config.CAMTimeout:
 		info.Mode = config.CAMTimeout
 		info.Timeout = 60
@@ -164,18 +166,18 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 
 func GlobalFlagValues(ctx *cli.Context) (*GenericParams, error) {
 	values := GenericParams{
-		CheckVersion:   ctx.GlobalBool(FlagCheckVersion),
-		Debug:          ctx.GlobalBool(FlagDebug),
-		StatePath:      ctx.GlobalString(FlagStatePath),
-		ReportLocation: ctx.GlobalString(FlagCommandReport),
+		CheckVersion:   ctx.Bool(FlagCheckVersion),
+		Debug:          ctx.Bool(FlagDebug),
+		StatePath:      ctx.String(FlagStatePath),
+		ReportLocation: ctx.String(FlagCommandReport),
 	}
 
 	if values.ReportLocation == "off" {
 		values.ReportLocation = ""
 	}
 
-	values.InContainer, values.IsDSImage = IsInContainer(ctx.GlobalBool(FlagInContainer))
-	values.ArchiveState = ArchiveState(ctx.GlobalString(FlagArchiveState), values.InContainer)
+	values.InContainer, values.IsDSImage = IsInContainer(ctx.Bool(FlagInContainer))
+	values.ArchiveState = ArchiveState(ctx.String(FlagArchiveState), values.InContainer)
 
 	values.ClientConfig = GetDockerClientConfig(ctx)
 
@@ -184,10 +186,10 @@ func GlobalFlagValues(ctx *cli.Context) (*GenericParams, error) {
 
 func GetDockerClientConfig(ctx *cli.Context) *config.DockerClient {
 	config := &config.DockerClient{
-		UseTLS:      ctx.GlobalBool(FlagUseTLS),
-		VerifyTLS:   ctx.GlobalBool(FlagVerifyTLS),
-		TLSCertPath: ctx.GlobalString(FlagTLSCertPath),
-		Host:        ctx.GlobalString(FlagHost),
+		UseTLS:      ctx.Bool(FlagUseTLS),
+		VerifyTLS:   ctx.Bool(FlagVerifyTLS),
+		TLSCertPath: ctx.String(FlagTLSCertPath),
+		Host:        ctx.String(FlagHost),
 		Env:         map[string]string{},
 	}
 

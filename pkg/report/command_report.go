@@ -233,6 +233,15 @@ type RunCommand struct {
 	TargetReference string `json:"target_reference"`
 }
 
+// Output Version for 'registry'
+const OVRegistryCommand = "1.0"
+
+// RegistryCommand is the 'registry' command report data
+type RegistryCommand struct {
+	Command
+	TargetReference string `json:"target_reference"`
+}
+
 func (cmd *Command) init(containerized bool) {
 	cmd.Containerized = containerized
 	cmd.Engine = version.Current()
@@ -402,6 +411,21 @@ func NewRunCommand(reportLocation string, containerized bool) *RunCommand {
 			reportLocation: reportLocation,
 			Version:        OVRunCommand, //run command 'results' version (report and artifacts)
 			Type:           command.Run,
+			State:          command.StateUnknown,
+		},
+	}
+
+	cmd.Command.init(containerized)
+	return cmd
+}
+
+// NewRegistryCommand creates a new 'registry' command report
+func NewRegistryCommand(reportLocation string, containerized bool) *RegistryCommand {
+	cmd := &RegistryCommand{
+		Command: Command{
+			reportLocation: reportLocation,
+			Version:        OVRegistryCommand, //registry command 'results' version (report and artifacts)
+			Type:           command.Registry,
 			State:          command.StateUnknown,
 		},
 	}

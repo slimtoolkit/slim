@@ -1,12 +1,12 @@
 # github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1
 github.com/Azure/go-ansiterm
 github.com/Azure/go-ansiterm/winterm
-# github.com/Microsoft/go-winio v0.5.0
+# github.com/Microsoft/go-winio v0.5.1
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
 github.com/Microsoft/go-winio/pkg/security
 github.com/Microsoft/go-winio/vhd
-# github.com/Microsoft/hcsshim v0.8.22
+# github.com/Microsoft/hcsshim v0.8.23
 github.com/Microsoft/hcsshim
 github.com/Microsoft/hcsshim/computestorage
 github.com/Microsoft/hcsshim/internal/cow
@@ -56,11 +56,16 @@ github.com/compose-spec/compose-go/template
 github.com/compose-spec/compose-go/types
 # github.com/containerd/cgroups v1.0.1
 github.com/containerd/cgroups/stats/v1
-# github.com/containerd/containerd v1.5.5
+# github.com/containerd/containerd v1.5.8
+github.com/containerd/containerd/errdefs
 github.com/containerd/containerd/log
 github.com/containerd/containerd/pkg/userns
+github.com/containerd/containerd/platforms
 github.com/containerd/containerd/sys
-# github.com/cpuguy83/go-md2man/v2 v2.0.0
+# github.com/containerd/stargz-snapshotter/estargz v0.10.1
+github.com/containerd/stargz-snapshotter/estargz
+github.com/containerd/stargz-snapshotter/estargz/errorutil
+# github.com/cpuguy83/go-md2man/v2 v2.0.1
 github.com/cpuguy83/go-md2man/v2/md2man
 # github.com/distribution/distribution/v3 v3.0.0-20210316161203-a01c71e2477e
 github.com/distribution/distribution/v3/digestset
@@ -74,17 +79,35 @@ github.com/docker-slim/uilive
 # github.com/docker-slim/uiprogress v0.0.0-20190505193231-9d4396e6d40b
 github.com/docker-slim/uiprogress
 github.com/docker-slim/uiprogress/util/strutil
-# github.com/docker/docker v20.10.8+incompatible
+# github.com/docker/cli v20.10.12+incompatible
+github.com/docker/cli/cli/config
+github.com/docker/cli/cli/config/configfile
+github.com/docker/cli/cli/config/credentials
+github.com/docker/cli/cli/config/types
+# github.com/docker/distribution v2.7.1+incompatible
+github.com/docker/distribution/digestset
+github.com/docker/distribution/reference
+github.com/docker/distribution/registry/api/errcode
+github.com/docker/distribution/registry/client/auth/challenge
+# github.com/docker/docker v20.10.12+incompatible
+github.com/docker/docker/api
+github.com/docker/docker/api/types
 github.com/docker/docker/api/types/blkiodev
 github.com/docker/docker/api/types/container
+github.com/docker/docker/api/types/events
 github.com/docker/docker/api/types/filters
+github.com/docker/docker/api/types/image
 github.com/docker/docker/api/types/mount
 github.com/docker/docker/api/types/network
 github.com/docker/docker/api/types/registry
 github.com/docker/docker/api/types/strslice
 github.com/docker/docker/api/types/swarm
 github.com/docker/docker/api/types/swarm/runtime
+github.com/docker/docker/api/types/time
 github.com/docker/docker/api/types/versions
+github.com/docker/docker/api/types/volume
+github.com/docker/docker/client
+github.com/docker/docker/errdefs
 github.com/docker/docker/pkg/archive
 github.com/docker/docker/pkg/fileutils
 github.com/docker/docker/pkg/homedir
@@ -95,8 +118,13 @@ github.com/docker/docker/pkg/longpath
 github.com/docker/docker/pkg/pools
 github.com/docker/docker/pkg/stdcopy
 github.com/docker/docker/pkg/system
+# github.com/docker/docker-credential-helpers v0.6.4
+github.com/docker/docker-credential-helpers/client
+github.com/docker/docker-credential-helpers/credentials
 # github.com/docker/go-connections v0.4.0
 github.com/docker/go-connections/nat
+github.com/docker/go-connections/sockets
+github.com/docker/go-connections/tlsconfig
 # github.com/docker/go-units v0.4.0
 github.com/docker/go-units
 # github.com/dsnet/compress v0.0.1
@@ -108,7 +136,7 @@ github.com/dsnet/compress/internal/errors
 github.com/dsnet/compress/internal/prefix
 # github.com/dustin/go-humanize v1.0.0
 github.com/dustin/go-humanize
-# github.com/fatih/color v1.10.0
+# github.com/fatih/color v1.13.0
 github.com/fatih/color
 # github.com/fsouza/go-dockerclient v1.7.4
 github.com/fsouza/go-dockerclient
@@ -138,8 +166,40 @@ github.com/gogo/protobuf/proto
 github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 # github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 github.com/golang/groupcache/lru
-# github.com/golang/protobuf v1.5.0
+# github.com/golang/protobuf v1.5.2
 github.com/golang/protobuf/proto
+github.com/golang/protobuf/ptypes
+github.com/golang/protobuf/ptypes/any
+github.com/golang/protobuf/ptypes/duration
+github.com/golang/protobuf/ptypes/timestamp
+# github.com/google/go-containerregistry v0.8.0
+github.com/google/go-containerregistry/internal/and
+github.com/google/go-containerregistry/internal/estargz
+github.com/google/go-containerregistry/internal/gzip
+github.com/google/go-containerregistry/internal/legacy
+github.com/google/go-containerregistry/internal/redact
+github.com/google/go-containerregistry/internal/retry
+github.com/google/go-containerregistry/internal/retry/wait
+github.com/google/go-containerregistry/internal/verify
+github.com/google/go-containerregistry/internal/windows
+github.com/google/go-containerregistry/pkg/authn
+github.com/google/go-containerregistry/pkg/crane
+github.com/google/go-containerregistry/pkg/legacy
+github.com/google/go-containerregistry/pkg/legacy/tarball
+github.com/google/go-containerregistry/pkg/logs
+github.com/google/go-containerregistry/pkg/name
+github.com/google/go-containerregistry/pkg/v1
+github.com/google/go-containerregistry/pkg/v1/daemon
+github.com/google/go-containerregistry/pkg/v1/empty
+github.com/google/go-containerregistry/pkg/v1/layout
+github.com/google/go-containerregistry/pkg/v1/match
+github.com/google/go-containerregistry/pkg/v1/mutate
+github.com/google/go-containerregistry/pkg/v1/partial
+github.com/google/go-containerregistry/pkg/v1/remote
+github.com/google/go-containerregistry/pkg/v1/remote/transport
+github.com/google/go-containerregistry/pkg/v1/stream
+github.com/google/go-containerregistry/pkg/v1/tarball
+github.com/google/go-containerregistry/pkg/v1/types
 # github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 github.com/google/shlex
 # github.com/gorilla/websocket v1.4.2
@@ -148,13 +208,19 @@ github.com/gorilla/websocket
 github.com/imdario/mergo
 # github.com/kennygrant/sanitize v1.2.4
 github.com/kennygrant/sanitize
-# github.com/klauspost/compress v1.11.13
+# github.com/klauspost/compress v1.13.6
+github.com/klauspost/compress
 github.com/klauspost/compress/flate
+github.com/klauspost/compress/fse
+github.com/klauspost/compress/huff0
+github.com/klauspost/compress/internal/snapref
+github.com/klauspost/compress/zstd
+github.com/klauspost/compress/zstd/internal/xxhash
 # github.com/klauspost/pgzip v1.2.4
 github.com/klauspost/pgzip
-# github.com/mattn/go-colorable v0.1.8
+# github.com/mattn/go-colorable v0.1.12
 github.com/mattn/go-colorable
-# github.com/mattn/go-isatty v0.0.12
+# github.com/mattn/go-isatty v0.0.14
 github.com/mattn/go-isatty
 # github.com/mattn/go-runewidth v0.0.9
 github.com/mattn/go-runewidth
@@ -162,7 +228,9 @@ github.com/mattn/go-runewidth
 github.com/mattn/go-shellwords
 # github.com/mattn/go-tty v0.0.3
 github.com/mattn/go-tty
-# github.com/mitchellh/mapstructure v1.4.1
+# github.com/mitchellh/go-homedir v1.1.0
+github.com/mitchellh/go-homedir
+# github.com/mitchellh/mapstructure v1.4.3
 github.com/mitchellh/mapstructure
 # github.com/moby/sys/mount v0.2.0
 github.com/moby/sys/mount
@@ -175,7 +243,7 @@ github.com/moby/term/windows
 github.com/morikuni/aec
 # github.com/opencontainers/go-digest v1.0.0
 github.com/opencontainers/go-digest
-# github.com/opencontainers/image-spec v1.0.1
+# github.com/opencontainers/image-spec v1.0.2-0.20211117181255-693428a734f5
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
 # github.com/opencontainers/runc v1.0.2
@@ -184,12 +252,10 @@ github.com/opencontainers/runc/libcontainer/user
 github.com/pkg/errors
 # github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03
 github.com/pkg/term/termios
-# github.com/russross/blackfriday/v2 v2.0.1
+# github.com/russross/blackfriday/v2 v2.1.0
 github.com/russross/blackfriday/v2
 # github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
 github.com/saintfish/chardet
-# github.com/shurcooL/sanitized_anchor_name v1.0.0
-github.com/shurcooL/sanitized_anchor_name
 # github.com/sirupsen/logrus v1.8.1
 github.com/sirupsen/logrus
 # github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
@@ -203,15 +269,17 @@ github.com/ulikunitz/xz/internal/xlog
 github.com/ulikunitz/xz/lzma
 # github.com/ulyssessouza/godotenv v1.3.1-0.20210806120901-e417b721114e
 github.com/ulyssessouza/godotenv
-# github.com/urfave/cli v1.22.4
-github.com/urfave/cli
+# github.com/urfave/cli/v2 v2.3.0
+github.com/urfave/cli/v2
+# github.com/vbatts/tar-split v0.11.2
+github.com/vbatts/tar-split/archive/tar
 # go.opencensus.io v0.23.0
 go.opencensus.io
 go.opencensus.io/internal
 go.opencensus.io/trace
 go.opencensus.io/trace/internal
 go.opencensus.io/trace/tracestate
-# golang.org/x/net v0.0.0-20210226172049-e18ecbb05110
+# golang.org/x/net v0.0.0-20211216030914-fe4d6282115f
 golang.org/x/net/context
 golang.org/x/net/html
 golang.org/x/net/html/atom
@@ -220,14 +288,16 @@ golang.org/x/net/http/httpguts
 golang.org/x/net/http2
 golang.org/x/net/http2/hpack
 golang.org/x/net/idna
+golang.org/x/net/internal/socks
+golang.org/x/net/proxy
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.0.0-20210921065528-437939a70204
+# golang.org/x/sys v0.0.0-20211216021012-1d35b9e2eb4e
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
-# golang.org/x/text v0.3.4
+# golang.org/x/text v0.3.7
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -248,7 +318,7 @@ golang.org/x/text/secure/bidirule
 golang.org/x/text/transform
 golang.org/x/text/unicode/bidi
 golang.org/x/text/unicode/norm
-# google.golang.org/appengine v1.6.6
+# google.golang.org/appengine v1.6.7
 google.golang.org/appengine/internal
 google.golang.org/appengine/internal/base
 google.golang.org/appengine/internal/datastore
@@ -256,7 +326,13 @@ google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/protobuf v1.26.0
+# google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
+google.golang.org/genproto/googleapis/rpc/status
+# google.golang.org/grpc v1.43.0
+google.golang.org/grpc/codes
+google.golang.org/grpc/internal/status
+google.golang.org/grpc/status
+# google.golang.org/protobuf v1.27.1
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire
 google.golang.org/protobuf/internal/descfmt
@@ -284,5 +360,8 @@ google.golang.org/protobuf/reflect/protoregistry
 google.golang.org/protobuf/runtime/protoiface
 google.golang.org/protobuf/runtime/protoimpl
 google.golang.org/protobuf/types/descriptorpb
+google.golang.org/protobuf/types/known/anypb
+google.golang.org/protobuf/types/known/durationpb
+google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/yaml.v2 v2.4.0
 gopkg.in/yaml.v2

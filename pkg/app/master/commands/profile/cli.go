@@ -7,7 +7,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 const (
@@ -16,7 +16,7 @@ const (
 	Alias = "p"
 )
 
-var CLI = cli.Command{
+var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
@@ -90,26 +90,21 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagHostname),
 		commands.Cflag(commands.FlagExpose),
 		commands.Cflag(commands.FlagExcludeMounts),
-		commands.Cflag(commands.FlagExcludePattern),
-		//commands.Cflag(commands.FlagPathPerms),
-		//commands.Cflag(commands.FlagPathPermsFile),
-		//commands.Cflag(commands.FlagIncludePath),
-		//commands.Cflag(commands.FlagIncludePathFile),
-		//commands.Cflag(commands.FlagIncludeBin),
-		//commands.Cflag(commands.FlagIncludeExe),
-		//commands.Cflag(commands.FlagIncludeShell),
+		commands.Cflag(commands.FlagExcludePattern), //should remove too (no need)
 		commands.Cflag(commands.FlagMount),
 		commands.Cflag(commands.FlagContinueAfter),
 		commands.Cflag(commands.FlagUseLocalMounts),
 		commands.Cflag(commands.FlagUseSensorVolume),
-		//commands.Cflag(commands.FlagKeepTmpArtifacts),
+		//Sensor flags:
+		commands.Cflag(commands.FlagSensorIPCEndpoint),
+		commands.Cflag(commands.FlagSensorIPCMode),
 	},
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name)
 
 		targetRef := ctx.String(commands.FlagTarget)
 		if targetRef == "" {
-			if len(ctx.Args()) < 1 {
+			if ctx.Args().Len() < 1 {
 				xc.Out.Error("param.target", "missing target image ID/name")
 				cli.ShowCommandHelp(ctx, Name)
 				return nil
@@ -326,7 +321,7 @@ var CLI = cli.Command{
 
 		//doKeepTmpArtifacts := ctx.Bool(commands.FlagKeepTmpArtifacts)
 
-		doExcludeMounts := ctx.BoolT(commands.FlagExcludeMounts)
+		doExcludeMounts := ctx.Bool(commands.FlagExcludeMounts)
 		if doExcludeMounts {
 			for mpath := range volumeMounts {
 				excludePatterns[mpath] = nil
@@ -353,7 +348,7 @@ var CLI = cli.Command{
 				})
 		}
 
-		commandReport := ctx.GlobalString(commands.FlagCommandReport)
+		commandReport := ctx.String(commands.FlagCommandReport)
 		if commandReport == "off" {
 			commandReport = ""
 		}
@@ -405,7 +400,11 @@ var CLI = cli.Command{
 			doUseLocalMounts,
 			doUseSensorVolume,
 			//doKeepTmpArtifacts,
-			continueAfter)
+			continueAfter,
+			ctx.String(commands.FlagSensorIPCEndpoint),
+			ctx.String(commands.FlagSensorIPCMode),
+			ctx.String(commands.FlagLogLevel),
+			ctx.String(commands.FlagLogFormat))
 
 		return nil
 	},

@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/docker-slim/docker-slim/pkg/aflag"
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerhost"
@@ -35,6 +36,8 @@ import (
 
 // Container inspector constants
 const (
+	SensorIPCModeDirect     = "direct"
+	SensorIPCModeProxy      = "proxy"
 	SensorBinPath           = "/opt/dockerslim/bin/docker-slim-sensor"
 	ContainerNamePat        = "dockerslimk_%v_%v"
 	ArtifactsDir            = "artifacts"
@@ -119,13 +122,20 @@ type Inspector struct {
 	DoIncludeCertDirs     bool
 	DoIncludeCertPKAll    bool
 	DoIncludeCertPKDirs   bool
+	DoIncludeNew          bool
 	SelectedNetworks      map[string]NetNameInfo
 	DoDebug               bool
+	LogLevel              string
+	LogFormat             string
 	PrintState            bool
 	PrintPrefix           string
 	InContainer           bool
+	SensorIPCEndpoint     string
+	SensorIPCMode         string
+	TargetHost            string
 	dockerEventCh         chan *dockerapi.APIEvents
 	dockerEventStopCh     chan struct{}
+	isDone                aflag.Type
 	ipcClient             *ipc.Client
 	logger                *log.Entry
 	xc                    *app.ExecutionContext
@@ -183,10 +193,15 @@ func NewInspector(
 	doIncludeCertDirs bool,
 	doIncludeCertPKAll bool,
 	doIncludeCertPKDirs bool,
+	doIncludeNew bool,
 	selectedNetworks map[string]NetNameInfo,
 	//serviceAliases []string,
 	doDebug bool,
+	logLevel string,
+	logFormat string,
 	inContainer bool,
+	sensorIPCEndpoint string,
+	sensorIPCMode string,
 	printState bool,
 	printPrefix string) (*Inspector, error) {
 
@@ -228,11 +243,16 @@ func NewInspector(
 		DoIncludeCertDirs:     doIncludeCertDirs,
 		DoIncludeCertPKAll:    doIncludeCertPKAll,
 		DoIncludeCertPKDirs:   doIncludeCertPKDirs,
+		DoIncludeNew:          doIncludeNew,
 		SelectedNetworks:      selectedNetworks,
 		DoDebug:               doDebug,
+		LogLevel:              logLevel,
+		LogFormat:             logFormat,
 		PrintState:            printState,
 		PrintPrefix:           printPrefix,
 		InContainer:           inContainer,
+		SensorIPCEndpoint:     sensorIPCEndpoint,
+		SensorIPCMode:         sensorIPCMode,
 		xc:                    xc,
 		crOpts:                crOpts,
 	}
@@ -495,6 +515,14 @@ func (i *Inspector) RunContainer() error {
 		containerCmd = append(containerCmd, "-d")
 	}
 
+	if i.LogLevel != "" {
+		containerCmd = append(containerCmd, "-log-level", i.LogLevel)
+	}
+
+	if i.LogFormat != "" {
+		containerCmd = append(containerCmd, "-log-format", i.LogFormat)
+	}
+
 	i.ContainerName = fmt.Sprintf(ContainerNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))
 
 	labels := i.Overrides.Labels
@@ -725,7 +753,6 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	i.ContainerID = containerInfo.ID
-
 	if i.PrintState {
 		i.xc.Out.Info("container",
 			ovars{
@@ -846,6 +873,20 @@ func (i *Inspector) RunContainer() error {
 		i.ContainerPortsInfo = strings.Join(portKeys, ",")
 	}
 
+	if i.PrintState {
+		var containerIP string
+		if i.ContainerInfo.NetworkSettings != nil {
+			containerIP = i.ContainerInfo.NetworkSettings.IPAddress
+		}
+		i.xc.Out.Info("container",
+			ovars{
+				"status": "running",
+				"name":   containerInfo.Name,
+				"id":     i.ContainerID,
+				"ip":     containerIP,
+			})
+	}
+
 	if err = i.initContainerChannels(); err != nil {
 		return err
 	}
@@ -890,6 +931,7 @@ func (i *Inspector) RunContainer() error {
 	cmd.IncludeCertDirs = i.DoIncludeCertDirs
 	cmd.IncludeCertPKAll = i.DoIncludeCertPKAll
 	cmd.IncludeCertPKDirs = i.DoIncludeCertPKDirs
+	cmd.IncludeNew = i.DoIncludeNew
 
 	if runAsUser != "" {
 		cmd.AppUser = runAsUser
@@ -1010,6 +1052,11 @@ func (i *Inspector) ShowContainerLogs() {
 
 // ShutdownContainer terminates the container inspector instance execution
 func (i *Inspector) ShutdownContainer() error {
+	if i.isDone.IsOn() {
+		return nil
+	}
+
+	i.isDone.On()
 	if !i.DoUseLocalMounts {
 		deleteOrig := true
 		if i.DoKeepTmpArtifacts {
@@ -1086,8 +1133,16 @@ func (i *Inspector) ShutdownContainer() error {
 // FinishMonitoring ends the target container monitoring activities
 func (i *Inspector) FinishMonitoring() {
 	if i.dockerEventStopCh == nil {
-		errutil.FailOn(fmt.Errorf("docker event stop chanel is nil"))
+		if i.PrintState {
+			i.xc.Out.Info("container.inspector",
+				ovars{
+					"message": "already finished monitoring",
+				})
+		}
+
+		return
 	}
+
 	close(i.dockerEventStopCh)
 	i.dockerEventStopCh = nil
 
@@ -1113,25 +1168,58 @@ func (i *Inspector) FinishMonitoring() {
 }
 
 func (i *Inspector) initContainerChannels() error {
-	var targetHost string
+	const op = "container.Inspector.initContainerChannels"
 	var cmdPort string
 	var evtPort string
+	var ipcMode string
+	var cn string
 
-	if i.InContainer || i.Overrides.Network == "host" {
-		targetHost = i.ContainerInfo.NetworkSettings.IPAddress
+	if i.Overrides != nil {
+		cn = i.Overrides.Network
+	}
+
+	switch i.SensorIPCMode {
+	case SensorIPCModeDirect, SensorIPCModeProxy:
+		ipcMode = i.SensorIPCMode
+	default:
+		if i.InContainer || cn == "host" {
+			ipcMode = SensorIPCModeDirect
+		} else {
+			ipcMode = SensorIPCModeProxy
+		}
+	}
+
+	switch ipcMode {
+	case SensorIPCModeDirect:
+		i.TargetHost = i.ContainerInfo.NetworkSettings.IPAddress
 		cmdPort = cmdPortStrDefault
 		evtPort = evtPortStrDefault
-	} else {
+	case SensorIPCModeProxy:
+		i.DockerHostIP = dockerhost.GetIP()
+		i.TargetHost = i.DockerHostIP
 		cmdPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.CmdPort]
 		evtPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.EvtPort]
-		i.DockerHostIP = dockerhost.GetIP()
-
-		targetHost = i.DockerHostIP
 		cmdPort = cmdPortBindings[0].HostPort
 		evtPort = evtPortBindings[0].HostPort
 	}
 
-	ipcClient, err := ipc.NewClient(targetHost, cmdPort, evtPort, defaultConnectWait)
+	i.SensorIPCMode = ipcMode
+
+	if i.SensorIPCEndpoint != "" {
+		i.TargetHost = i.SensorIPCEndpoint
+	}
+
+	i.logger.WithFields(log.Fields{
+		"op":                op,
+		"in.container":      i.InContainer,
+		"container.network": cn,
+		"ipc.mode":          ipcMode,
+		"target":            i.TargetHost,
+		"port.cmd":          cmdPort,
+		"port.evt":          evtPort,
+	}).Debugf("target.container.ipc.connect")
+
+	ipcClient, err := ipc.NewClient(i.TargetHost, cmdPort, evtPort, defaultConnectWait)
 	if err != nil {
 		return err
 	}
