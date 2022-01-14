@@ -184,7 +184,6 @@ func (wc *WebsocketClient) Disconnect() error {
 		if err != nil {
 			log.Debugf("WebsocketClient.Disconnect: conn.WriteMessage(websocket.CloseMessage) error=%v", err)
 			return err
-			fmt.Print("write close err: %v\n", err)
 		}
 
 		//TODO: should wait for the 'websocket: close 1000 (normal)' read error

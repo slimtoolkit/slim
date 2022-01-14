@@ -423,6 +423,11 @@ func (p *CustomProbe) Start() {
 
 					for i := 0; i < maxRetryCount; i++ {
 						req, err := http.NewRequest(cmd.Method, addr, reqBody)
+						if err != nil {
+							p.xc.Out.Error("HTTP probe - construct request error - %v", err.Error())
+							// Break since the same args are passed to NewRequest() on each loop.
+							break
+						}
 						for _, hline := range cmd.Headers {
 							hparts := strings.SplitN(hline, ":", 2)
 							if len(hparts) != 2 {
