@@ -138,9 +138,16 @@ func NewCustomProbe(
 			continue
 		}
 
+		log.Debugf("HTTP probe - target's network port key='%s' data='%#v'", nsPortKey, nsPortData)
+
 		parts := strings.Split(string(nsPortKey), "/")
 		if len(parts) == 2 && parts[1] != "tcp" {
 			log.Debugf("HTTP probe - skipping non-tcp port => %v", nsPortKey)
+			continue
+		}
+
+		if nsPortData == nil {
+			log.Debugf("HTTP probe - skipping network setting without port data => %v", nsPortKey)
 			continue
 		}
 
