@@ -375,7 +375,7 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--detect-all-certs` - Detect all certifcate files
 - `--detect-all-cert-pks` - Detect all certifcate private key files
 - `--change-match-layers-only` - Show only layers with change matches (default: false).
-- `--export-all-data-artifacts` - Archive path to export file of all data artifacts, enabling the related flags if not set (if set to `.` then path defaults to `./data-artifacts.tar`, otherwise path must include file name)
+- `--export-all-data-artifacts` - TAR archive file path to export all text data artifacts (if value is set to `.` then the archive file path defaults to `./data-artifacts.tar`)
 - `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
 
 Change Types:
@@ -454,7 +454,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-cert-dirs` - Keep known cert directories and all files in them
 - `--include-cert-pk-all` - Keep all discovered cert private keys
 - `--include-cert-pk-dirs` - Keep known cert private key directories and all files in them
-- `--include-new` - Keep new files created by target during dynamic analysis
+- `--include-new` - Keep new files created by target during dynamic analysis (default value: false)
 - `--preserve-path` - Keep path from orignal image in its initial state (changes to the selected container image files when it runs will be discarded). [can use this flag multiple times]
 - `--preserve-path-file` - File with paths to keep from original image in their original state (changes to the selected container image files when it runs will be discarded).
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)

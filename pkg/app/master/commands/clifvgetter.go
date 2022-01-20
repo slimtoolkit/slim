@@ -4,28 +4,32 @@ package commands
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
+
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/app/master/signals"
-
-	"github.com/urfave/cli/v2"
 )
 
 func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, error) {
+	const op = "commands.GetContainerRunOptions"
 	var cro config.ContainerRunOptions
 	cro.Runtime = ctx.String(FlagCRORuntime)
 	sysctlList := ctx.StringSlice(FlagCROSysctl)
 	if len(sysctlList) > 0 {
 		params, err := ParseTokenMap(sysctlList)
 		if err != nil {
-			fmt.Printf("invalid sysctl options %v\n", err)
+			log.WithFields(log.Fields{
+				"op":    op,
+				"error": err,
+			}).Error("invalid sysctl options")
 			return nil, err
 		}
 
@@ -35,7 +39,12 @@ func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, erro
 	if len(hostConfigFileName) > 0 {
 		hostConfigBytes, err := ioutil.ReadFile(hostConfigFileName)
 		if err != nil {
-			fmt.Printf("could not read host config file %v: %v\n", hostConfigFileName, err)
+			log.WithFields(log.Fields{
+				"op":        op,
+				"file.name": hostConfigFileName,
+				"error":     err,
+			}).Error("could not read host config file")
+			return nil, err
 		}
 		json.Unmarshal(hostConfigBytes, &cro.HostConfig)
 	}
@@ -100,6 +109,8 @@ func GetContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 }
 
 func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error) {
+	const op = "commands.GetContainerOverrides"
+
 	doUseEntrypoint := ctx.String(FlagEntrypoint)
 	doUseCmd := ctx.String(FlagCmd)
 	exposePortList := ctx.StringSlice(FlagExpose)
@@ -119,7 +130,10 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	if len(exposePortList) > 0 {
 		overrides.ExposedPorts, err = ParseDockerExposeOpt(exposePortList)
 		if err != nil {
-			fmt.Printf("invalid expose options..\n\n")
+			log.WithFields(log.Fields{
+				"op":    op,
+				"error": err,
+			}).Error("invalid expose options")
 			return nil, err
 		}
 	}
@@ -127,7 +141,10 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	if len(volumesList) > 0 {
 		volumes, err := ParseTokenSet(volumesList)
 		if err != nil {
-			fmt.Printf("invalid volume options %v\n", err)
+			log.WithFields(log.Fields{
+				"op":    op,
+				"error": err,
+			}).Error("invalid volume options")
 			return nil, err
 		}
 
@@ -137,7 +154,10 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	if len(labelsList) > 0 {
 		labels, err := ParseTokenMap(labelsList)
 		if err != nil {
-			fmt.Printf("invalid label options %v\n", err)
+			log.WithFields(log.Fields{
+				"op":    op,
+				"error": err,
+			}).Error("invalid label options")
 			return nil, err
 		}
 
@@ -146,7 +166,10 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 
 	overrides.Entrypoint, err = ParseExec(doUseEntrypoint)
 	if err != nil {
-		fmt.Printf("invalid entrypoint option..\n\n")
+		log.WithFields(log.Fields{
+			"op":    op,
+			"error": err,
+		}).Error("invalid entrypoint option")
 		return nil, err
 	}
 
@@ -155,7 +178,10 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 
 	overrides.Cmd, err = ParseExec(doUseCmd)
 	if err != nil {
-		fmt.Printf("invalid cmd option..\n\n")
+		log.WithFields(log.Fields{
+			"op":    op,
+			"error": err,
+		}).Error("invalid cmd option")
 		return nil, err
 	}
 
