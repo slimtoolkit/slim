@@ -20,11 +20,15 @@ const (
 )
 
 func (p *CustomProbe) crawl(proto, domain, addr string) {
-	p.workers.Add(1)
 
 	var httpClient *http.Client
 	if strings.HasPrefix(proto, config.ProtoHTTP2) {
-		httpClient = getHTTPClient(proto)
+		var err error
+		if httpClient, err = getHTTPClient(proto); err != nil {
+			p.xc.Out.Error("HTTP probe - construct client error - %v", err.Error())
+			return
+		}
+
 		httpClient.Timeout = 10 * time.Second //matches the timeout used by Colly
 		jar, _ := cookiejar.New(nil)
 		httpClient.Jar = jar
@@ -35,6 +39,7 @@ func (p *CustomProbe) crawl(proto, domain, addr string) {
 		p.concurrentCrawlers <- struct{}{}
 	}
 
+	p.workers.Add(1)
 	go func() {
 		defer func() {
 			if p.maxConcurrentCrawlers > 0 &&

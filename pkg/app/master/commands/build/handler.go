@@ -997,7 +997,6 @@ func OnCommand(
 	if err != nil && containerInspector.DoShowContainerLogs {
 		containerInspector.ShowContainerLogs()
 	}
-
 	xc.FailOn(err)
 
 	containerName := containerInspector.ContainerName
