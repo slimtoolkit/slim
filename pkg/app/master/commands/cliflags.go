@@ -110,6 +110,10 @@ const (
 	FlagUseSensorVolume = "use-sensor-volume"
 	FlagContinueAfter   = "continue-after"
 
+	//RunTime Analysis Options
+	FlagRTAOnbuildBaseImage = "rta-onbuild-base-image"
+	FlagRTASourcePT         = "rta-source-ptrace"
+
 	//Sensor IPC Options (for build and profile commands)
 	FlagSensorIPCEndpoint = "sensor-ipc-endpoint"
 	FlagSensorIPCMode     = "sensor-ipc-mode"
@@ -204,6 +208,9 @@ const (
 	FlagUseLocalMountsUsage  = "Mount local paths for target container artifact input and output"
 	FlagUseSensorVolumeUsage = "Sensor volume name to use"
 	FlagContinueAfterUsage   = "Select continue mode: enter | signal | probe | timeout-number-in-seconds | container.probe"
+
+	FlagRTAOnbuildBaseImageUsage = "Enable runtime analysis for onbuild base images"
+	FlagRTASourcePTUsage         = "Enable PTRACE runtime analysis source"
 
 	FlagSensorIPCEndpointUsage = "Override sensor IPC endpoint"
 	FlagSensorIPCModeUsage     = "Select sensor IPC mode: proxy | direct"
@@ -759,6 +766,17 @@ var CommonFlags = map[string]cli.Flag{
 		Name:    FlagDeleteFatImage,
 		Usage:   FlagDeleteFatImageUsage,
 		EnvVars: []string{"DSLIM_DELETE_FAT"},
+	},
+	FlagRTAOnbuildBaseImage: &cli.BoolFlag{ //should be disabled by default
+		Name:    FlagRTAOnbuildBaseImage,
+		Usage:   FlagRTAOnbuildBaseImageUsage,
+		EnvVars: []string{"DSLIM_RTA_ONBUILD_BI"},
+	},
+	FlagRTASourcePT: &cli.BoolFlag{
+		Name:    FlagRTASourcePT,
+		Value:   true, //all sources are enabled by default
+		Usage:   FlagRTASourcePTUsage,
+		EnvVars: []string{"DSLIM_RTA_SRC_PT"},
 	},
 }
 

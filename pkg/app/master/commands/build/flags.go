@@ -219,6 +219,7 @@ var Flags = map[string]cli.Flag{
 	},
 	FlagIncludeNew: &cli.BoolFlag{
 		Name:    FlagIncludeNew,
+		Value:   true, //enabled by default for now to keep the original behavior until minification works the same
 		Usage:   FlagIncludeNewUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_NEW"},
 	},

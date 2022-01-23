@@ -144,6 +144,7 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagContinueAfter),
 		commands.Cflag(commands.FlagUseLocalMounts),
 		commands.Cflag(commands.FlagUseSensorVolume),
+		commands.Cflag(commands.FlagRTAOnbuildBaseImage),
 		//Sensor flags:
 		commands.Cflag(commands.FlagSensorIPCEndpoint),
 		commands.Cflag(commands.FlagSensorIPCMode),
@@ -616,6 +617,9 @@ var CLI = &cli.Command{
 			commandReport = ""
 		}
 
+		rtaOnbuildBaseImage := ctx.Bool(commands.FlagRTAOnbuildBaseImage)
+		rtaSourcePT := ctx.Bool(commands.FlagRTASourcePT)
+
 		OnCommand(
 			xc,
 			gcvalues,
@@ -693,6 +697,8 @@ var CLI = &cli.Command{
 			execCmd,
 			string(execFileCmd),
 			deleteFatImage,
+			rtaOnbuildBaseImage,
+			rtaSourcePT,
 			ctx.String(commands.FlagSensorIPCEndpoint),
 			ctx.String(commands.FlagSensorIPCMode),
 			ctx.String(commands.FlagLogLevel),

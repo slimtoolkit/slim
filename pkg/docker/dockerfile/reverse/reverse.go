@@ -28,6 +28,7 @@ type Dockerfile struct {
 	ExposedPorts    []string
 	ImageStack      []*ImageInfo
 	AllInstructions []*InstructionInfo
+	HasOnbuild      bool
 }
 
 type ImageInfo struct {
@@ -290,6 +291,10 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 			instParts := strings.SplitN(cleanInst, " ", 2)
 			if len(instParts) == 2 {
 				instInfo.Type = instParts[0]
+			}
+
+			if instInfo.Type == "ONBUILD" {
+				out.HasOnbuild = true
 			}
 
 			if instInfo.CommandAll == "" {
