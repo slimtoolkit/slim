@@ -123,6 +123,8 @@ func OnCommand(
 	httpProbeAPISpecs []string,
 	httpProbeAPISpecFiles []string,
 	httpProbeApps []string,
+	httpProbeProxyEndpoint string,
+	httpProbeProxyPort int,
 	portBindings map[dockerapi.Port][]dockerapi.PortBinding,
 	doPublishExposedPorts bool,
 	doRmFileArtifacts bool,

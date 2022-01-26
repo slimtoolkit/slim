@@ -97,6 +97,8 @@ const (
 	FlagHTTPProbeAPISpecFile      = "http-probe-apispec-file"
 	FlagHTTPProbeExec             = "http-probe-exec"
 	FlagHTTPProbeExecFile         = "http-probe-exec-file"
+	FlagHTTPProbeProxyEndpoint    = "http-probe-proxy-endpoint"
+	FlagHTTPProbeProxyPort        = "http-probe-proxy-port"
 
 	FlagPublishPort         = "publish-port"
 	FlagPublishExposedPorts = "publish-exposed-ports"
@@ -196,6 +198,8 @@ const (
 	FlagHTTPProbeAPISpecFileUsage      = "Run HTTP probes for API spec from file"
 	FlagHTTPProbeExecUsage             = "App to execute when running HTTP probes"
 	FlagHTTPProbeExecFileUsage         = "Apps to execute when running HTTP probes loaded from file"
+	FlagHTTPProbeProxyEndpointUsage    = "Endpoint to proxy HTTP probes"
+	FlagHTTPProbeProxyPortUsage        = "Port to proxy HTTP probes (used with HTTP probe proxy endpoint)"
 
 	FlagPublishPortUsage         = "Map container port to host port (format => port | hostPort:containerPort | hostIP:hostPort:containerPort | hostIP::containerPort )"
 	FlagPublishExposedPortsUsage = "Map all exposed ports to the same host ports"
@@ -572,6 +576,18 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:   FlagHTTPProbeExecFileUsage,
 		EnvVars: []string{"DSLIM_HTTP_PROBE_EXEC_FILE"},
 	},
+	FlagHTTPProbeProxyEndpoint: &cli.StringFlag{
+		Name:    FlagHTTPProbeProxyEndpoint,
+		Value:   "",
+		Usage:   FlagHTTPProbeProxyEndpointUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_PROXY_ENDPOINT"},
+	},
+	FlagHTTPProbeProxyPort: &cli.IntFlag{
+        Name:    FlagHTTPProbeProxyPort,
+        Value:   0,
+        Usage:   FlagHTTPProbeProxyPortUsage,
+        EnvVars: []string{"DSLIM_HTTP_PROBE_PROXY_PORT"},
+    },
 	FlagPublishPort: &cli.StringSliceFlag{
 		Name:    FlagPublishPort,
 		Value:   cli.NewStringSlice(),

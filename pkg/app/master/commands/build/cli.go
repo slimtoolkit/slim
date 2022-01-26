@@ -65,6 +65,8 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagHTTPProbeAPISpecFile),
 		commands.Cflag(commands.FlagHTTPProbeExec),
 		commands.Cflag(commands.FlagHTTPProbeExecFile),
+		commands.Cflag(commands.FlagHTTPProbeProxyEndpoint),
+		commands.Cflag(commands.FlagHTTPProbeProxyPort),
 		commands.Cflag(commands.FlagPublishPort),
 		commands.Cflag(commands.FlagPublishExposedPorts),
 		commands.Cflag(commands.FlagRunTargetAsUser),
@@ -378,6 +380,9 @@ var CLI = &cli.Command{
 			httpProbeApps = append(httpProbeApps, moreProbeApps...)
 		}
 
+		httpProbeProxyEndpoint := ctx.String(commands.FlagHTTPProbeProxyEndpoint)
+		httpProbeProxyPort := ctx.Int(commands.FlagHTTPProbeProxyPort)
+
 		doKeepPerms := ctx.Bool(FlagKeepPerms)
 
 		doRunTargetAsUser := ctx.Bool(commands.FlagRunTargetAsUser)
@@ -661,6 +666,8 @@ var CLI = &cli.Command{
 			httpProbeAPISpecs,
 			httpProbeAPISpecFiles,
 			httpProbeApps,
+			httpProbeProxyEndpoint,
+			httpProbeProxyPort,
 			portBindings,
 			doPublishExposedPorts,
 			doRmFileArtifacts,
