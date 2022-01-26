@@ -874,16 +874,12 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	if i.PrintState {
-		var containerIP string
-		if i.ContainerInfo.NetworkSettings != nil {
-			containerIP = i.ContainerInfo.NetworkSettings.IPAddress
-		}
 		i.xc.Out.Info("container",
 			ovars{
 				"status": "running",
 				"name":   containerInfo.Name,
 				"id":     i.ContainerID,
-				"ip":     containerIP,
+				"ip":     i.ContainerInfo.NetworkSettings.IPAddress,
 			})
 	}
 

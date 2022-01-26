@@ -4,7 +4,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 )
 
 // ContainerOverrides provides a set of container field overrides
@@ -114,6 +114,33 @@ type HTTPProbeCmd struct {
 	Username string   `json:"username"`
 	Password string   `json:"password"`
 	Crawl    bool     `json:"crawl"`
+
+	FastCGI *FastCGIProbeWrapperConfig `json:"fastcgi,omitempty"`
+}
+
+// FastCGI permits fine-grained configuration of the fastcgi RoundTripper.
+type FastCGIProbeWrapperConfig struct {
+	// Root is the fastcgi root directory.
+	// Defaults to the root directory of the container.
+	Root string `json:"root,omitempty"`
+
+	// The path in the URL will be split into two, with the first piece ending
+	// with the value of SplitPath. The first piece will be assumed as the
+	// actual resource (CGI script) name, and the second piece will be set to
+	// PATH_INFO for the CGI script to use.
+	SplitPath []string `json:"split_path,omitempty"`
+
+	// Extra environment variables.
+	EnvVars map[string]string `json:"env,omitempty"`
+
+	// The duration used to set a deadline when connecting to an upstream.
+	DialTimeout time.Duration `json:"dial_timeout,omitempty"`
+
+	// The duration used to set a deadline when reading from the FastCGI server.
+	ReadTimeout time.Duration `json:"read_timeout,omitempty"`
+
+	// The duration used to set a deadline when sending to the FastCGI server.
+	WriteTimeout time.Duration `json:"write_timeout,omitempty"`
 }
 
 // HTTPProbeCmds is a list of HTTPProbeCmd instances
