@@ -10,8 +10,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/docker/api/types/container"
 	"github.com/dustin/go-humanize"
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
 
@@ -610,6 +611,52 @@ func fixJSONArray(in string) string {
 	}
 
 	return out.String()
+}
+
+func deserialiseHealtheckInstruction(config *container.HealthConfig) (*container.HealthConfig, error) {
+
+	data := `HEALTHCHECK &{["CMD" "/healthcheck" "8080"] "5s" "10s" "2s" '\x03'}`
+	cleanInst := strings.TrimSpace(data)
+	var instPart1 string
+	var instPart2 string
+	var instParts []string
+	if strings.HasPrefix(cleanInst, "HEALTHCHECK ") {
+
+		cleanInst = strings.Replace(cleanInst, "&{[", "", -1)
+
+		//Splits the string into two parts - first part pointer to array of string and rest of the string with } in end.
+		instParts = strings.SplitN(cleanInst, "]", 2)
+
+		// Cleans HEALTHCHECK part and splits the first part further
+		parts := strings.SplitN(instParts[0], " ", 2)
+
+		// joins the first part of the string
+		instPart1 = strings.Join(parts[1:], " ")
+
+		// removes quotes from the first part of the string
+		instPart1 = strings.ReplaceAll(instPart1, "\"", "")
+
+		// cleans it to assign it to the pointer config.Test
+		config.Test = strings.Split(instPart1, " ")
+
+		// removes the } from the second part of the string
+		instPart2 = strings.Replace(instParts[1], "}", "", -1)
+
+		// removes spaces, "", '' from the second part of the string
+		instPart2 = strings.ReplaceAll(instPart2, "\"", "")
+		instPart2 = strings.ReplaceAll(instPart2, "'", "")
+		instPart2 = strings.TrimSpace(instPart2)
+
+	}
+
+	_, err := fmt.Sscanf(instPart2, `%ds %ds %ds \x%x`, &config.Interval, &config.Timeout, &config.StartPeriod, &config.Retries)
+
+	if err != nil {
+		panic(err)
+	}
+
+	// returns: &{[CMD /healthcheck 8080] 5ns 10ns 2ns 3}
+	return config, nil
 }
 
 //
