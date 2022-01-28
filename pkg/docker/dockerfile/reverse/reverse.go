@@ -613,13 +613,15 @@ func fixJSONArray(in string) string {
 	return out.String()
 }
 
-func deserialiseHealtheckInstruction(config *container.HealthConfig) (*container.HealthConfig, error) {
+func deserialiseHealtheckInstruction(config *container.HealthConfig) (string, *container.HealthConfig, error) {
 
 	data := `HEALTHCHECK &{["CMD" "/healthcheck" "8080"] "5s" "10s" "2s" '\x03'}`
 	cleanInst := strings.TrimSpace(data)
-	var instPart1 string
-	var instPart2 string
-	var instParts []string
+	var (
+		instPart1 string
+		instPart2 string
+		instParts []string
+	)
 	if strings.HasPrefix(cleanInst, "HEALTHCHECK ") {
 
 		cleanInst = strings.Replace(cleanInst, "&{[", "", -1)
@@ -642,21 +644,22 @@ func deserialiseHealtheckInstruction(config *container.HealthConfig) (*container
 		// removes the } from the second part of the string
 		instPart2 = strings.Replace(instParts[1], "}", "", -1)
 
-		// removes spaces, "", '' from the second part of the string
-		instPart2 = strings.ReplaceAll(instPart2, "\"", "")
-		instPart2 = strings.ReplaceAll(instPart2, "'", "")
+		// removes extra spaces from string
 		instPart2 = strings.TrimSpace(instPart2)
 
 	}
 
-	_, err := fmt.Sscanf(instPart2, `%ds %ds %ds \x%x`, &config.Interval, &config.Timeout, &config.StartPeriod, &config.Retries)
+	_, err := fmt.Sscanf(instPart2, `"%ds" "%ds" "%ds" '\x%x'`, &config.Interval, &config.Timeout, &config.StartPeriod, &config.Retries)
 
 	if err != nil {
 		panic(err)
 	}
 
-	// returns: &{[CMD /healthcheck 8080] 5ns 10ns 2ns 3}
-	return config, nil
+	healthInst := fmt.Sprintf(`HEALTHCHECK --interval=%ds --timeout=%ds --start-period=%ds --retries=%x %s`, config.Interval, config.Timeout, config.StartPeriod, config.Retries, strings.Join(config.Test, " "))
+	fmt.Println(healthInst)
+
+	// returns: healthinst and &{[CMD /healthcheck 8080] 5ns 10ns 2ns 3}
+	return healthInst, config, nil
 }
 
 //
