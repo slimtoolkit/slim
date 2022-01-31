@@ -346,6 +346,13 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 			}
 
 			if instInfo.Type == "HEALTHCHECK" {
+
+				healthInst, _, err := deserialiseHealtheckInstruction(instInfo.Params)
+				if err != nil {
+					log.Errorf("ReverseDockerfileFromHistory - HEALTHCHECK - deserialiseHealtheckInstruction - %v", err)
+				}
+
+				instInfo.CommandAll = healthInst
 				//TODO: restore the HEALTHCHECK instruction
 				//Example:
 				// HEALTHCHECK &{["CMD" "/healthcheck" "8080"] "5s" "10s" "0s" '\x03'}
@@ -612,11 +619,12 @@ func fixJSONArray(in string) string {
 	return out.String()
 }
 
-func deserialiseHealtheckInstruction(config *docker.HealthConfig) (string, *docker.HealthConfig, error) {
+func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig, error) {
 
-	data := `HEALTHCHECK &{["CMD" "/healthcheck" "8080"] "5s" "10s" "2s" '\x03'}`
+	//	data := `HEALTHCHECK &{["CMD" "/healthcheck" "8080"] "5s" "10s" "2s" '\x03'}`
 	cleanInst := strings.TrimSpace(data)
 	var (
+		config    *docker.HealthConfig
 		instPart1 string
 		instPart2 string
 		instParts []string
@@ -658,7 +666,7 @@ func deserialiseHealtheckInstruction(config *docker.HealthConfig) (string, *dock
 	fmt.Println(healthInst)
 
 	// returns: healthinst and &{[CMD /healthcheck 8080] 5ns 10ns 2ns 3}
-	return healthInst, config, nil
+	return healthInst, config, err
 }
 
 //
