@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker/docker/api/types/container"
 	"github.com/dustin/go-humanize"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
@@ -613,7 +612,7 @@ func fixJSONArray(in string) string {
 	return out.String()
 }
 
-func deserialiseHealtheckInstruction(config *container.HealthConfig) (string, *container.HealthConfig, error) {
+func deserialiseHealtheckInstruction(config *docker.HealthConfig) (string, *docker.HealthConfig, error) {
 
 	data := `HEALTHCHECK &{["CMD" "/healthcheck" "8080"] "5s" "10s" "2s" '\x03'}`
 	cleanInst := strings.TrimSpace(data)
