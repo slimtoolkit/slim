@@ -11,7 +11,7 @@ import (
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
 
@@ -346,6 +346,13 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 			}
 
 			if instInfo.Type == "HEALTHCHECK" {
+
+				healthInst, _, err := deserialiseHealtheckInstruction(instInfo.Params)
+				if err != nil {
+					log.Errorf("ReverseDockerfileFromHistory - HEALTHCHECK - deserialiseHealtheckInstruction - %v", err)
+				}
+
+				instInfo.CommandAll = healthInst
 				//TODO: restore the HEALTHCHECK instruction
 				//Example:
 				// HEALTHCHECK &{["CMD" "/healthcheck" "8080"] "5s" "10s" "0s" '\x03'}
@@ -610,6 +617,56 @@ func fixJSONArray(in string) string {
 	}
 
 	return out.String()
+}
+
+func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig, error) {
+
+	//	data := `HEALTHCHECK &{["CMD" "/healthcheck" "8080"] "5s" "10s" "2s" '\x03'}`
+	cleanInst := strings.TrimSpace(data)
+	var (
+		config    *docker.HealthConfig
+		instPart1 string
+		instPart2 string
+		instParts []string
+	)
+	if strings.HasPrefix(cleanInst, "HEALTHCHECK ") {
+
+		cleanInst = strings.Replace(cleanInst, "&{[", "", -1)
+
+		//Splits the string into two parts - first part pointer to array of string and rest of the string with } in end.
+		instParts = strings.SplitN(cleanInst, "]", 2)
+
+		// Cleans HEALTHCHECK part and splits the first part further
+		parts := strings.SplitN(instParts[0], " ", 2)
+
+		// joins the first part of the string
+		instPart1 = strings.Join(parts[1:], " ")
+
+		// removes quotes from the first part of the string
+		instPart1 = strings.ReplaceAll(instPart1, "\"", "")
+
+		// cleans it to assign it to the pointer config.Test
+		config.Test = strings.Split(instPart1, " ")
+
+		// removes the } from the second part of the string
+		instPart2 = strings.Replace(instParts[1], "}", "", -1)
+
+		// removes extra spaces from string
+		instPart2 = strings.TrimSpace(instPart2)
+
+	}
+
+	_, err := fmt.Sscanf(instPart2, `"%ds" "%ds" "%ds" '\x%x'`, &config.Interval, &config.Timeout, &config.StartPeriod, &config.Retries)
+
+	if err != nil {
+		panic(err)
+	}
+
+	healthInst := fmt.Sprintf(`HEALTHCHECK --interval=%ds --timeout=%ds --start-period=%ds --retries=%x %s`, config.Interval, config.Timeout, config.StartPeriod, config.Retries, strings.Join(config.Test, " "))
+	fmt.Println(healthInst)
+
+	// returns: healthinst and &{[CMD /healthcheck 8080] 5ns 10ns 2ns 3}
+	return healthInst, config, err
 }
 
 //
