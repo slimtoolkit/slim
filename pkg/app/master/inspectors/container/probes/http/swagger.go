@@ -14,7 +14,6 @@ import (
 	"github.com/getkin/kin-openapi/openapi2conv"
 	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/ghodss/yaml"
-
 	log "github.com/sirupsen/logrus"
 )
 
@@ -201,6 +200,14 @@ func apiSpecPrefix(spec *openapi3.Swagger) (string, error) {
 }
 
 func (p *CustomProbe) loadAPISpecs(proto, targetHost, port string) {
+
+	baseAddr := getHTTPAddr(proto, targetHost, port)
+	client, err := getHTTPClient(proto)
+	if err != nil {
+		p.xc.Out.Error("HTTP probe - construct client error - %v", err.Error())
+		return
+	}
+
 	//TODO:
 	//Need to support user provided target port for the spec,
 	//but these need to be mapped to the actual port at runtime
@@ -214,10 +221,7 @@ func (p *CustomProbe) loadAPISpecs(proto, targetHost, port string) {
 			prefixOverride = parts[1]
 		}
 
-		baseAddr := getHTTPAddr(proto, targetHost, port)
 		addr := fmt.Sprintf("%s%s", baseAddr, specPath)
-		client := getHTTPClient(proto)
-
 		spec, err := loadAPISpecFromEndpoint(client, addr)
 		if err != nil {
 			p.xc.Out.Info("http.probe.apispec.error",
@@ -279,7 +283,11 @@ func (p *CustomProbe) probeAPISpecEndpoints(proto, targetHost, port, prefix stri
 			})
 	}
 
-	httpClient := getHTTPClient(proto)
+	httpClient, err := getHTTPClient(proto)
+	if err != nil {
+		p.xc.Out.Error("HTTP probe - construct client error - %v", err.Error())
+		return
+	}
 
 	for apiPath, pathInfo := range spec.Paths {
 		//very primitive way to set the path params (will break for numeric values)
@@ -318,6 +326,11 @@ func (p *CustomProbe) apiSpecEndpointCall(client *http.Client, endpoint, method 
 	method = strings.ToUpper(method)
 	for i := 0; i < maxRetryCount; i++ {
 		req, err := http.NewRequest(method, endpoint, nil)
+		if err != nil {
+			p.xc.Out.Error("HTTP probe - construct request error - %v", err.Error())
+			// Break since the same args are passed to NewRequest() on each loop.
+			break
+		}
 		//no body, no request headers and no credentials for now
 		res, err := client.Do(req)
 		p.CallCount++

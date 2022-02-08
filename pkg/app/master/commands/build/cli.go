@@ -65,6 +65,8 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagHTTPProbeAPISpecFile),
 		commands.Cflag(commands.FlagHTTPProbeExec),
 		commands.Cflag(commands.FlagHTTPProbeExecFile),
+		commands.Cflag(commands.FlagHTTPProbeProxyEndpoint),
+		commands.Cflag(commands.FlagHTTPProbeProxyPort),
 		commands.Cflag(commands.FlagPublishPort),
 		commands.Cflag(commands.FlagPublishExposedPorts),
 		commands.Cflag(commands.FlagRunTargetAsUser),
@@ -144,6 +146,7 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagContinueAfter),
 		commands.Cflag(commands.FlagUseLocalMounts),
 		commands.Cflag(commands.FlagUseSensorVolume),
+		commands.Cflag(commands.FlagRTAOnbuildBaseImage),
 		//Sensor flags:
 		commands.Cflag(commands.FlagSensorIPCEndpoint),
 		commands.Cflag(commands.FlagSensorIPCMode),
@@ -376,6 +379,9 @@ var CLI = &cli.Command{
 		if len(moreProbeApps) > 0 {
 			httpProbeApps = append(httpProbeApps, moreProbeApps...)
 		}
+
+		httpProbeProxyEndpoint := ctx.String(commands.FlagHTTPProbeProxyEndpoint)
+		httpProbeProxyPort := ctx.Int(commands.FlagHTTPProbeProxyPort)
 
 		doKeepPerms := ctx.Bool(FlagKeepPerms)
 
@@ -616,6 +622,9 @@ var CLI = &cli.Command{
 			commandReport = ""
 		}
 
+		rtaOnbuildBaseImage := ctx.Bool(commands.FlagRTAOnbuildBaseImage)
+		rtaSourcePT := ctx.Bool(commands.FlagRTASourcePT)
+
 		OnCommand(
 			xc,
 			gcvalues,
@@ -657,6 +666,8 @@ var CLI = &cli.Command{
 			httpProbeAPISpecs,
 			httpProbeAPISpecFiles,
 			httpProbeApps,
+			httpProbeProxyEndpoint,
+			httpProbeProxyPort,
 			portBindings,
 			doPublishExposedPorts,
 			doRmFileArtifacts,
@@ -693,6 +704,8 @@ var CLI = &cli.Command{
 			execCmd,
 			string(execFileCmd),
 			deleteFatImage,
+			rtaOnbuildBaseImage,
+			rtaSourcePT,
 			ctx.String(commands.FlagSensorIPCEndpoint),
 			ctx.String(commands.FlagSensorIPCMode),
 			ctx.String(commands.FlagLogLevel),

@@ -10,6 +10,7 @@ import (
 	"golang.org/x/net/http2"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
+	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/container/probes/http/internal"
 )
 
 func getHTTP1Client() *http.Client {
@@ -49,15 +50,17 @@ func getHTTP2Client(h2c bool) *http.Client {
 	return client
 }
 
-func getHTTPClient(proto string) *http.Client {
+func getHTTPClient(proto string) (*http.Client, error) {
 	switch proto {
+	case config.ProtoHTTP:
+		return getHTTP1Client(), nil
 	case config.ProtoHTTP2:
-		return getHTTP2Client(false)
+		return getHTTP2Client(false), nil
 	case config.ProtoHTTP2C:
-		return getHTTP2Client(true)
+		return getHTTP2Client(true), nil
 	}
 
-	return getHTTP1Client()
+	return nil, fmt.Errorf("unsupported HTTP-family protocol %s", proto)
 }
 
 func getHTTPAddr(proto, targetHost, port string) string {
@@ -79,4 +82,31 @@ func getHTTPScheme(proto string) string {
 	}
 
 	return scheme
+}
+
+func getFastCGIClient(cfg *config.FastCGIProbeWrapperConfig) *http.Client {
+
+	genericTimeout := time.Second * 30
+	var dialTimeout, readTimeout, writeTimeout time.Duration
+	if dialTimeout = cfg.DialTimeout; dialTimeout == 0 {
+		dialTimeout = genericTimeout
+	}
+	if readTimeout = cfg.ReadTimeout; readTimeout == 0 {
+		readTimeout = genericTimeout
+	}
+	if writeTimeout = cfg.WriteTimeout; writeTimeout == 0 {
+		writeTimeout = genericTimeout
+	}
+
+	return &http.Client{
+		Timeout: genericTimeout,
+		Transport: &internal.FastCGITransport{
+			Root:         cfg.Root,
+			SplitPath:    cfg.SplitPath,
+			EnvVars:      cfg.EnvVars,
+			DialTimeout:  dialTimeout,
+			ReadTimeout:  readTimeout,
+			WriteTimeout: writeTimeout,
+		},
+	}
 }

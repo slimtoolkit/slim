@@ -1,9 +1,9 @@
 package http
 
 import (
-	"fmt"
-	//"bytes"
 	"context"
+	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -19,15 +19,16 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
-	//"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/container"
 )
 
 const (
 	probeRetryCount = 5
-	httpPortStr     = "80"
-	httpsPortStr    = "443"
+
+	defaultHTTPPortStr    = "80"
+	defaultHTTPSPortStr   = "443"
+	defaultFastCGIPortStr = "9000"
 )
 
 type ovars = app.OutVars
@@ -138,9 +139,16 @@ func NewCustomProbe(
 			continue
 		}
 
+		log.Debugf("HTTP probe - target's network port key='%s' data='%#v'", nsPortKey, nsPortData)
+
 		parts := strings.Split(string(nsPortKey), "/")
 		if len(parts) == 2 && parts[1] != "tcp" {
 			log.Debugf("HTTP probe - skipping non-tcp port => %v", nsPortKey)
+			continue
+		}
+
+		if nsPortData == nil {
+			log.Debugf("HTTP probe - skipping network setting without port data => %v", nsPortKey)
 			continue
 		}
 
@@ -254,8 +262,8 @@ func (p *CustomProbe) Start() {
 			return -1
 		}
 
-		httpIdx := findIdx(p.Ports, httpPortStr)
-		httpsIdx := findIdx(p.Ports, httpsPortStr)
+		httpIdx := findIdx(p.Ports, defaultHTTPPortStr)
+		httpsIdx := findIdx(p.Ports, defaultHTTPSPortStr)
 		if httpIdx != -1 && httpsIdx != -1 && httpsIdx < httpIdx {
 			//want to probe http first
 			log.Debugf("http.probe - swapping http and https ports (http=%v <-> https=%v)",
@@ -320,13 +328,36 @@ func (p *CustomProbe) Start() {
 					rbSeeker = strBody
 				}
 
+				// TODO: need a smarter and more dynamic way to determine the actual protocol type
+
+				// Set up FastCGI defaults if the default CGI port is used without a FastCGI config.
+				if port == defaultFastCGIPortStr && cmd.FastCGI == nil {
+					log.Debugf("HTTP probe - FastCGI default port (%s) used, setting up HTTP probe FastCGI wrapper defaults")
+
+					// Typicall the entrypoint into a PHP app.
+					if cmd.Resource == "/" {
+						cmd.Resource = "/index.php"
+					}
+
+					// SplitPath is typically on the first .php path element.
+					var splitPath []string
+					if phpIdx := strings.Index(cmd.Resource, ".php"); phpIdx != -1 {
+						splitPath = []string{cmd.Resource[:phpIdx+4]}
+					}
+
+					cmd.FastCGI = &config.FastCGIProbeWrapperConfig{
+						// /var/www is a typical root for PHP indices.
+						Root:      "/var/www",
+						SplitPath: splitPath,
+					}
+				}
+
 				var protocols []string
 				if cmd.Protocol == "" {
-					//need a smarter and more dynamic way to determine the actual protocol type
 					switch port {
-					case httpPortStr:
+					case defaultHTTPPortStr:
 						protocols = []string{config.ProtoHTTP}
-					case httpsPortStr:
+					case defaultHTTPSPortStr:
 						protocols = []string{config.ProtoHTTPS}
 					default:
 						protocols = []string{config.ProtoHTTP, config.ProtoHTTPS}
@@ -417,29 +448,31 @@ func (p *CustomProbe) Start() {
 						continue
 					}
 
-					client := getHTTPClient(proto)
+					var client *http.Client
+					switch {
+					case cmd.FastCGI != nil:
+						log.Debug("HTTP probe - FastCGI embedded proxy configured")
+						client = getFastCGIClient(cmd.FastCGI)
+					default:
+						var err error
+						if client, err = getHTTPClient(proto); err != nil {
+							p.xc.Out.Error("HTTP probe - construct client error - %v", err.Error())
+							continue
+						}
+					}
+
 					baseAddr := getHTTPAddr(proto, targetHost, port)
+					// TODO: cmd.Resource may need to be a part of cmd.FastCGI instead.
 					addr := fmt.Sprintf("%s%s", baseAddr, cmd.Resource)
 
+					req, err := newHTTPRequestFromCmd(cmd, addr, reqBody)
+					if err != nil {
+						p.xc.Out.Error("HTTP probe - construct request error - %v", err.Error())
+						continue
+					}
+
 					for i := 0; i < maxRetryCount; i++ {
-						req, err := http.NewRequest(cmd.Method, addr, reqBody)
-						for _, hline := range cmd.Headers {
-							hparts := strings.SplitN(hline, ":", 2)
-							if len(hparts) != 2 {
-								log.Debugf("ignoring malformed header (%v)", hline)
-								continue
-							}
-
-							hname := strings.TrimSpace(hparts[0])
-							hvalue := strings.TrimSpace(hparts[1])
-							req.Header.Add(hname, hvalue)
-						}
-
-						if (cmd.Username != "") || (cmd.Password != "") {
-							req.SetBasicAuth(cmd.Username, cmd.Password)
-						}
-
-						res, err := client.Do(req)
+						res, err := client.Do(req.Clone(context.Background()))
 						p.CallCount++
 						rbSeeker.Seek(0, 0)
 
@@ -475,44 +508,34 @@ func (p *CustomProbe) Start() {
 							p.OkCount++
 
 							if p.OkCount == 1 {
-								//fetch the API spec when we know the target is reachable
-								p.loadAPISpecs(proto, targetHost, port)
-
-								//ideally api spec probes should work without http probe commands
-								//for now trigger the api spec probes after the first successful http probe command
-								//and once the api specs are loaded
-								for _, specInfo := range p.APISpecProbes {
-									var apiPrefix string
-									if specInfo.prefixOverride != "" {
-										apiPrefix = specInfo.prefixOverride
-									} else {
-										apiPrefix, err = apiSpecPrefix(specInfo.spec)
-										if err != nil {
-											p.xc.Out.Error("http.probe.api-spec.error.prefix", err.Error())
-											continue
-										}
-									}
-
-									p.probeAPISpecEndpoints(proto, targetHost, port, apiPrefix, specInfo.spec)
+								if len(p.APISpecs) != 0 && len(p.APISpecFiles) != 0 && cmd.FastCGI != nil {
+									p.xc.Out.Info("HTTP probe - API spec probing not implemented for fastcgi")
+								} else {
+									p.probeAPISpecs(proto, targetHost, port)
 								}
 							}
 
 							if cmd.Crawl {
-								p.crawl(proto, targetHost, addr)
+								if cmd.FastCGI != nil {
+									p.xc.Out.Info("HTTP probe - crawling not implemented for fastcgi")
+								} else {
+									p.crawl(proto, targetHost, addr)
+								}
 							}
 							break
 						} else {
 							p.ErrCount++
 
-							if urlErr, ok := err.(*url.Error); ok {
-								if urlErr.Err == io.EOF {
+							urlErr := &url.Error{}
+							if errors.As(err, &urlErr) {
+								if errors.Is(urlErr.Err, io.EOF) {
 									log.Debugf("HTTP probe - target not ready yet (retry again later)...")
 									time.Sleep(notReadyErrorWait * time.Second)
 								} else {
 									log.Debugf("HTTP probe - web error... retry again later...")
 									time.Sleep(webErrorWait * time.Second)
-
 								}
+
 							} else {
 								log.Debugf("HTTP probe - other error... retry again later...")
 								time.Sleep(otherErrorWait * time.Second)
@@ -614,6 +637,30 @@ func (p *CustomProbe) Start() {
 	}()
 }
 
+func (p *CustomProbe) probeAPISpecs(proto, targetHost, port string) {
+	//fetch the API spec when we know the target is reachable
+	p.loadAPISpecs(proto, targetHost, port)
+
+	//ideally api spec probes should work without http probe commands
+	//for now trigger the api spec probes after the first successful http probe command
+	//and once the api specs are loaded
+	for _, specInfo := range p.APISpecProbes {
+		var apiPrefix string
+		if specInfo.prefixOverride != "" {
+			apiPrefix = specInfo.prefixOverride
+		} else {
+			var err error
+			apiPrefix, err = apiSpecPrefix(specInfo.spec)
+			if err != nil {
+				p.xc.Out.Error("http.probe.api-spec.error.prefix", err.Error())
+				continue
+			}
+		}
+
+		p.probeAPISpecEndpoints(proto, targetHost, port, apiPrefix, specInfo.spec)
+	}
+}
+
 // DoneChan returns the 'done' channel for the HTTP probe instance
 func (p *CustomProbe) DoneChan() <-chan struct{} {
 	return p.doneChan
@@ -658,4 +705,29 @@ func exeAppCall(appCall string) error {
 
 	//TODO: process outBuf and errBuf here
 	return nil
+}
+
+func newHTTPRequestFromCmd(cmd config.HTTPProbeCmd, addr string, reqBody io.Reader) (*http.Request, error) {
+	req, err := http.NewRequestWithContext(context.Background(), cmd.Method, addr, reqBody)
+	if err != nil {
+		return nil, err
+	}
+
+	for _, hline := range cmd.Headers {
+		hparts := strings.SplitN(hline, ":", 2)
+		if len(hparts) != 2 {
+			log.Debugf("ignoring malformed header (%v)", hline)
+			continue
+		}
+
+		hname := strings.TrimSpace(hparts[0])
+		hvalue := strings.TrimSpace(hparts[1])
+		req.Header.Add(hname, hvalue)
+	}
+
+	if (cmd.Username != "") || (cmd.Password != "") {
+		req.SetBasicAuth(cmd.Username, cmd.Password)
+	}
+
+	return req, nil
 }

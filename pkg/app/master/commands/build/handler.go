@@ -46,6 +46,7 @@ const (
 	ecbBadCustomImageTag
 	ecbImageBuildError
 	ecbImageAlreadyOptimized
+	ecbOnbuildBaseImage
 	ecbNoEntrypoint
 	ecbBadTargetComposeSvc
 	ecbComposeSvcNoImage
@@ -122,6 +123,8 @@ func OnCommand(
 	httpProbeAPISpecs []string,
 	httpProbeAPISpecFiles []string,
 	httpProbeApps []string,
+	httpProbeProxyEndpoint string,
+	httpProbeProxyPort int,
 	portBindings map[dockerapi.Port][]dockerapi.PortBinding,
 	doPublishExposedPorts bool,
 	doRmFileArtifacts bool,
@@ -158,6 +161,8 @@ func OnCommand(
 	execCmd string,
 	execFileCmd string,
 	deleteFatImage bool,
+	rtaOnbuildBaseImage bool,
+	rtaSourcePT bool,
 	sensorIPCEndpoint string,
 	sensorIPCMode string,
 	logLevel string,
@@ -739,6 +744,24 @@ func OnCommand(
 					"list": strings.Join(imageInspector.DockerfileInfo.ExposedPorts, ","),
 				})
 		}
+
+		if !rtaOnbuildBaseImage && imageInspector.DockerfileInfo.HasOnbuild {
+			xc.Out.Info("target.image.error",
+				ovars{
+					"status":  "onbuild.base.image",
+					"image":   targetRef,
+					"message": "Runtime analysis for onbuild base images is not supported",
+				})
+
+			exitCode := commands.ECTBuild | ecbOnbuildBaseImage
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": exitCode,
+				})
+
+			cmdReport.Error = "onbuild.base.image"
+			xc.Exit(exitCode)
+		}
 	}
 
 	xc.Out.State("image.inspection.done")
@@ -976,7 +999,6 @@ func OnCommand(
 	if err != nil && containerInspector.DoShowContainerLogs {
 		containerInspector.ShowContainerLogs()
 	}
-
 	xc.FailOn(err)
 
 	containerName := containerInspector.ContainerName

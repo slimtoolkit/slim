@@ -5,6 +5,9 @@ import (
 	"os"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
+
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/build"
@@ -26,9 +29,6 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/xray"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	v "github.com/docker-slim/docker-slim/pkg/version"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
 )
 
 // DockerSlim app CLI constants

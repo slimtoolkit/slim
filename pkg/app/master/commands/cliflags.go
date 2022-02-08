@@ -97,6 +97,8 @@ const (
 	FlagHTTPProbeAPISpecFile      = "http-probe-apispec-file"
 	FlagHTTPProbeExec             = "http-probe-exec"
 	FlagHTTPProbeExecFile         = "http-probe-exec-file"
+	FlagHTTPProbeProxyEndpoint    = "http-probe-proxy-endpoint"
+	FlagHTTPProbeProxyPort        = "http-probe-proxy-port"
 
 	FlagPublishPort         = "publish-port"
 	FlagPublishExposedPorts = "publish-exposed-ports"
@@ -109,6 +111,10 @@ const (
 	FlagUseLocalMounts  = "use-local-mounts"
 	FlagUseSensorVolume = "use-sensor-volume"
 	FlagContinueAfter   = "continue-after"
+
+	//RunTime Analysis Options
+	FlagRTAOnbuildBaseImage = "rta-onbuild-base-image"
+	FlagRTASourcePT         = "rta-source-ptrace"
 
 	//Sensor IPC Options (for build and profile commands)
 	FlagSensorIPCEndpoint = "sensor-ipc-endpoint"
@@ -192,6 +198,8 @@ const (
 	FlagHTTPProbeAPISpecFileUsage      = "Run HTTP probes for API spec from file"
 	FlagHTTPProbeExecUsage             = "App to execute when running HTTP probes"
 	FlagHTTPProbeExecFileUsage         = "Apps to execute when running HTTP probes loaded from file"
+	FlagHTTPProbeProxyEndpointUsage    = "Endpoint to proxy HTTP probes"
+	FlagHTTPProbeProxyPortUsage        = "Port to proxy HTTP probes (used with HTTP probe proxy endpoint)"
 
 	FlagPublishPortUsage         = "Map container port to host port (format => port | hostPort:containerPort | hostIP:hostPort:containerPort | hostIP::containerPort )"
 	FlagPublishExposedPortsUsage = "Map all exposed ports to the same host ports"
@@ -204,6 +212,9 @@ const (
 	FlagUseLocalMountsUsage  = "Mount local paths for target container artifact input and output"
 	FlagUseSensorVolumeUsage = "Sensor volume name to use"
 	FlagContinueAfterUsage   = "Select continue mode: enter | signal | probe | timeout-number-in-seconds | container.probe"
+
+	FlagRTAOnbuildBaseImageUsage = "Enable runtime analysis for onbuild base images"
+	FlagRTASourcePTUsage         = "Enable PTRACE runtime analysis source"
 
 	FlagSensorIPCEndpointUsage = "Override sensor IPC endpoint"
 	FlagSensorIPCModeUsage     = "Select sensor IPC mode: proxy | direct"
@@ -565,6 +576,18 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:   FlagHTTPProbeExecFileUsage,
 		EnvVars: []string{"DSLIM_HTTP_PROBE_EXEC_FILE"},
 	},
+	FlagHTTPProbeProxyEndpoint: &cli.StringFlag{
+		Name:    FlagHTTPProbeProxyEndpoint,
+		Value:   "",
+		Usage:   FlagHTTPProbeProxyEndpointUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_PROXY_ENDPOINT"},
+	},
+	FlagHTTPProbeProxyPort: &cli.IntFlag{
+        Name:    FlagHTTPProbeProxyPort,
+        Value:   0,
+        Usage:   FlagHTTPProbeProxyPortUsage,
+        EnvVars: []string{"DSLIM_HTTP_PROBE_PROXY_PORT"},
+    },
 	FlagPublishPort: &cli.StringSliceFlag{
 		Name:    FlagPublishPort,
 		Value:   cli.NewStringSlice(),
@@ -759,6 +782,17 @@ var CommonFlags = map[string]cli.Flag{
 		Name:    FlagDeleteFatImage,
 		Usage:   FlagDeleteFatImageUsage,
 		EnvVars: []string{"DSLIM_DELETE_FAT"},
+	},
+	FlagRTAOnbuildBaseImage: &cli.BoolFlag{ //should be disabled by default
+		Name:    FlagRTAOnbuildBaseImage,
+		Usage:   FlagRTAOnbuildBaseImageUsage,
+		EnvVars: []string{"DSLIM_RTA_ONBUILD_BI"},
+	},
+	FlagRTASourcePT: &cli.BoolFlag{
+		Name:    FlagRTASourcePT,
+		Value:   true, //all sources are enabled by default
+		Usage:   FlagRTASourcePTUsage,
+		EnvVars: []string{"DSLIM_RTA_SRC_PT"},
 	},
 }
 

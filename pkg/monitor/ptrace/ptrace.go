@@ -207,7 +207,9 @@ func (app *App) processFileActivity(e *syscallEvent) {
 			return
 		}
 
-		if p.SyscallType() == CheckFileType && !p.FailedReturnStatus(e.retVal) {
+		if (p.SyscallType() == CheckFileType ||
+			p.SyscallType() == OpenFileType) &&
+			!p.FailedReturnStatus(e.retVal) {
 			//todo: filter "/proc/", "/sys/", "/dev/" externally
 			if e.pathParam != "." &&
 				e.pathParam != "/proc" &&
@@ -271,13 +273,6 @@ done:
 			app.Report.SyscallCount++
 			log.Debugf("ptrace.App.process: event ==> {pid=%v cn=%d}", e.pid, e.callNum)
 
-			/*
-				if _, ok := app.syscallActivity[e.callNum]; ok {
-					app.syscallActivity[e.callNum]++
-				} else {
-					app.syscallActivity[e.callNum] = 1
-				}
-			*/
 			app.processSyscallActivity(&e)
 			app.processFileActivity(&e)
 		}
@@ -364,14 +359,14 @@ func (app *App) start() error {
 
 	err = app.cmd.Wait()
 	log.Debugf("ptrace.App.start: app.cmd.Wait err - %v", err)
-	log.Debugf("ptrace.App.start: Process state info - Exited=%v ExitCode=%v SysWaitStatus=%v",
+	log.Debugf("ptrace.App.start: Target process state info - Exited=%v ExitCode=%v SysWaitStatus=%v",
 		app.cmd.ProcessState.Exited(),
 		app.cmd.ProcessState.ExitCode(),
 		app.cmd.ProcessState.Sys())
 
 	waitStatus, ok := app.cmd.ProcessState.Sys().(syscall.WaitStatus)
 	if ok {
-		log.Debugf("ptrace.App.start: Process wait status - %v (Exited=%v Signaled=%v Signal='%v' Stopped=%v StopSignal='%v' TrapCause=%v)",
+		log.Debugf("ptrace.App.start: Target process wait status - %v (Exited=%v Signaled=%v Signal='%v' Stopped=%v StopSignal='%v' TrapCause=%v)",
 			waitStatus,
 			waitStatus.Exited(),
 			waitStatus.Signaled(),
@@ -567,23 +562,26 @@ func (app *App) collect() {
 
 		if terminated {
 			if _, ok := pidSyscallState[wpid]; !ok {
-				log.Debugf("ptrace.App.collect: unknown process is terminated (%v)", wpid)
+				log.Debugf("ptrace.App.collect[%d/%d]: unknown process is terminated (pid=%v)",
+					app.cmd.Process.Pid, app.pgid, wpid)
 			} else {
 				if !pidSyscallState[wpid].exiting {
-					log.Debugf("ptrace.App.collect: unexpected process termination (%v)", wpid)
+					log.Debugf("ptrace.App.collect[%d/%d]: unexpected process termination (pid=%v)",
+						app.cmd.Process.Pid, app.pgid, wpid)
 				}
 			}
 
 			delete(pidSyscallState, wpid)
 			if app.MainPID() == wpid {
-				log.Debug("ptrace.App.collect: wpid is main PID and terminated...")
+				log.Debugf("ptrace.App.collect[%d/%d]: wpid(%v) is main PID and terminated...",
+					app.cmd.Process.Pid, app.pgid, wpid)
 				if !mainExiting {
 					log.Debug("ptrace.App.collect: unexpected main PID termination...")
 				}
 			}
 
 			if len(pidSyscallState) == 0 {
-				log.Debug("ptrace.App.collect: all processes terminated...")
+				log.Debugf("ptrace.App.collect[%d/%d]: all processes terminated...", app.cmd.Process.Pid, app.pgid)
 				app.collectorDoneCh <- 0
 				return
 			}
@@ -597,20 +595,41 @@ func (app *App) collect() {
 			if _, ok := pidSyscallState[wpid]; ok {
 				cstate = pidSyscallState[wpid]
 			} else {
-				log.Debugf("ptrace.App.collect: collector loop - new pid - mainPid=%v pid=%v (prevPid=%v) - add state", app.MainPID(), wpid, prevPid)
+				log.Debugf("ptrace.App.collect[%d/%d]: collector loop - new pid - mainPid=%v pid=%v (prevPid=%v) - add state",
+					app.cmd.Process.Pid, app.pgid, app.MainPID(), wpid, prevPid)
 				//TODO: create new process records from clones/forks
 				cstate = &syscallState{pid: wpid}
 				pidSyscallState[wpid] = cstate
 			}
 
 			if !cstate.expectReturn {
-				if err := onSyscall(wpid, cstate); err != nil {
-					log.Debugf("ptrace.App.collect: onSyscall error - %v", err)
+				genEvent, err := onSyscall(wpid, cstate)
+				if err != nil {
+					log.Debugf("ptrace.App.collect[%d/%d]: wpid=%v onSyscall error - %v",
+						app.cmd.Process.Pid, app.pgid, wpid, err)
 					continue
+				}
+
+				if genEvent {
+					evt := syscallEvent{
+						pid:       wpid,
+						callNum:   uint32(cstate.callNum),
+						pathParam: cstate.pathParam,
+					}
+
+					log.Debugf("ptrace.App.collect[%d/%d]: event.onSyscall - wpid=%v (evt=%#v)",
+						app.cmd.Process.Pid, app.pgid, wpid, evt)
+					select {
+					case app.eventCh <- evt:
+					default:
+						log.Debugf("ptrace.App.collect[%d/%d]: event.onSyscall - wpid=%v app.eventCh send error (evt=%#v)",
+							app.cmd.Process.Pid, app.pgid, wpid, evt)
+					}
 				}
 			} else {
 				if err := onSyscallReturn(wpid, cstate); err != nil {
-					log.Debugf("ptrace.App.collect: onSyscallReturn error - %v", err)
+					log.Debugf("ptrace.App.collect[%d/%d]: wpid=%v onSyscallReturn error - %v",
+						app.cmd.Process.Pid, app.pgid, wpid, err)
 					continue
 				}
 			}
@@ -637,14 +656,16 @@ func (app *App) collect() {
 					select {
 					case app.eventCh <- evt:
 					default:
-						log.Debugf("ptrace.App.collect: app.eventCh send error (%#v)", evt)
+						log.Debugf("ptrace.App.collect[%d/%d]: wpid=%v app.eventCh send error (evt=%#v)",
+							app.cmd.Process.Pid, app.pgid, wpid, evt)
 					}
 				}
 			}
 		}
 
 		if eventStop {
-			log.Debugf("ptrace.App.collect: eventStop eventCode=%d(0x%04x)", eventCode, eventCode)
+			log.Debugf("ptrace.App.collect[%d/%d]: eventStop eventCode=%d(0x%04x)",
+				app.cmd.Process.Pid, app.pgid, eventCode, eventCode)
 
 			switch eventCode {
 			case syscall.PTRACE_EVENT_CLONE,
@@ -653,11 +674,14 @@ func (app *App) collect() {
 				syscall.PTRACE_EVENT_VFORK_DONE:
 				newPid, err := syscall.PtraceGetEventMsg(wpid)
 				if err != nil {
-					log.Debugf("ptrace.App.collect: PTRACE_EVENT_CLONE/[V]FORK[_DONE] - error getting cloned pid - %v", err)
+					log.Debugf("ptrace.App.collect[%d/%d]: PTRACE_EVENT_CLONE/[V]FORK[_DONE] - error getting cloned pid - %v",
+						app.cmd.Process.Pid, app.pgid, err)
 				} else {
-					log.Debugf("ptrace.App.collect: PTRACE_EVENT_CLONE/[V]FORK[_DONE] - cloned pid - %v", newPid)
+					log.Debugf("ptrace.App.collect[%d/%d]: PTRACE_EVENT_CLONE/[V]FORK[_DONE] - cloned pid - %v",
+						app.cmd.Process.Pid, app.pgid, newPid)
 					if _, ok := pidSyscallState[int(newPid)]; ok {
-						log.Debugf("ptrace.App.collect: PTRACE_EVENT_CLONE/[V]FORK[_DONE] - pid already exists - %v", newPid)
+						log.Debugf("ptrace.App.collect[%d/%d]: PTRACE_EVENT_CLONE/[V]FORK[_DONE] - pid already exists - %v",
+							app.cmd.Process.Pid, app.pgid, newPid)
 						pidSyscallState[int(newPid)].started = true
 					} else {
 						pidSyscallState[int(newPid)] = &syscallState{pid: int(newPid), started: true}
@@ -667,22 +691,27 @@ func (app *App) collect() {
 			case syscall.PTRACE_EVENT_EXEC:
 				oldPid, err := syscall.PtraceGetEventMsg(wpid)
 				if err != nil {
-					log.Debugf("ptrace.App.collect: PTRACE_EVENT_EXEC - error getting old pid - %v", err)
+					log.Debugf("ptrace.App.collect[%d/%d]: PTRACE_EVENT_EXEC - error getting old pid - %v",
+						app.cmd.Process.Pid, app.pgid, err)
 				} else {
-					log.Debugf("ptrace.App.collect: PTRACE_EVENT_EXEC - old pid - %v", oldPid)
+					log.Debugf("ptrace.App.collect[%d/%d]: PTRACE_EVENT_EXEC - old pid - %v",
+						app.cmd.Process.Pid, app.pgid, oldPid)
 				}
 
 			case syscall.PTRACE_EVENT_EXIT:
-				log.Debugf("ptrace.App.collect: PTRACE_EVENT_EXIT - process exiting pid=%v", wpid)
+				log.Debugf("ptrace.App.collect[%d/%d]: PTRACE_EVENT_EXIT - process exiting pid=%v",
+					app.cmd.Process.Pid, app.pgid, wpid)
 				if app.MainPID() == wpid {
 					mainExiting = true
-					log.Debugf("ptrace.App.collect: main process is exiting (%v)", wpid)
+					log.Debugf("ptrace.App.collect[%d/%d]: main process is exiting (%v)",
+						app.cmd.Process.Pid, app.pgid, wpid)
 				}
 
 				if _, ok := pidSyscallState[wpid]; ok {
 					pidSyscallState[wpid].exiting = true
 				} else {
-					log.Debugf("ptrace.App.collect: unknown process is exiting (%v)", wpid)
+					log.Debugf("ptrace.App.collect[%d/%d]: unknown process is exiting (pid=%v)",
+						app.cmd.Process.Pid, app.pgid, wpid)
 				}
 			}
 		}
@@ -697,21 +726,23 @@ func (app *App) collect() {
 
 }
 
-func onSyscall(pid int, cstate *syscallState) error {
+func onSyscall(pid int, cstate *syscallState) (bool, error) {
 	var regs syscall.PtraceRegs
 	if err := syscall.PtraceGetRegs(pid, &regs); err != nil {
-		return err
+		return false, err
 	}
 
 	cstate.callNum = system.CallNumber(regs)
 	cstate.expectReturn = true
 	cstate.gotCallNum = true
 
-	if processor, found := syscallProcessors[int(cstate.callNum)]; found {
+	if processor, found := syscallProcessors[int(cstate.callNum)]; found && processor != nil {
 		processor.OnCall(pid, regs, cstate)
+		genEvent := processor.EventOnCall()
+		return genEvent, nil
 	}
 
-	return nil
+	return false, nil
 }
 
 func onSyscallReturn(pid int, cstate *syscallState) error {
@@ -766,6 +797,8 @@ type SyscallTypeName string
 
 const (
 	CheckFileType SyscallTypeName = "type.checkfile"
+	OpenFileType  SyscallTypeName = "type.openfile"
+	ExecType      SyscallTypeName = "type.exec"
 )
 
 type SyscallProcessor interface {
@@ -773,6 +806,7 @@ type SyscallProcessor interface {
 	SetSyscallNumber(uint64)
 	SyscallType() SyscallTypeName
 	SyscallName() string
+	EventOnCall() bool
 	OnCall(pid int, regs syscall.PtraceRegs, cstate *syscallState)
 	OnReturn(pid int, regs syscall.PtraceRegs, cstate *syscallState)
 	FailedCall(cstate *syscallState) bool
@@ -789,6 +823,7 @@ type syscallProcessorCore struct {
 }
 
 const (
+	SPPNo  StringParamPos = 0
 	SPPOne StringParamPos = 1
 	SPPTwo StringParamPos = 2
 )
@@ -809,16 +844,15 @@ func (ref *syscallProcessorCore) SyscallName() string {
 	return ref.Name
 }
 
-type checkFileSyscallProcessor struct {
-	*syscallProcessorCore
-}
-
-func (ref *checkFileSyscallProcessor) OnCall(pid int, regs syscall.PtraceRegs, cstate *syscallState) {
+func (ref *syscallProcessorCore) OnCall(pid int, regs syscall.PtraceRegs, cstate *syscallState) {
 	pth := ""
 	dir := ""
 	cwd, _ := os.Readlink(fmt.Sprintf("/proc/%d/cwd", pid))
 
 	switch ref.StringParam {
+	case SPPNo:
+		log.Tracef("syscallProcessorCore.OnCall[%s/%d]: pid=%d - no string param", ref.Name, ref.Num, pid)
+		return
 	case SPPOne:
 		pth = getStringParam(pid, system.CallFirstParam(regs))
 	case SPPTwo:
@@ -841,14 +875,20 @@ func (ref *checkFileSyscallProcessor) OnCall(pid int, regs syscall.PtraceRegs, c
 	cstate.pathParam = pth
 }
 
-func (ref *checkFileSyscallProcessor) OnReturn(pid int, regs syscall.PtraceRegs, cstate *syscallState) {
+func (ref *syscallProcessorCore) OnReturn(pid int, regs syscall.PtraceRegs, cstate *syscallState) {
+	//for stat/check syscalls:
 	//-2 => -ENOENT (No such file or directory)
 	//TODO: get/use error code enums
+
 	if cstate.pathParamErr == nil {
 		log.Debugf("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s('%s') = %d", pid, cstate.callNum, ref.Name, cstate.pathParam, int(cstate.retVal))
 	} else {
 		log.Debugf("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s(<unknown>/'%s') = %d [pp err => %v]", pid, cstate.callNum, ref.Name, cstate.pathParam, int(cstate.retVal), cstate.pathParamErr)
 	}
+}
+
+type checkFileSyscallProcessor struct {
+	*syscallProcessorCore
 }
 
 func (ref *checkFileSyscallProcessor) FailedCall(cstate *syscallState) bool {
@@ -857,6 +897,42 @@ func (ref *checkFileSyscallProcessor) FailedCall(cstate *syscallState) bool {
 
 func (ref *checkFileSyscallProcessor) FailedReturnStatus(retVal uint64) bool {
 	return retVal != 0
+}
+
+func (ref *checkFileSyscallProcessor) EventOnCall() bool {
+	return false
+}
+
+type openFileSyscallProcessor struct {
+	*syscallProcessorCore
+}
+
+func (ref *openFileSyscallProcessor) FailedCall(cstate *syscallState) bool {
+	return cstate.retVal < 0
+}
+
+func (ref *openFileSyscallProcessor) FailedReturnStatus(retVal uint64) bool {
+	return retVal < 0
+}
+
+func (ref *openFileSyscallProcessor) EventOnCall() bool {
+	return false
+}
+
+type execSyscallProcessor struct {
+	*syscallProcessorCore
+}
+
+func (ref *execSyscallProcessor) FailedCall(cstate *syscallState) bool {
+	return cstate.retVal < 0
+}
+
+func (ref *execSyscallProcessor) FailedReturnStatus(retVal uint64) bool {
+	return retVal < 0
+}
+
+func (ref *execSyscallProcessor) EventOnCall() bool {
+	return true
 }
 
 //TODO: introduce syscall num and name consts to use instead of liternal values
@@ -896,10 +972,12 @@ func init() {
 		},
 	})
 	//readlink(const char *path, char *buf, int bufsiz)
-	addSyscallProcessor(&checkFileSyscallProcessor{
+	//on success, returns the number of bytes placed in buf. On error, returns -1
+	//reusing "open" processor because the call error return values are similar
+	addSyscallProcessor(&openFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "readlink",
-			Type:        CheckFileType,
+			Type:        OpenFileType,
 			StringParam: SPPOne,
 		},
 	})
@@ -928,18 +1006,20 @@ func init() {
 		},
 	})
 	//open(const char *filename, int flags, int mode)
-	addSyscallProcessor(&checkFileSyscallProcessor{
+	addSyscallProcessor(&openFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "open",
-			Type:        CheckFileType,
+			Type:        OpenFileType,
 			StringParam: SPPOne,
 		},
 	})
 	//readlinkat(int dfd, const char *pathname, char *buf, int bufsiz)
-	addSyscallProcessor(&checkFileSyscallProcessor{
+	//on success, returns the number of bytes placed in buf. On error, returns -1
+	//reusing "open" processor because the call error return values are similar
+	addSyscallProcessor(&openFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "readlinkat",
-			Type:        CheckFileType,
+			Type:        OpenFileType,
 			StringParam: SPPTwo,
 		},
 	})
@@ -952,10 +1032,10 @@ func init() {
 		},
 	})
 	//openat(int dfd, const char *filename, int flags, int mode)
-	addSyscallProcessor(&checkFileSyscallProcessor{
+	addSyscallProcessor(&openFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "openat",
-			Type:        CheckFileType,
+			Type:        OpenFileType,
 			StringParam: SPPTwo,
 		},
 	})
@@ -978,6 +1058,22 @@ func init() {
 		},
 	})
 
+	//execve(const char *pathname, char *const argv[], char *const envp[])
+	addSyscallProcessor(&execSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "execve",
+			Type:        ExecType,
+			StringParam: SPPOne,
+		},
+	})
+	//execveat(int dirfd, const char *pathname, const char *const argv[], const char *const envp[], int flags)
+	addSyscallProcessor(&execSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "execveat",
+			Type:        ExecType,
+			StringParam: SPPTwo,
+		},
+	})
 }
 
 func addSyscallProcessor(p SyscallProcessor) {
