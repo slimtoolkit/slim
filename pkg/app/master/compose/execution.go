@@ -24,6 +24,17 @@ import (
 
 var ErrNoServiceImage = errors.New("no service image")
 
+type ServiceError struct {
+	Service string
+	Op      string
+	Info    string
+}
+
+func (e *ServiceError) Error() string {
+	return fmt.Sprintf("compose.ServiceError: service=%s op=%s info='%s'",
+		e.Service, e.Op, e.Info)
+}
+
 type ovars = app.OutVars
 
 type ExecutionState string
@@ -574,7 +585,8 @@ func (ref *Execution) PrepareServices() error {
 			ref.logger.Debugf("Execution.Prepare: service=%s", svcName)
 			if err := ref.PrepareService(ctx, svcName); err != nil {
 				ref.logger.Debugf("Execution.Prepare: PrepareService(%s) error - %v", svcName, err)
-				errCh <- fmt.Errorf("error preparing service - %s (%s)", svcName, err.Error())
+				//errCh <- fmt.Errorf("error preparing service - %s (%s)", svcName, err.Error())
+				errCh <- &ServiceError{Service: svcName, Op: "Execution.PrepareService", Info: err.Error()}
 				ref.logger.Debugf("Execution.Prepare: PrepareService(%s) - CANCEL ALL PREPARE SVC", svcName)
 				cancel()
 			}
@@ -643,9 +655,11 @@ func (ref *Execution) PrepareService(ctx context.Context, name string) error {
 			}
 
 			if !found {
+				ref.logger.Debugf("Execution.PrepareService(%s): image=%s - no image and image pull did not pull image", name, service.Image)
 				return ErrNoServiceImage
 			}
 		} else {
+			ref.logger.Debugf("Execution.PrepareService(%s): image=%s - no image and image pull is not enabled", name, service.Image)
 			return ErrNoServiceImage
 		}
 	}

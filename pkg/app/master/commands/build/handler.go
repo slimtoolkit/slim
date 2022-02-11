@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -50,6 +51,7 @@ const (
 	ecbNoEntrypoint
 	ecbBadTargetComposeSvc
 	ecbComposeSvcNoImage
+	ecbComposeSvcUnknownImage
 )
 
 type ovars = app.OutVars
@@ -776,7 +778,32 @@ func OnCommand(
 	if depServicesExe != nil {
 		xc.Out.State("container.dependencies.init.start")
 		err = depServicesExe.Prepare()
-		xc.FailOn(err)
+		if err != nil {
+			var svcErr *compose.ServiceError
+			if errors.As(err, &svcErr) {
+				xc.Out.Info("compose.file.error",
+					ovars{
+						"status":       "deps.unknown.image",
+						"files":        strings.Join(composeFiles, ","),
+						"service":      svcErr.Service,
+						"pull.enabled": doPull,
+						"message":      "Unknown dependency image (make sure to pull or build the images for your dependencies in compose)",
+					})
+
+				exitCode := commands.ECTBuild | ecbComposeSvcUnknownImage
+				xc.Out.State("exited",
+					ovars{
+						"exit.code": exitCode,
+						"version":   v.Current(),
+						"location":  fsutil.ExeDir(),
+					})
+
+				xc.Exit(exitCode)
+			}
+
+			xc.FailOn(err)
+		}
+
 		err = depServicesExe.Start()
 		if err != nil {
 			depServicesExe.Stop()
