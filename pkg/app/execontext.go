@@ -28,7 +28,13 @@ func (ref *ExecutionContext) AddCleanupHandler(handler func()) {
 }
 
 func (ref *ExecutionContext) doCleanup() {
-	for _, cleanup := range ref.cleanupHandlers {
+	if len(ref.cleanupHandlers) == 0 {
+		return
+	}
+
+	//call cleanup handlers in reverse order
+	for i := len(ref.cleanupHandlers) - 1; i >= 0; i-- {
+		cleanup := ref.cleanupHandlers[i]
 		if cleanup != nil {
 			cleanup()
 		}
