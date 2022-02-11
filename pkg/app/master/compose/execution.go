@@ -167,8 +167,9 @@ type RunningService struct {
 }
 
 type ActiveVolume struct {
-	Name string
-	ID   string
+	ShortName string
+	FullName  string
+	ID        string
 }
 
 type ActiveNetwork struct {
@@ -865,7 +866,8 @@ const (
 	rtLabelApp        = "ds.runtime.container.type"
 	rtLabelProject    = "ds.engine.compose.project"
 	rtLabelService    = "ds.engine.compose.service"
-	rtLabelVolume     = "ds.engine.compose.volume"
+	rtLabelVolumeName = "ds.engine.compose.volume.name"
+	rtLabelVolumeKey  = "ds.engine.compose.volume.key"
 	rtLabelNetwork    = "ds.engine.compose.network"
 )
 
@@ -890,6 +892,8 @@ func MountsFromVolumeConfigs(
 	activeVolumes map[string]*ActiveVolume) ([]dockerapi.HostMount, error) {
 	mounts := []dockerapi.HostMount{}
 	for _, c := range configs {
+		log.Debugf("compose.MountsFromVolumeConfigs(): volumeConfig=%#v", c)
+
 		mount := dockerapi.HostMount{
 			Type:     c.Type,
 			Target:   c.Target,
@@ -911,8 +915,12 @@ func MountsFromVolumeConfigs(
 					}
 				}
 
+				log.Debugf("compose.MountsFromVolumeConfigs(): no active volume (orig.source='%s' source='%s' activeVolumes=%#v)",
+					c.Source, source, activeVolumes)
+
 				mount.Type = types.VolumeTypeBind
 			} else {
+				log.Debugf("compose.MountsFromVolumeConfigs(): activeVolume='%s'", source)
 				mount.Type = types.VolumeTypeVolume
 			}
 
@@ -966,7 +974,7 @@ func EnvVarsFromService(varMap types.MappingWithEquals, varFiles types.StringLis
 	for _, file := range varFiles {
 		data, err := ioutil.ReadFile(file)
 		if err != nil {
-			fmt.Printf("EnvVarsFromService: error reading '%s' - %v\n", err)
+			log.Debugf("compose.EnvVarsFromService: error reading '%s' - %v", err)
 			continue
 		}
 
@@ -1003,7 +1011,7 @@ func HasImage(dclient *dockerapi.Client, imageRef string) (bool, error) {
 		return false, err
 	}
 
-	log.Debugf("HasImage(%s): image identity - %#v", imageRef, info)
+	log.Debugf("compose.HasImage(%s): image identity - %#v", imageRef, info)
 
 	var repo string
 	var tag string
@@ -1024,12 +1032,12 @@ func HasImage(dclient *dockerapi.Client, imageRef string) (bool, error) {
 
 	for _, t := range info.ShortTags {
 		if t == tag {
-			log.Debugf("HasImage(%s): FOUND IT - %s (%s)", imageRef, t, repo)
+			log.Debugf("compose.HasImage(%s): FOUND IT - %s (%s)", imageRef, t, repo)
 			return true, nil
 		}
 	}
 
-	log.Debugf("HasImage(%s): NOT FOUND IT", imageRef)
+	log.Debugf("compose.HasImage(%s): NOT FOUND IT", imageRef)
 	return false, nil
 }
 
@@ -1517,24 +1525,28 @@ func portBindingsFromServicePortConfigs(configs []types.ServicePortConfig) map[d
 	return result
 }
 
-func createVolume(apiClient *dockerapi.Client, projectName, name string, config types.VolumeConfig) (string, error) {
-	id := fmt.Sprintf("%s_%s", projectName, name)
-	labels := map[string]string{
-		rtLabelApp:     rtLabelAppVersion,
-		rtLabelProject: projectName,
-		rtLabelVolume:  name,
+func createVolume(apiClient *dockerapi.Client, projectName, volKey, volFullName string, config types.VolumeConfig) (string, error) {
+	labels := config.Labels
+	if labels == nil {
+		labels = map[string]string{}
 	}
 
+	labels[rtLabelApp] = rtLabelAppVersion
+	labels[rtLabelProject] = projectName
+	labels[rtLabelVolumeName] = volFullName
+	labels[rtLabelVolumeKey] = volKey
+
 	volumeOptions := dockerapi.CreateVolumeOptions{
-		Name:       id,
+		Name:       volFullName, //already includes the project prefix
 		Driver:     config.Driver,
 		DriverOpts: config.DriverOpts,
 		Labels:     labels,
 	}
 
+	log.Debugf("createVolume(%s, %s, %s) volumeOptions=%#v", projectName, volKey, volFullName, volumeOptions)
 	volumeInfo, err := apiClient.CreateVolume(volumeOptions)
 	if err != nil {
-		log.Debugf("dclient.CreateVolume() error = %v", err)
+		log.Debugf("apiClient.CreateVolume() error = %v", err)
 		return "", err
 	}
 
@@ -1545,20 +1557,22 @@ func (ref *Execution) CreateVolumes() error {
 	projectName := strings.Trim(ref.Project.Name, "-_")
 
 	for key, volume := range ref.Project.Volumes {
-		ref.logger.Debugf("CreateVolumes: key=%s name=%s", key, volume.Name)
-		name := key
+		name := fmt.Sprintf("%s_%s", projectName, key)
+		ref.logger.Debugf("CreateVolumes: key=%s gen.Name=%s volume.Name=%s", key, name, volume.Name)
+
 		if volume.Name != "" {
 			name = volume.Name
 		}
 
-		id, err := createVolume(ref.apiClient, projectName, name, volume)
+		id, err := createVolume(ref.apiClient, projectName, key, name, volume)
 		if err != nil {
 			return err
 		}
 
-		ref.ActiveVolumes[name] = &ActiveVolume{
-			Name: name,
-			ID:   id,
+		ref.ActiveVolumes[key] = &ActiveVolume{
+			ShortName: key,
+			FullName:  name,
+			ID:        id,
 		}
 	}
 
