@@ -461,7 +461,7 @@ func OnCommand(
 				lastIndexOfColon := strings.LastIndex(targetRef, ":")
 
 				if lastIndexOfColon > 0 {
-					targetRef = targetRef[:len(targetRef)-lastIndexOfColon+1]
+					targetRef = targetRef[0:lastIndexOfColon]
 				}
 
 				targetRef = targetRef + ":" + targetComposeSvcImageVersion
