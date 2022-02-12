@@ -59,6 +59,7 @@ const (
 	//Compose-related flags
 	FlagComposeFile                    = "compose-file"
 	FlagTargetComposeSvc               = "target-compose-svc"
+	FlagTargetComposeSvcImage          = "target-compose-svc-image"
 	FlagComposeSvcNoPorts              = "target-compose-svc-no-ports"
 	FlagDepExcludeComposeSvcAll        = "dep-exclude-compose-svc-all"
 	FlagDepIncludeComposeSvc           = "dep-include-compose-svc"
@@ -160,6 +161,7 @@ const (
 	//Compose-related flags
 	FlagComposeFileUsage                    = "Load container info from selected compose file(s)"
 	FlagTargetComposeSvcUsage               = "Target service from compose file"
+	FlagTargetComposeSvcImageUsage          = "Use Desired Image Version for the Target Service"
 	FlagComposeSvcNoPortsUsage              = "Do not publish ports for target service from compose file"
 	FlagDepExcludeComposeSvcAllUsage        = "Do not start any compose services as target dependencies"
 	FlagDepIncludeComposeSvcUsage           = "Include specific compose service as a target dependency (only selected services will be started)"
@@ -367,6 +369,12 @@ var CommonFlags = map[string]cli.Flag{
 		Value:   "",
 		Usage:   FlagTargetComposeSvcUsage,
 		EnvVars: []string{"DSLIM_TARGET_COMPOSE_SVC"},
+	},
+	FlagTargetComposeSvcImage: &cli.StringFlag{
+		Name:    FlagTargetComposeSvcImage,
+		Value:   "",
+		Usage:   FlagTargetComposeSvcImageUsage,
+		EnvVars: []string{"DSLIM_TARGET_COMPOSE_SVC_IMAGE"},
 	},
 	FlagComposeSvcNoPorts: &cli.BoolFlag{
 		Name:    FlagComposeSvcNoPorts,
