@@ -83,6 +83,12 @@ func (s Services) MarshalJSON() ([]byte, error) {
 	return json.MarshalIndent(data, "", "  ")
 }
 
+// Update Image for ServiceConfig
+func (s *ServiceConfig) UpdateImage(image string) error {
+	s.Image = image
+	return nil
+}
+
 // ServiceConfig is the configuration of one service
 type ServiceConfig struct {
 	Name     string   `yaml:"-" json:"-"`
