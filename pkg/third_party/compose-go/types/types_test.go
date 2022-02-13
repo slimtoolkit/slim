@@ -272,13 +272,3 @@ func TestNetworksByPriority(t *testing.T) {
 	}
 	assert.DeepEqual(t, s.NetworksByPriority(), []string{"qix", "zot", "bar", "foo"})
 }
-
-func TestUpdateImage(t *testing.T) {
-	s := ServiceConfig{
-		Image: "foo:0.1.0",
-	}
-
-	newImage := "bar:latest"
-	s.UpdateImage(newImage)
-	assert.Equal(t, s.Image, newImage)
-}

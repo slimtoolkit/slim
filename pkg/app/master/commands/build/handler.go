@@ -465,7 +465,7 @@ func OnCommand(
 				}
 
 				targetRef = targetRef + ":" + targetComposeSvcImageVersion
-				exe.Service(targetComposeSvc).Config.UpdateImage(targetRef)
+				exe.Service(targetComposeSvc).Config.Image = targetRef
 
 				logger.Info("using target version " + targetComposeSvcImageVersion)
 			}
