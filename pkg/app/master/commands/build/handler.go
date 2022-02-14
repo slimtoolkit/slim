@@ -96,6 +96,7 @@ func OnCommand(
 	composeFiles []string,
 	targetComposeSvc string,
 	targetComposeSvcImageVersion string,
+	composeSvcStartWait int,
 	composeSvcNoPorts bool,
 	depExcludeComposeSvcAll bool,
 	depIncludeComposeSvcDeps string,
@@ -842,7 +843,11 @@ func OnCommand(
 		//need a better way to make sure the dependencies are ready
 		//monitor docker events
 		//use basic application level checks (probing)
-		time.Sleep(3 * time.Second)
+		if composeSvcStartWait > -1 {
+			time.Sleep(time.Duration(composeSvcStartWait) * time.Second)
+		} else {
+			time.Sleep(3 * time.Second)
+		}
 		xc.Out.State("container.dependencies.init.done")
 
 		//might need more info (including alias info) when targeting compose services

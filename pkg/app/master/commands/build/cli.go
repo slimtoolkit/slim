@@ -34,6 +34,7 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagComposeFile),
 		commands.Cflag(commands.FlagTargetComposeSvc),
 		commands.Cflag(commands.FlagTargetComposeSvcImage),
+		commands.Cflag(commands.FlagComposeSvcStartWait),
 		commands.Cflag(commands.FlagComposeSvcNoPorts),
 		commands.Cflag(commands.FlagDepExcludeComposeSvcAll),
 		commands.Cflag(commands.FlagDepIncludeComposeSvc),
@@ -182,6 +183,8 @@ var CLI = &cli.Command{
 		depIncludeComposeSvcs := ctx.StringSlice(commands.FlagDepIncludeComposeSvc)
 		depExcludeComposeSvcs := ctx.StringSlice(commands.FlagDepExcludeComposeSvc)
 		composeNets := ctx.StringSlice(commands.FlagComposeNet)
+
+		composeSvcStartWait := ctx.Int(commands.FlagComposeSvcStartWait)
 
 		composeEnvNoHost := ctx.Bool(commands.FlagComposeEnvNoHost)
 		composeEnvVars, err := commands.ParseEnvFile(ctx.String(commands.FlagComposeEnvFile))
@@ -639,6 +642,7 @@ var CLI = &cli.Command{
 			composeFiles,
 			targetComposeSvc,
 			targetComposeSvcImageVersion,
+			composeSvcStartWait,
 			composeSvcNoPorts,
 			depExcludeComposeSvcAll,
 			depIncludeComposeSvcDeps,

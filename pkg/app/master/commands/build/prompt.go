@@ -17,6 +17,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagComposeFile), Description: commands.FlagComposeFileUsage},
 		{Text: commands.FullFlagName(commands.FlagTargetComposeSvc), Description: commands.FlagTargetComposeSvcUsage},
 		{Text: commands.FullFlagName(commands.FlagTargetComposeSvcImage), Description: commands.FlagTargetComposeSvcImageUsage},
+		{Text: commands.FullFlagName(commands.FlagComposeSvcStartWait), Description: commands.FlagComposeSvcStartWaitUsage},
 		{Text: commands.FullFlagName(commands.FlagDepIncludeComposeSvc), Description: commands.FlagDepIncludeComposeSvcUsage},
 		{Text: commands.FullFlagName(commands.FlagDepExcludeComposeSvc), Description: commands.FlagDepExcludeComposeSvcUsage},
 		{Text: commands.FullFlagName(commands.FlagDepIncludeComposeSvcDeps), Description: commands.FlagDepIncludeComposeSvcDepsUsage},
