@@ -30,6 +30,7 @@ var CLI = &cli.Command{
 		//Compose support
 		commands.Cflag(commands.FlagComposeFile),
 		commands.Cflag(commands.FlagTargetComposeSvc),
+		commands.Cflag(commands.FlagTargetComposeSvcImage),
 		commands.Cflag(commands.FlagComposeSvcNoPorts),
 		commands.Cflag(commands.FlagDepExcludeComposeSvcAll),
 		commands.Cflag(commands.FlagDepIncludeComposeSvc),
