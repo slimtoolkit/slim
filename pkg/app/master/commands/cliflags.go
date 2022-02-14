@@ -380,7 +380,7 @@ var CommonFlags = map[string]cli.Flag{
 	},
 	FlagComposeSvcStartWait: &cli.IntFlag{
 		Name:    FlagComposeSvcStartWait,
-		Value:   -1,
+		Value:   0,
 		Usage:   FlagComposeSvcStartWaitUsage,
 		EnvVars: []string{"DSLIM_COMPOSE_SVC_START_WAIT"},
 	},

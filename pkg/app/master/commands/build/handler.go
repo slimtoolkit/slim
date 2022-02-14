@@ -386,7 +386,7 @@ func OnCommand(
 			depExcludeComposeSvcs)
 
 		//todo: move compose flags to options
-		options := &compose.ExecutionOptions{}
+		options := &compose.ExecutionOptions{SvcStartWait: composeSvcStartWait}
 
 		logger.Debugf("compose: file(s)='%s' selectors='%+v'\n",
 			strings.Join(composeFiles, ","), selectors)
@@ -843,11 +843,7 @@ func OnCommand(
 		//need a better way to make sure the dependencies are ready
 		//monitor docker events
 		//use basic application level checks (probing)
-		if composeSvcStartWait > -1 {
-			time.Sleep(time.Duration(composeSvcStartWait) * time.Second)
-		} else {
-			time.Sleep(3 * time.Second)
-		}
+		time.Sleep(3 * time.Second)
 		xc.Out.State("container.dependencies.init.done")
 
 		//might need more info (including alias info) when targeting compose services
