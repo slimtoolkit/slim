@@ -174,7 +174,7 @@ var CLI = &cli.Command{
 
 		//todo: load/parse compose file and then use it to validate the related compose params
 		targetComposeSvc := ctx.String(commands.FlagTargetComposeSvc)
-		targetComposeSvcImageVersion := ctx.String(commands.FlagTargetComposeSvcImage)
+		targetComposeSvcImage := ctx.String(commands.FlagTargetComposeSvcImage)
 		composeSvcNoPorts := ctx.Bool(commands.FlagComposeSvcNoPorts)
 		depExcludeComposeSvcAll := ctx.Bool(commands.FlagDepExcludeComposeSvcAll)
 		depIncludeComposeSvcDeps := ctx.String(commands.FlagDepIncludeComposeSvcDeps)
@@ -638,7 +638,7 @@ var CLI = &cli.Command{
 			doShowPullLogs,
 			composeFiles,
 			targetComposeSvc,
-			targetComposeSvcImageVersion,
+			targetComposeSvcImage,
 			composeSvcNoPorts,
 			depExcludeComposeSvcAll,
 			depIncludeComposeSvcDeps,

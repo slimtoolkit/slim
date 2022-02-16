@@ -37,6 +37,9 @@ const (
 
 type ovars = app.OutVars
 
+//note: the runtime part of the 'profile' logic is a bit behind 'build'
+//todo: refactor 'xray', 'profile' and 'build' to compose and reuse common logic
+
 // OnCommand implements the 'profile' docker-slim command
 func OnCommand(
 	xc *app.ExecutionContext,

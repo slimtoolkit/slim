@@ -399,6 +399,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 
 - `--compose-file` - Load container info from selected compose file
 - `--target-compose-svc` - Target service from compose file
+- `--target-compose-svc-image` - Override the container image name and/or tag when targetting a compose service using the target-compose-svc parameter (format: tag_name or image_name:tag_name)
 - `--target-compose-svc-no-ports` - Do not publish ports for target service from compose file
 - `--dep-exclude-compose-svc-all` - Do not start any compose services as target dependencies
 - `--dep-include-compose-svc` - Include specific compose service as a target dependency (only selected services will be started)
