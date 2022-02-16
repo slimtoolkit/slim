@@ -28,21 +28,21 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagRegistrySecret),
 		commands.Cflag(commands.FlagShowPullLogs),
 		//Compose support
-		commands.Cflag(commands.FlagComposeFile),
-		commands.Cflag(commands.FlagTargetComposeSvc),
-		commands.Cflag(commands.FlagTargetComposeSvcImage),
-		commands.Cflag(commands.FlagComposeSvcStartWait),
-		commands.Cflag(commands.FlagComposeSvcNoPorts),
-		commands.Cflag(commands.FlagDepExcludeComposeSvcAll),
-		commands.Cflag(commands.FlagDepIncludeComposeSvc),
-		commands.Cflag(commands.FlagDepExcludeComposeSvc),
-		commands.Cflag(commands.FlagDepIncludeComposeSvcDeps),
-		commands.Cflag(commands.FlagDepIncludeTargetComposeSvcDeps),
-		commands.Cflag(commands.FlagComposeNet),
-		commands.Cflag(commands.FlagComposeEnvNoHost),
-		commands.Cflag(commands.FlagComposeEnvFile),
-		commands.Cflag(commands.FlagComposeProjectName),
-		commands.Cflag(commands.FlagComposeWorkdir),
+		commands.Cflag(commands.FlagComposeFile),                    //not used yet
+		commands.Cflag(commands.FlagTargetComposeSvc),               //not used yet
+		commands.Cflag(commands.FlagComposeSvcStartWait),            //not used yet
+		commands.Cflag(commands.FlagTargetComposeSvcImage),          //not used yet
+		commands.Cflag(commands.FlagComposeSvcNoPorts),              //not used yet
+		commands.Cflag(commands.FlagDepExcludeComposeSvcAll),        //not used yet
+		commands.Cflag(commands.FlagDepIncludeComposeSvc),           //not used yet
+		commands.Cflag(commands.FlagDepExcludeComposeSvc),           //not used yet
+		commands.Cflag(commands.FlagDepIncludeComposeSvcDeps),       //not used yet
+		commands.Cflag(commands.FlagDepIncludeTargetComposeSvcDeps), //not used yet
+		commands.Cflag(commands.FlagComposeNet),                     //not used yet
+		commands.Cflag(commands.FlagComposeEnvNoHost),               //not used yet
+		commands.Cflag(commands.FlagComposeEnvFile),                 //not used yet
+		commands.Cflag(commands.FlagComposeProjectName),             //not used yet
+		commands.Cflag(commands.FlagComposeWorkdir),                 //not used yet
 		//http probes
 		commands.Cflag(commands.FlagHTTPProbeOff),
 		commands.Cflag(commands.FlagHTTPProbe),
