@@ -95,7 +95,7 @@ func OnCommand(
 	doShowPullLogs bool,
 	composeFiles []string,
 	targetComposeSvc string,
-	targetComposeSvcImageVersion string,
+	targetComposeSvcImage string,
 	composeSvcStartWait int,
 	composeSvcNoPorts bool,
 	depExcludeComposeSvcAll bool,
@@ -457,18 +457,11 @@ func OnCommand(
 			serviceAliases = append(serviceAliases, targetSvcInfo.Config.Name)
 
 			targetRef = targetSvcInfo.Config.Image
-
-			if targetComposeSvcImageVersion != "" {
-				lastIndexOfColon := strings.LastIndex(targetRef, ":")
-
-				if lastIndexOfColon > 0 {
-					targetRef = targetRef[0:lastIndexOfColon]
-				}
-
-				targetRef = targetRef + ":" + targetComposeSvcImageVersion
-				exe.Service(targetComposeSvc).Config.Image = targetRef
-
-				logger.Info("using target version " + targetComposeSvcImageVersion)
+			if targetComposeSvcImage != "" {
+				targetRef = commands.UpdateImageRef(logger, targetRef, targetComposeSvcImage)
+				//shouldn't need to
+				targetSvcInfo.Config.Image = targetRef
+				logger.Debug("using target service override '%s' -> '%s' ", targetComposeSvcImage, targetRef)
 			}
 
 			if len(targetSvcInfo.Config.Entrypoint) > 0 {
