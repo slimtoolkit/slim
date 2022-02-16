@@ -161,7 +161,7 @@ const (
 	//Compose-related flags
 	FlagComposeFileUsage                    = "Load container info from selected compose file(s)"
 	FlagTargetComposeSvcUsage               = "Target service from compose file"
-	FlagTargetComposeSvcImageUsage          = "Use Desired Image Version for the Target Service"
+	FlagTargetComposeSvcImageUsage          = "Override the container image name and/or tag when targetting a compose service using the target-compose-svc parameter (format: tag_name or image_name:tag_name)"
 	FlagComposeSvcNoPortsUsage              = "Do not publish ports for target service from compose file"
 	FlagDepExcludeComposeSvcAllUsage        = "Do not start any compose services as target dependencies"
 	FlagDepIncludeComposeSvcUsage           = "Include specific compose service as a target dependency (only selected services will be started)"
