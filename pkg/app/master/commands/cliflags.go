@@ -60,6 +60,7 @@ const (
 	FlagComposeFile                    = "compose-file"
 	FlagTargetComposeSvc               = "target-compose-svc"
 	FlagTargetComposeSvcImage          = "target-compose-svc-image"
+	FlagComposeSvcStartWait            = "compose-svc-start-wait"
 	FlagComposeSvcNoPorts              = "target-compose-svc-no-ports"
 	FlagDepExcludeComposeSvcAll        = "dep-exclude-compose-svc-all"
 	FlagDepIncludeComposeSvc           = "dep-include-compose-svc"
@@ -162,6 +163,7 @@ const (
 	FlagComposeFileUsage                    = "Load container info from selected compose file(s)"
 	FlagTargetComposeSvcUsage               = "Target service from compose file"
 	FlagTargetComposeSvcImageUsage          = "Override the container image name and/or tag when targetting a compose service using the target-compose-svc parameter (format: tag_name or image_name:tag_name)"
+	FlagComposeSvcStartWaitUsage            = "Wait for specified seconds before starting each Service defined in the compose file"
 	FlagComposeSvcNoPortsUsage              = "Do not publish ports for target service from compose file"
 	FlagDepExcludeComposeSvcAllUsage        = "Do not start any compose services as target dependencies"
 	FlagDepIncludeComposeSvcUsage           = "Include specific compose service as a target dependency (only selected services will be started)"
@@ -375,6 +377,12 @@ var CommonFlags = map[string]cli.Flag{
 		Value:   "",
 		Usage:   FlagTargetComposeSvcImageUsage,
 		EnvVars: []string{"DSLIM_TARGET_COMPOSE_SVC_IMAGE"},
+	},
+	FlagComposeSvcStartWait: &cli.IntFlag{
+		Name:    FlagComposeSvcStartWait,
+		Value:   0,
+		Usage:   FlagComposeSvcStartWaitUsage,
+		EnvVars: []string{"DSLIM_COMPOSE_SVC_START_WAIT"},
 	},
 	FlagComposeSvcNoPorts: &cli.BoolFlag{
 		Name:    FlagComposeSvcNoPorts,
