@@ -697,7 +697,10 @@ func (ref *Execution) StartServices() error {
 
 			ref.logger.Debugf("Execution.StartServices: starting service=%s (image=%s)", service.Name, fullSvcInfo.Config.Image)
 
-			time.Sleep(time.Duration(ref.options.SvcStartWait) * time.Second)
+			if ref.options.SvcStartWait > 0 {
+				ref.logger.Debugf("Execution.StartServices: waiting %v seconds before starting service=%s (image=%s)", ref.options.SvcStartWait, service.Name, fullSvcInfo.Config.Image)
+				time.Sleep(time.Duration(ref.options.SvcStartWait) * time.Second)
+			}
 
 			err := ref.StartService(service.Name)
 			if err != nil {

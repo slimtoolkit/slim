@@ -386,7 +386,9 @@ func OnCommand(
 			depExcludeComposeSvcs)
 
 		//todo: move compose flags to options
-		options := &compose.ExecutionOptions{SvcStartWait: composeSvcStartWait}
+		options := &compose.ExecutionOptions{
+			SvcStartWait: composeSvcStartWait,
+		}
 
 		logger.Debugf("compose: file(s)='%s' selectors='%+v'\n",
 			strings.Join(composeFiles, ","), selectors)
