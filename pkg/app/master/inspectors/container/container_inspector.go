@@ -30,6 +30,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
+	containertypes "github.com/docker/docker/api/types/container"
 	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 )
@@ -565,11 +566,7 @@ func (i *Inspector) RunContainer() error {
 	containerOptions := dockerapi.CreateContainerOptions{
 		Name: i.ContainerName,
 		Config: &dockerapi.Config{
-			Image: i.ImageInspector.ImageRef,
-			//ExposedPorts: map[dockerapi.Port]struct{}{
-			//	i.CmdPort: {},
-			//	i.EvtPort: {},
-			//},
+			Image:      i.ImageInspector.ImageRef,
 			Entrypoint: []string{SensorBinPath},
 			Cmd:        containerCmd,
 			Env:        i.Overrides.Env,
@@ -577,7 +574,8 @@ func (i *Inspector) RunContainer() error {
 			Hostname:   i.Overrides.Hostname,
 			WorkingDir: i.Overrides.Workdir,
 		},
-		HostConfig: hostConfig,
+		HostConfig:       hostConfig,
+		NetworkingConfig: &dockerapi.NetworkingConfig{},
 	}
 
 	if i.crOpts != nil {
@@ -717,8 +715,20 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	if i.Overrides.Network != "" {
-		containerOptions.HostConfig.NetworkMode = i.Overrides.Network
-		i.logger.Debugf("RunContainer: HostConfig.NetworkMode => %v", i.Overrides.Network)
+		// Non-user defined networks are *probably* a mode, ex. "host".
+		//
+		// TODO: robustly parse `--network`, at the CLI level, to avoid ambiguity.
+		// https://github.com/docker/cli/blob/cf8c4bab6477ef62122bda875f80d8472005010d/opts/network.go#L35
+		if !containertypes.NetworkMode(i.Overrides.Network).IsUserDefined() {
+			containerOptions.HostConfig.NetworkMode = i.Overrides.Network
+			i.logger.Debugf("RunContainer: HostConfig.NetworkMode => %v", i.Overrides.Network)
+		}
+
+		if containerOptions.NetworkingConfig.EndpointsConfig == nil {
+			containerOptions.NetworkingConfig.EndpointsConfig = map[string]*dockerapi.EndpointConfig{}
+		}
+		containerOptions.NetworkingConfig.EndpointsConfig[i.Overrides.Network] = &dockerapi.EndpointConfig{}
+		i.logger.Debugf("RunContainer: NetworkingConfig.EndpointsConfig => %v", i.Overrides.Network)
 	}
 
 	// adding this separately for better visibility...
@@ -778,7 +788,10 @@ func (i *Inspector) RunContainer() error {
 		}
 	}
 
-	i.APIClient.AddEventListener(i.dockerEventCh)
+	if err := i.APIClient.AddEventListener(i.dockerEventCh); err != nil {
+		i.logger.Debugf("RunContainer: i.APIClient.AddEventListener error => %v", err)
+		return err
+	}
 	go func() {
 		for {
 			select {
@@ -843,10 +856,9 @@ func (i *Inspector) RunContainer() error {
 
 	errutil.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
 
-	if i.ContainerInfo.HostConfig != nil &&
-		i.ContainerInfo.HostConfig.NetworkMode != "host" {
+	if hCfg := i.ContainerInfo.HostConfig; hCfg != nil && !containertypes.NetworkMode(hCfg.NetworkMode).IsHost() {
 		i.logger.Debugf("RunContainer: container HostConfig.NetworkMode => %s len(ports)=%d",
-			i.ContainerInfo.HostConfig.NetworkMode, len(i.ContainerInfo.NetworkSettings.Ports))
+			hCfg.NetworkMode, len(i.ContainerInfo.NetworkSettings.Ports))
 		errutil.FailWhen(len(i.ContainerInfo.NetworkSettings.Ports) < len(commsExposedPorts), "docker-slim: error => missing comms ports")
 	}
 
@@ -879,7 +891,6 @@ func (i *Inspector) RunContainer() error {
 				"status": "running",
 				"name":   containerInfo.Name,
 				"id":     i.ContainerID,
-				"ip":     i.ContainerInfo.NetworkSettings.IPAddress,
 			})
 	}
 
@@ -1174,6 +1185,27 @@ func (i *Inspector) initContainerChannels() error {
 		cn = i.Overrides.Network
 	}
 
+	// Top level IP info will not be populated when not using "bridge",
+	// which is only set for backwards compatibility.
+	//
+	// https://github.com/moby/moby/issues/21658#issuecomment-203527083
+	ipAddr := i.ContainerInfo.NetworkSettings.IPAddress
+	if cn != "" {
+		network, found := i.ContainerInfo.NetworkSettings.Networks[cn]
+		errutil.FailWhen(!found, fmt.Sprintf("docker-slim: error => expected NetworkSettings.Networks to contain %s: %v",
+			cn, i.ContainerInfo.NetworkSettings.Networks))
+
+		ipAddr = network.IPAddress
+	}
+
+	if i.PrintState {
+		i.xc.Out.Info("container",
+			ovars{
+				"message": "obtained IP address",
+				"ip":      ipAddr,
+			})
+	}
+
 	switch i.SensorIPCMode {
 	case SensorIPCModeDirect, SensorIPCModeProxy:
 		ipcMode = i.SensorIPCMode
@@ -1187,7 +1219,7 @@ func (i *Inspector) initContainerChannels() error {
 
 	switch ipcMode {
 	case SensorIPCModeDirect:
-		i.TargetHost = i.ContainerInfo.NetworkSettings.IPAddress
+		i.TargetHost = ipAddr
 		cmdPort = cmdPortStrDefault
 		evtPort = evtPortStrDefault
 	case SensorIPCModeProxy:
@@ -1304,8 +1336,8 @@ func attachContainerToNetwork(
 	}
 
 	if err := apiClient.ConnectNetwork(netNameInfo.FullName, options); err != nil {
-		logger.Debugf("attachContainerToNetwork(%s): container network connect error - %v",
-			containerID, netNameInfo.FullName, err)
+		logger.Debugf("attachContainerToNetwork(%s,%s,%s): container network connect error - %v",
+			containerID, netNameInfo.FullName, networkLinks, err)
 		return err
 	}
 
