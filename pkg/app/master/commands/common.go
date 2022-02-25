@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"fmt"
 	"path/filepath"
 	"strings"
@@ -20,9 +21,35 @@ const (
 
 /////////////////////////////////////////////////////////
 
+type CLIContextKey int
+
+const (
+	GlobalParams CLIContextKey = 1
+	AppParams    CLIContextKey = 2
+)
+
+func CLIContextSave(ctx context.Context, key CLIContextKey, data interface{}) context.Context {
+	return context.WithValue(ctx, key, data)
+}
+
+func CLIContextGet(ctx context.Context, key CLIContextKey) interface{} {
+	if ctx == nil {
+		return nil
+	}
+
+	return ctx.Value(key)
+}
+
+/////////////////////////////////////////////////////////
+
 type GenericParams struct {
+	NoColor        bool
 	CheckVersion   bool
 	Debug          bool
+	Verbose        bool
+	LogLevel       string
+	LogFormat      string
+	Log            string
 	StatePath      string
 	ReportLocation string
 	InContainer    bool

@@ -5,12 +5,13 @@ import (
 	"io/ioutil"
 	"strings"
 
+	"github.com/urfave/cli/v2"
+
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-
-	"github.com/urfave/cli/v2"
+	//"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
 
 const (
@@ -238,15 +239,52 @@ var CLI = &cli.Command{
 			return nil
 		}
 
-		gcvalues, err := commands.GlobalFlagValues(ctx)
-		if err != nil {
-			xc.Out.Error("param.global", err.Error())
+		/*
+			gparams, err := commands.GlobalFlagValues(ctx)
+			if err != nil {
+				xc.Out.Error("param.global", err.Error())
+				xc.Out.State("exited",
+					ovars{
+						"exit.code": -1,
+					})
+				xc.Exit(-1)
+			}
+		*/
+
+		gparams, ok := commands.CLIContextGet(ctx.Context, commands.GlobalParams).(*commands.GenericParams)
+		if !ok || gparams == nil {
+			xc.Out.Error("param.global", "missing params")
 			xc.Out.State("exited",
 				ovars{
 					"exit.code": -1,
 				})
 			xc.Exit(-1)
 		}
+
+		/*
+			appOpts, err := config.NewAppOptionsFromFile(fsutil.ResolveImageStateBasePath(gparams.StatePath))
+			if err != nil {
+				xc.Out.Error("param.error.app.options", err.Error())
+				xc.Out.State("exited",
+					ovars{
+						"exit.code": -1,
+					})
+				xc.Exit(-1)
+			}
+		*/
+
+		appOpts, ok := commands.CLIContextGet(ctx.Context, commands.AppParams).(*config.AppOptions)
+		if !ok || appOpts == nil {
+			xc.Out.Error("param.error.app.options", "missing app params")
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
+		//gparams = commands.UpdateGlobalFlagValues(appOpts, gparams)
+		//todo: use updated global params
 
 		crOpts, err := commands.GetContainerRunOptions(ctx)
 		if err != nil {
@@ -300,18 +338,15 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
-		if doHTTPProbe {
+		if doHTTPProbe && len(httpProbeCmds) == 0 {
 			//add default probe cmd if the "http-probe" flag is set
+			//but only if there are no custom http probe commands
 			xc.Out.Info("param.http.probe",
 				ovars{
 					"message": "using default probe",
 				})
 
-			defaultCmd := config.HTTPProbeCmd{
-				Protocol: "http",
-				Method:   "GET",
-				Resource: "/",
-			}
+			defaultCmd := commands.GetDefaultHTTPProbe()
 
 			if doHTTPProbeCrawl {
 				defaultCmd.Crawl = true
@@ -632,7 +667,7 @@ var CLI = &cli.Command{
 
 		OnCommand(
 			xc,
-			gcvalues,
+			gparams,
 			targetRef,
 			doPull,
 			dockerConfigPath,
@@ -714,9 +749,7 @@ var CLI = &cli.Command{
 			rtaOnbuildBaseImage,
 			rtaSourcePT,
 			ctx.String(commands.FlagSensorIPCEndpoint),
-			ctx.String(commands.FlagSensorIPCMode),
-			ctx.String(commands.FlagLogLevel),
-			ctx.String(commands.FlagLogFormat))
+			ctx.String(commands.FlagSensorIPCMode))
 
 		return nil
 	},

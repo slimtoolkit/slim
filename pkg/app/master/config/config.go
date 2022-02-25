@@ -1,11 +1,59 @@
 package config
 
 import (
+	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
+
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
+
+// AppOptionsFilename is the default name for the app configs
+const AppOptionsFilename = "slim.config.json"
+
+// AppOptions provides a set of global application parameters and command-specific defaults
+// AppOptions values override the default flag values if they are set
+// AppOptions is loaded from the "slim.config.json" file stored in the state path directory
+type AppOptions struct {
+	Global *GlobalAppOptions `json:"global,omitempty"`
+}
+
+// GlobalAppOptions provides a set of global application parameters
+type GlobalAppOptions struct {
+	NoColor      *bool   `json:"no_color,omitempty"`
+	Debug        *bool   `json:"debug,omitempty"`
+	Verbose      *bool   `json:"verbose,omitempty"`
+	LogLevel     *string `json:"log_level,omitempty"`
+	Log          *string `json:"log,omitempty"`
+	LogFormat    *string `json:"log_format,omitempty"`
+	UseTLS       *bool   `json:"tls,omitempty"`
+	VerifyTLS    *bool   `json:"tls_verify,omitempty"`
+	TLSCertPath  *string `json:"tls_cert_path,omitempty"`
+	Host         *string `json:"host,omitempty"`
+	ArchiveState *string `json:"archive_state,omitempty"`
+}
+
+func NewAppOptionsFromFile(dir string) (*AppOptions, error) {
+	filePath := filepath.Join(dir, AppOptionsFilename)
+	var result AppOptions
+	err := fsutil.LoadStructFromFile(filePath, &result)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+
+		if err == fsutil.ErrNoFileData {
+			return nil, nil
+		}
+
+		return nil, err
+	}
+
+	return &result, nil
+}
 
 // ContainerOverrides provides a set of container field overrides
 // It can also be used to update the image instructions when

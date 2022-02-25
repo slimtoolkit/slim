@@ -2,10 +2,13 @@ package fsutil
 
 import (
 	"archive/tar"
+	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"golang.org/x/sys/unix"
 	"io"
+	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -45,6 +48,7 @@ const (
 
 // Directory and file related errors
 var (
+	ErrNoFileData                = errors.New("no file data")
 	ErrNoSrcDir                  = errors.New("no source directory path")
 	ErrNoDstDir                  = errors.New("no destination directory path")
 	ErrSameDir                   = errors.New("source and destination directories are the same")
@@ -916,6 +920,32 @@ func PreparePostUpdateStateDir(statePrefix string) {
 	}
 }
 
+// ResolveImageStateBasePath resolves the base path for the state path
+func ResolveImageStateBasePath(statePrefix string) string {
+	log.Debugf("ResolveImageStateBasePath(%s)", statePrefix)
+
+	appDir := ExeDir()
+	if statePrefix == "" {
+		statePrefix = appDir
+	}
+
+	for _, badPath := range badInstallPaths {
+		if strings.HasPrefix(statePrefix, badPath) {
+			log.Debugf("ResolveImageStateBasePath - statePrefix=%s appDir=%s badPath=%s", statePrefix, appDir, badPath)
+			if pinfo, err := os.Stat(tmpPath); err == nil && pinfo.IsDir() {
+				log.Debugf("ResolveImageStateBasePath - overriding state path to %v", stateTmpPath)
+				statePrefix = stateTmpPath
+			} else {
+				log.Debugf("ResolveImageStateBasePath - did not find tmp")
+			}
+
+			break
+		}
+	}
+
+	return statePrefix
+}
+
 // PrepareImageStateDirs ensures that the required application directories exist
 func PrepareImageStateDirs(statePrefix, imageID string) (string, string, string, string) {
 	//prepares the image processing directories
@@ -1287,4 +1317,28 @@ func UpdateFileTimes(target string, atime, mtime syscall.Timespec) error {
 func UpdateSymlinkTimes(target string, atime, mtime syscall.Timespec) error {
 	ts := []unix.Timespec{unix.Timespec(atime), unix.Timespec(mtime)}
 	return unix.UtimesNanoAt(unix.AT_FDCWD, target, ts, unix.AT_SYMLINK_NOFOLLOW)
+}
+
+//LoadStructFromFile creates a struct from a file
+func LoadStructFromFile(filePath string, out interface{}) error {
+	if _, err := os.Stat(filePath); err != nil {
+		return err
+	}
+
+	raw, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		return err
+	}
+
+	if len(raw) == 0 {
+		return ErrNoFileData
+	}
+
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	err = decoder.Decode(out)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

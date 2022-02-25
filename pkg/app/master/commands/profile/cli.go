@@ -5,7 +5,6 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 
 	"github.com/urfave/cli/v2"
 )
@@ -172,18 +171,15 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
-		if doHTTPProbe {
+		if doHTTPProbe && len(httpProbeCmds) == 0 {
 			//add default probe cmd if the "http-probe" flag is set
+			//but only if there are no custom http probe commands
 			xc.Out.Info("param.http.probe",
 				ovars{
 					"message": "using default probe",
 				})
 
-			defaultCmd := config.HTTPProbeCmd{
-				Protocol: "http",
-				Method:   "GET",
-				Resource: "/",
-			}
+			defaultCmd := commands.GetDefaultHTTPProbe()
 
 			if doHTTPProbeCrawl {
 				defaultCmd.Crawl = true
