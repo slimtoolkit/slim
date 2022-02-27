@@ -1223,7 +1223,7 @@ func (i *Inspector) initContainerChannels() error {
 		cmdPort = cmdPortStrDefault
 		evtPort = evtPortStrDefault
 	case SensorIPCModeProxy:
-		i.DockerHostIP = dockerhost.GetIP()
+		i.DockerHostIP = dockerhost.GetIP(i.APIClient)
 		i.TargetHost = i.DockerHostIP
 		cmdPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.CmdPort]
 		evtPortBindings := i.ContainerInfo.NetworkSettings.Ports[i.EvtPort]

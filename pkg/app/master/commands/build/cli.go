@@ -5,13 +5,13 @@ import (
 	"io/ioutil"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-	//"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
 
 const (
@@ -239,18 +239,6 @@ var CLI = &cli.Command{
 			return nil
 		}
 
-		/*
-			gparams, err := commands.GlobalFlagValues(ctx)
-			if err != nil {
-				xc.Out.Error("param.global", err.Error())
-				xc.Out.State("exited",
-					ovars{
-						"exit.code": -1,
-					})
-				xc.Exit(-1)
-			}
-		*/
-
 		gparams, ok := commands.CLIContextGet(ctx.Context, commands.GlobalParams).(*commands.GenericParams)
 		if !ok || gparams == nil {
 			xc.Out.Error("param.global", "missing params")
@@ -261,30 +249,10 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
-		/*
-			appOpts, err := config.NewAppOptionsFromFile(fsutil.ResolveImageStateBasePath(gparams.StatePath))
-			if err != nil {
-				xc.Out.Error("param.error.app.options", err.Error())
-				xc.Out.State("exited",
-					ovars{
-						"exit.code": -1,
-					})
-				xc.Exit(-1)
-			}
-		*/
-
 		appOpts, ok := commands.CLIContextGet(ctx.Context, commands.AppParams).(*config.AppOptions)
 		if !ok || appOpts == nil {
-			xc.Out.Error("param.error.app.options", "missing app params")
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
+			log.Debug("param.error.app.options - no app params")
 		}
-
-		//gparams = commands.UpdateGlobalFlagValues(appOpts, gparams)
-		//todo: use updated global params
 
 		crOpts, err := commands.GetContainerRunOptions(ctx)
 		if err != nil {
