@@ -174,7 +174,7 @@ const (
 	FlagComposeEnvNoHostUsage               = "Don't include the env vars from the host to compose"
 	FlagComposeEnvFileUsage                 = "Load compose env vars from file (host env vars override the values loaded from this file)"
 	FlagComposeWorkdirUsage                 = "Set custom work directory for compose"
-	FlagContainerProbeComposeSvcUsage       = "Set container probe to compose service"
+	FlagContainerProbeComposeSvcUsage       = "Container test/probe service from compose file"
 	FlagComposeProjectNameUsage             = "Use custom project name for compose"
 	FlagPrestartComposeSvcUsage             = "Run selected compose service(s) before any other compose services or target container"
 	FlagPoststartComposeSvcUsage            = "Run selected compose service(s) after the target container is running (need a new continue after mode too)"
