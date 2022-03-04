@@ -88,8 +88,8 @@ type Inspector struct {
 	FatContainerCmd       []string
 	LocalVolumePath       string
 	DoUseLocalMounts      bool
-	DoIncludeNuxtDist     bool
 	DoIncludeNuxtBuild    bool
+	DoIncludeNuxtDist     bool
 	SensorVolumeName      string
 	DoKeepTmpArtifacts    bool
 	StatePath             string
@@ -167,8 +167,8 @@ func NewInspector(
 	imageInspector *image.Inspector,
 	localVolumePath string,
 	doUseLocalMounts bool,
-	doIncludeNuxtDist bool,
 	doIncludeNuxtBuild bool,
+	doIncludeNuxtDist bool,
 	sensorVolumeName string,
 	doKeepTmpArtifacts bool,
 	overrides *config.ContainerOverrides,
@@ -215,8 +215,8 @@ func NewInspector(
 		StatePath:             statePath,
 		LocalVolumePath:       localVolumePath,
 		DoUseLocalMounts:      doUseLocalMounts,
-		DoIncludeNuxtDist:     doIncludeNuxtDist,
 		DoIncludeNuxtBuild:    doIncludeNuxtBuild,
+		DoIncludeNuxtDist:     doIncludeNuxtDist,
 		SensorVolumeName:      sensorVolumeName,
 		DoKeepTmpArtifacts:    doKeepTmpArtifacts,
 		CmdPort:               cmdPortSpecDefault,

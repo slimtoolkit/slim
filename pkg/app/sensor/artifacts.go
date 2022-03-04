@@ -1003,9 +1003,11 @@ copyFiles:
 			nuxtConfig, err := getNuxtConfig(filePath)
 			if err != nil {
 				log.Warn("saveArtifacts: failed to get nuxt config: %v", err)
+				continue
 			}
 			if nuxtConfig == nil {
 				log.Warn("saveArtifacts: nuxt config not found: ", fileName)
+				continue
 			}
 
 			if p.cmd.DoIncludeNuxtBuild {

@@ -140,9 +140,9 @@ var CLI = &cli.Command{
 		cflag(FlagIncludeCertPKDirs),
 		cflag(FlagIncludeNew),
 		cflag(FlagKeepTmpArtifacts),
-		cflag(FlagIncludeNuxtDistDir),
-		cflag(FlagIncludeNuxtBuildDir),
 		cflag(FlagIncludeNuxtAll),
+		cflag(FlagIncludeNuxtBuildDir),
+		cflag(FlagIncludeNuxtDistDir),
 		cflag(FlagKeepPerms),
 		cflag(FlagPathPerms),
 		cflag(FlagPathPermsFile),
@@ -517,9 +517,9 @@ var CLI = &cli.Command{
 
 		doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
 
+		doIncludeNuxtAll := ctx.Bool(FlagIncludeNuxtAll)
 		doIncludeNuxtBuild := ctx.Bool(FlagIncludeNuxtBuildDir)
 		doIncludeNuxtDist := ctx.Bool(FlagIncludeNuxtDistDir)
-		doIncludeNuxtAll := ctx.Bool(FlagIncludeNuxtAll)
 
 		if doIncludeNuxtAll {
 			doIncludeNuxtDist = true
