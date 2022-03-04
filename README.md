@@ -189,7 +189,7 @@ Elixir application images:
 
 ## RECENT UPDATES
 
-Latest version: 1.37.3 (12/10/2021)
+Latest version: 1.37.4 (2/27/2022)
 
 The 1.37.x releases add an experimental docker-compose support for the build command.
 
@@ -208,15 +208,15 @@ docker-slim update
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.37.3/dist_mac.zip`)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.37.4/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.37.4/dist_mac.zip`)
 
-   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.37.3/dist_mac_m1.zip`)
+   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.37.4/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.37.4/dist_mac_m1.zip`)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.3/dist_linux.tar.gz`)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.37.4/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.4/dist_linux.tar.gz`)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm.tar.gz`)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.37.4/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.4/dist_linux_arm.tar.gz`)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm64.tar.gz`)
+   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.37.4/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.4/dist_linux_arm64.tar.gz`)
 
 2. Unzip the package and optionally move it to your bin directory.
 
@@ -399,18 +399,20 @@ In the interactive CLI prompt mode you must specify the target image using the `
 
 - `--compose-file` - Load container info from selected compose file
 - `--target-compose-svc` - Target service from compose file
+- `--target-compose-svc-image` - Override the container image name and/or tag when targetting a compose service using the target-compose-svc parameter (format: tag_name or image_name:tag_name)
 - `--target-compose-svc-no-ports` - Do not publish ports for target service from compose file
 - `--dep-exclude-compose-svc-all` - Do not start any compose services as target dependencies
 - `--dep-include-compose-svc` - Include specific compose service as a target dependency (only selected services will be started)
 - `--dep-exclude-compose-svc` - Exclude specific service from the compose services that will be started as target dependencies
 - `--dep-include-compose-svc-deps` - Include all dependencies for the selected compose service (excluding the service itself) as target dependencies
 - `--dep-include-target-compose-svc-deps` - Include all dependencies for the target compose service (excluding the service itself) as target dependencies. This is a shortcut flag to avoid repeating the service name (it's a pretty long flag name though :-))
+- `--compose-svc-start-wait` - Number of seconds to wait before starting each compose service
 - `--compose-net` - Attach target to the selected compose network(s) otherwise all networks will be attached
 - `--compose-env-nohost` - Don't include the env vars from the host to compose
 - `--compose-env-file` - Load compose env vars from file (host env vars override the values loaded from this file)
 - `--compose-workdir` - Set custom work directory for compose
 - `--compose-project-name` - Use custom project name for compose
-- `--container-probe-compose-svc` - Set container probe to compose service
+- `--container-probe-compose-svc` - Container test/probe service from compose file
 - `--prestart-compose-svc` - placeholder for now
 - `--poststart-compose-svc` - placeholder for now
 - `--http-probe` - Enables/disables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`: `--http-probe=false`)
@@ -741,7 +743,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.37.3/dist_mac.zip), [Mac M1](https://downloads.dockerslim.com/releases/1.37.3/dist_mac_m1.zip), [Linux](https://downloads.dockerslim.com/releases/1.37.3/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.37.4/dist_mac.zip), [Mac M1](https://downloads.dockerslim.com/releases/1.37.4/dist_mac_m1.zip), [Linux](https://downloads.dockerslim.com/releases/1.37.4/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.37.4/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.37.4/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
 The extracted directory contains two binaries:
 

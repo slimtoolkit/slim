@@ -59,6 +59,8 @@ const (
 	//Compose-related flags
 	FlagComposeFile                    = "compose-file"
 	FlagTargetComposeSvc               = "target-compose-svc"
+	FlagTargetComposeSvcImage          = "target-compose-svc-image"
+	FlagComposeSvcStartWait            = "compose-svc-start-wait"
 	FlagComposeSvcNoPorts              = "target-compose-svc-no-ports"
 	FlagDepExcludeComposeSvcAll        = "dep-exclude-compose-svc-all"
 	FlagDepIncludeComposeSvc           = "dep-include-compose-svc"
@@ -160,6 +162,8 @@ const (
 	//Compose-related flags
 	FlagComposeFileUsage                    = "Load container info from selected compose file(s)"
 	FlagTargetComposeSvcUsage               = "Target service from compose file"
+	FlagTargetComposeSvcImageUsage          = "Override the container image name and/or tag when targetting a compose service using the target-compose-svc parameter (format: tag_name or image_name:tag_name)"
+	FlagComposeSvcStartWaitUsage            = "Number of seconds to wait before starting each compose service"
 	FlagComposeSvcNoPortsUsage              = "Do not publish ports for target service from compose file"
 	FlagDepExcludeComposeSvcAllUsage        = "Do not start any compose services as target dependencies"
 	FlagDepIncludeComposeSvcUsage           = "Include specific compose service as a target dependency (only selected services will be started)"
@@ -170,7 +174,7 @@ const (
 	FlagComposeEnvNoHostUsage               = "Don't include the env vars from the host to compose"
 	FlagComposeEnvFileUsage                 = "Load compose env vars from file (host env vars override the values loaded from this file)"
 	FlagComposeWorkdirUsage                 = "Set custom work directory for compose"
-	FlagContainerProbeComposeSvcUsage       = "Set container probe to compose service"
+	FlagContainerProbeComposeSvcUsage       = "Container test/probe service from compose file"
 	FlagComposeProjectNameUsage             = "Use custom project name for compose"
 	FlagPrestartComposeSvcUsage             = "Run selected compose service(s) before any other compose services or target container"
 	FlagPoststartComposeSvcUsage            = "Run selected compose service(s) after the target container is running (need a new continue after mode too)"
@@ -367,6 +371,18 @@ var CommonFlags = map[string]cli.Flag{
 		Value:   "",
 		Usage:   FlagTargetComposeSvcUsage,
 		EnvVars: []string{"DSLIM_TARGET_COMPOSE_SVC"},
+	},
+	FlagTargetComposeSvcImage: &cli.StringFlag{
+		Name:    FlagTargetComposeSvcImage,
+		Value:   "",
+		Usage:   FlagTargetComposeSvcImageUsage,
+		EnvVars: []string{"DSLIM_TARGET_COMPOSE_SVC_IMAGE"},
+	},
+	FlagComposeSvcStartWait: &cli.IntFlag{
+		Name:    FlagComposeSvcStartWait,
+		Value:   0,
+		Usage:   FlagComposeSvcStartWaitUsage,
+		EnvVars: []string{"DSLIM_COMPOSE_SVC_START_WAIT"},
 	},
 	FlagComposeSvcNoPorts: &cli.BoolFlag{
 		Name:    FlagComposeSvcNoPorts,

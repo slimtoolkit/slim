@@ -5,7 +5,6 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 
 	"github.com/urfave/cli/v2"
 )
@@ -28,19 +27,21 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagRegistrySecret),
 		commands.Cflag(commands.FlagShowPullLogs),
 		//Compose support
-		commands.Cflag(commands.FlagComposeFile),
-		commands.Cflag(commands.FlagTargetComposeSvc),
-		commands.Cflag(commands.FlagComposeSvcNoPorts),
-		commands.Cflag(commands.FlagDepExcludeComposeSvcAll),
-		commands.Cflag(commands.FlagDepIncludeComposeSvc),
-		commands.Cflag(commands.FlagDepExcludeComposeSvc),
-		commands.Cflag(commands.FlagDepIncludeComposeSvcDeps),
-		commands.Cflag(commands.FlagDepIncludeTargetComposeSvcDeps),
-		commands.Cflag(commands.FlagComposeNet),
-		commands.Cflag(commands.FlagComposeEnvNoHost),
-		commands.Cflag(commands.FlagComposeEnvFile),
-		commands.Cflag(commands.FlagComposeProjectName),
-		commands.Cflag(commands.FlagComposeWorkdir),
+		commands.Cflag(commands.FlagComposeFile),                    //not used yet
+		commands.Cflag(commands.FlagTargetComposeSvc),               //not used yet
+		commands.Cflag(commands.FlagComposeSvcStartWait),            //not used yet
+		commands.Cflag(commands.FlagTargetComposeSvcImage),          //not used yet
+		commands.Cflag(commands.FlagComposeSvcNoPorts),              //not used yet
+		commands.Cflag(commands.FlagDepExcludeComposeSvcAll),        //not used yet
+		commands.Cflag(commands.FlagDepIncludeComposeSvc),           //not used yet
+		commands.Cflag(commands.FlagDepExcludeComposeSvc),           //not used yet
+		commands.Cflag(commands.FlagDepIncludeComposeSvcDeps),       //not used yet
+		commands.Cflag(commands.FlagDepIncludeTargetComposeSvcDeps), //not used yet
+		commands.Cflag(commands.FlagComposeNet),                     //not used yet
+		commands.Cflag(commands.FlagComposeEnvNoHost),               //not used yet
+		commands.Cflag(commands.FlagComposeEnvFile),                 //not used yet
+		commands.Cflag(commands.FlagComposeProjectName),             //not used yet
+		commands.Cflag(commands.FlagComposeWorkdir),                 //not used yet
 		//http probes
 		commands.Cflag(commands.FlagHTTPProbeOff),
 		commands.Cflag(commands.FlagHTTPProbe),
@@ -170,18 +171,15 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
-		if doHTTPProbe {
+		if doHTTPProbe && len(httpProbeCmds) == 0 {
 			//add default probe cmd if the "http-probe" flag is set
+			//but only if there are no custom http probe commands
 			xc.Out.Info("param.http.probe",
 				ovars{
 					"message": "using default probe",
 				})
 
-			defaultCmd := config.HTTPProbeCmd{
-				Protocol: "http",
-				Method:   "GET",
-				Resource: "/",
-			}
+			defaultCmd := commands.GetDefaultHTTPProbe()
 
 			if doHTTPProbeCrawl {
 				defaultCmd.Crawl = true

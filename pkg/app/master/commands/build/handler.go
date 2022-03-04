@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -50,6 +51,7 @@ const (
 	ecbNoEntrypoint
 	ecbBadTargetComposeSvc
 	ecbComposeSvcNoImage
+	ecbComposeSvcUnknownImage
 )
 
 type ovars = app.OutVars
@@ -95,6 +97,8 @@ func OnCommand(
 	doShowPullLogs bool,
 	composeFiles []string,
 	targetComposeSvc string,
+	targetComposeSvcImage string,
+	composeSvcStartWait int,
 	composeSvcNoPorts bool,
 	depExcludeComposeSvcAll bool,
 	depIncludeComposeSvcDeps string,
@@ -166,9 +170,7 @@ func OnCommand(
 	rtaOnbuildBaseImage bool,
 	rtaSourcePT bool,
 	sensorIPCEndpoint string,
-	sensorIPCMode string,
-	logLevel string,
-	logFormat string) {
+	sensorIPCMode string) {
 
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
@@ -384,7 +386,9 @@ func OnCommand(
 			depExcludeComposeSvcs)
 
 		//todo: move compose flags to options
-		options := &compose.ExecutionOptions{}
+		options := &compose.ExecutionOptions{
+			SvcStartWait: composeSvcStartWait,
+		}
 
 		logger.Debugf("compose: file(s)='%s' selectors='%+v'\n",
 			strings.Join(composeFiles, ","), selectors)
@@ -455,6 +459,12 @@ func OnCommand(
 			serviceAliases = append(serviceAliases, targetSvcInfo.Config.Name)
 
 			targetRef = targetSvcInfo.Config.Image
+			if targetComposeSvcImage != "" {
+				targetRef = commands.UpdateImageRef(logger, targetRef, targetComposeSvcImage)
+				//shouldn't need to
+				targetSvcInfo.Config.Image = targetRef
+				logger.Debug("using target service override '%s' -> '%s' ", targetComposeSvcImage, targetRef)
+			}
 
 			if len(targetSvcInfo.Config.Entrypoint) > 0 {
 				logger.Debug("using targetSvcInfo.Config.Entrypoint")
@@ -778,7 +788,32 @@ func OnCommand(
 	if depServicesExe != nil {
 		xc.Out.State("container.dependencies.init.start")
 		err = depServicesExe.Prepare()
-		xc.FailOn(err)
+		if err != nil {
+			var svcErr *compose.ServiceError
+			if errors.As(err, &svcErr) {
+				xc.Out.Info("compose.file.error",
+					ovars{
+						"status":       "deps.unknown.image",
+						"files":        strings.Join(composeFiles, ","),
+						"service":      svcErr.Service,
+						"pull.enabled": doPull,
+						"message":      "Unknown dependency image (make sure to pull or build the images for your dependencies in compose)",
+					})
+
+				exitCode := commands.ECTBuild | ecbComposeSvcUnknownImage
+				xc.Out.State("exited",
+					ovars{
+						"exit.code": exitCode,
+						"version":   v.Current(),
+						"location":  fsutil.ExeDir(),
+					})
+
+				xc.Exit(exitCode)
+			}
+
+			xc.FailOn(err)
+		}
+
 		err = depServicesExe.Start()
 		if err != nil {
 			depServicesExe.Stop()
@@ -974,8 +1009,8 @@ func OnCommand(
 		doIncludeNew,
 		selectedNetworks,
 		gparams.Debug,
-		logLevel,
-		logFormat,
+		gparams.LogLevel,
+		gparams.LogFormat,
 		gparams.InContainer,
 		sensorIPCEndpoint,
 		sensorIPCMode,

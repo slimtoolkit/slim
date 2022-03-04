@@ -53,6 +53,14 @@ func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, erro
 	return &cro, nil
 }
 
+func GetDefaultHTTPProbe() config.HTTPProbeCmd {
+	return config.HTTPProbeCmd{
+		Protocol: "http",
+		Method:   "GET",
+		Resource: "/",
+	}
+}
+
 func GetHTTPProbes(ctx *cli.Context) ([]config.HTTPProbeCmd, error) {
 	httpProbeCmds, err := ParseHTTPProbes(ctx.StringSlice(FlagHTTPProbeCmd))
 	if err != nil {
@@ -190,10 +198,62 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	return overrides, nil
 }
 
+func UpdateGlobalFlagValues(appOpts *config.AppOptions, values *GenericParams) *GenericParams {
+	if appOpts == nil || appOpts.Global == nil || values == nil {
+		return values
+	}
+
+	if appOpts.Global.NoColor != nil {
+		values.NoColor = *appOpts.Global.NoColor
+	}
+
+	if appOpts.Global.Debug != nil {
+		values.Debug = *appOpts.Global.Debug
+	}
+
+	if appOpts.Global.Verbose != nil {
+		values.Verbose = *appOpts.Global.Verbose
+	}
+
+	if appOpts.Global.LogLevel != nil {
+		values.LogLevel = *appOpts.Global.LogLevel
+	}
+
+	if appOpts.Global.LogFormat != nil {
+		values.LogFormat = *appOpts.Global.LogFormat
+	}
+
+	if appOpts.Global.Log != nil {
+		values.Log = *appOpts.Global.Log
+	}
+
+	if appOpts.Global.UseTLS != nil {
+		values.ClientConfig.UseTLS = *appOpts.Global.UseTLS
+	}
+
+	if appOpts.Global.VerifyTLS != nil {
+		values.ClientConfig.VerifyTLS = *appOpts.Global.VerifyTLS
+	}
+
+	if appOpts.Global.TLSCertPath != nil {
+		values.ClientConfig.TLSCertPath = *appOpts.Global.TLSCertPath
+	}
+
+	if appOpts.Global.Host != nil {
+		values.ClientConfig.Host = *appOpts.Global.Host
+	}
+
+	return values
+}
+
 func GlobalFlagValues(ctx *cli.Context) (*GenericParams, error) {
 	values := GenericParams{
 		CheckVersion:   ctx.Bool(FlagCheckVersion),
 		Debug:          ctx.Bool(FlagDebug),
+		Verbose:        ctx.Bool(FlagVerbose),
+		LogLevel:       ctx.String(FlagLogLevel),
+		LogFormat:      ctx.String(FlagLogFormat),
+		Log:            ctx.String(FlagLog),
 		StatePath:      ctx.String(FlagStatePath),
 		ReportLocation: ctx.String(FlagCommandReport),
 	}

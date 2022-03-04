@@ -1,7 +1,10 @@
 package commands
 
 import (
+	"context"
+	"fmt"
 	"path/filepath"
+	"strings"
 
 	docker "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
@@ -18,9 +21,35 @@ const (
 
 /////////////////////////////////////////////////////////
 
+type CLIContextKey int
+
+const (
+	GlobalParams CLIContextKey = 1
+	AppParams    CLIContextKey = 2
+)
+
+func CLIContextSave(ctx context.Context, key CLIContextKey, data interface{}) context.Context {
+	return context.WithValue(ctx, key, data)
+}
+
+func CLIContextGet(ctx context.Context, key CLIContextKey) interface{} {
+	if ctx == nil {
+		return nil
+	}
+
+	return ctx.Value(key)
+}
+
+/////////////////////////////////////////////////////////
+
 type GenericParams struct {
+	NoColor        bool
 	CheckVersion   bool
 	Debug          bool
+	Verbose        bool
+	LogLevel       string
+	LogFormat      string
+	Log            string
 	StatePath      string
 	ReportLocation string
 	InContainer    bool
@@ -134,6 +163,37 @@ func ConfirmNetwork(logger *log.Entry, client *docker.Client, network string) bo
 	}
 
 	return false
+}
+
+///
+func UpdateImageRef(logger *log.Entry, ref, override string) string {
+	logger.Debugf("UpdateImageRef() - ref='%s' override='%s'", ref, override)
+	if override == "" {
+		return ref
+	}
+
+	refParts := strings.SplitN(ref, ":", 2)
+	refImage := refParts[0]
+	refTag := ""
+	if len(refParts) > 1 {
+		refTag = refParts[1]
+	}
+
+	overrideParts := strings.SplitN(override, ":", 2)
+	switch len(overrideParts) {
+	case 2:
+		refImage = overrideParts[0]
+		refTag = overrideParts[1]
+	case 1:
+		refTag = overrideParts[0]
+	}
+
+	if refTag == "" {
+		//shouldn't happen
+		refTag = "latest"
+	}
+
+	return fmt.Sprintf("%s:%s", refImage, refTag)
 }
 
 var CLI []*cli.Command
