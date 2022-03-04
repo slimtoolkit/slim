@@ -133,26 +133,20 @@ func NewCustomProbe(
 
 	availableHostPorts := map[string]string{}
 
-	for nsPortKey, nsPortData := range inspector.ContainerInfo.NetworkSettings.Ports {
-		//skip IPC ports
-		if (nsPortKey == inspector.CmdPort) || (nsPortKey == inspector.EvtPort) {
-			continue
-		}
-
+	for nsPortKey, nsPortData := range inspector.AvailablePorts {
 		log.Debugf("HTTP probe - target's network port key='%s' data='%#v'", nsPortKey, nsPortData)
 
-		parts := strings.Split(string(nsPortKey), "/")
-		if len(parts) == 2 && parts[1] != "tcp" {
+		if nsPortKey.Proto() != "tcp" {
 			log.Debugf("HTTP probe - skipping non-tcp port => %v", nsPortKey)
 			continue
 		}
 
-		if nsPortData == nil {
+		if nsPortData.HostPort == "" {
 			log.Debugf("HTTP probe - skipping network setting without port data => %v", nsPortKey)
 			continue
 		}
 
-		availableHostPorts[nsPortData[0].HostPort] = parts[0]
+		availableHostPorts[nsPortData.HostPort] = nsPortKey.Port()
 	}
 
 	log.Debugf("HTTP probe - available host ports => %+v", availableHostPorts)
@@ -160,11 +154,11 @@ func NewCustomProbe(
 	if len(probe.TargetPorts) > 0 {
 		for _, pnum := range probe.TargetPorts {
 			pspec := dockerapi.Port(fmt.Sprintf("%v/tcp", pnum))
-			if _, ok := inspector.ContainerInfo.NetworkSettings.Ports[pspec]; ok {
+			if _, ok := inspector.AvailablePorts[pspec]; ok {
 				if inspector.SensorIPCMode == container.SensorIPCModeDirect {
 					probe.Ports = append(probe.Ports, fmt.Sprintf("%d", pnum))
 				} else {
-					probe.Ports = append(probe.Ports, inspector.ContainerInfo.NetworkSettings.Ports[pspec][0].HostPort)
+					probe.Ports = append(probe.Ports, inspector.AvailablePorts[pspec].HostPort)
 				}
 			} else {
 				log.Debugf("HTTP probe - ignoring port => %v", pspec)
@@ -176,14 +170,14 @@ func NewCustomProbe(
 		if len(inspector.ImageInspector.DockerfileInfo.ExposedPorts) > 0 {
 			for epi := len(inspector.ImageInspector.DockerfileInfo.ExposedPorts) - 1; epi >= 0; epi-- {
 				portInfo := inspector.ImageInspector.DockerfileInfo.ExposedPorts[epi]
-				if strings.Index(portInfo, "/") == -1 {
+				if !strings.Contains(portInfo, "/") {
 					portInfo = fmt.Sprintf("%v/tcp", portInfo)
 				}
 
 				pspec := dockerapi.Port(portInfo)
 
-				if _, ok := inspector.ContainerInfo.NetworkSettings.Ports[pspec]; ok {
-					hostPort := inspector.ContainerInfo.NetworkSettings.Ports[pspec][0].HostPort
+				if _, ok := inspector.AvailablePorts[pspec]; ok {
+					hostPort := inspector.AvailablePorts[pspec].HostPort
 					if inspector.SensorIPCMode == container.SensorIPCModeDirect {
 						if containerPort := availableHostPorts[hostPort]; containerPort != "" {
 							probe.Ports = append(probe.Ports, containerPort)
@@ -332,7 +326,7 @@ func (p *CustomProbe) Start() {
 
 				// Set up FastCGI defaults if the default CGI port is used without a FastCGI config.
 				if port == defaultFastCGIPortStr && cmd.FastCGI == nil {
-					log.Debugf("HTTP probe - FastCGI default port (%s) used, setting up HTTP probe FastCGI wrapper defaults")
+					log.Debugf("HTTP probe - FastCGI default port (%s) used, setting up HTTP probe FastCGI wrapper defaults", port)
 
 					// Typicall the entrypoint into a PHP app.
 					if cmd.Resource == "/" {
@@ -481,7 +475,7 @@ func (p *CustomProbe) Start() {
 								io.Copy(ioutil.Discard, res.Body)
 							}
 
-							defer res.Body.Close()
+							res.Body.Close()
 						}
 
 						statusCode := "error"

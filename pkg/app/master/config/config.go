@@ -55,6 +55,9 @@ func NewAppOptionsFromFile(dir string) (*AppOptions, error) {
 	return &result, nil
 }
 
+// TODO: robustly parse `--network`/Network at the CLI level to avoid ambiguity.
+// https://github.com/docker/cli/blob/cf8c4bab6477ef62122bda875f80d8472005010d/opts/network.go#L35
+
 // ContainerOverrides provides a set of container field overrides
 // It can also be used to update the image instructions when
 // the "image-overrides" flag is provided
