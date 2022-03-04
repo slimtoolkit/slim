@@ -583,11 +583,11 @@ var CommonFlags = map[string]cli.Flag{
 		EnvVars: []string{"DSLIM_HTTP_PROBE_PROXY_ENDPOINT"},
 	},
 	FlagHTTPProbeProxyPort: &cli.IntFlag{
-        Name:    FlagHTTPProbeProxyPort,
-        Value:   0,
-        Usage:   FlagHTTPProbeProxyPortUsage,
-        EnvVars: []string{"DSLIM_HTTP_PROBE_PROXY_PORT"},
-    },
+		Name:    FlagHTTPProbeProxyPort,
+		Value:   0,
+		Usage:   FlagHTTPProbeProxyPortUsage,
+		EnvVars: []string{"DSLIM_HTTP_PROBE_PROXY_PORT"},
+	},
 	FlagPublishPort: &cli.StringSliceFlag{
 		Name:    FlagPublishPort,
 		Value:   cli.NewStringSlice(),

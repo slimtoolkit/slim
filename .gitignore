@@ -7,3 +7,4 @@
 /_gopath/
 dist_linux*.tar.gz
 dist_mac.zip
+.idea

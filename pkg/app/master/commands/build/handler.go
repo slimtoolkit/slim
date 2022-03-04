@@ -87,6 +87,8 @@ func OnCommand(
 	gparams *commands.GenericParams,
 	targetRef string,
 	doPull bool,
+	doIncludeNuxtBuild bool,
+	doIncludeNuxtDist bool,
 	dockerConfigPath string,
 	registryAccount string,
 	registrySecret string,
@@ -456,12 +458,12 @@ func OnCommand(
 
 			if len(targetSvcInfo.Config.Entrypoint) > 0 {
 				logger.Debug("using targetSvcInfo.Config.Entrypoint")
-				overrides.Entrypoint = []string(targetSvcInfo.Config.Entrypoint)
+				overrides.Entrypoint = targetSvcInfo.Config.Entrypoint
 			}
 
 			if len(targetSvcInfo.Config.Command) > 0 {
 				logger.Debug("using targetSvcInfo.Config.Command")
-				overrides.Cmd = []string(targetSvcInfo.Config.Command)
+				overrides.Cmd = targetSvcInfo.Config.Command
 			}
 
 			if overrides.Workdir == "" {
@@ -808,8 +810,8 @@ func OnCommand(
 		allNetNames := depServicesExe.ActiveNetworkNames()
 
 		if targetComposeSvc != "" {
-			//if we are targetting a compose service and
-			//we have explicitly selected compose networks (composeNets)
+			//if we are targeting a compose service, and we
+			//have explicitly selected compose networks (composeNets)
 			//we use the selected subset of the configured networks for the target service
 			composeNetsSet := map[string]struct{}{}
 			for _, key := range composeNets {
@@ -827,7 +829,7 @@ func OnCommand(
 				selectedNetNames[key] = netNameInfo
 			}
 		} else {
-			//we are not targetting a compose service,
+			//we are not targeting a compose service,
 			//but we do want to connect to the networks in compose
 			if len(composeNets) > 0 {
 				for _, key := range composeNets {
@@ -939,6 +941,8 @@ func OnCommand(
 		imageInspector,
 		localVolumePath,
 		doUseLocalMounts,
+		doIncludeNuxtDist,
+		doIncludeNuxtBuild,
 		doUseSensorVolume,
 		doKeepTmpArtifacts,
 		overrides,

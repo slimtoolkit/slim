@@ -140,6 +140,9 @@ var CLI = &cli.Command{
 		cflag(FlagIncludeCertPKDirs),
 		cflag(FlagIncludeNew),
 		cflag(FlagKeepTmpArtifacts),
+		cflag(FlagIncludeNuxtDistDir),
+		cflag(FlagIncludeNuxtBuildDir),
+		cflag(FlagIncludeNuxtAll),
 		cflag(FlagKeepPerms),
 		cflag(FlagPathPerms),
 		cflag(FlagPathPermsFile),
@@ -514,6 +517,15 @@ var CLI = &cli.Command{
 
 		doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
 
+		doIncludeNuxtBuild := ctx.Bool(FlagIncludeNuxtBuildDir)
+		doIncludeNuxtDist := ctx.Bool(FlagIncludeNuxtDistDir)
+		doIncludeNuxtAll := ctx.Bool(FlagIncludeNuxtAll)
+
+		if doIncludeNuxtAll {
+			doIncludeNuxtDist = true
+			doIncludeNuxtBuild = true
+		}
+
 		doExcludeMounts := ctx.Bool(commands.FlagExcludeMounts)
 		if doExcludeMounts {
 			for mpath := range volumeMounts {
@@ -630,6 +642,8 @@ var CLI = &cli.Command{
 			gcvalues,
 			targetRef,
 			doPull,
+			doIncludeNuxtBuild,
+			doIncludeNuxtDist,
 			dockerConfigPath,
 			registryAccount,
 			registrySecret,

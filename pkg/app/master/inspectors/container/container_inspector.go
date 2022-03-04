@@ -88,6 +88,8 @@ type Inspector struct {
 	FatContainerCmd       []string
 	LocalVolumePath       string
 	DoUseLocalMounts      bool
+	DoIncludeNuxtDist     bool
+	DoIncludeNuxtBuild    bool
 	SensorVolumeName      string
 	DoKeepTmpArtifacts    bool
 	StatePath             string
@@ -165,6 +167,8 @@ func NewInspector(
 	imageInspector *image.Inspector,
 	localVolumePath string,
 	doUseLocalMounts bool,
+	doIncludeNuxtDist bool,
+	doIncludeNuxtBuild bool,
 	sensorVolumeName string,
 	doKeepTmpArtifacts bool,
 	overrides *config.ContainerOverrides,
@@ -211,6 +215,8 @@ func NewInspector(
 		StatePath:             statePath,
 		LocalVolumePath:       localVolumePath,
 		DoUseLocalMounts:      doUseLocalMounts,
+		DoIncludeNuxtDist:     doIncludeNuxtDist,
+		DoIncludeNuxtBuild:    doIncludeNuxtBuild,
 		SensorVolumeName:      sensorVolumeName,
 		DoKeepTmpArtifacts:    doKeepTmpArtifacts,
 		CmdPort:               cmdPortSpecDefault,
@@ -542,7 +548,7 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	//hostConfig.Binds = volumeBinds
-	mountsList := []dockerapi.HostMount{}
+	var mountsList []dockerapi.HostMount
 	for _, m := range allMountsMap {
 		mountsList = append(mountsList, m)
 	}
@@ -552,8 +558,8 @@ func (i *Inspector) RunContainer() error {
 	hostConfig.UsernsMode = "host"
 
 	hasSysAdminCap := false
-	for _, cap := range hostConfig.CapAdd {
-		if cap == "SYS_ADMIN" {
+	for _, c := range hostConfig.CapAdd {
+		if c == "SYS_ADMIN" {
 			hasSysAdminCap = true
 		}
 	}
@@ -625,12 +631,12 @@ func (i *Inspector) RunContainer() error {
 	//add comms ports to the exposed ports in the container
 	if len(i.Overrides.ExposedPorts) > 0 {
 		containerOptions.Config.ExposedPorts = i.Overrides.ExposedPorts
-		for k, v := range commsExposedPorts {
+		for k, port := range commsExposedPorts {
 			if _, ok := containerOptions.Config.ExposedPorts[k]; ok {
 				i.logger.Errorf("RunContainer: comms port conflict => %v", k)
 			}
 
-			containerOptions.Config.ExposedPorts[k] = v
+			containerOptions.Config.ExposedPorts[k] = port
 		}
 		i.logger.Debugf("RunContainer: Config.ExposedPorts => %#v", containerOptions.Config.ExposedPorts)
 	} else {
@@ -660,11 +666,11 @@ func (i *Inspector) RunContainer() error {
 			i.xc.Exit(-126)
 		}
 
-		i.PortBindings[dockerapi.Port(cmdPortSpecDefault)] = []dockerapi.PortBinding{{
+		i.PortBindings[cmdPortSpecDefault] = []dockerapi.PortBinding{{
 			HostPort: cmdPortStrDefault,
 		}}
 
-		if pbInfo, ok := i.PortBindings[dockerapi.Port(evtPortSpecDefault)]; ok {
+		if pbInfo, ok := i.PortBindings[evtPortSpecDefault]; ok {
 			i.logger.Errorf("RunContainer: port bindings comms port conflict (evt) = %#v", pbInfo)
 			if i.PrintState {
 				i.xc.Out.Info("sensor.error",
@@ -684,7 +690,7 @@ func (i *Inspector) RunContainer() error {
 			i.xc.Exit(-127)
 		}
 
-		i.PortBindings[dockerapi.Port(evtPortSpecDefault)] = []dockerapi.PortBinding{{
+		i.PortBindings[evtPortSpecDefault] = []dockerapi.PortBinding{{
 			HostPort: evtPortStrDefault,
 		}}
 
@@ -935,6 +941,14 @@ func (i *Inspector) RunContainer() error {
 		if strings.ToLower(runAsUser) != "root" {
 			cmd.RunTargetAsUser = i.RunTargetAsUser
 		}
+	}
+
+	if i.DoIncludeNuxtBuild {
+		cmd.DoIncludeNuxtBuild = true
+	}
+
+	if i.DoIncludeNuxtDist {
+		cmd.DoIncludeNuxtDist = true
 	}
 
 	_, err = i.ipcClient.SendCommand(cmd)
@@ -1304,7 +1318,7 @@ func attachContainerToNetwork(
 	}
 
 	if err := apiClient.ConnectNetwork(netNameInfo.FullName, options); err != nil {
-		logger.Debugf("attachContainerToNetwork(%s): container network connect error - %v",
+		logger.Debugf("attachContainerToNetwork(%s): container-id %s container network connect error - %v",
 			containerID, netNameInfo.FullName, err)
 		return err
 	}

@@ -237,6 +237,8 @@ func OnCommand(
 		imageInspector,
 		localVolumePath,
 		doUseLocalMounts,
+		false, //doIncludeNuxtDist,
+		false, //doIncludeNuxtBuild,
 		doUseSensorVolume,
 		false, //doKeepTmpArtifacts,
 		overrides,
