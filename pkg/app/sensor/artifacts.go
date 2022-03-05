@@ -831,6 +831,10 @@ func (p *artifactStore) saveArtifacts() {
 	includePaths = preparePaths(getKeys(p.cmd.Includes))
 	log.Debugf("saveArtifacts - includePaths(%v): %+v", len(includePaths), includePaths)
 
+	if includePaths == nil {
+		includePaths = make(map[string]bool)
+	}
+
 	newPerms = getRecordsWithPerms(p.cmd.Includes)
 	log.Debugf("saveArtifacts - newPerms(%v): %+v", len(newPerms), newPerms)
 
@@ -997,28 +1001,28 @@ copyFiles:
 	for fileName := range p.fileMap {
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
 
-		if p.cmd.DoIncludeNuxtBuild || p.cmd.DoIncludeNuxtDist &&
-			strings.HasSuffix(filePath, "nuxt.config.js") {
+		if p.cmd.DoIncludeNuxtBuild || p.cmd.DoIncludeNuxtDist {
+			if filepath.Base(filePath) == "nuxt.config.js" {
+				nuxtConfig, err := getNuxtConfig(filePath)
+				if err != nil {
+					log.Warn("saveArtifacts: failed to get nuxt config: %v", err)
+					continue
+				}
+				if nuxtConfig == nil {
+					log.Warn("saveArtifacts: nuxt config not found: ", fileName)
+					continue
+				}
 
-			nuxtConfig, err := getNuxtConfig(filePath)
-			if err != nil {
-				log.Warn("saveArtifacts: failed to get nuxt config: %v", err)
+				if p.cmd.DoIncludeNuxtBuild {
+					build := fmt.Sprintf("%s/files%s", p.storeLocation, nuxtConfig.Build)
+					includePaths[build] = true
+				}
+				if p.cmd.DoIncludeNuxtDist {
+					dist := fmt.Sprintf("%s/files%s", p.storeLocation, nuxtConfig.Dist)
+					includePaths[dist] = true
+				}
 				continue
 			}
-			if nuxtConfig == nil {
-				log.Warn("saveArtifacts: nuxt config not found: ", fileName)
-				continue
-			}
-
-			if p.cmd.DoIncludeNuxtBuild {
-				build := fmt.Sprintf("%s/files%s", p.storeLocation, nuxtConfig.Build)
-				includePaths[build] = true
-			}
-			if p.cmd.DoIncludeNuxtDist {
-				dist := fmt.Sprintf("%s/files%s", p.storeLocation, nuxtConfig.Dist)
-				includePaths[dist] = true
-			}
-			continue
 		}
 
 		p.detectAppStack(fileName)
@@ -1700,11 +1704,13 @@ type nuxtDirs struct {
 
 func getNuxtConfig(path string) (*nuxtDirs, error) {
 	if _, err := os.Stat(path); err != nil && os.IsNotExist(err) {
+		log.Debugf("sensor: monitor - getNuxtConfig - err stat => %s - %s", path, err.Error())
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting file => %s", path)
 	}
 
 	dat, err := os.ReadFile(path)
 	if err != nil {
+		log.Debugf("sensor: monitor - getNuxtConfig - err reading file => %s - %s", path, err.Error())
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error reading file => %s", path)
 	}
 
@@ -1716,6 +1722,7 @@ func getNuxtConfig(path string) (*nuxtDirs, error) {
 		if v, err := value.ToString(); err == nil {
 			nuxt.Build = v
 		} else {
+			log.Debugf("saveArtifacts - using build default => %s", err.Error())
 			nuxt.Build = "build"
 		}
 	} else {
@@ -1725,9 +1732,11 @@ func getNuxtConfig(path string) (*nuxtDirs, error) {
 		if v, err := value.ToString(); err == nil {
 			nuxt.Dist = v
 		} else {
+			log.Debugf("saveArtifacts - using dist default => %s", err.Error())
 			nuxt.Dist = "dist"
 		}
 	} else {
+		log.Debug("saveArtifacts - reading nuxt.config.js file => ", err.Error())
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting distDir => %s", path)
 	}
 	return &nuxt, nil
