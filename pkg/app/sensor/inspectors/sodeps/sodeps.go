@@ -41,6 +41,12 @@ func AllExeDependencies(exeFileName string, find bool) ([]string, error) {
 	return AllDependencies(exeFileName)
 }
 
+const (
+	strExitStatus       = "exit status 127"
+	strErrorReloc       = "Error relocating"
+	strErrorSymNotFound = "symbol not found"
+)
+
 func AllDependencies(binFilePath string) ([]string, error) {
 	//binFilePath could point to an executable or a shared object
 	if !strings.HasPrefix(binFilePath, "/") {
@@ -76,18 +82,47 @@ func AllDependencies(binFilePath string) ([]string, error) {
 		return nil, err
 	}
 
-	if err := cmd.Wait(); err != nil {
-		log.Debugf("sodeps.AllDependencies(%v): exe error result - %v (stderr: '%v')", binFilePath, err, cerr.String())
-		return nil, err
-	}
-
-	if cout.Len() == 0 {
-		log.Debugf("sodeps.AllDependencies(%v): no results", binFilePath)
-		return nil, nil
-	}
-
+	depMap := map[string]struct{}{}
 	var deps []string
 	deps = append(deps, binFilePath)
+
+	if err := cmd.Wait(); err != nil {
+		if strings.Contains(err.Error(), strExitStatus) &&
+			strings.Contains(cerr.String(), strErrorReloc) &&
+			strings.Contains(cerr.String(), strErrorSymNotFound) {
+			elines := strings.Split(cerr.String(), "\n")
+			for _, line := range elines {
+				clean := strings.TrimSpace(line)
+				if len(clean) == 0 {
+					continue
+				}
+
+				if !strings.Contains(clean, strErrorReloc) {
+					log.Debugf("sodeps.AllDependencies(%v): skipping '%s'", binFilePath, line)
+					continue
+				}
+
+				parts := strings.Split(clean, " ")
+				//Error relocating __LIB_NAME__: __SYMBOL_NAME__: symbol not found
+				if len(parts) == 7 {
+					if strings.HasSuffix(parts[2], ":") {
+						dep := strings.Trim(parts[2], ":")
+						depMap[dep] = struct{}{}
+					}
+				} else {
+					log.Debugf("sodeps.AllDependencies(%v): skipping '%s'", binFilePath, line)
+				}
+			}
+
+		} else {
+			log.Debugf("sodeps.AllDependencies(%v): exe error result - %v (stderr: '%v')", binFilePath, err, cerr.String())
+			return nil, err
+		}
+	}
+
+	for dep := range depMap {
+		deps = append(deps, dep)
+	}
 
 	lines := strings.Split(cout.String(), "\n")
 	for _, line := range lines {
@@ -109,6 +144,11 @@ func AllDependencies(binFilePath string) ([]string, error) {
 				continue
 			}
 
+			if parts[2] == resolverExeName {
+				log.Debugf("sodeps.AllDependencies(%v): ignore non-lib dependency - '%v'", binFilePath, clean)
+				continue
+			}
+
 			deps = append(deps, parts[2])
 			continue
 		}
@@ -121,6 +161,11 @@ func AllDependencies(binFilePath string) ([]string, error) {
 			}
 
 			if strings.HasPrefix(parts[0], "linux-vdso") {
+				continue
+			}
+
+			if strings.HasPrefix(parts[0], resolverExeName) {
+				log.Debugf("sodeps.AllDependencies(%v): ignore resolver dependency - '%v'", binFilePath, clean)
 				continue
 			}
 
