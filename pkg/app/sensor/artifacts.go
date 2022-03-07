@@ -1708,7 +1708,7 @@ func getNuxtConfig(path string) (*nuxtDirs, error) {
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting file => %s", path)
 	}
 
-	dat, err := os.ReadFile(path)
+	dat, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Debugf("sensor: monitor - getNuxtConfig - err reading file => %s - %s", path, err.Error())
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error reading file => %s", path)
