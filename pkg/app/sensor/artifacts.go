@@ -19,6 +19,7 @@ import (
 
 	"github.com/armon/go-radix"
 	"github.com/bmatcuk/doublestar/v3"
+	"github.com/robertkrimen/otto"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/detectors/binfile"
@@ -441,7 +442,7 @@ func (p *artifactStore) prepareArtifacts() {
 				fsType = "file"
 				p.rawNames[bpath] = bprops
 				//use a separate file map, so we can save them last
-				//in case we are dealing with intemedate symlinks
+				//in case we are dealing with intermediate symlinks
 				//and to better track what bin deps are not covered by dynamic analysis
 				p.saFileMap[bpath] = bprops
 			case (bpathFileInfo.Mode() & os.ModeSymlink) != 0:
@@ -451,7 +452,6 @@ func (p *artifactStore) prepareArtifacts() {
 			default:
 				fsType = "unexpected"
 				log.Warnf("prepareArtifacts.binArtifacts[bsa] - unexpected ft - %s", bpath)
-
 			}
 
 			log.Debugf("prepareArtifacts.binArtifacts[bsa] - bin artifact (%s) fsType=%s [%d]bdep=%s", artifactFileName, fsType, idx, bpath)
@@ -567,7 +567,7 @@ func (p *artifactStore) resolveLinks() {
 		}
 	}
 
-	//note: resolve these extra symlinks after the the root level symlinks
+	//note: resolve these extra symlinks after the root level symlinks
 	for name := range p.resolve {
 		log.Debug("resolveLinks - resolving: ", name)
 		p.prepareArtifact(name)
@@ -831,6 +831,10 @@ func (p *artifactStore) saveArtifacts() {
 	includePaths = preparePaths(getKeys(p.cmd.Includes))
 	log.Debugf("saveArtifacts - includePaths(%v): %+v", len(includePaths), includePaths)
 
+	if includePaths == nil {
+		includePaths = make(map[string]bool)
+	}
+
 	newPerms = getRecordsWithPerms(p.cmd.Includes)
 	log.Debugf("saveArtifacts - newPerms(%v): %+v", len(newPerms), newPerms)
 
@@ -996,6 +1000,30 @@ copyFiles:
 	ngxEnsured := false
 	for fileName := range p.fileMap {
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
+
+		if p.cmd.DoIncludeNuxtBuild || p.cmd.DoIncludeNuxtDist {
+			if filepath.Base(filePath) == "nuxt.config.js" {
+				nuxtConfig, err := getNuxtConfig(filePath)
+				if err != nil {
+					log.Warn("saveArtifacts: failed to get nuxt config: %v", err)
+					continue
+				}
+				if nuxtConfig == nil {
+					log.Warn("saveArtifacts: nuxt config not found: ", fileName)
+					continue
+				}
+
+				if p.cmd.DoIncludeNuxtBuild {
+					build := fmt.Sprintf("%s/files%s", p.storeLocation, nuxtConfig.Build)
+					includePaths[build] = true
+				}
+				if p.cmd.DoIncludeNuxtDist {
+					dist := fmt.Sprintf("%s/files%s", p.storeLocation, nuxtConfig.Dist)
+					includePaths[dist] = true
+				}
+				continue
+			}
+		}
 
 		p.detectAppStack(fileName)
 
@@ -1667,6 +1695,51 @@ func rbEnsureGemFiles(src, storeLocation, prefix string) error {
 	}
 
 	return nil
+}
+
+type nuxtDirs struct {
+	Build string
+	Dist  string
+}
+
+func getNuxtConfig(path string) (*nuxtDirs, error) {
+	if _, err := os.Stat(path); err != nil && os.IsNotExist(err) {
+		log.Debugf("sensor: monitor - getNuxtConfig - err stat => %s - %s", path, err.Error())
+		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting file => %s", path)
+	}
+
+	dat, err := os.ReadFile(path)
+	if err != nil {
+		log.Debugf("sensor: monitor - getNuxtConfig - err reading file => %s - %s", path, err.Error())
+		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error reading file => %s", path)
+	}
+
+	vm := otto.New()
+	vm.Run(dat)
+	var nuxt nuxtDirs
+
+	if value, err := vm.Get("buildDir"); err == nil {
+		if v, err := value.ToString(); err == nil {
+			nuxt.Build = v
+		} else {
+			log.Debugf("saveArtifacts - using build default => %s", err.Error())
+			nuxt.Build = "build"
+		}
+	} else {
+		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting buildDir => %s", path)
+	}
+	if value, err := vm.Get("distDir"); err == nil {
+		if v, err := value.ToString(); err == nil {
+			nuxt.Dist = v
+		} else {
+			log.Debugf("saveArtifacts - using dist default => %s", err.Error())
+			nuxt.Dist = "dist"
+		}
+	} else {
+		log.Debug("saveArtifacts - reading nuxt.config.js file => ", err.Error())
+		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting distDir => %s", path)
+	}
+	return &nuxt, nil
 }
 
 func isRbGemSpecFile(filePath string) bool {

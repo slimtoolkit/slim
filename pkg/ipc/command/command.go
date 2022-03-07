@@ -58,6 +58,8 @@ type StartMonitor struct {
 	IncludeCertPKAll   bool                          `json:"include_cert_pk_all,omitempty"`
 	IncludeCertPKDirs  bool                          `json:"include_cert_pk_dirs,omitempty"`
 	IncludeNew         bool                          `json:"include_new,omitempty"`
+	DoIncludeNuxtBuild bool                          `json:"do_include_nuxt_build,omitempty"`
+	DoIncludeNuxtDist  bool                          `json:"do_include_nuxt_dist,omitempty"`
 }
 
 // GetName returns the command message ID for the start monitor command

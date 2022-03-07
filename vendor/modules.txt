@@ -252,6 +252,14 @@ github.com/opencontainers/runc/libcontainer/user
 github.com/pkg/errors
 # github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03
 github.com/pkg/term/termios
+# github.com/robertkrimen/otto v0.0.0-20211024170158-b87d35c0b86f
+github.com/robertkrimen/otto
+github.com/robertkrimen/otto/ast
+github.com/robertkrimen/otto/dbg
+github.com/robertkrimen/otto/file
+github.com/robertkrimen/otto/parser
+github.com/robertkrimen/otto/registry
+github.com/robertkrimen/otto/token
 # github.com/russross/blackfriday/v2 v2.1.0
 github.com/russross/blackfriday/v2
 # github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
@@ -363,5 +371,8 @@ google.golang.org/protobuf/types/descriptorpb
 google.golang.org/protobuf/types/known/anypb
 google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/timestamppb
+# gopkg.in/sourcemap.v1 v1.0.5
+gopkg.in/sourcemap.v1
+gopkg.in/sourcemap.v1/base64vlq
 # gopkg.in/yaml.v2 v2.4.0
 gopkg.in/yaml.v2

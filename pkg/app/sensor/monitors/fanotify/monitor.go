@@ -254,7 +254,7 @@ func getProcessInfo(pid int32) (*report.ProcessInfo, error) {
 	//	info.Env = strings.Split(string(rawEnviron),"\x00")
 	//}
 
-	info.Name = "uknown"
+	info.Name = "unknown"
 	info.ParentPid = -1
 
 	stat, err := ioutil.ReadFile(procFilePath(int(pid), "stat"))

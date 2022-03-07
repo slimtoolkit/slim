@@ -89,7 +89,7 @@ func startMonitor(errorCh chan error,
 	var peReportChan <-chan *report.PeMonitorReport
 	var peReport *report.PeMonitorReport
 	usePEMon, err := system.DefaultKernelFeatures.IsCompiled("CONFIG_PROC_EVENTS")
-	//tmp: disalbe PEVENTs (due to problems with the new boot2docker host OS)
+	//tmp: disable PEVENTs (due to problems with the new boot2docker host OS)
 	usePEMon = false
 	if (err == nil) && usePEMon {
 		log.Info("sensor: proc events are available!")
@@ -184,7 +184,7 @@ func Run() {
 
 	initSignalHandlers()
 	defer func() {
-		log.Debug("defered cleanup on shutdown...")
+		log.Debug("deferred cleanup on shutdown...")
 		cleanupOnShutdown()
 	}()
 
@@ -285,6 +285,5 @@ doneRunning:
 	}
 
 	ipcServer.TryPublishEvt(&event.Message{Name: event.ShutdownSensorDone}, 3)
-
 	log.Info("sensor: done!")
 }

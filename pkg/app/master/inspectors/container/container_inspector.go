@@ -93,6 +93,8 @@ type Inspector struct {
 	FatContainerCmd       []string
 	LocalVolumePath       string
 	DoUseLocalMounts      bool
+	DoIncludeNuxtBuild    bool
+	DoIncludeNuxtDist     bool
 	SensorVolumeName      string
 	DoKeepTmpArtifacts    bool
 	StatePath             string
@@ -170,6 +172,8 @@ func NewInspector(
 	imageInspector *image.Inspector,
 	localVolumePath string,
 	doUseLocalMounts bool,
+	doIncludeNuxtBuild bool,
+	doIncludeNuxtDist bool,
 	sensorVolumeName string,
 	doKeepTmpArtifacts bool,
 	overrides *config.ContainerOverrides,
@@ -216,6 +220,8 @@ func NewInspector(
 		StatePath:             statePath,
 		LocalVolumePath:       localVolumePath,
 		DoUseLocalMounts:      doUseLocalMounts,
+		DoIncludeNuxtBuild:    doIncludeNuxtBuild,
+		DoIncludeNuxtDist:     doIncludeNuxtDist,
 		SensorVolumeName:      sensorVolumeName,
 		DoKeepTmpArtifacts:    doKeepTmpArtifacts,
 		CmdPort:               cmdPortSpecDefault,
@@ -547,7 +553,7 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	//hostConfig.Binds = volumeBinds
-	mountsList := []dockerapi.HostMount{}
+	var mountsList []dockerapi.HostMount
 	for _, m := range allMountsMap {
 		mountsList = append(mountsList, m)
 	}
@@ -557,8 +563,8 @@ func (i *Inspector) RunContainer() error {
 	hostConfig.UsernsMode = "host"
 
 	hasSysAdminCap := false
-	for _, cap := range hostConfig.CapAdd {
-		if cap == "SYS_ADMIN" {
+	for _, c := range hostConfig.CapAdd {
+		if c == "SYS_ADMIN" {
 			hasSysAdminCap = true
 		}
 	}
@@ -832,6 +838,14 @@ func (i *Inspector) RunContainer() error {
 		if strings.ToLower(runAsUser) != "root" {
 			cmd.RunTargetAsUser = i.RunTargetAsUser
 		}
+	}
+
+	if i.DoIncludeNuxtBuild {
+		cmd.DoIncludeNuxtBuild = true
+	}
+
+	if i.DoIncludeNuxtDist {
+		cmd.DoIncludeNuxtDist = true
 	}
 
 	_, err = i.ipcClient.SendCommand(cmd)

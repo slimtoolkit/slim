@@ -42,6 +42,10 @@ const (
 
 	FlagKeepTmpArtifacts = "keep-tmp-artifacts"
 
+	FlagIncludeNuxtAll      = "include-nuxt-all"
+	FlagIncludeNuxtBuildDir = "include-nuxt-build-dir"
+	FlagIncludeNuxtDistDir  = "include-nuxt-dist-dir"
+
 	FlagKeepPerms = "keep-perms"
 
 	//Flags to edit (modify, add and remove) image metadata
@@ -98,6 +102,10 @@ const (
 	FlagIncludeNewUsage = "Keep new files created by target during dynamic analysis"
 
 	FlagKeepTmpArtifactsUsage = "Keep temporary artifacts when command is done"
+
+	FlagIncludeNuxtBuildDirUsage = "Include nuxt build directory"
+	FlagIncludeNuxtDistDirUsage  = "Include nuxt dist directory"
+	FlagIncludeNuxtAllUsage      = "Include nuxt build and dist directories"
 
 	FlagKeepPermsUsage = "Keep artifact permissions as-is"
 
@@ -228,6 +236,21 @@ var Flags = map[string]cli.Flag{
 		Name:    FlagKeepTmpArtifacts,
 		Usage:   FlagKeepTmpArtifactsUsage,
 		EnvVars: []string{"DSLIM_KEEP_TMP_ARTIFACTS"},
+	},
+	FlagIncludeNuxtAll: &cli.BoolFlag{
+		Name:    FlagIncludeNuxtAll,
+		Usage:   FlagIncludeNuxtAllUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_NUXT_ALL"},
+	},
+	FlagIncludeNuxtBuildDir: &cli.BoolFlag{
+		Name:    FlagIncludeNuxtBuildDir,
+		Usage:   FlagIncludeNuxtBuildDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_NUXT_BUILD_DIR"},
+	},
+	FlagIncludeNuxtDistDir: &cli.BoolFlag{
+		Name:    FlagIncludeNuxtDistDir,
+		Usage:   FlagIncludeNuxtDistDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_NUXT_DIST_DIR"},
 	},
 	FlagKeepPerms: &cli.BoolFlag{
 		Name:    FlagKeepPerms,

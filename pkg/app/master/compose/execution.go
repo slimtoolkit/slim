@@ -65,7 +65,7 @@ const (
 	XEInterrupt                  = "xe.interrupt"
 )
 
-type ExecutionEvenInfo struct {
+type ExecutionEventInfo struct {
 	Event ExecutionEvent
 	Data  map[string]string
 }
@@ -105,7 +105,7 @@ type Execution struct {
 	ContainerProbeSvc string
 
 	options    *ExecutionOptions
-	eventCh    chan *ExecutionEvenInfo
+	eventCh    chan *ExecutionEventInfo
 	printState bool
 	xc         *app.ExecutionContext
 	logger     *log.Entry
@@ -298,7 +298,7 @@ func NewExecution(
 	pullExcludes []string,
 	ownAllResources bool,
 	options *ExecutionOptions,
-	eventCh chan *ExecutionEvenInfo,
+	eventCh chan *ExecutionEventInfo,
 	printState bool) (*Execution, error) {
 	if logger != nil {
 		logger = logger.WithFields(log.Fields{"com": "compose.execution"})

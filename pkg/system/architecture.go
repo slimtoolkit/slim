@@ -3,7 +3,7 @@ package system
 type ArchName string
 
 const (
-	ArchNameUknown      ArchName = "unknown"
+	ArchNameUnknown     ArchName = "unknown"
 	ArchNameUnsupported ArchName = "unsupported"
 	ArchName386         ArchName = "386"
 	ArchNameAmd64       ArchName = "amd64"
@@ -72,7 +72,7 @@ var unsupportedArch = ArchInfo{
 }
 
 var unknownArch = ArchInfo{
-	Name: ArchNameUknown,
+	Name: ArchNameUnknown,
 }
 
 var archMap = map[MachineName]*ArchInfo{
@@ -89,7 +89,7 @@ func MachineToArchName(mtype string) ArchName {
 		return archInfo.Name
 	}
 
-	return ArchNameUknown
+	return ArchNameUnknown
 }
 
 func MachineToArch(mtype string) *ArchInfo {
