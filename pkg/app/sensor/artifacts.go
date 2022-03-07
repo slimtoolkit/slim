@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 package app
@@ -1718,7 +1719,7 @@ func getNuxtConfig(path string) (*nuxtDirs, error) {
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting file => %s", path)
 	}
 
-	dat, err := os.ReadFile(path)
+	dat, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Debugf("sensor: monitor - getNuxtConfig - err reading file => %s - %s", path, err.Error())
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error reading file => %s", path)
@@ -1747,7 +1748,7 @@ func getNuxtConfig(path string) (*nuxtDirs, error) {
 			nuxt.Dist = nuxtDefaultDistDir
 		}
 	} else {
-		log.Debug("saveArtifacts - error reading nuxt.config.js file => ", err.Error())
+		log.Debug("saveArtifacts - reading nuxt.config.js file => ", err.Error())
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting distDir => %s", path)
 	}
 	return &nuxt, nil
