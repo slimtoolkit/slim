@@ -108,11 +108,16 @@ func (i *Inspector) Pull(showPullLog bool, dockerConfigPath, registryAccount, re
 	}
 
 	var err error
+	var authConfig *docker.AuthConfiguration
 	registry := extractRegistry(repo)
-	authConfig, err := getDockerCredential(registryAccount, registrySecret, dockerConfigPath, registry)
+	authConfig, err = getRegistryCredential(registryAccount, registrySecret, dockerConfigPath, registry)
 	if err != nil {
-		log.Debugf("image.inspector.Pull: failed to getDockerCredential err=%v", err)
-		return err
+		log.Warnf("image.inspector.Pull: failed to get registry credential for registry=%s with err=%v", registry, err)
+		//warn, attempt pull anyway, needs to work for public registries
+	}
+
+	if authConfig == nil {
+		authConfig = &docker.AuthConfiguration{}
 	}
 
 	err = i.APIClient.PullImage(input, *authConfig)
@@ -130,7 +135,7 @@ func (i *Inspector) Pull(showPullLog bool, dockerConfigPath, registryAccount, re
 	return nil
 }
 
-func getDockerCredential(registryAccount, registrySecret, dockerConfigPath, registry string) (cred *docker.AuthConfiguration, err error) {
+func getRegistryCredential(registryAccount, registrySecret, dockerConfigPath, registry string) (cred *docker.AuthConfiguration, err error) {
 	if registryAccount != "" && registrySecret != "" {
 		cred = &docker.AuthConfiguration{
 			Username: registryAccount,
@@ -143,7 +148,7 @@ func getDockerCredential(registryAccount, registrySecret, dockerConfigPath, regi
 	if dockerConfigPath != "" {
 		dAuthConfigs, err := docker.NewAuthConfigurationsFromFile(dockerConfigPath)
 		if err != nil {
-			log.Debugf(
+			log.Warnf(
 				"image.inspector.Pull: getDockerCredential - failed to acquire local docker config path=%s err=%s",
 				dockerConfigPath,
 				err.Error(),
@@ -160,7 +165,7 @@ func getDockerCredential(registryAccount, registrySecret, dockerConfigPath, regi
 
 	cred, err = docker.NewAuthConfigurationsFromCredsHelpers(registry)
 	if err != nil {
-		log.Debugf(
+		log.Warnf(
 			"image.inspector.Pull: failed to acquire local docker credential helpers for %s err=%s",
 			registry,
 			err.Error(),
