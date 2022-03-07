@@ -117,6 +117,15 @@ const (
 	nodeNPMNodeGypFile    = "bin/node-gyp.js"
 )
 
+// nuxt related consts
+const (
+	nuxtConfigFile      = "nuxt.config.js"
+	nuxtBuildDir        = "buildDir"
+	nuxtDistDir         = "distDir"
+	nuxtDefaultDistDir  = "dist"
+	nuxtDefaultBuildDir = "build"
+)
+
 type appStackInfo struct {
 	language    string //will be reusing language consts from certdiscover (todo: replace it later)
 	codeFiles   uint
@@ -1002,7 +1011,7 @@ copyFiles:
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
 
 		if p.cmd.DoIncludeNuxtBuild || p.cmd.DoIncludeNuxtDist {
-			if filepath.Base(filePath) == "nuxt.config.js" {
+			if filepath.Base(filePath) == nuxtConfigFile {
 				nuxtConfig, err := getNuxtConfig(filePath)
 				if err != nil {
 					log.Warn("saveArtifacts: failed to get nuxt config: %v", err)
@@ -1013,12 +1022,13 @@ copyFiles:
 					continue
 				}
 
+				nuxtDir := strings.TrimRight(fileName, nuxtConfigFile)
 				if p.cmd.DoIncludeNuxtBuild {
-					build := fmt.Sprintf("%s/files%s", p.storeLocation, nuxtConfig.Build)
+					build := fmt.Sprintf("%s/files%s%s", p.storeLocation, nuxtDir, nuxtConfig.Build)
 					includePaths[build] = true
 				}
 				if p.cmd.DoIncludeNuxtDist {
-					dist := fmt.Sprintf("%s/files%s", p.storeLocation, nuxtConfig.Dist)
+					dist := fmt.Sprintf("%s/files%s%s", p.storeLocation, nuxtDir, nuxtConfig.Dist)
 					includePaths[dist] = true
 				}
 				continue
@@ -1718,25 +1728,26 @@ func getNuxtConfig(path string) (*nuxtDirs, error) {
 	vm.Run(dat)
 	var nuxt nuxtDirs
 
-	if value, err := vm.Get("buildDir"); err == nil {
+	if value, err := vm.Get(nuxtBuildDir); err == nil {
 		if v, err := value.ToString(); err == nil {
 			nuxt.Build = v
 		} else {
 			log.Debugf("saveArtifacts - using build default => %s", err.Error())
-			nuxt.Build = "build"
+			nuxt.Build = nuxtDefaultBuildDir
 		}
 	} else {
+		log.Debug("saveArtifacts - error reading nuxt.config.js file => ", err.Error())
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting buildDir => %s", path)
 	}
-	if value, err := vm.Get("distDir"); err == nil {
+	if value, err := vm.Get(nuxtDistDir); err == nil {
 		if v, err := value.ToString(); err == nil {
 			nuxt.Dist = v
 		} else {
 			log.Debugf("saveArtifacts - using dist default => %s", err.Error())
-			nuxt.Dist = "dist"
+			nuxt.Dist = nuxtDefaultDistDir
 		}
 	} else {
-		log.Debug("saveArtifacts - reading nuxt.config.js file => ", err.Error())
+		log.Debug("saveArtifacts - error reading nuxt.config.js file => ", err.Error())
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting distDir => %s", path)
 	}
 	return &nuxt, nil
