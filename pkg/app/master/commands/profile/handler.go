@@ -338,7 +338,7 @@ func OnCommand(
 		if len(probe.Ports) == 0 {
 			xc.Out.State("http.probe.error",
 				ovars{
-					"error":   "no exposed ports",
+					"error":   "NO EXPOSED PORTS",
 					"message": "expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services",
 				})
 

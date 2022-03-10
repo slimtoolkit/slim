@@ -147,7 +147,12 @@ func (ref *Output) State(state string, params ...OutVars) {
 
 				builder.WriteString(k)
 				builder.WriteString("=")
-				builder.WriteString(fmt.Sprintf("%v", v))
+				val := fmt.Sprintf("%v", v)
+				if strings.Contains(val, " ") && !strings.HasPrefix(val, `"`) {
+					val = fmt.Sprintf("\"%s\"", val)
+				}
+
+				builder.WriteString(val)
 				builder.WriteString(" ")
 			}
 
@@ -155,7 +160,7 @@ func (ref *Output) State(state string, params ...OutVars) {
 		}
 	}
 
-	if state == "exited" {
+	if state == "exited" || strings.Contains(state, "error") {
 		color.Set(color.FgHiRed, color.Bold)
 	} else {
 		color.Set(color.FgCyan, color.Bold)
