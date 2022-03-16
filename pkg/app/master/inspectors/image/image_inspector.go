@@ -57,8 +57,9 @@ func NewInspector(client *docker.Client, imageRef string /*, artifactLocation st
 
 // NoImage returns true if the target image doesn't exist
 func (i *Inspector) NoImage() bool {
-	_, err := dockerutil.HasImage(i.APIClient, i.ImageRef)
+	ii, err := dockerutil.HasImage(i.APIClient, i.ImageRef)
 	if err == nil {
+		log.Tracef("image.inspector.NoImage: ImageRef=%v ImageIdentity=%#v", i.ImageRef, ii)
 		return false
 	}
 
@@ -66,6 +67,9 @@ func (i *Inspector) NoImage() bool {
 		log.Debugf("image.inspector.NoImage: err=%v", err)
 	}
 
+	//handle the case where there's no tag in the target image reference
+	//and there are no default 'latest' tag
+	//this will return/save the first available tag
 	if err == dockerutil.ErrNotFound &&
 		!strings.Contains(i.ImageRef, ":") {
 		//check if there are any tags for the target image
@@ -75,7 +79,8 @@ func (i *Inspector) NoImage() bool {
 			return true
 		}
 
-		for ref := range matches {
+		for ref, props := range matches {
+			log.Tracef("image.inspector.NoImage: match.ref=%s match.props=%#v", ref, props)
 			i.ImageRef = ref
 			return false
 		}
@@ -248,6 +253,8 @@ func (i *Inspector) Inspect() error {
 		}
 		return err
 	}
+
+	log.Tracef("image.Inspector.Inspect: ImageInfo=%#v", i.ImageInfo)
 
 	imageList, err := i.APIClient.ListImages(docker.ListImagesOptions{All: true})
 	if err != nil {

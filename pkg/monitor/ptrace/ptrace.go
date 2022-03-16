@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/armon/go-radix"
 	log "github.com/sirupsen/logrus"
@@ -31,6 +32,7 @@ const (
 )
 
 func Run(
+	rtaSourcePT bool,
 	cmd string,
 	args []string,
 	dir string,
@@ -44,14 +46,25 @@ func Run(
 	origPaths map[string]interface{},
 ) (*App, error) {
 	log.Debug("ptrace.Run")
-	app, err := newApp(cmd, args, dir, user, runAsUser, reportCh, errorCh, stateCh, stopCh, includeNew, origPaths)
+	app, err := newApp(rtaSourcePT, cmd, args, dir, user, runAsUser, reportCh, errorCh, stateCh, stopCh, includeNew, origPaths)
 	if err != nil {
 		app.StateCh <- AppFailed
 		return nil, err
 	}
 
-	go app.process()
-	go app.trace()
+	if rtaSourcePT {
+		log.Debug("ptrace.Run - tracing target app")
+		app.Report.Enabled = true
+		go app.process()
+		go app.trace()
+	} else {
+		log.Debug("ptrace.Run - not tracing target app")
+		go func() {
+			time.Sleep(3 * time.Second)
+			app.StateCh <- AppDone
+			app.ReportCh <- &app.Report
+		}()
+	}
 
 	return app, nil
 }
@@ -78,6 +91,7 @@ type syscallState struct {
 }
 
 type App struct {
+	RTASourcePT     bool
 	Cmd             string
 	Args            []string
 	Dir             string
@@ -116,7 +130,9 @@ type syscallEvent struct {
 	pathParam string
 }
 
-func newApp(cmd string,
+func newApp(
+	rtaSourcePT bool,
+	cmd string,
 	args []string,
 	dir string,
 	user string,
@@ -148,6 +164,7 @@ func newApp(cmd string,
 	archName := system.MachineToArchName(sysInfo.Machine)
 
 	a := App{
+		RTASourcePT:     rtaSourcePT,
 		Cmd:             cmd,
 		Args:            args,
 		Dir:             dir,
@@ -350,11 +367,20 @@ func (app *App) FileActivity() map[string]*report.FSActivityInfo {
 func (app *App) start() error {
 	log.Debug("ptrace.App.start")
 	var err error
-	app.cmd, err = launcher.Start(app.Cmd, app.Args, app.Dir, app.User, app.RunAsUser, true)
+	app.cmd, err = launcher.Start(app.Cmd, app.Args, app.Dir, app.User, app.RunAsUser, app.RTASourcePT)
 	if err != nil {
 		log.Errorf("ptrace.App.start: cmd='%v' args='%+v' dir='%v' error=%v\n",
 			app.Cmd, app.Args, app.Dir, err)
 		return err
+	}
+
+	if !app.RTASourcePT {
+		app.pgid, err = syscall.Getpgid(app.cmd.Process.Pid)
+		if err != nil {
+			return err
+		}
+
+		return nil
 	}
 
 	err = app.cmd.Wait()

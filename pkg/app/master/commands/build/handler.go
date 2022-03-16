@@ -680,6 +680,7 @@ func OnCommand(
 		}
 	}
 
+	logger.Tracef("targetRef=%s ii.ImageRef=%s", targetRef, imageInspector.ImageRef)
 	//refresh the target refs
 	targetRef = imageInspector.ImageRef
 	cmdReport.TargetReference = imageInspector.ImageRef
@@ -1012,6 +1013,7 @@ func OnCommand(
 		gparams.LogLevel,
 		gparams.LogFormat,
 		gparams.InContainer,
+		rtaSourcePT,
 		sensorIPCEndpoint,
 		sensorIPCMode,
 		true,

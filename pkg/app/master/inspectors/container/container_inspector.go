@@ -136,6 +136,7 @@ type Inspector struct {
 	PrintState            bool
 	PrintPrefix           string
 	InContainer           bool
+	RTASourcePT           bool
 	SensorIPCEndpoint     string
 	SensorIPCMode         string
 	TargetHost            string
@@ -209,6 +210,7 @@ func NewInspector(
 	logLevel string,
 	logFormat string,
 	inContainer bool,
+	rtaSourcePT bool,
 	sensorIPCEndpoint string,
 	sensorIPCMode string,
 	printState bool,
@@ -261,6 +263,7 @@ func NewInspector(
 		PrintState:            printState,
 		PrintPrefix:           printPrefix,
 		InContainer:           inContainer,
+		RTASourcePT:           rtaSourcePT,
 		SensorIPCEndpoint:     sensorIPCEndpoint,
 		SensorIPCMode:         sensorIPCMode,
 		xc:                    xc,
@@ -791,7 +794,8 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	cmd := &command.StartMonitor{
-		AppName: i.FatContainerCmd[0],
+		RTASourcePT: i.RTASourcePT,
+		AppName:     i.FatContainerCmd[0],
 	}
 
 	if len(i.FatContainerCmd) > 1 {

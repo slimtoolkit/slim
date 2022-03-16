@@ -90,6 +90,7 @@ type SyscallStatInfo struct {
 
 // PtMonitorReport contains various process execution metadata
 type PtMonitorReport struct {
+	Enabled      bool                       `json:"enabled"`
 	ArchName     string                     `json:"arch_name"`
 	SyscallCount uint64                     `json:"syscall_count"`
 	SyscallNum   uint32                     `json:"syscall_num"`

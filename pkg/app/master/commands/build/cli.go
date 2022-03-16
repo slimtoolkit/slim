@@ -153,6 +153,7 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagUseLocalMounts),
 		commands.Cflag(commands.FlagUseSensorVolume),
 		commands.Cflag(commands.FlagRTAOnbuildBaseImage),
+		commands.Cflag(commands.FlagRTASourcePT),
 		//Sensor flags:
 		commands.Cflag(commands.FlagSensorIPCEndpoint),
 		commands.Cflag(commands.FlagSensorIPCMode),

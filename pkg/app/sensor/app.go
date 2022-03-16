@@ -104,7 +104,9 @@ func startMonitor(errorCh chan error,
 		log.Info("sensor: startMonitor - FAN failed to start running...")
 		return false
 	}
-	ptReportChan := ptrace.Run(errorCh,
+	ptReportChan := ptrace.Run(
+		cmd.RTASourcePT,
+		errorCh,
 		startAckChan,
 		ptmonStartChan,
 		stopMonitor,

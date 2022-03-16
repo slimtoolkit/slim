@@ -383,23 +383,26 @@ func (p *artifactStore) prepareArtifacts() {
 		p.prepareArtifact(artifactFileName)
 	}
 
-	for artifactFileName, fsaInfo := range p.ptMonReport.FSActivity {
-		artifactInfo, found := p.rawNames[artifactFileName]
-		if found {
-			artifactInfo.FSActivity = fsaInfo
-		} else {
-			log.Debugf("prepareArtifacts - fsa artifact => %v", artifactFileName)
-			p.prepareArtifact(artifactFileName)
+	if p.ptMonReport.Enabled {
+		log.Debug("prepareArtifacts - ptMonReport.Enabled")
+		for artifactFileName, fsaInfo := range p.ptMonReport.FSActivity {
 			artifactInfo, found := p.rawNames[artifactFileName]
 			if found {
 				artifactInfo.FSActivity = fsaInfo
 			} else {
-				log.Errorf("prepareArtifacts - fsa artifact - missing in rawNames => %v", artifactFileName)
-			}
+				log.Debugf("prepareArtifacts - fsa artifact => %v", artifactFileName)
+				p.prepareArtifact(artifactFileName)
+				artifactInfo, found := p.rawNames[artifactFileName]
+				if found {
+					artifactInfo.FSActivity = fsaInfo
+				} else {
+					log.Errorf("prepareArtifacts - fsa artifact - missing in rawNames => %v", artifactFileName)
+				}
 
-			//TMP:
-			//fsa might include directories, which we'll need to copy (dir only)
-			//but p.prepareArtifact() doesn't do anything with dirs for now
+				//TMP:
+				//fsa might include directories, which we'll need to copy (dir only)
+				//but p.prepareArtifact() doesn't do anything with dirs for now
+			}
 		}
 	}
 

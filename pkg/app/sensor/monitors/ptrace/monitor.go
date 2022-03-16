@@ -15,6 +15,7 @@ import (
 
 // Run starts the PTRACE monitor
 func Run(
+	rtaSourcePT bool,
 	errorCh chan error,
 	ackCh chan<- bool,
 	startCh <-chan int,
@@ -28,6 +29,7 @@ func Run(
 	origPaths map[string]interface{}) <-chan *report.PtMonitorReport {
 	log.Info("ptmon: Run")
 	ptApp, err := ptrace.Run(
+		rtaSourcePT,
 		appName,
 		appArgs,
 		dirName,

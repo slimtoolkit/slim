@@ -277,6 +277,7 @@ func OnCommand(
 		logLevel,
 		logFormat,
 		gparams.InContainer,
+		true, //rtaSourcePT
 		sensorIPCEndpoint,
 		sensorIPCMode,
 		true,

@@ -42,6 +42,7 @@ const (
 
 // Run starts the PTRACE monitor
 func Run(
+	rtaSourcePT bool,
 	errorCh chan error,
 	ackChan chan<- bool,
 	startChan <-chan int,
@@ -81,7 +82,7 @@ func Run(
 			runtime.LockOSThread()
 
 			var err error
-			app, err = launcher.Start(appName, appArgs, dirName, appUser, runTargetAsUser, true)
+			app, err = launcher.Start(appName, appArgs, dirName, appUser, runTargetAsUser, rtaSourcePT)
 			started := true
 			if err != nil {
 				started = false

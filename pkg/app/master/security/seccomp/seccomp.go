@@ -81,8 +81,13 @@ func GenProfile(artifactLocation string, profileName string) error {
 		return err
 	}
 
+	if !creport.Monitors.Pt.Enabled {
+		log.Debug("seccomp.GenProfile: not generating seccomp profile (PT mon disabled, no syscall info)")
+		return nil
+	}
+
 	profilePath := filepath.Join(artifactLocation, profileName)
-	log.Debug("docker-slim: saving seccomp profile to ", profilePath)
+	log.Debug("seccomp.GenProfile: saving seccomp profile to ", profilePath)
 
 	profile := &specs.Seccomp{
 		DefaultAction: specs.ActErrno,
