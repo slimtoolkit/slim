@@ -457,6 +457,9 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-cert-pk-all` - Keep all discovered cert private keys
 - `--include-cert-pk-dirs` - Keep known cert private key directories and all files in them
 - `--include-new` - Keep new files created by target during dynamic analysis (default value: false)
+- `--include-app-nuxt-dir` - Keep the root Nuxt.js app directory (default value: false)
+- `--include-app-nuxt-build-dir` - Keep the build Nuxt.js app directory (default value: false)
+- `--include-app-nuxt-dist-dir` - Keep the dist Nuxt.js app directory (default value: false)
 - `--preserve-path` - Keep path from orignal image in its initial state (changes to the selected container image files when it runs will be discarded). [can use this flag multiple times]
 - `--preserve-path-file` - File with paths to keep from original image in their original state (changes to the selected container image files when it runs will be discarded).
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
