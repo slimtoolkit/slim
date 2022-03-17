@@ -19,7 +19,7 @@ import (
 
 	"github.com/armon/go-radix"
 	"github.com/bmatcuk/doublestar/v3"
-	"github.com/robertkrimen/otto"
+	//"github.com/robertkrimen/otto"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/detectors/binfile"
@@ -120,10 +120,10 @@ const (
 // nuxt related consts
 const (
 	nuxtConfigFile      = "nuxt.config.js"
-	nuxtBuildDir        = "buildDir"
-	nuxtDistDir         = "distDir"
+	nuxtBuildDirKey     = "buildDir"
+	nuxtDistDirKey      = "dir" //in 'generate'
 	nuxtDefaultDistDir  = "dist"
-	nuxtDefaultBuildDir = "build"
+	nuxtDefaultBuildDir = ".nuxt"
 )
 
 type appStackInfo struct {
@@ -1012,10 +1012,11 @@ copyFiles:
 	ngxEnsured := false
 	for fileName := range p.fileMap {
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
+		p.detectAppStack(fileName)
 
-		if p.cmd.DoIncludeNuxtBuild || p.cmd.DoIncludeNuxtDist {
-			if filepath.Base(filePath) == nuxtConfigFile {
-				nuxtConfig, err := getNuxtConfig(filePath)
+		if p.cmd.IncludeAppNuxtDir || p.cmd.IncludeAppNuxtBuildDir || p.cmd.IncludeAppNuxtDistDir {
+			if isNuxtConfigFile(fileName) {
+				nuxtConfig, err := getNuxtConfig(fileName)
 				if err != nil {
 					log.Warn("saveArtifacts: failed to get nuxt config: %v", err)
 					continue
@@ -1025,20 +1026,53 @@ copyFiles:
 					continue
 				}
 
-				nuxtDir := strings.TrimRight(fileName, nuxtConfigFile)
-				if p.cmd.DoIncludeNuxtBuild {
-					build := fmt.Sprintf("%s/files%s%s", p.storeLocation, nuxtDir, nuxtConfig.Build)
-					includePaths[build] = true
+				//note:
+				//Nuxt config file is usually in the app directory, but not always
+				//cust app path is defined with the "srcDir" field in the Nuxt config file
+				nuxtAppDir := filepath.Dir(fileName)
+				nuxtAppDirPrefix := fmt.Sprintf("%s/", nuxtAppDir)
+				if p.cmd.IncludeAppNuxtDir {
+					includePaths[nuxtAppDir] = true
 				}
-				if p.cmd.DoIncludeNuxtDist {
-					dist := fmt.Sprintf("%s/files%s%s", p.storeLocation, nuxtDir, nuxtConfig.Dist)
-					includePaths[dist] = true
+
+				if p.cmd.IncludeAppNuxtBuildDir && nuxtConfig.Build != "" {
+					basePath := nuxtAppDir
+					if strings.HasPrefix(nuxtConfig.Build, "/") {
+						basePath = ""
+					}
+
+					srcPath := filepath.Join(basePath, nuxtConfig.Build)
+					if fsutil.DirExists(srcPath) {
+						if p.cmd.IncludeAppNuxtDir && strings.HasPrefix(srcPath, nuxtAppDirPrefix) {
+							log.Debugf("saveArtifacts[nuxt] - build dir is already included (%s)", srcPath)
+						} else {
+							includePaths[srcPath] = true
+						}
+					} else {
+						log.Debugf("saveArtifacts[nuxt] - build dir does not exists (%s)", srcPath)
+					}
+				}
+
+				if p.cmd.IncludeAppNuxtDistDir && nuxtConfig.Dist != "" {
+					basePath := nuxtAppDir
+					if strings.HasPrefix(nuxtConfig.Dist, "/") {
+						basePath = ""
+					}
+
+					srcPath := filepath.Join(basePath, nuxtConfig.Dist)
+					if fsutil.DirExists(srcPath) {
+						if p.cmd.IncludeAppNuxtDir && strings.HasPrefix(srcPath, nuxtAppDirPrefix) {
+							log.Debugf("saveArtifacts[nuxt] - dist dir is already included (%s)", srcPath)
+						} else {
+							includePaths[srcPath] = true
+						}
+					} else {
+						log.Debugf("saveArtifacts[nuxt] - dist dir does not exists (%s)", srcPath)
+					}
 				}
 				continue
 			}
 		}
-
-		p.detectAppStack(fileName)
 
 		if isRbGemSpecFile(fileName) {
 			log.Debug("saveArtifacts - processing ruby gem spec ==>", fileName)
@@ -1727,33 +1761,52 @@ func getNuxtConfig(path string) (*nuxtDirs, error) {
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error reading file => %s", path)
 	}
 
-	vm := otto.New()
-	vm.Run(dat)
-	var nuxt nuxtDirs
+	log.Tracef("sensor: monitor - getNuxtConfig(%s) - %s", path, string(dat))
 
-	if value, err := vm.Get(nuxtBuildDir); err == nil {
-		if v, err := value.ToString(); err == nil {
-			nuxt.Build = v
-		} else {
-			log.Debugf("saveArtifacts - using build default => %s", err.Error())
-			nuxt.Build = nuxtDefaultBuildDir
-		}
-	} else {
-		log.Debug("saveArtifacts - error reading nuxt.config.js file => ", err.Error())
-		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting buildDir => %s", path)
+	nuxt := nuxtDirs{
+		Build: nuxtDefaultBuildDir,
+		Dist:  fmt.Sprintf("%s/%s", nuxtDefaultBuildDir, nuxtDefaultDistDir),
 	}
-	if value, err := vm.Get(nuxtDistDir); err == nil {
-		if v, err := value.ToString(); err == nil {
-			nuxt.Dist = v
+
+	/*
+		todo: need more test apps to verify this part of the code
+		vm := otto.New()
+		vm.Run(dat)
+
+		if value, err := vm.Get(nuxtBuildDirKey); err == nil {
+			if v, err := value.ToString(); err == nil {
+				nuxt.Build = v
+			} else {
+				log.Debugf("saveArtifacts - using build default => %s", err.Error())
+			}
 		} else {
-			log.Debugf("saveArtifacts - using dist default => %s", err.Error())
-			nuxt.Dist = nuxtDefaultDistDir
+			log.Debug("saveArtifacts - error reading nuxt.config.js file => ", err.Error())
+			return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting buildDir => %s", path)
 		}
-	} else {
-		log.Debug("saveArtifacts - reading nuxt.config.js file => ", err.Error())
-		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting distDir => %s", path)
-	}
+
+		if value, err := vm.Get(nuxtDistDirKey); err == nil {
+			if v, err := value.ToString(); err == nil {
+				nuxt.Dist = fmt.Sprintf("%s/%s", nuxt.Build, v)
+			} else {
+				log.Debugf("saveArtifacts - using dist default => %s", err.Error())
+			}
+		} else {
+			log.Debug("saveArtifacts - reading nuxt.config.js file => ", err.Error())
+			return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting distDir => %s", path)
+		}
+	*/
+
 	return &nuxt, nil
+}
+
+func isNuxtConfigFile(filePath string) bool {
+	fileName := filepath.Base(filePath)
+	if fileName == nuxtConfigFile {
+		return true
+	}
+
+	//TODO: read the file and verify that it's a real nuxt config file
+	return false
 }
 
 func isRbGemSpecFile(filePath string) bool {

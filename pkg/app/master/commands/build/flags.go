@@ -42,9 +42,9 @@ const (
 
 	FlagKeepTmpArtifacts = "keep-tmp-artifacts"
 
-	FlagIncludeNuxtAll      = "include-nuxt-all"
-	FlagIncludeNuxtBuildDir = "include-nuxt-build-dir"
-	FlagIncludeNuxtDistDir  = "include-nuxt-dist-dir"
+	FlagIncludeAppNuxtDir      = "include-app-nuxt-dir"
+	FlagIncludeAppNuxtBuildDir = "include-app-nuxt-build-dir"
+	FlagIncludeAppNuxtDistDir  = "include-app-nuxt-dist-dir"
 
 	FlagKeepPerms = "keep-perms"
 
@@ -103,9 +103,9 @@ const (
 
 	FlagKeepTmpArtifactsUsage = "Keep temporary artifacts when command is done"
 
-	FlagIncludeNuxtBuildDirUsage = "Include nuxt build directory"
-	FlagIncludeNuxtDistDirUsage  = "Include nuxt dist directory"
-	FlagIncludeNuxtAllUsage      = "Include nuxt build and dist directories"
+	FlagIncludeAppNuxtBuildDirUsage = "Include the build Nuxt.js app directory"
+	FlagIncludeAppNuxtDistDirUsage  = "Include the dist Nuxt.js app directory"
+	FlagIncludeAppNuxtDirUsage      = "Include the root Nuxt.js app directory"
 
 	FlagKeepPermsUsage = "Keep artifact permissions as-is"
 
@@ -237,20 +237,20 @@ var Flags = map[string]cli.Flag{
 		Usage:   FlagKeepTmpArtifactsUsage,
 		EnvVars: []string{"DSLIM_KEEP_TMP_ARTIFACTS"},
 	},
-	FlagIncludeNuxtAll: &cli.BoolFlag{
-		Name:    FlagIncludeNuxtAll,
-		Usage:   FlagIncludeNuxtAllUsage,
-		EnvVars: []string{"DSLIM_INCLUDE_NUXT_ALL"},
+	FlagIncludeAppNuxtDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNuxtDir,
+		Usage:   FlagIncludeAppNuxtDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NUXT_DIR"},
 	},
-	FlagIncludeNuxtBuildDir: &cli.BoolFlag{
-		Name:    FlagIncludeNuxtBuildDir,
-		Usage:   FlagIncludeNuxtBuildDirUsage,
-		EnvVars: []string{"DSLIM_INCLUDE_NUXT_BUILD_DIR"},
+	FlagIncludeAppNuxtBuildDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNuxtBuildDir,
+		Usage:   FlagIncludeAppNuxtBuildDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NUXT_BUILD_DIR"},
 	},
-	FlagIncludeNuxtDistDir: &cli.BoolFlag{
-		Name:    FlagIncludeNuxtDistDir,
-		Usage:   FlagIncludeNuxtDistDirUsage,
-		EnvVars: []string{"DSLIM_INCLUDE_NUXT_DIST_DIR"},
+	FlagIncludeAppNuxtDistDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNuxtDistDir,
+		Usage:   FlagIncludeAppNuxtDistDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NUXT_DIST_DIR"},
 	},
 	FlagKeepPerms: &cli.BoolFlag{
 		Name:    FlagKeepPerms,

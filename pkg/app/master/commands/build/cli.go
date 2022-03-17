@@ -143,9 +143,9 @@ var CLI = &cli.Command{
 		cflag(FlagIncludeCertPKDirs),
 		cflag(FlagIncludeNew),
 		cflag(FlagKeepTmpArtifacts),
-		cflag(FlagIncludeNuxtAll),
-		cflag(FlagIncludeNuxtBuildDir),
-		cflag(FlagIncludeNuxtDistDir),
+		cflag(FlagIncludeAppNuxtDir),
+		cflag(FlagIncludeAppNuxtBuildDir),
+		cflag(FlagIncludeAppNuxtDistDir),
 		cflag(FlagKeepPerms),
 		cflag(FlagPathPerms),
 		cflag(FlagPathPermsFile),
@@ -526,14 +526,9 @@ var CLI = &cli.Command{
 
 		doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
 
-		doIncludeNuxtAll := ctx.Bool(FlagIncludeNuxtAll)
-		doIncludeNuxtBuild := ctx.Bool(FlagIncludeNuxtBuildDir)
-		doIncludeNuxtDist := ctx.Bool(FlagIncludeNuxtDistDir)
-
-		if doIncludeNuxtAll {
-			doIncludeNuxtDist = true
-			doIncludeNuxtBuild = true
-		}
+		doIncludeAppNuxtDir := ctx.Bool(FlagIncludeAppNuxtDir)
+		doIncludeAppNuxtBuildDir := ctx.Bool(FlagIncludeAppNuxtBuildDir)
+		doIncludeAppNuxtDistDir := ctx.Bool(FlagIncludeAppNuxtDistDir)
 
 		doExcludeMounts := ctx.Bool(commands.FlagExcludeMounts)
 		if doExcludeMounts {
@@ -651,8 +646,9 @@ var CLI = &cli.Command{
 			gparams,
 			targetRef,
 			doPull,
-			doIncludeNuxtBuild,
-			doIncludeNuxtDist,
+			doIncludeAppNuxtDir,
+			doIncludeAppNuxtBuildDir,
+			doIncludeAppNuxtDistDir,
 			dockerConfigPath,
 			registryAccount,
 			registrySecret,
