@@ -511,6 +511,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--exec-file` - A shell script file to run via Docker exec
 - `--sensor-ipc-mode` - Select sensor IPC mode: proxy | direct (useful for containerized CI/CD environments)
 - `--sensor-ipc-endpoint` - Override sensor IPC endpoint
+- `--rta-onbuild-base-image` - Enable runtime analysis for onbuild base images (default: false)
+- `--rta-source-ptrace` - Enable PTRACE runtime analysis source (default: true)
 
 In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.
 

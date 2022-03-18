@@ -58,9 +58,21 @@ func Run(
 		go app.process()
 		go app.trace()
 	} else {
-		log.Debug("ptrace.Run - not tracing target app")
+		log.Debug("ptrace.Run - not tracing target app...")
 		go func() {
-			time.Sleep(3 * time.Second)
+			log.Debug("ptrace.Run - not tracing target app - start app")
+			err := app.start()
+			if err != nil {
+				log.Debugf("ptrace.Run - not tracing target app - start app error - %v", err)
+				app.StateCh <- AppFailed
+				app.ErrorCh <- errors.SE("ptrace.App.trace.app.start", "call.error", err)
+				return
+			}
+
+			app.StateCh <- AppStarted
+
+			time.Sleep(2 * time.Second)
+			log.Debug("ptrace.Run - not tracing target app - state<-AppDone")
 			app.StateCh <- AppDone
 			app.ReportCh <- &app.Report
 		}()
