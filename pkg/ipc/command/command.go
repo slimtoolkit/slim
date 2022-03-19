@@ -40,28 +40,30 @@ type Message interface {
 
 // StartMonitor contains the start monitor command fields
 type StartMonitor struct {
-	RTASourcePT            bool                          `json:"rta_source_ptrace"`
-	AppName                string                        `json:"app_name"`
-	AppArgs                []string                      `json:"app_args,omitempty"`
-	AppUser                string                        `json:"app_user,omitempty"`
-	RunTargetAsUser        bool                          `json:"run_tas_user,omitempty"`
-	KeepPerms              bool                          `json:"keep_perms,omitempty"`
-	Perms                  map[string]*fsutil.AccessInfo `json:"perms,omitempty"`
-	Excludes               []string                      `json:"excludes,omitempty"`
-	Preserves              map[string]*fsutil.AccessInfo `json:"preserves,omitempty"`
-	Includes               map[string]*fsutil.AccessInfo `json:"includes,omitempty"`
-	IncludeBins            []string                      `json:"include_bins,omitempty"`
-	IncludeExes            []string                      `json:"include_exes,omitempty"`
-	IncludeShell           bool                          `json:"include_shell,omitempty"`
-	IncludeCertAll         bool                          `json:"include_cert_all,omitempty"`
-	IncludeCertBundles     bool                          `json:"include_cert_bundles,omitempty"`
-	IncludeCertDirs        bool                          `json:"include_cert_dirs,omitempty"`
-	IncludeCertPKAll       bool                          `json:"include_cert_pk_all,omitempty"`
-	IncludeCertPKDirs      bool                          `json:"include_cert_pk_dirs,omitempty"`
-	IncludeNew             bool                          `json:"include_new,omitempty"`
-	IncludeAppNuxtDir      bool                          `json:"include_app_nuxt_dir,omitempty"`
-	IncludeAppNuxtBuildDir bool                          `json:"include_app_nuxt_build,omitempty"`
-	IncludeAppNuxtDistDir  bool                          `json:"include_app_nuxt_dist,omitempty"`
+	RTASourcePT                  bool                          `json:"rta_source_ptrace"`
+	AppName                      string                        `json:"app_name"`
+	AppArgs                      []string                      `json:"app_args,omitempty"`
+	AppUser                      string                        `json:"app_user,omitempty"`
+	RunTargetAsUser              bool                          `json:"run_tas_user,omitempty"`
+	KeepPerms                    bool                          `json:"keep_perms,omitempty"`
+	Perms                        map[string]*fsutil.AccessInfo `json:"perms,omitempty"`
+	Excludes                     []string                      `json:"excludes,omitempty"`
+	Preserves                    map[string]*fsutil.AccessInfo `json:"preserves,omitempty"`
+	Includes                     map[string]*fsutil.AccessInfo `json:"includes,omitempty"`
+	IncludeBins                  []string                      `json:"include_bins,omitempty"`
+	IncludeExes                  []string                      `json:"include_exes,omitempty"`
+	IncludeShell                 bool                          `json:"include_shell,omitempty"`
+	IncludeCertAll               bool                          `json:"include_cert_all,omitempty"`
+	IncludeCertBundles           bool                          `json:"include_cert_bundles,omitempty"`
+	IncludeCertDirs              bool                          `json:"include_cert_dirs,omitempty"`
+	IncludeCertPKAll             bool                          `json:"include_cert_pk_all,omitempty"`
+	IncludeCertPKDirs            bool                          `json:"include_cert_pk_dirs,omitempty"`
+	IncludeNew                   bool                          `json:"include_new,omitempty"`
+	IncludeAppNuxtDir            bool                          `json:"include_app_nuxt_dir,omitempty"`
+	IncludeAppNuxtBuildDir       bool                          `json:"include_app_nuxt_build,omitempty"`
+	IncludeAppNuxtDistDir        bool                          `json:"include_app_nuxt_dist,omitempty"`
+	IncludeAppNuxtStaticDir      bool                          `json:"include_app_nuxt_static,omitempty"`
+	IncludeAppNuxtNodeModulesDir bool                          `json:"include_app_nuxt_nm,omitempty"`
 }
 
 // GetName returns the command message ID for the start monitor command

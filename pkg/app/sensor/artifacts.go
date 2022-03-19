@@ -112,7 +112,8 @@ const (
 	nodePackageLockFile   = "package-lock.json"
 	nodeNpmShrinkwrapFile = "npm-shrinkwrap.json"
 	nodeYarnLockFile      = "yarn.lock"
-	nodePackageDir        = "/node_modules/"
+	nodePackageDirPath    = "/node_modules/"
+	nodePackageDirName    = "node_modules"
 	nodeNPMNodeGypPackage = "/npm/node_modules/node-gyp/package.json"
 	nodeNPMNodeGypFile    = "bin/node-gyp.js"
 )
@@ -121,9 +122,11 @@ const (
 const (
 	nuxtConfigFile      = "nuxt.config.js"
 	nuxtBuildDirKey     = "buildDir"
-	nuxtDistDirKey      = "dir" //in 'generate'
+	nuxtSrcDirKey       = "srcDir" //defaults to rootDir
+	nuxtDistDirKey      = "dir"    //in 'generate'
 	nuxtDefaultDistDir  = "dist"
 	nuxtDefaultBuildDir = ".nuxt"
+	nuxtStaticDir       = "static"
 )
 
 type appStackInfo struct {
@@ -1014,7 +1017,11 @@ copyFiles:
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
 		p.detectAppStack(fileName)
 
-		if p.cmd.IncludeAppNuxtDir || p.cmd.IncludeAppNuxtBuildDir || p.cmd.IncludeAppNuxtDistDir {
+		if p.cmd.IncludeAppNuxtDir ||
+			p.cmd.IncludeAppNuxtBuildDir ||
+			p.cmd.IncludeAppNuxtDistDir ||
+			p.cmd.IncludeAppNuxtStaticDir ||
+			p.cmd.IncludeAppNuxtNodeModulesDir {
 			if isNuxtConfigFile(fileName) {
 				nuxtConfig, err := getNuxtConfig(fileName)
 				if err != nil {
@@ -1033,6 +1040,32 @@ copyFiles:
 				nuxtAppDirPrefix := fmt.Sprintf("%s/", nuxtAppDir)
 				if p.cmd.IncludeAppNuxtDir {
 					includePaths[nuxtAppDir] = true
+				}
+
+				if p.cmd.IncludeAppNuxtStaticDir {
+					srcPath := filepath.Join(nuxtAppDir, nuxtStaticDir)
+					if fsutil.DirExists(srcPath) {
+						if p.cmd.IncludeAppNuxtDir && strings.HasPrefix(srcPath, nuxtAppDirPrefix) {
+							log.Debugf("saveArtifacts[nuxt] - static dir is already included (%s)", srcPath)
+						} else {
+							includePaths[srcPath] = true
+						}
+					} else {
+						log.Debugf("saveArtifacts[nuxt] - static dir does not exists (%s)", srcPath)
+					}
+				}
+
+				if p.cmd.IncludeAppNuxtNodeModulesDir {
+					srcPath := filepath.Join(nuxtAppDir, nodePackageDirName)
+					if fsutil.DirExists(srcPath) {
+						if p.cmd.IncludeAppNuxtDir && strings.HasPrefix(srcPath, nuxtAppDirPrefix) {
+							log.Debugf("saveArtifacts[nuxt] - node_modules dir is already included (%s)", srcPath)
+						} else {
+							includePaths[srcPath] = true
+						}
+					} else {
+						log.Debugf("saveArtifacts[nuxt] - node_modules dir does not exists (%s)", srcPath)
+					}
 				}
 
 				if p.cmd.IncludeAppNuxtBuildDir && nuxtConfig.Build != "" {
@@ -1475,9 +1508,9 @@ func detectNodeCodeFile(fileName string) bool {
 }
 
 func detectNodePkgDir(fileName string) string {
-	prefix := getPathElementPrefix(fileName, nodePackageDir)
+	prefix := getPathElementPrefix(fileName, nodePackageDirPath)
 	if prefix != "" {
-		return fmt.Sprintf("%s%s", prefix, nodePackageDir)
+		return fmt.Sprintf("%s%s", prefix, nodePackageDirPath)
 	}
 
 	return ""

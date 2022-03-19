@@ -243,6 +243,8 @@ func OnCommand(
 		false, //doIncludeAppNuxtDir
 		false, //doIncludeAppNuxtBuildDir,
 		false, //doIncludeAppNuxtDistDir,
+		false, //doIncludeAppNuxtStaticDir,
+		false, //doIncludeAppNuxtNodeModulesDir,
 		doUseSensorVolume,
 		false, //doKeepTmpArtifacts,
 		overrides,

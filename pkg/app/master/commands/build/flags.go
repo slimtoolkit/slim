@@ -42,9 +42,11 @@ const (
 
 	FlagKeepTmpArtifacts = "keep-tmp-artifacts"
 
-	FlagIncludeAppNuxtDir      = "include-app-nuxt-dir"
-	FlagIncludeAppNuxtBuildDir = "include-app-nuxt-build-dir"
-	FlagIncludeAppNuxtDistDir  = "include-app-nuxt-dist-dir"
+	FlagIncludeAppNuxtDir            = "include-app-nuxt-dir"
+	FlagIncludeAppNuxtBuildDir       = "include-app-nuxt-build-dir"
+	FlagIncludeAppNuxtDistDir        = "include-app-nuxt-dist-dir"
+	FlagIncludeAppNuxtStaticDir      = "include-app-nuxt-static-dir"
+	FlagIncludeAppNuxtNodeModulesDir = "include-app-nuxt-nodemodules-dir"
 
 	FlagKeepPerms = "keep-perms"
 
@@ -103,9 +105,11 @@ const (
 
 	FlagKeepTmpArtifactsUsage = "Keep temporary artifacts when command is done"
 
-	FlagIncludeAppNuxtBuildDirUsage = "Include the build Nuxt.js app directory"
-	FlagIncludeAppNuxtDistDirUsage  = "Include the dist Nuxt.js app directory"
-	FlagIncludeAppNuxtDirUsage      = "Include the root Nuxt.js app directory"
+	FlagIncludeAppNuxtBuildDirUsage       = "Include the build Nuxt.js app directory"
+	FlagIncludeAppNuxtDistDirUsage        = "Include the dist Nuxt.js app directory"
+	FlagIncludeAppNuxtDirUsage            = "Include the root Nuxt.js app directory"
+	FlagIncludeAppNuxtStaticDirUsage      = "Include the static asset directory for Nuxt.js apps"
+	FlagIncludeAppNuxtNodeModulesDirUsage = "Include the node modules directory for Nuxt.js apps"
 
 	FlagKeepPermsUsage = "Keep artifact permissions as-is"
 
@@ -251,6 +255,16 @@ var Flags = map[string]cli.Flag{
 		Name:    FlagIncludeAppNuxtDistDir,
 		Usage:   FlagIncludeAppNuxtDistDirUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_APP_NUXT_DIST_DIR"},
+	},
+	FlagIncludeAppNuxtStaticDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNuxtStaticDir,
+		Usage:   FlagIncludeAppNuxtStaticDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NUXT_STATIC_DIR"},
+	},
+	FlagIncludeAppNuxtNodeModulesDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNuxtNodeModulesDir,
+		Usage:   FlagIncludeAppNuxtNodeModulesDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NUXT_NM_DIR"},
 	},
 	FlagKeepPerms: &cli.BoolFlag{
 		Name:    FlagKeepPerms,
