@@ -148,6 +148,7 @@ var CLI = &cli.Command{
 		cflag(FlagIncludeAppNuxtDistDir),
 		cflag(FlagIncludeAppNuxtStaticDir),
 		cflag(FlagIncludeAppNuxtNodeModulesDir),
+		cflag(FlagIncludeAppNextDir),
 		cflag(FlagKeepPerms),
 		cflag(FlagPathPerms),
 		cflag(FlagPathPermsFile),
@@ -534,6 +535,8 @@ var CLI = &cli.Command{
 		doIncludeAppNuxtStaticDir := ctx.Bool(FlagIncludeAppNuxtStaticDir)
 		doIncludeAppNuxtNodeModulesDir := ctx.Bool(FlagIncludeAppNuxtNodeModulesDir)
 
+		doIncludeAppNextDir := ctx.Bool(FlagIncludeAppNextDir)
+
 		doExcludeMounts := ctx.Bool(commands.FlagExcludeMounts)
 		if doExcludeMounts {
 			for mpath := range volumeMounts {
@@ -655,6 +658,7 @@ var CLI = &cli.Command{
 			doIncludeAppNuxtDistDir,
 			doIncludeAppNuxtStaticDir,
 			doIncludeAppNuxtNodeModulesDir,
+			doIncludeAppNextDir,
 			dockerConfigPath,
 			registryAccount,
 			registrySecret,

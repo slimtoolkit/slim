@@ -64,6 +64,7 @@ type StartMonitor struct {
 	IncludeAppNuxtDistDir        bool                          `json:"include_app_nuxt_dist,omitempty"`
 	IncludeAppNuxtStaticDir      bool                          `json:"include_app_nuxt_static,omitempty"`
 	IncludeAppNuxtNodeModulesDir bool                          `json:"include_app_nuxt_nm,omitempty"`
+	IncludeAppNextDir            bool                          `json:"include_app_next_dir,omitempty"`
 }
 
 // GetName returns the command message ID for the start monitor command

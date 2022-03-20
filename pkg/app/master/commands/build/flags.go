@@ -48,6 +48,8 @@ const (
 	FlagIncludeAppNuxtStaticDir      = "include-app-nuxt-static-dir"
 	FlagIncludeAppNuxtNodeModulesDir = "include-app-nuxt-nodemodules-dir"
 
+	FlagIncludeAppNextDir = "include-app-next-dir"
+
 	FlagKeepPerms = "keep-perms"
 
 	//Flags to edit (modify, add and remove) image metadata
@@ -110,6 +112,8 @@ const (
 	FlagIncludeAppNuxtDirUsage            = "Include the root Nuxt.js app directory"
 	FlagIncludeAppNuxtStaticDirUsage      = "Include the static asset directory for Nuxt.js apps"
 	FlagIncludeAppNuxtNodeModulesDirUsage = "Include the node modules directory for Nuxt.js apps"
+
+	FlagIncludeAppNextDirUsage = "Include the root Next.js app directory"
 
 	FlagKeepPermsUsage = "Keep artifact permissions as-is"
 
@@ -265,6 +269,11 @@ var Flags = map[string]cli.Flag{
 		Name:    FlagIncludeAppNuxtNodeModulesDir,
 		Usage:   FlagIncludeAppNuxtNodeModulesDirUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_APP_NUXT_NM_DIR"},
+	},
+	FlagIncludeAppNextDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNextDir,
+		Usage:   FlagIncludeAppNextDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NEXT_DIR"},
 	},
 	FlagKeepPerms: &cli.BoolFlag{
 		Name:    FlagKeepPerms,

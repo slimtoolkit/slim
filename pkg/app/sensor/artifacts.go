@@ -118,7 +118,7 @@ const (
 	nodeNPMNodeGypFile    = "bin/node-gyp.js"
 )
 
-// nuxt related consts
+// nuxt.js related consts
 const (
 	nuxtConfigFile      = "nuxt.config.js"
 	nuxtBuildDirKey     = "buildDir"
@@ -127,6 +127,18 @@ const (
 	nuxtDefaultDistDir  = "dist"
 	nuxtDefaultBuildDir = ".nuxt"
 	nuxtStaticDir       = "static"
+)
+
+// next.js related consts
+const (
+	nextConfigFile                = "next.config.js"
+	nextConfigFileAlt             = "next.config.mjs"
+	nextDefaultBuildDir           = ".next"
+	nextDefaultBuildStandaloneDir = ".next/standalone"
+	nextDefaultBuildStaticDir     = ".next/static"
+	nextStaticDir                 = "public"
+	nextDefaultStaticSpaDir       = "out"
+	nextDefaultStaticSpaDirPath   = "/out/_next/"
 )
 
 type appStackInfo struct {
@@ -1107,6 +1119,18 @@ copyFiles:
 			}
 		}
 
+		if p.cmd.IncludeAppNextDir {
+			if isNextConfigFile(fileName) {
+				nextAppDir := filepath.Dir(fileName)
+				//nextAppDirPrefix := fmt.Sprintf("%s/", nextAppDir)
+				if p.cmd.IncludeAppNextDir {
+					includePaths[nextAppDir] = true
+				}
+
+				continue
+			}
+		}
+
 		if isRbGemSpecFile(fileName) {
 			log.Debug("saveArtifacts - processing ruby gem spec ==>", fileName)
 			err := rbEnsureGemFiles(fileName, p.storeLocation, "/files")
@@ -1841,6 +1865,20 @@ func isNuxtConfigFile(filePath string) bool {
 	//TODO: read the file and verify that it's a real nuxt config file
 	return false
 }
+
+/////
+
+func isNextConfigFile(filePath string) bool {
+	fileName := filepath.Base(filePath)
+	if fileName == nextConfigFile || fileName == nextConfigFileAlt {
+		return true
+	}
+
+	//TODO: read the file and verify that it's a real next config file
+	return false
+}
+
+/////
 
 func isRbGemSpecFile(filePath string) bool {
 	ext := path.Ext(filePath)
