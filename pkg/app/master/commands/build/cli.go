@@ -149,6 +149,10 @@ var CLI = &cli.Command{
 		cflag(FlagIncludeAppNuxtStaticDir),
 		cflag(FlagIncludeAppNuxtNodeModulesDir),
 		cflag(FlagIncludeAppNextDir),
+		cflag(FlagIncludeAppNextBuildDir),
+		cflag(FlagIncludeAppNextDistDir),
+		cflag(FlagIncludeAppNextStaticDir),
+		cflag(FlagIncludeAppNextNodeModulesDir),
 		cflag(FlagKeepPerms),
 		cflag(FlagPathPerms),
 		cflag(FlagPathPermsFile),
@@ -536,6 +540,10 @@ var CLI = &cli.Command{
 		doIncludeAppNuxtNodeModulesDir := ctx.Bool(FlagIncludeAppNuxtNodeModulesDir)
 
 		doIncludeAppNextDir := ctx.Bool(FlagIncludeAppNextDir)
+		doIncludeAppNextBuildDir := ctx.Bool(FlagIncludeAppNextBuildDir)
+		doIncludeAppNextDistDir := ctx.Bool(FlagIncludeAppNextDistDir)
+		doIncludeAppNextStaticDir := ctx.Bool(FlagIncludeAppNextStaticDir)
+		doIncludeAppNextNodeModulesDir := ctx.Bool(FlagIncludeAppNextNodeModulesDir)
 
 		doExcludeMounts := ctx.Bool(commands.FlagExcludeMounts)
 		if doExcludeMounts {
@@ -659,6 +667,10 @@ var CLI = &cli.Command{
 			doIncludeAppNuxtStaticDir,
 			doIncludeAppNuxtNodeModulesDir,
 			doIncludeAppNextDir,
+			doIncludeAppNextBuildDir,
+			doIncludeAppNextDistDir,
+			doIncludeAppNextStaticDir,
+			doIncludeAppNextNodeModulesDir,
 			dockerConfigPath,
 			registryAccount,
 			registrySecret,

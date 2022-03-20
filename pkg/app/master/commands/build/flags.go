@@ -48,7 +48,11 @@ const (
 	FlagIncludeAppNuxtStaticDir      = "include-app-nuxt-static-dir"
 	FlagIncludeAppNuxtNodeModulesDir = "include-app-nuxt-nodemodules-dir"
 
-	FlagIncludeAppNextDir = "include-app-next-dir"
+	FlagIncludeAppNextDir            = "include-app-next-dir"
+	FlagIncludeAppNextBuildDir       = "include-app-next-build-dir"
+	FlagIncludeAppNextDistDir        = "include-app-next-dist-dir"
+	FlagIncludeAppNextStaticDir      = "include-app-next-static-dir"
+	FlagIncludeAppNextNodeModulesDir = "include-app-next-nodemodules-dir"
 
 	FlagKeepPerms = "keep-perms"
 
@@ -107,13 +111,17 @@ const (
 
 	FlagKeepTmpArtifactsUsage = "Keep temporary artifacts when command is done"
 
+	FlagIncludeAppNuxtDirUsage            = "Include the root Nuxt.js app directory"
 	FlagIncludeAppNuxtBuildDirUsage       = "Include the build Nuxt.js app directory"
 	FlagIncludeAppNuxtDistDirUsage        = "Include the dist Nuxt.js app directory"
-	FlagIncludeAppNuxtDirUsage            = "Include the root Nuxt.js app directory"
 	FlagIncludeAppNuxtStaticDirUsage      = "Include the static asset directory for Nuxt.js apps"
 	FlagIncludeAppNuxtNodeModulesDirUsage = "Include the node modules directory for Nuxt.js apps"
 
-	FlagIncludeAppNextDirUsage = "Include the root Next.js app directory"
+	FlagIncludeAppNextDirUsage            = "Include the root Next.js app directory"
+	FlagIncludeAppNextBuildDirUsage       = "Include the build directory for Next.js app"
+	FlagIncludeAppNextDistDirUsage        = "Include the static SPA directory for Next.js apps"
+	FlagIncludeAppNextStaticDirUsage      = "Include the static public asset directory for Next.js apps"
+	FlagIncludeAppNextNodeModulesDirUsage = "Include the node modules directory for Next.js apps"
 
 	FlagKeepPermsUsage = "Keep artifact permissions as-is"
 
@@ -275,6 +283,27 @@ var Flags = map[string]cli.Flag{
 		Usage:   FlagIncludeAppNextDirUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_APP_NEXT_DIR"},
 	},
+	FlagIncludeAppNextBuildDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNextBuildDir,
+		Usage:   FlagIncludeAppNextBuildDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NEXT_BUILD_DIR"},
+	},
+	FlagIncludeAppNextDistDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNextDistDir,
+		Usage:   FlagIncludeAppNextDistDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NEXT_DIST_DIR"},
+	},
+	FlagIncludeAppNextStaticDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNextStaticDir,
+		Usage:   FlagIncludeAppNextStaticDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NEXT_STATIC_DIR"},
+	},
+	FlagIncludeAppNextNodeModulesDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNextNodeModulesDir,
+		Usage:   FlagIncludeAppNextNodeModulesDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NEXT_NM_DIR"},
+	},
+
 	FlagKeepPerms: &cli.BoolFlag{
 		Name:    FlagKeepPerms,
 		Value:   true, //enabled by default

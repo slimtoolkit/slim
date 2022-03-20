@@ -1067,19 +1067,6 @@ copyFiles:
 					}
 				}
 
-				if p.cmd.IncludeAppNuxtNodeModulesDir {
-					srcPath := filepath.Join(nuxtAppDir, nodePackageDirName)
-					if fsutil.DirExists(srcPath) {
-						if p.cmd.IncludeAppNuxtDir && strings.HasPrefix(srcPath, nuxtAppDirPrefix) {
-							log.Debugf("saveArtifacts[nuxt] - node_modules dir is already included (%s)", srcPath)
-						} else {
-							includePaths[srcPath] = true
-						}
-					} else {
-						log.Debugf("saveArtifacts[nuxt] - node_modules dir does not exists (%s)", srcPath)
-					}
-				}
-
 				if p.cmd.IncludeAppNuxtBuildDir && nuxtConfig.Build != "" {
 					basePath := nuxtAppDir
 					if strings.HasPrefix(nuxtConfig.Build, "/") {
@@ -1115,16 +1102,86 @@ copyFiles:
 						log.Debugf("saveArtifacts[nuxt] - dist dir does not exists (%s)", srcPath)
 					}
 				}
+
+				if p.cmd.IncludeAppNuxtNodeModulesDir {
+					srcPath := filepath.Join(nuxtAppDir, nodePackageDirName)
+					if fsutil.DirExists(srcPath) {
+						if p.cmd.IncludeAppNuxtDir && strings.HasPrefix(srcPath, nuxtAppDirPrefix) {
+							log.Debugf("saveArtifacts[nuxt] - node_modules dir is already included (%s)", srcPath)
+						} else {
+							includePaths[srcPath] = true
+						}
+					} else {
+						log.Debugf("saveArtifacts[nuxt] - node_modules dir does not exists (%s)", srcPath)
+					}
+				}
+
 				continue
 			}
 		}
 
-		if p.cmd.IncludeAppNextDir {
+		if p.cmd.IncludeAppNextDir ||
+			p.cmd.IncludeAppNextBuildDir ||
+			p.cmd.IncludeAppNextDistDir ||
+			p.cmd.IncludeAppNextStaticDir ||
+			p.cmd.IncludeAppNextNodeModulesDir {
 			if isNextConfigFile(fileName) {
 				nextAppDir := filepath.Dir(fileName)
-				//nextAppDirPrefix := fmt.Sprintf("%s/", nextAppDir)
+				nextAppDirPrefix := fmt.Sprintf("%s/", nextAppDir)
 				if p.cmd.IncludeAppNextDir {
 					includePaths[nextAppDir] = true
+				}
+
+				if p.cmd.IncludeAppNextStaticDir {
+					srcPath := filepath.Join(nextAppDir, nextStaticDir)
+					if fsutil.DirExists(srcPath) {
+						if p.cmd.IncludeAppNextDir && strings.HasPrefix(srcPath, nextAppDirPrefix) {
+							log.Debugf("saveArtifacts[next] - static public dir is already included (%s)", srcPath)
+						} else {
+							includePaths[srcPath] = true
+						}
+					} else {
+						log.Debugf("saveArtifacts[next] - static public dir does not exists (%s)", srcPath)
+					}
+				}
+
+				if p.cmd.IncludeAppNextBuildDir {
+					srcPath := filepath.Join(nextAppDir, nextDefaultBuildDir)
+					if fsutil.DirExists(srcPath) {
+						if p.cmd.IncludeAppNextDir && strings.HasPrefix(srcPath, nextAppDirPrefix) {
+							log.Debugf("saveArtifacts[next] - build dir is already included (%s)", srcPath)
+						} else {
+							includePaths[srcPath] = true
+						}
+					} else {
+						log.Debugf("saveArtifacts[next] - build dir does not exists (%s)", srcPath)
+					}
+				}
+
+				if p.cmd.IncludeAppNextDistDir {
+					srcPath := filepath.Join(nextAppDir, nextDefaultStaticSpaDir)
+					if fsutil.DirExists(srcPath) {
+						if p.cmd.IncludeAppNextDir && strings.HasPrefix(srcPath, nextAppDirPrefix) {
+							log.Debugf("saveArtifacts[next] - dist dir is already included (%s)", srcPath)
+						} else {
+							includePaths[srcPath] = true
+						}
+					} else {
+						log.Debugf("saveArtifacts[next] - dist dir does not exists (%s)", srcPath)
+					}
+				}
+
+				if p.cmd.IncludeAppNextNodeModulesDir {
+					srcPath := filepath.Join(nextAppDir, nodePackageDirName)
+					if fsutil.DirExists(srcPath) {
+						if p.cmd.IncludeAppNextDir && strings.HasPrefix(srcPath, nextAppDirPrefix) {
+							log.Debugf("saveArtifacts[next] - node_modules dir is already included (%s)", srcPath)
+						} else {
+							includePaths[srcPath] = true
+						}
+					} else {
+						log.Debugf("saveArtifacts[next] - node_modules dir does not exists (%s)", srcPath)
+					}
 				}
 
 				continue

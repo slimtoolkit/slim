@@ -99,6 +99,10 @@ type Inspector struct {
 	DoIncludeAppNuxtStaticDir      bool
 	DoIncludeAppNuxtNodeModulesDir bool
 	DoIncludeAppNextDir            bool
+	DoIncludeAppNextBuildDir       bool
+	DoIncludeAppNextDistDir        bool
+	DoIncludeAppNextStaticDir      bool
+	DoIncludeAppNextNodeModulesDir bool
 	SensorVolumeName               string
 	DoKeepTmpArtifacts             bool
 	StatePath                      string
@@ -183,6 +187,10 @@ func NewInspector(
 	doIncludeAppNuxtStaticDir bool,
 	doIncludeAppNuxtNodeModulesDir bool,
 	doIncludeAppNextDir bool,
+	doIncludeAppNextBuildDir bool,
+	doIncludeAppNextDistDir bool,
+	doIncludeAppNextStaticDir bool,
+	doIncludeAppNextNodeModulesDir bool,
 	sensorVolumeName string,
 	doKeepTmpArtifacts bool,
 	overrides *config.ContainerOverrides,
@@ -236,6 +244,10 @@ func NewInspector(
 		DoIncludeAppNuxtStaticDir:      doIncludeAppNuxtStaticDir,
 		DoIncludeAppNuxtNodeModulesDir: doIncludeAppNuxtNodeModulesDir,
 		DoIncludeAppNextDir:            doIncludeAppNextDir,
+		DoIncludeAppNextBuildDir:       doIncludeAppNextBuildDir,
+		DoIncludeAppNextDistDir:        doIncludeAppNextDistDir,
+		DoIncludeAppNextStaticDir:      doIncludeAppNextStaticDir,
+		DoIncludeAppNextNodeModulesDir: doIncludeAppNextNodeModulesDir,
 		SensorVolumeName:               sensorVolumeName,
 		DoKeepTmpArtifacts:             doKeepTmpArtifacts,
 		CmdPort:                        cmdPortSpecDefault,
@@ -861,7 +873,12 @@ func (i *Inspector) RunContainer() error {
 	cmd.IncludeAppNuxtDistDir = i.DoIncludeAppNuxtDistDir
 	cmd.IncludeAppNuxtStaticDir = i.DoIncludeAppNuxtStaticDir
 	cmd.IncludeAppNuxtNodeModulesDir = i.DoIncludeAppNuxtNodeModulesDir
+
 	cmd.IncludeAppNextDir = i.DoIncludeAppNextDir
+	cmd.IncludeAppNextBuildDir = i.DoIncludeAppNextBuildDir
+	cmd.IncludeAppNextDistDir = i.DoIncludeAppNextDistDir
+	cmd.IncludeAppNextStaticDir = i.DoIncludeAppNextStaticDir
+	cmd.IncludeAppNextNodeModulesDir = i.DoIncludeAppNextNodeModulesDir
 
 	_, err = i.ipcClient.SendCommand(cmd)
 	if err != nil {
