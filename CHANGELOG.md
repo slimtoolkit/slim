@@ -1,5 +1,14 @@
 # Releases
 
+## 1.37.5 (3/20/2022)
+
+### New Features
+
+- Experimental Node.js package include flag
+- Experimental Next.js(React.js) app include flags
+- Experimental Nuxt.js(Vue.js) app include flags
+- Ability to disable the ptrace data source
+
 ## 1.37.4 (2/27/2022)
 
 ### New Features
