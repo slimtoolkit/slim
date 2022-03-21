@@ -468,6 +468,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-app-next-dist-dir` - Keep the static SPA directory for Next.js apps (default value: false)
 - `--include-app-next-static-dir` - Keep the static public asset directory for Next.js apps (default value: false)
 - `--include-app-next-nodemodules-dir` - Keep the node modules directory for Next.js apps (default value: false)
+- `--include-node-package` - Keep node.js package by name [can use this flag multiple times]
 - `--preserve-path` - Keep path from orignal image in its initial state (changes to the selected container image files when it runs will be discarded). [can use this flag multiple times]
 - `--preserve-path-file` - File with paths to keep from original image in their original state (changes to the selected container image files when it runs will be discarded).
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)

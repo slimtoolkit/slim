@@ -250,6 +250,7 @@ func OnCommand(
 		false, //doIncludeAppNextDistDir,
 		false, //doIncludeAppNextStaticDir,
 		false, //doIncludeAppNextNodeModulesDir,
+		nil,   //includeNodePackages,
 		doUseSensorVolume,
 		false, //doKeepTmpArtifacts,
 		overrides,

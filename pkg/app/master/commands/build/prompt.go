@@ -125,6 +125,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagIncludeAppNextDistDir), Description: FlagIncludeAppNextDistDirUsage},
 		{Text: commands.FullFlagName(FlagIncludeAppNextStaticDir), Description: FlagIncludeAppNextStaticDirUsage},
 		{Text: commands.FullFlagName(FlagIncludeAppNextNodeModulesDir), Description: FlagIncludeAppNextNodeModulesDirUsage},
+		{Text: commands.FullFlagName(FlagIncludeNodePackage), Description: FlagIncludeNodePackageUsage},
 		{Text: commands.FullFlagName(FlagBuildFromDockerfile), Description: FlagBuildFromDockerfileUsage},
 		{Text: commands.FullFlagName(FlagDockerfileContext), Description: FlagDockerfileContextUsage},
 		{Text: commands.FullFlagName(FlagTagFat), Description: FlagTagFatUsage},

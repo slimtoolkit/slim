@@ -54,6 +54,8 @@ const (
 	FlagIncludeAppNextStaticDir      = "include-app-next-static-dir"
 	FlagIncludeAppNextNodeModulesDir = "include-app-next-nodemodules-dir"
 
+	FlagIncludeNodePackage = "include-node-package"
+
 	FlagKeepPerms = "keep-perms"
 
 	//Flags to edit (modify, add and remove) image metadata
@@ -111,17 +113,19 @@ const (
 
 	FlagKeepTmpArtifactsUsage = "Keep temporary artifacts when command is done"
 
-	FlagIncludeAppNuxtDirUsage            = "Include the root Nuxt.js app directory"
-	FlagIncludeAppNuxtBuildDirUsage       = "Include the build Nuxt.js app directory"
-	FlagIncludeAppNuxtDistDirUsage        = "Include the dist Nuxt.js app directory"
-	FlagIncludeAppNuxtStaticDirUsage      = "Include the static asset directory for Nuxt.js apps"
-	FlagIncludeAppNuxtNodeModulesDirUsage = "Include the node modules directory for Nuxt.js apps"
+	FlagIncludeAppNuxtDirUsage            = "Keep the root Nuxt.js app directory"
+	FlagIncludeAppNuxtBuildDirUsage       = "Keep the build Nuxt.js app directory"
+	FlagIncludeAppNuxtDistDirUsage        = "Keep the dist Nuxt.js app directory"
+	FlagIncludeAppNuxtStaticDirUsage      = "Keep the static asset directory for Nuxt.js apps"
+	FlagIncludeAppNuxtNodeModulesDirUsage = "Keep the node modules directory for Nuxt.js apps"
 
-	FlagIncludeAppNextDirUsage            = "Include the root Next.js app directory"
-	FlagIncludeAppNextBuildDirUsage       = "Include the build directory for Next.js app"
-	FlagIncludeAppNextDistDirUsage        = "Include the static SPA directory for Next.js apps"
-	FlagIncludeAppNextStaticDirUsage      = "Include the static public asset directory for Next.js apps"
-	FlagIncludeAppNextNodeModulesDirUsage = "Include the node modules directory for Next.js apps"
+	FlagIncludeAppNextDirUsage            = "Keep the root Next.js app directory"
+	FlagIncludeAppNextBuildDirUsage       = "Keep the build directory for Next.js app"
+	FlagIncludeAppNextDistDirUsage        = "Keep the static SPA directory for Next.js apps"
+	FlagIncludeAppNextStaticDirUsage      = "Keep the static public asset directory for Next.js apps"
+	FlagIncludeAppNextNodeModulesDirUsage = "Keep the node modules directory for Next.js apps"
+
+	FlagIncludeNodePackageUsage = "Keep node.js package by name"
 
 	FlagKeepPermsUsage = "Keep artifact permissions as-is"
 
@@ -303,7 +307,12 @@ var Flags = map[string]cli.Flag{
 		Usage:   FlagIncludeAppNextNodeModulesDirUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_APP_NEXT_NM_DIR"},
 	},
-
+	FlagIncludeNodePackage: &cli.StringSliceFlag{
+		Name:    FlagIncludeNodePackage,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagIncludeNodePackageUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_NODE_PKG"},
+	},
 	FlagKeepPerms: &cli.BoolFlag{
 		Name:    FlagKeepPerms,
 		Value:   true, //enabled by default

@@ -153,6 +153,7 @@ var CLI = &cli.Command{
 		cflag(FlagIncludeAppNextDistDir),
 		cflag(FlagIncludeAppNextStaticDir),
 		cflag(FlagIncludeAppNextNodeModulesDir),
+		cflag(FlagIncludeNodePackage),
 		cflag(FlagKeepPerms),
 		cflag(FlagPathPerms),
 		cflag(FlagPathPermsFile),
@@ -545,6 +546,8 @@ var CLI = &cli.Command{
 		doIncludeAppNextStaticDir := ctx.Bool(FlagIncludeAppNextStaticDir)
 		doIncludeAppNextNodeModulesDir := ctx.Bool(FlagIncludeAppNextNodeModulesDir)
 
+		includeNodePackage := ctx.StringSlice(FlagIncludeNodePackage)
+
 		doExcludeMounts := ctx.Bool(commands.FlagExcludeMounts)
 		if doExcludeMounts {
 			for mpath := range volumeMounts {
@@ -671,6 +674,7 @@ var CLI = &cli.Command{
 			doIncludeAppNextDistDir,
 			doIncludeAppNextStaticDir,
 			doIncludeAppNextNodeModulesDir,
+			includeNodePackage,
 			dockerConfigPath,
 			registryAccount,
 			registrySecret,

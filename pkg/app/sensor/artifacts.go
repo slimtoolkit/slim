@@ -141,6 +141,12 @@ const (
 	nextDefaultStaticSpaDirPath   = "/out/_next/"
 )
 
+type NodePackageConfigSimple struct {
+	Name         string            `json:"name"`
+	Version      string            `json:"version"`
+	Dependencies map[string]string `json:"dependencies"`
+}
+
 type appStackInfo struct {
 	language    string //will be reusing language consts from certdiscover (todo: replace it later)
 	codeFiles   uint
@@ -1052,6 +1058,7 @@ copyFiles:
 				nuxtAppDirPrefix := fmt.Sprintf("%s/", nuxtAppDir)
 				if p.cmd.IncludeAppNuxtDir {
 					includePaths[nuxtAppDir] = true
+					log.Tracef("saveArtifacts[nuxt] - including app dir - %s", nuxtAppDir)
 				}
 
 				if p.cmd.IncludeAppNuxtStaticDir {
@@ -1061,6 +1068,7 @@ copyFiles:
 							log.Debugf("saveArtifacts[nuxt] - static dir is already included (%s)", srcPath)
 						} else {
 							includePaths[srcPath] = true
+							log.Tracef("saveArtifacts[nuxt] - including static dir - %s", srcPath)
 						}
 					} else {
 						log.Debugf("saveArtifacts[nuxt] - static dir does not exists (%s)", srcPath)
@@ -1079,6 +1087,7 @@ copyFiles:
 							log.Debugf("saveArtifacts[nuxt] - build dir is already included (%s)", srcPath)
 						} else {
 							includePaths[srcPath] = true
+							log.Tracef("saveArtifacts[nuxt] - including build dir - %s", srcPath)
 						}
 					} else {
 						log.Debugf("saveArtifacts[nuxt] - build dir does not exists (%s)", srcPath)
@@ -1097,6 +1106,7 @@ copyFiles:
 							log.Debugf("saveArtifacts[nuxt] - dist dir is already included (%s)", srcPath)
 						} else {
 							includePaths[srcPath] = true
+							log.Tracef("saveArtifacts[nuxt] - including dist dir - %s", srcPath)
 						}
 					} else {
 						log.Debugf("saveArtifacts[nuxt] - dist dir does not exists (%s)", srcPath)
@@ -1110,6 +1120,7 @@ copyFiles:
 							log.Debugf("saveArtifacts[nuxt] - node_modules dir is already included (%s)", srcPath)
 						} else {
 							includePaths[srcPath] = true
+							log.Tracef("saveArtifacts[nuxt] - including node_modules dir - %s", srcPath)
 						}
 					} else {
 						log.Debugf("saveArtifacts[nuxt] - node_modules dir does not exists (%s)", srcPath)
@@ -1130,6 +1141,7 @@ copyFiles:
 				nextAppDirPrefix := fmt.Sprintf("%s/", nextAppDir)
 				if p.cmd.IncludeAppNextDir {
 					includePaths[nextAppDir] = true
+					log.Tracef("saveArtifacts[next] - including app dir - %s", nextAppDir)
 				}
 
 				if p.cmd.IncludeAppNextStaticDir {
@@ -1139,6 +1151,7 @@ copyFiles:
 							log.Debugf("saveArtifacts[next] - static public dir is already included (%s)", srcPath)
 						} else {
 							includePaths[srcPath] = true
+							log.Tracef("saveArtifacts[next] - including static public dir - %s", srcPath)
 						}
 					} else {
 						log.Debugf("saveArtifacts[next] - static public dir does not exists (%s)", srcPath)
@@ -1152,6 +1165,7 @@ copyFiles:
 							log.Debugf("saveArtifacts[next] - build dir is already included (%s)", srcPath)
 						} else {
 							includePaths[srcPath] = true
+							log.Tracef("saveArtifacts[next] - including build dir - %s", srcPath)
 						}
 					} else {
 						log.Debugf("saveArtifacts[next] - build dir does not exists (%s)", srcPath)
@@ -1165,6 +1179,7 @@ copyFiles:
 							log.Debugf("saveArtifacts[next] - dist dir is already included (%s)", srcPath)
 						} else {
 							includePaths[srcPath] = true
+							log.Tracef("saveArtifacts[next] - including dist dir - %s", srcPath)
 						}
 					} else {
 						log.Debugf("saveArtifacts[next] - dist dir does not exists (%s)", srcPath)
@@ -1178,6 +1193,7 @@ copyFiles:
 							log.Debugf("saveArtifacts[next] - node_modules dir is already included (%s)", srcPath)
 						} else {
 							includePaths[srcPath] = true
+							log.Tracef("saveArtifacts[next] - including node_modules dir - %s", srcPath)
 						}
 					} else {
 						log.Debugf("saveArtifacts[next] - node_modules dir does not exists (%s)", srcPath)
@@ -1200,6 +1216,24 @@ copyFiles:
 			if err != nil {
 				log.Warn("saveArtifacts - error ensuring node package files => ", err)
 			}
+
+			if len(p.cmd.IncludeNodePackages) > 0 {
+				nodePackageInfo, err := getNodePackageFileData(fileName)
+				if err == nil && nodePackageInfo != nil {
+					for _, pkgName := range p.cmd.IncludeNodePackages {
+						//note: use a better match lookup and include package version match later (":" as separator)
+						if pkgName != "" && pkgName == nodePackageInfo.Name {
+							nodeAppDir := filepath.Dir(fileName)
+							includePaths[nodeAppDir] = true
+							log.Tracef("saveArtifacts[node] - including app(%s) dir - %s", nodePackageInfo.Name, nodeAppDir)
+							break
+						}
+					}
+				} else {
+					log.Warn("saveArtifacts - error getting node package config file => ", err)
+				}
+			}
+
 		} else if isNgxArtifact(fileName) && !ngxEnsured {
 			log.Debug("saveArtifacts - ensuring ngx artifacts....")
 			ngxEnsure(p.storeLocation)
@@ -1956,6 +1990,22 @@ func isNodePackageFile(filePath string) bool {
 
 	//TODO: read the file and verify that it's a real package file
 	return false
+}
+
+func getNodePackageFileData(filePath string) (*NodePackageConfigSimple, error) {
+	fileName := filepath.Base(filePath)
+	if fileName != nodePackageFile {
+		return nil, nil
+	}
+
+	var result NodePackageConfigSimple
+	err := fsutil.LoadStructFromFile(filePath, &result)
+	if err != nil {
+		log.Warnf("sensor: getNodePackageFileData(%s) - error loading data => %v", filePath, err)
+		return nil, err
+	}
+
+	return &result, nil
 }
 
 func nodeEnsurePackageFiles(keepPerms bool, src, storeLocation, prefix string) error {

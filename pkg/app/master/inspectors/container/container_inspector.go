@@ -130,6 +130,7 @@ type Inspector struct {
 	IncludePaths                   map[string]*fsutil.AccessInfo
 	IncludeBins                    map[string]*fsutil.AccessInfo
 	IncludeExes                    map[string]*fsutil.AccessInfo
+	IncludeNodePackages            []string
 	DoIncludeShell                 bool
 	DoIncludeCertAll               bool
 	DoIncludeCertBundles           bool
@@ -191,6 +192,7 @@ func NewInspector(
 	doIncludeAppNextDistDir bool,
 	doIncludeAppNextStaticDir bool,
 	doIncludeAppNextNodeModulesDir bool,
+	includeNodePackages []string,
 	sensorVolumeName string,
 	doKeepTmpArtifacts bool,
 	overrides *config.ContainerOverrides,
@@ -248,6 +250,7 @@ func NewInspector(
 		DoIncludeAppNextDistDir:        doIncludeAppNextDistDir,
 		DoIncludeAppNextStaticDir:      doIncludeAppNextStaticDir,
 		DoIncludeAppNextNodeModulesDir: doIncludeAppNextNodeModulesDir,
+		IncludeNodePackages:            includeNodePackages,
 		SensorVolumeName:               sensorVolumeName,
 		DoKeepTmpArtifacts:             doKeepTmpArtifacts,
 		CmdPort:                        cmdPortSpecDefault,
@@ -879,6 +882,8 @@ func (i *Inspector) RunContainer() error {
 	cmd.IncludeAppNextDistDir = i.DoIncludeAppNextDistDir
 	cmd.IncludeAppNextStaticDir = i.DoIncludeAppNextStaticDir
 	cmd.IncludeAppNextNodeModulesDir = i.DoIncludeAppNextNodeModulesDir
+
+	cmd.IncludeNodePackages = i.IncludeNodePackages
 
 	_, err = i.ipcClient.SendCommand(cmd)
 	if err != nil {
