@@ -13,6 +13,9 @@ const (
 )
 
 const (
+	FlagBinDir      = "bin-dir"
+	FlagBinDirUsage = "Install binaries to the standard user app bin directory (/usr/local/bin)"
+
 	FlagDockerCLIPlugin      = "docker-cli-plugin"
 	FlagDockerCLIPluginUsage = "Install as Docker CLI plugin"
 )
@@ -22,6 +25,11 @@ var CLI = &cli.Command{
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Flags: []cli.Flag{
+		&cli.BoolFlag{
+			Name:    FlagBinDir,
+			Usage:   FlagBinDirUsage,
+			EnvVars: []string{"DSLIM_INSTALL_BIN_DIR"},
+		},
 		&cli.BoolFlag{
 			Name:    FlagDockerCLIPlugin,
 			Usage:   FlagDockerCLIPluginUsage,
@@ -33,9 +41,11 @@ var CLI = &cli.Command{
 		statePath := ctx.String(commands.FlagStatePath)
 		inContainer, isDSImage := commands.IsInContainer(ctx.Bool(commands.FlagInContainer))
 		archiveState := commands.ArchiveState(ctx.String(commands.FlagArchiveState), inContainer)
+
+		binDir := ctx.Bool(FlagBinDir)
 		dockerCLIPlugin := ctx.Bool(FlagDockerCLIPlugin)
 
-		OnCommand(doDebug, statePath, archiveState, inContainer, isDSImage, dockerCLIPlugin)
+		OnCommand(doDebug, statePath, archiveState, inContainer, isDSImage, binDir, dockerCLIPlugin)
 		return nil
 	},
 }

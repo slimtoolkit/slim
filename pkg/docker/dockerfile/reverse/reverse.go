@@ -682,12 +682,59 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 	// removes extra spaces from string
 	instPart2 = strings.TrimSpace(instPart2)
 
-	_, err := fmt.Sscanf(instPart2, `"%ds" "%ds" "%ds" '\x%x'`, &config.Interval, &config.Timeout, &config.StartPeriod, &config.Retries)
-	if err != nil {
-		return "", nil, err
+	paramParts := strings.SplitN(instPart2, " ", 4)
+	for i, param := range paramParts {
+		paramParts[i] = strings.Trim(param, "\"'")
 	}
 
-	healthInst := fmt.Sprintf(`HEALTHCHECK --interval=%ds --timeout=%ds --start-period=%ds --retries=%x %s`, config.Interval, config.Timeout, config.StartPeriod, config.Retries, strings.Join(config.Test, " "))
+	var err error
+	config.Interval, err = time.ParseDuration(paramParts[0])
+	if err != nil {
+		fmt.Printf("[%s] config.Interval err = %v\n", paramParts[0], err)
+	}
+
+	config.Timeout, err = time.ParseDuration(paramParts[1])
+	if err != nil {
+		fmt.Printf("[%s] config.Timeout err = %v\n", paramParts[1], err)
+	}
+
+	config.StartPeriod, err = time.ParseDuration(paramParts[2])
+	if err != nil {
+		fmt.Printf("[%s] config.StartPeriod err = %v\n", paramParts[2], err)
+	}
+
+	paramParts[3] = strings.TrimPrefix(paramParts[3], `\x`)
+	retries, err := strconv.ParseInt(paramParts[3], 16, 64)
+	if err != nil {
+		fmt.Printf("[%s] config.Retries err = %v\n", paramParts[3], err)
+	} else {
+		config.Retries = int(retries)
+	}
+
+	var testType string
+	if len(config.Test) > 0 {
+		testType = config.Test[0]
+	}
+
+	var strTest string
+	switch testType {
+	case "NONE":
+		strTest = "NONE"
+	case "CMD":
+		if len(config.Test) == 1 {
+			strTest = "CMD []"
+		} else {
+			strTest = fmt.Sprintf(`CMD ["%s"]`, strings.Join(config.Test[1:], `", "`))
+		}
+	case "CMD-SHELL":
+		strTest = fmt.Sprintf("CMD %s", strings.Join(config.Test[1:], " "))
+	}
+
+	healthInst := fmt.Sprintf(`HEALTHCHECK --interval=%v --timeout=%v --start-period=%v --retries=%x %s`, config.Interval, config.Timeout, config.StartPeriod, config.Retries, strTest)
+	if strTest == "NONE" {
+		healthInst = "HEALTHCHECK NONE"
+	}
+
 	return healthInst, &config, nil
 }
 
