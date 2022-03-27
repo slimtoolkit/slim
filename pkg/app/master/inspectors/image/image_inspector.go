@@ -261,7 +261,9 @@ func (i *Inspector) Inspect() error {
 		return err
 	}
 
+	log.Tracef("image.Inspector.Inspect: imageList.size=%v", len(imageList))
 	for _, r := range imageList {
+		log.Tracef("image.Inspector.Inspect: target=%v record=%#v", i.ImageInfo.ID, r)
 		if r.ID == i.ImageInfo.ID {
 			i.ImageRecordInfo = r
 			break
