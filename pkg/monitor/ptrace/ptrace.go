@@ -518,9 +518,8 @@ func (app *App) collect() {
 	mainExiting := false
 	waitFor := -1
 	doSyscall := true
+	callSig := 0
 	for {
-		var callSig int
-
 		select {
 		case <-app.StopCh:
 			log.Debug("ptrace.App.collect: stop (exiting)")
@@ -572,8 +571,8 @@ func (app *App) collect() {
 			return
 		}
 
+		callSig = 0 // reset
 		terminated := false
-		stopped := false
 		eventStop := false
 		handleCall := false
 		eventCode := 0
@@ -586,7 +585,6 @@ func (app *App) collect() {
 			terminated = true
 			statusCode = int(ws.Signal())
 		case ws.Stopped():
-			stopped = true
 			statusCode = int(ws.StopSignal())
 			if statusCode == int(syscall.SIGTRAP|traceSysGoodStatusBit) {
 				handleCall = true
@@ -752,10 +750,6 @@ func (app *App) collect() {
 						app.cmd.Process.Pid, app.pgid, wpid)
 				}
 			}
-		}
-
-		if stopped {
-			callSig = statusCode
 		}
 
 		doSyscall = true

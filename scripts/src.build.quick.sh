@@ -18,7 +18,7 @@ LD_FLAGS="-s -w -X github.com/docker-slim/docker-slim/pkg/version.appVersionTag=
 
 BINDIR="${BDIR}/bin"
 mkdir -p "$BINDIR"
-rm -f "${BINDIR}/"*
+rm -rf "${BINDIR}/"*
 
 CGO_ENABLED=0 go build -ldflags="${LD_FLAGS}" -mod=vendor -o "${BINDIR}/docker-slim" "${BDIR}/cmd/docker-slim/main.go"
 CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="${LD_FLAGS}" -mod=vendor -o "${BINDIR}/docker-slim-sensor" "${BDIR}/cmd/docker-slim-sensor/main.go"
