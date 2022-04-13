@@ -1094,6 +1094,11 @@ func (i *Inspector) setAvailablePorts(hostProbePorts map[dockerapi.Port][]docker
 			continue
 		}
 
+		if len(pbinding) == 0 {
+			i.logger.Debugf("setAvailablePorts: skipping empty port bindings => pk=%v", pk)
+			continue
+		}
+
 		i.AvailablePorts[pk] = pbinding[0]
 
 		portKeys, portList = addPorts(portKeys, portList, pk, pbinding)
