@@ -2,7 +2,6 @@ package image
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -13,6 +12,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/google/go-containerregistry/pkg/name"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -92,16 +92,14 @@ func (i *Inspector) NoImage() bool {
 // Pull tries to download the target image
 func (i *Inspector) Pull(showPullLog bool, dockerConfigPath, registryAccount, registrySecret string) error {
 	var pullLog bytes.Buffer
-	var repo string
-	var tag string
-	if strings.Contains(i.ImageRef, ":") {
-		parts := strings.SplitN(i.ImageRef, ":", 2)
-		repo = parts[0]
-		tag = parts[1]
-	} else {
-		repo = i.ImageRef
-		tag = "latest"
+
+	ref, err := name.ParseReference(i.ImageRef)
+	if err != nil {
+		log.Errorf("image.inspector.Pull: bad image reference=%s err=%v", i.ImageRef, err)
+		return err
 	}
+	repo := ref.Context().Name()
+	tag := ref.Identifier()
 
 	input := docker.PullImageOptions{
 		Repository: repo,
@@ -112,7 +110,6 @@ func (i *Inspector) Pull(showPullLog bool, dockerConfigPath, registryAccount, re
 		input.OutputStream = &pullLog
 	}
 
-	var err error
 	var authConfig *docker.AuthConfiguration
 	registry := extractRegistry(repo)
 	authConfig, err = getRegistryCredential(registryAccount, registrySecret, dockerConfigPath, registry)
@@ -149,7 +146,7 @@ func getRegistryCredential(registryAccount, registrySecret, dockerConfigPath, re
 		return
 	}
 
-	missingAuthConfigErr := errors.New(fmt.Sprintf("could not find an auth config for registry - %s", registry))
+	missingAuthConfigErr := fmt.Errorf("could not find an auth config for registry - %s", registry)
 	if dockerConfigPath != "" {
 		dAuthConfigs, err := docker.NewAuthConfigurationsFromFile(dockerConfigPath)
 		if err != nil {

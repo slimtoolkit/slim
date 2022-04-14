@@ -19,38 +19,119 @@ import (
 
 // RootFS returns Image's RootFS description including the layer IDs.
 type RootFS struct {
-	Type      string
-	Layers    []string `json:",omitempty"`
-	BaseLayer string   `json:",omitempty"`
+	Type   string   `json:",omitempty"`
+	Layers []string `json:",omitempty"`
 }
 
 // ImageInspect contains response of Engine API:
 // GET "/images/{name:.*}/json"
 type ImageInspect struct {
-	ID              string `json:"Id"`
-	RepoTags        []string
-	RepoDigests     []string
-	Parent          string
-	Comment         string
-	Created         string
-	Container       string
+	// ID is the content-addressable ID of an image.
+	//
+	// This identified is a content-addressable digest calculated from the
+	// image's configuration (which includes the digests of layers used by
+	// the image).
+	//
+	// Note that this digest differs from the `RepoDigests` below, which
+	// holds digests of image manifests that reference the image.
+	ID string `json:"Id"`
+
+	// RepoTags is a list of image names/tags in the local image cache that
+	// reference this image.
+	//
+	// Multiple image tags can refer to the same imagem and this list may be
+	// empty if no tags reference the image, in which case the image is
+	// "untagged", in which case it can still be referenced by its ID.
+	RepoTags []string
+
+	// RepoDigests is a list of content-addressable digests of locally available
+	// image manifests that the image is referenced from. Multiple manifests can
+	// refer to the same image.
+	//
+	// These digests are usually only available if the image was either pulled
+	// from a registry, or if the image was pushed to a registry, which is when
+	// the manifest is generated and its digest calculated.
+	RepoDigests []string
+
+	// Parent is the ID of the parent image.
+	//
+	// Depending on how the image was created, this field may be empty and
+	// is only set for images that were built/created locally. This field
+	// is empty if the image was pulled from an image registry.
+	Parent string
+
+	// Comment is an optional message that can be set when committing or
+	// importing the image.
+	Comment string
+
+	// Created is the date and time at which the image was created, formatted in
+	// RFC 3339 nano-seconds (time.RFC3339Nano).
+	Created string
+
+	// Container is the ID of the container that was used to create the image.
+	//
+	// Depending on how the image was created, this field may be empty.
+	Container string
+
+	// ContainerConfig is the configuration of the container that was committed
+	// into the image.
 	ContainerConfig *container.Config
-	DockerVersion   string
-	Author          string
-	Config          *container.Config
-	Architecture    string
-	Variant         string `json:",omitempty"`
-	Os              string
-	OsVersion       string `json:",omitempty"`
-	Size            int64
-	VirtualSize     int64
-	GraphDriver     GraphDriverData
-	RootFS          RootFS
-	Metadata        ImageMetadata
+
+	// DockerVersion is the version of Docker that was used to build the image.
+	//
+	// Depending on how the image was created, this field may be empty.
+	DockerVersion string
+
+	// Author is the name of the author that was specified when committing the
+	// image, or as specified through MAINTAINER (deprecated) in the Dockerfile.
+	Author string
+	Config *container.Config
+
+	// Architecture is the hardware CPU architecture that the image runs on.
+	Architecture string
+
+	// Variant is the CPU architecture variant (presently ARM-only).
+	Variant string `json:",omitempty"`
+
+	// OS is the Operating System the image is built to run on.
+	Os string
+
+	// OsVersion is the version of the Operating System the image is built to
+	// run on (especially for Windows).
+	OsVersion string `json:",omitempty"`
+
+	// Size is the total size of the image including all layers it is composed of.
+	Size int64
+
+	// VirtualSize is the total size of the image including all layers it is
+	// composed of.
+	//
+	// In versions of Docker before v1.10, this field was calculated from
+	// the image itself and all of its parent images. Docker v1.10 and up
+	// store images self-contained, and no longer use a parent-chain, making
+	// this field an equivalent of the Size field.
+	//
+	// This field is kept for backward compatibility, but may be removed in
+	// a future version of the API.
+	VirtualSize int64 // TODO(thaJeztah): deprecate this field
+
+	// GraphDriver holds information about the storage driver used to store the
+	// container's and image's filesystem.
+	GraphDriver GraphDriverData
+
+	// RootFS contains information about the image's RootFS, including the
+	// layer IDs.
+	RootFS RootFS
+
+	// Metadata of the image in the local cache.
+	//
+	// This information is local to the daemon, and not part of the image itself.
+	Metadata ImageMetadata
 }
 
 // ImageMetadata contains engine-local data about the image
 type ImageMetadata struct {
+	// LastTagTime is the date and time at which the image was last tagged.
 	LastTagTime time.Time `json:",omitempty"`
 }
 
@@ -107,6 +188,15 @@ type Ping struct {
 	OSType         string
 	Experimental   bool
 	BuilderVersion BuilderVersion
+
+	// SwarmStatus provides information about the current swarm status of the
+	// engine, obtained from the "Swarm" header in the API response.
+	//
+	// It can be a nil struct if the API version does not provide this header
+	// in the ping response, or if an error occurred, in which case the client
+	// should use other ways to get the current swarm status, such as the /swarm
+	// endpoint.
+	SwarmStatus *swarm.Status
 }
 
 // ComponentVersion describes the version information for a specific component.
@@ -158,8 +248,8 @@ type Info struct {
 	Plugins            PluginsInfo
 	MemoryLimit        bool
 	SwapLimit          bool
-	KernelMemory       bool // Deprecated: kernel 5.4 deprecated kmem.limit_in_bytes
-	KernelMemoryTCP    bool
+	KernelMemory       bool `json:",omitempty"` // Deprecated: kernel 5.4 deprecated kmem.limit_in_bytes
+	KernelMemoryTCP    bool `json:",omitempty"` // KernelMemoryTCP is not supported on cgroups v2.
 	CPUCfsPeriod       bool `json:"CpuCfsPeriod"`
 	CPUCfsQuota        bool `json:"CpuCfsQuota"`
 	CPUShares          bool
@@ -212,7 +302,12 @@ type Info struct {
 	SecurityOptions     []string
 	ProductLicense      string               `json:",omitempty"`
 	DefaultAddressPools []NetworkAddressPool `json:",omitempty"`
-	Warnings            []string
+
+	// Warnings contains a slice of warnings that occurred  while collecting
+	// system information. These warnings are intended to be informational
+	// messages for the user, and are not intended to be parsed / used for
+	// other purposes, as they do not have a fixed format.
+	Warnings []string
 }
 
 // KeyValue holds a key/value pair
@@ -416,13 +511,44 @@ type DefaultNetworkSettings struct {
 // MountPoint represents a mount point configuration inside the container.
 // This is used for reporting the mountpoints in use by a container.
 type MountPoint struct {
-	Type        mount.Type `json:",omitempty"`
-	Name        string     `json:",omitempty"`
-	Source      string
+	// Type is the type of mount, see `Type<foo>` definitions in
+	// github.com/docker/docker/api/types/mount.Type
+	Type mount.Type `json:",omitempty"`
+
+	// Name is the name reference to the underlying data defined by `Source`
+	// e.g., the volume name.
+	Name string `json:",omitempty"`
+
+	// Source is the source location of the mount.
+	//
+	// For volumes, this contains the storage location of the volume (within
+	// `/var/lib/docker/volumes/`). For bind-mounts, and `npipe`, this contains
+	// the source (host) part of the bind-mount. For `tmpfs` mount points, this
+	// field is empty.
+	Source string
+
+	// Destination is the path relative to the container root (`/`) where the
+	// Source is mounted inside the container.
 	Destination string
-	Driver      string `json:",omitempty"`
-	Mode        string
-	RW          bool
+
+	// Driver is the volume driver used to create the volume (if it is a volume).
+	Driver string `json:",omitempty"`
+
+	// Mode is a comma separated list of options supplied by the user when
+	// creating the bind/volume mount.
+	//
+	// The default is platform-specific (`"z"` on Linux, empty on Windows).
+	Mode string
+
+	// RW indicates whether the mount is mounted writable (read-write).
+	RW bool
+
+	// Propagation describes how mounts are propagated from the host into the
+	// mount point, and vice-versa. Refer to the Linux kernel documentation
+	// for details:
+	// https://www.kernel.org/doc/Documentation/filesystems/sharedsubtree.txt
+	//
+	// This field is not used on Windows.
 	Propagation mount.Propagation
 }
 
@@ -530,6 +656,27 @@ type ShimConfig struct {
 	Opts   interface{}
 }
 
+// DiskUsageObject represents an object type used for disk usage query filtering.
+type DiskUsageObject string
+
+const (
+	// ContainerObject represents a container DiskUsageObject.
+	ContainerObject DiskUsageObject = "container"
+	// ImageObject represents an image DiskUsageObject.
+	ImageObject DiskUsageObject = "image"
+	// VolumeObject represents a volume DiskUsageObject.
+	VolumeObject DiskUsageObject = "volume"
+	// BuildCacheObject represents a build-cache DiskUsageObject.
+	BuildCacheObject DiskUsageObject = "build-cache"
+)
+
+// DiskUsageOptions holds parameters for system disk usage query.
+type DiskUsageOptions struct {
+	// Types specifies what object types to include in the response. If empty,
+	// all object types are returned.
+	Types []DiskUsageObject
+}
+
 // DiskUsage contains response of Engine API:
 // GET "/system/df"
 type DiskUsage struct {
@@ -538,7 +685,7 @@ type DiskUsage struct {
 	Containers  []*Container
 	Volumes     []*Volume
 	BuildCache  []*BuildCache
-	BuilderSize int64 // deprecated
+	BuilderSize int64 `json:",omitempty"` // Deprecated: deprecated in API 1.38, and no longer used since API 1.40.
 }
 
 // ContainersPruneReport contains the response for Engine API:

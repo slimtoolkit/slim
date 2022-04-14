@@ -3,13 +3,22 @@ package build
 import (
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
+	"runtime"
 	"strings"
+
+	pluginmanager "github.com/docker/cli/cli-plugins/manager"
+	"github.com/docker/cli/cli/command"
+	"github.com/docker/cli/cli/flags"
+	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/tlsconfig"
+	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
+	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 )
 
 // Build command flag names
@@ -85,6 +94,12 @@ const (
 	FlagCBOTarget           = "cbo-target"
 	FlagCBONetwork          = "cbo-network"
 	FlagCBOCacheFrom        = "cbo-cache-from"
+
+	// Buildx flags.
+	FlagUseBuildx       = "use-buildx"
+	FlagBuildxPlatforms = "buildx-platforms"
+	FlagBuildxBuilder   = "buildx-builder"
+	FlagBuildxPush      = "buildx-push"
 )
 
 // Build command flag usage info
@@ -469,6 +484,40 @@ var Flags = map[string]cli.Flag{
 		Usage:   FlagIncludeExeFileUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_EXE_FILE"},
 	},
+	FlagUseBuildx: &cli.BoolFlag{
+		Name:  FlagUseBuildx,
+		Value: false,
+		Usage: "Build with 'docker buildx'",
+		EnvVars: []string{
+			"DSLIM_USE_BUILDX",
+			// https://docs.docker.com/develop/develop-images/build_enhancements/#to-enable-buildx-builds
+			"DOCKER_BUILDX",
+		},
+	},
+	FlagBuildxPlatforms: &cli.StringSliceFlag{
+		Name:  FlagBuildxPlatforms,
+		Value: cli.NewStringSlice(),
+		Usage: "Platforms to build outputs for; currenly only one is allowed without --buildx-push. " +
+			"Can only be used with --use-buildx. " +
+			"If --dockerfile is set, only the first platform is used to build that Dockerfile's image. " +
+			"All platforms are used when building the output image.",
+		EnvVars: []string{"DSLIM_BUILDX_PLATFORMS"},
+	},
+	FlagBuildxBuilder: &cli.StringFlag{
+		Name:  FlagBuildxBuilder,
+		Usage: "The buildx builder to use instead of the default or current context's. Can only be used with --use-buildx",
+		EnvVars: []string{
+			"DSLIM_BUILDX_BUILDER",
+			// https://github.com/docker/buildx/blob/a2d5bc7/commands/root.go#L82
+			"BUILDX_BUILDER",
+		},
+	},
+	FlagBuildxPush: &cli.BoolFlag{
+		Name:    FlagBuildxPush,
+		Value:   false,
+		Usage:   "Push the resulting images to a registry. Can only be used with --use-buildx",
+		EnvVars: []string{"DSLIM_BUILDX_PUSH"},
+	},
 }
 
 func cflag(name string) cli.Flag {
@@ -480,8 +529,8 @@ func cflag(name string) cli.Flag {
 	return cf
 }
 
-func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, error) {
-	cbo := &config.ContainerBuildOptions{
+func GetContainerBuildOptions(ctx *cli.Context, gparams *commands.GenericParams) (cbo *config.ContainerBuildOptions, err error) {
+	cbo = &config.ContainerBuildOptions{
 		Labels: map[string]string{},
 	}
 
@@ -491,6 +540,14 @@ func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, 
 	cbo.Target = ctx.String(FlagCBOTarget)
 	cbo.NetworkMode = ctx.String(FlagCBONetwork)
 	cbo.CacheFrom = ctx.StringSlice(FlagCBOCacheFrom)
+
+	// Since there are components of buildx init that may fail if buildx is not configured,
+	// do not init buildx opts if not turned on.
+	if ctx.Bool(FlagUseBuildx) {
+		if cbo.Buildx, err = makeBuildxOptions(ctx, gparams, cbo.DockerfileContext); err != nil {
+			return nil, err
+		}
+	}
 
 	hosts := ctx.StringSlice(FlagCBOAddHost)
 	//TODO: figure out how to encode multiple host entries to a string (docs are not helpful)
@@ -556,6 +613,98 @@ func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, 
 	}
 
 	return cbo, nil
+}
+
+func makeBuildxOptions(ctx *cli.Context, gparams *commands.GenericParams, ctxDir string) (bxOpts config.BuildxOptions, err error) {
+	// A DockerCli is just an entrypoint into some convenience functions used by buildx.
+	cliOpts := []command.DockerCliOption{
+		command.WithInputStream(os.Stdin),
+		command.WithErrorStream(os.Stderr),
+		command.WithOutputStream(os.Stdout),
+	}
+	dockerCLI, err := command.NewDockerCli(cliOpts...)
+	if err != nil {
+		return config.BuildxOptions{}, err
+	}
+
+	makeClient := func(*command.DockerCli) (client.APIClient, error) {
+		return dockerclient.NewAPIClient(gparams.ClientConfig)
+	}
+	initOpts := []command.InitializeOpt{
+		command.WithInitializeClient(makeClient),
+	}
+	var hosts []string
+	if gparams.ClientConfig.Host != "" {
+		hosts = append(hosts, gparams.ClientConfig.Host)
+	}
+	var tlsOpts *tlsconfig.Options
+	if gparams.ClientConfig.TLSCertPath != "" {
+		tlsOpts = &tlsconfig.Options{
+			CAFile:   filepath.Join(gparams.ClientConfig.TLSCertPath, "ca.pem"),
+			CertFile: filepath.Join(gparams.ClientConfig.TLSCertPath, "cert.pem"),
+			KeyFile:  filepath.Join(gparams.ClientConfig.TLSCertPath, "key.pem"),
+		}
+	}
+	clientOpts := flags.ClientOptions{
+		Common: &flags.CommonOptions{
+			Debug:      gparams.Debug,
+			Hosts:      hosts,
+			LogLevel:   gparams.LogLevel,
+			TLS:        gparams.ClientConfig.UseTLS,
+			TLSVerify:  gparams.ClientConfig.VerifyTLS,
+			TLSOptions: tlsOpts,
+		},
+	}
+	if err := dockerCLI.Initialize(&clientOpts, initOpts...); err != nil {
+		return config.BuildxOptions{}, err
+	}
+	bxOpts.CLI = dockerCLI
+
+	if bxOpts.Plugin, err = pluginmanager.GetPlugin("buildx", dockerCLI, nil); err != nil {
+		return config.BuildxOptions{}, err
+	}
+	if perr := bxOpts.Plugin.Err; perr != nil {
+		return config.BuildxOptions{}, perr
+	}
+
+	bxOpts.Builder = ctx.String(FlagBuildxBuilder)
+	bxOpts.Pull = ctx.Bool(commands.FlagPull)
+	bxOpts.NoCache = false
+
+	// Since logs are proxied via docker-slim, align with other options.
+	if ctx.Bool(FlagShowBuildLogs) {
+		bxOpts.ProgressMode = "plain"
+	} else {
+		bxOpts.ProgressMode = "quiet"
+	}
+
+	bxOpts.Push = ctx.Bool(FlagBuildxPush)
+	// TODO(estroz): make outputs options
+	if bxOpts.Push {
+		bxOpts.Exports = append(bxOpts.Exports, "type=registry")
+	} else {
+		bxOpts.Exports = append(bxOpts.Exports, "type=docker")
+	}
+
+	platforms := ctx.StringSlice(FlagBuildxPlatforms)
+	if len(platforms) == 0 {
+		// Just use the current arch.
+		bxOpts.Platforms = append(bxOpts.Platforms, path.Join(runtime.GOOS, runtime.GOARCH))
+	} else {
+		for _, pfs := range platforms {
+			for _, pf := range strings.Split(pfs, ",") {
+				if pf != "" {
+					bxOpts.Platforms = append(bxOpts.Platforms, pf)
+				}
+			}
+		}
+	}
+	if !bxOpts.Push && len(bxOpts.Platforms) > 1 {
+		// TODO(estroz): remove this requirement if multi-platform builds are enabled.
+		return bxOpts, fmt.Errorf("only one platform is allowed without --buildx-push")
+	}
+
+	return bxOpts, nil
 }
 
 //TODO: move/share when the 'edit' command needs these flags too

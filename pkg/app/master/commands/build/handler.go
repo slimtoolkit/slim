@@ -3,6 +3,7 @@ package build
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -43,7 +44,7 @@ const composeProjectNamePat = "dsbuild_%v_%v"
 
 // Build command exit codes
 const (
-	ecbOther = iota + 1
+	_ = iota + 1
 	ecbBadCustomImageTag
 	ecbImageBuildError
 	ecbImageAlreadyOptimized
@@ -179,7 +180,8 @@ func OnCommand(
 	rtaOnbuildBaseImage bool,
 	rtaSourcePT bool,
 	sensorIPCEndpoint string,
-	sensorIPCMode string) {
+	sensorIPCMode string,
+	useBuildx bool) {
 
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
@@ -217,26 +219,7 @@ func OnCommand(
 	logger.Debugf("customImageTag='%s', additionalTags=%#v", customImageTag, additionalTags)
 
 	client, err := dockerclient.New(gparams.ClientConfig)
-	if err == dockerclient.ErrNoDockerInfo {
-		exitMsg := "missing Docker connection info"
-		if gparams.InContainer && gparams.IsDSImage {
-			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
-		}
-
-		xc.Out.Error("docker.connect.error", exitMsg)
-
-		exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
-		xc.Out.State("exited",
-			ovars{
-				"exit.code": exitCode,
-				"version":   v.Current(),
-				"location":  fsutil.ExeDir(),
-			})
-
-		cmdReport.Error = "docker.connect.error"
-		xc.Exit(exitCode)
-	}
-	xc.FailOn(err)
+	checkDockerClientErr(xc, cmdReport, gparams, err)
 
 	xc.Out.State("started")
 
@@ -274,11 +257,10 @@ func OnCommand(
 		}
 	}
 
+	platformStrs := cbOpts.Buildx.Platforms
+	platformStr := strings.Join(platformStrs, ",")
+
 	if cbOpts.Dockerfile != "" {
-		xc.Out.State("building",
-			ovars{
-				"message": "building basic image",
-			})
 
 		//create a fat image name:
 		//* use the explicit fat image tag if provided
@@ -326,17 +308,37 @@ func OnCommand(
 				"context":    targetRef,
 			})
 
-		fatBuilder, err := builder.NewBasicImageBuilder(
-			client,
-			cbOpts,
-			targetRef,
-			doShowBuildLogs)
+		var fatBuilder builder.ImageBuilder
+		if useBuildx {
+			xc.Out.State("building", ovars{
+				"message":  "building basic image",
+				"builder":  "buildx",
+				"platform": platformStrs[0],
+			})
+
+			fatBuilder, err = builder.NewBasicImageBuilderBuildx(
+				cbOpts,
+				targetRef,
+				doShowBuildLogs)
+		} else {
+			xc.Out.State("building", ovars{
+				"message": "building basic image",
+				"builder": "docker",
+			})
+
+			fatBuilder, err = builder.NewBasicImageBuilderDocker(
+				client,
+				cbOpts,
+				targetRef,
+				doShowBuildLogs)
+		}
 		xc.FailOn(err)
 
-		err = fatBuilder.Build()
+		ctx := context.Background()
+		err = fatBuilder.Build(ctx)
 
 		if doShowBuildLogs || err != nil {
-			xc.Out.LogDump("regular.image.build", fatBuilder.BuildLog.String(),
+			xc.Out.LogDump("regular.image.build", fatBuilder.GetLogs(),
 				ovars{
 					"tag": cbOpts.Tag,
 				})
@@ -472,7 +474,7 @@ func OnCommand(
 				targetRef = commands.UpdateImageRef(logger, targetRef, targetComposeSvcImage)
 				//shouldn't need to
 				targetSvcInfo.Config.Image = targetRef
-				logger.Debug("using target service override '%s' -> '%s' ", targetComposeSvcImage, targetRef)
+				logger.Debugf("using target service override '%s' -> '%s' ", targetComposeSvcImage, targetRef)
 			}
 
 			if len(targetSvcInfo.Config.Entrypoint) > 0 {
@@ -826,8 +828,8 @@ func OnCommand(
 
 		err = depServicesExe.Start()
 		if err != nil {
-			depServicesExe.Stop()
-			depServicesExe.Cleanup()
+			_ = depServicesExe.Stop()
+			_ = depServicesExe.Cleanup()
 		}
 		xc.FailOn(err)
 
@@ -1363,31 +1365,54 @@ func OnCommand(
 	}
 
 	xc.Out.State("container.inspection.done")
-	xc.Out.State("building",
-		ovars{
-			"message": "building optimized image",
+
+	var imageBuilder builder.ImageBuilder
+	if useBuildx {
+		xc.Out.State("building", ovars{
+			"message":   "building optimized image",
+			"builder":   "buildx",
+			"platforms": platformStr,
 		})
 
-	builder, err := builder.NewImageBuilder(client,
-		customImageTag,
-		additionalTags,
-		imageInspector.ImageInfo,
-		artifactLocation,
-		doShowBuildLogs,
-		imageOverrideSelectors,
-		overrides,
-		instructions,
-		targetRef)
+		imageBuilder, err = builder.NewImageBuilderBuildx(
+			customImageTag,
+			additionalTags,
+			imageInspector.ImageInfo,
+			cbOpts.Buildx,
+			artifactLocation,
+			doShowBuildLogs,
+			imageOverrideSelectors,
+			overrides,
+			instructions)
+
+	} else {
+		xc.Out.State("building", ovars{
+			"message": "building optimized image",
+			"builder": "docker",
+		})
+
+		imageBuilder, err = builder.NewImageBuilderDocker(client,
+			customImageTag,
+			additionalTags,
+			imageInspector.ImageInfo,
+			artifactLocation,
+			doShowBuildLogs,
+			imageOverrideSelectors,
+			overrides,
+			instructions,
+			targetRef)
+	}
 	xc.FailOn(err)
 
-	if !builder.HasData {
+	if !imageBuilder.HasData() {
 		logger.Info("WARNING - no data artifacts")
 	}
 
-	err = builder.Build()
+	ctx := context.Background()
+	err = imageBuilder.Build(ctx)
 
 	if doShowBuildLogs || err != nil {
-		xc.Out.LogDump("optimized.image.build", builder.BuildLog.String(),
+		xc.Out.LogDump("optimized.image.build", imageBuilder.GetLogs(),
 			ovars{
 				"tag": customImageTag,
 			})
@@ -1432,14 +1457,25 @@ func OnCommand(
 	}
 
 	/////////////////////////////
-	newImageInspector, err := image.NewInspector(client, builder.RepoName)
+	newImageInspector, err := image.NewInspector(client, customImageTag)
 	xc.FailOn(err)
+
+	// Pull the image down since you can't load and push in the same buildx run.
+	if useBuildx && cbOpts.Buildx.Push {
+		xc.Out.Info("build.post", ovars{
+			"message": "pulling newly built remote image",
+			"image":   newImageInspector.ImageRef,
+		})
+
+		err := newImageInspector.Pull(doShowPullLogs, dockerConfigPath, registryAccount, registrySecret)
+		xc.FailOn(err)
+	}
 
 	if newImageInspector.NoImage() {
 		xc.Out.Info("results",
 			ovars{
 				"message": "minified image not found",
-				"image":   builder.RepoName,
+				"image":   newImageInspector.ImageRef,
 			})
 
 		exitCode := commands.ECTBuild | ecbImageBuildError
@@ -1502,8 +1538,8 @@ func OnCommand(
 		cmdReport.Error = err.Error()
 	}
 
-	cmdReport.MinifiedImage = builder.RepoName
-	cmdReport.MinifiedImageHasData = builder.HasData
+	cmdReport.MinifiedImage = newImageInspector.ImageRef
+	cmdReport.MinifiedImageHasData = imageBuilder.HasData()
 	cmdReport.ArtifactLocation = imageInspector.ArtifactLocation
 	cmdReport.ContainerReportName = report.DefaultContainerReportFileName
 	cmdReport.SeccompProfileName = imageInspector.SeccompProfileName
@@ -1624,4 +1660,30 @@ func hasContinueAfterMode(modeSet, mode string) bool {
 	}
 
 	return false
+}
+
+func checkDockerClientErr(xc *app.ExecutionContext, cmdReport *report.BuildCommand, gparams *commands.GenericParams, err error) {
+	if err == nil {
+		return
+	}
+	if !errors.Is(err, dockerclient.ErrNoDockerInfo) {
+		xc.FailOn(err)
+	}
+
+	exitMsg := "missing Docker connection info"
+	if gparams.InContainer && gparams.IsDSImage {
+		exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
+	}
+
+	xc.Out.Error("docker.connect.error", exitMsg)
+
+	exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
+	xc.Out.State("exited", ovars{
+		"exit.code": exitCode,
+		"version":   v.Current(),
+		"location":  fsutil.ExeDir(),
+	})
+
+	cmdReport.Error = "docker.connect.error"
+	xc.Exit(exitCode)
 }

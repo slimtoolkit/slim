@@ -2,6 +2,7 @@ package builder
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -20,17 +21,17 @@ var (
 	ErrInvalidContextDir = errors.New("invalid context directory")
 )
 
-// BasicImageBuilder creates regular container images
-type BasicImageBuilder struct {
+// BasicImageBuilderDocker creates regular container images
+type BasicImageBuilderDocker struct {
 	ShowBuildLogs bool
 	BuildOptions  docker.BuildImageOptions
 	APIClient     *docker.Client
 	BuildLog      bytes.Buffer
 }
 
-// ImageBuilder creates new optimized container images
-type ImageBuilder struct {
-	BasicImageBuilder
+// ImageBuilderDocker creates new optimized container images
+type ImageBuilderDocker struct {
+	BasicImageBuilderDocker
 	RepoName       string
 	AdditionalTags []string
 	ID             string
@@ -43,8 +44,8 @@ type ImageBuilder struct {
 	Volumes        map[string]struct{}
 	OnBuild        []string
 	User           string
-	HasData        bool
-	TarData        bool
+
+	data string
 }
 
 const (
@@ -52,13 +53,13 @@ const (
 	dsEvtPortInfo = "65502/tcp"
 )
 
-// NewBasicImageBuilder creates a new BasicImageBuilder instances
-func NewBasicImageBuilder(client *docker.Client,
+// NewBasicImageBuilderDocker creates a new BasicImageBuilderDocker instances
+func NewBasicImageBuilderDocker(client *docker.Client,
 	//imageRepoNameTag string,
 	//dockerfileName string,
 	cbOpts *config.ContainerBuildOptions,
 	buildContext string,
-	showBuildLogs bool) (*BasicImageBuilder, error) {
+	showBuildLogs bool) (*BasicImageBuilderDocker, error) {
 	var buildArgs []docker.BuildArg
 	for _, ba := range cbOpts.BuildArgs {
 		buildArgs = append(buildArgs, docker.BuildArg{Name: ba.Name, Value: ba.Value})
@@ -89,7 +90,7 @@ func NewBasicImageBuilder(client *docker.Client,
 		}
 	}
 
-	builder := BasicImageBuilder{
+	builder := BasicImageBuilderDocker{
 		ShowBuildLogs: showBuildLogs,
 		BuildOptions: docker.BuildImageOptions{
 			Name:           cbOpts.Tag,
@@ -124,17 +125,20 @@ func NewBasicImageBuilder(client *docker.Client,
 }
 
 // Build creates a new container image
-func (b *BasicImageBuilder) Build() error {
+func (b *BasicImageBuilderDocker) Build(context.Context) error {
 	return b.APIClient.BuildImage(b.BuildOptions)
 }
 
-// Remove deletes the configured container image
-func (b *BasicImageBuilder) Remove() error {
-	return nil
+func (b *BasicImageBuilderDocker) GetLogs() string {
+	return b.BuildLog.String()
 }
 
-// NewImageBuilder creates a new ImageBuilder instances
-func NewImageBuilder(client *docker.Client,
+func (b *BasicImageBuilderDocker) HasData() bool {
+	return false
+}
+
+// NewImageBuilderDocker creates a new ImageBuilderDocker instances
+func NewImageBuilderDocker(client *docker.Client,
 	imageRepoNameTag string,
 	additionalTags []string,
 	imageInfo *docker.Image,
@@ -143,7 +147,7 @@ func NewImageBuilder(client *docker.Client,
 	overrideSelectors map[string]bool,
 	overrides *config.ContainerOverrides,
 	instructions *config.ImageNewInstructions,
-	sourceImage string) (*ImageBuilder, error) {
+	sourceImage string) (*ImageBuilderDocker, error) {
 
 	labels := map[string]string{}
 	if imageInfo.Config.Labels != nil {
@@ -178,8 +182,8 @@ func NewImageBuilder(client *docker.Client,
 	}
 	// omitempty will remove platform if empty on marshalled request to engine
 
-	builder := &ImageBuilder{
-		BasicImageBuilder: BasicImageBuilder{
+	builder := &ImageBuilderDocker{
+		BasicImageBuilderDocker: BasicImageBuilderDocker{
 			ShowBuildLogs: showBuildLogs,
 			APIClient:     client,
 			// extract platform - from image inspector
@@ -219,7 +223,7 @@ func NewImageBuilder(client *docker.Client,
 	}
 
 	if overrides != nil && len(overrideSelectors) > 0 {
-		log.Debugf("NewImageBuilder: Using container runtime overrides => %+v", overrideSelectors)
+		log.Debugf("NewImageBuilderDocker: Using container runtime overrides => %+v", overrideSelectors)
 		for k := range overrideSelectors {
 			switch k {
 			case "entrypoint":
@@ -266,7 +270,7 @@ func NewImageBuilder(client *docker.Client,
 
 	//instructions have higher value precedence over the runtime overrides
 	if instructions != nil {
-		log.Debugf("NewImageBuilder: Using new image instructions => %+v", instructions)
+		log.Debugf("NewImageBuilderDocker: Using new image instructions => %+v", instructions)
 
 		if instructions.Workdir != "" {
 			builder.WorkingDir = instructions.Workdir
@@ -296,30 +300,21 @@ func NewImageBuilder(client *docker.Client,
 			builder.Cmd = instructions.Cmd
 		}
 
-		if len(builder.ExposedPorts) > 0 &&
-			len(instructions.RemoveExposedPorts) > 0 {
+		if len(builder.ExposedPorts) > 0 {
 			for k := range instructions.RemoveExposedPorts {
-				if _, ok := builder.ExposedPorts[k]; ok {
-					delete(builder.ExposedPorts, k)
-				}
+				delete(builder.ExposedPorts, k)
 			}
 		}
 
-		if len(builder.Volumes) > 0 &&
-			len(instructions.RemoveVolumes) > 0 {
+		if len(builder.Volumes) > 0 {
 			for k := range instructions.RemoveVolumes {
-				if _, ok := builder.Volumes[k]; ok {
-					delete(builder.Volumes, k)
-				}
+				delete(builder.Volumes, k)
 			}
 		}
 
-		if len(builder.Labels) > 0 &&
-			len(instructions.RemoveLabels) > 0 {
+		if len(builder.Labels) > 0 {
 			for k := range instructions.RemoveLabels {
-				if _, ok := builder.Labels[k]; ok {
-					delete(builder.Labels, k)
-				}
+				delete(builder.Labels, k)
 			}
 		}
 
@@ -341,20 +336,13 @@ func NewImageBuilder(client *docker.Client,
 
 	builder.BuildOptions.OutputStream = &builder.BuildLog
 
-	dataTar := filepath.Join(artifactLocation, "files.tar")
-	builder.TarData = fsutil.IsRegularFile(dataTar)
-	if builder.TarData {
-		builder.HasData = true
-	} else {
-		dataDir := filepath.Join(artifactLocation, "files")
-		builder.HasData = fsutil.IsDir(dataDir)
-	}
+	builder.data = getDataName(artifactLocation)
 
 	return builder, nil
 }
 
 // Build creates a new container image
-func (b *ImageBuilder) Build() error {
+func (b *ImageBuilderDocker) Build(context.Context) error {
 	if err := b.GenerateDockerfile(); err != nil {
 		return err
 	}
@@ -367,14 +355,14 @@ func (b *ImageBuilder) Build() error {
 	for _, fullTag := range b.AdditionalTags {
 		fullTag := strings.TrimSpace(fullTag)
 		if len(fullTag) == 0 {
-			log.Debug("ImageBuilder.Build: Skipping empty tag")
+			log.Debug("ImageBuilderDocker.Build: Skipping empty tag")
 			continue
 		}
 
 		var options docker.TagImageOptions
 		parts := strings.Split(fullTag, ":")
 		if len(parts) > 2 {
-			log.Debugf("ImageBuilder.Build: Skipping malformed tag - '%s'", fullTag)
+			log.Debugf("ImageBuilderDocker.Build: Skipping malformed tag - '%s'", fullTag)
 			continue
 		}
 
@@ -388,15 +376,19 @@ func (b *ImageBuilder) Build() error {
 		targetImage := b.BuildOptions.Name
 		if err := b.APIClient.TagImage(targetImage, options); err != nil {
 			//not failing on tagging errors
-			log.Debugf("ImageBuilder.Build: Error tagging image '%s' with tag - '%s' (error - %v)", targetImage, fullTag, err)
+			log.Debugf("ImageBuilderDocker.Build: Error tagging image '%s' with tag - '%s' (error - %v)", targetImage, fullTag, err)
 		}
 	}
 
 	return nil
 }
 
+func (b *ImageBuilderDocker) HasData() bool {
+	return b.data != ""
+}
+
 // GenerateDockerfile creates a Dockerfile file
-func (b *ImageBuilder) GenerateDockerfile() error {
+func (b *ImageBuilderDocker) GenerateDockerfile() error {
 	return dockerfile.GenerateFromInfo(b.BuildOptions.ContextDir,
 		b.Volumes,
 		b.WorkingDir,
@@ -406,6 +398,5 @@ func (b *ImageBuilder) GenerateDockerfile() error {
 		b.ExposedPorts,
 		b.Entrypoint,
 		b.Cmd,
-		b.HasData,
-		b.TarData)
+		b.data)
 }

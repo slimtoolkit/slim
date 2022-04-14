@@ -6,6 +6,8 @@ import (
 	"strings"
 	"time"
 
+	pluginmanager "github.com/docker/cli/cli-plugins/manager"
+	"github.com/docker/cli/cli/command"
 	docker "github.com/fsouza/go-dockerclient"
 
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
@@ -105,6 +107,22 @@ type ContainerBuildOptions struct {
 	CacheFrom         []string
 	Target            string
 	NetworkMode       string
+	Buildx            BuildxOptions
+}
+
+type BuildxOptions struct {
+	// Plugin configuration.
+	CLI    *command.DockerCli
+	Plugin *pluginmanager.Plugin
+	Push   bool
+
+	// buildx args.
+	Builder      string
+	ProgressMode string
+	Platforms    []string
+	Exports      []string
+	Pull         bool
+	NoCache      bool
 }
 
 type CBOBuildArg struct {
