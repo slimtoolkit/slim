@@ -103,6 +103,10 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagExpose),
 		commands.Cflag(commands.FlagMount),
 		//Container Build Options
+		cflag(FlagUseBuildKit),
+		cflag(FlagBuildKitPlatforms),
+		cflag(FlagBuildKitBuilder),
+		cflag(FlagBuildKitPush),
 		cflag(FlagBuildFromDockerfile),
 		cflag(FlagDockerfileContext),
 		cflag(FlagTagFat),
@@ -169,7 +173,22 @@ var CLI = &cli.Command{
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name)
 
-		cbOpts, err := GetContainerBuildOptions(ctx)
+		gparams, ok := commands.CLIContextGet(ctx.Context, commands.GlobalParams).(*commands.GenericParams)
+		if !ok || gparams == nil {
+			xc.Out.Error("param.global", "missing params")
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
+		appOpts, ok := commands.CLIContextGet(ctx.Context, commands.AppParams).(*config.AppOptions)
+		if !ok || appOpts == nil {
+			log.Debug("param.error.app.options - no app params")
+		}
+
+		cbOpts, err := GetContainerBuildOptions(ctx, gparams)
 		if err != nil {
 			xc.Out.Error("param.error.container.build.options", err.Error())
 			xc.Out.State("exited",
@@ -225,7 +244,7 @@ var CLI = &cli.Command{
 				if targetRef == "" {
 					if ctx.Args().Len() < 1 {
 						xc.Out.Error("param.target", "missing image ID/name")
-						cli.ShowCommandHelp(ctx, Name)
+						_ = cli.ShowCommandHelp(ctx, Name)
 						return nil
 					} else {
 						targetRef = ctx.Args().First()
@@ -236,7 +255,7 @@ var CLI = &cli.Command{
 				if targetRef == "" {
 					if ctx.Args().Len() < 1 {
 						xc.Out.Error("param.target", "missing Dockerfile build context directory")
-						cli.ShowCommandHelp(ctx, Name)
+						_ = cli.ShowCommandHelp(ctx, Name)
 						return nil
 					} else {
 						targetRef = ctx.Args().First()
@@ -247,23 +266,8 @@ var CLI = &cli.Command{
 
 		if targetRef == "" {
 			xc.Out.Error("param.target", "missing target - make sure to set one of the target params")
-			cli.ShowCommandHelp(ctx, Name)
+			_ = cli.ShowCommandHelp(ctx, Name)
 			return nil
-		}
-
-		gparams, ok := commands.CLIContextGet(ctx.Context, commands.GlobalParams).(*commands.GenericParams)
-		if !ok || gparams == nil {
-			xc.Out.Error("param.global", "missing params")
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
-		}
-
-		appOpts, ok := commands.CLIContextGet(ctx.Context, commands.AppParams).(*config.AppOptions)
-		if !ok || appOpts == nil {
-			log.Debug("param.error.app.options - no app params")
 		}
 
 		crOpts, err := commands.GetContainerRunOptions(ctx)
@@ -651,11 +655,6 @@ var CLI = &cli.Command{
 				})
 		}
 
-		commandReport := ctx.String(commands.FlagCommandReport)
-		if commandReport == "off" {
-			commandReport = ""
-		}
-
 		rtaOnbuildBaseImage := ctx.Bool(commands.FlagRTAOnbuildBaseImage)
 		rtaSourcePT := ctx.Bool(commands.FlagRTASourcePT)
 
@@ -754,7 +753,9 @@ var CLI = &cli.Command{
 			rtaOnbuildBaseImage,
 			rtaSourcePT,
 			ctx.String(commands.FlagSensorIPCEndpoint),
-			ctx.String(commands.FlagSensorIPCMode))
+			ctx.String(commands.FlagSensorIPCMode),
+			ctx.Bool(FlagUseBuildKit),
+		)
 
 		return nil
 	},

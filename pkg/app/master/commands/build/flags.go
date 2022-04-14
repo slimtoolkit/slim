@@ -1,15 +1,33 @@
 package build
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"path/filepath"
+	"runtime"
 	"strings"
+	"time"
+
+	"github.com/docker/buildx/util/buildflags"
+	"github.com/docker/buildx/util/confutil"
+	"github.com/docker/buildx/util/platformutil"
+	"github.com/docker/buildx/util/progress"
+	"github.com/docker/cli/cli/command"
+	"github.com/docker/cli/cli/flags"
+	"github.com/docker/docker/client"
+	"github.com/docker/go-connections/tlsconfig"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
+	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
+
+	_ "github.com/docker/buildx/driver/docker"
+	// _ "github.com/docker/buildx/driver/docker-container"
+	// _ "github.com/docker/buildx/driver/kubernetes"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
-
-	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli/v2"
+	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 )
 
 // Build command flag names
@@ -85,6 +103,12 @@ const (
 	FlagCBOTarget           = "cbo-target"
 	FlagCBONetwork          = "cbo-network"
 	FlagCBOCacheFrom        = "cbo-cache-from"
+
+	// BuildKit flags.
+	FlagUseBuildKit       = "use-buildkit"
+	FlagBuildKitPlatforms = "buildkit-platforms"
+	FlagBuildKitBuilder   = "buildkit-builder"
+	FlagBuildKitPush      = "buildkit-push"
 )
 
 // Build command flag usage info
@@ -469,6 +493,37 @@ var Flags = map[string]cli.Flag{
 		Usage:   FlagIncludeExeFileUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_EXE_FILE"},
 	},
+	FlagUseBuildKit: &cli.BoolFlag{
+		Name:  FlagUseBuildKit,
+		Usage: "Build with buildkit via 'docker buildx build'",
+		EnvVars: []string{
+			"DSLIM_USE_BUILDKIT",
+			// https://docs.docker.com/develop/develop-images/build_enhancements/#to-enable-buildkit-builds
+			"DOCKER_BUILDKIT",
+		},
+	},
+	FlagBuildKitPlatforms: &cli.StringSliceFlag{
+		Name:  FlagBuildKitPlatforms,
+		Value: cli.NewStringSlice(),
+		Usage: "Platforms to build outputs for; currenly only one is allowed. Can only be used with --use-buildkit. ",
+		// "If a Dockerfile is set, only the first platform is used to build that image. " +
+		// "All platforms are used when building the output image.",
+		EnvVars: []string{"DSLIM_BUILDKIT_PLATFORMS"},
+	},
+	FlagBuildKitBuilder: &cli.StringFlag{
+		Name:  FlagBuildKitBuilder,
+		Usage: "The buildkit builder to use instead of default. Can only be used with --use-buildkit",
+		EnvVars: []string{
+			"DSLIM_BUILDKIT_BUILDER",
+			// https://github.com/docker/buildx/blob/a2d5bc7/commands/root.go#L82
+			"BUILDX_BUILDER",
+		},
+	},
+	FlagBuildKitPush: &cli.StringFlag{
+		Name:    FlagBuildKitPush,
+		Usage:   "Push the resulting images to a registry. Can only be used with --use-buildkit",
+		EnvVars: []string{"DSLIM_BUILDKIT_PUSH"},
+	},
 }
 
 func cflag(name string) cli.Flag {
@@ -480,8 +535,8 @@ func cflag(name string) cli.Flag {
 	return cf
 }
 
-func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, error) {
-	cbo := &config.ContainerBuildOptions{
+func GetContainerBuildOptions(ctx *cli.Context, gparams *commands.GenericParams) (cbo *config.ContainerBuildOptions, err error) {
+	cbo = &config.ContainerBuildOptions{
 		Labels: map[string]string{},
 	}
 
@@ -491,6 +546,14 @@ func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, 
 	cbo.Target = ctx.String(FlagCBOTarget)
 	cbo.NetworkMode = ctx.String(FlagCBONetwork)
 	cbo.CacheFrom = ctx.StringSlice(FlagCBOCacheFrom)
+
+	// Since there are components of buildx init that may fail if buildx/buildkit is not configured,
+	// do not init buildkit opts if not turned on.
+	if ctx.Bool(FlagUseBuildKit) {
+		if cbo.BuildKit, err = makeBuildKitOptions(ctx, gparams, cbo.DockerfileContext); err != nil {
+			return nil, err
+		}
+	}
 
 	hosts := ctx.StringSlice(FlagCBOAddHost)
 	//TODO: figure out how to encode multiple host entries to a string (docs are not helpful)
@@ -556,6 +619,103 @@ func GetContainerBuildOptions(ctx *cli.Context) (*config.ContainerBuildOptions, 
 	}
 
 	return cbo, nil
+}
+
+func makeBuildKitOptions(ctx *cli.Context, gparams *commands.GenericParams, ctxDir string) (bkOpts config.BuildKitOptions, err error) {
+	// A DockerCli is just an entrypoint into some convenience functions used by buildx.
+	cliOpts := []command.DockerCliOption{
+		command.WithInputStream(os.Stdin),
+		command.WithErrorStream(os.Stderr),
+		command.WithOutputStream(os.Stdout),
+	}
+	dockerCLI, err := command.NewDockerCli(cliOpts...)
+	if err != nil {
+		return config.BuildKitOptions{}, err
+	}
+
+	makeClient := func(*command.DockerCli) (client.APIClient, error) {
+		return dockerclient.NewAPIClient(gparams.ClientConfig)
+	}
+	initOpts := []command.InitializeOpt{
+		command.WithInitializeClient(makeClient),
+	}
+	var hosts []string
+	if gparams.ClientConfig.Host != "" {
+		hosts = append(hosts, gparams.ClientConfig.Host)
+	}
+	var tlsOpts *tlsconfig.Options
+	if gparams.ClientConfig.TLSCertPath != "" {
+		tlsOpts = &tlsconfig.Options{
+			CAFile:   filepath.Join(gparams.ClientConfig.TLSCertPath, "ca.pem"),
+			CertFile: filepath.Join(gparams.ClientConfig.TLSCertPath, "cert.pem"),
+			KeyFile:  filepath.Join(gparams.ClientConfig.TLSCertPath, "key.pem"),
+		}
+	}
+	clientOpts := flags.ClientOptions{
+		Common: &flags.CommonOptions{
+			Debug:      gparams.Debug,
+			Hosts:      hosts,
+			LogLevel:   gparams.LogLevel,
+			TLS:        gparams.ClientConfig.UseTLS,
+			TLSVerify:  gparams.ClientConfig.VerifyTLS,
+			TLSOptions: tlsOpts,
+		},
+	}
+	if err := dockerCLI.Initialize(&clientOpts, initOpts...); err != nil {
+		return config.BuildKitOptions{}, err
+	}
+
+	bkOpts.Pull = true
+	bkOpts.NoCache = false
+	bkOpts.ClientGetter = dockerAPI(dockerCLI)
+	bkOpts.ConfigDir = confutil.ConfigDir(dockerCLI)
+
+	goctx, cancel := context.WithTimeout(context.TODO(), 5*time.Second)
+	defer cancel()
+	builder := ctx.String(FlagBuildKitBuilder)
+	bkOpts.DriverInfos, err = getInstanceOrDefault(goctx, dockerCLI, builder, ctxDir)
+	if err != nil {
+		return config.BuildKitOptions{}, err
+	}
+
+	// Since logs are proxied via docker-slim, align with other options.
+	if ctx.Bool(FlagShowBuildLogs) {
+		bkOpts.ProgressMode = progress.PrinterModePlain
+	} else {
+		bkOpts.ProgressMode = progress.PrinterModeQuiet
+	}
+
+	push := ctx.Bool(FlagBuildKitPush)
+	// TODO(estroz): make outputs options
+	var outputs []string
+	if push {
+		outputs = append(outputs, "type=registry")
+	} else {
+		outputs = append(outputs, "type=docker")
+	}
+	if bkOpts.Exports, err = buildflags.ParseOutputs(outputs); err != nil {
+		return config.BuildKitOptions{}, err
+	}
+
+	platforms := ctx.StringSlice(FlagBuildKitPlatforms)
+	switch len(platforms) {
+	case 0:
+		// Just use the current arch.
+		bkOpts.Platforms = append(bkOpts.Platforms, v1.Platform{
+			OS:           runtime.GOOS,
+			Architecture: runtime.GOARCH,
+		})
+	default:
+		if bkOpts.Platforms, err = platformutil.Parse(platforms); err != nil {
+			return config.BuildKitOptions{}, err
+		}
+	}
+	if !push && len(bkOpts.Platforms) > 1 {
+		// TODO(estroz): remove this requirement if multi-platform builds are enabled.
+		return bkOpts, fmt.Errorf("only one platform is allowed without --buildkit-push")
+	}
+
+	return bkOpts, nil
 }
 
 //TODO: move/share when the 'edit' command needs these flags too

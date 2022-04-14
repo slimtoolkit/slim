@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -100,7 +99,7 @@ func UnpackLayer(dest string, layer io.Reader, options *TarOptions) (size int64,
 				basename := filepath.Base(hdr.Name)
 				aufsHardlinks[basename] = hdr
 				if aufsTempdir == "" {
-					if aufsTempdir, err = ioutil.TempDir("", "dockerplnk"); err != nil {
+					if aufsTempdir, err = os.MkdirTemp("", "dockerplnk"); err != nil {
 						return 0, err
 					}
 					defer os.RemoveAll(aufsTempdir)
@@ -114,6 +113,7 @@ func UnpackLayer(dest string, layer io.Reader, options *TarOptions) (size int64,
 				continue
 			}
 		}
+		//#nosec G305 -- The joined path is guarded against path traversal.
 		path := filepath.Join(dest, hdr.Name)
 		rel, err := filepath.Rel(dest, path)
 		if err != nil {
@@ -210,6 +210,7 @@ func UnpackLayer(dest string, layer io.Reader, options *TarOptions) (size int64,
 	}
 
 	for _, hdr := range dirs {
+		//#nosec G305 -- The header was checked for path traversal before it was appended to the dirs slice.
 		path := filepath.Join(dest, hdr.Name)
 		if err := system.Chtimes(path, hdr.AccessTime, hdr.ModTime); err != nil {
 			return 0, err

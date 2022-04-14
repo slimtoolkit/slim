@@ -1,0 +1,263 @@
+syntax = "proto3";
+
+package moby.buildkit.v1.frontend;
+
+import "github.com/gogo/protobuf/gogoproto/gogo.proto";
+import "github.com/gogo/googleapis/google/rpc/status.proto";
+import "github.com/moby/buildkit/solver/pb/ops.proto";
+import "github.com/moby/buildkit/api/types/worker.proto";
+import "github.com/moby/buildkit/util/apicaps/pb/caps.proto";
+import "github.com/tonistiigi/fsutil/types/stat.proto";
+
+
+option (gogoproto.sizer_all) = true;
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.unmarshaler_all) = true;
+
+service LLBBridge {
+	// apicaps:CapResolveImage
+	rpc ResolveImageConfig(ResolveImageConfigRequest) returns (ResolveImageConfigResponse);
+	// apicaps:CapSolveBase
+	rpc Solve(SolveRequest) returns (SolveResponse);
+	// apicaps:CapReadFile
+	rpc ReadFile(ReadFileRequest) returns (ReadFileResponse);
+	// apicaps:CapReadDir
+	rpc ReadDir(ReadDirRequest) returns (ReadDirResponse);
+	// apicaps:CapStatFile
+	rpc StatFile(StatFileRequest) returns (StatFileResponse);
+	rpc Ping(PingRequest) returns (PongResponse);
+	rpc Return(ReturnRequest) returns (ReturnResponse);
+	// apicaps:CapFrontendInputs
+	rpc Inputs(InputsRequest) returns (InputsResponse);
+
+	rpc NewContainer(NewContainerRequest) returns (NewContainerResponse);
+	rpc ReleaseContainer(ReleaseContainerRequest) returns (ReleaseContainerResponse);
+	rpc ExecProcess(stream ExecMessage) returns (stream ExecMessage);
+
+	// apicaps:CapGatewayWarnings
+	rpc Warn(WarnRequest) returns (WarnResponse); 
+}
+
+message Result {
+	oneof result {
+		// Deprecated non-array refs.
+		string refDeprecated = 1;
+		RefMapDeprecated refsDeprecated = 2;
+
+		Ref ref = 3;
+		RefMap refs = 4;
+	}
+	map<string, bytes> metadata = 10;
+}
+
+message RefMapDeprecated {
+	map<string, string> refs = 1;
+}
+
+message Ref {
+	string id = 1;
+	pb.Definition def = 2;
+}
+
+message RefMap {
+	map<string, Ref> refs = 1;
+}
+
+message ReturnRequest {
+	Result result = 1;
+	google.rpc.Status error = 2;
+}
+
+message ReturnResponse {
+}
+
+message InputsRequest {
+}
+
+message InputsResponse {
+	map<string, pb.Definition> Definitions = 1;
+}
+
+message ResolveImageConfigRequest {
+	string Ref = 1;
+	pb.Platform Platform = 2;
+	string ResolveMode = 3;
+	string LogName = 4;
+}
+
+message ResolveImageConfigResponse {
+	string Digest = 1 [(gogoproto.customtype) = "github.com/opencontainers/go-digest.Digest", (gogoproto.nullable) = false];
+	bytes Config = 2;
+}
+
+message SolveRequest {
+	pb.Definition Definition = 1;
+	string Frontend = 2;
+	map<string, string> FrontendOpt = 3;
+	// ImportCacheRefsDeprecated is deprecated in favor or the new Imports since BuildKit v0.4.0.
+	// When ImportCacheRefsDeprecated is set, the solver appends
+	// {.Type = "registry", .Attrs = {"ref": importCacheRef}}
+	// for each of the ImportCacheRefs entry to CacheImports for compatibility. (planned to be removed)
+	repeated string ImportCacheRefsDeprecated = 4;
+	bool allowResultReturn = 5;
+	bool allowResultArrayRef = 6;
+	
+	// apicaps.CapSolveInlineReturn deprecated
+	bool Final = 10;
+	bytes ExporterAttr = 11;
+	// CacheImports was added in BuildKit v0.4.0.
+	// apicaps:CapImportCaches
+	repeated CacheOptionsEntry CacheImports = 12;
+
+	// apicaps:CapFrontendInputs
+	map<string, pb.Definition> FrontendInputs = 13;
+
+	bool Evaluate = 14;
+}
+
+// CacheOptionsEntry corresponds to the control.CacheOptionsEntry
+message CacheOptionsEntry {
+	string Type = 1;
+	map<string, string> Attrs = 2;
+}
+
+message SolveResponse {
+	// deprecated
+	string ref = 1; // can be used by readfile request
+	// deprecated
+/*	bytes ExporterAttr = 2;*/
+	
+	// these fields are returned when allowMapReturn was set
+	Result result = 3;
+}
+
+message ReadFileRequest {
+	string Ref = 1;
+	string FilePath = 2;
+	FileRange Range = 3;
+}
+
+message FileRange {
+	int64 Offset = 1;
+	int64 Length = 2;
+}
+
+message ReadFileResponse {
+	bytes Data = 1;
+}
+
+message ReadDirRequest {
+	string Ref = 1;
+	string DirPath = 2;
+	string IncludePattern = 3;
+}
+
+message ReadDirResponse {
+	repeated fsutil.types.Stat entries = 1;
+}
+
+message StatFileRequest {
+	string Ref = 1;
+	string Path = 2;
+}
+
+message StatFileResponse {
+	fsutil.types.Stat stat = 1;
+}
+
+message PingRequest{
+}
+message PongResponse{
+	repeated moby.buildkit.v1.apicaps.APICap FrontendAPICaps = 1 [(gogoproto.nullable) = false];
+	repeated moby.buildkit.v1.apicaps.APICap LLBCaps = 2 [(gogoproto.nullable) = false];
+	repeated moby.buildkit.v1.types.WorkerRecord Workers = 3;
+}
+
+message WarnRequest {
+	string digest = 1 [(gogoproto.customtype) = "github.com/opencontainers/go-digest.Digest", (gogoproto.nullable) = false];
+	int64 level = 2;
+	bytes short = 3;
+	repeated bytes detail = 4;
+	string url = 5;
+	pb.SourceInfo info = 6;
+	repeated pb.Range ranges = 7;
+}
+
+message WarnResponse{}
+
+message NewContainerRequest {
+	string ContainerID = 1;
+	// For mount input values we can use random identifiers passed with ref
+	repeated pb.Mount Mounts = 2;
+	pb.NetMode Network = 3;
+	pb.Platform platform = 4;
+	pb.WorkerConstraints constraints = 5;
+	repeated pb.HostIP extraHosts = 6;
+}
+
+message NewContainerResponse{}
+
+message ReleaseContainerRequest {
+	string ContainerID = 1;
+}
+
+message ReleaseContainerResponse{}
+
+message ExecMessage {
+	string ProcessID = 1;
+	oneof Input {
+		// InitMessage sent from client to server will start a new process in a
+		// container
+		InitMessage Init = 2;
+		// FdMessage used from client to server for input (stdin) and 
+		// from server to client for output (stdout, stderr)
+		FdMessage File = 3;
+		// ResizeMessage used from client to server for terminal resize events
+		ResizeMessage Resize = 4;
+		// StartedMessage sent from server to client after InitMessage to
+		// indicate the process has started.
+		StartedMessage Started = 5;
+		// ExitMessage sent from server to client will contain the exit code
+		// when the process ends.
+		ExitMessage Exit = 6;
+		// DoneMessage from server to client will be the last message for any
+		// process.  Note that FdMessage might be sent after ExitMessage.
+		DoneMessage Done = 7;
+		// SignalMessage is used from client to server to send signal events
+		SignalMessage Signal = 8;
+	}
+}
+
+message InitMessage{
+	string ContainerID = 1;
+	pb.Meta Meta = 2;
+	repeated uint32 Fds = 3;
+	bool Tty = 4;
+	pb.SecurityMode Security = 5;
+}
+
+message ExitMessage {
+	uint32 Code = 1;
+	google.rpc.Status Error = 2;
+}
+
+message StartedMessage{}
+
+message DoneMessage{}
+
+message FdMessage{
+	uint32 Fd = 1; // what fd the data was from
+	bool EOF = 2;  // true if eof was reached
+	bytes Data = 3;
+}
+
+message ResizeMessage{
+	uint32 Rows = 1;
+	uint32 Cols = 2;
+}
+
+message SignalMessage {
+	// we only send name (ie HUP, INT) because the int values
+	// are platform dependent.
+	string Name = 1;
+}

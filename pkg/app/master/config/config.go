@@ -6,7 +6,10 @@ import (
 	"strings"
 	"time"
 
+	"github.com/docker/buildx/build"
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/moby/buildkit/client"
+	v1 "github.com/opencontainers/image-spec/specs-go/v1"
 
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
@@ -105,6 +108,18 @@ type ContainerBuildOptions struct {
 	CacheFrom         []string
 	Target            string
 	NetworkMode       string
+	BuildKit          BuildKitOptions
+}
+
+type BuildKitOptions struct {
+	ClientGetter build.DockerAPI
+	ProgressMode string
+	Platforms    []v1.Platform
+	ConfigDir    string
+	DriverInfos  []build.DriverInfo
+	Exports      []client.ExportEntry
+	Pull         bool
+	NoCache      bool
 }
 
 type CBOBuildArg struct {
