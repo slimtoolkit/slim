@@ -1,21 +1,20 @@
+TARGET_PLATFORM_DEV=$(shell go env GOOS)_$(shell go env GOARCH)
+
 default: build_in_docker ## build docker-slim in docker by default
 
-build_in_docker:   ## build docker-slim in docker
+build_in_docker:  ## build docker-slim for all supported architectures, in docker
 	rm -rfv bin
 	'$(CURDIR)/scripts/docker-builder.run.sh'
 
-build_m1_in_docker:
+build_in_docker_dev:  ## build docker-slim for the current platform in bin/, in docker
 	rm -rfv bin
-	'$(CURDIR)/scripts/docker-builder-m1.run.sh'
+	TARGET_PLATFORMS=$(TARGET_PLATFORM_DEV) '$(CURDIR)/scripts/docker-builder.run.sh'
 
-build:  ## build docker-slim
+build:  ## build docker-slim for all supported architectures
 	'$(CURDIR)/scripts/src.build.sh'
 
-build_m1:  ## build docker-slim
-	'$(CURDIR)/scripts/src.build.m1.sh'
-
-build_dev:  ## build docker-slim for development (quickly), in bin/
-	'$(CURDIR)/scripts/src.build.quick.sh'
+build_dev:  ## build docker-slim for the current platform in bin/
+	TARGET_PLATFORMS=$(TARGET_PLATFORM_DEV) '$(CURDIR)/scripts/src.build.sh'
 
 fmt:  ## format all golang files
 	'$(CURDIR)/scripts/src.fmt.sh'

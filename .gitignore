@@ -1,12 +1,10 @@
 .DS_Store
 /docker-slim
 /docker-slim-sensor
-/dist_linux*/
-/dist_mac/
-/dist_mac_m1/
+/dist_*/
 /bin/
 /_gopath/
-dist_linux*.tar.gz
-dist_mac.zip
+dist_*.tar.gz
+dist_*.zip
 .idea
 *.swp
