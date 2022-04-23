@@ -1,5 +1,17 @@
 # Releases
 
+## 1.37.6 (4/22/2022)
+
+### Improvements
+
+- Source image label in minified images
+- Full image path enhancements for container entry info
+
+### Bug Fixes
+
+- Traced application signal handling bugfix
+- Healthcheck instruction parsing bugfix
+
 ## 1.37.5 (3/20/2022)
 
 ### New Features
