@@ -1376,7 +1376,8 @@ func OnCommand(
 		doShowBuildLogs,
 		imageOverrideSelectors,
 		overrides,
-		instructions)
+		instructions,
+		targetRef)
 	xc.FailOn(err)
 
 	if !builder.HasData {
