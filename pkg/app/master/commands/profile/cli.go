@@ -21,7 +21,7 @@ var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
-	Flags: []cli.Flag{
+	Flags: append([]cli.Flag{
 		commands.Cflag(commands.FlagTarget),
 		commands.Cflag(commands.FlagPull),
 		commands.Cflag(commands.FlagDockerConfigPath),
@@ -44,24 +44,6 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagComposeEnvFile),                 //not used yet
 		commands.Cflag(commands.FlagComposeProjectName),             //not used yet
 		commands.Cflag(commands.FlagComposeWorkdir),                 //not used yet
-		//http probes
-		commands.Cflag(commands.FlagHTTPProbeOff),
-		commands.Cflag(commands.FlagHTTPProbe),
-		commands.Cflag(commands.FlagHTTPProbeCmd),
-		commands.Cflag(commands.FlagHTTPProbeCmdFile),
-		commands.Cflag(commands.FlagHTTPProbeStartWait),
-		commands.Cflag(commands.FlagHTTPProbeRetryCount),
-		commands.Cflag(commands.FlagHTTPProbeRetryWait),
-		commands.Cflag(commands.FlagHTTPProbePorts),
-		commands.Cflag(commands.FlagHTTPProbeFull),
-		commands.Cflag(commands.FlagHTTPProbeExitOnFailure),
-		commands.Cflag(commands.FlagHTTPProbeCrawl),
-		commands.Cflag(commands.FlagHTTPCrawlMaxDepth),
-		commands.Cflag(commands.FlagHTTPCrawlMaxPageCount),
-		commands.Cflag(commands.FlagHTTPCrawlConcurrency),
-		commands.Cflag(commands.FlagHTTPMaxConcurrentCrawlers),
-		commands.Cflag(commands.FlagHTTPProbeAPISpec),
-		commands.Cflag(commands.FlagHTTPProbeAPISpecFile),
 		commands.Cflag(commands.FlagPublishPort),
 		commands.Cflag(commands.FlagPublishExposedPorts),
 		commands.Cflag(commands.FlagHostExec),
@@ -101,7 +83,7 @@ var CLI = &cli.Command{
 		//Sensor flags:
 		commands.Cflag(commands.FlagSensorIPCEndpoint),
 		commands.Cflag(commands.FlagSensorIPCMode),
-	},
+	}, commands.HTTPProbeFlags()...),
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleOutput))
 
@@ -152,93 +134,7 @@ var CLI = &cli.Command{
 
 		doPublishExposedPorts := ctx.Bool(commands.FlagPublishExposedPorts)
 
-		httpCrawlMaxDepth := ctx.Int(commands.FlagHTTPCrawlMaxDepth)
-		httpCrawlMaxPageCount := ctx.Int(commands.FlagHTTPCrawlMaxPageCount)
-		httpCrawlConcurrency := ctx.Int(commands.FlagHTTPCrawlConcurrency)
-		httpMaxConcurrentCrawlers := ctx.Int(commands.FlagHTTPMaxConcurrentCrawlers)
-		doHTTPProbeCrawl := ctx.Bool(commands.FlagHTTPProbeCrawl)
-
-		doHTTPProbe := ctx.Bool(commands.FlagHTTPProbe)
-		if doHTTPProbe && ctx.Bool(commands.FlagHTTPProbeOff) {
-			doHTTPProbe = false
-		}
-
-		httpProbeCmds, err := commands.GetHTTPProbes(ctx)
-		if err != nil {
-			xc.Out.Error("param.http.probe", err.Error())
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
-		}
-
-		if doHTTPProbe && len(httpProbeCmds) == 0 {
-			//add default probe cmd if the "http-probe" flag is set
-			//but only if there are no custom http probe commands
-			xc.Out.Info("param.http.probe",
-				ovars{
-					"message": "using default probe",
-				})
-
-			defaultCmd := commands.GetDefaultHTTPProbe()
-
-			if doHTTPProbeCrawl {
-				defaultCmd.Crawl = true
-			}
-			httpProbeCmds = append(httpProbeCmds, defaultCmd)
-		}
-
-		if len(httpProbeCmds) > 0 {
-			doHTTPProbe = true
-		}
-
-		httpProbeStartWait := ctx.Int(commands.FlagHTTPProbeStartWait)
-		httpProbeRetryCount := ctx.Int(commands.FlagHTTPProbeRetryCount)
-		httpProbeRetryWait := ctx.Int(commands.FlagHTTPProbeRetryWait)
-		httpProbePorts, err := commands.ParseHTTPProbesPorts(ctx.String(commands.FlagHTTPProbePorts))
-		if err != nil {
-			xc.Out.Error("param.http.probe.ports", err.Error())
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
-		}
-
-		doHTTPProbeFull := ctx.Bool(commands.FlagHTTPProbeFull)
-		doHTTPProbeExitOnFailure := ctx.Bool(commands.FlagHTTPProbeExitOnFailure)
-
-		httpProbeAPISpecs := ctx.StringSlice(commands.FlagHTTPProbeAPISpec)
-		if len(httpProbeAPISpecs) > 0 {
-			doHTTPProbe = true
-		}
-
-		httpProbeAPISpecFiles, fileErrors := commands.ValidateFiles(ctx.StringSlice(commands.FlagHTTPProbeAPISpecFile))
-		if len(fileErrors) > 0 {
-			var err error
-			for k, v := range fileErrors {
-				err = v
-				xc.Out.Info("error",
-					ovars{
-						"file":  k,
-						"error": err,
-					})
-
-				xc.Out.Error("param.error.http.api.spec.file", err.Error())
-				xc.Out.State("exited",
-					ovars{
-						"exit.code": -1,
-					})
-				xc.Exit(-1)
-			}
-
-			return err
-		}
-
-		if len(httpProbeAPISpecFiles) > 0 {
-			doHTTPProbe = true
-		}
+		httpProbeOpts := commands.GetHTTPProbeOptions(xc, ctx)
 
 		continueAfter, err := commands.GetContinueAfter(ctx)
 		if err != nil {
@@ -250,7 +146,7 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
-		if !doHTTPProbe && continueAfter.Mode == "probe" {
+		if !httpProbeOpts.Do && continueAfter.Mode == "probe" {
 			continueAfter.Mode = "enter"
 			xc.Out.Info("enter",
 				ovars{
@@ -395,20 +291,7 @@ var CLI = &cli.Command{
 			registrySecret,
 			doShowPullLogs,
 			crOpts,
-			doHTTPProbe,
-			httpProbeCmds,
-			httpProbeStartWait,
-			httpProbeRetryCount,
-			httpProbeRetryWait,
-			httpProbePorts,
-			httpCrawlMaxDepth,
-			httpCrawlMaxPageCount,
-			httpCrawlConcurrency,
-			httpMaxConcurrentCrawlers,
-			doHTTPProbeFull,
-			doHTTPProbeExitOnFailure,
-			httpProbeAPISpecs,
-			httpProbeAPISpecFiles,
+			httpProbeOpts,
 			portBindings,
 			doPublishExposedPorts,
 			hostExecProbes,

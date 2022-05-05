@@ -24,7 +24,7 @@ var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
-	Flags: []cli.Flag{
+	Flags: append([]cli.Flag{
 		commands.Cflag(commands.FlagTarget),
 		commands.Cflag(commands.FlagPull),
 		commands.Cflag(commands.FlagDockerConfigPath),
@@ -48,28 +48,16 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagComposeProjectName),
 		commands.Cflag(commands.FlagComposeWorkdir),
 		commands.Cflag(commands.FlagContainerProbeComposeSvc),
-
-		commands.Cflag(commands.FlagHTTPProbeOff),
-		commands.Cflag(commands.FlagHTTPProbe),
-		commands.Cflag(commands.FlagHTTPProbeCmd),
-		commands.Cflag(commands.FlagHTTPProbeCmdFile),
-		commands.Cflag(commands.FlagHTTPProbeStartWait),
-		commands.Cflag(commands.FlagHTTPProbeRetryCount),
-		commands.Cflag(commands.FlagHTTPProbeRetryWait),
-		commands.Cflag(commands.FlagHTTPProbePorts),
-		commands.Cflag(commands.FlagHTTPProbeFull),
-		commands.Cflag(commands.FlagHTTPProbeExitOnFailure),
-		commands.Cflag(commands.FlagHTTPProbeCrawl),
-		commands.Cflag(commands.FlagHTTPCrawlMaxDepth),
-		commands.Cflag(commands.FlagHTTPCrawlMaxPageCount),
-		commands.Cflag(commands.FlagHTTPCrawlConcurrency),
-		commands.Cflag(commands.FlagHTTPMaxConcurrentCrawlers),
-		commands.Cflag(commands.FlagHTTPProbeAPISpec),
-		commands.Cflag(commands.FlagHTTPProbeAPISpecFile),
-		commands.Cflag(commands.FlagHTTPProbeProxyEndpoint),
-		commands.Cflag(commands.FlagHTTPProbeProxyPort),
 		commands.Cflag(commands.FlagHostExec),
 		commands.Cflag(commands.FlagHostExecFile),
+
+		commands.Cflag(commands.FlagTargetKubeWorkload),
+		commands.Cflag(commands.FlagTargetKubeWorkloadNamespace),
+		commands.Cflag(commands.FlagTargetKubeWorkloadContainer),
+		commands.Cflag(commands.FlagTargetKubeWorkloadImage),
+		commands.Cflag(commands.FlagKubeManifestFile),
+		commands.Cflag(commands.FlagKubeKubeconfigFile),
+
 		commands.Cflag(commands.FlagPublishPort),
 		commands.Cflag(commands.FlagPublishExposedPorts),
 		commands.Cflag(commands.FlagRunTargetAsUser),
@@ -165,7 +153,7 @@ var CLI = &cli.Command{
 		//Sensor flags:
 		commands.Cflag(commands.FlagSensorIPCEndpoint),
 		commands.Cflag(commands.FlagSensorIPCMode),
-	},
+	}, commands.HTTPProbeFlags()...),
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleOutput))
 
@@ -214,33 +202,43 @@ var CLI = &cli.Command{
 		composeWorkdir := ctx.String(commands.FlagComposeWorkdir)
 		containerProbeComposeSvc := ctx.String(commands.FlagContainerProbeComposeSvc)
 
+		kubeOpts, err := GetKubernetesOptions(ctx)
+		if err != nil {
+			xc.Out.Error("param.error.kubernetes.options", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
 		var targetRef string
 
-		if len(composeFiles) > 0 && targetComposeSvc != "" {
+		if kubeOpts.HasTargetSet() {
+			targetRef = kubeOpts.Target.Workload
+		} else if len(composeFiles) > 0 && targetComposeSvc != "" {
 			targetRef = targetComposeSvc
-		} else {
-			if cbOpts.Dockerfile == "" {
-				targetRef = ctx.String(commands.FlagTarget)
+		} else if cbOpts.Dockerfile == "" {
+			targetRef = ctx.String(commands.FlagTarget)
 
-				if targetRef == "" {
-					if ctx.Args().Len() < 1 {
-						xc.Out.Error("param.target", "missing image ID/name")
-						cli.ShowCommandHelp(ctx, Name)
-						return nil
-					} else {
-						targetRef = ctx.Args().First()
-					}
+			if targetRef == "" {
+				if ctx.Args().Len() < 1 {
+					xc.Out.Error("param.target", "missing image ID/name")
+					cli.ShowCommandHelp(ctx, Name)
+					return nil
+				} else {
+					targetRef = ctx.Args().First()
 				}
-			} else {
-				targetRef = cbOpts.DockerfileContext
-				if targetRef == "" {
-					if ctx.Args().Len() < 1 {
-						xc.Out.Error("param.target", "missing Dockerfile build context directory")
-						cli.ShowCommandHelp(ctx, Name)
-						return nil
-					} else {
-						targetRef = ctx.Args().First()
-					}
+			}
+		} else {
+			targetRef = cbOpts.DockerfileContext
+			if targetRef == "" {
+				if ctx.Args().Len() < 1 {
+					xc.Out.Error("param.target", "missing Dockerfile build context directory")
+					cli.ShowCommandHelp(ctx, Name)
+					return nil
+				} else {
+					targetRef = ctx.Args().First()
 				}
 			}
 		}
@@ -262,7 +260,7 @@ var CLI = &cli.Command{
 		}
 
 		appOpts, ok := commands.CLIContextGet(ctx.Context, commands.AppParams).(*config.AppOptions)
-		if !ok || appOpts == nil {
+		if !kubeOpts.HasTargetSet() && (!ok || appOpts == nil) {
 			log.Debug("param.error.app.options - no app params")
 		}
 
@@ -297,93 +295,7 @@ var CLI = &cli.Command{
 
 		doPublishExposedPorts := ctx.Bool(commands.FlagPublishExposedPorts)
 
-		httpCrawlMaxDepth := ctx.Int(commands.FlagHTTPCrawlMaxDepth)
-		httpCrawlMaxPageCount := ctx.Int(commands.FlagHTTPCrawlMaxPageCount)
-		httpCrawlConcurrency := ctx.Int(commands.FlagHTTPCrawlConcurrency)
-		httpMaxConcurrentCrawlers := ctx.Int(commands.FlagHTTPMaxConcurrentCrawlers)
-		doHTTPProbeCrawl := ctx.Bool(commands.FlagHTTPProbeCrawl)
-
-		doHTTPProbe := ctx.Bool(commands.FlagHTTPProbe)
-		if doHTTPProbe && ctx.Bool(commands.FlagHTTPProbeOff) {
-			doHTTPProbe = false
-		}
-
-		httpProbeCmds, err := commands.GetHTTPProbes(ctx)
-		if err != nil {
-			xc.Out.Error("param.http.probe", err.Error())
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
-		}
-
-		if doHTTPProbe && len(httpProbeCmds) == 0 {
-			//add default probe cmd if the "http-probe" flag is set
-			//but only if there are no custom http probe commands
-			xc.Out.Info("param.http.probe",
-				ovars{
-					"message": "using default probe",
-				})
-
-			defaultCmd := commands.GetDefaultHTTPProbe()
-
-			if doHTTPProbeCrawl {
-				defaultCmd.Crawl = true
-			}
-			httpProbeCmds = append(httpProbeCmds, defaultCmd)
-		}
-
-		if len(httpProbeCmds) > 0 {
-			doHTTPProbe = true
-		}
-
-		httpProbeStartWait := ctx.Int(commands.FlagHTTPProbeStartWait)
-		httpProbeRetryCount := ctx.Int(commands.FlagHTTPProbeRetryCount)
-		httpProbeRetryWait := ctx.Int(commands.FlagHTTPProbeRetryWait)
-		httpProbePorts, err := commands.ParseHTTPProbesPorts(ctx.String(commands.FlagHTTPProbePorts))
-		if err != nil {
-			xc.Out.Error("param.http.probe.ports", err.Error())
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
-		}
-
-		doHTTPProbeFull := ctx.Bool(commands.FlagHTTPProbeFull)
-		doHTTPProbeExitOnFailure := ctx.Bool(commands.FlagHTTPProbeExitOnFailure)
-
-		httpProbeAPISpecs := ctx.StringSlice(commands.FlagHTTPProbeAPISpec)
-		if len(httpProbeAPISpecs) > 0 {
-			doHTTPProbe = true
-		}
-
-		httpProbeAPISpecFiles, fileErrors := commands.ValidateFiles(ctx.StringSlice(commands.FlagHTTPProbeAPISpecFile))
-		if len(fileErrors) > 0 {
-			var err error
-			for k, v := range fileErrors {
-				err = v
-				xc.Out.Info("error",
-					ovars{
-						"file":  k,
-						"error": err,
-					})
-
-				xc.Out.Error("param.error.http.api.spec.file", err.Error())
-				xc.Out.State("exited",
-					ovars{
-						"exit.code": -1,
-					})
-				xc.Exit(-1)
-			}
-
-			return err
-		}
-
-		if len(httpProbeAPISpecFiles) > 0 {
-			doHTTPProbe = true
-		}
+		httpProbeOpts := commands.GetHTTPProbeOptions(xc, ctx)
 
 		continueAfter, err := commands.GetContinueAfter(ctx)
 		if err != nil {
@@ -395,7 +307,7 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
-		if continueAfter.Mode == config.CAMProbe && !doHTTPProbe {
+		if continueAfter.Mode == config.CAMProbe && !httpProbeOpts.Do {
 			continueAfter.Mode = ""
 			xc.Out.Info("exec",
 				ovars{
@@ -525,9 +437,6 @@ var CLI = &cli.Command{
 					})
 			}
 		}
-
-		httpProbeProxyEndpoint := ctx.String(commands.FlagHTTPProbeProxyEndpoint)
-		httpProbeProxyPort := ctx.Int(commands.FlagHTTPProbeProxyPort)
 
 		doKeepPerms := ctx.Bool(FlagKeepPerms)
 
@@ -660,20 +569,6 @@ var CLI = &cli.Command{
 
 		doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
 
-		doIncludeAppNuxtDir := ctx.Bool(FlagIncludeAppNuxtDir)
-		doIncludeAppNuxtBuildDir := ctx.Bool(FlagIncludeAppNuxtBuildDir)
-		doIncludeAppNuxtDistDir := ctx.Bool(FlagIncludeAppNuxtDistDir)
-		doIncludeAppNuxtStaticDir := ctx.Bool(FlagIncludeAppNuxtStaticDir)
-		doIncludeAppNuxtNodeModulesDir := ctx.Bool(FlagIncludeAppNuxtNodeModulesDir)
-
-		doIncludeAppNextDir := ctx.Bool(FlagIncludeAppNextDir)
-		doIncludeAppNextBuildDir := ctx.Bool(FlagIncludeAppNextBuildDir)
-		doIncludeAppNextDistDir := ctx.Bool(FlagIncludeAppNextDistDir)
-		doIncludeAppNextStaticDir := ctx.Bool(FlagIncludeAppNextStaticDir)
-		doIncludeAppNextNodeModulesDir := ctx.Bool(FlagIncludeAppNextNodeModulesDir)
-
-		includeNodePackage := ctx.StringSlice(FlagIncludeNodePackage)
-
 		doExcludeMounts := ctx.Bool(commands.FlagExcludeMounts)
 		if doExcludeMounts {
 			for mpath := range volumeMounts {
@@ -696,17 +591,6 @@ var CLI = &cli.Command{
 			gparams,
 			targetRef,
 			doPull,
-			doIncludeAppNuxtDir,
-			doIncludeAppNuxtBuildDir,
-			doIncludeAppNuxtDistDir,
-			doIncludeAppNuxtStaticDir,
-			doIncludeAppNuxtNodeModulesDir,
-			doIncludeAppNextDir,
-			doIncludeAppNextBuildDir,
-			doIncludeAppNextDistDir,
-			doIncludeAppNextStaticDir,
-			doIncludeAppNextNodeModulesDir,
-			includeNodePackage,
 			dockerConfigPath,
 			registryAccount,
 			registrySecret,
@@ -730,22 +614,7 @@ var CLI = &cli.Command{
 			cbOpts,
 			crOpts,
 			outputTags,
-			doHTTPProbe,
-			httpProbeCmds,
-			httpProbeStartWait,
-			httpProbeRetryCount,
-			httpProbeRetryWait,
-			httpProbePorts,
-			httpCrawlMaxDepth,
-			httpCrawlMaxPageCount,
-			httpCrawlConcurrency,
-			httpMaxConcurrentCrawlers,
-			doHTTPProbeFull,
-			doHTTPProbeExitOnFailure,
-			httpProbeAPISpecs,
-			httpProbeAPISpecFiles,
-			httpProbeProxyEndpoint,
-			httpProbeProxyPort,
+			httpProbeOpts,
 			portBindings,
 			doPublishExposedPorts,
 			hostExecProbes,
@@ -786,7 +655,9 @@ var CLI = &cli.Command{
 			rtaOnbuildBaseImage,
 			rtaSourcePT,
 			ctx.String(commands.FlagSensorIPCEndpoint),
-			ctx.String(commands.FlagSensorIPCMode))
+			ctx.String(commands.FlagSensorIPCMode),
+			kubeOpts,
+			GetAppNodejsInspectOptions(ctx))
 
 		return nil
 	},

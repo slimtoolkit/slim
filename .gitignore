@@ -11,3 +11,4 @@ dist_linux*.tar.gz
 dist_mac.zip
 .idea
 *.swp
+slim.report.json

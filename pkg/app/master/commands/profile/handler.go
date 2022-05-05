@@ -12,8 +12,8 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/container"
-	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/container/probes/http"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/image"
+	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/probes/http"
 	"github.com/docker-slim/docker-slim/pkg/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
@@ -51,20 +51,7 @@ func OnCommand(
 	registrySecret string,
 	doShowPullLogs bool,
 	crOpts *config.ContainerRunOptions,
-	doHTTPProbe bool,
-	httpProbeCmds []config.HTTPProbeCmd,
-	httpProbeStartWait int,
-	httpProbeRetryCount int,
-	httpProbeRetryWait int,
-	httpProbePorts []uint16,
-	httpCrawlMaxDepth int,
-	httpCrawlMaxPageCount int,
-	httpCrawlConcurrency int,
-	httpMaxConcurrentCrawlers int,
-	doHTTPProbeFull bool,
-	doHTTPProbeExitOnFailure bool,
-	httpProbeAPISpecs []string,
-	httpProbeAPISpecFiles []string,
+	httpProbeOpts config.HTTPProbeOptions,
 	portBindings map[docker.Port][]docker.PortBinding,
 	doPublishExposedPorts bool,
 	hostExecProbes []string,
@@ -93,10 +80,8 @@ func OnCommand(
 	sensorIPCMode string,
 	logLevel string,
 	logFormat string) {
-	const cmdName = Name
-	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("cmd=%s", cmdName)
 	printState := true
+	logger := log.WithFields(log.Fields{"app": appName, "command": Name})
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -134,7 +119,7 @@ func OnCommand(
 	errutil.FailOn(err)
 
 	if gparams.Debug {
-		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(fmt.Sprintf("cmd=%s", Name), logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	if overrides.Network == "host" && runtime.GOOS == "darwin" {
@@ -242,17 +227,6 @@ func OnCommand(
 		imageInspector,
 		localVolumePath,
 		doUseLocalMounts,
-		false, //doIncludeAppNuxtDir
-		false, //doIncludeAppNuxtBuildDir,
-		false, //doIncludeAppNuxtDistDir,
-		false, //doIncludeAppNuxtStaticDir,
-		false, //doIncludeAppNuxtNodeModulesDir,
-		false, //doIncludeAppNextDir
-		false, //doIncludeAppNextBuildDir,
-		false, //doIncludeAppNextDistDir,
-		false, //doIncludeAppNextStaticDir,
-		false, //doIncludeAppNextNodeModulesDir,
-		nil,   //includeNodePackages,
 		doUseSensorVolume,
 		false, //doKeepTmpArtifacts,
 		overrides,
@@ -266,7 +240,6 @@ func OnCommand(
 		etcHostsMaps,
 		dnsServers,
 		dnsSearchDomains,
-		doRunTargetAsUser,
 		doShowContainerLogs,
 		false, //doKeepPerms,
 		nil,   //pathPerms,
@@ -292,7 +265,7 @@ func OnCommand(
 		sensorIPCEndpoint,
 		sensorIPCMode,
 		printState,
-		prefix)
+		config.AppNodejsInspectOptions{})
 	errutil.FailOn(err)
 
 	if len(containerInspector.FatContainerCmd) == 0 {
@@ -324,32 +297,16 @@ func OnCommand(
 	logger.Info("watching container monitor...")
 
 	if config.CAMProbe == continueAfter.Mode {
-		doHTTPProbe = true
+		httpProbeOpts.Do = true
 	}
 
 	var probe *http.CustomProbe
-	if doHTTPProbe {
+	if httpProbeOpts.Do {
 		var err error
-		probe, err = http.NewCustomProbe(
-			xc,
-			containerInspector,
-			httpProbeCmds,
-			httpProbeStartWait,
-			httpProbeRetryCount,
-			httpProbeRetryWait,
-			httpProbePorts,
-			httpCrawlMaxDepth,
-			httpCrawlMaxPageCount,
-			httpCrawlConcurrency,
-			httpMaxConcurrentCrawlers,
-			doHTTPProbeFull,
-			doHTTPProbeExitOnFailure,
-			httpProbeAPISpecs,
-			httpProbeAPISpecFiles,
-			//httpProbeApps,
-			true, prefix)
+		probe, err = http.NewContainerProbe(xc, containerInspector, httpProbeOpts, printState)
 		errutil.FailOn(err)
-		if len(probe.Ports) == 0 {
+
+		if len(probe.Ports()) == 0 {
 			xc.Out.State("http.probe.error",
 				ovars{
 					"error":   "NO EXPOSED PORTS",
@@ -420,7 +377,7 @@ func OnCommand(
 				})
 				xc.FailOn(err)
 
-				buffer := &printbuffer.PrintBuffer{Prefix: fmt.Sprintf("%s[%s][exec]: output:", appName, cmdName)}
+				buffer := &printbuffer.PrintBuffer{Prefix: fmt.Sprintf("%s[%s][exec]: output:", appName, Name)}
 				xc.FailOn(containerInspector.APIClient.StartExec(exec.ID, dockerapi.StartExecOptions{
 					InputStream:  input,
 					OutputStream: buffer,
@@ -466,9 +423,12 @@ func OnCommand(
 					"message": "HTTP probe is done",
 				})
 
-			if probe != nil && probe.CallCount > 0 && probe.OkCount == 0 {
-				//make sure we show the container logs because none of the http probe calls were successful
-				containerInspector.DoShowContainerLogs = true
+			if probe != nil && probe.CallCount > 0 && probe.OkCount == 0 && httpProbeOpts.ExitOnFailure {
+				xc.Out.Error("probe.error", "no.successful.calls")
+
+				containerInspector.ShowContainerLogs()
+				xc.Out.State("exited", ovars{"exit.code": -1})
+				xc.Exit(-1)
 			}
 		case config.CAMHostExec:
 			commands.RunHostExecProbes(printState, xc, hostExecProbes)

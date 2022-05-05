@@ -12,6 +12,32 @@ func NewContent() Content {
 	return make(map[string]*MediaType, 4)
 }
 
+func NewContentWithSchema(schema *Schema, consumes []string) Content {
+	if len(consumes) == 0 {
+		return Content{
+			"*/*": NewMediaType().WithSchema(schema),
+		}
+	}
+	content := make(map[string]*MediaType, len(consumes))
+	for _, mediaType := range consumes {
+		content[mediaType] = NewMediaType().WithSchema(schema)
+	}
+	return content
+}
+
+func NewContentWithSchemaRef(schema *SchemaRef, consumes []string) Content {
+	if len(consumes) == 0 {
+		return Content{
+			"*/*": NewMediaType().WithSchemaRef(schema),
+		}
+	}
+	content := make(map[string]*MediaType, len(consumes))
+	for _, mediaType := range consumes {
+		content[mediaType] = NewMediaType().WithSchemaRef(schema)
+	}
+	return content
+}
+
 func NewContentWithJSONSchema(schema *Schema) Content {
 	return Content{
 		"application/json": NewMediaType().WithSchema(schema),
@@ -78,10 +104,10 @@ func (content Content) Get(mime string) *MediaType {
 	return content["*/*"]
 }
 
-func (content Content) Validate(c context.Context) error {
-	for _, v := range content {
+func (value Content) Validate(ctx context.Context) error {
+	for _, v := range value {
 		// Validate MediaType
-		if err := v.Validate(c); err != nil {
+		if err := v.Validate(ctx); err != nil {
 			return err
 		}
 	}

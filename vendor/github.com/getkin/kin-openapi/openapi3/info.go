@@ -26,25 +26,25 @@ func (value *Info) UnmarshalJSON(data []byte) error {
 	return jsoninfo.UnmarshalStrictStruct(data, value)
 }
 
-func (value *Info) Validate(c context.Context) error {
+func (value *Info) Validate(ctx context.Context) error {
 	if contact := value.Contact; contact != nil {
-		if err := contact.Validate(c); err != nil {
+		if err := contact.Validate(ctx); err != nil {
 			return err
 		}
 	}
 
 	if license := value.License; license != nil {
-		if err := license.Validate(c); err != nil {
+		if err := license.Validate(ctx); err != nil {
 			return err
 		}
 	}
 
 	if value.Version == "" {
-		return errors.New("value of version must be a non-empty JSON string")
+		return errors.New("value of version must be a non-empty string")
 	}
 
 	if value.Title == "" {
-		return errors.New("value of title must be a non-empty JSON string")
+		return errors.New("value of title must be a non-empty string")
 	}
 
 	return nil
@@ -66,7 +66,7 @@ func (value *Contact) UnmarshalJSON(data []byte) error {
 	return jsoninfo.UnmarshalStrictStruct(data, value)
 }
 
-func (value *Contact) Validate(c context.Context) error {
+func (value *Contact) Validate(ctx context.Context) error {
 	return nil
 }
 
@@ -85,9 +85,9 @@ func (value *License) UnmarshalJSON(data []byte) error {
 	return jsoninfo.UnmarshalStrictStruct(data, value)
 }
 
-func (value *License) Validate(c context.Context) error {
+func (value *License) Validate(ctx context.Context) error {
 	if value.Name == "" {
-		return errors.New("value of license name must be a non-empty JSON string")
+		return errors.New("value of license name must be a non-empty string")
 	}
 	return nil
 }

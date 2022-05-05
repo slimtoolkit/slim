@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
@@ -224,4 +225,73 @@ type ContinueAfter struct {
 	Mode         string
 	Timeout      time.Duration
 	ContinueChan <-chan struct{}
+}
+
+type HTTPProbeOptions struct {
+	Do            bool
+	Full          bool
+	ExitOnFailure bool
+
+	Cmds  []HTTPProbeCmd
+	Ports []uint16
+
+	StartWait  int
+	RetryCount int
+	RetryWait  int
+
+	CrawlMaxDepth       int
+	CrawlMaxPageCount   int
+	CrawlConcurrency    int
+	CrawlConcurrencyMax int
+
+	APISpecs     []string
+	APISpecFiles []string
+
+	ProxyEndpoint string
+	ProxyPort     int
+}
+
+type AppNodejsInspectOptions struct {
+	IncludePackages []string
+	NextOpts        NodejsWebFrameworkInspectOptions
+	NuxtOpts        NodejsWebFrameworkInspectOptions
+}
+
+type NodejsWebFrameworkInspectOptions struct {
+	IncludeAppDir         bool
+	IncludeBuildDir       bool
+	IncludeDistDir        bool
+	IncludeStaticDir      bool
+	IncludeNodeModulesDir bool
+}
+
+type KubernetesOptions struct {
+	Target         KubernetesTarget
+	TargetOverride KubernetesTargetOverride
+
+	Manifests  []string
+	Kubeconfig string
+}
+
+type KubernetesTarget struct {
+	Workload  string
+	Namespace string
+	Container string
+}
+
+func (t *KubernetesTarget) WorkloadName() (string, error) {
+	parts := strings.Split(t.Workload, "/")
+	if len(parts) != 2 || len(parts[1]) == 0 {
+		return "", errors.New("malformed Kubernetes workload name")
+	}
+
+	return parts[1], nil
+}
+
+type KubernetesTargetOverride struct {
+	Image string
+}
+
+func (ko KubernetesOptions) HasTargetSet() bool {
+	return ko.Target.Workload != ""
 }

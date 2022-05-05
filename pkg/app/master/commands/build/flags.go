@@ -1,6 +1,7 @@
 package build
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -648,4 +649,53 @@ func GetImageInstructions(ctx *cli.Context) (*config.ImageNewInstructions, error
 	instructions.ClearCmd = commands.IsOneSpace(cmd)
 
 	return instructions, nil
+}
+
+func GetAppNodejsInspectOptions(ctx *cli.Context) config.AppNodejsInspectOptions {
+	return config.AppNodejsInspectOptions{
+		IncludePackages: ctx.StringSlice(FlagIncludeNodePackage),
+		NextOpts:        getAppNextInspectOptions(ctx),
+		NuxtOpts:        getAppNuxtInspectOptions(ctx),
+	}
+}
+
+func getAppNextInspectOptions(ctx *cli.Context) config.NodejsWebFrameworkInspectOptions {
+	return config.NodejsWebFrameworkInspectOptions{
+		IncludeAppDir:         ctx.Bool(FlagIncludeAppNextDir),
+		IncludeBuildDir:       ctx.Bool(FlagIncludeAppNextBuildDir),
+		IncludeDistDir:        ctx.Bool(FlagIncludeAppNextDistDir),
+		IncludeStaticDir:      ctx.Bool(FlagIncludeAppNextStaticDir),
+		IncludeNodeModulesDir: ctx.Bool(FlagIncludeAppNextNodeModulesDir),
+	}
+}
+
+func getAppNuxtInspectOptions(ctx *cli.Context) config.NodejsWebFrameworkInspectOptions {
+	return config.NodejsWebFrameworkInspectOptions{
+		IncludeAppDir:         ctx.Bool(FlagIncludeAppNuxtDir),
+		IncludeBuildDir:       ctx.Bool(FlagIncludeAppNuxtBuildDir),
+		IncludeDistDir:        ctx.Bool(FlagIncludeAppNuxtDistDir),
+		IncludeStaticDir:      ctx.Bool(FlagIncludeAppNuxtStaticDir),
+		IncludeNodeModulesDir: ctx.Bool(FlagIncludeAppNuxtNodeModulesDir),
+	}
+}
+
+func GetKubernetesOptions(ctx *cli.Context) (config.KubernetesOptions, error) {
+	cfg := config.KubernetesOptions{
+		Target: config.KubernetesTarget{
+			Workload:  ctx.String(commands.FlagTargetKubeWorkload),
+			Namespace: ctx.String(commands.FlagTargetKubeWorkloadNamespace),
+			Container: ctx.String(commands.FlagTargetKubeWorkloadContainer),
+		},
+		TargetOverride: config.KubernetesTargetOverride{
+			Image: ctx.String(commands.FlagTargetKubeWorkloadImage),
+		},
+		Manifests:  ctx.StringSlice(commands.FlagKubeManifestFile),
+		Kubeconfig: ctx.String(commands.FlagKubeKubeconfigFile),
+	}
+
+	if len(cfg.Target.Namespace)+len(cfg.Target.Container)+len(cfg.TargetOverride.Image)+len(cfg.Manifests) > 0 && cfg.Target.Workload == "" {
+		return cfg, errors.New("--target-kube-workload flag must be provided")
+	}
+
+	return cfg, nil
 }
