@@ -5,7 +5,9 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
+	"github.com/docker-slim/docker-slim/pkg/app/master/container"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
+	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/pkg/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
@@ -24,7 +26,7 @@ type ovars = app.OutVars
 func OnCommand(
 	xc *app.ExecutionContext,
 	gparams *commands.GenericParams,
-	targetRef string) {
+	commandParams *CommandParams) {
 	logger := log.WithFields(log.Fields{"app": appName, "command": Name})
 	prefix := fmt.Sprintf("cmd=%s", Name)
 
@@ -36,7 +38,9 @@ func OnCommand(
 	xc.Out.State("started")
 	xc.Out.Info("params",
 		ovars{
-			"target": targetRef,
+			"target":          commandParams.TargetRef,
+			"debug-image":     commandParams.DebugContainerImage,
+			"debug-image-cmd": commandParams.DebugContainerImageCmd,
 		})
 
 	client, err := dockerclient.New(gparams.ClientConfig)
@@ -65,6 +69,47 @@ func OnCommand(
 	if gparams.Debug {
 		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
+
+	imageInspector, err := image.NewInspector(client, commandParams.DebugContainerImage)
+	options := container.ExecutionOptions{
+		Cmd:      []string{commandParams.DebugContainerImageCmd},
+		Terminal: true,
+	}
+	if imageInspector.NoImage() {
+		err := imageInspector.Pull(true, "", "", "")
+		errutil.FailOn(err)
+	}
+
+	exe, err := container.NewExecution(
+		xc,
+		logger,
+		client,
+		commandParams.DebugContainerImage,
+		&options,
+		nil,
+		true,
+		true)
+
+	// attach network, IPC & PIDs, essentially this is run --network container:golang_service --pid container:golang_service --ipc container:golang_service
+	mode := fmt.Sprintf("container:%s", commandParams.TargetRef)
+	fmt.Println("mode: ")
+	fmt.Println(mode)
+	exe.IpcMode = mode
+	exe.NetworkMode = mode
+	exe.PidMode = mode
+
+	errutil.FailOn(err)
+
+	err = exe.Start()
+	errutil.FailOn(err)
+
+	_, err = exe.Wait()
+	errutil.FailOn(err)
+
+	defer func() {
+		err = exe.Cleanup()
+		errutil.WarnOn(err)
+	}()
 
 	xc.Out.State("completed")
 	cmdReport.State = command.StateCompleted
