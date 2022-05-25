@@ -92,8 +92,6 @@ func OnCommand(
 
 	// attach network, IPC & PIDs, essentially this is run --network container:golang_service --pid container:golang_service --ipc container:golang_service
 	mode := fmt.Sprintf("container:%s", commandParams.TargetRef)
-	fmt.Println("mode: ")
-	fmt.Println(mode)
 	exe.IpcMode = mode
 	exe.NetworkMode = mode
 	exe.PidMode = mode
