@@ -1,0 +1,40 @@
+---
+name: Continous integration of docker-slim
+
+on:
+  push:
+    branches:
+      - "master"
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        go: ['1.15', '1.16', '1.17', '1.18']
+    runs-on: 'ubuntu-latest'
+    name: integration tests
+
+    steps:
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: build docker-slim
+        run: make build_dev
+
+      - name: run the bats integration tests
+        run: ./test/bats/bin/bats test/debug.bats
