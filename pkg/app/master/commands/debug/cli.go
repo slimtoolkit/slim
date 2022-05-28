@@ -16,11 +16,9 @@ const (
 	Usage = "Debug the target container image from a debug container"
 	Alias = "dbg"
 
-	FlagDebugImage    = "debug-image"
-	FlagDebugImageCmd = "debug-image-cmd"
+	FlagDebugImage = "debug-image"
 
-	DefaultDebugImage    = "nicolaka/netshoot"
-	DefaultDebugImageCmd = "/bin/bash"
+	DefaultDebugImage = "nicolaka/netshoot"
 )
 
 type CommandParams struct {
@@ -29,7 +27,9 @@ type CommandParams struct {
 	/// the name/id of the container image used for debugging
 	DebugContainerImage string
 	/// CMD used for launching the debugging image
-	DebugContainerImageCmd string
+	DebugContainerImageCmd []string
+	/// launch the debug container with --it
+	AttachTty bool
 }
 
 var CLI = &cli.Command{
@@ -40,11 +40,6 @@ var CLI = &cli.Command{
 		&cli.StringFlag{
 			Name:        FlagDebugImage,
 			DefaultText: DefaultDebugImage,
-			Required:    false,
-		},
-		&cli.StringFlag{
-			Name:        FlagDebugImageCmd,
-			DefaultText: DefaultDebugImageCmd,
 			Required:    false,
 		},
 	},
@@ -63,7 +58,8 @@ var CLI = &cli.Command{
 		commandParams := &CommandParams{
 			TargetRef:              ctx.String(commands.FlagTarget),
 			DebugContainerImage:    ctx.String(FlagDebugImage),
-			DebugContainerImageCmd: ctx.String(FlagDebugImageCmd),
+			DebugContainerImageCmd: []string{},
+			AttachTty:              true,
 		}
 
 		xc := app.NewExecutionContext(Name)
@@ -75,14 +71,15 @@ var CLI = &cli.Command{
 				return nil
 			} else {
 				commandParams.TargetRef = ctx.Args().First()
+				if ctx.Args().Len() > 1 && ctx.Args().Slice()[1] == "--" {
+					commandParams.AttachTty = false
+					commandParams.DebugContainerImageCmd = ctx.Args().Slice()[2:]
+				}
 			}
 		}
 
 		if commandParams.DebugContainerImage == "" {
 			commandParams.DebugContainerImage = DefaultDebugImage
-		}
-		if commandParams.DebugContainerImageCmd == "" {
-			commandParams.DebugContainerImageCmd = DefaultDebugImageCmd
 		}
 
 		OnCommand(
