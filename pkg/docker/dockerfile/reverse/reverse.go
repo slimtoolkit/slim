@@ -613,7 +613,46 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 		strTest = fmt.Sprintf("CMD %s", strings.Join(config.Test[1:], " "))
 	}
 
-	healthInst := fmt.Sprintf(`HEALTHCHECK --interval=%v --timeout=%v --start-period=%v --retries=%x %s`, config.Interval, config.Timeout, config.StartPeriod, config.Retries, strTest)
+	defaultTimeout := false
+	defaultInterval := false
+	defaultRetries := false
+	defaultStartPeriod := false
+
+	if config.Timeout == 0 {
+		defaultTimeout = true
+		config.Timeout = 30 * time.Second
+	}
+	if config.Interval == 0 {
+		defaultInterval = true
+		config.Interval = 30 * time.Second
+	}
+	if config.Retries == 0 {
+		defaultRetries = true
+		config.Retries = 3
+	}
+	if config.StartPeriod == 0 {
+		defaultStartPeriod = true
+	}
+
+	type HealthCheckFlag struct {
+		flagFmtStr string
+		isDefault  bool
+		value      interface{}
+	}
+
+	healthInst := "HEALTHCHECK"
+	for _, flag := range []HealthCheckFlag{
+		{flagFmtStr: "--interval=%v", isDefault: defaultInterval, value: config.Interval},
+		{flagFmtStr: "--timeout=%v", isDefault: defaultTimeout, value: config.Timeout},
+		{flagFmtStr: "--start-period=%v", isDefault: defaultStartPeriod, value: config.StartPeriod},
+		{flagFmtStr: "--retries=%x", isDefault: defaultRetries, value: config.Retries},
+	} {
+		if !flag.isDefault {
+			healthInst = healthInst + " " + fmt.Sprintf(flag.flagFmtStr, flag.value)
+		}
+	}
+
+	healthInst += " " + strTest
 	if strTest == "NONE" {
 		healthInst = "HEALTHCHECK NONE"
 	}
