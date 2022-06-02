@@ -379,7 +379,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 
 			if instInfo.Type == instTypeHealthcheck {
 
-				healthInst, _, err := deserialiseHealtheckInstruction(instInfo.Params)
+				healthInst, _, err := deserialiseHealtheckInstruction(instInfo.CommandAll)
 				if err != nil {
 					log.Errorf("ReverseDockerfileFromHistory - HEALTHCHECK - deserialiseHealtheckInstruction - %v", err)
 				}
