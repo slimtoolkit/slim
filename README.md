@@ -458,7 +458,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-cert-dirs` - Keep known cert directories and all files in them
 - `--include-cert-pk-all` - Keep all discovered cert private keys
 - `--include-cert-pk-dirs` - Keep known cert private key directories and all files in them
-- `--include-new` - Keep new files created by target during dynamic analysis (default value: false)
+- `--include-new` - Keep new files created by target during dynamic analysis (default value: true)
 
 - `--include-app-nuxt-dir` - Keep the root Nuxt.js app directory (default value: false)
 - `--include-app-nuxt-build-dir` - Keep the build Nuxt.js app directory (default value: false)
