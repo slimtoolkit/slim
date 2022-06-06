@@ -539,6 +539,30 @@ The `--dockerfile` option makes it possible to build a new minified image direct
 
 The `--use-local-mounts` option is used to choose how the `docker-slim` sensor is added to the target container and how the sensor artifacts are delivered back to the master. If you enable this option you'll get the original `docker-slim` behavior where it uses local file system volume mounts to add the sensor executable and to extract the artifacts from the target container. This option doesn't always work as expected in the dockerized environment where `docker-slim` itself is running in a Docker container. When this option is disabled (default behavior) then a separate Docker volume is used to mount the sensor and the sensor artifacts are explicitly copied from the target container.
 
+#### `docker-buildx` plugin
+
+You can build for multiple platforms using the `docker-buildx` plugin `build` command by setting `--use-buildx=true`.
+This plugin is automatically installed when installing newer versions of docker-ce.
+
+A subset of plugin flags are supported, eaching being prefixed with `--buildx-`.
+
+As an example, here we start a local registry, create a multi-platform builder,
+then run `docker-slim build` to build a manifest list for `linux/arm64` and `linux/amd64` platforms
+and push the list to the local registry:
+
+```console
+$ docker run -d -p 5000:5000 --name test-registry registry:2
+$ docker buildx create --use --driver-opt network=host --bootstrap --driver docker-container --name mybuilder
+$ docker-slim build --use-buildx=true --buildx-platforms linux/arm64,linux/amd64 --buildx-push=true --pull --tag localhost:5000/foo/nginx:slim nginx:latest
+cmd=build info=param.http.probe message='using default probe'
+cmd=build state=started
+...
+cmd=build state=building message="building optimized image" builder=buildx platforms=linux/arm64,linux/amd64
+...
+```
+
+Read more about installation and configuration [here](https://docs.docker.com/buildx/working-with-buildx/).
+
 ## RUNNING CONTAINERIZED
 
 The current version of `docker-slim` is able to run in containers. It will try to detect if it's running in a containerized environment, but you can also tell `docker-slim` explicitly using the `--in-container` global flag.

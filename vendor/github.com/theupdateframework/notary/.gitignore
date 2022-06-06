@@ -1,0 +1,17 @@
+/.vscode
+/cmd/notary-server/notary-server
+/cmd/notary-server/local.config.*
+/cmd/notary-signer/notary-signer
+/cmd/notary-signer/local.config.*
+/cmd/escrow/escrow
+/cmd/escrow/local.config.*
+cover
+bin
+cross
+.cover
+*.swp
+.idea
+*.iml
+*.test
+coverage*.txt
+gosec_output.csv

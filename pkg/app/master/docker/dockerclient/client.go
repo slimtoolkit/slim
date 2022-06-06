@@ -9,7 +9,8 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
-	"github.com/fsouza/go-dockerclient"
+	dockerclient "github.com/docker/docker/client"
+	docker "github.com/fsouza/go-dockerclient"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -64,44 +65,48 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 		config.UseTLS &&
 		config.VerifyTLS &&
 		config.TLSCertPath != "":
+
+		log.Debug("docker-slim: new Docker client (TLS,verify) [1]")
+
 		client, err = newTLSClient(config.Host, config.TLSCertPath, true)
 		if err != nil {
 			return nil, err
 		}
 
-		log.Debug("docker-slim: new Docker client (TLS,verify) [1]")
-
 	case config.Host != "" &&
 		config.UseTLS &&
 		!config.VerifyTLS &&
 		config.TLSCertPath != "":
+
+		log.Debug("docker-slim: new Docker client (TLS,no verify) [2]")
+
 		client, err = newTLSClient(config.Host, config.TLSCertPath, false)
 		if err != nil {
 			return nil, err
 		}
 
-		log.Debug("docker-slim: new Docker client (TLS,no verify) [2]")
-
 	case config.Host != "" &&
 		!config.UseTLS:
+
+		log.Debug("docker-slim: new Docker client [3]")
+
 		client, err = docker.NewClient(config.Host)
 		if err != nil {
 			return nil, err
 		}
-
-		log.Debug("docker-slim: new Docker client [3]")
 
 	case config.Host == "" &&
 		!config.VerifyTLS &&
 		config.Env[EnvDockerTLSVerify] == "1" &&
 		config.Env[EnvDockerCertPath] != "" &&
 		config.Env[EnvDockerHost] != "":
+
+		log.Debug("docker-slim: new Docker client (TLS,no verify) [4]")
+
 		client, err = newTLSClient(config.Env[EnvDockerHost], config.Env[EnvDockerCertPath], false)
 		if err != nil {
 			return nil, err
 		}
-
-		log.Debug("docker-slim: new Docker client (TLS,no verify) [4]")
 
 	case config.Env[EnvDockerHost] != "":
 		client, err = docker.NewClientFromEnv()
@@ -112,25 +117,47 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 		log.Debug("docker-slim: new Docker client (env) [5]")
 
 	case config.Host == "" && config.Env[EnvDockerHost] == "":
+		log.Debug("docker-slim: new Docker client (default) [6]")
+
 		config.Host = UnixSocketAddr
 		client, err = docker.NewClient(config.Host)
 		if err != nil {
 			return nil, err
 		}
 
-		log.Debug("docker-slim: new Docker client (default) [6]")
-
 	default:
 		return nil, ErrNoDockerInfo
 	}
 
-	if config.Env[EnvDockerHost] == "" {
+	if config.Env[EnvDockerHost] == "" && config.Host != "" {
+		log.Debug("docker-slim: configuring DOCKER_HOST env var")
+
 		if err := os.Setenv(EnvDockerHost, config.Host); err != nil {
 			errutil.WarnOn(err)
 		}
-
-		log.Debug("docker-slim: configured DOCKER_HOST env var")
 	}
 
 	return client, nil
+}
+
+// NewAPIClient creates a new Docker client instance
+func NewAPIClient(config *config.DockerClient) (*dockerclient.Client, error) {
+	if !fsutil.Exists(UnixSocketPath) && config.Env[EnvDockerHost] == "" && config.Host == "" {
+		return nil, ErrNoDockerInfo
+	}
+
+	if config.Env[EnvDockerHost] == "" && config.Host != "" {
+		log.Debug("docker-slim: configuring DOCKER_HOST env var for api client")
+
+		if err := os.Setenv(EnvDockerHost, config.Host); err != nil {
+			errutil.WarnOn(err)
+		}
+	}
+
+	opts := []dockerclient.Opt{
+		dockerclient.WithAPIVersionNegotiation(),
+		dockerclient.FromEnv,
+	}
+
+	return dockerclient.NewClientWithOpts(opts...)
 }

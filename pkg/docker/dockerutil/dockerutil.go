@@ -80,11 +80,7 @@ func ImageToIdentity(info *dockerapi.Image) *ImageIdentity {
 }
 
 func CleanImageID(id string) string {
-	if strings.HasPrefix(id, "sha256:") {
-		id = strings.TrimPrefix(id, "sha256:")
-	}
-
-	return id
+	return strings.TrimPrefix(id, "sha256:")
 }
 
 func HasEmptyImage(dclient *dockerapi.Client) error {
@@ -283,8 +279,7 @@ func SaveImage(dclient *dockerapi.Client, imageRef, local string, extract, remov
 
 		tarOptions := &archive.TarOptions{
 			NoLchown: true,
-			UIDMaps:  arc.IDMapping.UIDs(),
-			GIDMaps:  arc.IDMapping.GIDs(),
+			IDMap:    arc.IDMapping,
 		}
 		err = arc.Untar(afile, dstDir, tarOptions)
 		if err != nil {
@@ -591,8 +586,7 @@ func CopyFromContainer(dclient *dockerapi.Client, containerID, remote, local str
 
 		tarOptions := &archive.TarOptions{
 			NoLchown: true,
-			UIDMaps:  arc.IDMapping.UIDs(),
-			GIDMaps:  arc.IDMapping.GIDs(),
+			IDMap:    arc.IDMapping,
 		}
 		err = arc.Untar(afile, dstDir, tarOptions)
 		if err != nil {

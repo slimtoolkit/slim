@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 
 	"github.com/docker/docker/api/types"
 )
@@ -25,10 +25,10 @@ func (cli *Client) VolumeInspectWithRaw(ctx context.Context, volumeID string) (t
 	resp, err := cli.get(ctx, "/volumes/"+volumeID, nil, nil)
 	defer ensureReaderClosed(resp)
 	if err != nil {
-		return volume, nil, wrapResponseError(err, resp, "volume", volumeID)
+		return volume, nil, err
 	}
 
-	body, err := ioutil.ReadAll(resp.body)
+	body, err := io.ReadAll(resp.body)
 	if err != nil {
 		return volume, nil, err
 	}
