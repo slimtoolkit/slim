@@ -29,7 +29,7 @@ Don't worry about manually creating Seccomp and AppArmor security profiles. You 
 
 Understand your container image before and after you optimize it using the `xray` command in `docker-slim` or the [**Slim SaaS**](https://portal.slim.dev/login?invitecode=invite.1s85zlfnYX0p5TT1XKja49pAHbL) where you can get even more powerful insights including how your container image changed.
 
-`docker-slim` has been used with Node.js, Python, Ruby, Java, Golang, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian, CentOS, Alpine and even Distroless.
+`docker-slim` has been used with Node.js, Python, Ruby, Java, Go, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian, CentOS, Alpine and even Distroless.
 
 Note that some application stacks do require advanced container probing to make sure that all dynamically loaded components are detected. See the `--http-probe*` flags for more details to know how you can define custom probe commands. In some cases you might also need to use the `--include-path` flag to make sure everything your application needs is included (e.g., `ubuntu.com` python SPA app container image [example](https://github.com/docker-slim/examples/tree/master/3rdparty/ubuntu-com) where the client side template files are explicitly included).
 
@@ -115,7 +115,7 @@ Ruby application images:
 - from ruby:2.2-alpine - 319MB => 27MB (minified by **11.88X**)
 - from ruby:2.5.3 - 978MB => 30MB (minified by **32.74X**)
 
-Golang application images:
+Go application images:
 
 - from golang:latest - 700MB => 1.56MB (minified by **448.76X**)
 - from ubuntu:14.04 - 531MB => 1.87MB (minified by **284.10X**)
@@ -126,7 +126,7 @@ Rust application images:
 
 - from rust:1.31 - 2GB => 14MB (minified by **147.16X**)
 
-JAVA application images:
+Java application images:
 
 - from ubuntu:14.04 - 743.6 MB => 100.3 MB
 
