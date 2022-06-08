@@ -638,7 +638,9 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 			strTest = fmt.Sprintf(`CMD ["%s"]`, strings.Join(config.Test[1:], `", "`))
 		}
 	case "CMD-SHELL":
-		strTest = fmt.Sprintf("CMD %s", strings.Join(config.Test[1:], " "))
+		cmdShell := strings.Join(config.Test[1:], " ")
+		strTest = fmt.Sprintf("CMD %s", cmdShell)
+		config.Test = []string{config.Test[0], cmdShell}
 	}
 
 	defaultTimeout := false
