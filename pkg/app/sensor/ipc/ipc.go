@@ -119,6 +119,11 @@ func (s *Server) Run() error {
 func (s *Server) TryPublishEvt(evt *event.Message, retries uint) error {
 	log.Debugf("ipc.Server.TryPublishEvt(%+v)", evt)
 
+	if s.evtChannel == nil {
+		log.Warnf("ipc.Server.TryPublishEvt(): skipped - server has already been stopped")
+		return nil
+	}
+
 	data, err := json.Marshal(evt)
 	if err != nil {
 		log.Errorf("app.TryPublishEvt(): failed to encode event - %v", err)
