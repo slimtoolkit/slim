@@ -673,7 +673,7 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 		{flagFmtStr: "--interval=%v", isDefault: defaultInterval, value: config.Interval},
 		{flagFmtStr: "--timeout=%v", isDefault: defaultTimeout, value: config.Timeout},
 		{flagFmtStr: "--start-period=%v", isDefault: defaultStartPeriod, value: config.StartPeriod},
-		{flagFmtStr: "--retries=%x", isDefault: defaultRetries, value: config.Retries},
+		{flagFmtStr: "--retries=%d", isDefault: defaultRetries, value: config.Retries},
 	} {
 		if !flag.isDefault {
 			healthInst = healthInst + " " + fmt.Sprintf(flag.flagFmtStr, flag.value)
