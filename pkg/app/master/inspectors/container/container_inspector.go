@@ -897,9 +897,12 @@ func (i *Inspector) RunContainer() error {
 			})
 	}
 
-	for idx := 0; idx < 3; idx++ {
+	// We really need this code block to produce conclusive
+	// outcomes. Hence, many retries to prevent (most of) the
+	// premature terminations of the master process with the
+	// sensor process (in a container) remaining (semi-)started.
+	for idx := 0; idx < 16; idx++ {
 		evt, err := i.ipcClient.GetEvent()
-
 		if err != nil {
 			if os.IsTimeout(err) || err == channel.ErrWaitTimeout {
 				if i.PrintState {
@@ -917,7 +920,7 @@ func (i *Inspector) RunContainer() error {
 		}
 
 		if evt == nil || evt.Name == "" {
-			i.logger.Debug("empty event waiting for the docker-slim container to start (trying again)...")
+			i.logger.Warn("empty event waiting for the docker-slim container to start (trying again)...")
 			continue
 		}
 

@@ -531,8 +531,21 @@ func (app *App) collect() {
 			log.Tracef("ptrace.App.collect: trace syscall (pid=%v sig=%v)", callPid, callSig)
 			err := syscall.PtraceSyscall(callPid, callSig)
 			if err != nil {
-				log.Errorf("ptrace.App.collect: trace syscall pid=%v sig=%v error - %v (errno=%d)", callPid, callSig, err, err.(syscall.Errno))
-				app.ErrorCh <- errors.SE("ptrace.App.collect.ptsyscall", "call.error", err)
+				if strings.Contains(strings.ToLower(err.Error()), "no such process") {
+					// This is kinda-sorta normal situtaion when ptrace-ing:
+					//   - The tracee process might have been KILL-led
+					//   - A group-stop event in a multi-threaded program can have
+					//     a similar effect (see also https://linux.die.net/man/2/ptrace).
+					//
+					// We'd been observing this behavior a lot with short&fast Go programs,
+					// and regular `strace -f ./app` would produce similar results.
+					// Sending this error event back to the master process would make
+					// the `docker-slim build` command fail with the exit code -124.
+					log.Debugf("ptrace.App.collect: trace syscall - (likely) tracee terminated pid=%v sig=%v error - %v (errno=%d)", callPid, callSig, err, err.(syscall.Errno))
+				} else {
+					log.Errorf("ptrace.App.collect: trace syscall pid=%v sig=%v error - %v (errno=%d)", callPid, callSig, err, err.(syscall.Errno))
+					app.ErrorCh <- errors.SE("ptrace.App.collect.ptsyscall", "call.error", err)
+				}
 				//keep waiting for other syscalls
 			}
 		}

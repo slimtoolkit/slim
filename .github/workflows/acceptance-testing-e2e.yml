@@ -1,10 +1,12 @@
-name: build-and-test
+name: Acceptance testing (using e2e tests from docker-slim/examples)
 on:
   push:
     branches:
       - master
-  pull_request_target:
-    types: [opened, synchronize, reopened]
+  pull_request:
+    branches:
+      - master
+    types: [opened, synchronize, closed]
 jobs:
   build:
     runs-on: ubuntu-latest

@@ -62,7 +62,7 @@ test-e2e-golang:
 	make -f $(DSLIM_EXAMPLES_DIR)/golang_centos/Makefile test-e2e
 	make -f $(DSLIM_EXAMPLES_DIR)/golang_gin_standard/Makefile test-e2e
 	make -f $(DSLIM_EXAMPLES_DIR)/golang_standard/Makefile test-e2e
-	true || make -f $(DSLIM_EXAMPLES_DIR)/golang_ubuntu/Makefile test-e2e  # TODO: Flaky one!
+	make -f $(DSLIM_EXAMPLES_DIR)/golang_ubuntu/Makefile test-e2e
 
 test-e2e-java:
 	make -f $(DSLIM_EXAMPLES_DIR)/java_corretto/Makefile test-e2e
