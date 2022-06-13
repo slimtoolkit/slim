@@ -63,6 +63,9 @@ jobs:
           - dotnet
           - elixir
           - golang
+          - haskell
+          - http-probe
+          - image-edit
           - java
           - node
           - php
