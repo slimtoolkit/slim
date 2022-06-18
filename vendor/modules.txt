@@ -80,6 +80,8 @@ github.com/containerd/stargz-snapshotter/estargz
 github.com/containerd/stargz-snapshotter/estargz/errorutil
 # github.com/cpuguy83/go-md2man/v2 v2.0.1
 github.com/cpuguy83/go-md2man/v2/md2man
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
 # github.com/distribution/distribution/v3 v3.0.0-20210316161203-a01c71e2477e
 github.com/distribution/distribution/v3/digestset
 github.com/distribution/distribution/v3/reference
@@ -290,6 +292,8 @@ github.com/pkg/errors
 # github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03
 ## explicit
 github.com/pkg/term/termios
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
 # github.com/russross/blackfriday/v2 v2.1.0
 github.com/russross/blackfriday/v2
 # github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca
@@ -297,6 +301,10 @@ github.com/saintfish/chardet
 # github.com/sirupsen/logrus v1.8.1
 ## explicit
 github.com/sirupsen/logrus
+# github.com/stretchr/testify v1.7.1
+## explicit
+github.com/stretchr/testify/assert
+github.com/stretchr/testify/require
 # github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 ## explicit
 github.com/syndtr/gocapability/capability
@@ -409,4 +417,6 @@ google.golang.org/protobuf/types/known/durationpb
 google.golang.org/protobuf/types/known/timestamppb
 # gopkg.in/yaml.v2 v2.4.0
 gopkg.in/yaml.v2
+# gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+gopkg.in/yaml.v3
 # github.com/compose-spec/compose-go => ./pkg/third_party/compose-go

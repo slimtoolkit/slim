@@ -379,7 +379,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 
 			if instInfo.Type == instTypeHealthcheck {
 
-				healthInst, _, err := deserialiseHealtheckInstruction(instInfo.Params)
+				healthInst, _, err := deserialiseHealtheckInstruction(instInfo.CommandAll)
 				if err != nil {
 					log.Errorf("ReverseDockerfileFromHistory - HEALTHCHECK - deserialiseHealtheckInstruction - %v", err)
 				}
@@ -586,8 +586,36 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 		fmt.Printf("[%s] config.StartPeriod err = %v\n", paramParts[2], err)
 	}
 
-	paramParts[3] = strings.TrimPrefix(paramParts[3], `\x`)
-	retries, err := strconv.ParseInt(paramParts[3], 16, 64)
+	var retries int64
+	if strings.Index(paramParts[3], `\x`) != -1 {
+		// retries are hex encoded
+		retries, err = strconv.ParseInt(strings.TrimPrefix(paramParts[3], `\x`), 16, 64)
+	} else if strings.Index(paramParts[3], `\U`) != -1 {
+		// retries are a unicode string
+		retries, err = strconv.ParseInt(strings.TrimPrefix(paramParts[3], `\U`), 16, 64)
+	} else if strings.Index(paramParts[3], `\`) == 0 {
+		// retries is printed as a C-escape
+		if len(paramParts[3]) != 2 {
+			err = errors.New(fmt.Sprintf("expected retries (%s) to be an escape sequence", paramParts[3]))
+		} else {
+			escapeCodes := map[byte]int64{
+				byte('a'): 7,
+				byte('b'): 8,
+				byte('t'): 9,
+				byte('n'): 10,
+				byte('v'): 11,
+				byte('f'): 12,
+				byte('r'): 13,
+			}
+			var ok bool
+			if retries, ok = escapeCodes[(paramParts[3])[1]]; !ok {
+				err = errors.New(fmt.Sprintf("got an invalid escape sequence: %s", paramParts[3]))
+			}
+		}
+	} else {
+		retries = int64((paramParts[3])[0])
+	}
+
 	if err != nil {
 		fmt.Printf("[%s] config.Retries err = %v\n", paramParts[3], err)
 	} else {
@@ -610,10 +638,51 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 			strTest = fmt.Sprintf(`CMD ["%s"]`, strings.Join(config.Test[1:], `", "`))
 		}
 	case "CMD-SHELL":
-		strTest = fmt.Sprintf("CMD %s", strings.Join(config.Test[1:], " "))
+		cmdShell := strings.Join(config.Test[1:], " ")
+		strTest = fmt.Sprintf("CMD %s", cmdShell)
+		config.Test = []string{config.Test[0], cmdShell}
 	}
 
-	healthInst := fmt.Sprintf(`HEALTHCHECK --interval=%v --timeout=%v --start-period=%v --retries=%x %s`, config.Interval, config.Timeout, config.StartPeriod, config.Retries, strTest)
+	defaultTimeout := false
+	defaultInterval := false
+	defaultRetries := false
+	defaultStartPeriod := false
+
+	if config.Timeout == 0 {
+		defaultTimeout = true
+		config.Timeout = 30 * time.Second
+	}
+	if config.Interval == 0 {
+		defaultInterval = true
+		config.Interval = 30 * time.Second
+	}
+	if config.Retries == 0 {
+		defaultRetries = true
+		config.Retries = 3
+	}
+	if config.StartPeriod == 0 {
+		defaultStartPeriod = true
+	}
+
+	type HealthCheckFlag struct {
+		flagFmtStr string
+		isDefault  bool
+		value      interface{}
+	}
+
+	healthInst := "HEALTHCHECK"
+	for _, flag := range []HealthCheckFlag{
+		{flagFmtStr: "--interval=%v", isDefault: defaultInterval, value: config.Interval},
+		{flagFmtStr: "--timeout=%v", isDefault: defaultTimeout, value: config.Timeout},
+		{flagFmtStr: "--start-period=%v", isDefault: defaultStartPeriod, value: config.StartPeriod},
+		{flagFmtStr: "--retries=%d", isDefault: defaultRetries, value: config.Retries},
+	} {
+		if !flag.isDefault {
+			healthInst = healthInst + " " + fmt.Sprintf(flag.flagFmtStr, flag.value)
+		}
+	}
+
+	healthInst += " " + strTest
 	if strTest == "NONE" {
 		healthInst = "HEALTHCHECK NONE"
 	}
