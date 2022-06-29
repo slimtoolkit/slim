@@ -317,7 +317,7 @@ Global options:
 - `--log-level` - set the logging level ('debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')
 - `--log-format` - set the format used by logs ('text' (default), or 'json')
 - `--log` - log file to store logs
-- `--host` - Docker host address
+- `--host` - Docker host address or socket (prefix with `tcp://` or `unix://`)
 - `--tls` - use TLS connecting to Docker
 - `--tls-verify` - do TLS verification
 - `--tls-cert-path` - path to TLS cert files

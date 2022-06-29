@@ -213,9 +213,10 @@ func OnCommand(
 
 	xc.Out.Info("image",
 		ovars{
-			"id":         imageInspector.ImageInfo.ID,
-			"size.bytes": imageInspector.ImageInfo.VirtualSize,
-			"size.human": humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
+			"id":           imageInspector.ImageInfo.ID,
+			"size.bytes":   imageInspector.ImageInfo.VirtualSize,
+			"size.human":   humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
+			"architecture": imageInspector.ImageInfo.Architecture,
 		})
 
 	logger.Info("processing 'fat' image info...")

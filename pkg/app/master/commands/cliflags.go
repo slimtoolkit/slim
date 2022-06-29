@@ -40,7 +40,7 @@ const (
 	FlagUseTLSUsage        = "use TLS"
 	FlagVerifyTLSUsage     = "verify TLS"
 	FlagTLSCertPathUsage   = "path to TLS cert files"
-	FlagHostUsage          = "Docker host address"
+	FlagHostUsage          = "Docker host address or socket (prefix with 'tcp://' or 'unix://')"
 	FlagStatePathUsage     = "DockerSlim state base path"
 	FlagInContainerUsage   = "DockerSlim is running in a container"
 	FlagArchiveStateUsage  = "archive DockerSlim state to the selected Docker volume (default volume - docker-slim-state). By default, enabled when DockerSlim is running in a container (disabled otherwise). Set it to \"off\" to disable explicitly."
