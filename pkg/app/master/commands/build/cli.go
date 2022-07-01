@@ -66,10 +66,10 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagHTTPMaxConcurrentCrawlers),
 		commands.Cflag(commands.FlagHTTPProbeAPISpec),
 		commands.Cflag(commands.FlagHTTPProbeAPISpecFile),
-		commands.Cflag(commands.FlagHTTPProbeExec),
-		commands.Cflag(commands.FlagHTTPProbeExecFile),
 		commands.Cflag(commands.FlagHTTPProbeProxyEndpoint),
 		commands.Cflag(commands.FlagHTTPProbeProxyPort),
+		commands.Cflag(commands.FlagHostExec),
+		commands.Cflag(commands.FlagHostExecFile),
 		commands.Cflag(commands.FlagPublishPort),
 		commands.Cflag(commands.FlagPublishExposedPorts),
 		commands.Cflag(commands.FlagRunTargetAsUser),
@@ -385,10 +385,9 @@ var CLI = &cli.Command{
 			doHTTPProbe = true
 		}
 
-		httpProbeApps := ctx.StringSlice(commands.FlagHTTPProbeExec)
-		moreProbeApps, err := commands.ParseHTTPProbeExecFile(ctx.String(commands.FlagHTTPProbeExecFile))
+		continueAfter, err := commands.GetContinueAfter(ctx)
 		if err != nil {
-			xc.Out.Error("param.http.probe.exec.file", err.Error())
+			xc.Out.Error("param.error.continue.after", err.Error())
 			xc.Out.State("exited",
 				ovars{
 					"exit.code": -1,
@@ -396,8 +395,135 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
-		if len(moreProbeApps) > 0 {
-			httpProbeApps = append(httpProbeApps, moreProbeApps...)
+		if continueAfter.Mode == config.CAMProbe && !doHTTPProbe {
+			continueAfter.Mode = ""
+			xc.Out.Info("exec",
+				ovars{
+					"message": "changing continue-after from probe to nothing because http-probe is disabled",
+				})
+		}
+
+		execCmd := ctx.String(commands.FlagExec)
+		execFile := ctx.String(commands.FlagExecFile)
+		if strings.Contains(continueAfter.Mode, config.CAMExec) &&
+			len(execCmd) == 0 &&
+			len(execFile) == 0 {
+			continueAfter.Mode = config.CAMEnter
+			xc.Out.Info("exec",
+				ovars{
+					"message": "changing continue-after from exec to enter because there are no exec flags",
+				})
+		}
+
+		if len(execCmd) != 0 && len(execFile) != 0 {
+			xc.Out.Error("param.error.exec", "fatal: cannot use both --exec and --exec-file")
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+		var execFileCmd []byte
+		if len(execFile) > 0 {
+			execFileCmd, err = ioutil.ReadFile(execFile)
+			errutil.FailOn(err)
+
+			if !strings.Contains(continueAfter.Mode, config.CAMExec) {
+				if continueAfter.Mode == "" {
+					continueAfter.Mode = config.CAMExec
+				} else {
+					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMExec)
+				}
+
+				xc.Out.Info("exec",
+					ovars{
+						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
+					})
+			}
+
+		} else if len(execCmd) > 0 {
+			if !strings.Contains(continueAfter.Mode, config.CAMExec) {
+				if continueAfter.Mode == "" {
+					continueAfter.Mode = config.CAMExec
+				} else {
+					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMExec)
+				}
+
+				xc.Out.Info("exec",
+					ovars{
+						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
+					})
+			}
+		}
+
+		if containerProbeComposeSvc != "" {
+			if !strings.Contains(continueAfter.Mode, config.CAMContainerProbe) {
+				if continueAfter.Mode == "" {
+					continueAfter.Mode = config.CAMContainerProbe
+				} else {
+					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMContainerProbe)
+				}
+
+				xc.Out.Info("continue.after",
+					ovars{
+						"message": fmt.Sprintf("updating mode to %s", continueAfter.Mode),
+					})
+			}
+		}
+
+		if continueAfter.Mode == "" {
+			continueAfter.Mode = config.CAMEnter
+			xc.Out.Info("exec",
+				ovars{
+					"message": "changing continue-after to enter",
+				})
+		}
+
+		hostExecProbes := ctx.StringSlice(commands.FlagHostExec)
+		moreHostExecProbes, err := commands.ParseHTTPProbeExecFile(ctx.String(commands.FlagHostExecFile))
+		if err != nil {
+			xc.Out.Error("param.host.exec.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
+		if len(moreHostExecProbes) > 0 {
+			hostExecProbes = append(hostExecProbes, moreHostExecProbes...)
+		}
+
+		if strings.Contains(continueAfter.Mode, config.CAMHostExec) &&
+			len(hostExecProbes) == 0 {
+			if continueAfter.Mode == config.CAMHostExec {
+				continueAfter.Mode = config.CAMEnter
+				xc.Out.Info("host-exec",
+					ovars{
+						"message": "changing continue-after from host-exec to enter because there are no host-exec commands",
+					})
+			} else {
+				continueAfter.Mode = commands.RemoveContinueAfterMode(continueAfter.Mode, config.CAMHostExec)
+				xc.Out.Info("host-exec",
+					ovars{
+						"message": "removing host-exec continue-after mode because there are no host-exec commands",
+					})
+			}
+		}
+
+		if len(hostExecProbes) > 0 {
+			if !strings.Contains(continueAfter.Mode, config.CAMHostExec) {
+				if continueAfter.Mode == "" {
+					continueAfter.Mode = config.CAMHostExec
+				} else {
+					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMHostExec)
+				}
+
+				xc.Out.Info("exec",
+					ovars{
+						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
+					})
+			}
 		}
 
 		httpProbeProxyEndpoint := ctx.String(commands.FlagHTTPProbeProxyEndpoint)
@@ -557,100 +683,6 @@ var CLI = &cli.Command{
 			}
 		}
 
-		continueAfter, err := commands.GetContinueAfter(ctx)
-		if err != nil {
-			xc.Out.Error("param.error.continue.after", err.Error())
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
-		}
-
-		if continueAfter.Mode == config.CAMProbe && !doHTTPProbe {
-			continueAfter.Mode = ""
-			xc.Out.Info("exec",
-				ovars{
-					"message": "changing continue-after from probe to nothing because http-probe is disabled",
-				})
-		}
-
-		execCmd := ctx.String(commands.FlagExec)
-		execFile := ctx.String(commands.FlagExecFile)
-		if strings.Contains(continueAfter.Mode, config.CAMExec) &&
-			len(execCmd) == 0 &&
-			len(execFile) == 0 {
-			continueAfter.Mode = config.CAMEnter
-			xc.Out.Info("exec",
-				ovars{
-					"message": "changing continue-after from exec to enter because there are no exec flags",
-				})
-		}
-
-		if len(execCmd) != 0 && len(execFile) != 0 {
-			xc.Out.Error("param.error.exec", "fatal: cannot use both --exec and --exec-file")
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
-		}
-		var execFileCmd []byte
-		if len(execFile) > 0 {
-			execFileCmd, err = ioutil.ReadFile(execFile)
-			errutil.FailOn(err)
-
-			if !strings.Contains(continueAfter.Mode, config.CAMExec) {
-				if continueAfter.Mode == "" {
-					continueAfter.Mode = config.CAMExec
-				} else {
-					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMExec)
-				}
-
-				xc.Out.Info("exec",
-					ovars{
-						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
-					})
-			}
-
-		} else if len(execCmd) > 0 {
-			if !strings.Contains(continueAfter.Mode, config.CAMExec) {
-				if continueAfter.Mode == "" {
-					continueAfter.Mode = config.CAMExec
-				} else {
-					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMExec)
-				}
-
-				xc.Out.Info("exec",
-					ovars{
-						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
-					})
-			}
-		}
-
-		if containerProbeComposeSvc != "" {
-			if !strings.Contains(continueAfter.Mode, config.CAMContainerProbe) {
-				if continueAfter.Mode == "" {
-					continueAfter.Mode = config.CAMContainerProbe
-				} else {
-					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMContainerProbe)
-				}
-
-				xc.Out.Info("continue.after",
-					ovars{
-						"message": fmt.Sprintf("updating mode to %s", continueAfter.Mode),
-					})
-			}
-		}
-
-		if continueAfter.Mode == "" {
-			continueAfter.Mode = config.CAMEnter
-			xc.Out.Info("exec",
-				ovars{
-					"message": "changing continue-after to enter",
-				})
-		}
-
 		commandReport := ctx.String(commands.FlagCommandReport)
 		if commandReport == "off" {
 			commandReport = ""
@@ -712,11 +744,11 @@ var CLI = &cli.Command{
 			doHTTPProbeExitOnFailure,
 			httpProbeAPISpecs,
 			httpProbeAPISpecFiles,
-			httpProbeApps,
 			httpProbeProxyEndpoint,
 			httpProbeProxyPort,
 			portBindings,
 			doPublishExposedPorts,
+			hostExecProbes,
 			doRmFileArtifacts,
 			doCopyMetaArtifacts,
 			doRunTargetAsUser,

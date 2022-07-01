@@ -235,12 +235,14 @@ var tboolValues = []prompt.Suggest{
 }
 
 var continueAfterValues = []prompt.Suggest{
-	{Text: config.CAMExec, Description: "Automatically continue after container exec is finished running"},
-	{Text: config.CAMProbe, Description: "Automatically continue after the HTTP probe is finished running"},
+	{Text: config.CAMAppExit, Description: "Continue after the target app exits"},
+	{Text: config.CAMHostExec, Description: "Continue after host command execution is finished running"},
+	{Text: config.CAMExec, Description: "Continue after container command execution is finished running"},
+	{Text: config.CAMProbe, Description: "Continue after the HTTP probe is finished running"},
 	{Text: config.CAMEnter, Description: "Use the <enter> key to indicate you that you are done using the container"},
 	{Text: config.CAMSignal, Description: "Use SIGUSR1 to signal that you are done using the container"},
-	{Text: config.CAMTimeout, Description: "Automatically continue after the default timeout (60 seconds)"},
-	{Text: config.CAMContainerProbe, Description: "Automatically continue after the probed container exits"},
+	{Text: config.CAMTimeout, Description: "Continue after the default timeout (60 seconds)"},
+	{Text: config.CAMContainerProbe, Description: "Continue after the probed container exits"},
 	{Text: "<seconds>", Description: "Enter the number of seconds to wait instead of <seconds>"},
 }
 

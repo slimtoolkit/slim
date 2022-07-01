@@ -2,11 +2,13 @@ package profile
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/urfave/cli/v2"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-
-	"github.com/urfave/cli/v2"
+	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 )
 
 const (
@@ -60,10 +62,10 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagHTTPMaxConcurrentCrawlers),
 		commands.Cflag(commands.FlagHTTPProbeAPISpec),
 		commands.Cflag(commands.FlagHTTPProbeAPISpecFile),
-		commands.Cflag(commands.FlagHTTPProbeExec),
-		commands.Cflag(commands.FlagHTTPProbeExecFile),
 		commands.Cflag(commands.FlagPublishPort),
 		commands.Cflag(commands.FlagPublishExposedPorts),
+		commands.Cflag(commands.FlagHostExec),
+		commands.Cflag(commands.FlagHostExecFile),
 		//commands.Cflag(commands.FlagKeepPerms),
 		commands.Cflag(commands.FlagRunTargetAsUser),
 		commands.Cflag(commands.FlagShowContainerLogs),
@@ -238,10 +240,9 @@ var CLI = &cli.Command{
 			doHTTPProbe = true
 		}
 
-		httpProbeApps := ctx.StringSlice(commands.FlagHTTPProbeExec)
-		moreProbeApps, err := commands.ParseHTTPProbeExecFile(ctx.String(commands.FlagHTTPProbeExecFile))
+		continueAfter, err := commands.GetContinueAfter(ctx)
 		if err != nil {
-			xc.Out.Error("param.http.probe.exec.file", err.Error())
+			xc.Out.Error("param.error.continue.after", err.Error())
 			xc.Out.State("exited",
 				ovars{
 					"exit.code": -1,
@@ -249,8 +250,59 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
-		if len(moreProbeApps) > 0 {
-			httpProbeApps = append(httpProbeApps, moreProbeApps...)
+		if !doHTTPProbe && continueAfter.Mode == "probe" {
+			continueAfter.Mode = "enter"
+			xc.Out.Info("enter",
+				ovars{
+					"message": "changing continue-after from probe to enter because http-probe is disabled",
+				})
+		}
+
+		hostExecProbes := ctx.StringSlice(commands.FlagHostExec)
+		moreHostExecProbes, err := commands.ParseHTTPProbeExecFile(ctx.String(commands.FlagHostExecFile))
+		if err != nil {
+			xc.Out.Error("param.host.exec.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
+		if len(moreHostExecProbes) > 0 {
+			hostExecProbes = append(hostExecProbes, moreHostExecProbes...)
+		}
+
+		if strings.Contains(continueAfter.Mode, config.CAMHostExec) &&
+			len(hostExecProbes) == 0 {
+			if continueAfter.Mode == config.CAMHostExec {
+				continueAfter.Mode = config.CAMEnter
+				xc.Out.Info("host-exec",
+					ovars{
+						"message": "changing continue-after from host-exec to enter because there are no host-exec commands",
+					})
+			} else {
+				continueAfter.Mode = commands.RemoveContinueAfterMode(continueAfter.Mode, config.CAMHostExec)
+				xc.Out.Info("host-exec",
+					ovars{
+						"message": "removing host-exec continue-after mode because there are no host-exec commands",
+					})
+			}
+		}
+
+		if len(hostExecProbes) > 0 {
+			if !strings.Contains(continueAfter.Mode, config.CAMHostExec) {
+				if continueAfter.Mode == "" {
+					continueAfter.Mode = config.CAMHostExec
+				} else {
+					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMHostExec)
+				}
+
+				xc.Out.Info("exec",
+					ovars{
+						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
+					})
+			}
 		}
 
 		//doKeepPerms := ctx.Bool(commands.FlagKeepPerms)
@@ -328,24 +380,6 @@ var CLI = &cli.Command{
 			}
 		}
 
-		continueAfter, err := commands.GetContinueAfter(ctx)
-		if err != nil {
-			xc.Out.Error("param.error.continue.after", err.Error())
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
-		}
-
-		if !doHTTPProbe && continueAfter.Mode == "probe" {
-			continueAfter.Mode = "enter"
-			xc.Out.Info("enter",
-				ovars{
-					"message": "changing continue-after from probe to enter because http-probe is disabled",
-				})
-		}
-
 		commandReport := ctx.String(commands.FlagCommandReport)
 		if commandReport == "off" {
 			commandReport = ""
@@ -375,9 +409,9 @@ var CLI = &cli.Command{
 			doHTTPProbeExitOnFailure,
 			httpProbeAPISpecs,
 			httpProbeAPISpecFiles,
-			httpProbeApps,
 			portBindings,
 			doPublishExposedPorts,
+			hostExecProbes,
 			doRmFileArtifacts,
 			doCopyMetaArtifacts,
 			doRunTargetAsUser,

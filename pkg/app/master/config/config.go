@@ -215,6 +215,8 @@ const (
 	CAMTimeout        = "timeout"
 	CAMSignal         = "signal"
 	CAMExec           = "exec"
+	CAMHostExec       = "host-exec"
+	CAMAppExit        = "app-exit"
 )
 
 // ContinueAfter provides the command execution mode parameters

@@ -97,10 +97,11 @@ const (
 	FlagHTTPMaxConcurrentCrawlers = "http-max-concurrent-crawlers"
 	FlagHTTPProbeAPISpec          = "http-probe-apispec"
 	FlagHTTPProbeAPISpecFile      = "http-probe-apispec-file"
-	FlagHTTPProbeExec             = "http-probe-exec"
-	FlagHTTPProbeExecFile         = "http-probe-exec-file"
 	FlagHTTPProbeProxyEndpoint    = "http-probe-proxy-endpoint"
 	FlagHTTPProbeProxyPort        = "http-probe-proxy-port"
+
+	FlagHostExec     = "host-exec"
+	FlagHostExecFile = "host-exec-file"
 
 	FlagPublishPort         = "publish-port"
 	FlagPublishExposedPorts = "publish-exposed-ports"
@@ -200,10 +201,11 @@ const (
 	FlagHTTPMaxConcurrentCrawlersUsage = "Number of concurrent crawlers in the HTTP probe"
 	FlagHTTPProbeAPISpecUsage          = "Run HTTP probes for API spec"
 	FlagHTTPProbeAPISpecFileUsage      = "Run HTTP probes for API spec from file"
-	FlagHTTPProbeExecUsage             = "App to execute when running HTTP probes"
-	FlagHTTPProbeExecFileUsage         = "Apps to execute when running HTTP probes loaded from file"
 	FlagHTTPProbeProxyEndpointUsage    = "Endpoint to proxy HTTP probes"
 	FlagHTTPProbeProxyPortUsage        = "Port to proxy HTTP probes (used with HTTP probe proxy endpoint)"
+
+	FlagHostExecUsage     = "Host commands to execute (aka host commands probes)"
+	FlagHostExecFileUsage = "Host commands to execute loaded from file (ka host commands probes)"
 
 	FlagPublishPortUsage         = "Map container port to host port (format => port | hostPort:containerPort | hostIP:hostPort:containerPort | hostIP::containerPort )"
 	FlagPublishExposedPortsUsage = "Map all exposed ports to the same host ports"
@@ -580,18 +582,6 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:   FlagHTTPMaxConcurrentCrawlersUsage,
 		EnvVars: []string{"DSLIM_HTTP_MAX_CONCURRENT_CRAWLERS"},
 	},
-	FlagHTTPProbeExec: &cli.StringSliceFlag{
-		Name:    FlagHTTPProbeExec,
-		Value:   cli.NewStringSlice(),
-		Usage:   FlagHTTPProbeExecUsage,
-		EnvVars: []string{"DSLIM_HTTP_PROBE_EXEC"},
-	},
-	FlagHTTPProbeExecFile: &cli.StringFlag{
-		Name:    FlagHTTPProbeExecFile,
-		Value:   "",
-		Usage:   FlagHTTPProbeExecFileUsage,
-		EnvVars: []string{"DSLIM_HTTP_PROBE_EXEC_FILE"},
-	},
 	FlagHTTPProbeProxyEndpoint: &cli.StringFlag{
 		Name:    FlagHTTPProbeProxyEndpoint,
 		Value:   "",
@@ -603,6 +593,18 @@ var CommonFlags = map[string]cli.Flag{
 		Value:   0,
 		Usage:   FlagHTTPProbeProxyPortUsage,
 		EnvVars: []string{"DSLIM_HTTP_PROBE_PROXY_PORT"},
+	},
+	FlagHostExec: &cli.StringSliceFlag{
+		Name:    FlagHostExec,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagHostExecUsage,
+		EnvVars: []string{"DSLIM_HOST_EXEC"},
+	},
+	FlagHostExecFile: &cli.StringFlag{
+		Name:    FlagHostExecFile,
+		Value:   "",
+		Usage:   FlagHostExecFileUsage,
+		EnvVars: []string{"DSLIM_HOST_EXEC_FILE"},
 	},
 	FlagPublishPort: &cli.StringSliceFlag{
 		Name:    FlagPublishPort,

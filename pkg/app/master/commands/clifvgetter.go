@@ -97,6 +97,10 @@ func GetContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 		info.Mode = config.CAMExec
 	case config.CAMContainerProbe:
 		info.Mode = config.CAMContainerProbe
+	case config.CAMHostExec:
+		info.Mode = config.CAMHostExec
+	case config.CAMAppExit:
+		info.Mode = config.CAMAppExit
 	case config.CAMTimeout:
 		info.Mode = config.CAMTimeout
 		info.Timeout = 60
@@ -114,6 +118,26 @@ func GetContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 	}
 
 	return info, nil
+}
+
+func RemoveContinueAfterMode(continueAfter, mode string) string {
+	if continueAfter == mode {
+		return ""
+	}
+
+	var result []string
+	modes := strings.Split(continueAfter, "&")
+	for _, current := range modes {
+		if current != mode {
+			result = append(result, mode)
+		}
+	}
+
+	return strings.Join(modes, "&")
+}
+
+func GetContinueAfterModeNames(continueAfter string) []string {
+	return strings.Split(continueAfter, "&")
 }
 
 func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error) {

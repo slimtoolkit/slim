@@ -3,13 +3,18 @@ package commands
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
@@ -18,6 +23,8 @@ import (
 const (
 	ImagesStateRootPath = "images"
 )
+
+type ovars = app.OutVars
 
 /////////////////////////////////////////////////////////
 
@@ -195,5 +202,101 @@ func UpdateImageRef(logger *log.Entry, ref, override string) string {
 
 	return fmt.Sprintf("%s:%s", refImage, refTag)
 }
+
+func RunHostExecProbes(printState bool, xc *app.ExecutionContext, hostExecProbes []string) {
+	if len(hostExecProbes) > 0 {
+		var callCount uint
+		var okCount uint
+		var errCount uint
+
+		if printState {
+			xc.Out.Info("host.exec.probes",
+				ovars{
+					"count": len(hostExecProbes),
+				})
+		}
+
+		for idx, appCall := range hostExecProbes {
+			if printState {
+				xc.Out.Info("host.exec.probes",
+					ovars{
+						"idx": idx,
+						"app": appCall,
+					})
+			}
+
+			xc.Out.Info("host.exec.probe.output.start")
+			//TODO LATER:
+			//add more parameters and outputs for more advanced execution control capabilities
+			err := exeAppCall(appCall)
+			xc.Out.Info("host.exec.probe.output.end")
+
+			callCount++
+			statusCode := "error"
+			callErrorStr := "none"
+			if err == nil {
+				okCount++
+				statusCode = "ok"
+			} else {
+				errCount++
+				callErrorStr = err.Error()
+			}
+
+			if printState {
+				xc.Out.Info("host.exec.probes",
+					ovars{
+						"idx":    idx,
+						"app":    appCall,
+						"status": statusCode,
+						"error":  callErrorStr,
+						"time":   time.Now().UTC().Format(time.RFC3339),
+					})
+			}
+		}
+	}
+}
+
+func exeAppCall(appCall string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Second)
+	defer cancel()
+
+	appCall = strings.TrimSpace(appCall)
+	args, err := shlex.Split(appCall)
+	if err != nil {
+		log.Errorf("exeAppCall(%s): call parse error: %v", appCall, err)
+		return err
+	}
+
+	if len(args) == 0 {
+		return fmt.Errorf("empty appCall")
+	}
+
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	//cmd.Dir = "."
+	cmd.Stdin = os.Stdin
+
+	//var outBuf, errBuf bytes.Buffer
+	//cmd.Stdout = io.MultiWriter(os.Stdout, &outBuf)
+	//cmd.Stderr = io.MultiWriter(os.Stderr, &errBuf)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		log.Errorf("exeAppCall(%s): command start error: %v", appCall, err)
+		return err
+	}
+
+	err = cmd.Wait()
+	fmt.Printf("\n")
+	if err != nil {
+		log.Fatalf("exeAppCall(%s): command exited with error: %v", appCall, err)
+		return err
+	}
+
+	//TODO: process outBuf and errBuf here
+	return nil
+}
+
+///////////////////////////////////////
 
 var CLI []*cli.Command

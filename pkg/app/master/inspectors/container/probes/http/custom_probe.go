@@ -9,13 +9,11 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"strings"
 	"sync"
 	"time"
 
 	dockerapi "github.com/fsouza/go-dockerclient"
-	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
@@ -35,20 +33,20 @@ type ovars = app.OutVars
 
 // CustomProbe is a custom HTTP probe
 type CustomProbe struct {
-	PrintState            bool
-	PrintPrefix           string
-	Ports                 []string
-	Cmds                  []config.HTTPProbeCmd
-	StartWait             int
-	RetryCount            int
-	RetryWait             int
-	TargetPorts           []uint16
-	ProbeFull             bool
-	ProbeExitOnFailure    bool
-	APISpecs              []string
-	APISpecFiles          []string
-	APISpecProbes         []apiSpecInfo
-	ProbeApps             []string
+	PrintState         bool
+	PrintPrefix        string
+	Ports              []string
+	Cmds               []config.HTTPProbeCmd
+	StartWait          int
+	RetryCount         int
+	RetryWait          int
+	TargetPorts        []uint16
+	ProbeFull          bool
+	ProbeExitOnFailure bool
+	APISpecs           []string
+	APISpecFiles       []string
+	APISpecProbes      []apiSpecInfo
+	//ProbeApps             []string
 	ContainerInspector    *container.Inspector
 	CallCount             uint64
 	ErrCount              uint64
@@ -80,7 +78,7 @@ func NewCustomProbe(
 	probeExitOnFailure bool,
 	apiSpecs []string,
 	apiSpecFiles []string,
-	probeApps []string,
+	//probeApps []string,
 	printState bool,
 	printPrefix string) (*CustomProbe, error) {
 	//note: the default probe should already be there if the user asked for it
@@ -106,18 +104,18 @@ func NewCustomProbe(
 	}
 
 	probe := &CustomProbe{
-		PrintState:            printState,
-		PrintPrefix:           printPrefix,
-		Cmds:                  cmds,
-		StartWait:             startWait,
-		RetryCount:            retryCount,
-		RetryWait:             retryWait,
-		TargetPorts:           targetPorts,
-		ProbeFull:             probeFull,
-		ProbeExitOnFailure:    probeExitOnFailure,
-		APISpecs:              apiSpecs,
-		APISpecFiles:          apiSpecFiles,
-		ProbeApps:             probeApps,
+		PrintState:         printState,
+		PrintPrefix:        printPrefix,
+		Cmds:               cmds,
+		StartWait:          startWait,
+		RetryCount:         retryCount,
+		RetryWait:          retryWait,
+		TargetPorts:        targetPorts,
+		ProbeFull:          probeFull,
+		ProbeExitOnFailure: probeExitOnFailure,
+		APISpecs:           apiSpecs,
+		APISpecFiles:       apiSpecFiles,
+		//ProbeApps:             probeApps,
 		ContainerInspector:    inspector,
 		crawlMaxDepth:         crawlMaxDepth,
 		crawlMaxPageCount:     crawlMaxPageCount,
@@ -541,53 +539,6 @@ func (p *CustomProbe) Start() {
 			}
 		}
 
-		if len(p.ProbeApps) > 0 {
-			if p.PrintState {
-				p.xc.Out.Info("http.probe.apps",
-					ovars{
-						"count": len(p.ProbeApps),
-					})
-			}
-
-			for idx, appCall := range p.ProbeApps {
-				if p.PrintState {
-					p.xc.Out.Info("http.probe.app",
-						ovars{
-							"idx": idx,
-							"app": appCall,
-						})
-				}
-
-				p.xc.Out.Info("http.probe.app.output.start")
-				//TODO LATER:
-				//add more parameters and outputs for more advanced execution control capabilities
-				err := exeAppCall(appCall)
-				p.xc.Out.Info("http.probe.app.output.end")
-
-				p.CallCount++
-				statusCode := "error"
-				callErrorStr := "none"
-				if err == nil {
-					p.OkCount++
-					statusCode = "ok"
-				} else {
-					p.ErrCount++
-					callErrorStr = err.Error()
-				}
-
-				if p.PrintState {
-					p.xc.Out.Info("http.probe.app",
-						ovars{
-							"idx":    idx,
-							"app":    appCall,
-							"status": statusCode,
-							"error":  callErrorStr,
-							"time":   time.Now().UTC().Format(time.RFC3339),
-						})
-				}
-			}
-		}
-
 		log.Info("HTTP probe done.")
 
 		if p.PrintState {
@@ -658,47 +609,6 @@ func (p *CustomProbe) probeAPISpecs(proto, targetHost, port string) {
 // DoneChan returns the 'done' channel for the HTTP probe instance
 func (p *CustomProbe) DoneChan() <-chan struct{} {
 	return p.doneChan
-}
-
-func exeAppCall(appCall string) error {
-	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Second)
-	defer cancel()
-
-	appCall = strings.TrimSpace(appCall)
-	args, err := shlex.Split(appCall)
-	if err != nil {
-		log.Errorf("exeAppCall(%s): call parse error: %v", appCall, err)
-		return err
-	}
-
-	if len(args) == 0 {
-		return fmt.Errorf("empty appCall")
-	}
-
-	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
-	//cmd.Dir = "."
-	cmd.Stdin = os.Stdin
-
-	//var outBuf, errBuf bytes.Buffer
-	//cmd.Stdout = io.MultiWriter(os.Stdout, &outBuf)
-	//cmd.Stderr = io.MultiWriter(os.Stderr, &errBuf)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	if err := cmd.Start(); err != nil {
-		log.Errorf("exeAppCall(%s): command start error: %v", appCall, err)
-		return err
-	}
-
-	err = cmd.Wait()
-	fmt.Printf("\n")
-	if err != nil {
-		log.Fatalf("exeAppCall(%s): command exited with error: %v", appCall, err)
-		return err
-	}
-
-	//TODO: process outBuf and errBuf here
-	return nil
 }
 
 func newHTTPRequestFromCmd(cmd config.HTTPProbeCmd, addr string, reqBody io.Reader) (*http.Request, error) {

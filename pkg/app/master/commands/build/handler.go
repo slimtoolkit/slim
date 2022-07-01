@@ -137,11 +137,11 @@ func OnCommand(
 	doHTTPProbeExitOnFailure bool,
 	httpProbeAPISpecs []string,
 	httpProbeAPISpecFiles []string,
-	httpProbeApps []string,
 	httpProbeProxyEndpoint string,
 	httpProbeProxyPort int,
 	portBindings map[dockerapi.Port][]dockerapi.PortBinding,
 	doPublishExposedPorts bool,
+	hostExecProbes []string,
 	doRmFileArtifacts bool,
 	copyMetaArtifactsLocation string,
 	doRunTargetAsUser bool,
@@ -184,6 +184,7 @@ func OnCommand(
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
+	printState := true
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -421,8 +422,8 @@ func OnCommand(
 			nil,  //pullExcludes (todo: add a flag)
 			true, //ownAllResources
 			options,
-			nil,  //eventCh
-			true) //printState
+			nil, //eventCh
+			printState)
 
 		xc.FailOn(err)
 
@@ -1035,7 +1036,7 @@ func OnCommand(
 		rtaSourcePT,
 		sensorIPCEndpoint,
 		sensorIPCMode,
-		true,
+		printState,
 		prefix)
 	xc.FailOn(err)
 
@@ -1114,7 +1115,7 @@ func OnCommand(
 			doHTTPProbeExitOnFailure,
 			httpProbeAPISpecs,
 			httpProbeAPISpecFiles,
-			httpProbeApps,
+			//httpProbeApps,
 			true,
 			prefix)
 		xc.FailOn(err)
@@ -1162,7 +1163,7 @@ func OnCommand(
 
 	execFail := false
 
-	modes := strings.Split(continueAfter.Mode, "&")
+	modes := commands.GetContinueAfterModeNames(continueAfter.Mode)
 	for _, mode := range modes {
 		//should work for the most parts except
 		//when probe and signal are combined
@@ -1295,6 +1296,11 @@ func OnCommand(
 				//make sure we show the container logs because none of the http probe calls were successful
 				containerInspector.DoShowContainerLogs = true
 			}
+		case config.CAMHostExec:
+			commands.RunHostExecProbes(printState, xc, hostExecProbes)
+		case config.CAMAppExit:
+			xc.Out.Prompt("waiting for the target app to exit")
+			//TBD
 		default:
 			errutil.Fail("unknown continue-after mode")
 		}
