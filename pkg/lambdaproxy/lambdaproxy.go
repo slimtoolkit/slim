@@ -63,6 +63,15 @@ type HTTPResponse struct {
 	Body       string   `json:"body"`
 }
 
+//encode and decode options - future placeholder for v1 and v2 options of lambda results
+type EncodeOptions struct {
+	version string `json:"version"`
+}
+
+type DecodeOptions struct {
+	version string `json:"version"`
+}
+
 // Add a helper for handling errors. This logs any error to os.Stderr
 // and returns a 500 Internal Server Error response that the AWS API
 // Gateway understands.
@@ -116,7 +125,7 @@ func EncodeRequest(input *HTTPRequest, options *EncodeOptions) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func DecodeResponse(input []byte, options DecodeOptions) (HTTPResponse, error) {
+func DecodeResponse(input []byte, options *DecodeOptions) (HTTPResponse, error) {
 
 	var response apiGatewayProxyResponse
 	if err := json.NewDecoder(bytes.NewBuffer(input)).Decode(&response); err != nil {
