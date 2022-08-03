@@ -16,8 +16,9 @@ fi
 
 LD_FLAGS="-s -w -X github.com/docker-slim/docker-slim/pkg/version.appVersionTag=${TAG} -X github.com/docker-slim/docker-slim/pkg/version.appVersionRev=${REVISION} -X github.com/docker-slim/docker-slim/pkg/version.appVersionTime=${BUILD_TIME}"
 
-mkdir -p ${BDIR}/dist_linux/
-rm -f ${BDIR}/dist_linux/*
+BINDIR="${BDIR}/bin"
+mkdir -p "$BINDIR"
+rm -rf "${BINDIR}/"*
 
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="${LD_FLAGS}" -mod=vendor -o "${BDIR}/dist_linux/docker-slim" "${BDIR}/cmd/docker-slim/main.go"
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="${LD_FLAGS}" -mod=vendor -o "${BDIR}/dist_linux/docker-slim-sensor" "${BDIR}/cmd/docker-slim-sensor/main.go"
+CGO_ENABLED=0 go build -ldflags="${LD_FLAGS}" -mod=vendor -o "${BINDIR}/docker-slim" "${BDIR}/cmd/docker-slim/main.go"
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="${LD_FLAGS}" -mod=vendor -o "${BINDIR}/docker-slim-sensor" "${BDIR}/cmd/docker-slim-sensor/main.go"

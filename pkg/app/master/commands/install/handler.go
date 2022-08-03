@@ -17,17 +17,40 @@ const (
 	dockerCLIPluginDirSuffx = "/.docker/cli-plugins"
 	masterAppName           = "docker-slim"
 	sensorAppName           = "docker-slim-sensor"
+	binDirName              = "/usr/local/bin"
 )
 
-// OnCommand implements the 'update' docker-slim command
-func OnCommand(doDebug bool, statePath, archiveState string, inContainer, isDSImage bool, dockerCLIPlugin bool) {
+// OnCommand implements the 'install' docker-slim command
+func OnCommand(
+	doDebug bool,
+	statePath string,
+	archiveState string,
+	inContainer bool,
+	isDSImage bool,
+	binDir bool,
+	dockerCLIPlugin bool) {
 	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "install"})
 
 	appPath, err := os.Executable()
 	errutil.FailOn(err)
 	appDirPath := filepath.Dir(appPath)
 
+	if binDir {
+		err := installToBinDir(logger, statePath, inContainer, isDSImage, appDirPath)
+		if err != nil {
+			fmt.Printf("docker-slim[install]: info=status message='error installing to bin dir'\n")
+			fmt.Printf("docker-slim[install]: state=exited version=%s\n", vinfo.Current())
+			return
+		}
+
+		fmt.Printf("docker-slim[install]: state=bin.dir.installed\n")
+
+		//use the path from the bin dir, so installing docker CLI plugin symlinks to the right binaries
+		appDirPath = binDirName
+	}
+
 	if dockerCLIPlugin {
+		//create a symlink
 		err := installDockerCLIPlugin(logger, statePath, inContainer, isDSImage, appDirPath)
 		if err != nil {
 			fmt.Printf("docker-slim[install]: info=status message='error installing as Docker CLI plugin'\n")
@@ -37,6 +60,37 @@ func OnCommand(doDebug bool, statePath, archiveState string, inContainer, isDSIm
 
 		fmt.Printf("docker-slim[install]: state=docker.cli.plugin.installed\n")
 	}
+}
+
+func installToBinDir(logger *log.Entry, statePath string, inContainer, isDSImage bool, appDirPath string) error {
+	if err := installRelease(logger, appDirPath, statePath, binDirName); err != nil {
+		logger.Debugf("installToBinDir error: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func symlinkBinaries(logger *log.Entry, appRootPath, symlinkRootPath string) error {
+	symlinkMasterAppPath := filepath.Join(symlinkRootPath, masterAppName)
+	symlinkSensorAppPath := filepath.Join(symlinkRootPath, sensorAppName)
+	targetSensorAppPath := filepath.Join(appRootPath, sensorAppName)
+	targetMasterAppPath := filepath.Join(appRootPath, masterAppName)
+
+	//todo:
+	//should not symlink the sensor because Docker CLI will treat it as an invalid plugin
+	//need to improve sensor bin discovery from master app symlink
+	err := os.Symlink(targetSensorAppPath, symlinkSensorAppPath)
+	if err != nil {
+		return err
+	}
+
+	err = os.Symlink(targetMasterAppPath, symlinkMasterAppPath)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func installDockerCLIPlugin(logger *log.Entry, statePath string, inContainer, isDSImage bool, appDirPath string) error {
@@ -51,7 +105,7 @@ func installDockerCLIPlugin(logger *log.Entry, statePath string, inContainer, is
 		}
 	}
 
-	if err := installRelease(logger, appDirPath, statePath, dockerCLIPluginDir); err != nil {
+	if err := symlinkBinaries(logger, appDirPath, dockerCLIPluginDir); err != nil {
 		logger.Debugf("installDockerCLIPlugin error: %v", err)
 		return err
 	}

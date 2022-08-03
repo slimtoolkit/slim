@@ -175,9 +175,10 @@ func OnCommand(
 
 	xc.Out.Info("image",
 		ovars{
-			"id":         imageInspector.ImageInfo.ID,
-			"size.bytes": imageInspector.ImageInfo.VirtualSize,
-			"size.human": humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
+			"id":           imageInspector.ImageInfo.ID,
+			"size.bytes":   imageInspector.ImageInfo.VirtualSize,
+			"size.human":   humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
+			"architecture": imageInspector.ImageInfo.Architecture,
 		})
 
 	logger.Info("processing 'fat' image info...")
@@ -369,17 +370,11 @@ func OnCommand(
 
 		//fix up exe path if relative
 		if !strings.HasPrefix(cmdReport.SourceImage.ContainerEntry.ExePath, "/") {
-			var envPaths []string
-			for _, envInfo := range cmdReport.SourceImage.EnvVars {
-				if strings.HasPrefix(envInfo, "PATH=") {
-					envInfo = strings.TrimPrefix(envInfo, "PATH=")
-					envPaths = strings.Split(envInfo, ":")
-					break
-				}
-			}
+			//check relative path
+			if strings.HasPrefix(cmdReport.SourceImage.ContainerEntry.ExePath, "./") ||
+				strings.HasPrefix(cmdReport.SourceImage.ContainerEntry.ExePath, "../") {
 
-			for _, envPath := range envPaths {
-				fullExePath := fmt.Sprintf("%s/%s", envPath, cmdReport.SourceImage.ContainerEntry.ExePath)
+				fullExePath := filepath.Join(cmdReport.SourceImage.WorkDir, cmdReport.SourceImage.ContainerEntry.ExePath)
 				object := findChange(imagePkg, fullExePath)
 				if object != nil {
 					cmdReport.SourceImage.ContainerEntry.FullExePath =
@@ -387,7 +382,29 @@ func OnCommand(
 							Name:  fullExePath,
 							Layer: object.LayerIndex,
 						}
-					break
+				}
+			} else {
+				//check env paths
+				var envPaths []string
+				for _, envInfo := range cmdReport.SourceImage.EnvVars {
+					if strings.HasPrefix(envInfo, "PATH=") {
+						envInfo = strings.TrimPrefix(envInfo, "PATH=")
+						envPaths = strings.Split(envInfo, ":")
+						break
+					}
+				}
+
+				for _, envPath := range envPaths {
+					fullExePath := fmt.Sprintf("%s/%s", envPath, cmdReport.SourceImage.ContainerEntry.ExePath)
+					object := findChange(imagePkg, fullExePath)
+					if object != nil {
+						cmdReport.SourceImage.ContainerEntry.FullExePath =
+							&report.ContainerFileInfo{
+								Name:  fullExePath,
+								Layer: object.LayerIndex,
+							}
+						break
+					}
 				}
 			}
 		} else {

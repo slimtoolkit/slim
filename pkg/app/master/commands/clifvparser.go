@@ -16,6 +16,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	"github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/sysenv"
@@ -424,12 +425,17 @@ func ParsePathPerms(raw string) (string, *fsutil.AccessInfo, error) {
 }
 
 func ParsePaths(values []string) map[string]*fsutil.AccessInfo {
+	const op = "commands.ParsePaths"
 	paths := map[string]*fsutil.AccessInfo{}
 
 	for _, raw := range values {
 		pathStr, access, err := ParsePathPerms(raw)
 		if err != nil {
-			fmt.Printf("parsePaths() - skipping %v (error=%v)\n", raw, err)
+			log.WithFields(log.Fields{
+				"op":    op,
+				"line":  raw,
+				"error": err,
+			}).Debug("skipping.line")
 			continue
 		}
 
@@ -467,6 +473,7 @@ func ValidateFiles(names []string) ([]string, map[string]error) {
 }
 
 func ParsePathsFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
+	const op = "commands.ParsePathsFile"
 	paths := map[string]*fsutil.AccessInfo{}
 
 	if filePath == "" {
@@ -493,13 +500,25 @@ func ParsePathsFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
 	}
 
 	lines := strings.Split(string(fileData), "\n")
+	log.WithFields(log.Fields{
+		"op":          op,
+		"file.path":   filePath,
+		"full.path":   fullPath,
+		"lines.count": len(lines),
+	}).Trace("data")
 
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if len(line) != 0 {
 			pathStr, access, err := ParsePathPerms(line)
 			if err != nil {
-				fmt.Printf("parsePathsFile() - skipping %v (error=%v)\n", line, err)
+				log.WithFields(log.Fields{
+					"op":        op,
+					"file.path": filePath,
+					"full.path": fullPath,
+					"line":      line,
+					"error":     err,
+				}).Debug("skipping.line")
 				continue
 			}
 

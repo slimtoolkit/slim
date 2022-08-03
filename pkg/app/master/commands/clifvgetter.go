@@ -4,28 +4,32 @@ package commands
 
 import (
 	"encoding/json"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+	"github.com/urfave/cli/v2"
+
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/app/master/signals"
-
-	"github.com/urfave/cli"
 )
 
 func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, error) {
+	const op = "commands.GetContainerRunOptions"
 	var cro config.ContainerRunOptions
 	cro.Runtime = ctx.String(FlagCRORuntime)
 	sysctlList := ctx.StringSlice(FlagCROSysctl)
 	if len(sysctlList) > 0 {
 		params, err := ParseTokenMap(sysctlList)
 		if err != nil {
-			fmt.Printf("invalid sysctl options %v\n", err)
+			log.WithFields(log.Fields{
+				"op":    op,
+				"error": err,
+			}).Error("invalid sysctl options")
 			return nil, err
 		}
 
@@ -35,13 +39,26 @@ func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, erro
 	if len(hostConfigFileName) > 0 {
 		hostConfigBytes, err := ioutil.ReadFile(hostConfigFileName)
 		if err != nil {
-			fmt.Printf("could not read host config file %v: %v\n", hostConfigFileName, err)
+			log.WithFields(log.Fields{
+				"op":        op,
+				"file.name": hostConfigFileName,
+				"error":     err,
+			}).Error("could not read host config file")
+			return nil, err
 		}
 		json.Unmarshal(hostConfigBytes, &cro.HostConfig)
 	}
 
 	cro.ShmSize = ctx.Int64(FlagCROShmSize)
 	return &cro, nil
+}
+
+func GetDefaultHTTPProbe() config.HTTPProbeCmd {
+	return config.HTTPProbeCmd{
+		Protocol: "http",
+		Method:   "GET",
+		Resource: "/",
+	}
 }
 
 func GetHTTPProbes(ctx *cli.Context) ([]config.HTTPProbeCmd, error) {
@@ -78,6 +95,12 @@ func GetContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 		info.Mode = config.CAMProbe
 	case config.CAMExec:
 		info.Mode = config.CAMExec
+	case config.CAMContainerProbe:
+		info.Mode = config.CAMContainerProbe
+	case config.CAMHostExec:
+		info.Mode = config.CAMHostExec
+	case config.CAMAppExit:
+		info.Mode = config.CAMAppExit
 	case config.CAMTimeout:
 		info.Mode = config.CAMTimeout
 		info.Timeout = 60
@@ -97,7 +120,29 @@ func GetContinueAfter(ctx *cli.Context) (*config.ContinueAfter, error) {
 	return info, nil
 }
 
+func RemoveContinueAfterMode(continueAfter, mode string) string {
+	if continueAfter == mode {
+		return ""
+	}
+
+	var result []string
+	modes := strings.Split(continueAfter, "&")
+	for _, current := range modes {
+		if current != mode {
+			result = append(result, mode)
+		}
+	}
+
+	return strings.Join(modes, "&")
+}
+
+func GetContinueAfterModeNames(continueAfter string) []string {
+	return strings.Split(continueAfter, "&")
+}
+
 func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error) {
+	const op = "commands.GetContainerOverrides"
+
 	doUseEntrypoint := ctx.String(FlagEntrypoint)
 	doUseCmd := ctx.String(FlagCmd)
 	exposePortList := ctx.StringSlice(FlagExpose)
@@ -117,7 +162,10 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	if len(exposePortList) > 0 {
 		overrides.ExposedPorts, err = ParseDockerExposeOpt(exposePortList)
 		if err != nil {
-			fmt.Printf("invalid expose options..\n\n")
+			log.WithFields(log.Fields{
+				"op":    op,
+				"error": err,
+			}).Error("invalid expose options")
 			return nil, err
 		}
 	}
@@ -125,7 +173,10 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	if len(volumesList) > 0 {
 		volumes, err := ParseTokenSet(volumesList)
 		if err != nil {
-			fmt.Printf("invalid volume options %v\n", err)
+			log.WithFields(log.Fields{
+				"op":    op,
+				"error": err,
+			}).Error("invalid volume options")
 			return nil, err
 		}
 
@@ -135,7 +186,10 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	if len(labelsList) > 0 {
 		labels, err := ParseTokenMap(labelsList)
 		if err != nil {
-			fmt.Printf("invalid label options %v\n", err)
+			log.WithFields(log.Fields{
+				"op":    op,
+				"error": err,
+			}).Error("invalid label options")
 			return nil, err
 		}
 
@@ -144,7 +198,10 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 
 	overrides.Entrypoint, err = ParseExec(doUseEntrypoint)
 	if err != nil {
-		fmt.Printf("invalid entrypoint option..\n\n")
+		log.WithFields(log.Fields{
+			"op":    op,
+			"error": err,
+		}).Error("invalid entrypoint option")
 		return nil, err
 	}
 
@@ -153,7 +210,10 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 
 	overrides.Cmd, err = ParseExec(doUseCmd)
 	if err != nil {
-		fmt.Printf("invalid cmd option..\n\n")
+		log.WithFields(log.Fields{
+			"op":    op,
+			"error": err,
+		}).Error("invalid cmd option")
 		return nil, err
 	}
 
@@ -162,20 +222,72 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 	return overrides, nil
 }
 
+func UpdateGlobalFlagValues(appOpts *config.AppOptions, values *GenericParams) *GenericParams {
+	if appOpts == nil || appOpts.Global == nil || values == nil {
+		return values
+	}
+
+	if appOpts.Global.NoColor != nil {
+		values.NoColor = *appOpts.Global.NoColor
+	}
+
+	if appOpts.Global.Debug != nil {
+		values.Debug = *appOpts.Global.Debug
+	}
+
+	if appOpts.Global.Verbose != nil {
+		values.Verbose = *appOpts.Global.Verbose
+	}
+
+	if appOpts.Global.LogLevel != nil {
+		values.LogLevel = *appOpts.Global.LogLevel
+	}
+
+	if appOpts.Global.LogFormat != nil {
+		values.LogFormat = *appOpts.Global.LogFormat
+	}
+
+	if appOpts.Global.Log != nil {
+		values.Log = *appOpts.Global.Log
+	}
+
+	if appOpts.Global.UseTLS != nil {
+		values.ClientConfig.UseTLS = *appOpts.Global.UseTLS
+	}
+
+	if appOpts.Global.VerifyTLS != nil {
+		values.ClientConfig.VerifyTLS = *appOpts.Global.VerifyTLS
+	}
+
+	if appOpts.Global.TLSCertPath != nil {
+		values.ClientConfig.TLSCertPath = *appOpts.Global.TLSCertPath
+	}
+
+	if appOpts.Global.Host != nil {
+		values.ClientConfig.Host = *appOpts.Global.Host
+	}
+
+	return values
+}
+
 func GlobalFlagValues(ctx *cli.Context) (*GenericParams, error) {
 	values := GenericParams{
-		CheckVersion:   ctx.GlobalBool(FlagCheckVersion),
-		Debug:          ctx.GlobalBool(FlagDebug),
-		StatePath:      ctx.GlobalString(FlagStatePath),
-		ReportLocation: ctx.GlobalString(FlagCommandReport),
+		CheckVersion:   ctx.Bool(FlagCheckVersion),
+		Debug:          ctx.Bool(FlagDebug),
+		Verbose:        ctx.Bool(FlagVerbose),
+		LogLevel:       ctx.String(FlagLogLevel),
+		LogFormat:      ctx.String(FlagLogFormat),
+		Log:            ctx.String(FlagLog),
+		StatePath:      ctx.String(FlagStatePath),
+		ReportLocation: ctx.String(FlagCommandReport),
 	}
 
 	if values.ReportLocation == "off" {
 		values.ReportLocation = ""
 	}
 
-	values.InContainer, values.IsDSImage = IsInContainer(ctx.GlobalBool(FlagInContainer))
-	values.ArchiveState = ArchiveState(ctx.GlobalString(FlagArchiveState), values.InContainer)
+	values.InContainer, values.IsDSImage = IsInContainer(ctx.Bool(FlagInContainer))
+	values.ArchiveState = ArchiveState(ctx.String(FlagArchiveState), values.InContainer)
 
 	values.ClientConfig = GetDockerClientConfig(ctx)
 
@@ -184,10 +296,10 @@ func GlobalFlagValues(ctx *cli.Context) (*GenericParams, error) {
 
 func GetDockerClientConfig(ctx *cli.Context) *config.DockerClient {
 	config := &config.DockerClient{
-		UseTLS:      ctx.GlobalBool(FlagUseTLS),
-		VerifyTLS:   ctx.GlobalBool(FlagVerifyTLS),
-		TLSCertPath: ctx.GlobalString(FlagTLSCertPath),
-		Host:        ctx.GlobalString(FlagHost),
+		UseTLS:      ctx.Bool(FlagUseTLS),
+		VerifyTLS:   ctx.Bool(FlagVerifyTLS),
+		TLSCertPath: ctx.String(FlagTLSCertPath),
+		Host:        ctx.String(FlagHost),
 		Env:         map[string]string{},
 	}
 

@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -46,9 +47,11 @@ const (
 	ecbBadCustomImageTag
 	ecbImageBuildError
 	ecbImageAlreadyOptimized
+	ecbOnbuildBaseImage
 	ecbNoEntrypoint
 	ecbBadTargetComposeSvc
 	ecbComposeSvcNoImage
+	ecbComposeSvcUnknownImage
 )
 
 type ovars = app.OutVars
@@ -86,12 +89,25 @@ func OnCommand(
 	gparams *commands.GenericParams,
 	targetRef string,
 	doPull bool,
+	doIncludeAppNuxtDir bool,
+	doIncludeAppNuxtBuildDir bool,
+	doIncludeAppNuxtDistDir bool,
+	doIncludeAppNuxtStaticDir bool,
+	doIncludeAppNuxtNodeModulesDir bool,
+	doIncludeAppNextDir bool,
+	doIncludeAppNextBuildDir bool,
+	doIncludeAppNextDistDir bool,
+	doIncludeAppNextStaticDir bool,
+	doIncludeAppNextNodeModulesDir bool,
+	includeNodePackages []string,
 	dockerConfigPath string,
 	registryAccount string,
 	registrySecret string,
 	doShowPullLogs bool,
 	composeFiles []string,
 	targetComposeSvc string,
+	targetComposeSvcImage string,
+	composeSvcStartWait int,
 	composeSvcNoPorts bool,
 	depExcludeComposeSvcAll bool,
 	depIncludeComposeSvcDeps string,
@@ -121,9 +137,11 @@ func OnCommand(
 	doHTTPProbeExitOnFailure bool,
 	httpProbeAPISpecs []string,
 	httpProbeAPISpecFiles []string,
-	httpProbeApps []string,
+	httpProbeProxyEndpoint string,
+	httpProbeProxyPort int,
 	portBindings map[dockerapi.Port][]dockerapi.PortBinding,
 	doPublishExposedPorts bool,
+	hostExecProbes []string,
 	doRmFileArtifacts bool,
 	copyMetaArtifactsLocation string,
 	doRunTargetAsUser bool,
@@ -150,6 +168,7 @@ func OnCommand(
 	doIncludeCertDirs bool,
 	doIncludeCertPKAll bool,
 	doIncludeCertPKDirs bool,
+	doIncludeNew bool,
 	doUseLocalMounts bool,
 	doUseSensorVolume string,
 	doKeepTmpArtifacts bool,
@@ -157,12 +176,15 @@ func OnCommand(
 	execCmd string,
 	execFileCmd string,
 	deleteFatImage bool,
-	logLevel string,
-	logFormat string) {
+	rtaOnbuildBaseImage bool,
+	rtaSourcePT bool,
+	sensorIPCEndpoint string,
+	sensorIPCMode string) {
 
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
+	printState := true
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -374,7 +396,9 @@ func OnCommand(
 			depExcludeComposeSvcs)
 
 		//todo: move compose flags to options
-		options := &compose.ExecutionOptions{}
+		options := &compose.ExecutionOptions{
+			SvcStartWait: composeSvcStartWait,
+		}
 
 		logger.Debugf("compose: file(s)='%s' selectors='%+v'\n",
 			strings.Join(composeFiles, ","), selectors)
@@ -398,8 +422,8 @@ func OnCommand(
 			nil,  //pullExcludes (todo: add a flag)
 			true, //ownAllResources
 			options,
-			nil,  //eventCh
-			true) //printState
+			nil, //eventCh
+			printState)
 
 		xc.FailOn(err)
 
@@ -445,15 +469,21 @@ func OnCommand(
 			serviceAliases = append(serviceAliases, targetSvcInfo.Config.Name)
 
 			targetRef = targetSvcInfo.Config.Image
+			if targetComposeSvcImage != "" {
+				targetRef = commands.UpdateImageRef(logger, targetRef, targetComposeSvcImage)
+				//shouldn't need to
+				targetSvcInfo.Config.Image = targetRef
+				logger.Debug("using target service override '%s' -> '%s' ", targetComposeSvcImage, targetRef)
+			}
 
 			if len(targetSvcInfo.Config.Entrypoint) > 0 {
 				logger.Debug("using targetSvcInfo.Config.Entrypoint")
-				overrides.Entrypoint = []string(targetSvcInfo.Config.Entrypoint)
+				overrides.Entrypoint = targetSvcInfo.Config.Entrypoint
 			}
 
 			if len(targetSvcInfo.Config.Command) > 0 {
 				logger.Debug("using targetSvcInfo.Config.Command")
-				overrides.Cmd = []string(targetSvcInfo.Config.Command)
+				overrides.Cmd = targetSvcInfo.Config.Command
 			}
 
 			if overrides.Workdir == "" {
@@ -660,6 +690,7 @@ func OnCommand(
 		}
 	}
 
+	logger.Tracef("targetRef=%s ii.ImageRef=%s", targetRef, imageInspector.ImageRef)
 	//refresh the target refs
 	targetRef = imageInspector.ImageRef
 	cmdReport.TargetReference = imageInspector.ImageRef
@@ -676,9 +707,10 @@ func OnCommand(
 
 	xc.Out.Info("image",
 		ovars{
-			"id":         imageInspector.ImageInfo.ID,
-			"size.bytes": imageInspector.ImageInfo.VirtualSize,
-			"size.human": humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
+			"id":           imageInspector.ImageInfo.ID,
+			"size.bytes":   imageInspector.ImageInfo.VirtualSize,
+			"size.human":   humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
+			"architecture": imageInspector.ImageInfo.Architecture,
 		})
 
 	if imageInspector.ImageInfo.Config != nil &&
@@ -736,6 +768,24 @@ func OnCommand(
 					"list": strings.Join(imageInspector.DockerfileInfo.ExposedPorts, ","),
 				})
 		}
+
+		if !rtaOnbuildBaseImage && imageInspector.DockerfileInfo.HasOnbuild {
+			xc.Out.Info("target.image.error",
+				ovars{
+					"status":  "onbuild.base.image",
+					"image":   targetRef,
+					"message": "Runtime analysis for onbuild base images is not supported",
+				})
+
+			exitCode := commands.ECTBuild | ecbOnbuildBaseImage
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": exitCode,
+				})
+
+			cmdReport.Error = "onbuild.base.image"
+			xc.Exit(exitCode)
+		}
 	}
 
 	xc.Out.State("image.inspection.done")
@@ -750,7 +800,32 @@ func OnCommand(
 	if depServicesExe != nil {
 		xc.Out.State("container.dependencies.init.start")
 		err = depServicesExe.Prepare()
-		xc.FailOn(err)
+		if err != nil {
+			var svcErr *compose.ServiceError
+			if errors.As(err, &svcErr) {
+				xc.Out.Info("compose.file.error",
+					ovars{
+						"status":       "deps.unknown.image",
+						"files":        strings.Join(composeFiles, ","),
+						"service":      svcErr.Service,
+						"pull.enabled": doPull,
+						"message":      "Unknown dependency image (make sure to pull or build the images for your dependencies in compose)",
+					})
+
+				exitCode := commands.ECTBuild | ecbComposeSvcUnknownImage
+				xc.Out.State("exited",
+					ovars{
+						"exit.code": exitCode,
+						"version":   v.Current(),
+						"location":  fsutil.ExeDir(),
+					})
+
+				xc.Exit(exitCode)
+			}
+
+			xc.FailOn(err)
+		}
+
 		err = depServicesExe.Start()
 		if err != nil {
 			depServicesExe.Stop()
@@ -782,8 +857,8 @@ func OnCommand(
 		allNetNames := depServicesExe.ActiveNetworkNames()
 
 		if targetComposeSvc != "" {
-			//if we are targetting a compose service and
-			//we have explicitly selected compose networks (composeNets)
+			//if we are targeting a compose service, and we
+			//have explicitly selected compose networks (composeNets)
 			//we use the selected subset of the configured networks for the target service
 			composeNetsSet := map[string]struct{}{}
 			for _, key := range composeNets {
@@ -801,7 +876,7 @@ func OnCommand(
 				selectedNetNames[key] = netNameInfo
 			}
 		} else {
-			//we are not targetting a compose service,
+			//we are not targeting a compose service,
 			//but we do want to connect to the networks in compose
 			if len(composeNets) > 0 {
 				for _, key := range composeNets {
@@ -913,6 +988,17 @@ func OnCommand(
 		imageInspector,
 		localVolumePath,
 		doUseLocalMounts,
+		doIncludeAppNuxtDir,
+		doIncludeAppNuxtBuildDir,
+		doIncludeAppNuxtDistDir,
+		doIncludeAppNuxtStaticDir,
+		doIncludeAppNuxtNodeModulesDir,
+		doIncludeAppNextDir,
+		doIncludeAppNextBuildDir,
+		doIncludeAppNextDistDir,
+		doIncludeAppNextStaticDir,
+		doIncludeAppNextNodeModulesDir,
+		includeNodePackages,
 		doUseSensorVolume,
 		doKeepTmpArtifacts,
 		overrides,
@@ -941,12 +1027,16 @@ func OnCommand(
 		doIncludeCertDirs,
 		doIncludeCertPKAll,
 		doIncludeCertPKDirs,
+		doIncludeNew,
 		selectedNetworks,
 		gparams.Debug,
-		logLevel,
-		logFormat,
+		gparams.LogLevel,
+		gparams.LogFormat,
 		gparams.InContainer,
-		true,
+		rtaSourcePT,
+		sensorIPCEndpoint,
+		sensorIPCMode,
+		printState,
 		prefix)
 	xc.FailOn(err)
 
@@ -967,9 +1057,20 @@ func OnCommand(
 
 	logger.Info("starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
+	if err != nil && containerInspector.DoShowContainerLogs {
+		containerInspector.ShowContainerLogs()
+	}
 	xc.FailOn(err)
 
+	containerName := containerInspector.ContainerName
+	containerID := containerInspector.ContainerID
 	inspectorCleanup := func() {
+		xc.Out.Info("container.inspector.cleanup",
+			ovars{
+				"name": containerName,
+				"id":   containerID,
+			})
+
 		if containerInspector != nil {
 			xc.Out.State("container.target.shutdown.start")
 			containerInspector.FinishMonitoring()
@@ -991,11 +1092,8 @@ func OnCommand(
 
 	logger.Info("watching container monitor...")
 
-	for _, mode := range strings.Split(continueAfter.Mode, "&") {
-		if mode == config.CAMProbe {
-			doHTTPProbe = true
-			break
-		}
+	if hasContinueAfterMode(continueAfter.Mode, config.CAMProbe) {
+		doHTTPProbe = true
 	}
 
 	var probe *http.CustomProbe
@@ -1017,7 +1115,7 @@ func OnCommand(
 			doHTTPProbeExitOnFailure,
 			httpProbeAPISpecs,
 			httpProbeAPISpecFiles,
-			httpProbeApps,
+			//httpProbeApps,
 			true,
 			prefix)
 		xc.FailOn(err)
@@ -1025,7 +1123,7 @@ func OnCommand(
 		if len(probe.Ports) == 0 {
 			xc.Out.State("http.probe.error",
 				ovars{
-					"error":   "no exposed ports",
+					"error":   "NO EXPOSED PORTS",
 					"message": "expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services",
 				})
 
@@ -1053,11 +1151,8 @@ func OnCommand(
 		continueAfterMsg = "no input required, execution will resume after the timeout"
 	}
 
-	for _, mode := range strings.Split(continueAfter.Mode, "&") {
-		if mode == config.CAMProbe {
-			continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
-			break
-		}
+	if hasContinueAfterMode(continueAfter.Mode, config.CAMProbe) {
+		continueAfterMsg = "no input required, execution will resume when HTTP probing is completed"
 	}
 
 	xc.Out.Info("continue.after",
@@ -1068,7 +1163,7 @@ func OnCommand(
 
 	execFail := false
 
-	modes := strings.Split(continueAfter.Mode, "&")
+	modes := commands.GetContinueAfterModeNames(continueAfter.Mode)
 	for _, mode := range modes {
 		//should work for the most parts except
 		//when probe and signal are combined
@@ -1076,11 +1171,14 @@ func OnCommand(
 		switch mode {
 		case config.CAMContainerProbe:
 
-			idsToLog := make(map[string]string)
+			idsToLog := map[string]string{}
 			idsToLog[targetRef] = containerInspector.ContainerID
 			for name, svc := range depServicesExe.RunningServices {
 				idsToLog[name] = svc.ID
 			}
+			//TODO:
+			//need a flag to control logs for dep services
+			//also good to leverage the logging capabilities in compose (TBD)
 			for name, id := range idsToLog {
 				name := name
 				id := id
@@ -1198,6 +1296,11 @@ func OnCommand(
 				//make sure we show the container logs because none of the http probe calls were successful
 				containerInspector.DoShowContainerLogs = true
 			}
+		case config.CAMHostExec:
+			commands.RunHostExecProbes(printState, xc, hostExecProbes)
+		case config.CAMAppExit:
+			xc.Out.Prompt("waiting for the target app to exit")
+			//TBD
 		default:
 			errutil.Fail("unknown continue-after mode")
 		}
@@ -1280,7 +1383,8 @@ func OnCommand(
 		doShowBuildLogs,
 		imageOverrideSelectors,
 		overrides,
-		instructions)
+		instructions,
+		targetRef)
 	xc.FailOn(err)
 
 	if !builder.HasData {
@@ -1517,4 +1621,14 @@ func OnCommand(
 				"file": cmdReport.ReportLocation(),
 			})
 	}
+}
+
+func hasContinueAfterMode(modeSet, mode string) bool {
+	for _, current := range strings.Split(modeSet, "&") {
+		if current == mode {
+			return true
+		}
+	}
+
+	return false
 }

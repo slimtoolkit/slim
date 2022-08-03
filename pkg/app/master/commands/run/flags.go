@@ -2,7 +2,7 @@ package run
 
 import (
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // Run command flag names
@@ -24,31 +24,31 @@ const (
 )
 
 var Flags = map[string]cli.Flag{
-	FlagLiveLogs: cli.BoolFlag{
-		Name:   FlagLiveLogs,
-		Usage:  FlagLiveLogsUsage,
-		EnvVar: "DSLIM_RUN_LIVE_LOGS",
+	FlagLiveLogs: &cli.BoolFlag{
+		Name:    FlagLiveLogs,
+		Usage:   FlagLiveLogsUsage,
+		EnvVars: []string{"DSLIM_RUN_LIVE_LOGS"},
 	},
-	FlagTerminal: cli.BoolFlag{
-		Name:   FlagTerminal,
-		Usage:  FlagTerminalUsage,
-		EnvVar: "DSLIM_RUN_TERMINAL",
+	FlagTerminal: &cli.BoolFlag{
+		Name:    FlagTerminal,
+		Usage:   FlagTerminalUsage,
+		EnvVars: []string{"DSLIM_RUN_TERMINAL"},
 	},
-	FlagPublishPort: cli.StringSliceFlag{
-		Name:   FlagPublishPort,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagPublishPortUsage,
-		EnvVar: "DSLIM_RUN_PUBLISH_PORT",
+	FlagPublishPort: &cli.StringSliceFlag{
+		Name:    FlagPublishPort,
+		Value:   &cli.StringSlice{},
+		Usage:   FlagPublishPortUsage,
+		EnvVars: []string{"DSLIM_RUN_PUBLISH_PORT"},
 	},
-	FlagRemove: cli.BoolFlag{
-		Name:   FlagRemove,
-		Usage:  FlagRemoveUsage,
-		EnvVar: "DSLIM_RUN_RM",
+	FlagRemove: &cli.BoolFlag{
+		Name:    FlagRemove,
+		Usage:   FlagRemoveUsage,
+		EnvVars: []string{"DSLIM_RUN_RM"},
 	},
-	FlagDetach: cli.BoolFlag{
-		Name:   FlagDetach,
-		Usage:  FlagDetachUsage,
-		EnvVar: "DSLIM_RUN_DETACH",
+	FlagDetach: &cli.BoolFlag{
+		Name:    FlagDetach,
+		Usage:   FlagDetachUsage,
+		EnvVars: []string{"DSLIM_RUN_DETACH"},
 	},
 }
 

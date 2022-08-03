@@ -50,7 +50,6 @@ func CallFourthParam(regs syscall.PtraceRegs) uint64 {
 	return regs.Rcx
 }
 
-
 /*
 X86_32 SYSCALL REGISTER USE:
 

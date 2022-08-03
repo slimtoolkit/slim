@@ -37,6 +37,9 @@ const (
 
 type ovars = app.OutVars
 
+//note: the runtime part of the 'profile' logic is a bit behind 'build'
+//todo: refactor 'xray', 'profile' and 'build' to compose and reuse common logic
+
 // OnCommand implements the 'profile' docker-slim command
 func OnCommand(
 	xc *app.ExecutionContext,
@@ -62,9 +65,9 @@ func OnCommand(
 	doHTTPProbeExitOnFailure bool,
 	httpProbeAPISpecs []string,
 	httpProbeAPISpecFiles []string,
-	httpProbeApps []string,
 	portBindings map[docker.Port][]docker.PortBinding,
 	doPublishExposedPorts bool,
+	hostExecProbes []string,
 	doRmFileArtifacts bool,
 	copyMetaArtifactsLocation string,
 	doRunTargetAsUser bool,
@@ -86,11 +89,14 @@ func OnCommand(
 	doUseSensorVolume string,
 	//doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
+	sensorIPCEndpoint string,
+	sensorIPCMode string,
 	logLevel string,
 	logFormat string) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
 	prefix := fmt.Sprintf("cmd=%s", cmdName)
+	printState := true
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -208,9 +214,10 @@ func OnCommand(
 
 	xc.Out.Info("image",
 		ovars{
-			"id":         imageInspector.ImageInfo.ID,
-			"size.bytes": imageInspector.ImageInfo.VirtualSize,
-			"size.human": humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
+			"id":           imageInspector.ImageInfo.ID,
+			"size.bytes":   imageInspector.ImageInfo.VirtualSize,
+			"size.human":   humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
+			"architecture": imageInspector.ImageInfo.Architecture,
 		})
 
 	logger.Info("processing 'fat' image info...")
@@ -235,6 +242,17 @@ func OnCommand(
 		imageInspector,
 		localVolumePath,
 		doUseLocalMounts,
+		false, //doIncludeAppNuxtDir
+		false, //doIncludeAppNuxtBuildDir,
+		false, //doIncludeAppNuxtDistDir,
+		false, //doIncludeAppNuxtStaticDir,
+		false, //doIncludeAppNuxtNodeModulesDir,
+		false, //doIncludeAppNextDir
+		false, //doIncludeAppNextBuildDir,
+		false, //doIncludeAppNextDistDir,
+		false, //doIncludeAppNextStaticDir,
+		false, //doIncludeAppNextNodeModulesDir,
+		nil,   //includeNodePackages,
 		doUseSensorVolume,
 		false, //doKeepTmpArtifacts,
 		overrides,
@@ -263,13 +281,17 @@ func OnCommand(
 		false, //doIncludeCertDirs
 		false, //doIncludeCertPKAll
 		false, //doIncludeCertPKDirs
+		false, //doIncludeNew
 		nil,   //selectedNetNames
 		//nil,
 		gparams.Debug,
 		logLevel,
 		logFormat,
 		gparams.InContainer,
-		true,
+		true, //rtaSourcePT
+		sensorIPCEndpoint,
+		sensorIPCMode,
+		printState,
 		prefix)
 	errutil.FailOn(err)
 
@@ -305,8 +327,10 @@ func OnCommand(
 		doHTTPProbe = true
 	}
 
+	var probe *http.CustomProbe
 	if doHTTPProbe {
-		probe, err := http.NewCustomProbe(
+		var err error
+		probe, err = http.NewCustomProbe(
 			xc,
 			containerInspector,
 			httpProbeCmds,
@@ -322,13 +346,13 @@ func OnCommand(
 			doHTTPProbeExitOnFailure,
 			httpProbeAPISpecs,
 			httpProbeAPISpecFiles,
-			httpProbeApps,
+			//httpProbeApps,
 			true, prefix)
 		errutil.FailOn(err)
 		if len(probe.Ports) == 0 {
 			xc.Out.State("http.probe.error",
 				ovars{
-					"error":   "no exposed ports",
+					"error":   "NO EXPOSED PORTS",
 					"message": "expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services",
 				})
 
@@ -358,34 +382,102 @@ func OnCommand(
 			"message": continueAfterMsg,
 		})
 
-	switch continueAfter.Mode {
-	case config.CAMEnter:
-		xc.Out.Prompt("USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER")
-		creader := bufio.NewReader(os.Stdin)
-		_, _, _ = creader.ReadLine()
-	case config.CAMSignal:
-		xc.Out.Prompt("send SIGUSR1 when you are done using the container")
-		<-continueAfter.ContinueChan
-		xc.Out.Info("event",
-			ovars{
-				"message": "got SIGUSR1",
-			})
-	case config.CAMTimeout:
-		xc.Out.Prompt(fmt.Sprintf("waiting for the target container (%v seconds)", int(continueAfter.Timeout)))
-		<-time.After(time.Second * continueAfter.Timeout)
-		xc.Out.Info("event",
-			ovars{
-				"message": "done waiting for the target container",
-			})
-	case config.CAMProbe:
-		xc.Out.Prompt("waiting for the HTTP probe to finish")
-		<-continueAfter.ContinueChan
-		xc.Out.Info("event",
-			ovars{
-				"message": "HTTP probe is done",
-			})
-	default:
-		errutil.Fail("unknown continue-after mode")
+	execFail := false
+
+	modes := commands.GetContinueAfterModeNames(continueAfter.Mode)
+	for _, mode := range modes {
+		switch mode {
+		//case config.CAMContainerProbe:
+		/*
+			case config.CAMExec:
+				var input *bytes.Buffer
+				var cmd []string
+				if len(execFileCmd) != 0 {
+					input = bytes.NewBufferString(execFileCmd)
+					cmd = []string{"sh", "-s"}
+					for _, line := range strings.Split(string(execFileCmd), "\n") {
+						xc.Out.Info("continue.after",
+							ovars{
+								"mode":  config.CAMExec,
+								"shell": line,
+							})
+					}
+				} else {
+					input = bytes.NewBufferString("")
+					cmd = []string{"sh", "-c", execCmd}
+					xc.Out.Info("continue.after",
+						ovars{
+							"mode":  config.CAMExec,
+							"shell": execCmd,
+						})
+				}
+				exec, err := containerInspector.APIClient.CreateExec(dockerapi.CreateExecOptions{
+					Container:    containerInspector.ContainerID,
+					Cmd:          cmd,
+					AttachStdin:  true,
+					AttachStdout: true,
+					AttachStderr: true,
+				})
+				xc.FailOn(err)
+
+				buffer := &printbuffer.PrintBuffer{Prefix: fmt.Sprintf("%s[%s][exec]: output:", appName, cmdName)}
+				xc.FailOn(containerInspector.APIClient.StartExec(exec.ID, dockerapi.StartExecOptions{
+					InputStream:  input,
+					OutputStream: buffer,
+					ErrorStream:  buffer,
+				}))
+
+				inspect, err := containerInspector.APIClient.InspectExec(exec.ID)
+				xc.FailOn(err)
+				errutil.FailWhen(inspect.Running, "still running")
+				if inspect.ExitCode != 0 {
+					execFail = true
+				}
+
+				xc.Out.Info("continue.after",
+					ovars{
+						"mode":     config.CAMExec,
+						"exitcode": inspect.ExitCode,
+					})
+		*/
+		case config.CAMEnter:
+			xc.Out.Prompt("USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER")
+			creader := bufio.NewReader(os.Stdin)
+			_, _, _ = creader.ReadLine()
+		case config.CAMSignal:
+			xc.Out.Prompt("send SIGUSR1 when you are done using the container")
+			<-continueAfter.ContinueChan
+			xc.Out.Info("event",
+				ovars{
+					"message": "got SIGUSR1",
+				})
+		case config.CAMTimeout:
+			xc.Out.Prompt(fmt.Sprintf("waiting for the target container (%v seconds)", int(continueAfter.Timeout)))
+			<-time.After(time.Second * continueAfter.Timeout)
+			xc.Out.Info("event",
+				ovars{
+					"message": "done waiting for the target container",
+				})
+		case config.CAMProbe:
+			xc.Out.Prompt("waiting for the HTTP probe to finish")
+			<-continueAfter.ContinueChan
+			xc.Out.Info("event",
+				ovars{
+					"message": "HTTP probe is done",
+				})
+
+			if probe != nil && probe.CallCount > 0 && probe.OkCount == 0 {
+				//make sure we show the container logs because none of the http probe calls were successful
+				containerInspector.DoShowContainerLogs = true
+			}
+		case config.CAMHostExec:
+			commands.RunHostExecProbes(printState, xc, hostExecProbes)
+		case config.CAMAppExit:
+			xc.Out.Prompt("waiting for the target app to exit")
+			//TBD
+		default:
+			errutil.Fail("unknown continue-after mode")
+		}
 	}
 
 	xc.Out.State("container.inspection.finishing")
@@ -395,6 +487,23 @@ func OnCommand(
 	logger.Info("shutting down 'fat' container...")
 	err = containerInspector.ShutdownContainer()
 	errutil.WarnOn(err)
+
+	if execFail {
+		xc.Out.Info("continue.after",
+			ovars{
+				"mode":    config.CAMExec,
+				"message": "fatal: exec cmd failure",
+			})
+
+		exitCode := 1
+		xc.Out.State("exited",
+			ovars{
+				"exit.code": exitCode,
+			})
+
+		cmdReport.Error = "exec.cmd.failure"
+		xc.Exit(exitCode)
+	}
 
 	xc.Out.State("container.inspection.artifact.processing")
 

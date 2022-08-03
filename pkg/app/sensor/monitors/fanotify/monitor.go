@@ -33,7 +33,11 @@ const (
 )
 
 // Run starts the FANOTIFY monitor
-func Run(errorCh chan error, mountPoint string, stopChan chan struct{}, origPaths map[string]interface{}) <-chan *report.FanMonitorReport {
+func Run(errorCh chan error,
+	mountPoint string,
+	stopChan chan struct{},
+	includeNew bool,
+	origPaths map[string]interface{}) <-chan *report.FanMonitorReport {
 	log.Info("fanmon: Run")
 
 	nd, err := fanapi.Initialize(fanapi.FAN_CLASS_NOTIF, os.O_RDONLY)
@@ -133,9 +137,14 @@ func Run(errorCh chan error, mountPoint string, stopChan chan struct{}, origPath
 				log.Debugf("fanmon: processor - [%v] handling event %v", fanReport.EventCount, e)
 
 				_, ok := origPaths[e.File]
+				if includeNew {
+					ok = true
+				}
+
 				if !ok {
 					continue done
 				}
+
 				if e.ID == 1 {
 					//first event represents the main process
 					if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
@@ -245,7 +254,7 @@ func getProcessInfo(pid int32) (*report.ProcessInfo, error) {
 	//	info.Env = strings.Split(string(rawEnviron),"\x00")
 	//}
 
-	info.Name = "uknown"
+	info.Name = "unknown"
 	info.ParentPid = -1
 
 	stat, err := ioutil.ReadFile(procFilePath(int(pid), "stat"))

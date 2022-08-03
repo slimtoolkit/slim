@@ -1,5 +1,56 @@
 # Releases
 
+## 1.37.6 (4/22/2022)
+
+### Improvements
+
+- Source image label in minified images
+- Full image path enhancements for container entry info
+
+### Bug Fixes
+
+- Traced application signal handling bugfix
+- Healthcheck instruction parsing bugfix
+
+## 1.37.5 (3/20/2022)
+
+### New Features
+
+- Experimental Node.js package include flag
+- Experimental Next.js(React.js) app include flags
+- Experimental Nuxt.js(Vue.js) app include flags
+- Ability to disable the ptrace data source
+
+## 1.37.4 (2/27/2022)
+
+### New Features
+
+- Container probe feature to use one of the compose services to test/probe the target container (`--container-probe-compose-svc` flag and `container.probe` continue-after mode)
+- Ability to override the container image name and/or tag when targetting a compose service (`--target-compose-svc-image` flag)
+- Ability to wait before executing the HTTP probes (`--http-probe-start-wait` flag)
+- Ability to wait before starting each compose service (`--compose-svc-start-wait` flag)
+- Basic FastCGI protocol support in HTTP probes (docs TBD)
+- New `registry` command and a basic `pull` subcommand
+- `--include-new` build flag to keep new files created by target during dynamic analysis
+- Supprot for stored global param in `slim.config.json`
+
+
+### Improvements
+
+- Improved containerized CI/CD environments support (`sensor-ipc-mode` and `sensor-ipc-endpoint` flags for `build` and `profile`)
+- Docker host detection improvements
+- Target container IP detection improvements
+- Not minifying onbuild base images by default
+- Not minifying already minified images
+- Cleanup container resources on exit
+- `include-cert-all` build flag enabled by default
+- Propagate logging flags to sensor
+- Not using default http probe if custom probes are already defined
+- Many compose related enhancements (volume lookup enhancements, compose image detection and error handling, etc)
+- Various monitoring engine enhancements
+- Migrate from urfave/cli/v1 to urfave/cli/v2
+- Dockerfile reverse engineering enhancements (HEALTHCHECK instruction support, improved RUN instruction reversing when ARGs are also used)
+
 ## 1.37.3 (12/10/2021)
 
 ### New Features

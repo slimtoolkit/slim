@@ -9,7 +9,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // Build command flag names
@@ -36,9 +36,25 @@ const (
 	FlagIncludeCertPKAll   = "include-cert-pk-all"
 	FlagIncludeCertPKDirs  = "include-cert-pk-dirs"
 
+	FlagIncludeNew = "include-new"
+
 	//FlagIncludeLicenses  = "include-licenses"
 
 	FlagKeepTmpArtifacts = "keep-tmp-artifacts"
+
+	FlagIncludeAppNuxtDir            = "include-app-nuxt-dir"
+	FlagIncludeAppNuxtBuildDir       = "include-app-nuxt-build-dir"
+	FlagIncludeAppNuxtDistDir        = "include-app-nuxt-dist-dir"
+	FlagIncludeAppNuxtStaticDir      = "include-app-nuxt-static-dir"
+	FlagIncludeAppNuxtNodeModulesDir = "include-app-nuxt-nodemodules-dir"
+
+	FlagIncludeAppNextDir            = "include-app-next-dir"
+	FlagIncludeAppNextBuildDir       = "include-app-next-build-dir"
+	FlagIncludeAppNextDistDir        = "include-app-next-dist-dir"
+	FlagIncludeAppNextStaticDir      = "include-app-next-static-dir"
+	FlagIncludeAppNextNodeModulesDir = "include-app-next-nodemodules-dir"
+
+	FlagIncludeNodePackage = "include-node-package"
 
 	FlagKeepPerms = "keep-perms"
 
@@ -93,7 +109,23 @@ const (
 	FlagIncludeCertPKAllUsage   = "Keep all discovered cert private keys"
 	FlagIncludeCertPKDirsUsage  = "Keep known cert private key directories and all files in them"
 
+	FlagIncludeNewUsage = "Keep new files created by target during dynamic analysis"
+
 	FlagKeepTmpArtifactsUsage = "Keep temporary artifacts when command is done"
+
+	FlagIncludeAppNuxtDirUsage            = "Keep the root Nuxt.js app directory"
+	FlagIncludeAppNuxtBuildDirUsage       = "Keep the build Nuxt.js app directory"
+	FlagIncludeAppNuxtDistDirUsage        = "Keep the dist Nuxt.js app directory"
+	FlagIncludeAppNuxtStaticDirUsage      = "Keep the static asset directory for Nuxt.js apps"
+	FlagIncludeAppNuxtNodeModulesDirUsage = "Keep the node modules directory for Nuxt.js apps"
+
+	FlagIncludeAppNextDirUsage            = "Keep the root Next.js app directory"
+	FlagIncludeAppNextBuildDirUsage       = "Keep the build directory for Next.js app"
+	FlagIncludeAppNextDistDirUsage        = "Keep the static SPA directory for Next.js apps"
+	FlagIncludeAppNextStaticDirUsage      = "Keep the static public asset directory for Next.js apps"
+	FlagIncludeAppNextNodeModulesDirUsage = "Keep the node modules directory for Next.js apps"
+
+	FlagIncludeNodePackageUsage = "Keep node.js package by name"
 
 	FlagKeepPermsUsage = "Keep artifact permissions as-is"
 
@@ -128,250 +160,314 @@ const (
 )
 
 var Flags = map[string]cli.Flag{
-	FlagShowBuildLogs: cli.BoolFlag{
-		Name:   FlagShowBuildLogs,
-		Usage:  FlagShowBuildLogsUsage,
-		EnvVar: "DSLIM_SHOW_BLOGS",
+	FlagShowBuildLogs: &cli.BoolFlag{
+		Name:    FlagShowBuildLogs,
+		Usage:   FlagShowBuildLogsUsage,
+		EnvVars: []string{"DSLIM_SHOW_BLOGS"},
 	},
-	FlagPathPerms: cli.StringSliceFlag{
-		Name:   FlagPathPerms,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagPathPermsUsage,
-		EnvVar: "DSLIM_PATH_PERMS",
+	FlagPathPerms: &cli.StringSliceFlag{
+		Name:    FlagPathPerms,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagPathPermsUsage,
+		EnvVars: []string{"DSLIM_PATH_PERMS"},
 	},
-	FlagPathPermsFile: cli.StringFlag{
-		Name:   FlagPathPermsFile,
-		Value:  "",
-		Usage:  FlagPathPermsFileUsage,
-		EnvVar: "DSLIM_PATH_PERMS_FILE",
+	FlagPathPermsFile: &cli.StringFlag{
+		Name:    FlagPathPermsFile,
+		Value:   "",
+		Usage:   FlagPathPermsFileUsage,
+		EnvVars: []string{"DSLIM_PATH_PERMS_FILE"},
 	},
-	FlagPreservePath: cli.StringSliceFlag{
-		Name:   FlagPreservePath,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagPreservePathUsage,
-		EnvVar: "DSLIM_PRESERVE_PATH",
+	FlagPreservePath: &cli.StringSliceFlag{
+		Name:    FlagPreservePath,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagPreservePathUsage,
+		EnvVars: []string{"DSLIM_PRESERVE_PATH"},
 	},
-	FlagPreservePathFile: cli.StringFlag{
-		Name:   FlagPreservePathFile,
-		Value:  "",
-		Usage:  FlagPreservePathFileUsage,
-		EnvVar: "DSLIM_PRESERVE_PATH_FILE",
+	FlagPreservePathFile: &cli.StringFlag{
+		Name:    FlagPreservePathFile,
+		Value:   "",
+		Usage:   FlagPreservePathFileUsage,
+		EnvVars: []string{"DSLIM_PRESERVE_PATH_FILE"},
 	},
-	FlagIncludePath: cli.StringSliceFlag{
-		Name:   FlagIncludePath,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagIncludePathUsage,
-		EnvVar: "DSLIM_INCLUDE_PATH",
+	FlagIncludePath: &cli.StringSliceFlag{
+		Name:    FlagIncludePath,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagIncludePathUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_PATH"},
 	},
-	FlagIncludePathFile: cli.StringFlag{
-		Name:   FlagIncludePathFile,
-		Value:  "",
-		Usage:  FlagIncludePathFileUsage,
-		EnvVar: "DSLIM_INCLUDE_PATH_FILE",
+	FlagIncludePathFile: &cli.StringFlag{
+		Name:    FlagIncludePathFile,
+		Value:   "",
+		Usage:   FlagIncludePathFileUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_PATH_FILE"},
 	},
-	FlagIncludeBin: cli.StringSliceFlag{
-		Name:   FlagIncludeBin,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagIncludeBinUsage,
-		EnvVar: "DSLIM_INCLUDE_BIN",
+	FlagIncludeBin: &cli.StringSliceFlag{
+		Name:    FlagIncludeBin,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagIncludeBinUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_BIN"},
 	},
-	FlagIncludeExe: cli.StringSliceFlag{
-		Name:   FlagIncludeExe,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagIncludeExeUsage,
-		EnvVar: "DSLIM_INCLUDE_EXE",
+	FlagIncludeExe: &cli.StringSliceFlag{
+		Name:    FlagIncludeExe,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagIncludeExeUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_EXE"},
 	},
-	FlagIncludeShell: cli.BoolFlag{
-		Name:   FlagIncludeShell,
-		Usage:  FlagIncludeShellUsage,
-		EnvVar: "DSLIM_INCLUDE_SHELL",
-	},
-	////
-	FlagIncludeCertAll: cli.BoolFlag{
-		Name:   FlagIncludeCertAll,
-		Usage:  FlagIncludeCertAllUsage,
-		EnvVar: "DSLIM_INCLUDE_CERT_ALL",
-	},
-	FlagIncludeCertBundles: cli.BoolFlag{
-		Name:   FlagIncludeCertBundles,
-		Usage:  FlagIncludeCertBundlesUsage,
-		EnvVar: "DSLIM_INCLUDE_CERT_BUNDLES",
-	},
-	FlagIncludeCertDirs: cli.BoolFlag{
-		Name:   FlagIncludeCertDirs,
-		Usage:  FlagIncludeCertDirsUsage,
-		EnvVar: "DSLIM_INCLUDE_CERT_DIRS",
-	},
-	FlagIncludeCertPKAll: cli.BoolFlag{
-		Name:   FlagIncludeCertPKAll,
-		Usage:  FlagIncludeCertPKAllUsage,
-		EnvVar: "DSLIM_INCLUDE_CERT_PK_ALL",
-	},
-	FlagIncludeCertPKDirs: cli.BoolFlag{
-		Name:   FlagIncludeCertPKDirs,
-		Usage:  FlagIncludeCertPKDirsUsage,
-		EnvVar: "DSLIM_INCLUDE_CERT_PK_DIRS",
+	FlagIncludeShell: &cli.BoolFlag{
+		Name:    FlagIncludeShell,
+		Usage:   FlagIncludeShellUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_SHELL"},
 	},
 	////
-	FlagKeepTmpArtifacts: cli.BoolFlag{
-		Name:   FlagKeepTmpArtifacts,
-		Usage:  FlagKeepTmpArtifactsUsage,
-		EnvVar: "DSLIM_KEEP_TMP_ARTIFACTS",
+	FlagIncludeCertAll: &cli.BoolFlag{
+		Name:    FlagIncludeCertAll,
+		Value:   true, //enabled by default
+		Usage:   FlagIncludeCertAllUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_CERT_ALL"},
 	},
-	FlagKeepPerms: cli.BoolTFlag{
-		Name:   FlagKeepPerms,
-		Usage:  FlagKeepPermsUsage,
-		EnvVar: "DSLIM_KEEP_PERMS",
+	FlagIncludeCertBundles: &cli.BoolFlag{
+		Name:    FlagIncludeCertBundles,
+		Usage:   FlagIncludeCertBundlesUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_CERT_BUNDLES"},
 	},
-	FlagNewEntrypoint: cli.StringFlag{
-		Name:   FlagNewEntrypoint,
-		Value:  "",
-		Usage:  FlagNewEntrypointUsage,
-		EnvVar: "DSLIM_NEW_ENTRYPOINT",
+	FlagIncludeCertDirs: &cli.BoolFlag{
+		Name:    FlagIncludeCertDirs,
+		Usage:   FlagIncludeCertDirsUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_CERT_DIRS"},
 	},
-	FlagNewCmd: cli.StringFlag{
-		Name:   FlagNewCmd,
-		Value:  "",
-		Usage:  FlagNewCmdUsage,
-		EnvVar: "DSLIM_NEW_CMD",
+	FlagIncludeCertPKAll: &cli.BoolFlag{
+		Name:    FlagIncludeCertPKAll,
+		Usage:   FlagIncludeCertPKAllUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_CERT_PK_ALL"},
 	},
-	FlagNewExpose: cli.StringSliceFlag{
-		Name:   FlagNewExpose,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagNewExposeUsage,
-		EnvVar: "DSLIM_NEW_EXPOSE",
+	FlagIncludeCertPKDirs: &cli.BoolFlag{
+		Name:    FlagIncludeCertPKDirs,
+		Usage:   FlagIncludeCertPKDirsUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_CERT_PK_DIRS"},
 	},
-	FlagNewWorkdir: cli.StringFlag{
-		Name:   FlagNewWorkdir,
-		Value:  "",
-		Usage:  FlagNewWorkdirUsage,
-		EnvVar: "DSLIM_NEW_WORKDIR",
+	FlagIncludeNew: &cli.BoolFlag{
+		Name:    FlagIncludeNew,
+		Value:   true, //enabled by default for now to keep the original behavior until minification works the same
+		Usage:   FlagIncludeNewUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_NEW"},
 	},
-	FlagNewEnv: cli.StringSliceFlag{
-		Name:   FlagNewEnv,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagNewEnvUsage,
-		EnvVar: "DSLIM_NEW_ENV",
+	////
+	FlagKeepTmpArtifacts: &cli.BoolFlag{
+		Name:    FlagKeepTmpArtifacts,
+		Usage:   FlagKeepTmpArtifactsUsage,
+		EnvVars: []string{"DSLIM_KEEP_TMP_ARTIFACTS"},
 	},
-	FlagNewVolume: cli.StringSliceFlag{
-		Name:   FlagNewVolume,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagNewVolumeUsage,
-		EnvVar: "DSLIM_NEW_VOLUME",
+	FlagIncludeAppNuxtDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNuxtDir,
+		Usage:   FlagIncludeAppNuxtDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NUXT_DIR"},
 	},
-	FlagNewLabel: cli.StringSliceFlag{
-		Name:   FlagNewLabel,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagNewLabelUsage,
-		EnvVar: "DSLIM_NEW_LABEL",
+	FlagIncludeAppNuxtBuildDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNuxtBuildDir,
+		Usage:   FlagIncludeAppNuxtBuildDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NUXT_BUILD_DIR"},
 	},
-	FlagTag: cli.StringSliceFlag{
-		Name:   FlagTag,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagTagUsage,
-		EnvVar: "DSLIM_TARGET_TAG",
+	FlagIncludeAppNuxtDistDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNuxtDistDir,
+		Usage:   FlagIncludeAppNuxtDistDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NUXT_DIST_DIR"},
 	},
-	FlagImageOverrides: cli.StringFlag{
-		Name:   FlagImageOverrides,
-		Value:  "",
-		Usage:  FlagImageOverridesUsage,
-		EnvVar: "DSLIM_TARGET_OVERRIDES",
+	FlagIncludeAppNuxtStaticDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNuxtStaticDir,
+		Usage:   FlagIncludeAppNuxtStaticDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NUXT_STATIC_DIR"},
+	},
+	FlagIncludeAppNuxtNodeModulesDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNuxtNodeModulesDir,
+		Usage:   FlagIncludeAppNuxtNodeModulesDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NUXT_NM_DIR"},
+	},
+	FlagIncludeAppNextDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNextDir,
+		Usage:   FlagIncludeAppNextDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NEXT_DIR"},
+	},
+	FlagIncludeAppNextBuildDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNextBuildDir,
+		Usage:   FlagIncludeAppNextBuildDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NEXT_BUILD_DIR"},
+	},
+	FlagIncludeAppNextDistDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNextDistDir,
+		Usage:   FlagIncludeAppNextDistDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NEXT_DIST_DIR"},
+	},
+	FlagIncludeAppNextStaticDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNextStaticDir,
+		Usage:   FlagIncludeAppNextStaticDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NEXT_STATIC_DIR"},
+	},
+	FlagIncludeAppNextNodeModulesDir: &cli.BoolFlag{
+		Name:    FlagIncludeAppNextNodeModulesDir,
+		Usage:   FlagIncludeAppNextNodeModulesDirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_NEXT_NM_DIR"},
+	},
+	FlagIncludeNodePackage: &cli.StringSliceFlag{
+		Name:    FlagIncludeNodePackage,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagIncludeNodePackageUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_NODE_PKG"},
+	},
+	FlagKeepPerms: &cli.BoolFlag{
+		Name:    FlagKeepPerms,
+		Value:   true, //enabled by default
+		Usage:   FlagKeepPermsUsage,
+		EnvVars: []string{"DSLIM_KEEP_PERMS"},
+	},
+	FlagNewEntrypoint: &cli.StringFlag{
+		Name:    FlagNewEntrypoint,
+		Value:   "",
+		Usage:   FlagNewEntrypointUsage,
+		EnvVars: []string{"DSLIM_NEW_ENTRYPOINT"},
+	},
+	FlagNewCmd: &cli.StringFlag{
+		Name:    FlagNewCmd,
+		Value:   "",
+		Usage:   FlagNewCmdUsage,
+		EnvVars: []string{"DSLIM_NEW_CMD"},
+	},
+	FlagNewExpose: &cli.StringSliceFlag{
+		Name:    FlagNewExpose,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagNewExposeUsage,
+		EnvVars: []string{"DSLIM_NEW_EXPOSE"},
+	},
+	FlagNewWorkdir: &cli.StringFlag{
+		Name:    FlagNewWorkdir,
+		Value:   "",
+		Usage:   FlagNewWorkdirUsage,
+		EnvVars: []string{"DSLIM_NEW_WORKDIR"},
+	},
+	FlagNewEnv: &cli.StringSliceFlag{
+		Name:    FlagNewEnv,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagNewEnvUsage,
+		EnvVars: []string{"DSLIM_NEW_ENV"},
+	},
+	FlagNewVolume: &cli.StringSliceFlag{
+		Name:    FlagNewVolume,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagNewVolumeUsage,
+		EnvVars: []string{"DSLIM_NEW_VOLUME"},
+	},
+	FlagNewLabel: &cli.StringSliceFlag{
+		Name:    FlagNewLabel,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagNewLabelUsage,
+		EnvVars: []string{"DSLIM_NEW_LABEL"},
+	},
+	FlagTag: &cli.StringSliceFlag{
+		Name:    FlagTag,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagTagUsage,
+		EnvVars: []string{"DSLIM_TARGET_TAG"},
+	},
+	FlagImageOverrides: &cli.StringFlag{
+		Name:    FlagImageOverrides,
+		Value:   "",
+		Usage:   FlagImageOverridesUsage,
+		EnvVars: []string{"DSLIM_TARGET_OVERRIDES"},
 	},
 	//Container Build Options
-	FlagBuildFromDockerfile: cli.StringFlag{
-		Name:   FlagBuildFromDockerfile,
-		Value:  "",
-		Usage:  FlagBuildFromDockerfileUsage,
-		EnvVar: "DSLIM_BUILD_DOCKERFILE",
+	FlagBuildFromDockerfile: &cli.StringFlag{
+		Name:    FlagBuildFromDockerfile,
+		Value:   "",
+		Usage:   FlagBuildFromDockerfileUsage,
+		EnvVars: []string{"DSLIM_BUILD_DOCKERFILE"},
 	},
-	FlagDockerfileContext: cli.StringFlag{
-		Name:   FlagDockerfileContext,
-		Value:  "",
-		Usage:  FlagDockerfileContextUsage,
-		EnvVar: "DSLIM_BUILD_DOCKERFILE_CTX",
+	FlagDockerfileContext: &cli.StringFlag{
+		Name:    FlagDockerfileContext,
+		Value:   "",
+		Usage:   FlagDockerfileContextUsage,
+		EnvVars: []string{"DSLIM_BUILD_DOCKERFILE_CTX"},
 	},
-	FlagTagFat: cli.StringFlag{
-		Name:   FlagTagFat,
-		Value:  "",
-		Usage:  FlagTagFatUsage,
-		EnvVar: "DSLIM_TARGET_TAG_FAT",
+	FlagTagFat: &cli.StringFlag{
+		Name:    FlagTagFat,
+		Value:   "",
+		Usage:   FlagTagFatUsage,
+		EnvVars: []string{"DSLIM_TARGET_TAG_FAT"},
 	},
-	FlagCBOAddHost: cli.StringSliceFlag{
-		Name:   FlagCBOAddHost,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagCBOAddHostUsage,
-		EnvVar: "DSLIM_CBO_ADD_HOST",
+	FlagCBOAddHost: &cli.StringSliceFlag{
+		Name:    FlagCBOAddHost,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagCBOAddHostUsage,
+		EnvVars: []string{"DSLIM_CBO_ADD_HOST"},
 	},
-	FlagCBOBuildArg: cli.StringSliceFlag{
-		Name:   FlagCBOBuildArg,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagCBOBuildArgUsage,
-		EnvVar: "DSLIM_CBO_BUILD_ARG",
+	FlagCBOBuildArg: &cli.StringSliceFlag{
+		Name:    FlagCBOBuildArg,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagCBOBuildArgUsage,
+		EnvVars: []string{"DSLIM_CBO_BUILD_ARG"},
 	},
-	FlagCBOCacheFrom: cli.StringSliceFlag{
-		Name:   FlagCBOCacheFrom,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagCBOCacheFromUsage,
-		EnvVar: "DSLIM_CBO_CACHE_FROM",
+	FlagCBOCacheFrom: &cli.StringSliceFlag{
+		Name:    FlagCBOCacheFrom,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagCBOCacheFromUsage,
+		EnvVars: []string{"DSLIM_CBO_CACHE_FROM"},
 	},
-	FlagCBOLabel: cli.StringSliceFlag{
-		Name:   FlagCBOLabel,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagCBOLabelUsage,
-		EnvVar: "DSLIM_CBO_LABEL",
+	FlagCBOLabel: &cli.StringSliceFlag{
+		Name:    FlagCBOLabel,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagCBOLabelUsage,
+		EnvVars: []string{"DSLIM_CBO_LABEL"},
 	},
-	FlagCBOTarget: cli.StringFlag{
-		Name:   FlagCBOTarget,
-		Value:  "",
-		Usage:  FlagCBOTargetUsage,
-		EnvVar: "DSLIM_CBO_TARGET",
+	FlagCBOTarget: &cli.StringFlag{
+		Name:    FlagCBOTarget,
+		Value:   "",
+		Usage:   FlagCBOTargetUsage,
+		EnvVars: []string{"DSLIM_CBO_TARGET"},
 	},
-	FlagCBONetwork: cli.StringFlag{
-		Name:   FlagCBONetwork,
-		Value:  "",
-		Usage:  FlagCBONetworkUsage,
-		EnvVar: "DSLIM_CBO_NETWORK",
+	FlagCBONetwork: &cli.StringFlag{
+		Name:    FlagCBONetwork,
+		Value:   "",
+		Usage:   FlagCBONetworkUsage,
+		EnvVars: []string{"DSLIM_CBO_NETWORK"},
 	},
-	FlagDeleteFatImage: cli.BoolFlag{
-		Name:   FlagDeleteFatImage,
-		Usage:  FlagDeleteFatImageUsage,
-		EnvVar: "DSLIM_DELETE_FAT",
+	FlagDeleteFatImage: &cli.BoolFlag{
+		Name:    FlagDeleteFatImage,
+		Usage:   FlagDeleteFatImageUsage,
+		EnvVars: []string{"DSLIM_DELETE_FAT"},
 	},
-	FlagRemoveExpose: cli.StringSliceFlag{
-		Name:   FlagRemoveExpose,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagRemoveExposeUsage,
-		EnvVar: "DSLIM_RM_EXPOSE",
+	FlagRemoveExpose: &cli.StringSliceFlag{
+		Name:    FlagRemoveExpose,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagRemoveExposeUsage,
+		EnvVars: []string{"DSLIM_RM_EXPOSE"},
 	},
-	FlagRemoveEnv: cli.StringSliceFlag{
-		Name:   FlagRemoveEnv,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagRemoveEnvUsage,
-		EnvVar: "DSLIM_RM_ENV",
+	FlagRemoveEnv: &cli.StringSliceFlag{
+		Name:    FlagRemoveEnv,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagRemoveEnvUsage,
+		EnvVars: []string{"DSLIM_RM_ENV"},
 	},
-	FlagRemoveLabel: cli.StringSliceFlag{
-		Name:   FlagRemoveLabel,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagRemoveLabelUsage,
-		EnvVar: "DSLIM_RM_LABEL",
+	FlagRemoveLabel: &cli.StringSliceFlag{
+		Name:    FlagRemoveLabel,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagRemoveLabelUsage,
+		EnvVars: []string{"DSLIM_RM_LABEL"},
 	},
-	FlagRemoveVolume: cli.StringSliceFlag{
-		Name:   FlagRemoveVolume,
-		Value:  &cli.StringSlice{},
-		Usage:  FlagRemoveVolumeUsage,
-		EnvVar: "DSLIM_RM_VOLUME",
+	FlagRemoveVolume: &cli.StringSliceFlag{
+		Name:    FlagRemoveVolume,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagRemoveVolumeUsage,
+		EnvVars: []string{"DSLIM_RM_VOLUME"},
 	},
-	FlagIncludeBinFile: cli.StringFlag{
-		Name:   FlagIncludeBinFile,
-		Value:  "",
-		Usage:  FlagIncludeBinFileUsage,
-		EnvVar: "DSLIM_INCLUDE_BIN_FILE",
+	FlagIncludeBinFile: &cli.StringFlag{
+		Name:    FlagIncludeBinFile,
+		Value:   "",
+		Usage:   FlagIncludeBinFileUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_BIN_FILE"},
 	},
-	FlagIncludeExeFile: cli.StringFlag{
-		Name:   FlagIncludeExeFile,
-		Value:  "",
-		Usage:  FlagIncludeExeFileUsage,
-		EnvVar: "DSLIM_INCLUDE_EXE_FILE",
+	FlagIncludeExeFile: &cli.StringFlag{
+		Name:    FlagIncludeExeFile,
+		Value:   "",
+		Usage:   FlagIncludeExeFileUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_EXE_FILE"},
 	},
 }
 

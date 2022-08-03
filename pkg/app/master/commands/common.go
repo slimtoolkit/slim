@@ -1,12 +1,20 @@
 package commands
 
 import (
+	"context"
+	"fmt"
+	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
+	"time"
 
 	docker "github.com/fsouza/go-dockerclient"
+	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
@@ -16,11 +24,39 @@ const (
 	ImagesStateRootPath = "images"
 )
 
+type ovars = app.OutVars
+
+/////////////////////////////////////////////////////////
+
+type CLIContextKey int
+
+const (
+	GlobalParams CLIContextKey = 1
+	AppParams    CLIContextKey = 2
+)
+
+func CLIContextSave(ctx context.Context, key CLIContextKey, data interface{}) context.Context {
+	return context.WithValue(ctx, key, data)
+}
+
+func CLIContextGet(ctx context.Context, key CLIContextKey) interface{} {
+	if ctx == nil {
+		return nil
+	}
+
+	return ctx.Value(key)
+}
+
 /////////////////////////////////////////////////////////
 
 type GenericParams struct {
+	NoColor        bool
 	CheckVersion   bool
 	Debug          bool
+	Verbose        bool
+	LogLevel       string
+	LogFormat      string
+	Log            string
 	StatePath      string
 	ReportLocation string
 	InContainer    bool
@@ -136,4 +172,131 @@ func ConfirmNetwork(logger *log.Entry, client *docker.Client, network string) bo
 	return false
 }
 
-var CLI []cli.Command
+///
+func UpdateImageRef(logger *log.Entry, ref, override string) string {
+	logger.Debugf("UpdateImageRef() - ref='%s' override='%s'", ref, override)
+	if override == "" {
+		return ref
+	}
+
+	refParts := strings.SplitN(ref, ":", 2)
+	refImage := refParts[0]
+	refTag := ""
+	if len(refParts) > 1 {
+		refTag = refParts[1]
+	}
+
+	overrideParts := strings.SplitN(override, ":", 2)
+	switch len(overrideParts) {
+	case 2:
+		refImage = overrideParts[0]
+		refTag = overrideParts[1]
+	case 1:
+		refTag = overrideParts[0]
+	}
+
+	if refTag == "" {
+		//shouldn't happen
+		refTag = "latest"
+	}
+
+	return fmt.Sprintf("%s:%s", refImage, refTag)
+}
+
+func RunHostExecProbes(printState bool, xc *app.ExecutionContext, hostExecProbes []string) {
+	if len(hostExecProbes) > 0 {
+		var callCount uint
+		var okCount uint
+		var errCount uint
+
+		if printState {
+			xc.Out.Info("host.exec.probes",
+				ovars{
+					"count": len(hostExecProbes),
+				})
+		}
+
+		for idx, appCall := range hostExecProbes {
+			if printState {
+				xc.Out.Info("host.exec.probes",
+					ovars{
+						"idx": idx,
+						"app": appCall,
+					})
+			}
+
+			xc.Out.Info("host.exec.probe.output.start")
+			//TODO LATER:
+			//add more parameters and outputs for more advanced execution control capabilities
+			err := exeAppCall(appCall)
+			xc.Out.Info("host.exec.probe.output.end")
+
+			callCount++
+			statusCode := "error"
+			callErrorStr := "none"
+			if err == nil {
+				okCount++
+				statusCode = "ok"
+			} else {
+				errCount++
+				callErrorStr = err.Error()
+			}
+
+			if printState {
+				xc.Out.Info("host.exec.probes",
+					ovars{
+						"idx":    idx,
+						"app":    appCall,
+						"status": statusCode,
+						"error":  callErrorStr,
+						"time":   time.Now().UTC().Format(time.RFC3339),
+					})
+			}
+		}
+	}
+}
+
+func exeAppCall(appCall string) error {
+	ctx, cancel := context.WithTimeout(context.Background(), 200*time.Second)
+	defer cancel()
+
+	appCall = strings.TrimSpace(appCall)
+	args, err := shlex.Split(appCall)
+	if err != nil {
+		log.Errorf("exeAppCall(%s): call parse error: %v", appCall, err)
+		return err
+	}
+
+	if len(args) == 0 {
+		return fmt.Errorf("empty appCall")
+	}
+
+	cmd := exec.CommandContext(ctx, args[0], args[1:]...)
+	//cmd.Dir = "."
+	cmd.Stdin = os.Stdin
+
+	//var outBuf, errBuf bytes.Buffer
+	//cmd.Stdout = io.MultiWriter(os.Stdout, &outBuf)
+	//cmd.Stderr = io.MultiWriter(os.Stderr, &errBuf)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		log.Errorf("exeAppCall(%s): command start error: %v", appCall, err)
+		return err
+	}
+
+	err = cmd.Wait()
+	fmt.Printf("\n")
+	if err != nil {
+		log.Fatalf("exeAppCall(%s): command exited with error: %v", appCall, err)
+		return err
+	}
+
+	//TODO: process outBuf and errBuf here
+	return nil
+}
+
+///////////////////////////////////////
+
+var CLI []*cli.Command

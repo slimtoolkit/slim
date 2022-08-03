@@ -27,13 +27,15 @@ Don't worry about manually creating Seccomp and AppArmor security profiles. You 
 
 `docker-slim` will optimize and secure your containers by understanding your application and what it needs using various analysis techniques. It will throw away what you don't need, reducing the attack surface of your container. What if you need some of those extra things to debug your container? You can use dedicated debugging side-car containers for that (more details below).
 
-Understand your container image before and after you optimize it using the `xray` command in `docker-slim` or the [Slim SaaS](https://portal.slim.dev/login?invitecode=invite.1s85zlfnYX0p5TT1XKja49pAHbL) where you can get even more powerful insights including how your container image changed.
+Understand your container image before and after you optimize it using the `xray` command in `docker-slim` or the [**Slim SaaS**](https://portal.slim.dev/login?invitecode=invite.1s85zlfnYX0p5TT1XKja49pAHbL) where you can get even more powerful insights including how your container image changed.
 
-`docker-slim` has been used with Node.js, Python, Ruby, Java, Golang, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian, CentOS, Alpine and even Distroless.
+`docker-slim` has been used with Node.js, Python, Ruby, Java, Go, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian, CentOS, Alpine and even Distroless.
 
 Note that some application stacks do require advanced container probing to make sure that all dynamically loaded components are detected. See the `--http-probe*` flags for more details to know how you can define custom probe commands. In some cases you might also need to use the `--include-path` flag to make sure everything your application needs is included (e.g., `ubuntu.com` python SPA app container image [example](https://github.com/docker-slim/examples/tree/master/3rdparty/ubuntu-com) where the client side template files are explicitly included).
 
 It's also a good idea to use your app/environment tests when you run `docker-slim`. See the `--continue-after` flag for more details about integrating your tests with the temporary container `docker-slim` creates when it's doing its dynamic analysis. Running tests in the target container is also an option, but it does require you to specify a custom ENTRYPOINT/CMD with a custom wrapper to start your app and to execute your tests.
+
+![DockerSlim How](assets/images/docs/DockerSlimHow.jpeg)
 
 Interactive CLI prompt screencast:
 
@@ -113,7 +115,7 @@ Ruby application images:
 - from ruby:2.2-alpine - 319MB => 27MB (minified by **11.88X**)
 - from ruby:2.5.3 - 978MB => 30MB (minified by **32.74X**)
 
-Golang application images:
+Go application images:
 
 - from golang:latest - 700MB => 1.56MB (minified by **448.76X**)
 - from ubuntu:14.04 - 531MB => 1.87MB (minified by **284.10X**)
@@ -124,7 +126,7 @@ Rust application images:
 
 - from rust:1.31 - 2GB => 14MB (minified by **147.16X**)
 
-JAVA application images:
+Java application images:
 
 - from ubuntu:14.04 - 743.6 MB => 100.3 MB
 
@@ -189,9 +191,9 @@ Elixir application images:
 
 ## RECENT UPDATES
 
-Latest version: 1.37.3 (12/10/2021)
+Latest version: 1.37.6 (4/24/2022)
 
-The 1.37.x releases add an experimental docker-compose support for the build command.
+The 1.37.x releases add an experimental docker-compose support and various improved application tracing capabilities for the build command.
 
 For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
@@ -208,15 +210,15 @@ docker-slim update
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.37.3/dist_mac.zip`)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.37.6/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.37.6/dist_mac.zip`)
 
-   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.37.3/dist_mac_m1.zip`)
+   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.37.6/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.37.6/dist_mac_m1.zip`)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.3/dist_linux.tar.gz`)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.37.6/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.6/dist_linux.tar.gz`)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm.tar.gz`)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.37.6/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.6/dist_linux_arm.tar.gz`)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm64.tar.gz`)
+   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.37.6/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.37.6/dist_linux_arm64.tar.gz`)
 
 2. Unzip the package and optionally move it to your bin directory.
 
@@ -315,7 +317,7 @@ Global options:
 - `--log-level` - set the logging level ('debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')
 - `--log-format` - set the format used by logs ('text' (default), or 'json')
 - `--log` - log file to store logs
-- `--host` - Docker host address
+- `--host` - Docker host address or socket (prefix with `tcp://` or `unix://`)
 - `--tls` - use TLS connecting to Docker
 - `--tls-verify` - do TLS verification
 - `--tls-cert-path` - path to TLS cert files
@@ -332,17 +334,17 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--target` - target Dockerfile path (or Docker image, in the future; if you don't use this flag you must specify the target as the argument to the command)
 - `--target-type` - explicitly specify the command target type (values: dockerfile, image)
 - `--skip-build-context` - don't try to analyze build context
-- `build-context-dir` - explicitly specify the build context directory
-- `skip-dockerignore` - don't try to analyze .dockerignore
-- `include-check-label` - include checks with the selected label key:value
-- `exclude-check-label` - exclude checks with the selected label key:value
-- `include-check-id` - check ID to include
-- `include-check-id-file` - file with check IDs to include
-- `exclude-check-id` - check ID to exclude
-- `exclude-check-id-file` - file with check IDs to exclude
-- `show-nohits` - show checks with no matches
-- `show-snippet` - show check match snippet (default value: true)
-- `list-checks` - list available checks (don't need to specify the target flag if you just want to list the available checks)
+- `--build-context-dir` - explicitly specify the build context directory
+- `--skip-dockerignore` - don't try to analyze .dockerignore
+- `--include-check-label` - include checks with the selected label key:value
+- `--exclude-check-label` - exclude checks with the selected label key:value
+- `--include-check-id` - check ID to include
+- `--include-check-id-file` - file with check IDs to include
+- `--exclude-check-id` - check ID to exclude
+- `--exclude-check-id-file` - file with check IDs to exclude
+- `--show-nohits` - show checks with no matches
+- `--show-snippet` - show check match snippet (default value: true)
+- `--list-checks` - list available checks (don't need to specify the target flag if you just want to list the available checks)
 
 ### `XRAY` COMMAND OPTIONS
 
@@ -368,13 +370,14 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--reuse-saved-image` - Reuse saved container image (default: true).
 - `--top-changes-max` - Maximum number of top changes to track (defalt: 20).
 - `--hash-data` - Generate file data hashes (default: false).
-- `--detect-duplicates` - Detect duplicate files based on their hashes (default: false).
-- `--show-duplicates` - Show all discovered duplicate file paths (default: true).
+- `--detect-duplicates` - Detect duplicate files based on their hashes (default: true).
+- `--show-duplicates` - Show all discovered duplicate file paths (default: false).
+- `--show-special-perms` - Show files with special permissions (setuid,setgid,sticky) (default: true)
 - `--detect-utf8` - Detect utf8 files and optionally extract the discovered utf8 file content (possible values: "true" or "dump" or "dump:output_target.tgz" or "dump:output_target.tgz::max_size_bytes" or "dump:output_target.tgz:::max_size_bytes").
 - `--detect-all-certs` - Detect all certifcate files
 - `--detect-all-cert-pks` - Detect all certifcate private key files
 - `--change-match-layers-only` - Show only layers with change matches (default: false).
-- `--export-all-data-artifacts` - Archive path to export all data artifacts enabling the related flags if not set (if set to `.` then path defaults to `./data-artifacts.tar`)
+- `--export-all-data-artifacts` - TAR archive file path to export all text data artifacts (if value is set to `.` then the archive file path defaults to `./data-artifacts.tar`)
 - `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
 
 Change Types:
@@ -396,26 +399,29 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--registry-secret` - Account secret to be used when pulling images from private registries (used with the `--pull` and `--registry-account` flags).
 - `--show-plogs` - Show image pull logs (default: false).
 
-- `compose-file` - Load container info from selected compose file
-- `target-compose-svc` - Target service from compose file
-- `target-compose-svc-no-ports` - Do not publish ports for target service from compose file
-- `dep-exclude-compose-svc-all` - Do not start any compose services as target dependencies
-- `dep-include-compose-svc` - Include specific compose service as a target dependency (only selected services will be started)
-- `dep-exclude-compose-svc` - Exclude specific service from the compose services that will be started as target dependencies
-- `dep-include-compose-svc-deps` - Include all dependencies for the selected compose service (excluding the service itself) as target dependencies
-- `dep-include-target-compose-svc-deps` - Include all dependencies for the target compose service (excluding the service itself) as target dependencies. This is a shortcut flag to avoid repeating the service name (it's a pretty long flag name though :-))
-- `compose-net` - Attach target to the selected compose network(s) otherwise all networks will be attached
-- `compose-env-nohost` - Don't include the env vars from the host to compose
-- `compose-env-file` - Load compose env vars from file (host env vars override the values loaded from this file)
-- `compose-workdir` - Set custom work directory for compose
-- `compose-project-name` - Use custom project name for compose
-- `container-probe-compose-svc` - Set container probe to compose service
-- `prestart-compose-svc` - placeholder for now
-- `poststart-compose-svc` - placeholder for now
+- `--compose-file` - Load container info from selected compose file
+- `--target-compose-svc` - Target service from compose file
+- `--target-compose-svc-image` - Override the container image name and/or tag when targetting a compose service using the target-compose-svc parameter (format: tag_name or image_name:tag_name)
+- `--target-compose-svc-no-ports` - Do not publish ports for target service from compose file
+- `--dep-exclude-compose-svc-all` - Do not start any compose services as target dependencies
+- `--dep-include-compose-svc` - Include specific compose service as a target dependency (only selected services will be started)
+- `--dep-exclude-compose-svc` - Exclude specific service from the compose services that will be started as target dependencies
+- `--dep-include-compose-svc-deps` - Include all dependencies for the selected compose service (excluding the service itself) as target dependencies
+- `--dep-include-target-compose-svc-deps` - Include all dependencies for the target compose service (excluding the service itself) as target dependencies. This is a shortcut flag to avoid repeating the service name (it's a pretty long flag name though :-))
+- `--compose-svc-start-wait` - Number of seconds to wait before starting each compose service
+- `--compose-net` - Attach target to the selected compose network(s) otherwise all networks will be attached
+- `--compose-env-nohost` - Don't include the env vars from the host to compose
+- `--compose-env-file` - Load compose env vars from file (host env vars override the values loaded from this file)
+- `--compose-workdir` - Set custom work directory for compose
+- `--compose-project-name` - Use custom project name for compose
+- `--container-probe-compose-svc` - Container test/probe service from compose file
+- `--prestart-compose-svc` - placeholder for now
+- `--poststart-compose-svc` - placeholder for now
 - `--http-probe` - Enables/disables HTTP probing (ENABLED by default; you have to disable the probe if you don't need it by setting the flag to `false`: `--http-probe=false`)
 - `--http-probe-off` - Alternative way to disable HTTP probing
 - `--http-probe-cmd` - Additional HTTP probe command [can use this flag multiple times]
 - `--http-probe-cmd-file` - File with user defined HTTP probe commands
+- `--http-probe-start-wait` - Number of seconds to wait before starting HTTP probing
 - `--http-probe-retry-count` - Number of retries for each HTTP probe (default value: 5)
 - `--http-probe-retry-wait` - Number of seconds to wait before retrying HTTP probe (doubles when target is not ready; default value: 8)
 - `--http-probe-ports` - Explicit list of ports to probe (in the order you want them to be probed; excluded ports are not probed!)
@@ -447,11 +453,24 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-exe value` - Include executable from image (by executable name)
 - `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
 - `--include-shell` - Include basic shell functionality (default value: false)
-- `include-cert-all` - Keep all discovered cert files
-- `include-cert-bundles-only` - Keep only cert bundles
-- `include-cert-dirs` - Keep known cert directories and all files in them
-- `include-cert-pk-all` - Keep all discovered cert private keys
-- `include-cert-pk-dirs` - Keep known cert private key directories and all files in them
+- `--include-cert-all` - Keep all discovered cert files (default: true)
+- `--include-cert-bundles-only` - Keep only cert bundles
+- `--include-cert-dirs` - Keep known cert directories and all files in them
+- `--include-cert-pk-all` - Keep all discovered cert private keys
+- `--include-cert-pk-dirs` - Keep known cert private key directories and all files in them
+- `--include-new` - Keep new files created by target during dynamic analysis (default value: true)
+
+- `--include-app-nuxt-dir` - Keep the root Nuxt.js app directory (default value: false)
+- `--include-app-nuxt-build-dir` - Keep the build Nuxt.js app directory (default value: false)
+- `--include-app-nuxt-dist-dir` - Keep the dist Nuxt.js app directory (default value: false)
+- `--include-app-nuxt-static-dir` - Keep the static asset directory for Nuxt.js apps (default value: false)
+- `--include-app-nuxt-nodemodules-dir` - Keep the node modules directory for Nuxt.js apps (default value: false)
+- `--include-app-next-dir` - Keep the root Next.js app directory (default value: false)
+- `--include-app-next-build-dir` - Keep the build directory for Next.js app (default value: false)
+- `--include-app-next-dist-dir` - Keep the static SPA directory for Next.js apps (default value: false)
+- `--include-app-next-static-dir` - Keep the static public asset directory for Next.js apps (default value: false)
+- `--include-app-next-nodemodules-dir` - Keep the node modules directory for Next.js apps (default value: false)
+- `--include-node-package` - Keep node.js package by name [can use this flag multiple times]
 - `--preserve-path` - Keep path from orignal image in its initial state (changes to the selected container image files when it runs will be discarded). [can use this flag multiple times]
 - `--preserve-path-file` - File with paths to keep from original image in their original state (changes to the selected container image files when it runs will be discarded).
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
@@ -486,7 +505,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--use-local-mounts` - Mount local paths for target container artifact input and output (off, by default)
 - `--use-sensor-volume` - Sensor volume name to use (set it to your Docker volume name if you manage your own `docker-slim` sensor volume).
 - `--keep-tmp-artifacts` - Keep temporary artifacts when command is done (off, by default).
-- `--keep-perms` - Keep artifact permissions as-is (true, by default)
+- `--keep-perms` - Keep artifact permissions as-is (default: true)
 - `--run-target-as-user` - Run target app (in the temporary container) as USER from Dockerfile (true, by default)
 - `--new-entrypoint` - New ENTRYPOINT instruction for the optimized image
 - `--new-cmd` - New CMD instruction for the optimized image
@@ -501,6 +520,10 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--remove-expose` - Remove EXPOSE instructions for the optimized image
 - `--exec` - A shell script snippet to run via Docker exec
 - `--exec-file` - A shell script file to run via Docker exec
+- `--sensor-ipc-mode` - Select sensor IPC mode: proxy | direct (useful for containerized CI/CD environments)
+- `--sensor-ipc-endpoint` - Override sensor IPC endpoint
+- `--rta-onbuild-base-image` - Enable runtime analysis for onbuild base images (default: false)
+- `--rta-source-ptrace` - Enable PTRACE runtime analysis source (default: true)
 
 In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.
 
@@ -736,7 +759,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.37.3/dist_mac.zip), [Mac M1](https://downloads.dockerslim.com/releases/1.37.3/dist_mac_m1.zip), [Linux](https://downloads.dockerslim.com/releases/1.37.3/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.37.3/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.37.6/dist_mac.zip), [Mac M1](https://downloads.dockerslim.com/releases/1.37.6/dist_mac_m1.zip), [Linux](https://downloads.dockerslim.com/releases/1.37.6/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.37.6/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.37.6/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
 The extracted directory contains two binaries:
 
@@ -872,11 +895,11 @@ Pick one of the build options that works best for you.
 
 ##### Containerized
 
-Run `make` (or `./scripts/docker-builder.run.sh` or click on `./scripts/mac/docker-builder.run.command` on Macs) from the project directory (builds `docker-slim` in a Docker container; great if you don't want to install Go on your local machine and if you already have Docker).
+Run `make build_in_docker` on linux or `make build_m1_in_docker` on Macs (or `./scripts/docker-builder.run.sh` or click on `./scripts/mac/docker-builder.run.command` on Macs) from the project directory (builds `docker-slim` in a Docker container; great if you don't want to install Go on your local machine and if you already have Docker).
 
 ##### Native
 
-Run `make build` (or `./scripts/src.build.sh` or click on `./scripts/mac/src.build.command` on Macs) to build `docker-slim` natively (requires Go installed locally).
+Run `make build` on linux or `make build_m1` on Macs (or `./scripts/src.build.sh` or click on `./scripts/mac/src.build.command` on Macs) to build `docker-slim` natively (requires Go installed locally).
 
 Note:
 

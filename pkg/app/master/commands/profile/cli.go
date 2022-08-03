@@ -2,12 +2,13 @@ package profile
 
 import (
 	"fmt"
+	"strings"
+
+	"github.com/urfave/cli/v2"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
-
-	"github.com/urfave/cli"
 )
 
 const (
@@ -16,7 +17,7 @@ const (
 	Alias = "p"
 )
 
-var CLI = cli.Command{
+var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
@@ -28,19 +29,21 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagRegistrySecret),
 		commands.Cflag(commands.FlagShowPullLogs),
 		//Compose support
-		commands.Cflag(commands.FlagComposeFile),
-		commands.Cflag(commands.FlagTargetComposeSvc),
-		commands.Cflag(commands.FlagComposeSvcNoPorts),
-		commands.Cflag(commands.FlagDepExcludeComposeSvcAll),
-		commands.Cflag(commands.FlagDepIncludeComposeSvc),
-		commands.Cflag(commands.FlagDepExcludeComposeSvc),
-		commands.Cflag(commands.FlagDepIncludeComposeSvcDeps),
-		commands.Cflag(commands.FlagDepIncludeTargetComposeSvcDeps),
-		commands.Cflag(commands.FlagComposeNet),
-		commands.Cflag(commands.FlagComposeEnvNoHost),
-		commands.Cflag(commands.FlagComposeEnvFile),
-		commands.Cflag(commands.FlagComposeProjectName),
-		commands.Cflag(commands.FlagComposeWorkdir),
+		commands.Cflag(commands.FlagComposeFile),                    //not used yet
+		commands.Cflag(commands.FlagTargetComposeSvc),               //not used yet
+		commands.Cflag(commands.FlagComposeSvcStartWait),            //not used yet
+		commands.Cflag(commands.FlagTargetComposeSvcImage),          //not used yet
+		commands.Cflag(commands.FlagComposeSvcNoPorts),              //not used yet
+		commands.Cflag(commands.FlagDepExcludeComposeSvcAll),        //not used yet
+		commands.Cflag(commands.FlagDepIncludeComposeSvc),           //not used yet
+		commands.Cflag(commands.FlagDepExcludeComposeSvc),           //not used yet
+		commands.Cflag(commands.FlagDepIncludeComposeSvcDeps),       //not used yet
+		commands.Cflag(commands.FlagDepIncludeTargetComposeSvcDeps), //not used yet
+		commands.Cflag(commands.FlagComposeNet),                     //not used yet
+		commands.Cflag(commands.FlagComposeEnvNoHost),               //not used yet
+		commands.Cflag(commands.FlagComposeEnvFile),                 //not used yet
+		commands.Cflag(commands.FlagComposeProjectName),             //not used yet
+		commands.Cflag(commands.FlagComposeWorkdir),                 //not used yet
 		//http probes
 		commands.Cflag(commands.FlagHTTPProbeOff),
 		commands.Cflag(commands.FlagHTTPProbe),
@@ -59,10 +62,10 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagHTTPMaxConcurrentCrawlers),
 		commands.Cflag(commands.FlagHTTPProbeAPISpec),
 		commands.Cflag(commands.FlagHTTPProbeAPISpecFile),
-		commands.Cflag(commands.FlagHTTPProbeExec),
-		commands.Cflag(commands.FlagHTTPProbeExecFile),
 		commands.Cflag(commands.FlagPublishPort),
 		commands.Cflag(commands.FlagPublishExposedPorts),
+		commands.Cflag(commands.FlagHostExec),
+		commands.Cflag(commands.FlagHostExecFile),
 		//commands.Cflag(commands.FlagKeepPerms),
 		commands.Cflag(commands.FlagRunTargetAsUser),
 		commands.Cflag(commands.FlagShowContainerLogs),
@@ -90,26 +93,21 @@ var CLI = cli.Command{
 		commands.Cflag(commands.FlagHostname),
 		commands.Cflag(commands.FlagExpose),
 		commands.Cflag(commands.FlagExcludeMounts),
-		commands.Cflag(commands.FlagExcludePattern),
-		//commands.Cflag(commands.FlagPathPerms),
-		//commands.Cflag(commands.FlagPathPermsFile),
-		//commands.Cflag(commands.FlagIncludePath),
-		//commands.Cflag(commands.FlagIncludePathFile),
-		//commands.Cflag(commands.FlagIncludeBin),
-		//commands.Cflag(commands.FlagIncludeExe),
-		//commands.Cflag(commands.FlagIncludeShell),
+		commands.Cflag(commands.FlagExcludePattern), //should remove too (no need)
 		commands.Cflag(commands.FlagMount),
 		commands.Cflag(commands.FlagContinueAfter),
 		commands.Cflag(commands.FlagUseLocalMounts),
 		commands.Cflag(commands.FlagUseSensorVolume),
-		//commands.Cflag(commands.FlagKeepTmpArtifacts),
+		//Sensor flags:
+		commands.Cflag(commands.FlagSensorIPCEndpoint),
+		commands.Cflag(commands.FlagSensorIPCMode),
 	},
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name)
 
 		targetRef := ctx.String(commands.FlagTarget)
 		if targetRef == "" {
-			if len(ctx.Args()) < 1 {
+			if ctx.Args().Len() < 1 {
 				xc.Out.Error("param.target", "missing target image ID/name")
 				cli.ShowCommandHelp(ctx, Name)
 				return nil
@@ -175,18 +173,15 @@ var CLI = cli.Command{
 			xc.Exit(-1)
 		}
 
-		if doHTTPProbe {
+		if doHTTPProbe && len(httpProbeCmds) == 0 {
 			//add default probe cmd if the "http-probe" flag is set
+			//but only if there are no custom http probe commands
 			xc.Out.Info("param.http.probe",
 				ovars{
 					"message": "using default probe",
 				})
 
-			defaultCmd := config.HTTPProbeCmd{
-				Protocol: "http",
-				Method:   "GET",
-				Resource: "/",
-			}
+			defaultCmd := commands.GetDefaultHTTPProbe()
 
 			if doHTTPProbeCrawl {
 				defaultCmd.Crawl = true
@@ -245,10 +240,9 @@ var CLI = cli.Command{
 			doHTTPProbe = true
 		}
 
-		httpProbeApps := ctx.StringSlice(commands.FlagHTTPProbeExec)
-		moreProbeApps, err := commands.ParseHTTPProbeExecFile(ctx.String(commands.FlagHTTPProbeExecFile))
+		continueAfter, err := commands.GetContinueAfter(ctx)
 		if err != nil {
-			xc.Out.Error("param.http.probe.exec.file", err.Error())
+			xc.Out.Error("param.error.continue.after", err.Error())
 			xc.Out.State("exited",
 				ovars{
 					"exit.code": -1,
@@ -256,8 +250,59 @@ var CLI = cli.Command{
 			xc.Exit(-1)
 		}
 
-		if len(moreProbeApps) > 0 {
-			httpProbeApps = append(httpProbeApps, moreProbeApps...)
+		if !doHTTPProbe && continueAfter.Mode == "probe" {
+			continueAfter.Mode = "enter"
+			xc.Out.Info("enter",
+				ovars{
+					"message": "changing continue-after from probe to enter because http-probe is disabled",
+				})
+		}
+
+		hostExecProbes := ctx.StringSlice(commands.FlagHostExec)
+		moreHostExecProbes, err := commands.ParseHTTPProbeExecFile(ctx.String(commands.FlagHostExecFile))
+		if err != nil {
+			xc.Out.Error("param.host.exec.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
+		if len(moreHostExecProbes) > 0 {
+			hostExecProbes = append(hostExecProbes, moreHostExecProbes...)
+		}
+
+		if strings.Contains(continueAfter.Mode, config.CAMHostExec) &&
+			len(hostExecProbes) == 0 {
+			if continueAfter.Mode == config.CAMHostExec {
+				continueAfter.Mode = config.CAMEnter
+				xc.Out.Info("host-exec",
+					ovars{
+						"message": "changing continue-after from host-exec to enter because there are no host-exec commands",
+					})
+			} else {
+				continueAfter.Mode = commands.RemoveContinueAfterMode(continueAfter.Mode, config.CAMHostExec)
+				xc.Out.Info("host-exec",
+					ovars{
+						"message": "removing host-exec continue-after mode because there are no host-exec commands",
+					})
+			}
+		}
+
+		if len(hostExecProbes) > 0 {
+			if !strings.Contains(continueAfter.Mode, config.CAMHostExec) {
+				if continueAfter.Mode == "" {
+					continueAfter.Mode = config.CAMHostExec
+				} else {
+					continueAfter.Mode = fmt.Sprintf("%s&%s", continueAfter.Mode, config.CAMHostExec)
+				}
+
+				xc.Out.Info("exec",
+					ovars{
+						"message": fmt.Sprintf("updating continue-after mode to %s", continueAfter.Mode),
+					})
+			}
 		}
 
 		//doKeepPerms := ctx.Bool(commands.FlagKeepPerms)
@@ -326,7 +371,7 @@ var CLI = cli.Command{
 
 		//doKeepTmpArtifacts := ctx.Bool(commands.FlagKeepTmpArtifacts)
 
-		doExcludeMounts := ctx.BoolT(commands.FlagExcludeMounts)
+		doExcludeMounts := ctx.Bool(commands.FlagExcludeMounts)
 		if doExcludeMounts {
 			for mpath := range volumeMounts {
 				excludePatterns[mpath] = nil
@@ -335,25 +380,7 @@ var CLI = cli.Command{
 			}
 		}
 
-		continueAfter, err := commands.GetContinueAfter(ctx)
-		if err != nil {
-			xc.Out.Error("param.error.continue.after", err.Error())
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
-		}
-
-		if !doHTTPProbe && continueAfter.Mode == "probe" {
-			continueAfter.Mode = "enter"
-			xc.Out.Info("enter",
-				ovars{
-					"message": "changing continue-after from probe to enter because http-probe is disabled",
-				})
-		}
-
-		commandReport := ctx.GlobalString(commands.FlagCommandReport)
+		commandReport := ctx.String(commands.FlagCommandReport)
 		if commandReport == "off" {
 			commandReport = ""
 		}
@@ -382,9 +409,9 @@ var CLI = cli.Command{
 			doHTTPProbeExitOnFailure,
 			httpProbeAPISpecs,
 			httpProbeAPISpecFiles,
-			httpProbeApps,
 			portBindings,
 			doPublishExposedPorts,
+			hostExecProbes,
 			doRmFileArtifacts,
 			doCopyMetaArtifacts,
 			doRunTargetAsUser,
@@ -406,8 +433,10 @@ var CLI = cli.Command{
 			doUseSensorVolume,
 			//doKeepTmpArtifacts,
 			continueAfter,
-			ctx.GlobalString(commands.FlagLogLevel),
-			ctx.GlobalString(commands.FlagLogFormat))
+			ctx.String(commands.FlagSensorIPCEndpoint),
+			ctx.String(commands.FlagSensorIPCMode),
+			ctx.String(commands.FlagLogLevel),
+			ctx.String(commands.FlagLogFormat))
 
 		return nil
 	},

@@ -3,20 +3,21 @@ package reverse
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/dustin/go-humanize"
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
+)
 
-	"github.com/docker-slim/docker-slim/pkg/consts"
-	v "github.com/docker-slim/docker-slim/pkg/version"
+var (
+	ErrBadInstPrefix = errors.New("bad instruction prefix")
 )
 
 // Dockerfile represents the reverse engineered Dockerfile info
@@ -28,6 +29,7 @@ type Dockerfile struct {
 	ExposedPorts    []string
 	ImageStack      []*ImageInfo
 	AllInstructions []*InstructionInfo
+	HasOnbuild      bool
 }
 
 type ImageInfo struct {
@@ -80,11 +82,42 @@ type InstructionInfo struct {
 //Another option is to rely on '#(nop)'.
 
 const (
-	defaultRunInstShell  = "/bin/sh"
-	notRunInstPrefix     = "/bin/sh -c #(nop) "
-	runInstShellPrefix   = "/bin/sh -c " //without any ARG params
-	runInstArgsPrefix    = "|"
-	instMaintainerPrefix = "MAINTAINER "
+	defaultRunInstShell = "/bin/sh"
+	notRunInstPrefix    = "/bin/sh -c #(nop) "
+	runInstShellPrefix  = "/bin/sh -c " //without any ARG params
+	runInstArgsPrefix   = "|"
+)
+
+const (
+	//MAINTAINER:
+	instPrefixMaintainer = "MAINTAINER "
+	//ENTRYPOINT:
+	instTypeEntrypoint   = "ENTRYPOINT"
+	instPrefixEntrypoint = "ENTRYPOINT "
+	//CMD:
+	instTypeCmd   = "CMD"
+	instPrefixCmd = "CMD "
+	//USER:
+	instTypeUser   = "USER"
+	instPrefixUser = "USER "
+	//EXPOSE:
+	instTypeExpose   = "EXPOSE"
+	instPrefixExpose = "EXPOSE "
+	//WORKDIR:
+	instTypeWorkdir   = "WORKDIR"
+	instPrefixWorkdir = "WORKDIR "
+	//HEALTHCHECK:
+	instTypeHealthcheck   = "HEALTHCHECK"
+	instPrefixHealthcheck = "HEALTHCHECK "
+	//ONBUILD:
+	instTypeOnbuild = "ONBUILD"
+	//RUN:
+	instTypeRun   = "RUN"
+	instPrefixRun = "RUN "
+	//ADD:
+	instTypeAdd = "ADD"
+	//COPY:
+	instTypeCopy = "COPY"
 )
 
 // DockerfileFromHistory recreates Dockerfile information from container image history
@@ -137,9 +170,9 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 						parts[i] = partPrefix + strings.TrimSpace(parts[i])
 					}
 					runDataFormatted := strings.Join(parts, " && \\\n")
-					inst = "RUN " + runDataFormatted
+					inst = instPrefixRun + runDataFormatted
 				} else {
-					inst = "RUN " + runData
+					inst = instPrefixRun + runData
 				}
 			default:
 				//TODO: need to refactor
@@ -193,7 +226,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				if !processed {
 					//default to RUN instruction in exec form
 					isExecForm = true
-					inst = "RUN " + rawInst
+					inst = instPrefixRun + rawInst
 					if outArray, err := shlex.Split(rawInst); err == nil {
 						var outJson bytes.Buffer
 						encoder := json.NewEncoder(&outJson)
@@ -209,7 +242,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 			//NOTE: Dockerfile instructions can be any case, but the instructions from history are always uppercase
 			cleanInst := strings.TrimSpace(inst)
 
-			if strings.HasPrefix(cleanInst, "ENTRYPOINT ") {
+			if strings.HasPrefix(cleanInst, instPrefixEntrypoint) {
 				cleanInst = strings.Replace(cleanInst, "&{[", "[", -1)
 				cleanInst = strings.Replace(cleanInst, "]}", "]", -1)
 
@@ -217,32 +250,32 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				if strings.HasPrefix(cleanInst, entrypointShellFormPrefix) {
 					instData := strings.TrimPrefix(cleanInst, entrypointShellFormPrefix)
 					instData = strings.TrimSuffix(instData, `"]`)
-					cleanInst = "ENTRYPOINT " + instData
+					cleanInst = instPrefixEntrypoint + instData
 				} else {
 					isExecForm = true
 
-					instData := strings.TrimPrefix(cleanInst, "ENTRYPOINT ")
+					instData := strings.TrimPrefix(cleanInst, instPrefixEntrypoint)
 					instData = fixJSONArray(instData)
-					cleanInst = "ENTRYPOINT " + instData
+					cleanInst = instPrefixEntrypoint + instData
 				}
 			}
 
-			if strings.HasPrefix(cleanInst, "CMD ") {
+			if strings.HasPrefix(cleanInst, instPrefixCmd) {
 				cmdShellFormPrefix := `CMD ["/bin/sh" "-c" "`
 				if strings.HasPrefix(cleanInst, cmdShellFormPrefix) {
 					instData := strings.TrimPrefix(cleanInst, cmdShellFormPrefix)
 					instData = strings.TrimSuffix(instData, `"]`)
-					cleanInst = "CMD " + instData
+					cleanInst = instPrefixCmd + instData
 				} else {
 					isExecForm = true
 
-					instData := strings.TrimPrefix(cleanInst, "CMD ")
+					instData := strings.TrimPrefix(cleanInst, instPrefixCmd)
 					instData = fixJSONArray(instData)
-					cleanInst = "CMD " + instData
+					cleanInst = instPrefixCmd + instData
 				}
 			}
 
-			if strings.HasPrefix(cleanInst, instMaintainerPrefix) {
+			if strings.HasPrefix(cleanInst, instPrefixMaintainer) {
 				parts := strings.SplitN(cleanInst, " ", 2)
 				if len(parts) == 2 {
 					maintainer := strings.TrimSpace(parts[1])
@@ -253,7 +286,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				}
 			}
 
-			if strings.HasPrefix(cleanInst, "USER ") {
+			if strings.HasPrefix(cleanInst, instPrefixUser) {
 				parts := strings.SplitN(cleanInst, " ", 2)
 				if len(parts) == 2 {
 					userName := strings.TrimSpace(parts[1])
@@ -265,7 +298,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				}
 			}
 
-			if strings.HasPrefix(cleanInst, "EXPOSE ") {
+			if strings.HasPrefix(cleanInst, instPrefixExpose) {
 				parts := strings.SplitN(cleanInst, " ", 2)
 				if len(parts) == 2 {
 					portInfo := strings.TrimSpace(parts[1])
@@ -292,12 +325,16 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				instInfo.Type = instParts[0]
 			}
 
+			if instInfo.Type == instTypeOnbuild {
+				out.HasOnbuild = true
+			}
+
 			if instInfo.CommandAll == "" {
 				instInfo.Type = "NONE"
 				instInfo.CommandAll = "#no instruction info"
 			}
 
-			if instInfo.Type == "RUN" {
+			if instInfo.Type == instTypeRun {
 				var cmdParts []string
 				cmds := strings.Replace(instParts[1], "\\", "", -1)
 				if strings.Contains(cmds, "&&") {
@@ -318,12 +355,12 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				}
 			}
 
-			if instInfo.Type == "WORKDIR" {
+			if instInfo.Type == instTypeWorkdir {
 				instInfo.SystemCommands = append(instInfo.SystemCommands, fmt.Sprintf("mkdir -p %s", instParts[1]))
 			}
 
 			switch instInfo.Type {
-			case "ADD", "COPY":
+			case instTypeAdd, instTypeCopy:
 				pparts := strings.SplitN(instInfo.Params, ":", 2)
 				if len(pparts) == 2 {
 					instInfo.SourceType = pparts[0]
@@ -340,11 +377,14 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				}
 			}
 
-			if instInfo.Type == "HEALTHCHECK" {
-				//TODO: restore the HEALTHCHECK instruction
-				//Example:
-				// HEALTHCHECK &{["CMD" "/healthcheck" "8080"] "5s" "10s" "0s" '\x03'}
-				// HEALTHCHECK --interval=5s --timeout=10s --retries=3 CMD [ "/healthcheck", "8080" ]
+			if instInfo.Type == instTypeHealthcheck {
+
+				healthInst, _, err := deserialiseHealtheckInstruction(instInfo.CommandAll)
+				if err != nil {
+					log.Errorf("ReverseDockerfileFromHistory - HEALTHCHECK - deserialiseHealtheckInstruction - %v", err)
+				}
+
+				instInfo.CommandAll = healthInst
 			}
 
 			if len(instInfo.CommandAll) > 44 {
@@ -473,119 +513,6 @@ func SaveDockerfileData(fatImageDockerfileLocation string, fatImageDockerfileLin
 	return ioutil.WriteFile(fatImageDockerfileLocation, data.Bytes(), 0644)
 }
 
-// GenerateFromInfo builds and saves a Dockerfile file object
-func GenerateFromInfo(location string,
-	volumes map[string]struct{},
-	workingDir string,
-	env []string,
-	labels map[string]string,
-	user string,
-	exposedPorts map[docker.Port]struct{},
-	entrypoint []string,
-	cmd []string,
-	hasData bool,
-	tarData bool) error {
-
-	dockerfileLocation := filepath.Join(location, "Dockerfile")
-
-	var dfData bytes.Buffer
-	dfData.WriteString("FROM scratch\n")
-
-	dsInfoLabel := fmt.Sprintf("LABEL %s=\"%s\"\n", consts.ContainerLabelName, v.Current())
-	dfData.WriteString(dsInfoLabel)
-
-	if len(labels) > 0 {
-		for name, value := range labels {
-			var encoded bytes.Buffer
-			encoder := json.NewEncoder(&encoded)
-			encoder.SetEscapeHTML(false)
-			encoder.Encode(value)
-			labelInfo := fmt.Sprintf("LABEL %s=%s\n", name, encoded.String())
-			dfData.WriteString(labelInfo)
-		}
-		dfData.WriteByte('\n')
-	}
-
-	if len(env) > 0 {
-		for _, envInfo := range env {
-			if envParts := strings.Split(envInfo, "="); len(envParts) > 1 {
-				dfData.WriteString("ENV ")
-				envLine := fmt.Sprintf("%s \"%s\"", envParts[0], envParts[1])
-				dfData.WriteString(envLine)
-				dfData.WriteByte('\n')
-			}
-		}
-		dfData.WriteByte('\n')
-	}
-
-	if len(volumes) > 0 {
-		var volumeList []string
-		for volumeName := range volumes {
-			volumeList = append(volumeList, strconv.Quote(volumeName))
-		}
-
-		volumeInst := fmt.Sprintf("VOLUME [%s]", strings.Join(volumeList, ","))
-		dfData.WriteString(volumeInst)
-		dfData.WriteByte('\n')
-	}
-
-	if hasData {
-		addData := "COPY files /\n"
-		if tarData {
-			addData = "ADD files.tar /\n"
-		}
-
-		dfData.WriteString(addData)
-	}
-
-	if workingDir != "" {
-		dfData.WriteString("WORKDIR ")
-		dfData.WriteString(workingDir)
-		dfData.WriteByte('\n')
-	}
-
-	if user != "" {
-		dfData.WriteString("USER ")
-		dfData.WriteString(user)
-		dfData.WriteByte('\n')
-	}
-
-	if len(exposedPorts) > 0 {
-		for portInfo := range exposedPorts {
-			dfData.WriteString("EXPOSE ")
-			dfData.WriteString(string(portInfo))
-			dfData.WriteByte('\n')
-		}
-	}
-
-	if len(entrypoint) > 0 {
-		//TODO: need to make sure the generated ENTRYPOINT is compatible with the original behavior
-		var quotedEntryPoint []string
-		for idx := range entrypoint {
-			quotedEntryPoint = append(quotedEntryPoint, strconv.Quote(entrypoint[idx]))
-		}
-
-		dfData.WriteString("ENTRYPOINT [")
-		dfData.WriteString(strings.Join(quotedEntryPoint, ","))
-		dfData.WriteByte(']')
-		dfData.WriteByte('\n')
-	}
-
-	if len(cmd) > 0 {
-		//TODO: need to make sure the generated CMD is compatible with the original behavior
-		var quotedCmd []string
-		for idx := range cmd {
-			quotedCmd = append(quotedCmd, strconv.Quote(cmd[idx]))
-		}
-		dfData.WriteString("CMD [")
-		dfData.WriteString(strings.Join(quotedCmd, ","))
-		dfData.WriteByte(']')
-		dfData.WriteByte('\n')
-	}
-
-	return ioutil.WriteFile(dockerfileLocation, dfData.Bytes(), 0644)
-}
-
 func fixJSONArray(in string) string {
 	data := in
 	if data[0] == '[' {
@@ -605,6 +532,162 @@ func fixJSONArray(in string) string {
 	}
 
 	return out.String()
+}
+
+func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig, error) {
+	//Example:
+	// HEALTHCHECK &{["CMD" "/healthcheck" "8080"] "5s" "10s" "0s" '\x03'}
+	// HEALTHCHECK --interval=5s --timeout=10s --retries=3 CMD [ "/healthcheck", "8080" ]
+	//Note: CMD can be specified with both formats (shell and json)
+	cleanInst := strings.TrimSpace(data)
+	if !strings.HasPrefix(cleanInst, instPrefixHealthcheck) {
+		return "", nil, ErrBadInstPrefix
+	}
+
+	cleanInst = strings.Replace(cleanInst, "&{[", "", -1)
+
+	//Splits the string into two parts - first part pointer to array of string and rest of the string with } in end.
+	instParts := strings.SplitN(cleanInst, "]", 2)
+	// Cleans HEALTHCHECK part and splits the first part further
+	parts := strings.SplitN(instParts[0], " ", 2)
+	// joins the first part of the string
+	instPart1 := strings.Join(parts[1:], " ")
+	// removes quotes from the first part of the string
+	instPart1 = strings.ReplaceAll(instPart1, "\"", "")
+
+	// cleans it to assign it to the pointer config.Test
+	config := docker.HealthConfig{
+		Test: strings.Split(instPart1, " "),
+	}
+
+	// removes the } from the second part of the string
+	instPart2 := strings.Replace(instParts[1], "}", "", -1)
+	// removes extra spaces from string
+	instPart2 = strings.TrimSpace(instPart2)
+
+	paramParts := strings.SplitN(instPart2, " ", 4)
+	for i, param := range paramParts {
+		paramParts[i] = strings.Trim(param, "\"'")
+	}
+
+	var err error
+	config.Interval, err = time.ParseDuration(paramParts[0])
+	if err != nil {
+		fmt.Printf("[%s] config.Interval err = %v\n", paramParts[0], err)
+	}
+
+	config.Timeout, err = time.ParseDuration(paramParts[1])
+	if err != nil {
+		fmt.Printf("[%s] config.Timeout err = %v\n", paramParts[1], err)
+	}
+
+	config.StartPeriod, err = time.ParseDuration(paramParts[2])
+	if err != nil {
+		fmt.Printf("[%s] config.StartPeriod err = %v\n", paramParts[2], err)
+	}
+
+	var retries int64
+	if strings.Index(paramParts[3], `\x`) != -1 {
+		// retries are hex encoded
+		retries, err = strconv.ParseInt(strings.TrimPrefix(paramParts[3], `\x`), 16, 64)
+	} else if strings.Index(paramParts[3], `\U`) != -1 {
+		// retries are a unicode string
+		retries, err = strconv.ParseInt(strings.TrimPrefix(paramParts[3], `\U`), 16, 64)
+	} else if strings.Index(paramParts[3], `\`) == 0 {
+		// retries is printed as a C-escape
+		if len(paramParts[3]) != 2 {
+			err = errors.New(fmt.Sprintf("expected retries (%s) to be an escape sequence", paramParts[3]))
+		} else {
+			escapeCodes := map[byte]int64{
+				byte('a'): 7,
+				byte('b'): 8,
+				byte('t'): 9,
+				byte('n'): 10,
+				byte('v'): 11,
+				byte('f'): 12,
+				byte('r'): 13,
+			}
+			var ok bool
+			if retries, ok = escapeCodes[(paramParts[3])[1]]; !ok {
+				err = errors.New(fmt.Sprintf("got an invalid escape sequence: %s", paramParts[3]))
+			}
+		}
+	} else {
+		retries = int64((paramParts[3])[0])
+	}
+
+	if err != nil {
+		fmt.Printf("[%s] config.Retries err = %v\n", paramParts[3], err)
+	} else {
+		config.Retries = int(retries)
+	}
+
+	var testType string
+	if len(config.Test) > 0 {
+		testType = config.Test[0]
+	}
+
+	var strTest string
+	switch testType {
+	case "NONE":
+		strTest = "NONE"
+	case "CMD":
+		if len(config.Test) == 1 {
+			strTest = "CMD []"
+		} else {
+			strTest = fmt.Sprintf(`CMD ["%s"]`, strings.Join(config.Test[1:], `", "`))
+		}
+	case "CMD-SHELL":
+		cmdShell := strings.Join(config.Test[1:], " ")
+		strTest = fmt.Sprintf("CMD %s", cmdShell)
+		config.Test = []string{config.Test[0], cmdShell}
+	}
+
+	defaultTimeout := false
+	defaultInterval := false
+	defaultRetries := false
+	defaultStartPeriod := false
+
+	if config.Timeout == 0 {
+		defaultTimeout = true
+		config.Timeout = 30 * time.Second
+	}
+	if config.Interval == 0 {
+		defaultInterval = true
+		config.Interval = 30 * time.Second
+	}
+	if config.Retries == 0 {
+		defaultRetries = true
+		config.Retries = 3
+	}
+	if config.StartPeriod == 0 {
+		defaultStartPeriod = true
+	}
+
+	type HealthCheckFlag struct {
+		flagFmtStr string
+		isDefault  bool
+		value      interface{}
+	}
+
+	healthInst := "HEALTHCHECK"
+	for _, flag := range []HealthCheckFlag{
+		{flagFmtStr: "--interval=%v", isDefault: defaultInterval, value: config.Interval},
+		{flagFmtStr: "--timeout=%v", isDefault: defaultTimeout, value: config.Timeout},
+		{flagFmtStr: "--start-period=%v", isDefault: defaultStartPeriod, value: config.StartPeriod},
+		{flagFmtStr: "--retries=%d", isDefault: defaultRetries, value: config.Retries},
+	} {
+		if !flag.isDefault {
+			healthInst = healthInst + " " + fmt.Sprintf(flag.flagFmtStr, flag.value)
+		}
+	}
+
+	healthInst += " " + strTest
+	if strTest == "NONE" {
+		healthInst = "HEALTHCHECK NONE"
+	}
+
+	return healthInst, &config, nil
 }
 
 //
