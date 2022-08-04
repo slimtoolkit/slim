@@ -53,6 +53,7 @@ type HTTPRequest struct {
 	Resource string   `json:"resource"`
 	Headers  []string `json:"headers"`
 	Body     string   `json:"body"`
+	Protocol string   `json:"protocol"`
 	Username string   `json:"username"`
 	Password string   `json:"password"`
 }
@@ -94,12 +95,12 @@ func clientError(status int) (apiGatewayProxyResponse, error) {
 
 func handleRequest(ctx context.Context, request *HTTPProbeCmd) (*HTTPRequest, error) {
 
-	fmt.Printf("Body size = %d.\n", len(request.Body))
+	// fmt.Printf("Body size = %d.\n", len(request.Body))
 
-	fmt.Println("Headers:")
-	for key, value := range request.Headers {
-		fmt.Printf("    %s: %s\n", key, value)
-	}
+	// fmt.Println("Headers:")
+	// for key, value := range request.Headers {
+	// 	fmt.Printf("    %s: %s\n", key, value)
+	// }
 
 	return &HTTPRequest{Method: request.Method, Resource: request.Resource, Headers: request.Headers, Body: request.Body}, nil
 }
@@ -189,11 +190,11 @@ func convertMapToSlice(input map[string]string) []string {
 	return pairs
 }
 
-func main() {
-	input, err := handleRequest(context.Background(), &HTTPProbeCmd{})
-	if err != nil {
-		fmt.Println("Error:", err)
-		os.Exit(1)
-	}
-	EncodeRequest(input, nil)
-}
+// func main() {
+// 	input, err := handleRequest(context.Background(), &HTTPProbeCmd{})
+// 	if err != nil {
+// 		fmt.Println("Error:", err)
+// 		os.Exit(1)
+// 	}
+// 	EncodeRequest(input, nil)
+// }
