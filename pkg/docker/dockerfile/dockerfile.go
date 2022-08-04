@@ -83,7 +83,7 @@ func GenerateFromInfo(location string,
 
 	if len(env) > 0 {
 		for _, envInfo := range env {
-			if envParts := strings.Split(envInfo, "="); len(envParts) > 1 {
+			if envParts := strings.SplitN(envInfo, "=", 2); len(envParts) > 1 {
 				dfData.WriteString("ENV ")
 				envLine := fmt.Sprintf("%s \"%s\"", envParts[0], envParts[1])
 				dfData.WriteString(envLine)
