@@ -17,7 +17,7 @@
 
 # Optimize Your Experience with Containers. Make Your Containers Better, Smaller, More Secure and Do Less to Get There (free and open source!)
 
-DockerSlim is a tool for developers that provides a set of commands (`build`, `xray`, `lint` and others) to simplify and optimize your developer experience with containers. It makes your containers betters, smaller and more secure.
+DockerSlim is a tool for developers that provides a set of commands (`build`, `xray`, `lint` and others) to simplify and optimize your developer experience with containers. It makes your containers better, smaller and more secure.
 
 Don't change anything in your Docker container image and minify it by up to 30x making it secure too! Optimizing images isn't the only thing it can do though. It can also help you understand and author better container images.
 
