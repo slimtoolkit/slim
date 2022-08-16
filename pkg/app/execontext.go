@@ -1,12 +1,15 @@
 package app
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"strings"
 
 	"github.com/fatih/color"
 
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/consts"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
@@ -197,7 +200,12 @@ func (ref *Output) Info(infoType string, params ...OutVars) {
 		}
 	}
 
-	fmt.Printf("cmd=%s info=%s%s%s\n", ref.CmdName, itcolor(infoType), sep, data)
+	if commands.FlagConsoleOutput == "json-output" {
+		JSONFormatter(data)
+	} else {
+		fmt.Printf("cmd=%s info=%s%s%s\n", ref.CmdName, itcolor(infoType), sep, data)
+	}
+
 }
 
 func ShowCommunityInfo() {
@@ -206,4 +214,14 @@ func ShowCommunityInfo() {
 	fmt.Printf("docker-slim: message='join the Gitter channel to ask questions or to share your feedback' info='%s'\n", consts.CommunityGitter)
 	fmt.Printf("docker-slim: message='join the Discord server to ask questions or to share your feedback' info='%s'\n", consts.CommunityDiscord)
 	fmt.Printf("docker-slim: message='Github discussions' info='%s'\n", consts.CommunityDiscussions)
+}
+
+func JSONFormatter(data string) {
+
+	var out io.Writer
+	enc := json.NewEncoder(out)
+	enc.SetIndent("", "    ")
+	if err := enc.Encode(data); err != nil {
+		panic(err)
+	}
 }

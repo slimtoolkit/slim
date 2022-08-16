@@ -56,6 +56,7 @@ type GenericParams struct {
 	Verbose        bool
 	LogLevel       string
 	LogFormat      string
+	ConsoleOutput  string
 	Log            string
 	StatePath      string
 	ReportLocation string

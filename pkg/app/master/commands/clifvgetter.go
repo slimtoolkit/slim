@@ -277,6 +277,7 @@ func GlobalFlagValues(ctx *cli.Context) (*GenericParams, error) {
 		Verbose:        ctx.Bool(FlagVerbose),
 		LogLevel:       ctx.String(FlagLogLevel),
 		LogFormat:      ctx.String(FlagLogFormat),
+		ConsoleOutput:  ctx.String(FlagConsoleOutput),
 		Log:            ctx.String(FlagLog),
 		StatePath:      ctx.String(FlagStatePath),
 		ReportLocation: ctx.String(FlagCommandReport),
