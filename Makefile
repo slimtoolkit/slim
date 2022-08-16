@@ -14,6 +14,9 @@ build:  ## build docker-slim
 build_m1:  ## build docker-slim
 	'$(CURDIR)/scripts/src.build.m1.sh'
 
+build_dev:  ## build docker-slim for development (quickly), in bin/
+	'$(CURDIR)/scripts/src.build.quick.sh'
+
 fmt:  ## format all golang files
 	'$(CURDIR)/scripts/src.fmt.sh'
 
@@ -29,4 +32,6 @@ tools: ## install necessary tools
 clean: ## clean up
 	'$(CURDIR)/scripts/src.cleanup.sh'
 
-.PHONY: default help build_in_docker build_m1_in_docker build build_m1 fmt inspect tools clean
+.PHONY: default help build_in_docker build_m1_in_docker build build_m1 build_dev fmt inspect tools clean
+
+include $(CURDIR)/test/e2e-tests.mk

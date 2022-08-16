@@ -8,7 +8,8 @@ import (
 	"strings"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
+	"github.com/docker-slim/docker-slim/pkg/consts"
+	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 
 	docker "github.com/fsouza/go-dockerclient"
@@ -141,7 +142,8 @@ func NewImageBuilder(client *docker.Client,
 	showBuildLogs bool,
 	overrideSelectors map[string]bool,
 	overrides *config.ContainerOverrides,
-	instructions *config.ImageNewInstructions) (*ImageBuilder, error) {
+	instructions *config.ImageNewInstructions,
+	sourceImage string) (*ImageBuilder, error) {
 
 	labels := map[string]string{}
 	if imageInfo.Config.Labels != nil {
@@ -256,6 +258,10 @@ func NewImageBuilder(client *docker.Client,
 				}
 			}
 		}
+	}
+
+	if sourceImage != "" {
+		builder.Labels[consts.SourceImageLabelName] = sourceImage
 	}
 
 	//instructions have higher value precedence over the runtime overrides
@@ -391,7 +397,7 @@ func (b *ImageBuilder) Build() error {
 
 // GenerateDockerfile creates a Dockerfile file
 func (b *ImageBuilder) GenerateDockerfile() error {
-	return reverse.GenerateFromInfo(b.BuildOptions.ContextDir,
+	return dockerfile.GenerateFromInfo(b.BuildOptions.ContextDir,
 		b.Volumes,
 		b.WorkingDir,
 		b.Env,

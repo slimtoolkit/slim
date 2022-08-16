@@ -86,12 +86,20 @@ type ExecutionIO struct {
 }
 
 type Execution struct {
-	ContainerInfo     *dockerapi.Container
-	ContainerName     string
-	ContainerID       string
-	State             ExecutionState
-	Crashed           bool
-	StopTimeout       uint
+	ContainerInfo *dockerapi.Container
+	ContainerName string
+	ContainerID   string
+	State         ExecutionState
+	Crashed       bool
+	StopTimeout   uint
+
+	/// the following fields are forwarded to dockerapi.HostConfig and take
+	/// the same parameters as docker's `--pid`, `--network` and `--ipc` CLI
+	/// flags
+	PidMode     string
+	NetworkMode string
+	IpcMode     string
+
 	imageRef          string
 	APIClient         *dockerapi.Client
 	options           *ExecutionOptions
@@ -149,7 +157,11 @@ func NewExecution(
 func (ref *Execution) Start() error {
 	ref.ContainerName = fmt.Sprintf(ContainerNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))
 
-	hostConfig := &dockerapi.HostConfig{}
+	hostConfig := &dockerapi.HostConfig{
+		NetworkMode: ref.NetworkMode,
+		PidMode:     ref.PidMode,
+		IpcMode:     ref.IpcMode,
+	}
 
 	containerOptions := dockerapi.CreateContainerOptions{
 		Name: ref.ContainerName,

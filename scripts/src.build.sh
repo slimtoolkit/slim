@@ -14,7 +14,7 @@ BUILD_TIME="$(date -u '+%Y-%m-%d_%I:%M:%S%p')"
 TAG="current"
 REVISION="current"
 if hash git 2>/dev/null && [ -e $BDIR/.git ]; then
-  TAG="$(git describe --tags)"
+  TAG="$(git describe --tags --always)"
   REVISION="$(git rev-parse HEAD)"
 fi
 
@@ -41,12 +41,11 @@ mkdir ${BDIR}/dist_mac
 cp ${BDIR}/bin/mac/docker-slim ${BDIR}/dist_mac/docker-slim
 cp ${BDIR}/bin/linux/docker-slim-sensor ${BDIR}/dist_mac/docker-slim-sensor
 pushd ${BDIR}
-
 if hash zip 2> /dev/null; then
 	zip -r dist_mac.zip dist_mac -x "*.DS_Store"
 fi
-
 popd
+
 rm -rfv ${BDIR}/dist_linux
 mkdir ${BDIR}/dist_linux
 cp ${BDIR}/bin/linux/docker-slim ${BDIR}/dist_linux/docker-slim
@@ -54,6 +53,7 @@ cp ${BDIR}/bin/linux/docker-slim-sensor ${BDIR}/dist_linux/docker-slim-sensor
 pushd ${BDIR}
 tar -czvf dist_linux.tar.gz dist_linux
 popd
+
 rm -rfv $BDIR/dist_linux_arm
 mkdir $BDIR/dist_linux_arm
 cp $BDIR/bin/linux_arm/docker-slim $BDIR/dist_linux_arm/docker-slim
@@ -61,6 +61,7 @@ cp $BDIR/bin/linux_arm/docker-slim-sensor $BDIR/dist_linux_arm/docker-slim-senso
 pushd ${BDIR}
 tar -czvf dist_linux_arm.tar.gz dist_linux_arm
 popd
+
 rm -rfv $BDIR/dist_linux_arm64
 mkdir $BDIR/dist_linux_arm64
 cp $BDIR/bin/linux_arm64/docker-slim $BDIR/dist_linux_arm64/docker-slim

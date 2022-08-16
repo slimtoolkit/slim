@@ -13,6 +13,7 @@ const (
 	Probe        Type = "probe"
 	Run          Type = "run"
 	Server       Type = "server"
+	Registry     Type = "registry"
 	Version      Type = "version"
 	Update       Type = "update"
 )

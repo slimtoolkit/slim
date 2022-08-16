@@ -4,7 +4,6 @@ package app
 
 import (
 	"flag"
-	"io/fs"
 	"os"
 	"path/filepath"
 	"strings"
@@ -28,6 +27,44 @@ var doneChan chan struct{}
 
 ///////////////////////////////////////////////////////////////////////////////
 
+func getCurrentPaths(root string) (map[string]interface{}, error) {
+	pathMap := map[string]interface{}{}
+	err := filepath.Walk(root,
+		func(pth string, info os.FileInfo, err error) error {
+			if strings.HasPrefix(pth, "/proc/") {
+				log.Debugf("getCurrentPaths: skipping /proc file system objects...")
+				return filepath.SkipDir
+			}
+
+			if strings.HasPrefix(pth, "/sys/") {
+				log.Debugf("getCurrentPaths: skipping /sys file system objects...")
+				return filepath.SkipDir
+			}
+
+			if strings.HasPrefix(pth, "/dev/") {
+				log.Debugf("getCurrentPaths: skipping /dev file system objects...")
+				return filepath.SkipDir
+			}
+
+			if info.Mode().IsRegular() &&
+				!strings.HasPrefix(pth, "/proc/") &&
+				!strings.HasPrefix(pth, "/sys/") &&
+				!strings.HasPrefix(pth, "/dev/") {
+				pth, err := filepath.Abs(pth)
+				if err == nil {
+					pathMap[pth] = nil
+				}
+			}
+			return nil
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return pathMap, nil
+}
+
 func startMonitor(errorCh chan error,
 	startAckChan chan bool,
 	stopWork chan bool,
@@ -36,20 +73,13 @@ func startMonitor(errorCh chan error,
 	ptmonStartChan chan int,
 	cmd *command.StartMonitor,
 	dirName string) bool {
-
-	cmd.OrigPaths = make(map[string]interface{})
-	err := filepath.WalkDir("/", func(pth string, d fs.DirEntry, err error) error {
-		if d.Type().IsRegular() && !strings.HasPrefix(pth, "/proc/") && !strings.HasPrefix(pth, "/sys/") {
-			pth, err := filepath.Abs(pth)
-			if err == nil {
-				cmd.OrigPaths[pth] = nil
-			}
-		}
-		return nil
-	})
+	origPaths, err := getCurrentPaths("/")
 	if err != nil {
-	    panic(err)
+		errorCh <- err
+		time.Sleep(3 * time.Second) //give error event time to get sent
 	}
+
+	errutil.FailOn(err)
 
 	log.Info("sensor: monitor starting...")
 	mountPoint := "/"
@@ -59,7 +89,7 @@ func startMonitor(errorCh chan error,
 	var peReportChan <-chan *report.PeMonitorReport
 	var peReport *report.PeMonitorReport
 	usePEMon, err := system.DefaultKernelFeatures.IsCompiled("CONFIG_PROC_EVENTS")
-	//tmp: disalbe PEVENTs (due to problems with the new boot2docker host OS)
+	//tmp: disable PEVENTs (due to problems with the new boot2docker host OS)
 	usePEMon = false
 	if (err == nil) && usePEMon {
 		log.Info("sensor: proc events are available!")
@@ -69,12 +99,14 @@ func startMonitor(errorCh chan error,
 
 	prepareEnv(defaultArtifactDirName, cmd)
 
-	fanReportChan := fanotify.Run(errorCh, mountPoint, stopMonitor, cmd.OrigPaths) //data.AppName, data.AppArgs
+	fanReportChan := fanotify.Run(errorCh, mountPoint, stopMonitor, cmd.IncludeNew, origPaths) //data.AppName, data.AppArgs
 	if fanReportChan == nil {
 		log.Info("sensor: startMonitor - FAN failed to start running...")
 		return false
 	}
-	ptReportChan := ptrace.Run(errorCh,
+	ptReportChan := ptrace.Run(
+		cmd.RTASourcePT,
+		errorCh,
 		startAckChan,
 		ptmonStartChan,
 		stopMonitor,
@@ -83,7 +115,8 @@ func startMonitor(errorCh chan error,
 		dirName,
 		cmd.AppUser,
 		cmd.RunTargetAsUser,
-		cmd.OrigPaths)
+		cmd.IncludeNew,
+		origPaths)
 	if ptReportChan == nil {
 		log.Info("sensor: startMonitor - PTAN failed to start running...")
 		close(stopMonitor)
@@ -107,7 +140,7 @@ func startMonitor(errorCh chan error,
 			//TODO: when peReport is available filter file events from fanReport
 		}
 
-		processReports(mountPoint, fanReport, ptReport, peReport, cmd)
+		processReports(cmd, mountPoint, origPaths, fanReport, ptReport, peReport)
 		stopWorkAck <- true
 	}()
 
@@ -153,7 +186,7 @@ func Run() {
 
 	initSignalHandlers()
 	defer func() {
-		log.Debug("defered cleanup on shutdown...")
+		log.Debug("deferred cleanup on shutdown...")
 		cleanupOnShutdown()
 	}()
 
@@ -254,6 +287,5 @@ doneRunning:
 	}
 
 	ipcServer.TryPublishEvt(&event.Message{Name: event.ShutdownSensorDone}, 3)
-
 	log.Info("sensor: done!")
 }

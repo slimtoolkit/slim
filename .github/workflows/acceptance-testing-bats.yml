@@ -1,0 +1,39 @@
+name: Acceptance testing (using bats tests)
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+    types: [opened, synchronize, closed]
+jobs:
+  test:
+    strategy:
+      matrix:
+        go: ['1.15', '1.18']
+    runs-on: 'ubuntu-latest'
+    steps:
+      - uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/go-build
+            ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - uses: actions/setup-go@v3
+        with:
+          go-version: ${{ matrix.go }}
+
+      - name: Build DockerSlim (quick dev)
+        run: make build_dev
+
+      - name: Run the bats test suite
+        run: ./test/bats/bin/bats test/debug.bats

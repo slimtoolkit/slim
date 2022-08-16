@@ -28,7 +28,13 @@ func (ref *ExecutionContext) AddCleanupHandler(handler func()) {
 }
 
 func (ref *ExecutionContext) doCleanup() {
-	for _, cleanup := range ref.cleanupHandlers {
+	if len(ref.cleanupHandlers) == 0 {
+		return
+	}
+
+	//call cleanup handlers in reverse order
+	for i := len(ref.cleanupHandlers) - 1; i >= 0; i-- {
+		cleanup := ref.cleanupHandlers[i]
 		if cleanup != nil {
 			cleanup()
 		}
@@ -141,7 +147,12 @@ func (ref *Output) State(state string, params ...OutVars) {
 
 				builder.WriteString(k)
 				builder.WriteString("=")
-				builder.WriteString(fmt.Sprintf("%v", v))
+				val := fmt.Sprintf("%v", v)
+				if strings.Contains(val, " ") && !strings.HasPrefix(val, `"`) {
+					val = fmt.Sprintf("\"%s\"", val)
+				}
+
+				builder.WriteString(val)
 				builder.WriteString(" ")
 			}
 
@@ -149,7 +160,7 @@ func (ref *Output) State(state string, params ...OutVars) {
 		}
 	}
 
-	if state == "exited" {
+	if state == "exited" || strings.Contains(state, "error") {
 		color.Set(color.FgHiRed, color.Bold)
 	} else {
 		color.Set(color.FgCyan, color.Bold)

@@ -3,7 +3,11 @@
 /docker-slim-sensor
 /dist_linux*/
 /dist_mac/
+/dist_mac_m1/
 /bin/
 /_gopath/
+slim.report.json
 dist_linux*.tar.gz
 dist_mac.zip
+.idea
+*.swp

@@ -4,7 +4,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 
 	log "github.com/sirupsen/logrus"
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 )
 
 // Lint command flag names
@@ -43,84 +43,85 @@ const (
 )
 
 var Flags = map[string]cli.Flag{
-	commands.FlagTarget: cli.StringFlag{
-		Name:   commands.FlagTarget,
-		Value:  "",
-		Usage:  FlagLintTargetUsage,
-		EnvVar: "DSLIM_TARGET",
+	commands.FlagTarget: &cli.StringFlag{
+		Name:    commands.FlagTarget,
+		Value:   "",
+		Usage:   FlagLintTargetUsage,
+		EnvVars: []string{"DSLIM_TARGET"},
 	},
-	FlagTargetType: cli.StringFlag{
-		Name:   FlagTargetType,
-		Value:  "",
-		Usage:  FlagTargetTypeUsage,
-		EnvVar: "DSLIM_LINT_TARGET_TYPE",
+	FlagTargetType: &cli.StringFlag{
+		Name:    FlagTargetType,
+		Value:   "",
+		Usage:   FlagTargetTypeUsage,
+		EnvVars: []string{"DSLIM_LINT_TARGET_TYPE"},
 	},
-	FlagSkipBuildContext: cli.BoolFlag{
-		Name:   FlagSkipBuildContext,
-		Usage:  FlagSkipBuildContextUsage,
-		EnvVar: "DSLIM_LINT_SKIP_BC",
+	FlagSkipBuildContext: &cli.BoolFlag{
+		Name:    FlagSkipBuildContext,
+		Usage:   FlagSkipBuildContextUsage,
+		EnvVars: []string{"DSLIM_LINT_SKIP_BC"},
 	},
-	FlagBuildContextDir: cli.StringFlag{
-		Name:   FlagBuildContextDir,
-		Value:  "",
-		Usage:  FlagBuildContextDirUsage,
-		EnvVar: "DSLIM_LINT_BC_DIR",
+	FlagBuildContextDir: &cli.StringFlag{
+		Name:    FlagBuildContextDir,
+		Value:   "",
+		Usage:   FlagBuildContextDirUsage,
+		EnvVars: []string{"DSLIM_LINT_BC_DIR"},
 	},
-	FlagSkipDockerignore: cli.BoolFlag{
-		Name:   FlagSkipDockerignore,
-		Usage:  FlagSkipDockerignoreUsage,
-		EnvVar: "DSLIM_LINT_SKIP_DI",
+	FlagSkipDockerignore: &cli.BoolFlag{
+		Name:    FlagSkipDockerignore,
+		Usage:   FlagSkipDockerignoreUsage,
+		EnvVars: []string{"DSLIM_LINT_SKIP_DI"},
 	},
-	FlagIncludeCheckLabel: cli.StringSliceFlag{
-		Name:   FlagIncludeCheckLabel,
-		Value:  &cli.StringSlice{""},
-		Usage:  FlagIncludeCheckLabelUsage,
-		EnvVar: "DSLIM_LINT_INCLUDE_LABEL",
+	FlagIncludeCheckLabel: &cli.StringSliceFlag{
+		Name:    FlagIncludeCheckLabel,
+		Value:   cli.NewStringSlice(""),
+		Usage:   FlagIncludeCheckLabelUsage,
+		EnvVars: []string{"DSLIM_LINT_INCLUDE_LABEL"},
 	},
-	FlagExcludeCheckLabel: cli.StringSliceFlag{
-		Name:   FlagExcludeCheckLabel,
-		Value:  &cli.StringSlice{""},
-		Usage:  FlagExcludeCheckLabelUsage,
-		EnvVar: "DSLIM_LINT_EXCLUDE_LABEL",
+	FlagExcludeCheckLabel: &cli.StringSliceFlag{
+		Name:    FlagExcludeCheckLabel,
+		Value:   cli.NewStringSlice(""),
+		Usage:   FlagExcludeCheckLabelUsage,
+		EnvVars: []string{"DSLIM_LINT_EXCLUDE_LABEL"},
 	},
-	FlagIncludeCheckID: cli.StringSliceFlag{
-		Name:   FlagIncludeCheckID,
-		Value:  &cli.StringSlice{""},
-		Usage:  FlagIncludeCheckIDUsage,
-		EnvVar: "DSLIM_LINT_INCLUDE_CID",
+	FlagIncludeCheckID: &cli.StringSliceFlag{
+		Name:    FlagIncludeCheckID,
+		Value:   cli.NewStringSlice(""),
+		Usage:   FlagIncludeCheckIDUsage,
+		EnvVars: []string{"DSLIM_LINT_INCLUDE_CID"},
 	},
-	FlagIncludeCheckIDFile: cli.StringFlag{
-		Name:   FlagIncludeCheckIDFile,
-		Value:  "",
-		Usage:  FlagIncludeCheckIDFileUsage,
-		EnvVar: "DSLIM_LINT_INCLUDE_CID_FILE",
+	FlagIncludeCheckIDFile: &cli.StringFlag{
+		Name:    FlagIncludeCheckIDFile,
+		Value:   "",
+		Usage:   FlagIncludeCheckIDFileUsage,
+		EnvVars: []string{"DSLIM_LINT_INCLUDE_CID_FILE"},
 	},
-	FlagExcludeCheckID: cli.StringSliceFlag{
-		Name:   FlagExcludeCheckID,
-		Value:  &cli.StringSlice{""},
-		Usage:  FlagExcludeCheckIDUsage,
-		EnvVar: "DSLIM_LINT_EXCLUDE_CID",
+	FlagExcludeCheckID: &cli.StringSliceFlag{
+		Name:    FlagExcludeCheckID,
+		Value:   cli.NewStringSlice(""),
+		Usage:   FlagExcludeCheckIDUsage,
+		EnvVars: []string{"DSLIM_LINT_EXCLUDE_CID"},
 	},
-	FlagExcludeCheckIDFile: cli.StringFlag{
-		Name:   FlagExcludeCheckIDFile,
-		Value:  "",
-		Usage:  FlagExcludeCheckIDFileUsage,
-		EnvVar: "DSLIM_LINT_EXCLUDE_CID_FILE",
+	FlagExcludeCheckIDFile: &cli.StringFlag{
+		Name:    FlagExcludeCheckIDFile,
+		Value:   "",
+		Usage:   FlagExcludeCheckIDFileUsage,
+		EnvVars: []string{"DSLIM_LINT_EXCLUDE_CID_FILE"},
 	},
-	FlagShowNoHits: cli.BoolFlag{
-		Name:   FlagShowNoHits,
-		Usage:  FlagShowNoHitsUsage,
-		EnvVar: "DSLIM_LINT_SHOW_NOHITS",
+	FlagShowNoHits: &cli.BoolFlag{
+		Name:    FlagShowNoHits,
+		Usage:   FlagShowNoHitsUsage,
+		EnvVars: []string{"DSLIM_LINT_SHOW_NOHITS"},
 	},
-	FlagShowSnippet: cli.BoolTFlag{
-		Name:   FlagShowSnippet,
-		Usage:  FlagShowSnippetUsage,
-		EnvVar: "DSLIM_LINT_SHOW_SNIPPET",
+	FlagShowSnippet: &cli.BoolFlag{
+		Name:    FlagShowSnippet,
+		Value:   true,
+		Usage:   FlagShowSnippetUsage,
+		EnvVars: []string{"DSLIM_LINT_SHOW_SNIPPET"},
 	},
-	FlagListChecks: cli.BoolFlag{
-		Name:   FlagListChecks,
-		Usage:  FlagListChecksUsage,
-		EnvVar: "DSLIM_LINT_LIST_CHECKS",
+	FlagListChecks: &cli.BoolFlag{
+		Name:    FlagListChecks,
+		Usage:   FlagListChecksUsage,
+		EnvVars: []string{"DSLIM_LINT_LIST_CHECKS"},
 	},
 }
 

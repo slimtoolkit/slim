@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"os"
 
-	"github.com/urfave/cli"
+	"github.com/urfave/cli/v2"
 
 	"github.com/docker-slim/docker-slim/pkg/version"
 )
@@ -22,7 +22,7 @@ type pluginMetadata struct {
 	URL              string
 }
 
-var CLI = cli.Command{
+var CLI = &cli.Command{
 	Category: "internal.metadata",
 	Name:     Name,
 	Usage:    Usage,

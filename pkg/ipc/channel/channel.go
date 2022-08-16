@@ -466,7 +466,7 @@ func NewCommandClient(addr string, connectWait, connectTimeout, readTimeout, wri
 				return cmdClient, nil
 			}
 
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				log.Debug("channel.NewCommandClient: closed connection.")
 			} else {
 				log.Errorf("channel.NewCommandClient: channel verify error = %v", err)
