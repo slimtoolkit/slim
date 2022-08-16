@@ -43,15 +43,32 @@ func TestHandleRequest(t *testing.T) {
 
 func TestEncodeRequest(t *testing.T) {
 
+	var testrequest *HTTPRequest
+
+	err := json.Unmarshal([]byte(`{
+		"headers": [
+			"header1: value1",
+			"header2: value1,value2"
+		],
+		"body": "Hello from Lambda",
+		"resource": "/2015-03-31/functions/function/invocations"
+	}`), &testrequest)
+
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	// Call EncodeRequest
-	encodedRequest, err := EncodeRequest(request, nil)
+	encodedRequest, err := EncodeRequest(testrequest, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// Check that the encoded request is correct
 	//to-fix-this-test
-	assert.Equal(t, encodedRequest, []byte(`{"resource": "/2015-03-31/functions/function/invocations","body": "{\"httpMethod\":\"POST\", \"path\":\"/stuff\", \"body\":\"{\"key\":\"val data\"}\", \"headers{\"Content-Type\": \"application/json\"}}"}`))
+	assert.Equal(t, string(encodedRequest),
+		`{"headers":{"header1":"value1","header2":"value1,value2"},"body":"Hello from Lambda","resource":"/2015-03-31/functions/function/invocations"}
+`)
 }
 
 //function to decode response from lambda proxy

@@ -32,13 +32,13 @@ type HTTPProbeCmd struct {
 }
 
 type apiGatewayProxyRequest struct {
-	Resource              string            `json:"resource"` // The resource path defined in API Gateway
-	Path                  string            `json:"path"`     // The url path for the caller
-	HTTPMethod            string            `json:"httpMethod"`
-	Headers               map[string]string `json:"headers"`
-	QueryStringParameters map[string]string `json:"queryStringParameters"`
-	Body                  string            `json:"body"`
+	Path                  string            `json:"path,omitempty"` // The url path for the caller
+	HTTPMethod            string            `json:"httpMethod,omitempty"`
+	Headers               map[string]string `json:"headers,omitempty"`
+	QueryStringParameters map[string]string `json:"queryStringParameters,omitempty"`
+	Body                  string            `json:"body,omitempty"`
 	IsBase64Encoded       bool              `json:"isBase64Encoded,omitempty"`
+	Resource              string            `json:"resource,omitempty"` // The resource path defined in API Gateway
 }
 
 type apiGatewayProxyResponse struct {
@@ -94,13 +94,6 @@ func clientError(status int) (apiGatewayProxyResponse, error) {
 }
 
 func handleRequest(ctx context.Context, request *HTTPProbeCmd) (*HTTPRequest, error) {
-
-	// fmt.Printf("Body size = %d.\n", len(request.Body))
-
-	// fmt.Println("Headers:")
-	// for key, value := range request.Headers {
-	// 	fmt.Printf("    %s: %s\n", key, value)
-	// }
 
 	return &HTTPRequest{Method: request.Method, Resource: request.Resource, Headers: request.Headers, Body: request.Body}, nil
 }
@@ -189,12 +182,3 @@ func convertMapToSlice(input map[string]string) []string {
 
 	return pairs
 }
-
-// func main() {
-// 	input, err := handleRequest(context.Background(), &HTTPProbeCmd{})
-// 	if err != nil {
-// 		fmt.Println("Error:", err)
-// 		os.Exit(1)
-// 	}
-// 	EncodeRequest(input, nil)
-// }
