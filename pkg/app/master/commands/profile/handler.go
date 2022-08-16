@@ -37,6 +37,9 @@ const (
 
 type ovars = app.OutVars
 
+//note: the runtime part of the 'profile' logic is a bit behind 'build'
+//todo: refactor 'xray', 'profile' and 'build' to compose and reuse common logic
+
 // OnCommand implements the 'profile' docker-slim command
 func OnCommand(
 	xc *app.ExecutionContext,
@@ -86,6 +89,8 @@ func OnCommand(
 	doUseSensorVolume string,
 	//doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
+	sensorIPCEndpoint string,
+	sensorIPCMode string,
 	logLevel string,
 	logFormat string) {
 	const cmdName = Name
@@ -235,6 +240,17 @@ func OnCommand(
 		imageInspector,
 		localVolumePath,
 		doUseLocalMounts,
+		false, //doIncludeAppNuxtDir
+		false, //doIncludeAppNuxtBuildDir,
+		false, //doIncludeAppNuxtDistDir,
+		false, //doIncludeAppNuxtStaticDir,
+		false, //doIncludeAppNuxtNodeModulesDir,
+		false, //doIncludeAppNextDir
+		false, //doIncludeAppNextBuildDir,
+		false, //doIncludeAppNextDistDir,
+		false, //doIncludeAppNextStaticDir,
+		false, //doIncludeAppNextNodeModulesDir,
+		nil,   //includeNodePackages,
 		doUseSensorVolume,
 		false, //doKeepTmpArtifacts,
 		overrides,
@@ -263,12 +279,16 @@ func OnCommand(
 		false, //doIncludeCertDirs
 		false, //doIncludeCertPKAll
 		false, //doIncludeCertPKDirs
+		false, //doIncludeNew
 		nil,   //selectedNetNames
 		//nil,
 		gparams.Debug,
 		logLevel,
 		logFormat,
 		gparams.InContainer,
+		true, //rtaSourcePT
+		sensorIPCEndpoint,
+		sensorIPCMode,
 		true,
 		prefix)
 	errutil.FailOn(err)
@@ -328,7 +348,7 @@ func OnCommand(
 		if len(probe.Ports) == 0 {
 			xc.Out.State("http.probe.error",
 				ovars{
-					"error":   "no exposed ports",
+					"error":   "NO EXPOSED PORTS",
 					"message": "expose your service port with --expose or disable HTTP probing with --http-probe=false if your containerized application doesnt expose any network services",
 				})
 
@@ -419,6 +439,19 @@ func OnCommand(
 	xc.Out.State("completed")
 
 	cmdReport.State = command.StateCompleted
+
+	cmdReport.SeccompProfileName = imageInspector.SeccompProfileName
+	cmdReport.AppArmorProfileName = imageInspector.AppArmorProfileName
+
+	xc.Out.Info("results",
+		ovars{
+			"artifacts.seccomp": cmdReport.SeccompProfileName,
+		})
+
+	xc.Out.Info("results",
+		ovars{
+			"artifacts.apparmor": cmdReport.AppArmorProfileName,
+		})
 
 	if copyMetaArtifactsLocation != "" {
 		toCopy := []string{
