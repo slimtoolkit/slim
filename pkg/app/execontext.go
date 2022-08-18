@@ -3,13 +3,11 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"io"
 	"os"
 	"strings"
 
 	"github.com/fatih/color"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/consts"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
@@ -21,7 +19,7 @@ type ExecutionContext struct {
 
 func (ref *ExecutionContext) Exit(exitCode int) {
 	ref.doCleanup()
-	exit(exitCode)
+	exit(exitCode, ref.Out.JSONFlag)
 }
 
 func (ref *ExecutionContext) AddCleanupHandler(handler func()) {
@@ -52,26 +50,28 @@ func (ref *ExecutionContext) FailOn(err error) {
 	errutil.FailOn(err)
 }
 
-func exit(exitCode int) {
-	ShowCommunityInfo()
+func exit(exitCode int, jsonFlag string) {
+	ShowCommunityInfo(jsonFlag)
 	os.Exit(exitCode)
 }
 
-func NewExecutionContext(cmdName string) *ExecutionContext {
+func NewExecutionContext(cmdName, jsonFlag string) *ExecutionContext {
 	ref := &ExecutionContext{
-		Out: NewOutput(cmdName),
+		Out: NewOutput(cmdName, jsonFlag),
 	}
 
 	return ref
 }
 
 type Output struct {
-	CmdName string
+	CmdName  string
+	JSONFlag string
 }
 
-func NewOutput(cmdName string) *Output {
+func NewOutput(cmdName, jsonFlag string) *Output {
 	ref := &Output{
-		CmdName: cmdName,
+		CmdName:  cmdName,
+		JSONFlag: jsonFlag,
 	}
 
 	return ref
@@ -109,7 +109,17 @@ func (ref *Output) Prompt(data string) {
 	color.Set(color.FgHiRed)
 	defer color.Unset()
 
-	fmt.Printf("cmd=%s prompt='%s'\n", ref.CmdName, data)
+	if ref.JSONFlag == "json" {
+		//marshal data to json
+		var jsonData []byte
+		if len(data) > 0 {
+			jsonData, _ = json.Marshal(data)
+			fmt.Println(string(jsonData))
+		}
+	} else {
+		fmt.Printf("cmd=%s prompt='%s'\n", ref.CmdName, data)
+	}
+
 }
 
 func (ref *Output) Error(errType string, data string) {
@@ -123,7 +133,17 @@ func (ref *Output) Message(data string) {
 	color.Set(color.FgHiMagenta)
 	defer color.Unset()
 
-	fmt.Printf("cmd=%s message='%s'\n", ref.CmdName, data)
+	if ref.JSONFlag == "json" {
+		//marshal data to json
+		var jsonData []byte
+		if len(data) > 0 {
+			jsonData, _ = json.Marshal(data)
+			fmt.Println(string(jsonData))
+		}
+	} else {
+		fmt.Printf("cmd=%s message='%s'\n", ref.CmdName, data)
+	}
+
 }
 
 func (ref *Output) State(state string, params ...OutVars) {
@@ -170,7 +190,16 @@ func (ref *Output) State(state string, params ...OutVars) {
 	}
 	defer color.Unset()
 
-	fmt.Printf("cmd=%s state=%s%s%s%s\n", ref.CmdName, state, exitInfo, sep, info)
+	//marshal info to json
+	if ref.JSONFlag == "json" {
+		var jsonData []byte
+		if len(info) > 0 {
+			jsonData, _ = json.Marshal(params[0])
+			fmt.Println(string(jsonData))
+		}
+	} else {
+		fmt.Printf("cmd=%s state=%s%s%s%s\n", ref.CmdName, state, exitInfo, sep, info)
+	}
 }
 
 var (
@@ -200,28 +229,54 @@ func (ref *Output) Info(infoType string, params ...OutVars) {
 		}
 	}
 
-	if commands.FlagConsoleOutput == "json-output" {
-		JSONFormatter(data)
+	//marshal data to json
+	// var jsonData []byte
+	// if len(data) > 0 {
+	// 	jsonData, _ = json.Marshal(params[0])
+	// }
+	// fmt.Printf(string(jsonData))
+
+	if ref.JSONFlag == "json" {
+		var jsonData []byte
+		if len(data) > 0 {
+			jsonData, _ = json.Marshal(params[0])
+		}
+		fmt.Println(string(jsonData))
+
 	} else {
 		fmt.Printf("cmd=%s info=%s%s%s\n", ref.CmdName, itcolor(infoType), sep, data)
 	}
 
 }
 
-func ShowCommunityInfo() {
+func ShowCommunityInfo(jsonFlag string) {
 	color.Set(color.FgHiMagenta)
 	defer color.Unset()
-	fmt.Printf("docker-slim: message='join the Gitter channel to ask questions or to share your feedback' info='%s'\n", consts.CommunityGitter)
-	fmt.Printf("docker-slim: message='join the Discord server to ask questions or to share your feedback' info='%s'\n", consts.CommunityDiscord)
-	fmt.Printf("docker-slim: message='Github discussions' info='%s'\n", consts.CommunityDiscussions)
-}
+	data := fmt.Sprintf("docker-slim: message='join the Gitter channel to ask questions or to share your feedback' info='%s'\n", consts.CommunityGitter)
+	data = fmt.Sprintf("docker-slim: message='join the Discord server to ask questions or to share your feedback' info='%s'\n", consts.CommunityDiscord)
+	data = fmt.Sprintf("docker-slim: message='Github discussions' info='%s'\n", consts.CommunityDiscussions)
 
-func JSONFormatter(data string) {
+	if jsonFlag == "json" {
+		var jsonData []byte
+		if len(data) > 0 {
+			jsonData, _ = json.Marshal(data)
+		}
+		fmt.Println(string(jsonData))
 
-	var out io.Writer
-	enc := json.NewEncoder(out)
-	enc.SetIndent("", "    ")
-	if err := enc.Encode(data); err != nil {
-		panic(err)
+	} else {
+		var jsonData []byte
+		if len(data) > 0 {
+			jsonData, _ = json.Marshal(data)
+		}
+		fmt.Println(string(jsonData))
+		// fmt.Printf(data)
 	}
 }
+
+// func JSONFormatter(data, params) {
+// // 	var jsonData []byte
+// // 	if len(data) > 0 {
+// // 		jsonData, _ = json.Marshal(params[0])
+// // 	}
+// // 	fmt.Printf(string(jsonData))
+// // }

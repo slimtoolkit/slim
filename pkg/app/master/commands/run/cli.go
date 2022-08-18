@@ -99,7 +99,7 @@ var CLI = &cli.Command{
 		cflag(FlagDetach),
 	},
 	Action: func(ctx *cli.Context) error {
-		xc := app.NewExecutionContext(Name)
+		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleOutput))
 
 		gparams, err := commands.GlobalFlagValues(ctx)
 		if err != nil {

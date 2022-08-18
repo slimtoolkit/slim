@@ -33,7 +33,7 @@ var CLI = &cli.Command{
 
 		targetRef := ctx.Args().First()
 
-		xc := app.NewExecutionContext(Name)
+		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleOutput))
 
 		OnCommand(
 			xc,

@@ -79,7 +79,7 @@ func (ia *InteractiveApp) execute(command string) {
 	}
 
 	if parts[0] == "exit" {
-		app.ShowCommunityInfo()
+		app.ShowCommunityInfo(FlagConsoleOutput)
 		os.Exit(0)
 	}
 

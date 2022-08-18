@@ -23,7 +23,7 @@ var CLI = &cli.Command{
 			return err
 		}
 
-		xc := app.NewExecutionContext(Name)
+		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleOutput))
 
 		OnCommand(
 			xc,

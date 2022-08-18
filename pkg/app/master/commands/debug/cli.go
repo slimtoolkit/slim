@@ -62,7 +62,7 @@ var CLI = &cli.Command{
 			AttachTty:              true,
 		}
 
-		xc := app.NewExecutionContext(Name)
+		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleOutput))
 
 		if commandParams.TargetRef == "" {
 			if ctx.Args().Len() < 1 {

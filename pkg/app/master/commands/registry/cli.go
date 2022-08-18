@@ -53,7 +53,7 @@ var CLI = &cli.Command{
 				cflag(FlagSaveToDocker),
 			},
 			Action: func(ctx *cli.Context) error {
-				xc := app.NewExecutionContext(fullCmdName(PullCmdName))
+				xc := app.NewExecutionContext(fullCmdName(PullCmdName), ctx.String(commands.FlagConsoleOutput))
 
 				gcvalues, err := commands.GlobalFlagValues(ctx)
 				if err != nil {
@@ -88,7 +88,7 @@ var CLI = &cli.Command{
 					return err
 				}
 
-				xc := app.NewExecutionContext(fullCmdName(PushCmdName))
+				xc := app.NewExecutionContext(fullCmdName(PushCmdName), ctx.String(commands.FlagConsoleOutput))
 				OnPushCommand(xc, gcvalues)
 				return nil
 			},
@@ -102,7 +102,7 @@ var CLI = &cli.Command{
 					return err
 				}
 
-				xc := app.NewExecutionContext(fullCmdName(CopyCmdName))
+				xc := app.NewExecutionContext(fullCmdName(CopyCmdName), ctx.String(commands.FlagConsoleOutput))
 				OnCopyCommand(xc, gcvalues)
 				return nil
 			},
