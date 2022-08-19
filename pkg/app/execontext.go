@@ -229,54 +229,41 @@ func (ref *Output) Info(infoType string, params ...OutVars) {
 		}
 	}
 
-	//marshal data to json
-	// var jsonData []byte
-	// if len(data) > 0 {
-	// 	jsonData, _ = json.Marshal(params[0])
-	// }
-	// fmt.Printf(string(jsonData))
-
-	if ref.JSONFlag == "json" {
+	switch ref.JSONFlag {
+	case "json":
 		var jsonData []byte
 		if len(data) > 0 {
 			jsonData, _ = json.Marshal(params[0])
+			fmt.Println(string(jsonData))
 		}
-		fmt.Println(string(jsonData))
-
-	} else {
+	case "text":
 		fmt.Printf("cmd=%s info=%s%s%s\n", ref.CmdName, itcolor(infoType), sep, data)
+
+	default:
+		fmt.Printf("Unknown json flag: %s\n", ref.JSONFlag)
 	}
 
 }
 
 func ShowCommunityInfo(jsonFlag string) {
+
+	type Data struct {
+		DockerSlim string `json:"dockerslim`
+	}
+
+	var data Data
+
 	color.Set(color.FgHiMagenta)
 	defer color.Unset()
-	data := fmt.Sprintf("docker-slim: message='join the Gitter channel to ask questions or to share your feedback' info='%s'\n", consts.CommunityGitter)
-	data = fmt.Sprintf("docker-slim: message='join the Discord server to ask questions or to share your feedback' info='%s'\n", consts.CommunityDiscord)
-	data = fmt.Sprintf("docker-slim: message='Github discussions' info='%s'\n", consts.CommunityDiscussions)
+	data.DockerSlim = fmt.Sprintf("message='join the Gitter channel to ask questions or to share your feedback info='%s'"+"\n"+"message='join the Discord server to ask questions or to share your feedback' info='%s'"+"\n"+"message='Github discussions' info='%s'", consts.CommunityGitter, consts.CommunityDiscord, consts.CommunityDiscussions)
 
 	if jsonFlag == "json" {
 		var jsonData []byte
-		if len(data) > 0 {
+		if len(data.DockerSlim) > 0 {
 			jsonData, _ = json.Marshal(data)
 		}
 		fmt.Println(string(jsonData))
-
 	} else {
-		var jsonData []byte
-		if len(data) > 0 {
-			jsonData, _ = json.Marshal(data)
-		}
-		fmt.Println(string(jsonData))
-		// fmt.Printf(data)
+		fmt.Println(data.DockerSlim)
 	}
 }
-
-// func JSONFormatter(data, params) {
-// // 	var jsonData []byte
-// // 	if len(data) > 0 {
-// // 		jsonData, _ = json.Marshal(params[0])
-// // 	}
-// // 	fmt.Printf(string(jsonData))
-// // }

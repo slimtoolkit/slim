@@ -293,7 +293,7 @@ func GlobalFlags() []cli.Flag {
 		},
 		&cli.StringFlag{
 			Name:  FlagConsoleOutput,
-			Value: "json",
+			Value: "text",
 			Usage: "set the format used by logs ('text' (default), or 'json')",
 		},
 		&cli.BoolFlag{

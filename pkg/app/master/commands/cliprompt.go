@@ -247,6 +247,11 @@ var continueAfterValues = []prompt.Suggest{
 	{Text: "<seconds>", Description: "Enter the number of seconds to wait instead of <seconds>"},
 }
 
+var consoleOutputValues = []prompt.Suggest{
+	{Text: "text", Description: "Default, console output in text format"},
+	{Text: "json", Description: "Use json if you want JSON console output"},
+}
+
 var ipcModeValues = []prompt.Suggest{
 	{Text: "proxy", Description: "Proxy sensor ipc mode"},
 	{Text: "direct", Description: "Direct sensor ipc mode"},
@@ -271,6 +276,10 @@ func CompleteTBool(ia *InteractiveApp, token string, params prompt.Document) []p
 
 func CompleteContinueAfter(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(continueAfterValues, token, true)
+}
+
+func CompleteConsoleOutput(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	return prompt.FilterHasPrefix(consoleOutputValues, token, true)
 }
 
 func CompleteIPCMode(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {

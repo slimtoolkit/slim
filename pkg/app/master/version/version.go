@@ -9,7 +9,7 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
@@ -46,13 +46,23 @@ func PrintCheckVersion(
 			fmt.Printf("%s info=version status=OUTDATED local=%s current=%s\n", printPrefix, v.Tag(), info.Current)
 			fmt.Printf("%s info=message message='%s'\n", printPrefix, msg)
 		} else {
-			xc.Out.Info("version",
-				app.OutVars{
-					"status":  "OUTDATED",
-					"local":   v.Tag(),
-					"current": info.Current,
-				})
-			xc.Out.Message(msg)
+			if xc.Out.JSONFlag == "json" {
+				xc.Out.Info("version",
+					app.OutVars{
+						"status":  "OUTDATED",
+						"local":   v.Tag(),
+						"current": info.Current,
+						"message": msg,
+					})
+			} else {
+				xc.Out.Info("version",
+					app.OutVars{
+						"status":  "OUTDATED",
+						"local":   v.Tag(),
+						"current": info.Current,
+					})
+				xc.Out.Message(msg)
+			}
 		}
 	}
 }
