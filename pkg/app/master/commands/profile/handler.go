@@ -529,6 +529,19 @@ func OnCommand(
 
 	cmdReport.State = command.StateCompleted
 
+	cmdReport.SeccompProfileName = imageInspector.SeccompProfileName
+	cmdReport.AppArmorProfileName = imageInspector.AppArmorProfileName
+
+	xc.Out.Info("results",
+		ovars{
+			"artifacts.seccomp": cmdReport.SeccompProfileName,
+		})
+
+	xc.Out.Info("results",
+		ovars{
+			"artifacts.apparmor": cmdReport.AppArmorProfileName,
+		})
+
 	if copyMetaArtifactsLocation != "" {
 		toCopy := []string{
 			report.DefaultContainerReportFileName,
