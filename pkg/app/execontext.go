@@ -19,7 +19,7 @@ type ExecutionContext struct {
 
 func (ref *ExecutionContext) Exit(exitCode int) {
 	ref.doCleanup()
-	exit(exitCode, ref.Out.JSONFlag)
+	ref.exit(exitCode)
 }
 
 func (ref *ExecutionContext) AddCleanupHandler(handler func()) {
@@ -50,8 +50,8 @@ func (ref *ExecutionContext) FailOn(err error) {
 	errutil.FailOn(err)
 }
 
-func exit(exitCode int, jsonFlag string) {
-	ShowCommunityInfo(jsonFlag)
+func (ref *ExecutionContext) exit(exitCode int) {
+	ShowCommunityInfo(ref.Out.JSONFlag)
 	os.Exit(exitCode)
 }
 
@@ -113,7 +113,11 @@ func (ref *Output) Prompt(data string) {
 		//marshal data to json
 		var jsonData []byte
 		if len(data) > 0 {
-			jsonData, _ = json.Marshal(data)
+			msg := map[string]string{
+				"cmd":    ref.CmdName,
+				"prompt": data,
+			}
+			jsonData, _ = json.Marshal(msg)
 			fmt.Println(string(jsonData))
 		}
 	} else {
@@ -126,7 +130,22 @@ func (ref *Output) Error(errType string, data string) {
 	color.Set(color.FgHiRed)
 	defer color.Unset()
 
-	fmt.Printf("cmd=%s error=%s message='%s'\n", ref.CmdName, errType, data)
+	if ref.JSONFlag == "json" {
+		//marshal data to json
+		var jsonData []byte
+		if len(data) > 0 {
+			msg := map[string]string{
+				"cmd":     ref.CmdName,
+				"error":   errType,
+				"message": data,
+			}
+			jsonData, _ = json.Marshal(msg)
+			fmt.Println(string(jsonData))
+		}
+	} else {
+		fmt.Printf("cmd=%s error=%s message='%s'\n", ref.CmdName, errType, data)
+	}
+
 }
 
 func (ref *Output) Message(data string) {
@@ -137,7 +156,11 @@ func (ref *Output) Message(data string) {
 		//marshal data to json
 		var jsonData []byte
 		if len(data) > 0 {
-			jsonData, _ = json.Marshal(data)
+			msg := map[string]string{
+				"cmd":     ref.CmdName,
+				"message": data,
+			}
+			jsonData, _ = json.Marshal(msg)
 			fmt.Println(string(jsonData))
 		}
 	} else {
@@ -193,8 +216,16 @@ func (ref *Output) State(state string, params ...OutVars) {
 	//marshal info to json
 	if ref.JSONFlag == "json" {
 		var jsonData []byte
+		var jsonInfoData []byte
 		if len(info) > 0 {
-			jsonData, _ = json.Marshal(params[0])
+			jsonInfoData, _ = json.Marshal(params[0])
+			msg := map[string]string{
+				"cmd":       ref.CmdName,
+				"state":     state,
+				"exit.info": exitInfo,
+				"info":      string(jsonInfoData),
+			}
+			jsonData, _ = json.Marshal(msg)
 			fmt.Println(string(jsonData))
 		}
 	} else {
@@ -232,8 +263,15 @@ func (ref *Output) Info(infoType string, params ...OutVars) {
 	switch ref.JSONFlag {
 	case "json":
 		var jsonData []byte
+		var jsonInfoData []byte
 		if len(data) > 0 {
-			jsonData, _ = json.Marshal(params[0])
+			jsonInfoData, _ = json.Marshal(params[0])
+			msg := map[string]string{
+				"cmd":  ref.CmdName,
+				"info": infoType,
+				"data": string(jsonInfoData),
+			}
+			jsonData, _ = json.Marshal(msg)
 			fmt.Println(string(jsonData))
 		}
 	case "text":
@@ -248,22 +286,46 @@ func (ref *Output) Info(infoType string, params ...OutVars) {
 func ShowCommunityInfo(jsonFlag string) {
 
 	type Data struct {
-		DockerSlim string `json:"dockerslim`
+		App     string `json:"app"`
+		Message string `json:"message"`
+		Info    string `json:"info"`
+	}
+
+	type CommunityInfo struct {
+		Data []Data `json:"data"`
 	}
 
 	var data Data
+	var community CommunityInfo
 
 	color.Set(color.FgHiMagenta)
 	defer color.Unset()
-	data.DockerSlim = fmt.Sprintf("message='join the Gitter channel to ask questions or to share your feedback info='%s'"+"\n"+"message='join the Discord server to ask questions or to share your feedback' info='%s'"+"\n"+"message='Github discussions' info='%s'", consts.CommunityGitter, consts.CommunityDiscord, consts.CommunityDiscussions)
+
+	data.App = "docker-slim"
+	data.Message = "Join the Gitter channel to ask questions or to share your feedback"
+	data.Info = consts.CommunityGitter
+
+	community.Data = append(community.Data, data)
+
+	data.App = "docker-slim"
+	data.Message = "Join the Discord server to ask questions or to share your feedback"
+	data.Info = consts.CommunityDiscord
+
+	community.Data = append(community.Data, data)
+
+	data.App = "docker-slim"
+	data.Message = "GitHub Discussions"
+	data.Info = consts.CommunityDiscussions
+
+	community.Data = append(community.Data, data)
 
 	if jsonFlag == "json" {
 		var jsonData []byte
-		if len(data.DockerSlim) > 0 {
-			jsonData, _ = json.Marshal(data)
-		}
+		jsonData, _ = json.Marshal(community.Data)
 		fmt.Println(string(jsonData))
 	} else {
-		fmt.Println(data.DockerSlim)
+		for _, v := range community.Data {
+			fmt.Printf("'app':'%s' 'message':'%s' 'info':'%s'\n", v.App, v.Message, v.Info)
+		}
 	}
 }

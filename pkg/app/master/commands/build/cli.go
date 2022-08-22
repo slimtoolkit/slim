@@ -167,8 +167,7 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagSensorIPCMode),
 	},
 	Action: func(ctx *cli.Context) error {
-		gparams, ok := commands.CLIContextGet(ctx.Context, commands.GlobalParams).(*commands.GenericParams)
-		xc := app.NewExecutionContext(Name, gparams.ConsoleOutput)
+		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleOutput))
 
 		cbOpts, err := GetContainerBuildOptions(ctx)
 		if err != nil {
@@ -252,7 +251,7 @@ var CLI = &cli.Command{
 			return nil
 		}
 
-		//	gparams, ok := commands.CLIContextGet(ctx.Context, commands.GlobalParams).(*commands.GenericParams)
+		gparams, ok := commands.CLIContextGet(ctx.Context, commands.GlobalParams).(*commands.GenericParams)
 		if !ok || gparams == nil {
 			xc.Out.Error("param.global", "missing params")
 			xc.Out.State("exited",

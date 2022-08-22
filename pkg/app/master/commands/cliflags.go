@@ -294,7 +294,7 @@ func GlobalFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:  FlagConsoleOutput,
 			Value: "text",
-			Usage: "set the format used by logs ('text' (default), or 'json')",
+			Usage: "set the console output format to use ('text' (default), or 'json')",
 		},
 		&cli.BoolFlag{
 			Name:  FlagUseTLS,
