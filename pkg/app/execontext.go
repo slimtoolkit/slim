@@ -104,8 +104,9 @@ func (ref *Output) LogDump(logType, data string, params ...OutVars) {
 	case "json":
 		var jsonData []byte
 		msg := map[string]string{
-			"cmd": ref.CmdName,
-			"log": logType,
+			"cmd":  ref.CmdName,
+			"log":  logType,
+			"data": data,
 		}
 		jsonData, _ = json.Marshal(msg)
 		if len(params) > 0 {
