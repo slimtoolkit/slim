@@ -3,6 +3,7 @@ package app
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
@@ -109,7 +110,8 @@ func (ref *Output) Prompt(data string) {
 	color.Set(color.FgHiRed)
 	defer color.Unset()
 
-	if ref.JSONFlag == "json" {
+	switch ref.JSONFlag {
+	case "json":
 		//marshal data to json
 		var jsonData []byte
 		if len(data) > 0 {
@@ -120,8 +122,10 @@ func (ref *Output) Prompt(data string) {
 			jsonData, _ = json.Marshal(msg)
 			fmt.Println(string(jsonData))
 		}
-	} else {
+	case "text":
 		fmt.Printf("cmd=%s prompt='%s'\n", ref.CmdName, data)
+	default:
+		log.Fatalf("Unknown console output flag: %s\n. It should be either 'text' or 'json", ref.JSONFlag)
 	}
 
 }
@@ -130,7 +134,8 @@ func (ref *Output) Error(errType string, data string) {
 	color.Set(color.FgHiRed)
 	defer color.Unset()
 
-	if ref.JSONFlag == "json" {
+	switch ref.JSONFlag {
+	case "json":
 		//marshal data to json
 		var jsonData []byte
 		if len(data) > 0 {
@@ -142,8 +147,10 @@ func (ref *Output) Error(errType string, data string) {
 			jsonData, _ = json.Marshal(msg)
 			fmt.Println(string(jsonData))
 		}
-	} else {
+	case "text":
 		fmt.Printf("cmd=%s error=%s message='%s'\n", ref.CmdName, errType, data)
+	default:
+		log.Fatalf("Unknown console output flag: %s\n. It should be either 'text' or 'json", ref.JSONFlag)
 	}
 
 }
@@ -152,7 +159,8 @@ func (ref *Output) Message(data string) {
 	color.Set(color.FgHiMagenta)
 	defer color.Unset()
 
-	if ref.JSONFlag == "json" {
+	switch ref.JSONFlag {
+	case "json":
 		//marshal data to json
 		var jsonData []byte
 		if len(data) > 0 {
@@ -163,8 +171,10 @@ func (ref *Output) Message(data string) {
 			jsonData, _ = json.Marshal(msg)
 			fmt.Println(string(jsonData))
 		}
-	} else {
+	case "text":
 		fmt.Printf("cmd=%s message='%s'\n", ref.CmdName, data)
+	default:
+		log.Fatalf("Unknown console output flag: %s\n. It should be either 'text' or 'json", ref.JSONFlag)
 	}
 
 }
@@ -213,23 +223,31 @@ func (ref *Output) State(state string, params ...OutVars) {
 	}
 	defer color.Unset()
 
-	//marshal info to json
-	if ref.JSONFlag == "json" {
+	switch ref.JSONFlag {
+	case "json":
 		var jsonData []byte
-		var jsonInfoData []byte
-		if len(info) > 0 {
-			jsonInfoData, _ = json.Marshal(params[0])
-			msg := map[string]string{
-				"cmd":       ref.CmdName,
-				"state":     state,
-				"exit.info": exitInfo,
-				"info":      string(jsonInfoData),
-			}
-			jsonData, _ = json.Marshal(msg)
+		msg := map[string]string{
+			"cmd":       ref.CmdName,
+			"state":     state,
+			"exit.info": exitInfo,
+		}
+		jsonData, _ = json.Marshal(msg)
+		if len(params) > 0 {
+			jsonParamsData, _ := json.Marshal(params[0])
+			var jsonslice []string
+			jsonslice = append(jsonslice, string(jsonData))
+			jsonslice = append(jsonslice, string(jsonParamsData))
+			jsonData = append(jsonData, jsonParamsData...)
+			sliceJSON := strings.Split(string(jsonData), "}{")
+			fmt.Println(strings.Join(sliceJSON, ","))
+		} else {
 			fmt.Println(string(jsonData))
 		}
-	} else {
+	case "text":
 		fmt.Printf("cmd=%s state=%s%s%s%s\n", ref.CmdName, state, exitInfo, sep, info)
+
+	default:
+		log.Fatalf("Unknown console output flag: %s\n. It should be either 'text' or 'json", ref.JSONFlag)
 	}
 }
 
@@ -242,6 +260,7 @@ var (
 func (ref *Output) Info(infoType string, params ...OutVars) {
 	var data string
 	var sep string
+	var jsonslice []string
 
 	if len(params) > 0 {
 		kvSet := params[0]
@@ -263,22 +282,28 @@ func (ref *Output) Info(infoType string, params ...OutVars) {
 	switch ref.JSONFlag {
 	case "json":
 		var jsonData []byte
-		var jsonInfoData []byte
+
 		if len(data) > 0 {
-			jsonInfoData, _ = json.Marshal(params[0])
+
 			msg := map[string]string{
 				"cmd":  ref.CmdName,
 				"info": infoType,
-				"data": string(jsonInfoData),
 			}
 			jsonData, _ = json.Marshal(msg)
-			fmt.Println(string(jsonData))
+			jsonParamsData, _ := json.Marshal(params[0])
+
+			jsonslice := append(jsonslice, string(jsonData))
+			jsonslice = append(jsonslice, string(jsonParamsData))
+			jsonData = append(jsonData, jsonParamsData...)
+			sliceJSON := strings.Split(string(jsonData), "}{")
+			fmt.Println(strings.Join(sliceJSON, ","))
+
 		}
 	case "text":
 		fmt.Printf("cmd=%s info=%s%s%s\n", ref.CmdName, itcolor(infoType), sep, data)
 
 	default:
-		fmt.Printf("Unknown json flag: %s\n", ref.JSONFlag)
+		log.Fatalf("Unknown console output flag: %s\n. It should be either 'text' or 'json", ref.JSONFlag)
 	}
 
 }
@@ -319,13 +344,16 @@ func ShowCommunityInfo(jsonFlag string) {
 
 	community.Data = append(community.Data, data)
 
-	if jsonFlag == "json" {
+	switch jsonFlag {
+	case "json":
 		var jsonData []byte
 		jsonData, _ = json.Marshal(community.Data)
 		fmt.Println(string(jsonData))
-	} else {
+	case "text":
 		for _, v := range community.Data {
 			fmt.Printf("'app':'%s' 'message':'%s' 'info':'%s'\n", v.App, v.Message, v.Info)
 		}
+	default:
+		log.Fatalf("Unknown console output flag: %s\n. It should be either 'text' or 'json", jsonFlag)
 	}
 }

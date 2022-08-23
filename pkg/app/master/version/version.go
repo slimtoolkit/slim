@@ -52,8 +52,8 @@ func PrintCheckVersion(
 						"status":  "OUTDATED",
 						"local":   v.Tag(),
 						"current": info.Current,
-						"message": msg,
 					})
+				xc.Out.Message(msg)
 			} else {
 				xc.Out.Info("version",
 					app.OutVars{
