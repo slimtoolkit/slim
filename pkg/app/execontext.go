@@ -100,10 +100,33 @@ func (ref *Output) LogDump(logType, data string, params ...OutVars) {
 			info = builder.String()
 		}
 	}
+	switch ref.JSONFlag {
+	case "json":
+		var jsonData []byte
+		msg := map[string]string{
+			"cmd": ref.CmdName,
+			"log": logType,
+		}
+		jsonData, _ = json.Marshal(msg)
+		if len(params) > 0 {
+			jsonParamsData, _ := json.Marshal(params[0])
+			var jsonslice []string
+			jsonslice = append(jsonslice, string(jsonData))
+			jsonslice = append(jsonslice, string(jsonParamsData))
+			jsonData = append(jsonData, jsonParamsData...)
+			sliceJSON := strings.Split(string(jsonData), "}{")
+			fmt.Println(strings.Join(sliceJSON, ","))
+		} else {
+			fmt.Println(string(jsonData))
+		}
+	case "text":
+		fmt.Printf("cmd=%s log='%s' event=LOG.START %s ====================\n", ref.CmdName, logType, info)
+		fmt.Println(data)
+		fmt.Printf("cmd=%s log='%s' event=LOG.END %s ====================\n", ref.CmdName, logType, info)
+	default:
+		log.Fatalf("Unknown console output flag: %s\n. It should be either 'text' or 'json", ref.JSONFlag)
+	}
 
-	fmt.Printf("cmd=%s log='%s' event=LOG.START %s ====================\n", ref.CmdName, logType, info)
-	fmt.Println(data)
-	fmt.Printf("cmd=%s log='%s' event=LOG.END %s ====================\n", ref.CmdName, logType, info)
 }
 
 func (ref *Output) Prompt(data string) {
