@@ -86,11 +86,19 @@ type OutVars map[string]interface{}
 
 func (ref *Output) LogDump(logType, data string, params ...OutVars) {
 	var info string
+	msg := make(map[string]string)
+	var jsonData []byte
+
+	msg["cmd"] = ref.CmdName
+	msg["log"] = logType
+	msg["data"] = data
+
 	if len(params) > 0 {
 		kvSet := params[0]
 		if len(kvSet) > 0 {
 			var builder strings.Builder
 			for k, v := range kvSet {
+				msg[k] = fmt.Sprintf("%v", v)
 				builder.WriteString(kcolor(k))
 				builder.WriteString("=")
 				builder.WriteString(fmt.Sprintf("'%s'", vcolor("%v", v)))
@@ -102,24 +110,8 @@ func (ref *Output) LogDump(logType, data string, params ...OutVars) {
 	}
 	switch ref.JSONFlag {
 	case "json":
-		var jsonData []byte
-		msg := map[string]string{
-			"cmd":  ref.CmdName,
-			"log":  logType,
-			"data": data,
-		}
 		jsonData, _ = json.Marshal(msg)
-		if len(params) > 0 {
-			jsonParamsData, _ := json.Marshal(params[0])
-			var jsonslice []string
-			jsonslice = append(jsonslice, string(jsonData))
-			jsonslice = append(jsonslice, string(jsonParamsData))
-			jsonData = append(jsonData, jsonParamsData...)
-			sliceJSON := strings.Split(string(jsonData), "}{")
-			fmt.Println(strings.Join(sliceJSON, ","))
-		} else {
-			fmt.Println(string(jsonData))
-		}
+		fmt.Println(string(jsonData))
 	case "text":
 		fmt.Printf("cmd=%s log='%s' event=LOG.START %s ====================\n", ref.CmdName, logType, info)
 		fmt.Println(data)
@@ -207,6 +199,10 @@ func (ref *Output) State(state string, params ...OutVars) {
 	var exitInfo string
 	var info string
 	var sep string
+	msg := make(map[string]string)
+	var jsonData []byte
+	msg["cmd"] = ref.CmdName
+	msg["state"] = state
 
 	if len(params) > 0 {
 		var minCount int
@@ -224,7 +220,8 @@ func (ref *Output) State(state string, params ...OutVars) {
 				if k == "exit.code" {
 					continue
 				}
-
+				msg["exit.info"] = exitInfo
+				msg[k] = fmt.Sprintf("%v", v)
 				builder.WriteString(k)
 				builder.WriteString("=")
 				val := fmt.Sprintf("%v", v)
@@ -249,24 +246,8 @@ func (ref *Output) State(state string, params ...OutVars) {
 
 	switch ref.JSONFlag {
 	case "json":
-		var jsonData []byte
-		msg := map[string]string{
-			"cmd":       ref.CmdName,
-			"state":     state,
-			"exit.info": exitInfo,
-		}
 		jsonData, _ = json.Marshal(msg)
-		if len(params) > 0 {
-			jsonParamsData, _ := json.Marshal(params[0])
-			var jsonslice []string
-			jsonslice = append(jsonslice, string(jsonData))
-			jsonslice = append(jsonslice, string(jsonParamsData))
-			jsonData = append(jsonData, jsonParamsData...)
-			sliceJSON := strings.Split(string(jsonData), "}{")
-			fmt.Println(strings.Join(sliceJSON, ","))
-		} else {
-			fmt.Println(string(jsonData))
-		}
+		fmt.Println(string(jsonData))
 	case "text":
 		fmt.Printf("cmd=%s state=%s%s%s%s\n", ref.CmdName, state, exitInfo, sep, info)
 
@@ -284,7 +265,10 @@ var (
 func (ref *Output) Info(infoType string, params ...OutVars) {
 	var data string
 	var sep string
-	var jsonslice []string
+	msg := make(map[string]string)
+	var jsonData []byte
+	msg["cmd"] = ref.CmdName
+	msg["info"] = infoType
 
 	if len(params) > 0 {
 		kvSet := params[0]
@@ -293,6 +277,7 @@ func (ref *Output) Info(infoType string, params ...OutVars) {
 			sep = " "
 
 			for k, v := range kvSet {
+				msg[k] = fmt.Sprintf("%v", v)
 				builder.WriteString(kcolor(k))
 				builder.WriteString("=")
 				builder.WriteString(fmt.Sprintf("'%s'", vcolor("%v", v)))
@@ -305,24 +290,8 @@ func (ref *Output) Info(infoType string, params ...OutVars) {
 
 	switch ref.JSONFlag {
 	case "json":
-		var jsonData []byte
-
-		if len(data) > 0 {
-
-			msg := map[string]string{
-				"cmd":  ref.CmdName,
-				"info": infoType,
-			}
-			jsonData, _ = json.Marshal(msg)
-			jsonParamsData, _ := json.Marshal(params[0])
-
-			jsonslice := append(jsonslice, string(jsonData))
-			jsonslice = append(jsonslice, string(jsonParamsData))
-			jsonData = append(jsonData, jsonParamsData...)
-			sliceJSON := strings.Split(string(jsonData), "}{")
-			fmt.Println(strings.Join(sliceJSON, ","))
-
-		}
+		jsonData, _ = json.Marshal(msg)
+		fmt.Println(string(jsonData))
 	case "text":
 		fmt.Printf("cmd=%s info=%s%s%s\n", ref.CmdName, itcolor(infoType), sep, data)
 
