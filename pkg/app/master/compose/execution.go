@@ -1130,7 +1130,7 @@ func pullImage(ctx context.Context, apiClient *dockerapi.Client, imageRef string
 	return nil
 }
 
-//TODO: move builder into pkg
+// TODO: move builder into pkg
 func buildImage(ctx context.Context, apiClient *dockerapi.Client, basePath, imageName string, config *types.BuildConfig) error {
 	log.Debugf("buildImage(%s,%s)", basePath, imageName)
 

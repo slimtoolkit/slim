@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 package app
@@ -654,7 +655,7 @@ func getRecordsWithPerms(m map[string]*fsutil.AccessInfo) map[string]*fsutil.Acc
 	return perms
 }
 
-//copied from dockerimage.go
+// copied from dockerimage.go
 func linkTargetToFullPath(fullPath, target string) string {
 	if filepath.IsAbs(target) {
 		return target

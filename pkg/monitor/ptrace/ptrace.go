@@ -980,7 +980,7 @@ func (ref *execSyscallProcessor) EventOnCall() bool {
 	return true
 }
 
-//TODO: introduce syscall num and name consts to use instead of liternal values
+// TODO: introduce syscall num and name consts to use instead of liternal values
 var syscallProcessors = map[int]SyscallProcessor{}
 
 func init() {

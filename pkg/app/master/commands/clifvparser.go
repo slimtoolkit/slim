@@ -51,7 +51,7 @@ func ArchiveState(flag string, inContainer bool) string {
 	}
 }
 
-//based on expose opt parsing in Docker
+// based on expose opt parsing in Docker
 func ParseDockerExposeOpt(values []string) (map[docker.Port]struct{}, error) {
 	exposedPorts := map[docker.Port]struct{}{}
 

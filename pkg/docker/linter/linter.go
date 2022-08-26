@@ -60,7 +60,7 @@ const (
 	StatusFailed   = "failed"
 )
 
-//TODO: add report name, report time, etc
+// TODO: add report name, report time, etc
 type Report struct {
 	Status          string
 	BuildContextDir string

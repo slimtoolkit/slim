@@ -15,7 +15,7 @@ import (
 	v "github.com/docker-slim/docker-slim/pkg/version"
 )
 
-//note: dup (todo: refactor)
+// note: dup (todo: refactor)
 const (
 	//MAINTAINER:
 	instPrefixMaintainer = "MAINTAINER "

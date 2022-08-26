@@ -52,12 +52,12 @@ func getHTTP2Client(h2c bool) *http.Client {
 
 func getHTTPClient(proto string) (*http.Client, error) {
 	switch proto {
-	case config.ProtoHTTP:
-		return getHTTP1Client(), nil
 	case config.ProtoHTTP2:
 		return getHTTP2Client(false), nil
 	case config.ProtoHTTP2C:
 		return getHTTP2Client(true), nil
+	default:
+		return getHTTP1Client(), nil
 	}
 
 	return nil, fmt.Errorf("unsupported HTTP-family protocol %s", proto)

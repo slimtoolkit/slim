@@ -57,6 +57,7 @@ func init() {
 }
 
 // Schema is the compose-spec JSON schema
+//
 //go:embed compose-spec.json
 var Schema string
 

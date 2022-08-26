@@ -173,7 +173,7 @@ func ConfirmNetwork(logger *log.Entry, client *docker.Client, network string) bo
 	return false
 }
 
-///
+// /
 func UpdateImageRef(logger *log.Entry, ref, override string) string {
 	logger.Debugf("UpdateImageRef() - ref='%s' override='%s'", ref, override)
 	if override == "" {

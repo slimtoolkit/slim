@@ -1,3 +1,4 @@
+//go:build linux
 // +build linux
 
 package launcher
@@ -14,7 +15,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/system"
 )
 
-//copied from libcontainer
+// copied from libcontainer
 func fixStdioPermissions(uid int) error {
 	var null unix.Stat_t
 	if err := unix.Stat("/dev/null", &null); err != nil {

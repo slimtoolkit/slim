@@ -54,7 +54,6 @@ func pe(context, data, message string) ParseError {
 // This data structure is frankly pretty lousy for handling complex languages,
 // but lucky for us the Dockerfile isn't very complicated. This structure
 // works a little more effectively than a "proper" parse tree for our needs.
-//
 type Node struct {
 	IsValid    bool
 	Errors     []string

@@ -135,7 +135,7 @@ func installRelease(logger *log.Entry, appRootPath, statePath, targetRootPath st
 	return nil
 }
 
-//copied from updater
+// copied from updater
 func updateFile(logger *log.Entry, sourcePath, targetPath string) error {
 	file, err := os.Open(sourcePath)
 	if err != nil {

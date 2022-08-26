@@ -1313,13 +1313,13 @@ func UpdateFileTimes(target string, atime, mtime syscall.Timespec) error {
 	return syscall.UtimesNano(target, ts)
 }
 
-//UpdateSymlinkTimes updates the atime and mtime timestamps on the target symlink
+// UpdateSymlinkTimes updates the atime and mtime timestamps on the target symlink
 func UpdateSymlinkTimes(target string, atime, mtime syscall.Timespec) error {
 	ts := []unix.Timespec{unix.Timespec(atime), unix.Timespec(mtime)}
 	return unix.UtimesNanoAt(unix.AT_FDCWD, target, ts, unix.AT_SYMLINK_NOFOLLOW)
 }
 
-//LoadStructFromFile creates a struct from a file
+// LoadStructFromFile creates a struct from a file
 func LoadStructFromFile(filePath string, out interface{}) error {
 	if _, err := os.Stat(filePath); err != nil {
 		return err
