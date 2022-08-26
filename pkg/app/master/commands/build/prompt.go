@@ -181,6 +181,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(FlagIncludeCertPKDirs):                       commands.CompleteBool,
 		commands.FullFlagName(FlagIncludeNew):                              commands.CompleteBool,
 		commands.FullFlagName(commands.FlagContinueAfter):                  commands.CompleteContinueAfter,
+		commands.FullFlagName(commands.FlagConsoleOutput):                  commands.CompleteConsoleOutput,
 		commands.FullFlagName(commands.FlagUseLocalMounts):                 commands.CompleteBool,
 		commands.FullFlagName(commands.FlagUseSensorVolume):                commands.CompleteVolume,
 		commands.FullFlagName(FlagKeepTmpArtifacts):                        commands.CompleteBool,

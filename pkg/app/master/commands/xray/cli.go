@@ -56,7 +56,7 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
 	},
 	Action: func(ctx *cli.Context) error {
-		xc := app.NewExecutionContext(Name)
+		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleOutput))
 
 		targetRef := ctx.String(commands.FlagTarget)
 
