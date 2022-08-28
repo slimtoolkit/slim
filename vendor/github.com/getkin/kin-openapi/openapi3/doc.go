@@ -1,5 +1,4 @@
-// Package openapi3 parses and writes OpenAPI 3 specifications.
+// Package openapi3 parses and writes OpenAPI 3 specification documents.
 //
-// The OpenAPI 3.0 specification can be found at:
-//   https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.md
+// See https://github.com/OAI/OpenAPI-Specification/blob/master/versions/3.0.0.md
 package openapi3

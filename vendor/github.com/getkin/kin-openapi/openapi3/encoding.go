@@ -11,11 +11,11 @@ import (
 type Encoding struct {
 	ExtensionProps
 
-	ContentType   string                `json:"contentType,omitempty" yaml:"contentType,omitempty"`
-	Headers       map[string]*HeaderRef `json:"headers,omitempty" yaml:"headers,omitempty"`
-	Style         string                `json:"style,omitempty" yaml:"style,omitempty"`
-	Explode       *bool                 `json:"explode,omitempty" yaml:"explode,omitempty"`
-	AllowReserved bool                  `json:"allowReserved,omitempty" yaml:"allowReserved,omitempty"`
+	ContentType   string  `json:"contentType,omitempty" yaml:"contentType,omitempty"`
+	Headers       Headers `json:"headers,omitempty" yaml:"headers,omitempty"`
+	Style         string  `json:"style,omitempty" yaml:"style,omitempty"`
+	Explode       *bool   `json:"explode,omitempty" yaml:"explode,omitempty"`
+	AllowReserved bool    `json:"allowReserved,omitempty" yaml:"allowReserved,omitempty"`
 }
 
 func NewEncoding() *Encoding {
@@ -61,21 +61,21 @@ func (encoding *Encoding) SerializationMethod() *SerializationMethod {
 	return sm
 }
 
-func (encoding *Encoding) Validate(c context.Context) error {
-	if encoding == nil {
+func (value *Encoding) Validate(ctx context.Context) error {
+	if value == nil {
 		return nil
 	}
-	for k, v := range encoding.Headers {
+	for k, v := range value.Headers {
 		if err := ValidateIdentifier(k); err != nil {
 			return nil
 		}
-		if err := v.Validate(c); err != nil {
+		if err := v.Validate(ctx); err != nil {
 			return nil
 		}
 	}
 
 	// Validate a media types's serialization method.
-	sm := encoding.SerializationMethod()
+	sm := value.SerializationMethod()
 	switch {
 	case sm.Style == SerializationForm && sm.Explode,
 		sm.Style == SerializationForm && !sm.Explode,
@@ -86,7 +86,7 @@ func (encoding *Encoding) Validate(c context.Context) error {
 		sm.Style == SerializationDeepObject && sm.Explode:
 		// it is a valid
 	default:
-		return fmt.Errorf("Serialization method with style=%q and explode=%v is not supported by media type", sm.Style, sm.Explode)
+		return fmt.Errorf("serialization method with style=%q and explode=%v is not supported by media type", sm.Style, sm.Explode)
 	}
 
 	return nil

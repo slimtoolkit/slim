@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+      - iximiuz/kubernetes-support-poc
   pull_request:
     branches:
       - master
@@ -17,7 +18,7 @@ jobs:
       - name: Set up Go development environment
         uses: actions/setup-go@v3
         with:
-          go-version: '1.15.0'
+          go-version: '1.16.0'
 
       - name: Build DockerSlim (multi-arch)
         run: make build

@@ -21,6 +21,6 @@ func (value *Discriminator) UnmarshalJSON(data []byte) error {
 	return jsoninfo.UnmarshalStrictStruct(data, value)
 }
 
-func (value *Discriminator) Validate(c context.Context) error {
+func (value *Discriminator) Validate(ctx context.Context) error {
 	return nil
 }

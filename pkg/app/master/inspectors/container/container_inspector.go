@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/signal"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
 	"time"
@@ -17,8 +16,9 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerhost"
-	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/container/ipc"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/image"
+	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/ipc"
+	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/sensor"
 	"github.com/docker-slim/docker-slim/pkg/app/master/security/apparmor"
 	"github.com/docker-slim/docker-slim/pkg/app/master/security/seccomp"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
@@ -37,24 +37,20 @@ import (
 
 // Container inspector constants
 const (
-	SensorIPCModeDirect     = "direct"
-	SensorIPCModeProxy      = "proxy"
-	SensorBinPath           = "/opt/dockerslim/bin/docker-slim-sensor"
-	ContainerNamePat        = "dockerslimk_%v_%v"
-	ArtifactsDir            = "artifacts"
-	ReportArtifactTar       = "creport.tar"
-	ReportFileName          = "creport.json"
-	FileArtifactsTar        = "files.tar"
-	FileArtifactsOutTar     = "files_out.tar"
-	FileArtifactsArchiveTar = "files_archive.tar"
-	FileArtifactsDirName    = "files"
-	FileArtifactsPrefix     = "files/"
-	SensorBinLocal          = "docker-slim-sensor"
-	ArtifactsMountPat       = "%s:/opt/dockerslim/artifacts"
-	ArtifactsVolumePath     = "/opt/dockerslim/artifacts"
-	SensorMountPat          = "%s:/opt/dockerslim/bin/docker-slim-sensor:ro"
-	VolumeSensorMountPat    = "%s:/opt/dockerslim/bin:ro"
-	LabelName               = "dockerslim"
+	SensorIPCModeDirect = "direct"
+	SensorIPCModeProxy  = "proxy"
+	SensorBinPath       = "/opt/dockerslim/bin/docker-slim-sensor"
+	ContainerNamePat    = "dockerslimk_%v_%v"
+	ArtifactsDir        = "artifacts"
+	ReportArtifactTar   = "creport.tar"
+	fileArtifactsTar    = "files.tar"
+	FileArtifactsOutTar = "files_out.tar"
+	// FileArtifactsArchiveTar = "files_archive.tar"
+	ArtifactsMountPat    = "%s:/opt/dockerslim/artifacts"
+	ArtifactsVolumePath  = "/opt/dockerslim/artifacts"
+	SensorMountPat       = "%s:/opt/dockerslim/bin/docker-slim-sensor:ro"
+	VolumeSensorMountPat = "%s:/opt/dockerslim/bin:ro"
+	LabelName            = "dockerslim"
 )
 
 type ovars = app.OutVars
@@ -69,7 +65,6 @@ var (
 var ErrStartMonitorTimeout = goerr.New("start monitor timeout")
 
 const (
-	defaultConnectWait   = 60
 	sensorVolumeBaseName = "docker-slim-sensor"
 )
 
@@ -84,79 +79,68 @@ type NetNameInfo struct {
 
 // Inspector is a container execution inspector
 type Inspector struct {
-	ContainerInfo                  *dockerapi.Container
-	ContainerPortsInfo             string
-	ContainerPortList              string
-	AvailablePorts                 map[dockerapi.Port]dockerapi.PortBinding // Ports found to be available for probing.
-	ContainerID                    string
-	ContainerName                  string
-	FatContainerCmd                []string
-	LocalVolumePath                string
-	DoUseLocalMounts               bool
-	DoIncludeAppNuxtDir            bool
-	DoIncludeAppNuxtBuildDir       bool
-	DoIncludeAppNuxtDistDir        bool
-	DoIncludeAppNuxtStaticDir      bool
-	DoIncludeAppNuxtNodeModulesDir bool
-	DoIncludeAppNextDir            bool
-	DoIncludeAppNextBuildDir       bool
-	DoIncludeAppNextDistDir        bool
-	DoIncludeAppNextStaticDir      bool
-	DoIncludeAppNextNodeModulesDir bool
-	SensorVolumeName               string
-	DoKeepTmpArtifacts             bool
-	StatePath                      string
-	CmdPort                        dockerapi.Port
-	EvtPort                        dockerapi.Port
-	DockerHostIP                   string
-	ImageInspector                 *image.Inspector
-	APIClient                      *dockerapi.Client
-	Overrides                      *config.ContainerOverrides
-	ExplicitVolumeMounts           map[string]config.VolumeMount
-	BaseMounts                     []dockerapi.HostMount
-	BaseVolumesFrom                []string
-	DoPublishExposedPorts          bool
-	HasClassicLinks                bool
-	Links                          []string
-	EtcHostsMaps                   []string
-	DNSServers                     []string
-	DNSSearchDomains               []string
-	DoShowContainerLogs            bool
-	RunTargetAsUser                bool
-	KeepPerms                      bool
-	PathPerms                      map[string]*fsutil.AccessInfo
-	ExcludePatterns                map[string]*fsutil.AccessInfo
-	PreservePaths                  map[string]*fsutil.AccessInfo
-	IncludePaths                   map[string]*fsutil.AccessInfo
-	IncludeBins                    map[string]*fsutil.AccessInfo
-	IncludeExes                    map[string]*fsutil.AccessInfo
-	IncludeNodePackages            []string
-	DoIncludeShell                 bool
-	DoIncludeCertAll               bool
-	DoIncludeCertBundles           bool
-	DoIncludeCertDirs              bool
-	DoIncludeCertPKAll             bool
-	DoIncludeCertPKDirs            bool
-	DoIncludeNew                   bool
-	SelectedNetworks               map[string]NetNameInfo
-	DoDebug                        bool
-	LogLevel                       string
-	LogFormat                      string
-	PrintState                     bool
-	PrintPrefix                    string
-	InContainer                    bool
-	RTASourcePT                    bool
-	SensorIPCEndpoint              string
-	SensorIPCMode                  string
-	TargetHost                     string
-	dockerEventCh                  chan *dockerapi.APIEvents
-	dockerEventStopCh              chan struct{}
-	isDone                         aflag.Type
-	ipcClient                      *ipc.Client
-	logger                         *log.Entry
-	xc                             *app.ExecutionContext
-	crOpts                         *config.ContainerRunOptions
-	portBindings                   map[dockerapi.Port][]dockerapi.PortBinding
+	ContainerInfo         *dockerapi.Container
+	ContainerPortsInfo    string
+	ContainerPortList     string
+	AvailablePorts        map[dockerapi.Port]dockerapi.PortBinding // Ports found to be available for probing.
+	ContainerID           string
+	ContainerName         string
+	FatContainerCmd       []string
+	LocalVolumePath       string
+	DoUseLocalMounts      bool
+	SensorVolumeName      string
+	DoKeepTmpArtifacts    bool
+	StatePath             string
+	CmdPort               dockerapi.Port
+	EvtPort               dockerapi.Port
+	DockerHostIP          string
+	ImageInspector        *image.Inspector
+	APIClient             *dockerapi.Client
+	Overrides             *config.ContainerOverrides
+	ExplicitVolumeMounts  map[string]config.VolumeMount
+	BaseMounts            []dockerapi.HostMount
+	BaseVolumesFrom       []string
+	DoPublishExposedPorts bool
+	HasClassicLinks       bool
+	Links                 []string
+	EtcHostsMaps          []string
+	DNSServers            []string
+	DNSSearchDomains      []string
+	DoShowContainerLogs   bool
+	RunTargetAsUser       bool
+	KeepPerms             bool
+	PathPerms             map[string]*fsutil.AccessInfo
+	ExcludePatterns       map[string]*fsutil.AccessInfo
+	PreservePaths         map[string]*fsutil.AccessInfo
+	IncludePaths          map[string]*fsutil.AccessInfo
+	IncludeBins           map[string]*fsutil.AccessInfo
+	IncludeExes           map[string]*fsutil.AccessInfo
+	DoIncludeShell        bool
+	DoIncludeCertAll      bool
+	DoIncludeCertBundles  bool
+	DoIncludeCertDirs     bool
+	DoIncludeCertPKAll    bool
+	DoIncludeCertPKDirs   bool
+	DoIncludeNew          bool
+	SelectedNetworks      map[string]NetNameInfo
+	DoDebug               bool
+	LogLevel              string
+	LogFormat             string
+	PrintState            bool
+	InContainer           bool
+	RTASourcePT           bool
+	SensorIPCEndpoint     string
+	SensorIPCMode         string
+	TargetHost            string
+	dockerEventCh         chan *dockerapi.APIEvents
+	dockerEventStopCh     chan struct{}
+	isDone                aflag.Type
+	ipcClient             *ipc.Client
+	logger                *log.Entry
+	xc                    *app.ExecutionContext
+	crOpts                *config.ContainerRunOptions
+	portBindings          map[dockerapi.Port][]dockerapi.PortBinding
+	appNodejsInspectOpts  config.AppNodejsInspectOptions
 }
 
 func pathMapKeys(m map[string]*fsutil.AccessInfo) []string {
@@ -182,17 +166,6 @@ func NewInspector(
 	imageInspector *image.Inspector,
 	localVolumePath string,
 	doUseLocalMounts bool,
-	doIncludeAppNuxtDir bool,
-	doIncludeAppNuxtBuildDir bool,
-	doIncludeAppNuxtDistDir bool,
-	doIncludeAppNuxtStaticDir bool,
-	doIncludeAppNuxtNodeModulesDir bool,
-	doIncludeAppNextDir bool,
-	doIncludeAppNextBuildDir bool,
-	doIncludeAppNextDistDir bool,
-	doIncludeAppNextStaticDir bool,
-	doIncludeAppNextNodeModulesDir bool,
-	includeNodePackages []string,
 	sensorVolumeName string,
 	doKeepTmpArtifacts bool,
 	overrides *config.ContainerOverrides,
@@ -206,7 +179,6 @@ func NewInspector(
 	etcHostsMaps []string,
 	dnsServers []string,
 	dnsSearchDomains []string,
-	runTargetAsUser bool,
 	showContainerLogs bool,
 	keepPerms bool,
 	pathPerms map[string]*fsutil.AccessInfo,
@@ -232,70 +204,58 @@ func NewInspector(
 	sensorIPCEndpoint string,
 	sensorIPCMode string,
 	printState bool,
-	printPrefix string) (*Inspector, error) {
+	appNodejsInspectOpts config.AppNodejsInspectOptions) (*Inspector, error) {
 
 	logger = logger.WithFields(log.Fields{"component": "container.inspector"})
 	inspector := &Inspector{
-		logger:                         logger,
-		StatePath:                      statePath,
-		LocalVolumePath:                localVolumePath,
-		DoUseLocalMounts:               doUseLocalMounts,
-		DoIncludeAppNuxtDir:            doIncludeAppNuxtDir,
-		DoIncludeAppNuxtBuildDir:       doIncludeAppNuxtBuildDir,
-		DoIncludeAppNuxtDistDir:        doIncludeAppNuxtDistDir,
-		DoIncludeAppNuxtStaticDir:      doIncludeAppNuxtStaticDir,
-		DoIncludeAppNuxtNodeModulesDir: doIncludeAppNuxtNodeModulesDir,
-		DoIncludeAppNextDir:            doIncludeAppNextDir,
-		DoIncludeAppNextBuildDir:       doIncludeAppNextBuildDir,
-		DoIncludeAppNextDistDir:        doIncludeAppNextDistDir,
-		DoIncludeAppNextStaticDir:      doIncludeAppNextStaticDir,
-		DoIncludeAppNextNodeModulesDir: doIncludeAppNextNodeModulesDir,
-		IncludeNodePackages:            includeNodePackages,
-		SensorVolumeName:               sensorVolumeName,
-		DoKeepTmpArtifacts:             doKeepTmpArtifacts,
-		CmdPort:                        cmdPortSpecDefault,
-		EvtPort:                        evtPortSpecDefault,
-		ImageInspector:                 imageInspector,
-		APIClient:                      client,
-		Overrides:                      overrides,
-		ExplicitVolumeMounts:           explicitVolumeMounts,
-		BaseMounts:                     baseMounts,
-		BaseVolumesFrom:                baseVolumesFrom,
-		DoPublishExposedPorts:          doPublishExposedPorts,
-		HasClassicLinks:                hasClassicLinks,
-		Links:                          links,
-		EtcHostsMaps:                   etcHostsMaps,
-		DNSServers:                     dnsServers,
-		DNSSearchDomains:               dnsSearchDomains,
-		DoShowContainerLogs:            showContainerLogs,
-		RunTargetAsUser:                runTargetAsUser,
-		KeepPerms:                      keepPerms,
-		PathPerms:                      pathPerms,
-		ExcludePatterns:                excludePatterns,
-		PreservePaths:                  preservePaths,
-		IncludePaths:                   includePaths,
-		IncludeBins:                    includeBins,
-		IncludeExes:                    includeExes,
-		DoIncludeShell:                 doIncludeShell,
-		DoIncludeCertAll:               doIncludeCertAll,
-		DoIncludeCertBundles:           doIncludeCertBundles,
-		DoIncludeCertDirs:              doIncludeCertDirs,
-		DoIncludeCertPKAll:             doIncludeCertPKAll,
-		DoIncludeCertPKDirs:            doIncludeCertPKDirs,
-		DoIncludeNew:                   doIncludeNew,
-		SelectedNetworks:               selectedNetworks,
-		DoDebug:                        doDebug,
-		LogLevel:                       logLevel,
-		LogFormat:                      logFormat,
-		PrintState:                     printState,
-		PrintPrefix:                    printPrefix,
-		InContainer:                    inContainer,
-		RTASourcePT:                    rtaSourcePT,
-		SensorIPCEndpoint:              sensorIPCEndpoint,
-		SensorIPCMode:                  sensorIPCMode,
-		xc:                             xc,
-		crOpts:                         crOpts,
-		portBindings:                   portBindings,
+		logger:                logger,
+		StatePath:             statePath,
+		LocalVolumePath:       localVolumePath,
+		DoUseLocalMounts:      doUseLocalMounts,
+		SensorVolumeName:      sensorVolumeName,
+		DoKeepTmpArtifacts:    doKeepTmpArtifacts,
+		CmdPort:               cmdPortSpecDefault,
+		EvtPort:               evtPortSpecDefault,
+		ImageInspector:        imageInspector,
+		APIClient:             client,
+		Overrides:             overrides,
+		ExplicitVolumeMounts:  explicitVolumeMounts,
+		BaseMounts:            baseMounts,
+		BaseVolumesFrom:       baseVolumesFrom,
+		DoPublishExposedPorts: doPublishExposedPorts,
+		HasClassicLinks:       hasClassicLinks,
+		Links:                 links,
+		EtcHostsMaps:          etcHostsMaps,
+		DNSServers:            dnsServers,
+		DNSSearchDomains:      dnsSearchDomains,
+		DoShowContainerLogs:   showContainerLogs,
+		KeepPerms:             keepPerms,
+		PathPerms:             pathPerms,
+		ExcludePatterns:       excludePatterns,
+		PreservePaths:         preservePaths,
+		IncludePaths:          includePaths,
+		IncludeBins:           includeBins,
+		IncludeExes:           includeExes,
+		DoIncludeShell:        doIncludeShell,
+		DoIncludeCertAll:      doIncludeCertAll,
+		DoIncludeCertBundles:  doIncludeCertBundles,
+		DoIncludeCertDirs:     doIncludeCertDirs,
+		DoIncludeCertPKAll:    doIncludeCertPKAll,
+		DoIncludeCertPKDirs:   doIncludeCertPKDirs,
+		DoIncludeNew:          doIncludeNew,
+		SelectedNetworks:      selectedNetworks,
+		DoDebug:               doDebug,
+		LogLevel:              logLevel,
+		LogFormat:             logFormat,
+		PrintState:            printState,
+		InContainer:           inContainer,
+		RTASourcePT:           rtaSourcePT,
+		SensorIPCEndpoint:     sensorIPCEndpoint,
+		SensorIPCMode:         sensorIPCMode,
+		xc:                    xc,
+		crOpts:                crOpts,
+		portBindings:          portBindings,
+		appNodejsInspectOpts:  appNodejsInspectOpts,
 	}
 
 	if overrides == nil {
@@ -345,47 +305,7 @@ func NewInspector(
 // RunContainer starts the container inspector instance execution
 func (i *Inspector) RunContainer() error {
 	artifactsPath := filepath.Join(i.LocalVolumePath, ArtifactsDir)
-	sensorPath := filepath.Join(fsutil.ExeDir(), SensorBinLocal)
-
-	if runtime.GOOS == "darwin" {
-		stateSensorPath := filepath.Join(i.StatePath, SensorBinLocal)
-		if fsutil.Exists(stateSensorPath) {
-			sensorPath = stateSensorPath
-		}
-	}
-
-	if !fsutil.Exists(sensorPath) {
-		if i.PrintState {
-			i.xc.Out.Info("sensor.error",
-				ovars{
-					"message":  "sensor binary not found",
-					"location": sensorPath,
-				})
-
-			i.xc.Out.State("exited",
-				ovars{
-					"exit.code": -125,
-					"component": "container.inspector",
-					"version":   v.Current(),
-				})
-		}
-
-		i.xc.Exit(-125)
-	}
-
-	if finfo, err := os.Lstat(sensorPath); err == nil {
-		i.logger.Debugf("RunContainer: sensor (%s) perms => %#o", sensorPath, finfo.Mode().Perm())
-		if finfo.Mode().Perm()&fsutil.FilePermUserExe == 0 {
-			i.logger.Debugf("RunContainer: sensor (%s) missing execute permission", sensorPath)
-			updatedMode := finfo.Mode() | fsutil.FilePermUserExe | fsutil.FilePermGroupExe | fsutil.FilePermOtherExe
-			if err = os.Chmod(sensorPath, updatedMode); err != nil {
-				i.logger.Errorf("RunContainer: error updating sensor (%s) perms (%#o -> %#o) => %v",
-					sensorPath, finfo.Mode().Perm(), updatedMode.Perm(), err)
-			}
-		}
-	} else {
-		i.logger.Errorf("RunContainer: error getting sensor (%s) info => %#v", sensorPath, err)
-	}
+	sensorPath := sensor.EnsureLocalBinary(i.xc, i.logger, i.StatePath, i.PrintState)
 
 	allMountsMap := map[string]dockerapi.HostMount{}
 
@@ -507,7 +427,7 @@ func (i *Inspector) RunContainer() error {
 		vm := dockerapi.HostMount{
 			Type:   "bind",
 			Source: artifactsPath,
-			Target: "/opt/dockerslim/artifacts",
+			Target: ArtifactsVolumePath,
 		}
 
 		mkey := fmt.Sprintf("%s:%s:%s", vm.Type, vm.Source, vm.Target)
@@ -530,7 +450,7 @@ func (i *Inspector) RunContainer() error {
 		vm := dockerapi.HostMount{
 			Type:     "bind",
 			Source:   sensorPath,
-			Target:   "/opt/dockerslim/bin/docker-slim-sensor",
+			Target:   SensorBinPath,
 			ReadOnly: true,
 		}
 
@@ -871,19 +791,19 @@ func (i *Inspector) RunContainer() error {
 		}
 	}
 
-	cmd.IncludeAppNuxtDir = i.DoIncludeAppNuxtDir
-	cmd.IncludeAppNuxtBuildDir = i.DoIncludeAppNuxtBuildDir
-	cmd.IncludeAppNuxtDistDir = i.DoIncludeAppNuxtDistDir
-	cmd.IncludeAppNuxtStaticDir = i.DoIncludeAppNuxtStaticDir
-	cmd.IncludeAppNuxtNodeModulesDir = i.DoIncludeAppNuxtNodeModulesDir
+	cmd.IncludeAppNextDir = i.appNodejsInspectOpts.NextOpts.IncludeAppDir
+	cmd.IncludeAppNextBuildDir = i.appNodejsInspectOpts.NextOpts.IncludeBuildDir
+	cmd.IncludeAppNextDistDir = i.appNodejsInspectOpts.NextOpts.IncludeDistDir
+	cmd.IncludeAppNextStaticDir = i.appNodejsInspectOpts.NextOpts.IncludeStaticDir
+	cmd.IncludeAppNextNodeModulesDir = i.appNodejsInspectOpts.NextOpts.IncludeNodeModulesDir
 
-	cmd.IncludeAppNextDir = i.DoIncludeAppNextDir
-	cmd.IncludeAppNextBuildDir = i.DoIncludeAppNextBuildDir
-	cmd.IncludeAppNextDistDir = i.DoIncludeAppNextDistDir
-	cmd.IncludeAppNextStaticDir = i.DoIncludeAppNextStaticDir
-	cmd.IncludeAppNextNodeModulesDir = i.DoIncludeAppNextNodeModulesDir
+	cmd.IncludeAppNuxtDir = i.appNodejsInspectOpts.NuxtOpts.IncludeAppDir
+	cmd.IncludeAppNuxtBuildDir = i.appNodejsInspectOpts.NuxtOpts.IncludeBuildDir
+	cmd.IncludeAppNuxtDistDir = i.appNodejsInspectOpts.NuxtOpts.IncludeDistDir
+	cmd.IncludeAppNuxtStaticDir = i.appNodejsInspectOpts.NuxtOpts.IncludeStaticDir
+	cmd.IncludeAppNuxtNodeModulesDir = i.appNodejsInspectOpts.NuxtOpts.IncludeNodeModulesDir
 
-	cmd.IncludeNodePackages = i.IncludeNodePackages
+	cmd.IncludeNodePackages = i.appNodejsInspectOpts.IncludePackages
 
 	_, err = i.ipcClient.SendCommand(cmd)
 	if err != nil {
@@ -1200,7 +1120,7 @@ func (i *Inspector) ShutdownContainer() error {
 		}
 
 		reportLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, ReportArtifactTar)
-		reportRemotePath := filepath.Join(ArtifactsVolumePath, ReportFileName)
+		reportRemotePath := filepath.Join(ArtifactsVolumePath, report.DefaultContainerReportFileName)
 		err := dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, reportRemotePath, reportLocalPath, true, deleteOrig)
 		if err != nil {
 			errutil.FailOn(err)
@@ -1209,7 +1129,7 @@ func (i *Inspector) ShutdownContainer() error {
 		/*
 			//ALTERNATIVE WAY TO XFER THE FILE ARTIFACTS
 			filesOutLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, FileArtifactsArchiveTar)
-			filesTarRemotePath := filepath.Join(ArtifactsVolumePath, FileArtifactsTar)
+			filesTarRemotePath := filepath.Join(ArtifactsVolumePath, fileArtifactsTar)
 			err = dockerutil.CopyFromContainer(i.APIClient,
 				i.ContainerID,
 				filesTarRemotePath,
@@ -1222,7 +1142,7 @@ func (i *Inspector) ShutdownContainer() error {
 		*/
 
 		filesOutLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, FileArtifactsOutTar)
-		filesRemotePath := filepath.Join(ArtifactsVolumePath, FileArtifactsDirName)
+		filesRemotePath := filepath.Join(ArtifactsVolumePath, sensor.FileArtifactsDirName)
 		err = dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, filesRemotePath, filesOutLocalPath, false, false)
 		if err != nil {
 			errutil.FailOn(err)
@@ -1233,7 +1153,7 @@ func (i *Inspector) ShutdownContainer() error {
 		//Rewrite the filemode bits using the data from creport.json,
 		//but creport.json also needs to be enhanced to use
 		//octal filemodes for the file records
-		err = dockerutil.PrepareContainerDataArchive(filesOutLocalPath, FileArtifactsTar, FileArtifactsPrefix, deleteOrig)
+		err = dockerutil.PrepareContainerDataArchive(filesOutLocalPath, fileArtifactsTar, sensor.FileArtifactsPrefix, deleteOrig)
 		if err != nil {
 			errutil.FailOn(err)
 		}
@@ -1379,7 +1299,7 @@ func (i *Inspector) initContainerChannels() error {
 		"port.evt":          evtPort,
 	}).Debugf("target.container.ipc.connect")
 
-	ipcClient, err := ipc.NewClient(i.TargetHost, cmdPort, evtPort, defaultConnectWait)
+	ipcClient, err := ipc.NewClient(i.TargetHost, cmdPort, evtPort, sensor.DefaultConnectWait)
 	if err != nil {
 		return err
 	}

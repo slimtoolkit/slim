@@ -11,15 +11,15 @@ import (
 // Components is specified by OpenAPI/Swagger standard version 3.0.
 type Components struct {
 	ExtensionProps
-	Schemas         map[string]*SchemaRef         `json:"schemas,omitempty" yaml:"schemas,omitempty"`
-	Parameters      map[string]*ParameterRef      `json:"parameters,omitempty" yaml:"parameters,omitempty"`
-	Headers         map[string]*HeaderRef         `json:"headers,omitempty" yaml:"headers,omitempty"`
-	RequestBodies   map[string]*RequestBodyRef    `json:"requestBodies,omitempty" yaml:"requestBodies,omitempty"`
-	Responses       map[string]*ResponseRef       `json:"responses,omitempty" yaml:"responses,omitempty"`
-	SecuritySchemes map[string]*SecuritySchemeRef `json:"securitySchemes,omitempty" yaml:"securitySchemes,omitempty"`
-	Examples        map[string]*ExampleRef        `json:"examples,omitempty" yaml:"examples,omitempty"`
-	Links           map[string]*LinkRef           `json:"links,omitempty" yaml:"links,omitempty"`
-	Callbacks       map[string]*CallbackRef       `json:"callbacks,omitempty" yaml:"callbacks,omitempty"`
+	Schemas         Schemas         `json:"schemas,omitempty" yaml:"schemas,omitempty"`
+	Parameters      ParametersMap   `json:"parameters,omitempty" yaml:"parameters,omitempty"`
+	Headers         Headers         `json:"headers,omitempty" yaml:"headers,omitempty"`
+	RequestBodies   RequestBodies   `json:"requestBodies,omitempty" yaml:"requestBodies,omitempty"`
+	Responses       Responses       `json:"responses,omitempty" yaml:"responses,omitempty"`
+	SecuritySchemes SecuritySchemes `json:"securitySchemes,omitempty" yaml:"securitySchemes,omitempty"`
+	Examples        Examples        `json:"examples,omitempty" yaml:"examples,omitempty"`
+	Links           Links           `json:"links,omitempty" yaml:"links,omitempty"`
+	Callbacks       Callbacks       `json:"callbacks,omitempty" yaml:"callbacks,omitempty"`
 }
 
 func NewComponents() Components {
@@ -34,12 +34,12 @@ func (components *Components) UnmarshalJSON(data []byte) error {
 	return jsoninfo.UnmarshalStrictStruct(data, components)
 }
 
-func (components *Components) Validate(c context.Context) (err error) {
+func (components *Components) Validate(ctx context.Context) (err error) {
 	for k, v := range components.Schemas {
 		if err = ValidateIdentifier(k); err != nil {
 			return
 		}
-		if err = v.Validate(c); err != nil {
+		if err = v.Validate(ctx); err != nil {
 			return
 		}
 	}
@@ -48,7 +48,7 @@ func (components *Components) Validate(c context.Context) (err error) {
 		if err = ValidateIdentifier(k); err != nil {
 			return
 		}
-		if err = v.Validate(c); err != nil {
+		if err = v.Validate(ctx); err != nil {
 			return
 		}
 	}
@@ -57,7 +57,7 @@ func (components *Components) Validate(c context.Context) (err error) {
 		if err = ValidateIdentifier(k); err != nil {
 			return
 		}
-		if err = v.Validate(c); err != nil {
+		if err = v.Validate(ctx); err != nil {
 			return
 		}
 	}
@@ -66,7 +66,7 @@ func (components *Components) Validate(c context.Context) (err error) {
 		if err = ValidateIdentifier(k); err != nil {
 			return
 		}
-		if err = v.Validate(c); err != nil {
+		if err = v.Validate(ctx); err != nil {
 			return
 		}
 	}
@@ -75,7 +75,7 @@ func (components *Components) Validate(c context.Context) (err error) {
 		if err = ValidateIdentifier(k); err != nil {
 			return
 		}
-		if err = v.Validate(c); err != nil {
+		if err = v.Validate(ctx); err != nil {
 			return
 		}
 	}
@@ -84,7 +84,7 @@ func (components *Components) Validate(c context.Context) (err error) {
 		if err = ValidateIdentifier(k); err != nil {
 			return
 		}
-		if err = v.Validate(c); err != nil {
+		if err = v.Validate(ctx); err != nil {
 			return
 		}
 	}
@@ -94,10 +94,13 @@ func (components *Components) Validate(c context.Context) (err error) {
 
 const identifierPattern = `^[a-zA-Z0-9._-]+$`
 
-var identifierRegExp = regexp.MustCompile(identifierPattern)
+// IdentifierRegExp verifies whether Component object key matches 'identifierPattern' pattern, according to OapiAPI v3.x.0.
+// Hovever, to be able supporting legacy OpenAPI v2.x, there is a need to customize above pattern in orde not to fail
+// converted v2-v3 validation
+var IdentifierRegExp = regexp.MustCompile(identifierPattern)
 
 func ValidateIdentifier(value string) error {
-	if identifierRegExp.MatchString(value) {
+	if IdentifierRegExp.MatchString(value) {
 		return nil
 	}
 	return fmt.Errorf("identifier %q is not supported by OpenAPIv3 standard (regexp: %q)", value, identifierPattern)

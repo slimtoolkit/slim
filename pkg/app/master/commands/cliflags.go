@@ -3,6 +3,7 @@ package commands
 import (
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+	"k8s.io/client-go/tools/clientcmd"
 )
 
 /////////////////////////////////////////////////////////
@@ -78,6 +79,18 @@ const (
 	FlagPoststartComposeSvc            = "poststart-compose-svc"
 	FlagPrestartComposeWaitExit        = "prestart-compose-wait-exit"
 	FlagContainerProbeComposeSvc       = "container-probe-compose-svc"
+
+	//Kubernetes-related flags
+	FlagTargetKubeWorkload          = "target-kube-workload" // <kind>/<name> e.g: deployment/foo, job/bar
+	FlagTargetKubeWorkloadNamespace = "target-kube-workload-namespace"
+	FlagTargetKubeWorkloadContainer = "target-kube-workload-container"
+	FlagTargetKubeWorkloadImage     = "target-kube-workload-image"
+	FlagKubeManifestFile            = "kube-manifest-file"
+	FlagKubeKubeconfigFile          = "kube-kubeconfig-file"
+	// TODO: FlagKubeContext        = "kube-context"
+	//       FlagKubeCluster        =" kube-cluster"
+	//       etc.
+	// Naming convention: keep the well known kubectl flag names as-is and prefix them with `--kube-`
 
 	FlagRemoveFileArtifacts = "remove-file-artifacts"
 	FlagCopyMetaArtifacts   = "copy-meta-artifacts"
@@ -183,6 +196,14 @@ const (
 	FlagPoststartComposeSvcUsage            = "Run selected compose service(s) after the target container is running (need a new continue after mode too)"
 	FlagPrestartComposeWaitExitUsage        = "Wait for selected prestart compose services to exit before starting other compose services or target container"
 
+	//Kubernetes-related flags
+	FlagTargetKubeWorkloadUsage          = "[Experimental] Target Kubernetes workload from the manifests (if --kube-manifest-file is provided) or in the default kubeconfig cluster (format: <resource>/<name>, e.g., deployments/foobar)"
+	FlagTargetKubeWorkloadNamespaceUsage = "[Experimental] Target Kubernetes workload namespace (if not set, the value from the manifest is used if provided, otherwise - \"default\")"
+	FlagTargetKubeWorkloadContainerUsage = "[Experimental] Target container in the Kubernetes workload's pod template spec"
+	FlagTargetKubeWorkloadImageUsage     = "[Experimental] Override the container image name and/or tag when targetting a Kubernetes workload (format: tag_name or image_name:tag_name)"
+	FlagKubeManifestFileUsage            = "[Experimental] Kubernetes manifest(s) to apply before run"
+	FlagKubeKubeconfigFileUsage          = "[Experimental] Path to the kubeconfig file"
+
 	FlagRemoveFileArtifactsUsage = "remove file artifacts when command is done"
 	FlagCopyMetaArtifactsUsage   = "copy metadata artifacts to the selected location when command is done"
 
@@ -207,7 +228,7 @@ const (
 	FlagHTTPProbeProxyPortUsage        = "Port to proxy HTTP probes (used with HTTP probe proxy endpoint)"
 
 	FlagHostExecUsage     = "Host commands to execute (aka host commands probes)"
-	FlagHostExecFileUsage = "Host commands to execute loaded from file (ka host commands probes)"
+	FlagHostExecFileUsage = "Host commands to execute loaded from file (aka host commands probes)"
 
 	FlagPublishPortUsage         = "Map container port to host port (format => port | hostPort:containerPort | hostIP:hostPort:containerPort | hostIP::containerPort )"
 	FlagPublishExposedPortsUsage = "Map all exposed ports to the same host ports"
@@ -369,6 +390,7 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:   FlagShowPullLogsUsage,
 		EnvVars: []string{"DSLIM_PLOG"},
 	},
+	//
 	FlagComposeFile: &cli.StringSliceFlag{
 		Name:    FlagComposeFile,
 		Value:   cli.NewStringSlice(),
@@ -478,6 +500,47 @@ var CommonFlags = map[string]cli.Flag{
 		Usage:   FlagPoststartComposeSvcUsage,
 		EnvVars: []string{"DSLIM_POSTSTART_COMPOSE_SVC"},
 	},
+	//
+	FlagTargetKubeWorkload: &cli.StringFlag{
+		Name:    FlagTargetKubeWorkload,
+		Value:   "",
+		Usage:   FlagTargetKubeWorkloadUsage,
+		EnvVars: []string{"DSLIM_TARGET_KUBE_WORKLOAD"},
+	},
+	FlagTargetKubeWorkloadNamespace: &cli.StringFlag{
+		Name:    FlagTargetKubeWorkloadNamespace,
+		Value:   "",
+		Usage:   FlagTargetKubeWorkloadNamespaceUsage,
+		EnvVars: []string{"DSLIM_TARGET_KUBE_WORKLOAD_NAMESPACE"},
+	},
+	FlagTargetKubeWorkloadContainer: &cli.StringFlag{
+		Name:    FlagTargetKubeWorkloadContainer,
+		Value:   "",
+		Usage:   FlagTargetKubeWorkloadContainerUsage,
+		EnvVars: []string{"DSLIM_TARGET_KUBE_WORKLOAD_CONTAINER"},
+	},
+	FlagTargetKubeWorkloadImage: &cli.StringFlag{
+		Name:    FlagTargetKubeWorkloadImage,
+		Value:   "",
+		Usage:   FlagTargetKubeWorkloadImageUsage,
+		EnvVars: []string{"DSLIM_TARGET_KUBE_WORKLOAD_IMAGE"},
+	},
+	FlagKubeManifestFile: &cli.StringSliceFlag{
+		Name:    FlagKubeManifestFile,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagKubeManifestFileUsage,
+		EnvVars: []string{"DSLIM_KUBE_MANIFEST_FILE"},
+	},
+	FlagKubeKubeconfigFile: &cli.StringFlag{
+		Name:  FlagKubeKubeconfigFile,
+		Value: clientcmd.RecommendedHomeFile,
+		Usage: FlagKubeKubeconfigFileUsage,
+		EnvVars: []string{
+			"DSLIM_KUBE_KUBECONFIG_FILE",
+			"KUBECONFIG", // subject to an industry-wide convention
+		},
+	},
+	//
 	FlagRemoveFileArtifacts: &cli.BoolFlag{
 		Name:    FlagRemoveFileArtifacts,
 		Usage:   FlagRemoveFileArtifactsUsage,
@@ -830,6 +893,28 @@ func Cflag(name string) cli.Flag {
 	}
 
 	return cf
+}
+
+func HTTPProbeFlags() []cli.Flag {
+	return []cli.Flag{
+		Cflag(FlagHTTPProbeOff),
+		Cflag(FlagHTTPProbe),
+		Cflag(FlagHTTPProbeCmd),
+		Cflag(FlagHTTPProbeCmdFile),
+		Cflag(FlagHTTPProbeStartWait),
+		Cflag(FlagHTTPProbeRetryCount),
+		Cflag(FlagHTTPProbeRetryWait),
+		Cflag(FlagHTTPProbePorts),
+		Cflag(FlagHTTPProbeFull),
+		Cflag(FlagHTTPProbeExitOnFailure),
+		Cflag(FlagHTTPProbeCrawl),
+		Cflag(FlagHTTPCrawlMaxDepth),
+		Cflag(FlagHTTPCrawlMaxPageCount),
+		Cflag(FlagHTTPCrawlConcurrency),
+		Cflag(FlagHTTPMaxConcurrentCrawlers),
+		Cflag(FlagHTTPProbeAPISpec),
+		Cflag(FlagHTTPProbeAPISpecFile),
+	}
 }
 
 ///////////////////////////////////

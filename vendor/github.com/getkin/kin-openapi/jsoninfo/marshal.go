@@ -59,11 +59,11 @@ func (encoder *ObjectEncoder) EncodeStructFieldsAndExtensions(value interface{})
 	// Follow "encoding/json" semantics
 	if reflection.Kind() != reflect.Ptr {
 		// Panic because this is a clear programming error
-		panic(fmt.Errorf("Value %s is not a pointer", reflection.Type().String()))
+		panic(fmt.Errorf("value %s is not a pointer", reflection.Type().String()))
 	}
 	if reflection.IsNil() {
 		// Panic because this is a clear programming error
-		panic(fmt.Errorf("Value %s is nil", reflection.Type().String()))
+		panic(fmt.Errorf("value %s is nil", reflection.Type().String()))
 	}
 
 	// Take the element
@@ -146,7 +146,7 @@ iteration:
 				continue iteration
 			}
 		default:
-			panic(fmt.Errorf("Field '%s' has unsupported type %s", field.JSONName, field.Type.String()))
+			panic(fmt.Errorf("field %q has unsupported type %s", field.JSONName, field.Type.String()))
 		}
 
 		// No special treament is needed
