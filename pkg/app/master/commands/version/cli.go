@@ -22,7 +22,7 @@ var CLI = &cli.Command{
 		inContainer, isDSImage := commands.IsInContainer(ctx.Bool(commands.FlagInContainer))
 		clientConfig := commands.GetDockerClientConfig(ctx)
 
-		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleOutput))
+		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleFormat))
 
 		OnCommand(xc,
 			doDebug,

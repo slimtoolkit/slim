@@ -173,7 +173,7 @@ func findSymlinks(files []string, mp string) map[string]*report.ArtifactProps {
 	inodes, devices := filesToInodesNative(files)
 	log.Debugf("findSymlinks - len(inodes)=%v len(devices)=%v", len(inodes), len(devices))
 
-	inodeToFiles := make(map[uint64][]string)
+	inodeToFiles := map[uint64][]string{}
 
 	//native filepath.Walk is a bit slow (compared to the "find" command)
 	//but it's fast enough for now

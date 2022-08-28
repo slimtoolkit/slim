@@ -167,7 +167,7 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagSensorIPCMode),
 	},
 	Action: func(ctx *cli.Context) error {
-		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleOutput))
+		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleFormat))
 
 		cbOpts, err := GetContainerBuildOptions(ctx)
 		if err != nil {

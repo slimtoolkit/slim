@@ -67,7 +67,7 @@ func Run(errorCh chan error,
 		fanReport := &report.FanMonitorReport{
 			MonitorPid:       os.Getpid(),
 			MonitorParentPid: os.Getppid(),
-			ProcessFiles:     make(map[string]map[string]*report.FileInfo),
+			ProcessFiles:     map[string]map[string]*report.FileInfo{},
 		}
 
 		eventChan := make(chan Event, eventBufSize)
@@ -150,7 +150,7 @@ func Run(errorCh chan error,
 					//first event represents the main process
 					if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
 						fanReport.MainProcess = pinfo
-						fanReport.Processes = make(map[string]*report.ProcessInfo)
+						fanReport.Processes = map[string]*report.ProcessInfo{}
 						fanReport.Processes[strconv.Itoa(int(e.Pid))] = pinfo
 					}
 				} else {
@@ -162,7 +162,7 @@ func Run(errorCh chan error,
 				}
 
 				if _, ok := fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))]; !ok {
-					fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))] = make(map[string]*report.FileInfo)
+					fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))] = map[string]*report.FileInfo{}
 				}
 
 				if existingFi, ok := fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))][e.File]; !ok {

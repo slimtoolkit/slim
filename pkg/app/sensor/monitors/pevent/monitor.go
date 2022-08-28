@@ -26,8 +26,8 @@ func Run(stopChan chan struct{}) <-chan *report.PeMonitorReport {
 
 	go func() {
 		peReport := &report.PeMonitorReport{
-			Children: make(map[int][]int),
-			Parents:  make(map[int]int),
+			Children: map[int][]int{},
+			Parents:  map[int]int{},
 		}
 
 	done:

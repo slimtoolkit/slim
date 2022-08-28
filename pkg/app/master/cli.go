@@ -157,7 +157,7 @@ func newCLI() *cli.App {
 	cliApp.After = func(ctx *cli.Context) error {
 		//tmp hack
 		if !strings.Contains(strings.Join(os.Args, " "), " docker-cli-plugin-metadata") {
-			app.ShowCommunityInfo(ctx.String(commands.FlagConsoleOutput))
+			app.ShowCommunityInfo(ctx.String(commands.FlagConsoleFormat))
 		}
 		return nil
 	}

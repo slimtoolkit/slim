@@ -474,7 +474,7 @@ func (c *FCGIClient) Options(p map[string]string) (resp *http.Response, err erro
 // in the format that bodyType specified
 func (c *FCGIClient) Post(p map[string]string, method string, bodyType string, body io.Reader, l int64) (resp *http.Response, err error) {
 	if p == nil {
-		p = make(map[string]string)
+		p = map[string]string{}
 	}
 
 	p["REQUEST_METHOD"] = strings.ToUpper(method)

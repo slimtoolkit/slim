@@ -79,7 +79,7 @@ func (ia *InteractiveApp) execute(command string) {
 	}
 
 	if parts[0] == "exit" {
-		app.ShowCommunityInfo(FlagConsoleOutput)
+		app.ShowCommunityInfo(FlagConsoleFormat)
 		os.Exit(0)
 	}
 
@@ -210,7 +210,7 @@ var GlobalFlagSuggestions = []prompt.Suggest{
 	{Text: FullFlagName(FlagLogLevel), Description: FlagLogLevelUsage},
 	{Text: FullFlagName(FlagLog), Description: FlagLogUsage},
 	{Text: FullFlagName(FlagLogFormat), Description: FlagLogFormatUsage},
-	{Text: FullFlagName(FlagConsoleOutput), Description: FlagConsoleOutputUsage},
+	{Text: FullFlagName(FlagConsoleFormat), Description: FlagConsoleFormatUsage},
 	{Text: FullFlagName(FlagUseTLS), Description: FlagUseTLSUsage},
 	{Text: FullFlagName(FlagVerifyTLS), Description: FlagVerifyTLSUsage},
 	{Text: FullFlagName(FlagTLSCertPath), Description: FlagTLSCertPathUsage},

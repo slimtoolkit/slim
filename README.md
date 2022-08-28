@@ -316,7 +316,7 @@ Global options:
 - `--verbose` - enable info logs
 - `--log-level` - set the logging level ('debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')
 - `--log-format` - set the format used by logs ('text' (default), or 'json')
-- `--console-output` - set the console output format to use ('text' (default), or 'json')
+- `--console-format` - set the console output format to use ('text' (default), or 'json')
 - `--log` - log file to store logs
 - `--host` - Docker host address or socket (prefix with `tcp://` or `unix://`)
 - `--tls` - use TLS connecting to Docker

@@ -866,7 +866,7 @@ func (p *artifactStore) saveArtifacts() {
 	log.Debugf("saveArtifacts - includePaths(%v): %+v", len(includePaths), includePaths)
 
 	if includePaths == nil {
-		includePaths = make(map[string]bool)
+		includePaths = map[string]bool{}
 	}
 
 	newPerms = getRecordsWithPerms(p.cmd.Includes)

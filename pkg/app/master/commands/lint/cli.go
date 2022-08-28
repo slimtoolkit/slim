@@ -34,7 +34,7 @@ var CLI = &cli.Command{
 		cflag(FlagListChecks),
 	},
 	Action: func(ctx *cli.Context) error {
-		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleOutput))
+		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleFormat))
 
 		doListChecks := ctx.Bool(FlagListChecks)
 

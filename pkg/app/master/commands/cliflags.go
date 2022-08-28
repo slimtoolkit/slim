@@ -26,7 +26,7 @@ const (
 	FlagInContainer   = "in-container"
 	FlagArchiveState  = "archive-state"
 	FlagNoColor       = "no-color"
-	FlagConsoleOutput = "console-output"
+	FlagConsoleFormat = "console-format"
 )
 
 // Global flag usage info
@@ -38,7 +38,7 @@ const (
 	FlagLogLevelUsage      = "set the logging level ('trace', 'debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')"
 	FlagLogUsage           = "log file to store logs"
 	FlagLogFormatUsage     = "set the format used by logs ('text' (default), or 'json')"
-	FlagConsoleOutputUsage = "set the format used by logs ('text' (default), or 'json')"
+	FlagConsoleFormatUsage = "set the console output format to use ('text' (default), or 'json')"
 	FlagUseTLSUsage        = "use TLS"
 	FlagVerifyTLSUsage     = "verify TLS"
 	FlagTLSCertPathUsage   = "path to TLS cert files"
@@ -292,9 +292,9 @@ func GlobalFlags() []cli.Flag {
 			Usage: "set the format used by logs ('text' (default), or 'json')",
 		},
 		&cli.StringFlag{
-			Name:  FlagConsoleOutput,
+			Name:  FlagConsoleFormat,
 			Value: "text",
-			Usage: "set the console output format to use ('text' (default), or 'json')",
+			Usage: FlagConsoleFormatUsage,
 		},
 		&cli.BoolFlag{
 			Name:  FlagUseTLS,

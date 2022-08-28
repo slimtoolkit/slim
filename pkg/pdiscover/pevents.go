@@ -50,7 +50,7 @@ func NewAllWatcher(flags uint32) (*Watcher, error) {
 	w := &Watcher{
 		allFlags: flags,
 		listener: listener,
-		watches:  make(map[int]*watch),
+		watches:  map[int]*watch{},
 		Fork:     make(chan *ProcEventFork),
 		Exec:     make(chan *ProcEventExec),
 		Exit:     make(chan *ProcEventExit),
@@ -72,7 +72,7 @@ func NewWatcher() (*Watcher, error) {
 
 	w := &Watcher{
 		listener: listener,
-		watches:  make(map[int]*watch),
+		watches:  map[int]*watch{},
 		Fork:     make(chan *ProcEventFork),
 		Exec:     make(chan *ProcEventExec),
 		Exit:     make(chan *ProcEventExit),
