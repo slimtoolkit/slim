@@ -1,5 +1,20 @@
 # Releases
 
+## 1.38.0 (8/27/2022)
+
+### New Features
+
+- Experimental 'debug' command
+- JSON console output format
+
+### Improvements
+
+- refactored http-probe-exec and http-probe-exec-file to be host-exec and host-exec-file (breaking change)
+
+### Bug Fixes
+
+- todo: add info
+
 ## 1.37.6 (4/22/2022)
 
 ### Improvements
