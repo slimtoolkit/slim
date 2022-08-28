@@ -13,6 +13,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/app/master/signals"
@@ -51,6 +52,91 @@ func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, erro
 
 	cro.ShmSize = ctx.Int64(FlagCROShmSize)
 	return &cro, nil
+}
+
+func GetHTTPProbeOptions(xc *app.ExecutionContext, ctx *cli.Context) config.HTTPProbeOptions {
+	opts := config.HTTPProbeOptions{
+		Do:            ctx.Bool(FlagHTTPProbe) && !ctx.Bool(FlagHTTPProbeOff),
+		Full:          ctx.Bool(FlagHTTPProbeFull),
+		ExitOnFailure: ctx.Bool(FlagHTTPProbeExitOnFailure),
+
+		StartWait:  ctx.Int(FlagHTTPProbeStartWait),
+		RetryCount: ctx.Int(FlagHTTPProbeRetryCount),
+		RetryWait:  ctx.Int(FlagHTTPProbeRetryWait),
+
+		CrawlMaxDepth:       ctx.Int(FlagHTTPCrawlMaxDepth),
+		CrawlMaxPageCount:   ctx.Int(FlagHTTPCrawlMaxPageCount),
+		CrawlConcurrency:    ctx.Int(FlagHTTPCrawlConcurrency),
+		CrawlConcurrencyMax: ctx.Int(FlagHTTPMaxConcurrentCrawlers),
+	}
+
+	cmds, err := GetHTTPProbes(ctx)
+	if err != nil {
+		xc.Out.Error("param.http.probe", err.Error())
+		xc.Out.State("exited",
+			ovars{
+				"exit.code": -1,
+			})
+		xc.Exit(-1)
+	}
+	opts.Cmds = cmds
+
+	if opts.Do && len(opts.Cmds) == 0 {
+		//add default probe cmd if the "http-probe" flag is set
+		//but only if there are no custom http probe commands
+		xc.Out.Info("param.http.probe",
+			ovars{
+				"message": "using default probe",
+			})
+
+		opts.Cmds = append(opts.Cmds, GetDefaultHTTPProbe())
+
+		if ctx.Bool(FlagHTTPProbeCrawl) {
+			opts.Cmds[0].Crawl = true
+		}
+	}
+
+	if len(opts.Cmds) > 0 {
+		opts.Do = true
+	}
+
+	ports, err := ParseHTTPProbesPorts(ctx.String(FlagHTTPProbePorts))
+	if err != nil {
+		xc.Out.Error("param.http.probe.ports", err.Error())
+		xc.Out.State("exited",
+			ovars{
+				"exit.code": -1,
+			})
+		xc.Exit(-1)
+	}
+	opts.Ports = ports
+
+	opts.APISpecs = ctx.StringSlice(FlagHTTPProbeAPISpec)
+	apiSpecFiles, fileErrors := ValidateFiles(ctx.StringSlice(FlagHTTPProbeAPISpecFile))
+	if len(fileErrors) > 0 {
+		for k, v := range fileErrors {
+			err = v
+			xc.Out.Info("error",
+				ovars{
+					"file":  k,
+					"error": err,
+				})
+
+			xc.Out.Error("param.error.http.api.spec.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+	}
+	opts.APISpecFiles = apiSpecFiles
+
+	if len(opts.APISpecs)+len(opts.APISpecFiles) > 0 {
+		opts.Do = true
+	}
+
+	return opts
 }
 
 func GetDefaultHTTPProbe() config.HTTPProbeCmd {

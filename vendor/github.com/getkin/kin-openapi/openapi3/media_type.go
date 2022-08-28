@@ -4,17 +4,20 @@ import (
 	"context"
 
 	"github.com/getkin/kin-openapi/jsoninfo"
+	"github.com/go-openapi/jsonpointer"
 )
 
 // MediaType is specified by OpenAPI/Swagger 3.0 standard.
 type MediaType struct {
 	ExtensionProps
 
-	Schema   *SchemaRef             `json:"schema,omitempty" yaml:"schema,omitempty"`
-	Example  interface{}            `json:"example,omitempty" yaml:"example,omitempty"`
-	Examples map[string]*ExampleRef `json:"examples,omitempty" yaml:"examples,omitempty"`
-	Encoding map[string]*Encoding   `json:"encoding,omitempty" yaml:"encoding,omitempty"`
+	Schema   *SchemaRef           `json:"schema,omitempty" yaml:"schema,omitempty"`
+	Example  interface{}          `json:"example,omitempty" yaml:"example,omitempty"`
+	Examples Examples             `json:"examples,omitempty" yaml:"examples,omitempty"`
+	Encoding map[string]*Encoding `json:"encoding,omitempty" yaml:"encoding,omitempty"`
 }
+
+var _ jsonpointer.JSONPointable = (*MediaType)(nil)
 
 func NewMediaType() *MediaType {
 	return &MediaType{}
@@ -64,14 +67,34 @@ func (mediaType *MediaType) UnmarshalJSON(data []byte) error {
 	return jsoninfo.UnmarshalStrictStruct(data, mediaType)
 }
 
-func (mediaType *MediaType) Validate(c context.Context) error {
-	if mediaType == nil {
+func (value *MediaType) Validate(ctx context.Context) error {
+	if value == nil {
 		return nil
 	}
-	if schema := mediaType.Schema; schema != nil {
-		if err := schema.Validate(c); err != nil {
+	if schema := value.Schema; schema != nil {
+		if err := schema.Validate(ctx); err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (mediaType MediaType) JSONLookup(token string) (interface{}, error) {
+	switch token {
+	case "schema":
+		if mediaType.Schema != nil {
+			if mediaType.Schema.Ref != "" {
+				return &Ref{Ref: mediaType.Schema.Ref}, nil
+			}
+			return mediaType.Schema.Value, nil
+		}
+	case "example":
+		return mediaType.Example, nil
+	case "examples":
+		return mediaType.Examples, nil
+	case "encoding":
+		return mediaType.Encoding, nil
+	}
+	v, _, err := jsonpointer.GetForToken(mediaType.ExtensionProps, token)
+	return v, err
 }

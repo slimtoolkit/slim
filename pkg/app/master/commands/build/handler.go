@@ -3,6 +3,7 @@ package build
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -15,17 +16,16 @@ import (
 	"time"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/master/builder"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/compose"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
 	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/container"
-	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/container/probes/http"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/image"
+	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/probes/http"
+	"github.com/docker-slim/docker-slim/pkg/app/master/kubernetes"
 	"github.com/docker-slim/docker-slim/pkg/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/command"
-	"github.com/docker-slim/docker-slim/pkg/consts"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
@@ -52,36 +52,12 @@ const (
 	ecbBadTargetComposeSvc
 	ecbComposeSvcNoImage
 	ecbComposeSvcUnknownImage
+	ecbKubernetesNoWorkload
+	ecbKubernetesNoWorkloadContainer
+	ecbNotImplementedYet
 )
 
 type ovars = app.OutVars
-
-func NewLogWriter(name string) *chanWriter {
-	r, w := io.Pipe()
-	cw := &chanWriter{
-		Name: name,
-		r:    r,
-		w:    w,
-	}
-	go func() {
-		s := bufio.NewScanner(cw.r)
-		for s.Scan() {
-			fmt.Println(name + ": " + string(s.Bytes()))
-		}
-	}()
-	return cw
-}
-
-type chanWriter struct {
-	Name string
-	Chan chan string
-	w    *io.PipeWriter
-	r    *io.PipeReader
-}
-
-func (w *chanWriter) Write(p []byte) (n int, err error) {
-	return w.w.Write(p)
-}
 
 // OnCommand implements the 'build' docker-slim command
 func OnCommand(
@@ -89,21 +65,11 @@ func OnCommand(
 	gparams *commands.GenericParams,
 	targetRef string,
 	doPull bool,
-	doIncludeAppNuxtDir bool,
-	doIncludeAppNuxtBuildDir bool,
-	doIncludeAppNuxtDistDir bool,
-	doIncludeAppNuxtStaticDir bool,
-	doIncludeAppNuxtNodeModulesDir bool,
-	doIncludeAppNextDir bool,
-	doIncludeAppNextBuildDir bool,
-	doIncludeAppNextDistDir bool,
-	doIncludeAppNextStaticDir bool,
-	doIncludeAppNextNodeModulesDir bool,
-	includeNodePackages []string,
 	dockerConfigPath string,
 	registryAccount string,
 	registrySecret string,
 	doShowPullLogs bool,
+
 	composeFiles []string,
 	targetComposeSvc string,
 	targetComposeSvcImage string,
@@ -120,25 +86,13 @@ func OnCommand(
 	composeWorkdir string,
 	composeProjectName string,
 	containerProbeComposeSvc string,
+
 	cbOpts *config.ContainerBuildOptions,
 	crOpts *config.ContainerRunOptions,
 	outputTags []string,
-	doHTTPProbe bool,
-	httpProbeCmds []config.HTTPProbeCmd,
-	httpProbeStartWait int,
-	httpProbeRetryCount int,
-	httpProbeRetryWait int,
-	httpProbePorts []uint16,
-	httpCrawlMaxDepth int,
-	httpCrawlMaxPageCount int,
-	httpCrawlConcurrency int,
-	httpMaxConcurrentCrawlers int,
-	doHTTPProbeFull bool,
-	doHTTPProbeExitOnFailure bool,
-	httpProbeAPISpecs []string,
-	httpProbeAPISpecFiles []string,
-	httpProbeProxyEndpoint string,
-	httpProbeProxyPort int,
+
+	httpProbeOpts config.HTTPProbeOptions,
+
 	portBindings map[dockerapi.Port][]dockerapi.PortBinding,
 	doPublishExposedPorts bool,
 	hostExecProbes []string,
@@ -157,6 +111,7 @@ func OnCommand(
 	explicitVolumeMounts map[string]config.VolumeMount,
 	doKeepPerms bool,
 	pathPerms map[string]*fsutil.AccessInfo,
+
 	excludePatterns map[string]*fsutil.AccessInfo,
 	preservePaths map[string]*fsutil.AccessInfo,
 	includePaths map[string]*fsutil.AccessInfo,
@@ -169,22 +124,24 @@ func OnCommand(
 	doIncludeCertPKAll bool,
 	doIncludeCertPKDirs bool,
 	doIncludeNew bool,
+
 	doUseLocalMounts bool,
 	doUseSensorVolume string,
 	doKeepTmpArtifacts bool,
 	continueAfter *config.ContinueAfter,
 	execCmd string,
 	execFileCmd string,
-	deleteFatImage bool,
+	doDeleteFatImage bool,
 	rtaOnbuildBaseImage bool,
 	rtaSourcePT bool,
 	sensorIPCEndpoint string,
-	sensorIPCMode string) {
+	sensorIPCMode string,
 
-	const cmdName = Name
-	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("cmd=%s", cmdName)
+	kubeOpts config.KubernetesOptions,
+	appNodejsInspectOpts config.AppNodejsInspectOptions,
+) {
 	printState := true
+	logger := log.WithFields(log.Fields{"app": appName, "command": Name})
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -241,6 +198,76 @@ func OnCommand(
 
 	xc.Out.State("started")
 
+	if kubeOpts.HasTargetSet() {
+		xc.Out.Info("params",
+			ovars{
+				"target.type":      "kubernetes.workload",
+				"target":           kubeOpts.Target.Workload,
+				"target.namespace": kubeOpts.Target.Namespace,
+				"target.container": kubeOpts.Target.Container,
+				"target.image":     kubeOpts.TargetOverride.Image,
+				"continue.mode":    continueAfter.Mode,
+			})
+
+		kubeClient, err := kubernetes.NewClient(kubeOpts)
+		xc.FailOn(err)
+
+		var manifests *kubernetes.Manifests
+		if len(kubeOpts.Manifests) > 0 {
+			manifests, err = kubernetes.ManifestsFromFiles(
+				kubeOpts,
+				kubeClient,
+				kubernetes.NewResourceBuilderFunc(kubeOpts))
+			xc.FailOn(err)
+		}
+
+		h := newKubeHandler(
+			xc,
+			context.TODO(),
+			cmdReport,
+			logger,
+			client,
+			kubeClient,
+			kubernetes.NewKubectl(kubeOpts),
+			kubernetes.NewWorkloadFinder(manifests, kubernetes.NewResourceBuilderFunc(kubeOpts)))
+		h.Handle(
+			kubeOpts.Target,
+			kubeOpts.TargetOverride,
+			manifests,
+			kubeHandleOptions{
+				DoPull:                    doPull,
+				DoShowPullLogs:            doShowPullLogs,
+				DoShowBuildLogs:           doShowBuildLogs,
+				DoShowContainerLogs:       doShowContainerLogs,
+				DoDeleteFatImage:          doDeleteFatImage,
+				DoRmFileArtifacts:         doRmFileArtifacts,
+				CBOpts:                    cbOpts,
+				RtaOnbuildBaseImage:       rtaOnbuildBaseImage,
+				RtaSourcePT:               rtaSourcePT,
+				DockerConfigPath:          dockerConfigPath,
+				RegistryAccount:           registryAccount,
+				RegistrySecret:            registrySecret,
+				KeepPerms:                 doKeepPerms,
+				PathPerms:                 pathPerms,
+				ArchiveState:              gparams.ArchiveState,
+				StatePath:                 gparams.StatePath,
+				CopyMetaArtifactsLocation: copyMetaArtifactsLocation,
+				Debug:                     gparams.Debug,
+				LogLevel:                  gparams.LogLevel,
+				LogFormat:                 gparams.LogFormat,
+				SensorIPCEndpoint:         sensorIPCEndpoint,
+				CustomImageTag:            customImageTag,
+				AdditionalTags:            additionalTags,
+				httpProbeOpts:             httpProbeOpts,
+				continueAfter:             continueAfter,
+				execCmd:                   execCmd,
+			})
+
+		vinfo := <-viChan
+		version.PrintCheckVersion(xc, "", vinfo)
+		return
+	}
+
 	if len(composeFiles) > 0 && targetComposeSvc != "" {
 		xc.Out.Info("params",
 			ovars{
@@ -251,119 +278,30 @@ func OnCommand(
 				"keep.perms":    doKeepPerms,
 				"tags":          strings.Join(outputTags, ","),
 			})
+	} else if cbOpts.Dockerfile != "" {
+		xc.Out.Info("params",
+			ovars{
+				"target.type":   "dockerfile",
+				"context":       targetRef,
+				"file":          cbOpts.Dockerfile,
+				"continue.mode": continueAfter.Mode,
+				"rt.as.user":    doRunTargetAsUser,
+				"keep.perms":    doKeepPerms,
+			})
 	} else {
-		if cbOpts.Dockerfile == "" {
-			xc.Out.Info("params",
-				ovars{
-					"target.type":   "image",
-					"target":        targetRef,
-					"continue.mode": continueAfter.Mode,
-					"rt.as.user":    doRunTargetAsUser,
-					"keep.perms":    doKeepPerms,
-					"tags":          strings.Join(outputTags, ","),
-				})
-		} else {
-			xc.Out.Info("params",
-				ovars{
-					"target.type":   "dockerfile",
-					"context":       targetRef,
-					"file":          cbOpts.Dockerfile,
-					"continue.mode": continueAfter.Mode,
-					"rt.as.user":    doRunTargetAsUser,
-					"keep.perms":    doKeepPerms,
-				})
-		}
+		xc.Out.Info("params",
+			ovars{
+				"target.type":   "image",
+				"target":        targetRef,
+				"continue.mode": continueAfter.Mode,
+				"rt.as.user":    doRunTargetAsUser,
+				"keep.perms":    doKeepPerms,
+				"tags":          strings.Join(outputTags, ","),
+			})
 	}
 
 	if cbOpts.Dockerfile != "" {
-		xc.Out.State("building",
-			ovars{
-				"message": "building basic image",
-			})
-
-		//create a fat image name:
-		//* use the explicit fat image tag if provided
-		//* or create one based on the user provided (slim image) custom tag if it's available
-		//* otherwise auto-generate a name
-		var fatImageRepoNameTag string
-		if cbOpts.Tag != "" {
-			fatImageRepoNameTag = cbOpts.Tag
-		} else if customImageTag != "" {
-			citParts := strings.Split(customImageTag, ":")
-			switch len(citParts) {
-			case 1:
-				fatImageRepoNameTag = fmt.Sprintf("%s.fat", customImageTag)
-			case 2:
-				fatImageRepoNameTag = fmt.Sprintf("%s.fat:%s", citParts[0], citParts[1])
-			default:
-				xc.Out.Info("param.error",
-					ovars{
-						"status": "malformed.custom.image.tag",
-						"value":  customImageTag,
-					})
-
-				exitCode := commands.ECTBuild | ecbBadCustomImageTag
-				xc.Out.State("exited",
-					ovars{
-						"exit.code": exitCode,
-						"version":   v.Current(),
-						"location":  fsutil.ExeDir(),
-					})
-
-				cmdReport.Error = "malformed.custom.image.tag"
-				xc.Exit(exitCode)
-			}
-		} else {
-			fatImageRepoNameTag = fmt.Sprintf("docker-slim-tmp-fat-image.%v.%v",
-				os.Getpid(), time.Now().UTC().Format("20060102150405"))
-		}
-
-		cbOpts.Tag = fatImageRepoNameTag
-
-		xc.Out.Info("basic.image.info",
-			ovars{
-				"tag":        cbOpts.Tag,
-				"dockerfile": cbOpts.Dockerfile,
-				"context":    targetRef,
-			})
-
-		fatBuilder, err := builder.NewBasicImageBuilder(
-			client,
-			cbOpts,
-			targetRef,
-			doShowBuildLogs)
-		xc.FailOn(err)
-
-		err = fatBuilder.Build()
-
-		if doShowBuildLogs || err != nil {
-			xc.Out.LogDump("regular.image.build", fatBuilder.BuildLog.String(),
-				ovars{
-					"tag": cbOpts.Tag,
-				})
-		}
-
-		if err != nil {
-			xc.Out.Info("build.error",
-				ovars{
-					"status": "standard.image.build.error",
-					"value":  err,
-				})
-
-			exitCode := commands.ECTBuild | ecbImageBuildError
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": exitCode,
-					"version":   v.Current(),
-					"location":  fsutil.ExeDir(),
-				})
-
-			xc.Exit(exitCode)
-		}
-
-		xc.Out.State("basic.image.build.completed")
-
-		targetRef = fatImageRepoNameTag
+		targetRef = buildFatImage(xc, targetRef, customImageTag, cbOpts, doShowBuildLogs, client, cmdReport)
 	}
 
 	var serviceAliases []string
@@ -613,13 +551,13 @@ func OnCommand(
 	}
 
 	logger.Infof("image=%v http-probe=%v remove-file-artifacts=%v image-overrides=%+v entrypoint=%+v (%v) cmd=%+v (%v) workdir='%v' env=%+v expose=%+v",
-		targetRef, doHTTPProbe, doRmFileArtifacts,
+		targetRef, httpProbeOpts.Do, doRmFileArtifacts,
 		imageOverrideSelectors,
 		overrides.Entrypoint, overrides.ClearEntrypoint, overrides.Cmd, overrides.ClearCmd,
 		overrides.Workdir, overrides.Env, overrides.ExposedPorts)
 
 	if gparams.Debug {
-		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(fmt.Sprintf("cmd=%s", Name), logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	if overrides.Network == "host" && runtime.GOOS == "darwin" {
@@ -658,137 +596,22 @@ func OnCommand(
 		xc.Exit(exitCode)
 	}
 
-	imageInspector, err := image.NewInspector(client, targetRef)
-	xc.FailOn(err)
+	imageInspector, localVolumePath, statePath, stateKey := inspectFatImage(
+		xc,
+		targetRef,
+		doPull,
+		doShowPullLogs,
+		rtaOnbuildBaseImage,
+		dockerConfigPath,
+		registryAccount,
+		registrySecret,
+		gparams.StatePath,
+		client,
+		logger,
+		cmdReport)
 
-	if imageInspector.NoImage() {
-		if doPull {
-			xc.Out.Info("target.image",
-				ovars{
-					"status":  "image.not.found",
-					"image":   targetRef,
-					"message": "trying to pull target image",
-				})
-
-			err := imageInspector.Pull(doShowPullLogs, dockerConfigPath, registryAccount, registrySecret)
-			xc.FailOn(err)
-		} else {
-			xc.Out.Info("target.image.error",
-				ovars{
-					"status":  "image.not.found",
-					"image":   targetRef,
-					"message": "make sure the target image already exists locally (use --pull flag to auto-download it from registry)",
-				})
-
-			exitCode := commands.ECTBuild | ecbImageBuildError
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": exitCode,
-				})
-
-			xc.Exit(exitCode)
-		}
-	}
-
-	logger.Tracef("targetRef=%s ii.ImageRef=%s", targetRef, imageInspector.ImageRef)
 	//refresh the target refs
 	targetRef = imageInspector.ImageRef
-	cmdReport.TargetReference = imageInspector.ImageRef
-
-	xc.Out.State("image.inspection.start")
-
-	logger.Info("inspecting 'fat' image metadata...")
-	err = imageInspector.Inspect()
-	xc.FailOn(err)
-
-	localVolumePath, artifactLocation, statePath, stateKey := fsutil.PrepareImageStateDirs(gparams.StatePath, imageInspector.ImageInfo.ID)
-	imageInspector.ArtifactLocation = artifactLocation
-	logger.Debugf("localVolumePath=%v, artifactLocation=%v, statePath=%v, stateKey=%v", localVolumePath, artifactLocation, statePath, stateKey)
-
-	xc.Out.Info("image",
-		ovars{
-			"id":           imageInspector.ImageInfo.ID,
-			"size.bytes":   imageInspector.ImageInfo.VirtualSize,
-			"size.human":   humanize.Bytes(uint64(imageInspector.ImageInfo.VirtualSize)),
-			"architecture": imageInspector.ImageInfo.Architecture,
-		})
-
-	if imageInspector.ImageInfo.Config != nil &&
-		len(imageInspector.ImageInfo.Config.Labels) > 0 {
-		for labelName := range imageInspector.ImageInfo.Config.Labels {
-			if labelName == consts.ContainerLabelName {
-				xc.Out.Info("target.image.error",
-					ovars{
-						"status":  "image.already.optimized",
-						"image":   targetRef,
-						"message": "the target image is already optimized",
-					})
-
-				exitCode := commands.ECTBuild | ecbImageAlreadyOptimized
-				xc.Out.State("exited",
-					ovars{
-						"exit.code": exitCode,
-					})
-
-				cmdReport.Error = "image.already.optimized"
-				xc.Exit(exitCode)
-			}
-		}
-	}
-
-	logger.Info("processing 'fat' image info...")
-	err = imageInspector.ProcessCollectedData()
-	xc.FailOn(err)
-
-	if imageInspector.DockerfileInfo != nil {
-		if imageInspector.DockerfileInfo.ExeUser != "" {
-			xc.Out.Info("image.users",
-				ovars{
-					"exe": imageInspector.DockerfileInfo.ExeUser,
-					"all": strings.Join(imageInspector.DockerfileInfo.AllUsers, ","),
-				})
-		}
-
-		if len(imageInspector.DockerfileInfo.ImageStack) > 0 {
-			cmdReport.ImageStack = imageInspector.DockerfileInfo.ImageStack
-
-			for idx, layerInfo := range imageInspector.DockerfileInfo.ImageStack {
-				xc.Out.Info("image.stack",
-					ovars{
-						"index": idx,
-						"name":  layerInfo.FullName,
-						"id":    layerInfo.ID,
-					})
-			}
-		}
-
-		if len(imageInspector.DockerfileInfo.ExposedPorts) > 0 {
-			xc.Out.Info("image.exposed_ports",
-				ovars{
-					"list": strings.Join(imageInspector.DockerfileInfo.ExposedPorts, ","),
-				})
-		}
-
-		if !rtaOnbuildBaseImage && imageInspector.DockerfileInfo.HasOnbuild {
-			xc.Out.Info("target.image.error",
-				ovars{
-					"status":  "onbuild.base.image",
-					"image":   targetRef,
-					"message": "Runtime analysis for onbuild base images is not supported",
-				})
-
-			exitCode := commands.ECTBuild | ecbOnbuildBaseImage
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": exitCode,
-				})
-
-			cmdReport.Error = "onbuild.base.image"
-			xc.Exit(exitCode)
-		}
-	}
-
-	xc.Out.State("image.inspection.done")
 
 	//validate links (check if target container exists, ignore&log if not)
 	svcLinkMap := map[string]struct{}{}
@@ -988,17 +811,6 @@ func OnCommand(
 		imageInspector,
 		localVolumePath,
 		doUseLocalMounts,
-		doIncludeAppNuxtDir,
-		doIncludeAppNuxtBuildDir,
-		doIncludeAppNuxtDistDir,
-		doIncludeAppNuxtStaticDir,
-		doIncludeAppNuxtNodeModulesDir,
-		doIncludeAppNextDir,
-		doIncludeAppNextBuildDir,
-		doIncludeAppNextDistDir,
-		doIncludeAppNextStaticDir,
-		doIncludeAppNextNodeModulesDir,
-		includeNodePackages,
 		doUseSensorVolume,
 		doKeepTmpArtifacts,
 		overrides,
@@ -1012,7 +824,6 @@ func OnCommand(
 		etcHostsMaps,
 		dnsServers,
 		dnsSearchDomains,
-		doRunTargetAsUser,
 		doShowContainerLogs,
 		doKeepPerms,
 		pathPerms,
@@ -1037,7 +848,7 @@ func OnCommand(
 		sensorIPCEndpoint,
 		sensorIPCMode,
 		printState,
-		prefix)
+		appNodejsInspectOpts)
 	xc.FailOn(err)
 
 	if len(containerInspector.FatContainerCmd) == 0 {
@@ -1092,35 +903,123 @@ func OnCommand(
 
 	logger.Info("watching container monitor...")
 
+	monitorContainer(
+		xc,
+		targetRef,
+		continueAfter,
+		execCmd,
+		execFileCmd,
+		httpProbeOpts,
+		hostExecProbes,
+		depServicesExe,
+		containerProbeComposeSvc,
+		containerInspector,
+		client,
+		cmdReport,
+		printState)
+
+	xc.Out.State("container.inspection.finishing")
+
+	containerInspector.FinishMonitoring()
+
+	logger.Info("shutting down 'fat' container...")
+	err = containerInspector.ShutdownContainer()
+	errutil.WarnOn(err)
+
+	if depServicesExe != nil {
+		xc.Out.State("container.dependencies.shutdown.start")
+		err = depServicesExe.Stop()
+		errutil.WarnOn(err)
+		err = depServicesExe.Cleanup()
+		errutil.WarnOn(err)
+		xc.Out.State("container.dependencies.shutdown.done")
+	}
+
+	xc.Out.State("container.inspection.artifact.processing")
+
+	if !containerInspector.HasCollectedData() {
+		imageInspector.ShowFatImageDockerInstructions()
+		xc.Out.Info("results",
+			ovars{
+				"status":   "no data collected (no minified image generated)",
+				"version":  v.Current(),
+				"location": fsutil.ExeDir(),
+			})
+
+		exitCode := commands.ECTBuild | ecbImageBuildError
+		xc.Out.State("exited",
+			ovars{
+				"exit.code": exitCode,
+			})
+
+		cmdReport.Error = "no.data.collected"
+		xc.Exit(exitCode)
+	}
+
+	logger.Info("processing instrumented 'fat' container info...")
+	err = containerInspector.ProcessCollectedData()
+	xc.FailOn(err)
+
+	xc.Out.State("container.inspection.done")
+
+	minifiedImageName := buildSlimImage(
+		xc,
+		customImageTag,
+		additionalTags,
+		cbOpts,
+		overrides,
+		imageOverrideSelectors,
+		instructions,
+		doDeleteFatImage,
+		doShowBuildLogs,
+		imageInspector,
+		client,
+		logger,
+		cmdReport)
+
+	// (Re)Name me please!
+	slimmingPostProcess(
+		xc,
+		minifiedImageName,
+		copyMetaArtifactsLocation,
+		doRmFileArtifacts,
+		gparams.ArchiveState,
+		stateKey,
+		imageInspector,
+		client,
+		logger,
+		cmdReport)
+
+	vinfo := <-viChan
+	version.PrintCheckVersion(xc, "", vinfo)
+}
+
+func monitorContainer(
+	xc *app.ExecutionContext,
+	targetRef string,
+	continueAfter *config.ContinueAfter,
+	execCmd string,
+	execFileCmd string,
+	httpProbeOpts config.HTTPProbeOptions,
+	hostExecProbes []string,
+	depServicesExe *compose.Execution,
+	containerProbeComposeSvc string,
+	containerInspector *container.Inspector,
+	client *dockerapi.Client,
+	cmdReport *report.BuildCommand,
+	printState bool,
+) {
 	if hasContinueAfterMode(continueAfter.Mode, config.CAMProbe) {
-		doHTTPProbe = true
+		httpProbeOpts.Do = true
 	}
 
 	var probe *http.CustomProbe
-	if doHTTPProbe {
+	if httpProbeOpts.Do {
 		var err error
-		probe, err = http.NewCustomProbe(
-			xc,
-			containerInspector,
-			httpProbeCmds,
-			httpProbeStartWait,
-			httpProbeRetryCount,
-			httpProbeRetryWait,
-			httpProbePorts,
-			httpCrawlMaxDepth,
-			httpCrawlMaxPageCount,
-			httpCrawlConcurrency,
-			httpMaxConcurrentCrawlers,
-			doHTTPProbeFull,
-			doHTTPProbeExitOnFailure,
-			httpProbeAPISpecs,
-			httpProbeAPISpecFiles,
-			//httpProbeApps,
-			true,
-			prefix)
+		probe, err = http.NewContainerProbe(xc, containerInspector, httpProbeOpts, printState)
 		xc.FailOn(err)
 
-		if len(probe.Ports) == 0 {
+		if len(probe.Ports()) == 0 {
 			xc.Out.State("http.probe.error",
 				ovars{
 					"error":   "NO EXPOSED PORTS",
@@ -1170,7 +1069,6 @@ func OnCommand(
 		//because both need channels (TODO: fix)
 		switch mode {
 		case config.CAMContainerProbe:
-
 			idsToLog := map[string]string{}
 			idsToLog[targetRef] = containerInspector.ContainerID
 			for name, svc := range depServicesExe.RunningServices {
@@ -1216,10 +1114,12 @@ func OnCommand(
 				}
 				time.Sleep(1 * time.Second)
 			}
+
 		case config.CAMEnter:
 			xc.Out.Prompt("USER INPUT REQUIRED, PRESS <ENTER> WHEN YOU ARE DONE USING THE CONTAINER")
 			creader := bufio.NewReader(os.Stdin)
 			_, _, _ = creader.ReadLine()
+
 		case config.CAMExec:
 			var input *bytes.Buffer
 			var cmd []string
@@ -1251,7 +1151,7 @@ func OnCommand(
 			})
 			xc.FailOn(err)
 
-			buffer := &printbuffer.PrintBuffer{Prefix: fmt.Sprintf("%s[%s][exec]: output:", appName, cmdName)}
+			buffer := &printbuffer.PrintBuffer{Prefix: fmt.Sprintf("%s[%s][exec]: output:", appName, Name)}
 			xc.FailOn(containerInspector.APIClient.StartExec(exec.ID, dockerapi.StartExecOptions{
 				InputStream:  input,
 				OutputStream: buffer,
@@ -1270,6 +1170,7 @@ func OnCommand(
 					"mode":     config.CAMExec,
 					"exitcode": inspect.ExitCode,
 				})
+
 		case config.CAMSignal:
 			xc.Out.Prompt("send SIGUSR1 when you are done using the container")
 			<-continueAfter.ContinueChan
@@ -1277,6 +1178,7 @@ func OnCommand(
 				ovars{
 					"message": "got SIGUSR1",
 				})
+
 		case config.CAMTimeout:
 			xc.Out.Prompt(fmt.Sprintf("waiting for the target container (%v seconds)", int(continueAfter.Timeout)))
 			<-time.After(time.Second * continueAfter.Timeout)
@@ -1284,6 +1186,7 @@ func OnCommand(
 				ovars{
 					"message": "done waiting for the target container",
 				})
+
 		case config.CAMProbe:
 			xc.Out.Prompt("waiting for the HTTP probe to finish")
 			<-continueAfter.ContinueChan
@@ -1292,9 +1195,12 @@ func OnCommand(
 					"message": "HTTP probe is done",
 				})
 
-			if probe != nil && probe.CallCount > 0 && probe.OkCount == 0 {
-				//make sure we show the container logs because none of the http probe calls were successful
-				containerInspector.DoShowContainerLogs = true
+			if probe != nil && probe.CallCount > 0 && probe.OkCount == 0 && httpProbeOpts.ExitOnFailure {
+				xc.Out.Error("probe.error", "no.successful.calls")
+
+				containerInspector.ShowContainerLogs()
+				xc.Out.State("exited", ovars{"exit.code": -1})
+				xc.Exit(-1)
 			}
 		case config.CAMHostExec:
 			commands.RunHostExecProbes(printState, xc, hostExecProbes)
@@ -1305,14 +1211,6 @@ func OnCommand(
 			errutil.Fail("unknown continue-after mode")
 		}
 	}
-
-	xc.Out.State("container.inspection.finishing")
-
-	containerInspector.FinishMonitoring()
-
-	logger.Info("shutting down 'fat' container...")
-	err = containerInspector.ShutdownContainer()
-	errutil.WarnOn(err)
 
 	if execFail {
 		xc.Out.Info("continue.after",
@@ -1330,123 +1228,28 @@ func OnCommand(
 		cmdReport.Error = "exec.cmd.failure"
 		xc.Exit(exitCode)
 	}
+}
 
-	if depServicesExe != nil {
-		xc.Out.State("container.dependencies.shutdown.start")
-		err = depServicesExe.Stop()
-		errutil.WarnOn(err)
-		err = depServicesExe.Cleanup()
-		errutil.WarnOn(err)
-		xc.Out.State("container.dependencies.shutdown.done")
-	}
-
-	xc.Out.State("container.inspection.artifact.processing")
-
-	if !containerInspector.HasCollectedData() {
-		imageInspector.ShowFatImageDockerInstructions()
-		xc.Out.Info("results",
-			ovars{
-				"status":   "no data collected (no minified image generated)",
-				"version":  v.Current(),
-				"location": fsutil.ExeDir(),
-			})
-
-		exitCode := commands.ECTBuild | ecbImageBuildError
-		xc.Out.State("exited",
-			ovars{
-				"exit.code": exitCode,
-			})
-
-		cmdReport.Error = "no.data.collected"
-		xc.Exit(exitCode)
-	}
-
-	logger.Info("processing instrumented 'fat' container info...")
-	err = containerInspector.ProcessCollectedData()
-	xc.FailOn(err)
-
-	if customImageTag == "" {
-		customImageTag = imageInspector.SlimImageRepo
-	}
-
-	xc.Out.State("container.inspection.done")
-	xc.Out.State("building",
-		ovars{
-			"message": "building optimized image",
-		})
-
-	builder, err := builder.NewImageBuilder(client,
-		customImageTag,
-		additionalTags,
-		imageInspector.ImageInfo,
-		artifactLocation,
-		doShowBuildLogs,
-		imageOverrideSelectors,
-		overrides,
-		instructions,
-		targetRef)
-	xc.FailOn(err)
-
-	if !builder.HasData {
-		logger.Info("WARNING - no data artifacts")
-	}
-
-	err = builder.Build()
-
-	if doShowBuildLogs || err != nil {
-		xc.Out.LogDump("optimized.image.build", builder.BuildLog.String(),
-			ovars{
-				"tag": customImageTag,
-			})
-	}
-
-	if err != nil {
-		xc.Out.Info("build.error",
-			ovars{
-				"status": "optimized.image.build.error",
-				"error":  err,
-			})
-
-		exitCode := commands.ECTBuild | ecbImageBuildError
-		xc.Out.State("exited",
-			ovars{
-				"exit.code": exitCode,
-				"version":   v.Current(),
-				"location":  fsutil.ExeDir(),
-			})
-
-		cmdReport.Error = "optimized.image.build.error"
-		xc.Exit(exitCode)
-	}
-
-	xc.Out.State("completed")
-	cmdReport.State = command.StateCompleted
-
-	if cbOpts.Dockerfile != "" {
-		if deleteFatImage {
-			xc.Out.Info("Dockerfile", ovars{
-				"image.name":        cbOpts.Tag,
-				"image.fat.deleted": "true",
-			})
-			var err = client.RemoveImage(cbOpts.Tag)
-			errutil.WarnOn(err)
-		} else {
-			xc.Out.Info("Dockerfile", ovars{
-				"image.name":        cbOpts.Tag,
-				"image.fat.deleted": "false",
-			})
-		}
-	}
-
-	/////////////////////////////
-	newImageInspector, err := image.NewInspector(client, builder.RepoName)
+func slimmingPostProcess(
+	xc *app.ExecutionContext,
+	minifiedImageName string,
+	copyMetaArtifactsLocation string,
+	doRmFileArtifacts bool,
+	archiveState string,
+	stateKey string,
+	imageInspector *image.Inspector,
+	client *dockerapi.Client,
+	logger *log.Entry,
+	cmdReport *report.BuildCommand,
+) {
+	newImageInspector, err := image.NewInspector(client, minifiedImageName)
 	xc.FailOn(err)
 
 	if newImageInspector.NoImage() {
 		xc.Out.Info("results",
 			ovars{
 				"message": "minified image not found",
-				"image":   builder.RepoName,
+				"image":   minifiedImageName,
 			})
 
 		exitCode := commands.ECTBuild | ecbImageBuildError
@@ -1509,8 +1312,6 @@ func OnCommand(
 		cmdReport.Error = err.Error()
 	}
 
-	cmdReport.MinifiedImage = builder.RepoName
-	cmdReport.MinifiedImageHasData = builder.HasData
 	cmdReport.ArtifactLocation = imageInspector.ArtifactLocation
 	cmdReport.ContainerReportName = report.DefaultContainerReportFileName
 	cmdReport.SeccompProfileName = imageInspector.SeccompProfileName
@@ -1569,7 +1370,6 @@ func OnCommand(
 		} else {
 			logger.Infof("could not read container report - %v", err)
 		}
-
 	}
 
 	/////////////////////////////
@@ -1581,7 +1381,7 @@ func OnCommand(
 		}
 		if !commands.CopyMetaArtifacts(logger,
 			toCopy,
-			artifactLocation, copyMetaArtifactsLocation) {
+			imageInspector.ArtifactLocation, copyMetaArtifactsLocation) {
 			xc.Out.Info("artifacts",
 				ovars{
 					"message": "could not copy meta artifacts",
@@ -1589,7 +1389,7 @@ func OnCommand(
 		}
 	}
 
-	if err := commands.DoArchiveState(logger, client, artifactLocation, gparams.ArchiveState, stateKey); err != nil {
+	if err := commands.DoArchiveState(logger, client, imageInspector.ArtifactLocation, archiveState, stateKey); err != nil {
 		xc.Out.Info("state",
 			ovars{
 				"message": "could not archive state",
@@ -1600,7 +1400,7 @@ func OnCommand(
 
 	if doRmFileArtifacts {
 		logger.Info("removing temporary artifacts...")
-		err = fsutil.Remove(artifactLocation)
+		err = fsutil.Remove(imageInspector.ArtifactLocation)
 		errutil.WarnOn(err)
 	}
 
@@ -1610,9 +1410,6 @@ func OnCommand(
 		ovars{
 			"message": "use the xray command to learn more about the optimize image",
 		})
-
-	vinfo := <-viChan
-	version.PrintCheckVersion(xc, "", vinfo)
 
 	cmdReport.State = command.StateDone
 	if cmdReport.Save() {
@@ -1631,4 +1428,31 @@ func hasContinueAfterMode(modeSet, mode string) bool {
 	}
 
 	return false
+}
+
+func NewLogWriter(name string) *chanWriter {
+	r, w := io.Pipe()
+	cw := &chanWriter{
+		Name: name,
+		r:    r,
+		w:    w,
+	}
+	go func() {
+		s := bufio.NewScanner(cw.r)
+		for s.Scan() {
+			fmt.Println(name + ": " + string(s.Bytes()))
+		}
+	}()
+	return cw
+}
+
+type chanWriter struct {
+	Name string
+	Chan chan string
+	w    *io.PipeWriter
+	r    *io.PipeReader
+}
+
+func (w *chanWriter) Write(p []byte) (n int, err error) {
+	return w.w.Write(p)
 }

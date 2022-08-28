@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-	"strings"
 )
 
 // UnsupportedPropertiesError is a helper for extensions that want to refuse
@@ -27,7 +26,7 @@ func (err *UnsupportedPropertiesError) Error() string {
 	m := err.UnsupportedProperties
 	typeInfo := GetTypeInfoForValue(err.Value)
 	if m == nil || typeInfo == nil {
-		return "Invalid UnsupportedPropertiesError"
+		return fmt.Sprintf("invalid %T", *err)
 	}
 	keys := make([]string, 0, len(m))
 	for k := range m {
@@ -36,10 +35,8 @@ func (err *UnsupportedPropertiesError) Error() string {
 	sort.Strings(keys)
 	supported := typeInfo.FieldNames()
 	if len(supported) == 0 {
-		return fmt.Sprintf("Type '%T' doesn't take any properties. Unsupported properties: '%s'\n",
-			err.Value, strings.Join(keys, "', '"))
+		return fmt.Sprintf("type \"%T\" doesn't take any properties. Unsupported properties: %+v",
+			err.Value, keys)
 	}
-	return fmt.Sprintf("Unsupported properties: '%s'\nSupported properties are: '%s'",
-		strings.Join(keys, "', '"),
-		strings.Join(supported, "', '"))
+	return fmt.Sprintf("unsupported properties: %+v (supported properties are: %+v)", keys, supported)
 }

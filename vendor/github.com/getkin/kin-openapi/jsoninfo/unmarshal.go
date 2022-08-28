@@ -25,7 +25,7 @@ type ObjectDecoder struct {
 func NewObjectDecoder(data []byte) (*ObjectDecoder, error) {
 	var remainingFields map[string]json.RawMessage
 	if err := json.Unmarshal(data, &remainingFields); err != nil {
-		return nil, fmt.Errorf("Failed to unmarshal extension properties: %v\nInput: %s", err, data)
+		return nil, fmt.Errorf("failed to unmarshal extension properties: %v (%s)", err, data)
 	}
 	return &ObjectDecoder{
 		Data:            data,
@@ -41,10 +41,10 @@ func (decoder *ObjectDecoder) DecodeExtensionMap() map[string]json.RawMessage {
 func (decoder *ObjectDecoder) DecodeStructFieldsAndExtensions(value interface{}) error {
 	reflection := reflect.ValueOf(value)
 	if reflection.Kind() != reflect.Ptr {
-		panic(fmt.Errorf("Value %T is not a pointer", value))
+		panic(fmt.Errorf("value %T is not a pointer", value))
 	}
 	if reflection.IsNil() {
-		panic(fmt.Errorf("Value %T is nil", value))
+		panic(fmt.Errorf("value %T is nil", value))
 	}
 	reflection = reflection.Elem()
 	for (reflection.Kind() == reflect.Interface || reflection.Kind() == reflect.Ptr) && !reflection.IsNil() {
@@ -52,7 +52,7 @@ func (decoder *ObjectDecoder) DecodeStructFieldsAndExtensions(value interface{})
 	}
 	reflectionType := reflection.Type()
 	if reflectionType.Kind() != reflect.Struct {
-		panic(fmt.Errorf("Value %T is not a struct", value))
+		panic(fmt.Errorf("value %T is not a struct", value))
 	}
 	typeInfo := GetTypeInfo(reflectionType)
 
@@ -87,7 +87,7 @@ func (decoder *ObjectDecoder) DecodeStructFieldsAndExtensions(value interface{})
 						continue
 					}
 				}
-				return fmt.Errorf("Error while unmarshalling property '%s' (%s): %v",
+				return fmt.Errorf("failed to unmarshal property %q (%s): %v",
 					field.JSONName, fieldValue.Type().String(), err)
 			}
 			if !isPtr {
@@ -109,7 +109,7 @@ func (decoder *ObjectDecoder) DecodeStructFieldsAndExtensions(value interface{})
 						continue
 					}
 				}
-				return fmt.Errorf("Error while unmarshalling property '%s' (%s): %v",
+				return fmt.Errorf("failed to unmarshal property %q (%s): %v",
 					field.JSONName, fieldPtr.Type().String(), err)
 			}
 

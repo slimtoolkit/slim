@@ -3,17 +3,21 @@ package openapi3
 import (
 	"context"
 	"errors"
+	"fmt"
 	"math"
 	"net/url"
 	"strings"
+
+	"github.com/getkin/kin-openapi/jsoninfo"
 )
 
 // Servers is specified by OpenAPI/Swagger standard version 3.0.
 type Servers []*Server
 
-func (servers Servers) Validate(c context.Context) error {
-	for _, v := range servers {
-		if err := v.Validate(c); err != nil {
+// Validate ensures servers are per the OpenAPIv3 specification.
+func (value Servers) Validate(ctx context.Context) error {
+	for _, v := range value {
+		if err := v.Validate(ctx); err != nil {
 			return err
 		}
 	}
@@ -36,9 +40,18 @@ func (servers Servers) MatchURL(parsedURL *url.URL) (*Server, []string, string) 
 
 // Server is specified by OpenAPI/Swagger standard version 3.0.
 type Server struct {
+	ExtensionProps
 	URL         string                     `json:"url" yaml:"url"`
 	Description string                     `json:"description,omitempty" yaml:"description,omitempty"`
 	Variables   map[string]*ServerVariable `json:"variables,omitempty" yaml:"variables,omitempty"`
+}
+
+func (server *Server) MarshalJSON() ([]byte, error) {
+	return jsoninfo.MarshalStrictStruct(server)
+}
+
+func (server *Server) UnmarshalJSON(data []byte) error {
+	return jsoninfo.UnmarshalStrictStruct(data, server)
 }
 
 func (server Server) ParameterNames() ([]string, error) {
@@ -52,7 +65,7 @@ func (server Server) ParameterNames() ([]string, error) {
 		pattern = pattern[i+1:]
 		i = strings.IndexByte(pattern, '}')
 		if i < 0 {
-			return nil, errors.New("Missing '}'")
+			return nil, errors.New("missing '}'")
 		}
 		params = append(params, strings.TrimSpace(pattern[:i]))
 		pattern = pattern[i+1:]
@@ -112,12 +125,22 @@ func (server Server) MatchRawURL(input string) ([]string, string, bool) {
 	return params, input, true
 }
 
-func (server *Server) Validate(c context.Context) (err error) {
-	if server.URL == "" {
-		return errors.New("value of url must be a non-empty JSON string")
+func (value *Server) Validate(ctx context.Context) (err error) {
+	if value.URL == "" {
+		return errors.New("value of url must be a non-empty string")
 	}
-	for _, v := range server.Variables {
-		if err = v.Validate(c); err != nil {
+	opening, closing := strings.Count(value.URL, "{"), strings.Count(value.URL, "}")
+	if opening != closing {
+		return errors.New("server URL has mismatched { and }")
+	}
+	if opening != len(value.Variables) {
+		return errors.New("server has undeclared variables")
+	}
+	for name, v := range value.Variables {
+		if !strings.Contains(value.URL, fmt.Sprintf("{%s}", name)) {
+			return errors.New("server has undeclared variables")
+		}
+		if err = v.Validate(ctx); err != nil {
 			return
 		}
 	}
@@ -126,23 +149,27 @@ func (server *Server) Validate(c context.Context) (err error) {
 
 // ServerVariable is specified by OpenAPI/Swagger standard version 3.0.
 type ServerVariable struct {
-	Enum        []interface{} `json:"enum,omitempty" yaml:"enum,omitempty"`
-	Default     interface{}   `json:"default,omitempty" yaml:"default,omitempty"`
-	Description string        `json:"description,omitempty" yaml:"description,omitempty"`
+	ExtensionProps
+	Enum        []string `json:"enum,omitempty" yaml:"enum,omitempty"`
+	Default     string   `json:"default,omitempty" yaml:"default,omitempty"`
+	Description string   `json:"description,omitempty" yaml:"description,omitempty"`
 }
 
-func (serverVariable *ServerVariable) Validate(c context.Context) error {
-	switch serverVariable.Default.(type) {
-	case float64, string:
-	default:
-		return errors.New("value of default must be either JSON number or JSON string")
-	}
-	for _, item := range serverVariable.Enum {
-		switch item.(type) {
-		case float64, string:
-		default:
-			return errors.New("Every variable 'enum' item must be number of string")
+func (serverVariable *ServerVariable) MarshalJSON() ([]byte, error) {
+	return jsoninfo.MarshalStrictStruct(serverVariable)
+}
+
+func (serverVariable *ServerVariable) UnmarshalJSON(data []byte) error {
+	return jsoninfo.UnmarshalStrictStruct(data, serverVariable)
+}
+
+func (value *ServerVariable) Validate(ctx context.Context) error {
+	if value.Default == "" {
+		data, err := value.MarshalJSON()
+		if err != nil {
+			return err
 		}
+		return fmt.Errorf("field default is required in %s", data)
 	}
 	return nil
 }

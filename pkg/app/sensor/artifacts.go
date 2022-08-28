@@ -20,7 +20,6 @@ import (
 
 	"github.com/armon/go-radix"
 	"github.com/bmatcuk/doublestar/v3"
-	//"github.com/robertkrimen/otto"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/detectors/binfile"
@@ -37,7 +36,6 @@ const (
 	pidFileSuffix          = ".pid"
 	varRunDir              = "/var/run/"
 	fileTypeCmdName        = "file"
-	defaultReportName      = "creport.json"
 	defaultArtifactDirName = "/opt/dockerslim/artifacts"
 	filesDirName           = "files"
 	filesArchiveName       = "files.tar"
@@ -1667,7 +1665,7 @@ func (p *artifactStore) saveReport() {
 		creport.Image.Files = append(creport.Image.Files, p.rawNames[fname])
 	}
 
-	reportName := defaultReportName
+	reportName := report.DefaultContainerReportFileName
 
 	_, err := os.Stat(p.storeLocation)
 	if os.IsNotExist(err) {

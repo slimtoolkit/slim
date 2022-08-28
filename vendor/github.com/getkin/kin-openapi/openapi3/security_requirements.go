@@ -15,9 +15,9 @@ func (srs *SecurityRequirements) With(securityRequirement SecurityRequirement) *
 	return srs
 }
 
-func (srs SecurityRequirements) Validate(c context.Context) error {
-	for _, item := range srs {
-		if err := item.Validate(c); err != nil {
+func (value SecurityRequirements) Validate(ctx context.Context) error {
+	for _, item := range value {
+		if err := item.Validate(ctx); err != nil {
 			return err
 		}
 	}
@@ -38,6 +38,6 @@ func (security SecurityRequirement) Authenticate(provider string, scopes ...stri
 	return security
 }
 
-func (security SecurityRequirement) Validate(c context.Context) error {
+func (value SecurityRequirement) Validate(ctx context.Context) error {
 	return nil
 }
