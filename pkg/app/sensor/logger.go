@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-package app
+package sensor
 
 import (
 	"fmt"

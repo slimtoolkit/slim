@@ -4,6 +4,8 @@
 package ptrace
 
 import (
+	"context"
+	"os"
 	"time"
 
 	"github.com/docker-slim/docker-slim/pkg/errors"
@@ -16,41 +18,48 @@ import (
 
 // Run starts the PTRACE monitor
 func Run(
+	ctx context.Context,
 	rtaSourcePT bool,
-	errorCh chan error,
-	ackCh chan<- bool,
-	startCh <-chan int,
-	stopCh chan struct{},
+	standalone bool,
+	errorCh chan<- error,
+	appStartAckCh chan<- bool,
+	signalCh <-chan os.Signal,
 	appName string,
 	appArgs []string,
 	dirName string,
 	appUser string,
 	runTargetAsUser bool,
 	includeNew bool,
-	origPaths map[string]interface{}) <-chan *report.PtMonitorReport {
+	origPaths map[string]interface{},
+) <-chan *report.PtMonitorReport {
 	log.Info("ptmon: Run")
-	ptApp, err := ptrace.Run(
+
+	reportCh := make(chan *report.PtMonitorReport, 1)
+	appStateCh := make(chan ptrace.AppState, 10)
+
+	_, err := ptrace.Run(
+		ctx,
 		rtaSourcePT,
+		standalone,
 		appName,
 		appArgs,
 		dirName,
 		appUser,
 		runTargetAsUser,
-		nil,
+		reportCh,
 		errorCh,
-		nil,
-		stopCh,
+		appStateCh,
+		signalCh,
 		includeNew,
 		origPaths)
 	if err != nil {
-		if ackCh != nil {
-			ackCh <- false
+		if appStartAckCh != nil {
+			appStartAckCh <- false
 			time.Sleep(2 * time.Second)
 		}
 
 		if errorCh != nil {
-			sensorErr := errors.SE("sensor.ptrace.Run/ptrace.Run", "call.error", err)
-			errorCh <- sensorErr
+			errorCh <- errors.SE("sensor.ptrace.Run/ptrace.Run", "call.error", err)
 			time.Sleep(3 * time.Second)
 		}
 
@@ -60,29 +69,33 @@ func Run(
 	go func() {
 		for {
 			select {
-			case <-stopCh:
+			case <-ctx.Done():
 				log.Debug("ptmon: pta state watcher - stopping...")
 				return
-			case state := <-ptApp.StateCh:
+
+			case state := <-appStateCh:
 				log.Debugf("ptmon: pta state watcher - state => %v", state)
+
 				switch state {
 				case ptrace.AppStarted:
 					log.Debug("ptmon: pta state watcher - state(started)...")
-					if ackCh != nil {
-						ackCh <- true
+					if appStartAckCh != nil {
+						appStartAckCh <- true
 					}
+
 				case ptrace.AppFailed:
 					log.Debug("ptmon: pta state watcher - state(failed)...")
-					if ackCh != nil {
-						ackCh <- false
+					if appStartAckCh != nil {
+						appStartAckCh <- false
 					}
-					return
-				case ptrace.AppDone, ptrace.AppExited:
+					return // Don't need to wait for the 'done' state.
+
+				case ptrace.AppDone:
 					log.Debug("ptmon: pta state watcher - state(terminated)...")
 				}
 			}
 		}
 	}()
 
-	return ptApp.ReportCh
+	return reportCh
 }

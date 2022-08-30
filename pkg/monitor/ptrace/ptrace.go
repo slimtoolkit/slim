@@ -2,6 +2,7 @@ package ptrace
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
@@ -10,7 +11,6 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
-	"time"
 
 	"github.com/armon/go-radix"
 	log "github.com/sirupsen/logrus"
@@ -28,25 +28,26 @@ const (
 	AppStarted AppState = "app.started"
 	AppFailed  AppState = "app.failed"
 	AppDone    AppState = "app.done"
-	AppExited  AppState = "app.exited"
 )
 
 func Run(
+	ctx context.Context,
 	rtaSourcePT bool,
+	standalone bool,
 	cmd string,
 	args []string,
 	dir string,
 	user string,
 	runAsUser bool,
-	reportCh chan *report.PtMonitorReport,
-	errorCh chan error,
-	stateCh chan AppState,
-	stopCh chan struct{},
+	reportCh chan<- *report.PtMonitorReport,
+	errorCh chan<- error,
+	stateCh chan<- AppState,
+	signalCh <-chan os.Signal,
 	includeNew bool,
 	origPaths map[string]interface{},
 ) (*App, error) {
 	log.Debug("ptrace.Run")
-	app, err := newApp(rtaSourcePT, cmd, args, dir, user, runAsUser, reportCh, errorCh, stateCh, stopCh, includeNew, origPaths)
+	app, err := newApp(ctx, rtaSourcePT, standalone, cmd, args, dir, user, runAsUser, signalCh, reportCh, errorCh, stateCh, includeNew, origPaths)
 	if err != nil {
 		app.StateCh <- AppFailed
 		return nil, err
@@ -61,19 +62,26 @@ func Run(
 		log.Debug("ptrace.Run - not tracing target app...")
 		go func() {
 			log.Debug("ptrace.Run - not tracing target app - start app")
-			err := app.start()
-			if err != nil {
+			if err := app.start(); err != nil {
 				log.Debugf("ptrace.Run - not tracing target app - start app error - %v", err)
 				app.StateCh <- AppFailed
 				app.ErrorCh <- errors.SE("ptrace.App.trace.app.start", "call.error", err)
 				return
 			}
 
+			cancelSignalForwarding := app.startSignalForwarding()
+			defer cancelSignalForwarding()
+
 			app.StateCh <- AppStarted
 
-			time.Sleep(2 * time.Second)
-			log.Debug("ptrace.Run - not tracing target app - state<-AppDone")
-			app.StateCh <- AppDone
+			if err := app.cmd.Wait(); err != nil {
+				log.WithError(err).Debug("ptrace.Run - not tracing target app - state<-AppFailed")
+				app.StateCh <- AppFailed
+			} else {
+				log.Debug("ptrace.Run - not tracing target app - state<-AppDone")
+				app.StateCh <- AppDone
+			}
+
 			app.ReportCh <- &app.Report
 		}()
 	}
@@ -103,17 +111,19 @@ type syscallState struct {
 }
 
 type App struct {
+	ctx             context.Context
 	RTASourcePT     bool
+	standalone      bool
 	Cmd             string
 	Args            []string
 	Dir             string
 	User            string
 	RunAsUser       bool
 	Report          report.PtMonitorReport
-	ReportCh        chan *report.PtMonitorReport
-	ErrorCh         chan error
-	StateCh         chan AppState
-	StopCh          chan struct{}
+	signalCh        <-chan os.Signal
+	ReportCh        chan<- *report.PtMonitorReport
+	ErrorCh         chan<- error
+	StateCh         chan<- AppState
 	fsActivity      map[string]*report.FSActivityInfo
 	syscallActivity map[uint32]uint64
 	//syscallResolver system.NumberResolverFunc
@@ -143,22 +153,22 @@ type syscallEvent struct {
 }
 
 func newApp(
+	ctx context.Context,
 	rtaSourcePT bool,
+	standalone bool,
 	cmd string,
 	args []string,
 	dir string,
 	user string,
 	runAsUser bool,
-	reportCh chan *report.PtMonitorReport,
-	errorCh chan error,
-	stateCh chan AppState,
-	stopCh chan struct{},
+	signalCh <-chan os.Signal,
+	reportCh chan<- *report.PtMonitorReport,
+	errorCh chan<- error,
+	stateCh chan<- AppState,
 	includeNew bool,
-	origPaths map[string]interface{}) (*App, error) {
+	origPaths map[string]interface{},
+) (*App, error) {
 	log.Debug("ptrace.newApp")
-	if reportCh == nil {
-		reportCh = make(chan *report.PtMonitorReport, 1)
-	}
 
 	if errorCh == nil {
 		errorCh = make(chan error, 100)
@@ -168,24 +178,22 @@ func newApp(
 		stateCh = make(chan AppState, 10)
 	}
 
-	if stopCh == nil {
-		stopCh = make(chan struct{})
-	}
-
 	sysInfo := system.GetSystemInfo()
 	archName := system.MachineToArchName(sysInfo.Machine)
 
 	a := App{
+		ctx:             ctx,
 		RTASourcePT:     rtaSourcePT,
+		standalone:      standalone,
 		Cmd:             cmd,
 		Args:            args,
 		Dir:             dir,
 		User:            user,
 		RunAsUser:       runAsUser,
+		signalCh:        signalCh,
 		ReportCh:        reportCh,
 		ErrorCh:         errorCh,
 		StateCh:         stateCh,
-		StopCh:          stopCh,
 		fsActivity:      map[string]*report.FSActivityInfo{},
 		syscallActivity: map[uint32]uint64{},
 		eventCh:         make(chan syscallEvent, eventBufSize),
@@ -203,10 +211,6 @@ func newApp(
 	return &a, nil
 }
 
-func (app *App) Stop() {
-	close(app.StopCh)
-}
-
 func (app *App) trace() {
 	log.Debug("ptrace.App.trace")
 	runtime.LockOSThread()
@@ -218,6 +222,9 @@ func (app *App) trace() {
 		app.ErrorCh <- errors.SE("ptrace.App.trace.app.start", "call.error", err)
 		return
 	}
+
+	cancelSignalForwarding := app.startSignalForwarding()
+	defer cancelSignalForwarding()
 
 	app.StateCh <- AppStarted
 	app.collect()
@@ -287,7 +294,7 @@ done:
 				state = AppFailed
 			}
 			break done
-		case <-app.StopCh:
+		case <-app.ctx.Done():
 			log.Debug("ptrace.App.process: stopping...")
 			//NOTE: need a better way to stop the target app...
 			//"os: process already finished" error is ok
@@ -521,7 +528,7 @@ func (app *App) collect() {
 	callSig := 0
 	for {
 		select {
-		case <-app.StopCh:
+		case <-app.ctx.Done():
 			log.Debug("ptrace.App.collect: stop (exiting)")
 			return
 		default:
@@ -581,6 +588,8 @@ func (app *App) collect() {
 			log.Error("ptrace.App.collect: wpid = -1")
 			app.StateCh <- AppFailed
 			app.ErrorCh <- errors.SE("ptrace.App.collect.wpid", "call.error", fmt.Errorf("wpid is -1"))
+			// TODO(ivan): Investigate if this code branch leads to sensor becoming stuck.
+			//             Should we collectorDoneCh <- 42?
 			return
 		}
 
@@ -627,11 +636,20 @@ func (app *App) collect() {
 				if !mainExiting {
 					log.Debug("ptrace.App.collect: unexpected main PID termination...")
 				}
+
+				if len(pidSyscallState) > 0 && app.standalone {
+					// Announce the end of event collection but don't stop the tracing loop.
+					//
+					// This makes the monitor report the tracing results unblocking the sensor
+					// and allowing it to start dumping the artifacts (while giving an extra
+					// chance for the child processes to terminate gracefully).
+					app.collectorDoneCh <- 0
+				}
 			}
 
 			if len(pidSyscallState) == 0 {
 				log.Debugf("ptrace.App.collect[%d/%d]: all processes terminated...", app.cmd.Process.Pid, app.pgid)
-				app.collectorDoneCh <- 0
+				app.collectorDoneCh <- 0 // TODO(ivan): Should it be collectorDoneCh <- statusCode instead?
 				return
 			}
 
@@ -769,6 +787,49 @@ func (app *App) collect() {
 		callPid = wpid
 	}
 
+}
+
+func (app *App) startSignalForwarding() context.CancelFunc {
+	log.Debug("ptrace.App - signal forwarder - starting...")
+
+	ctx, cancel := context.WithCancel(app.ctx)
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+
+			case s := <-app.signalCh:
+				log.WithField("signal", s).Debug("ptrace.App - signal forwarder - received signal")
+
+				if s == syscall.SIGCHLD {
+					continue
+				}
+
+				log.WithField("signal", s).Debug("ptrace.App - signal forwarder - forwarding signal")
+
+				ss, ok := s.(syscall.Signal)
+				if !ok {
+					log.WithField("signal", s).Debug("ptrace.App - signal forwarder - unsupported signal type")
+					continue
+				}
+
+				// app.cmd.Process.Signal(s) can't be used because due to ptrace-ing
+				// the target processes' status becomes set before the actual
+				// process termination making Signal() think the process exited and
+				// not even trying to deliver the signal.
+				if err := syscall.Kill(app.cmd.Process.Pid, ss); err != nil {
+					log.
+						WithError(err).
+						WithField("signal", ss).
+						Debug("ptrace.App - signal forwarder - failed to signal target app")
+				}
+			}
+		}
+	}()
+
+	return cancel
 }
 
 func onSyscall(pid int, cstate *syscallState) (bool, error) {

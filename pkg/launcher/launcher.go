@@ -4,13 +4,13 @@
 package launcher
 
 import (
-	"golang.org/x/sys/unix"
 	"os"
 	"os/exec"
 	"strings"
 	"syscall"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
 
 	"github.com/docker-slim/docker-slim/pkg/system"
 )

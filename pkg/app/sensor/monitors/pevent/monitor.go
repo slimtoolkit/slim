@@ -15,7 +15,7 @@ import (
 //Watch the processes to separate the activity we care about from unrelated stuff running in the background.
 
 // Run starts the PEVENT monitor
-func Run(stopChan chan struct{}) <-chan *report.PeMonitorReport {
+func Run(stopChan <-chan struct{}) <-chan *report.PeMonitorReport {
 	log.Info("pemon: starting...")
 
 	//"connection refused" with boot2docker...

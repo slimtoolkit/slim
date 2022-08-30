@@ -4,9 +4,12 @@
 package ptrace
 
 import (
+	"context"
+	"os"
 	"os/exec"
 	"runtime"
 	"strconv"
+	"syscall"
 	"time"
 
 	"github.com/docker-slim/docker-slim/pkg/errors"
@@ -43,18 +46,20 @@ const (
 
 // Run starts the PTRACE monitor
 func Run(
+	ctx context.Context,
 	rtaSourcePT bool,
-	errorCh chan error,
-	ackChan chan<- bool,
-	startChan <-chan int,
-	stopChan chan struct{},
+	standalone bool, // TODO: Implement me!
+	errorCh chan<- error,
+	appStartAckCh chan<- bool,
+	signalCh <-chan os.Signal,
 	appName string,
 	appArgs []string,
 	dirName string,
 	appUser string,
 	runTargetAsUser bool,
 	includeNew bool,
-	origPaths map[string]interface{}) <-chan *report.PtMonitorReport {
+	origPaths map[string]interface{},
+) <-chan *report.PtMonitorReport {
 	log.Info("ptmon: Run")
 
 	sysInfo := system.GetSystemInfo()
@@ -84,18 +89,21 @@ func Run(
 
 			var err error
 			app, err = launcher.Start(appName, appArgs, dirName, appUser, runTargetAsUser, rtaSourcePT)
-			started := true
 			if err != nil {
-				started = false
-			}
-			ackChan <- started
-
-			if err != nil {
-				sensorErr := errors.SE("sensor.ptrace.Run/launcher.Start", "call.error", err)
-				errorCh <- sensorErr
+				appStartAckCh <- false
+				errorCh <- errors.SE("sensor.ptrace.Run/launcher.Start", "call.error", err)
 				time.Sleep(3 * time.Second)
+				errutil.FailOn(err)
 			}
-			errutil.FailOn(err)
+
+			// TODO: Apparently, rtaSourcePT is ignored by this below code.
+			//       The x86-64 version of it has an alternative code branch
+			//       to run the target app w/o tracing.
+
+			appStartAckCh <- true
+
+			cancelSignalForwarding := startSignalForwarding(ctx, app, signalCh)
+			defer cancelSignalForwarding()
 
 			targetPid := app.Process.Pid
 
@@ -194,7 +202,7 @@ func Run(
 						callNum: uint32(callNum),
 						retVal:  retVal,
 					}:
-					case <-stopChan:
+					case <-ctx.Done():
 						log.Info("ptmon: collector - stopping...")
 						return
 					}
@@ -211,7 +219,7 @@ func Run(
 			case rc := <-collectorDoneChan:
 				log.Info("ptmon: processor - collector finished =>", rc)
 				break done
-			case <-stopChan:
+			case <-ctx.Done():
 				log.Info("ptmon: processor - stopping...")
 				//NOTE: need a better way to stop the target app...
 				if err := app.Process.Signal(unix.SIGTERM); err != nil {
@@ -250,4 +258,41 @@ func Run(
 	}()
 
 	return resultChan
+}
+
+func startSignalForwarding(
+	ctx context.Context,
+	app *exec.Cmd,
+	signalCh <-chan os.Signal,
+) context.CancelFunc {
+	log.Debug("ptmon: signal forwarder - starting...")
+
+	ctx, cancel := context.WithCancel(ctx)
+
+	go func() {
+		for {
+			select {
+			case <-ctx.Done():
+				return
+
+			case s := <-signalCh:
+				log.WithField("signal", s).Debug("ptmon: signal forwarder - received signal")
+
+				if s == syscall.SIGCHLD {
+					continue
+				}
+
+				log.WithField("signal", s).Debug("ptmon: signal forwarder - forwarding signal")
+
+				if err := app.Process.Signal(s); err != nil {
+					log.
+						WithError(err).
+						WithField("signal", s).
+						Debug("ptmon: signal forwarder - failed to signal target app")
+				}
+			}
+		}
+	}()
+
+	return cancel
 }
