@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - master
-      - iximiuz/kubernetes-support-poc
   pull_request:
     branches:
       - master
