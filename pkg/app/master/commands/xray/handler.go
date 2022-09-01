@@ -1265,37 +1265,26 @@ func objectHistoryString(history *dockerimage.ObjectHistory) string {
 
 func printObject(xc *app.ExecutionContext, object *dockerimage.ObjectMetadata) {
 	var hashInfo string
+
 	if object.Hash != "" {
 		hashInfo = fmt.Sprintf(" hash=%s", object.Hash)
 	}
-	xc.Out.Info("params",
-		ovars{
-			"mode":        object.Mode,
-			"size.human":  humanize.Bytes(uint64(object.Size)),
-			"size.bytes":  object.Size,
-			"uid":         object.UID,
-			"gid":         object.GID,
-			"mtime":       object.ModTime.UTC().Format(time.RFC3339),
-			"H":           objectHistoryString(object.History),
-			"hash":        hashInfo,
-			"object.name": object.Name,
-		},
-	)
-	// fmt.Printf("%s: mode=%s size.human='%v' size.bytes=%d uid=%d gid=%d mtime='%s' %s%s '%s'",
-	// 	object.Change,
-	// 	object.Mode,
-	// 	humanize.Bytes(uint64(object.Size)),
-	// 	object.Size,
-	// 	object.UID,
-	// 	object.GID,
-	// 	object.ModTime.UTC().Format(time.RFC3339),
-	// 	objectHistoryString(object.History),
-	// 	hashInfo,
-	// 	object.Name)
+	ov := ovars{
+		"mode":        object.Mode,
+		"size.human":  humanize.Bytes(uint64(object.Size)),
+		"size.bytes":  object.Size,
+		"uid":         object.UID,
+		"gid":         object.GID,
+		"mtime":       object.ModTime.UTC().Format(time.RFC3339),
+		"H":           objectHistoryString(object.History),
+		"hash":        hashInfo,
+		"object.name": object.Name,
+	}
 
 	if object.LinkTarget != "" {
-		fmt.Printf(" -> '%s'\n", object.LinkTarget)
-	} else {
-		fmt.Printf("\n")
+		ov["link.target"] = object.LinkTarget
 	}
+
+	xc.Out.Info("object", ov)
+
 }
