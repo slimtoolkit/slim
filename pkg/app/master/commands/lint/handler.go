@@ -70,7 +70,7 @@ func OnCommand(
 	var client *dockerapi.Client
 
 	if gparams.Debug {
-		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	if doListChecks {

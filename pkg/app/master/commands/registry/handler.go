@@ -69,7 +69,7 @@ func OnPullCommand(
 	errutil.FailOn(err)
 
 	if gparams.Debug {
-		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	//todo: pass a custom client to Pull (based on `client` above)
@@ -145,7 +145,7 @@ func OnPushCommand(
 	errutil.FailOn(err)
 
 	if gparams.Debug {
-		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	xc.Out.State("completed")
@@ -203,7 +203,7 @@ func OnCopyCommand(
 	errutil.FailOn(err)
 
 	if gparams.Debug {
-		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	xc.Out.State("completed")

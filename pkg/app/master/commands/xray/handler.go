@@ -130,7 +130,7 @@ func OnCommand(
 	errutil.FailOn(err)
 
 	if gparams.Debug {
-		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	imageInspector, err := image.NewInspector(client, targetRef)

@@ -48,5 +48,5 @@ func OnCommand(
 	}
 	errutil.FailOn(err)
 
-	version.Print(fmt.Sprintf("cmd=%s", Name), logger, client, true, inContainer, isDSImage)
+	version.Print(xc, fmt.Sprintf("cmd=%s", Name), logger, client, true, inContainer, isDSImage)
 }
