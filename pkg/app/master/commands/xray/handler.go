@@ -78,7 +78,6 @@ func OnCommand(
 ) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("cmd=%s", cmdName)
 
 	changeDataMatchers := map[string]*dockerimage.ChangeDataMatcher{}
 	for _, cdm := range changeDataMatcherList {
@@ -130,7 +129,7 @@ func OnCommand(
 	errutil.FailOn(err)
 
 	if gparams.Debug {
-		version.Print(xc, prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, cmdName, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	imageInspector, err := image.NewInspector(client, targetRef)

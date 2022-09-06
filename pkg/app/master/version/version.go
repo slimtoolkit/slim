@@ -82,9 +82,10 @@ func GetCheckVersionVerdict(info *CheckVersionInfo) string {
 }
 
 // Print shows the master app version information
-func Print(xc *app.ExecutionContext, printPrefix string, logger *log.Entry, client *docker.Client, checkVersion, inContainer, isDSImage bool) {
+func Print(xc *app.ExecutionContext, cmdNameParam string, logger *log.Entry, client *docker.Client, checkVersion, inContainer, isDSImage bool) {
 
 	ovApp := ovars{
+		"cmd":       cmdNameParam,
 		"version":   v.Current(),
 		"container": inContainer,
 		"dsimage":   isDSImage,
@@ -107,6 +108,7 @@ func Print(xc *app.ExecutionContext, printPrefix string, logger *log.Entry, clie
 
 	hostInfo := system.GetSystemInfo()
 	ovHost := ovars{
+		"cmd":     cmdNameParam,
 		"osname":  hostInfo.Distro.DisplayName,
 		"osbuild": hostInfo.OsBuild,
 		"version": hostInfo.Version,
@@ -127,6 +129,7 @@ func Print(xc *app.ExecutionContext, printPrefix string, logger *log.Entry, clie
 		}
 
 		ovDocker := ovars{
+			"cmd":              cmdNameParam,
 			"name":             info.Name,
 			"kernel.version":   info.KernelVersion,
 			"operating.system": info.OperatingSystem,
@@ -146,6 +149,7 @@ func Print(xc *app.ExecutionContext, printPrefix string, logger *log.Entry, clie
 			xc.Exit(-1)
 		}
 		ovDockerClient := ovars{
+			"cmd":              cmdNameParam,
 			"api.version":      ver.Get("ApiVersion"),
 			"mini.api.version": ver.Get("MinAPIVersion"),
 			"build.time":       ver.Get("BuildTime"),

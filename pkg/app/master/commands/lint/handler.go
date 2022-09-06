@@ -39,7 +39,6 @@ func OnCommand(
 	doListChecks bool) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("cmd=%s", cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -70,7 +69,7 @@ func OnCommand(
 	var client *dockerapi.Client
 
 	if gparams.Debug {
-		version.Print(xc, prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, cmdName, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	if doListChecks {
