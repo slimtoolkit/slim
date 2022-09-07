@@ -4,10 +4,12 @@
 package sensor
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -25,167 +27,67 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/sysenv"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"golang.org/x/sys/unix"
 
 	log "github.com/sirupsen/logrus"
 )
 
 const (
 	defaultArtifactDirName = "/opt/dockerslim/artifacts"
+
+	sensorModeControlled = "controlled"
+	sensorModeStandalone = "standalone"
 )
 
-///////////////////////////////////////////////////////////////////////////////
+const (
+	enableDebugFlagUsage   = "enable debug logging"
+	enableDebugFlagDefault = false
 
-func getCurrentPaths(root string) (map[string]interface{}, error) {
-	pathMap := map[string]interface{}{}
-	err := filepath.Walk(root,
-		func(pth string, info os.FileInfo, err error) error {
-			if strings.HasPrefix(pth, "/proc/") {
-				log.Debugf("getCurrentPaths: skipping /proc file system objects...")
-				return filepath.SkipDir
-			}
+	logLevelFlagUsage   = "set the logging level ('debug', 'info' (default), 'warn', 'error', 'fatal', 'panic')"
+	logLevelFlagDefault = "info"
 
-			if strings.HasPrefix(pth, "/sys/") {
-				log.Debugf("getCurrentPaths: skipping /sys file system objects...")
-				return filepath.SkipDir
-			}
+	logFormatFlagUsage   = "set the format used by logs ('text' (default), or 'json')"
+	logFormatFlagDefault = "text"
 
-			if strings.HasPrefix(pth, "/dev/") {
-				log.Debugf("getCurrentPaths: skipping /dev file system objects...")
-				return filepath.SkipDir
-			}
+	sensorModeFlagUsage   = "set the sensor execution mode ('controlled' when sensor expect the driver docker-slim app to manipulate its lifecycle; or 'standalone' when sensor depends on nothing but the target app"
+	sensorModeFlagDefault = sensorModeControlled
 
-			if info.Mode().IsRegular() &&
-				!strings.HasPrefix(pth, "/proc/") &&
-				!strings.HasPrefix(pth, "/sys/") &&
-				!strings.HasPrefix(pth, "/dev/") {
-				pth, err := filepath.Abs(pth)
-				if err == nil {
-					pathMap[pth] = nil
-				}
-			}
-			return nil
-		})
+	commandFileFlagUsage   = "JSONL-encoded file with one ore more sensor commands"
+	commandFileFlagDefault = defaultArtifactDirName + "/commands.json"
 
-	if err != nil {
-		return nil, err
-	}
+	stopSignalFlagUsage   = "signal to stop the target app and start producing the report"
+	stopSignalFlagDefault = "TERM"
 
-	return pathMap, nil
-}
-
-type monResult struct {
-	peReportChan  <-chan *report.PeMonitorReport
-	fanReportChan <-chan *report.FanMonitorReport
-	ptReportChan  <-chan *report.PtMonitorReport
-}
-
-func (r *monResult) peReport() *report.PeMonitorReport {
-	if r.peReportChan == nil {
-		return nil
-	}
-	return <-r.peReportChan
-}
-
-func (r *monResult) fanReport() *report.FanMonitorReport {
-	return <-r.fanReportChan
-}
-
-func (r *monResult) ptReport() *report.PtMonitorReport {
-	return <-r.ptReportChan
-}
-
-func startMonitor(
-	ctx context.Context,
-	cmd *command.StartMonitor,
-	standalone bool,
-	dirName string,
-	mountPoint string,
-	signalChan <-chan os.Signal,
-	errorChan chan<- error,
-) (monResult, error) {
-	res := monResult{}
-	origPaths, err := getCurrentPaths("/")
-	if err != nil {
-		return res, err
-	}
-
-	log.Info("sensor: monitor starting...")
-
-	//tmp: disable PEVENTs (due to problems with the new boot2docker host OS)
-	usePEMon, err := system.DefaultKernelFeatures.IsCompiled("CONFIG_PROC_EVENTS")
-	usePEMon = false
-	if (err == nil) && usePEMon {
-		log.Info("sensor: proc events are available!")
-		res.peReportChan = pevent.Run(ctx.Done())
-		//ProcEvents are not enabled in the default boot2docker kernel
-	}
-
-	prepareEnv(defaultArtifactDirName, cmd)
-
-	res.fanReportChan = fanotify.Run(ctx, errorChan, mountPoint, cmd.IncludeNew, origPaths) //cmd.AppName, cmd.AppArgs
-	if res.fanReportChan == nil {
-		log.Info("sensor: startMonitor - FAN failed to start running...")
-		return res, errors.New("FAN failed to start running")
-	}
-
-	log.Debugf("sensor: starting target app => %v %#v", cmd.AppName, cmd.AppArgs)
-
-	appStartAckChan := make(chan bool, 3)
-	res.ptReportChan = ptrace.Run(
-		ctx,
-		cmd.RTASourcePT,
-		standalone,
-		errorChan,
-		appStartAckChan,
-		signalChan,
-		cmd.AppName,
-		cmd.AppArgs,
-		dirName,
-		cmd.AppUser,
-		cmd.RunTargetAsUser,
-		cmd.IncludeNew,
-		origPaths)
-	if res.ptReportChan == nil {
-		log.Info("sensor: startMonitor - PTAN failed to start running...")
-		return res, errors.New("PTAN failed to start running")
-	}
-
-	log.Info("sensor: waiting for monitor to complete startup...")
-
-	if !<-appStartAckChan {
-		log.Info("sensor: startMonitor - PTAN failed to ack running...")
-		return res, errors.New("PTAN failed to ack running")
-	}
-
-	return res, nil
-}
-
-/////////
+	stopGracePeriodFlagUsage   = "time to wait for the graceful termination of the target app (before sensor will send it SIGKILL)"
+	stopGracePeriodFlagDefault = 5 * time.Second
+)
 
 var (
-	enableDebug  bool
-	logLevelName string
-	logFormat    string
-	mode         string
-	startCommand string
+	enableDebug     *bool          = flag.Bool("debug", enableDebugFlagDefault, enableDebugFlagUsage)
+	logLevel        *string        = flag.String("log-level", logLevelFlagDefault, logLevelFlagUsage)
+	logFormat       *string        = flag.String("log-format", logFormatFlagDefault, logFormatFlagUsage)
+	sensorMode      *string        = flag.String("mode", sensorModeFlagDefault, sensorModeFlagUsage)
+	commandFile     *string        = flag.String("command-file", commandFileFlagDefault, commandFileFlagUsage)
+	stopSignal      *string        = flag.String("stop-signal", stopSignalFlagDefault, stopSignalFlagUsage)
+	stopGracePeriod *time.Duration = flag.Duration("stop-grace-period", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
 )
 
 func init() {
-	flag.BoolVar(&enableDebug, "d", false, "enable debug logging")
-	flag.StringVar(&logLevelName, "log-level", "info", "set the logging level ('debug', 'info' (default), 'warn', 'error', 'fatal', 'panic')")
-	flag.StringVar(&logFormat, "log-format", "text", "set the format used by logs ('text' (default), or 'json')")
-	flag.StringVar(&mode, "mode", "controlled", "set the sensor execution mode ('controlled' when sensor expect the driver docker-slim app to manipulate its lifecycle; or 'standalone' when sensor depends on nothing but the target app")
-	flag.StringVar(&startCommand, "command", "", "JSON-encoded command to start the monitor")
+	flag.BoolVar(enableDebug, "d", enableDebugFlagDefault, enableDebugFlagUsage)
+	flag.StringVar(logLevel, "l", logLevelFlagDefault, logLevelFlagUsage)
+	flag.StringVar(logFormat, "f", logFormatFlagDefault, logFormatFlagUsage)
+	flag.StringVar(sensorMode, "m", sensorModeFlagDefault, sensorModeFlagUsage)
+	flag.StringVar(commandFile, "c", commandFileFlagDefault, commandFileFlagUsage)
+	flag.StringVar(stopSignal, "s", stopSignalFlagDefault, stopSignalFlagUsage)
+	flag.DurationVar(stopGracePeriod, "w", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
 }
-
-/////////
 
 // Run starts the sensor app
 func Run() {
 	flag.Parse()
 
 	errutil.FailOn(
-		configureLogger(enableDebug, logLevelName, logFormat),
+		configureLogger(*enableDebug, *logLevel, *logFormat),
 	)
 
 	activeCaps, maxCaps, err := sysenv.Capabilities(0)
@@ -210,13 +112,24 @@ func Run() {
 
 	mountPoint := "/"
 
-	if mode == "controlled" {
+	switch *sensorMode {
+	case sensorModeControlled:
 		initSignalHandlers(sensorCtxCancel)
-		runControlled(sensorCtx, dirName, mountPoint)
-	} else if mode == "standalone" {
-		// Hardcoded values will become flags (in a separate PR).
-		runStandalone(sensorCtx, dirName, mountPoint, syscall.SIGTERM, 5*time.Second)
-	} else {
+
+		runControlled(
+			sensorCtx,
+			dirName,
+			mountPoint,
+		)
+	case sensorModeStandalone:
+		runStandalone(
+			sensorCtx,
+			dirName,
+			mountPoint,
+			signalFromString(*stopSignal),
+			*stopGracePeriod,
+		)
+	default:
 		errutil.FailOn(errors.New("unknown sensor mode"))
 	}
 
@@ -336,8 +249,8 @@ func runStandalone(
 ) {
 	monitorCtx, monitorCtxCancel := context.WithCancel(sensorCtx)
 
-	var startCmd command.StartMonitor
-	errutil.FailOn(json.Unmarshal([]byte(startCommand), &startCmd))
+	startCmd, err := readCommandFile()
+	errutil.FailOn(err)
 
 	errorChan := make(chan error)
 	go func() {
@@ -381,6 +294,93 @@ func runStandalone(
 	)
 }
 
+type monResult struct {
+	peReportChan  <-chan *report.PeMonitorReport
+	fanReportChan <-chan *report.FanMonitorReport
+	ptReportChan  <-chan *report.PtMonitorReport
+}
+
+func (r *monResult) peReport() *report.PeMonitorReport {
+	if r.peReportChan == nil {
+		return nil
+	}
+	return <-r.peReportChan
+}
+
+func (r *monResult) fanReport() *report.FanMonitorReport {
+	return <-r.fanReportChan
+}
+
+func (r *monResult) ptReport() *report.PtMonitorReport {
+	return <-r.ptReportChan
+}
+
+func startMonitor(
+	ctx context.Context,
+	cmd *command.StartMonitor,
+	standalone bool,
+	dirName string,
+	mountPoint string,
+	signalChan <-chan os.Signal,
+	errorChan chan<- error,
+) (monResult, error) {
+	res := monResult{}
+	origPaths, err := getCurrentPaths("/")
+	if err != nil {
+		return res, err
+	}
+
+	log.Info("sensor: monitor starting...")
+
+	//tmp: disable PEVENTs (due to problems with the new boot2docker host OS)
+	usePEMon, err := system.DefaultKernelFeatures.IsCompiled("CONFIG_PROC_EVENTS")
+	usePEMon = false
+	if (err == nil) && usePEMon {
+		log.Info("sensor: proc events are available!")
+		res.peReportChan = pevent.Run(ctx.Done())
+		//ProcEvents are not enabled in the default boot2docker kernel
+	}
+
+	prepareEnv(defaultArtifactDirName, cmd)
+
+	res.fanReportChan = fanotify.Run(ctx, errorChan, mountPoint, cmd.IncludeNew, origPaths) //cmd.AppName, cmd.AppArgs
+	if res.fanReportChan == nil {
+		log.Info("sensor: startMonitor - FAN failed to start running...")
+		return res, errors.New("FAN failed to start running")
+	}
+
+	log.Debugf("sensor: starting target app => %v %#v", cmd.AppName, cmd.AppArgs)
+
+	appStartAckChan := make(chan bool, 3)
+	res.ptReportChan = ptrace.Run(
+		ctx,
+		cmd.RTASourcePT,
+		standalone,
+		errorChan,
+		appStartAckChan,
+		signalChan,
+		cmd.AppName,
+		cmd.AppArgs,
+		dirName,
+		cmd.AppUser,
+		cmd.RunTargetAsUser,
+		cmd.IncludeNew,
+		origPaths)
+	if res.ptReportChan == nil {
+		log.Info("sensor: startMonitor - PTAN failed to start running...")
+		return res, errors.New("PTAN failed to start running")
+	}
+
+	log.Info("sensor: waiting for monitor to complete startup...")
+
+	if !<-appStartAckChan {
+		log.Info("sensor: startMonitor - PTAN failed to ack running...")
+		return res, errors.New("PTAN failed to ack running")
+	}
+
+	return res, nil
+}
+
 func initSignalForwardingChannel(
 	ctx context.Context,
 	stopSignal os.Signal,
@@ -421,4 +421,76 @@ func initSignalForwardingChannel(
 	}()
 
 	return signalChan
+}
+
+func getCurrentPaths(root string) (map[string]interface{}, error) {
+	pathMap := map[string]interface{}{}
+	err := filepath.Walk(root,
+		func(pth string, info os.FileInfo, err error) error {
+			if strings.HasPrefix(pth, "/proc/") {
+				log.Debugf("getCurrentPaths: skipping /proc file system objects...")
+				return filepath.SkipDir
+			}
+
+			if strings.HasPrefix(pth, "/sys/") {
+				log.Debugf("getCurrentPaths: skipping /sys file system objects...")
+				return filepath.SkipDir
+			}
+
+			if strings.HasPrefix(pth, "/dev/") {
+				log.Debugf("getCurrentPaths: skipping /dev file system objects...")
+				return filepath.SkipDir
+			}
+
+			if info.Mode().IsRegular() &&
+				!strings.HasPrefix(pth, "/proc/") &&
+				!strings.HasPrefix(pth, "/sys/") &&
+				!strings.HasPrefix(pth, "/dev/") {
+				pth, err := filepath.Abs(pth)
+				if err == nil {
+					pathMap[pth] = nil
+				}
+			}
+			return nil
+		})
+
+	if err != nil {
+		return nil, err
+	}
+
+	return pathMap, nil
+}
+
+func signalFromString(s string) syscall.Signal {
+	if !strings.HasPrefix(s, "SIG") {
+		s = "SIG" + s
+	}
+	return unix.SignalNum(s)
+}
+
+// TODO: Make this function return a list of commands.
+func readCommandFile() (command.StartMonitor, error) {
+	var cmd command.StartMonitor
+
+	file, err := os.Open(*commandFile)
+	if err != nil {
+		return cmd, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	if !scanner.Scan() {
+		return cmd, errors.New("empty command file")
+	}
+
+	jsonCmd := scanner.Text()
+	if err := scanner.Err(); err != nil {
+		return cmd, fmt.Errorf("failed to read command file: %w", err)
+	}
+
+	if err := json.Unmarshal([]byte(jsonCmd), &cmd); err != nil {
+		return cmd, err
+	}
+
+	return cmd, nil
 }
