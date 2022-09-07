@@ -33,13 +33,12 @@ import (
 )
 
 const (
-	pidFileSuffix          = ".pid"
-	varRunDir              = "/var/run/"
-	fileTypeCmdName        = "file"
-	defaultArtifactDirName = "/opt/dockerslim/artifacts"
-	filesDirName           = "files"
-	filesArchiveName       = "files.tar"
-	preservedDirName       = "preserved"
+	pidFileSuffix    = ".pid"
+	varRunDir        = "/var/run/"
+	fileTypeCmdName  = "file"
+	filesDirName     = "files"
+	filesArchiveName = "files.tar"
+	preservedDirName = "preserved"
 )
 
 //TODO: extract these app, framework and language specific login into separate packages
@@ -222,6 +221,7 @@ func prepareEnv(storeLocation string, cmd *command.StartMonitor) {
 }
 
 func saveResults(
+	artifactDirName string,
 	cmd *command.StartMonitor,
 	fileNames map[string]*report.ArtifactProps,
 	fanMonReport *report.FanMonitorReport,
@@ -230,10 +230,10 @@ func saveResults(
 ) {
 	log.Debugf("saveResults(%v,...)", len(fileNames))
 
-	artifactDirName := defaultArtifactDirName
 	artifactStore := newArtifactStore(artifactDirName, fileNames, fanMonReport, ptMonReport, peReport, cmd)
 	artifactStore.prepareArtifacts()
 	artifactStore.saveArtifacts()
+	artifactStore.enumerateArtifacts()
 	//artifactStore.archiveArtifacts() //alternative way to xfer artifacts
 	artifactStore.saveReport()
 }
@@ -1425,8 +1425,8 @@ copyIncludes:
 		log.Debug("saveArtifacts: restoring preserved paths - %d", len(p.cmd.Preserves))
 
 		preservedDirPath := filepath.Join(p.storeLocation, preservedDirName)
-		filesDirPath := filepath.Join(p.storeLocation, filesDirName)
 		if fsutil.Exists(preservedDirPath) {
+			filesDirPath := filepath.Join(p.storeLocation, filesDirName)
 			preservePaths := preparePaths(getKeys(p.cmd.Preserves))
 			for inPath, isDir := range preservePaths {
 				srcPath := fmt.Sprintf("%s%s", preservedDirPath, inPath)
@@ -1637,9 +1637,70 @@ func (p *artifactStore) archiveArtifacts() {
 	errutil.FailOn(err)
 }
 
-func (p *artifactStore) saveReport() {
-	sort.Strings(p.nameList)
+// Go over all saved artifacts and update the name list to make
+// sure all the files & folders are reflected in the final report.
+// Hopefully, just a temporary workaround until a proper refactoring.
+func (p *artifactStore) enumerateArtifacts() {
+	knownFiles := list2map(p.nameList)
 
+	var curpath string
+	dirqueue := []string{filepath.Join(p.storeLocation, filesDirName)}
+
+	for len(dirqueue) > 0 {
+		curpath, dirqueue = dirqueue[0], dirqueue[1:]
+
+		entries, err := os.ReadDir(curpath)
+		if err != nil {
+			log.WithError(err).Warn("artifactStore.enumerateArtifacts: readdir error")
+			// Keep processing though since it might have been a partial result.
+		}
+
+		// Leaf element - empty dir.
+		if len(entries) == 0 {
+			if knownFiles[curpath] {
+				continue
+			}
+
+			if props, err := artifactProps(curpath); err == nil {
+				p.nameList = append(p.nameList, curpath)
+				p.rawNames[curpath] = props
+				knownFiles[curpath] = true
+			} else {
+				log.
+					WithError(err).
+					WithField("path", curpath).
+					Warn("artifactStore.enumerateArtifacts: failed computing dir artifact props")
+			}
+			continue
+		}
+
+		for _, child := range entries {
+			childpath := filepath.Join(curpath, child.Name())
+			if child.IsDir() {
+				dirqueue = append(dirqueue, childpath)
+				continue
+			}
+
+			// Leaf element - regular file or symlink.
+			if knownFiles[childpath] {
+				continue
+			}
+
+			if props, err := artifactProps(childpath); err == nil {
+				p.nameList = append(p.nameList, childpath)
+				p.rawNames[childpath] = props
+				knownFiles[childpath] = true
+			} else {
+				log.
+					WithError(err).
+					WithField("paht", childpath).
+					Warn("artifactStore.enumerateArtifacts: failed computing artifact props")
+			}
+		}
+	}
+}
+
+func (p *artifactStore) saveReport() {
 	creport := report.ContainerReport{
 		Monitors: report.MonitorReports{
 			Pt:  p.ptMonReport,
@@ -1658,6 +1719,7 @@ func (p *artifactStore) saveReport() {
 		},
 	}
 
+	sort.Strings(p.nameList)
 	for _, fname := range p.nameList {
 		creport.Image.Files = append(creport.Image.Files, p.rawNames[fname])
 	}
@@ -2177,4 +2239,38 @@ func shellDependencies() ([]string, error) {
 	}
 
 	return allDeps, nil
+}
+
+// TODO: Merge it with prepareArtifact().
+func artifactProps(filename string) (*report.ArtifactProps, error) {
+	fileInfo, err := os.Lstat(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	fileType := report.UnknownArtifactType
+	switch true {
+	case fileInfo.Mode().IsRegular():
+		fileType = report.FileArtifactType
+	case (fileInfo.Mode() & os.ModeSymlink) != 0:
+		fileType = report.SymlinkArtifactType
+	case fileInfo.IsDir():
+		fileType = report.DirArtifactType
+	}
+
+	return &report.ArtifactProps{
+		FileType: fileType,
+		FilePath: filename,
+		Mode:     fileInfo.Mode(),
+		ModeText: fileInfo.Mode().String(),
+		FileSize: fileInfo.Size(),
+	}, nil
+}
+
+func list2map(l []string) map[string]bool {
+	m := map[string]bool{}
+	for _, v := range l {
+		m[v] = true
+	}
+	return m
 }

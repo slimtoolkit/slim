@@ -11,10 +11,10 @@ type ArtifactType int
 
 // Artifact type ID constants
 const (
-	DirArtifactType     = 1
-	FileArtifactType    = 2
-	SymlinkArtifactType = 3
-	UnknownArtifactType = 99
+	DirArtifactType     ArtifactType = 1
+	FileArtifactType    ArtifactType = 2
+	SymlinkArtifactType ArtifactType = 3
+	UnknownArtifactType ArtifactType = 99
 )
 
 // DefaultContainerReportFileName is the default container report file name

@@ -18,6 +18,7 @@ import (
 )
 
 func processReports(
+	artifactDirName string,
 	cmd *command.StartMonitor,
 	mountPoint string,
 	peReport *report.PeMonitorReport,
@@ -41,7 +42,7 @@ func processReports(
 
 	log.Debugf("processReports(): len(fanReport.ProcessFiles)=%v / fileCount=%v", len(fanReport.ProcessFiles), fileCount)
 	allFilesMap := findSymlinks(fileList, mountPoint)
-	saveResults(cmd, allFilesMap, fanReport, ptReport, peReport)
+	saveResults(artifactDirName, cmd, allFilesMap, fanReport, ptReport, peReport)
 }
 
 func getProcessChildren(pid int, targetPidList map[int]bool, processChildrenMap map[int][]int) {
