@@ -29,6 +29,10 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+const (
+	defaultArtifactDirName = "/opt/dockerslim/artifacts"
+)
+
 ///////////////////////////////////////////////////////////////////////////////
 
 func getCurrentPaths(root string) (map[string]interface{}, error) {
@@ -296,7 +300,14 @@ func runControlled(sensorCtx context.Context, dirName, mountPoint string) {
 
 				log.Info("sensor: waiting for monitor to finish...")
 
-				processReports(startCmd, mountPoint, monRes.peReport(), monRes.fanReport(), monRes.ptReport())
+				processReports(
+					defaultArtifactDirName,
+					startCmd,
+					mountPoint,
+					monRes.peReport(),
+					monRes.fanReport(),
+					monRes.ptReport(),
+				)
 
 				log.Info("sensor: monitor stopped...")
 				ipcServer.TryPublishEvt(&event.Message{Name: event.StopMonitorDone}, 3)
@@ -360,7 +371,14 @@ func runStandalone(
 
 	log.Info("sensor: target app is done.")
 
-	processReports(&startCmd, mountPoint, monRes.peReport(), monRes.fanReport(), ptReport)
+	processReports(
+		defaultArtifactDirName,
+		&startCmd,
+		mountPoint,
+		monRes.peReport(),
+		monRes.fanReport(),
+		ptReport,
+	)
 }
 
 func initSignalForwardingChannel(
