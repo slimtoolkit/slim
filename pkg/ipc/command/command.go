@@ -41,6 +41,7 @@ type Message interface {
 // StartMonitor contains the start monitor command fields
 type StartMonitor struct {
 	RTASourcePT                  bool                          `json:"rta_source_ptrace"`
+	Entrypoint                   []string                      `json:"entrypoint,omitempty"`
 	AppName                      string                        `json:"app_name"`
 	AppArgs                      []string                      `json:"app_args,omitempty"`
 	AppUser                      string                        `json:"app_user,omitempty"`

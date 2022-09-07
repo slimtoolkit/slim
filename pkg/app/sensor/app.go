@@ -527,6 +527,43 @@ func readCommandFile() (command.StartMonitor, error) {
 		return cmd, fmt.Errorf("could not decode command: %w", err)
 	}
 
+	// Dockerfile allows to define ENTRYPOINT[] + CMD[]
+	// while sensor's StartMonitor command historically
+	// allows providing only AppName + AppArgs[] making
+	// the sensor's approach inherently inferior.
+	// In the standalone mode the CMD[] part can be
+	// overridden at the run-time, but to be able to
+	// safely override the StartMonitor command, we have
+	// to differentiate between the constant ENTRYPOINT[]
+	// and the dynamic CMD[] part. Because of that, an
+	// extra field StartMonitor.Entrypoint was added.
+	// However, to avoid cascading changes to the rest of
+	// the sensor's code, we do a conversion back to
+	// the AppName + AppArgs[] format early on.
+
+	// First, check if there is a run-time override of the CMD[] part.
+	if args := flag.Args(); len(args) > 0 {
+		cmd.AppName = args[0]
+		cmd.AppArgs = args[1:]
+	}
+
+	// Now, convert from Entrypoint + AppName + AppArgs to just AppName + AppArgs
+	if len(cmd.Entrypoint) > 0 {
+		oldName := cmd.AppName
+		oldArgs := cmd.AppArgs
+
+		cmd.AppName = cmd.Entrypoint[0]
+		cmd.AppArgs = cmd.Entrypoint[1:]
+
+		if len(oldName) > 0 {
+			cmd.AppArgs = append(cmd.AppArgs, oldName)
+		}
+		cmd.AppArgs = append(cmd.AppArgs, oldArgs...)
+
+		// Unset entrypoint.
+		cmd.Entrypoint = []string{}
+	}
+
 	return cmd, nil
 }
 
