@@ -10,6 +10,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"path/filepath"
@@ -27,6 +28,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/sysenv"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	"golang.org/x/sys/unix"
 
 	log "github.com/sirupsen/logrus"
@@ -34,6 +36,7 @@ import (
 
 const (
 	defaultArtifactDirName = "/opt/dockerslim/artifacts"
+	defaultEventsFileName  = defaultArtifactDirName + "/events.json"
 
 	sensorModeControlled = "controlled"
 	sensorModeStandalone = "standalone"
@@ -191,6 +194,7 @@ func runControlled(sensorCtx context.Context, dirName, mountPoint string) {
 				if res, err := startMonitor(monitorCtx, startCmd, false, dirName, mountPoint, signalChan, errorChan); err != nil {
 					log.Info("sensor: monitor not started...")
 					monitorCtxCancel()
+					errorChan <- err
 					ipcServer.TryPublishEvt(&event.Message{Name: event.StartMonitorFailed}, 3)
 					time.Sleep(3 * time.Second) //give error event time to get sent
 				} else {
@@ -247,40 +251,40 @@ func runStandalone(
 	stopSignal os.Signal,
 	stopGracePeriod time.Duration,
 ) {
+	eventChan := make(chan event.Message, 10)
+	errorChan := make(chan error, 10)
+	go runEventReporter(sensorCtx, eventChan, errorChan)
+
 	monitorCtx, monitorCtxCancel := context.WithCancel(sensorCtx)
+	defer monitorCtxCancel()
 
 	startCmd, err := readCommandFile()
-	errutil.FailOn(err)
-
-	errorChan := make(chan error)
-	go func() {
-		for {
-			log.Debug("sensor: error collector - waiting for errors...")
-			select {
-			case <-sensorCtx.Done():
-				log.Debug("sensor: error collector - done...")
-				return
-			case err := <-errorChan:
-				log.Infof("sensor: error collector - forwarding error = %+v", err)
-				log.Infof("sensor: error: %v", event.Message{Name: event.Error, Data: err})
-			}
-		}
-	}()
+	if err != nil {
+		errorChan <- err
+		eventChan <- event.Message{Name: event.StartMonitorFailed}
+		time.Sleep(3 * time.Second) // give event time to get sent (we have to get rid of those sleeps...)
+		errutil.FailOn(err)
+	}
 
 	signalChan := initSignalForwardingChannel(monitorCtx, stopSignal, stopGracePeriod)
 	monRes, err := startMonitor(monitorCtx, &startCmd, true, dirName, mountPoint, signalChan, errorChan)
 	if err != nil {
 		log.Info("sensor: monitor not started...")
-		monitorCtxCancel()
-		log.Infof("sensor: error: %v", event.Message{Name: event.StartMonitorFailed})
-		return
+		errorChan <- err
+		eventChan <- event.Message{Name: event.StartMonitorFailed}
+		time.Sleep(3 * time.Second) // give event time to get sent (we have to get rid of those sleeps...)
+		errutil.FailOn(err)
 	}
+
+	eventChan <- event.Message{Name: event.StartMonitorDone}
 
 	// Wait until the monitored app is terminated.
 	ptReport := monRes.ptReport()
 
 	// Make other monitors stop by canceling their context(s).
 	monitorCtxCancel()
+
+	eventChan <- event.Message{Name: event.StopMonitorDone}
 
 	log.Info("sensor: target app is done.")
 
@@ -292,6 +296,9 @@ func runStandalone(
 		monRes.fanReport(),
 		ptReport,
 	)
+
+	eventChan <- event.Message{Name: event.ShutdownSensorDone}
+	time.Sleep(3 * time.Second) // give event time to get sent (we have to get rid of those sleeps...)
 }
 
 type monResult struct {
@@ -379,6 +386,34 @@ func startMonitor(
 	}
 
 	return res, nil
+}
+
+func runEventReporter(
+	ctx context.Context,
+	eventChan <-chan event.Message,
+	errorChan <-chan error,
+) {
+	errutil.FailOn(fsutil.Touch(defaultEventsFileName))
+
+	out, err := os.OpenFile(defaultEventsFileName, os.O_APPEND|os.O_WRONLY, 0644)
+	errutil.FailOn(err)
+	defer out.Close()
+
+	log.Debug("sensor: event collector - waiting for events...")
+
+	for {
+		select {
+		case <-ctx.Done():
+			log.Debug("sensor: event collector - done...")
+			return
+		case evt := <-eventChan:
+			log.WithField("event", evt).Info("sensor: event collector - dumping event")
+			writeJSON(evt, out)
+		case err := <-errorChan:
+			log.WithError(err).Warn("sensor: event collector - dumping error")
+			writeJSON(event.Message{Name: event.Error, Data: err.Error()}, out)
+		}
+	}
 }
 
 func initSignalForwardingChannel(
@@ -474,7 +509,7 @@ func readCommandFile() (command.StartMonitor, error) {
 
 	file, err := os.Open(*commandFile)
 	if err != nil {
-		return cmd, err
+		return cmd, fmt.Errorf("could not open command file: %w", err)
 	}
 	defer file.Close()
 
@@ -489,8 +524,17 @@ func readCommandFile() (command.StartMonitor, error) {
 	}
 
 	if err := json.Unmarshal([]byte(jsonCmd), &cmd); err != nil {
-		return cmd, err
+		return cmd, fmt.Errorf("could not decode command: %w", err)
 	}
 
 	return cmd, nil
+}
+
+func writeJSON(v interface{}, w io.Writer) {
+	encoder := json.NewEncoder(w)
+	encoder.SetEscapeHTML(false)
+
+	if err := encoder.Encode(v); err != nil {
+		log.WithError(err).Warn("Failed dumping JSON event")
+	}
 }
