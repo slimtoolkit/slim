@@ -25,6 +25,7 @@ const (
 	versionAuthKey       = "1JZg1RXvS6mZ0ANgf7p9PoYWQ9q.1JZg3zytWMmBVH50c0RvtBvVpq8"
 )
 
+type ovars = app.OutVars
 type CheckVersionRequest struct {
 	AppVersion string `json:"app_version"`
 }
@@ -81,8 +82,16 @@ func GetCheckVersionVerdict(info *CheckVersionInfo) string {
 }
 
 // Print shows the master app version information
-func Print(printPrefix string, logger *log.Entry, client *docker.Client, checkVersion, inContainer, isDSImage bool) {
-	fmt.Printf("%s info=app version='%s' container=%v dsimage=%v\n", printPrefix, v.Current(), inContainer, isDSImage)
+func Print(xc *app.ExecutionContext, cmdNameParam string, logger *log.Entry, client *docker.Client, checkVersion, inContainer, isDSImage bool) {
+
+	ovApp := ovars{
+		"cmd":       cmdNameParam,
+		"version":   v.Current(),
+		"container": inContainer,
+		"dsimage":   isDSImage,
+		"location":  fsutil.ExeDir(),
+	}
+
 	if checkVersion {
 		vinfo := Check(inContainer, isDSImage)
 		outdated := "unknown"
@@ -91,48 +100,66 @@ func Print(printPrefix string, logger *log.Entry, client *docker.Client, checkVe
 			outdated = fmt.Sprintf("%v", vinfo.Outdated)
 			current = vinfo.Current
 		}
-		fmt.Printf("%s info=app outdated=%v current=%v verdict='%v'\n",
-			printPrefix, outdated, current, GetCheckVersionVerdict(vinfo))
+		ovApp["outdated"] = outdated
+		ovApp["current"] = current
+		ovApp["verdict"] = GetCheckVersionVerdict(vinfo)
 	}
-
-	fmt.Printf("%s info=app location='%v'\n", printPrefix, fsutil.ExeDir())
+	xc.Out.Info("app", ovApp)
 
 	hostInfo := system.GetSystemInfo()
-	fmt.Printf("%s info=host osname='%v'\n", printPrefix, hostInfo.Distro.DisplayName)
-	fmt.Printf("%s info=host osbuild=%v\n", printPrefix, hostInfo.OsBuild)
-	fmt.Printf("%s info=host version='%v'\n", printPrefix, hostInfo.Version)
-	fmt.Printf("%s info=host release=%v\n", printPrefix, hostInfo.Release)
-	fmt.Printf("%s info=host sysname=%v\n", printPrefix, hostInfo.Sysname)
+	ovHost := ovars{
+		"cmd":     cmdNameParam,
+		"osname":  hostInfo.Distro.DisplayName,
+		"osbuild": hostInfo.OsBuild,
+		"version": hostInfo.Version,
+		"release": hostInfo.Release,
+		"sysname": hostInfo.Sysname,
+	}
+	xc.Out.Info("host", ovHost)
 
 	if client != nil {
 		info, err := client.Info()
 		if err != nil {
-			fmt.Printf("%s error='error getting docker info'\n", printPrefix)
-			logger.Debugf("Error getting docker info => %v", err)
-			return
+			xc.Out.Error("error getting docker info", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
 		}
 
-		fmt.Printf("%s info=docker name=%v\n", printPrefix, info.Name)
-		fmt.Printf("%s info=docker kernel_version=%v\n", printPrefix, info.KernelVersion)
-		fmt.Printf("%s info=docker operating_system=%v\n", printPrefix, info.OperatingSystem)
-		fmt.Printf("%s info=docker ostype=%v\n", printPrefix, info.OSType)
-		fmt.Printf("%s info=docker server_version=%v\n", printPrefix, info.ServerVersion)
-		fmt.Printf("%s info=docker architecture=%v\n", printPrefix, info.Architecture)
+		ovDocker := ovars{
+			"cmd":              cmdNameParam,
+			"name":             info.Name,
+			"kernel.version":   info.KernelVersion,
+			"operating.system": info.OperatingSystem,
+			"ostype":           info.OSType,
+			"server.version":   info.ServerVersion,
+			"architecture":     info.Architecture,
+		}
+		xc.Out.Info("docker", ovDocker)
 
 		ver, err := client.Version()
 		if err != nil {
-			fmt.Printf("%s error='error getting docker client version'\n", printPrefix)
-			logger.Debugf("Error getting docker client version => %v", err)
-			return
+			xc.Out.Error("error getting docker client version", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
 		}
-
-		fmt.Printf("%s info=dclient api_version=%v\n", printPrefix, ver.Get("ApiVersion"))
-		fmt.Printf("%s info=dclient min_api_version=%v\n", printPrefix, ver.Get("MinAPIVersion"))
-		fmt.Printf("%s info=dclient build_time=%v\n", printPrefix, ver.Get("BuildTime"))
-		fmt.Printf("%s info=dclient git_commit=%v\n", printPrefix, ver.Get("GitCommit"))
+		ovDockerClient := ovars{
+			"cmd":              cmdNameParam,
+			"api.version":      ver.Get("ApiVersion"),
+			"mini.api.version": ver.Get("MinAPIVersion"),
+			"build.time":       ver.Get("BuildTime"),
+			"git.commit":       ver.Get("GitCommit"),
+		}
+		xc.Out.Info("dclient", ovDockerClient)
 	} else {
-		fmt.Printf("%s info=no.docker.client\n", printPrefix)
+		xc.Out.Info("no.docker.client", ovars{})
 	}
+
 }
 
 // Check checks the app version

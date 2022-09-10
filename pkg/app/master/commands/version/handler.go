@@ -1,8 +1,6 @@
 package version
 
 import (
-	"fmt"
-
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
@@ -48,5 +46,5 @@ func OnCommand(
 	}
 	errutil.FailOn(err)
 
-	version.Print(fmt.Sprintf("cmd=%s", Name), logger, client, true, inContainer, isDSImage)
+	version.Print(xc, Name, logger, client, true, inContainer, isDSImage)
 }

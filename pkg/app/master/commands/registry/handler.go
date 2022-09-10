@@ -31,7 +31,6 @@ func OnPullCommand(
 	cparams *PullCommandParams) {
 	cmdName := fullCmdName(PullCmdName)
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("cmd=%s", cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -69,7 +68,7 @@ func OnPullCommand(
 	errutil.FailOn(err)
 
 	if gparams.Debug {
-		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, cmdName, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	//todo: pass a custom client to Pull (based on `client` above)
@@ -112,7 +111,7 @@ func OnPushCommand(
 	gparams *commands.GenericParams) {
 	cmdName := fullCmdName(PushCmdName)
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("cmd=%s", cmdName)
+	Name := fmt.Sprintf("cmd=%s", cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -145,7 +144,7 @@ func OnPushCommand(
 	errutil.FailOn(err)
 
 	if gparams.Debug {
-		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, Name, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	xc.Out.State("completed")
@@ -170,7 +169,7 @@ func OnCopyCommand(
 	gparams *commands.GenericParams) {
 	cmdName := fullCmdName(CopyCmdName)
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("cmd=%s", cmdName)
+	Name := fmt.Sprintf("cmd=%s", cmdName)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -203,7 +202,7 @@ func OnCopyCommand(
 	errutil.FailOn(err)
 
 	if gparams.Debug {
-		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, Name, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	xc.Out.State("completed")

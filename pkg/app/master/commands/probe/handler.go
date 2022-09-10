@@ -26,7 +26,7 @@ func OnCommand(
 	gparams *commands.GenericParams,
 	targetRef string) {
 	logger := log.WithFields(log.Fields{"app": appName, "command": Name})
-	prefix := fmt.Sprintf("cmd=%s", Name)
+	cmdName := fmt.Sprintf("cmd=%s", Name)
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -63,7 +63,7 @@ func OnCommand(
 	errutil.FailOn(err)
 
 	if gparams.Debug {
-		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, cmdName, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	xc.Out.State("completed")

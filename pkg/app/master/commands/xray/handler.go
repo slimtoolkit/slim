@@ -78,7 +78,6 @@ func OnCommand(
 ) {
 	const cmdName = Name
 	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	prefix := fmt.Sprintf("cmd=%s", cmdName)
 
 	changeDataMatchers := map[string]*dockerimage.ChangeDataMatcher{}
 	for _, cdm := range changeDataMatcherList {
@@ -130,7 +129,7 @@ func OnCommand(
 	errutil.FailOn(err)
 
 	if gparams.Debug {
-		version.Print(prefix, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, cmdName, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	imageInspector, err := image.NewInspector(client, targetRef)
@@ -1265,25 +1264,26 @@ func objectHistoryString(history *dockerimage.ObjectHistory) string {
 
 func printObject(xc *app.ExecutionContext, object *dockerimage.ObjectMetadata) {
 	var hashInfo string
+
 	if object.Hash != "" {
 		hashInfo = fmt.Sprintf(" hash=%s", object.Hash)
 	}
-
-	fmt.Printf("%s: mode=%s size.human='%v' size.bytes=%d uid=%d gid=%d mtime='%s' %s%s '%s'",
-		object.Change,
-		object.Mode,
-		humanize.Bytes(uint64(object.Size)),
-		object.Size,
-		object.UID,
-		object.GID,
-		object.ModTime.UTC().Format(time.RFC3339),
-		objectHistoryString(object.History),
-		hashInfo,
-		object.Name)
+	ov := ovars{
+		"mode":        object.Mode,
+		"size.human":  humanize.Bytes(uint64(object.Size)),
+		"size.bytes":  object.Size,
+		"uid":         object.UID,
+		"gid":         object.GID,
+		"mtime":       object.ModTime.UTC().Format(time.RFC3339),
+		"H":           objectHistoryString(object.History),
+		"hash":        hashInfo,
+		"object.name": object.Name,
+	}
 
 	if object.LinkTarget != "" {
-		fmt.Printf(" -> '%s'\n", object.LinkTarget)
-	} else {
-		fmt.Printf("\n")
+		ov["link.target"] = object.LinkTarget
 	}
+
+	xc.Out.Info("object", ov)
+
 }

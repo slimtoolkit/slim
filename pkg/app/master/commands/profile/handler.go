@@ -119,7 +119,7 @@ func OnCommand(
 	errutil.FailOn(err)
 
 	if gparams.Debug {
-		version.Print(fmt.Sprintf("cmd=%s", Name), logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		version.Print(xc, Name, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
 	if overrides.Network == "host" && runtime.GOOS == "darwin" {
