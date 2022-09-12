@@ -1,13 +1,18 @@
 //go:build linux
 // +build linux
 
-package app
+package sensor
 
 import (
+	"context"
+	"encoding/json"
+	"errors"
 	"flag"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/ipc"
@@ -23,8 +28,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 )
-
-var doneChan chan struct{}
 
 ///////////////////////////////////////////////////////////////////////////////
 
@@ -66,51 +69,71 @@ func getCurrentPaths(root string) (map[string]interface{}, error) {
 	return pathMap, nil
 }
 
-func startMonitor(errorCh chan error,
-	startAckChan chan bool,
-	stopWork chan bool,
-	stopWorkAck chan bool,
-	pids chan []int,
-	ptmonStartChan chan int,
+type monResult struct {
+	peReportChan  <-chan *report.PeMonitorReport
+	fanReportChan <-chan *report.FanMonitorReport
+	ptReportChan  <-chan *report.PtMonitorReport
+}
+
+func (r *monResult) peReport() *report.PeMonitorReport {
+	if r.peReportChan == nil {
+		return nil
+	}
+	return <-r.peReportChan
+}
+
+func (r *monResult) fanReport() *report.FanMonitorReport {
+	return <-r.fanReportChan
+}
+
+func (r *monResult) ptReport() *report.PtMonitorReport {
+	return <-r.ptReportChan
+}
+
+func startMonitor(
+	ctx context.Context,
 	cmd *command.StartMonitor,
-	dirName string) bool {
+	standalone bool,
+	dirName string,
+	mountPoint string,
+	signalChan <-chan os.Signal,
+	errorChan chan<- error,
+) (monResult, error) {
+	res := monResult{}
 	origPaths, err := getCurrentPaths("/")
 	if err != nil {
-		errorCh <- err
-		time.Sleep(3 * time.Second) //give error event time to get sent
+		return res, err
 	}
 
-	errutil.FailOn(err)
-
 	log.Info("sensor: monitor starting...")
-	mountPoint := "/"
 
-	stopMonitor := make(chan struct{})
-
-	var peReportChan <-chan *report.PeMonitorReport
-	var peReport *report.PeMonitorReport
-	usePEMon, err := system.DefaultKernelFeatures.IsCompiled("CONFIG_PROC_EVENTS")
 	//tmp: disable PEVENTs (due to problems with the new boot2docker host OS)
+	usePEMon, err := system.DefaultKernelFeatures.IsCompiled("CONFIG_PROC_EVENTS")
 	usePEMon = false
 	if (err == nil) && usePEMon {
 		log.Info("sensor: proc events are available!")
-		peReportChan = pevent.Run(stopMonitor)
+		res.peReportChan = pevent.Run(ctx.Done())
 		//ProcEvents are not enabled in the default boot2docker kernel
 	}
 
 	prepareEnv(defaultArtifactDirName, cmd)
 
-	fanReportChan := fanotify.Run(errorCh, mountPoint, stopMonitor, cmd.IncludeNew, origPaths) //data.AppName, data.AppArgs
-	if fanReportChan == nil {
+	res.fanReportChan = fanotify.Run(ctx, errorChan, mountPoint, cmd.IncludeNew, origPaths) //cmd.AppName, cmd.AppArgs
+	if res.fanReportChan == nil {
 		log.Info("sensor: startMonitor - FAN failed to start running...")
-		return false
+		return res, errors.New("FAN failed to start running")
 	}
-	ptReportChan := ptrace.Run(
+
+	log.Debugf("sensor: starting target app => %v %#v", cmd.AppName, cmd.AppArgs)
+
+	appStartAckChan := make(chan bool, 3)
+	res.ptReportChan = ptrace.Run(
+		ctx,
 		cmd.RTASourcePT,
-		errorCh,
-		startAckChan,
-		ptmonStartChan,
-		stopMonitor,
+		standalone,
+		errorChan,
+		appStartAckChan,
+		signalChan,
 		cmd.AppName,
 		cmd.AppArgs,
 		dirName,
@@ -118,34 +141,19 @@ func startMonitor(errorCh chan error,
 		cmd.RunTargetAsUser,
 		cmd.IncludeNew,
 		origPaths)
-	if ptReportChan == nil {
+	if res.ptReportChan == nil {
 		log.Info("sensor: startMonitor - PTAN failed to start running...")
-		close(stopMonitor)
-		return false
+		return res, errors.New("PTAN failed to start running")
 	}
 
-	go func() {
-		log.Debug("sensor: monitor.worker - waiting to stop monitoring...")
-		<-stopWork
-		log.Debug("sensor: monitor.worker - stop message...")
+	log.Info("sensor: waiting for monitor to complete startup...")
 
-		close(stopMonitor)
+	if !<-appStartAckChan {
+		log.Info("sensor: startMonitor - PTAN failed to ack running...")
+		return res, errors.New("PTAN failed to ack running")
+	}
 
-		log.Debug("sensor: monitor.worker - processing data...")
-
-		fanReport := <-fanReportChan
-		ptReport := <-ptReportChan
-
-		if peReportChan != nil {
-			peReport = <-peReportChan
-			//TODO: when peReport is available filter file events from fanReport
-		}
-
-		processReports(cmd, mountPoint, origPaths, fanReport, ptReport, peReport)
-		stopWorkAck <- true
-	}()
-
-	return true
+	return res, nil
 }
 
 /////////
@@ -154,12 +162,16 @@ var (
 	enableDebug  bool
 	logLevelName string
 	logFormat    string
+	mode         string
+	startCommand string
 )
 
 func init() {
 	flag.BoolVar(&enableDebug, "d", false, "enable debug logging")
 	flag.StringVar(&logLevelName, "log-level", "info", "set the logging level ('debug', 'info' (default), 'warn', 'error', 'fatal', 'panic')")
 	flag.StringVar(&logFormat, "log-format", "text", "set the format used by logs ('text' (default), or 'json')")
+	flag.StringVar(&mode, "mode", "controlled", "set the sensor execution mode ('controlled' when sensor expect the driver docker-slim app to manipulate its lifecycle; or 'standalone' when sensor depends on nothing but the target app")
+	flag.StringVar(&startCommand, "command", "", "JSON-encoded command to start the monitor")
 }
 
 /////////
@@ -168,8 +180,9 @@ func init() {
 func Run() {
 	flag.Parse()
 
-	err := configureLogger(enableDebug, logLevelName, logFormat)
-	errutil.FailOn(err)
+	errutil.FailOn(
+		configureLogger(enableDebug, logLevelName, logFormat),
+	)
 
 	activeCaps, maxCaps, err := sysenv.Capabilities(0)
 	log.Debugf("sensor: uid=%v euid=%v", os.Getuid(), os.Geteuid())
@@ -185,99 +198,114 @@ func Run() {
 	errutil.WarnOn(err)
 	log.Debugf("sensor: cwd => %#v", dirName)
 
-	initSignalHandlers()
+	sensorCtx, sensorCtxCancel := context.WithCancel(context.Background())
 	defer func() {
 		log.Debug("deferred cleanup on shutdown...")
-		cleanupOnShutdown()
+		sensorCtxCancel()
 	}()
 
-	log.Debug("sensor: setting up channels...")
-	doneChan = make(chan struct{})
+	mountPoint := "/"
 
-	ipcServer, err := ipc.NewServer(doneChan)
+	if mode == "controlled" {
+		initSignalHandlers(sensorCtxCancel)
+		runControlled(sensorCtx, dirName, mountPoint)
+	} else if mode == "standalone" {
+		// Hardcoded values will become flags (in a separate PR).
+		runStandalone(sensorCtx, dirName, mountPoint, syscall.SIGTERM, 5*time.Second)
+	} else {
+		errutil.FailOn(errors.New("unknown sensor mode"))
+	}
+
+	log.Info("sensor: done!")
+}
+
+func runControlled(sensorCtx context.Context, dirName, mountPoint string) {
+	log.Debug("sensor: starting IPC server...")
+	ipcServer, err := ipc.NewServer(sensorCtx.Done())
 	errutil.FailOn(err)
+	errutil.FailOn(
+		ipcServer.Run(),
+	)
 
-	err = ipcServer.Run()
-	errutil.FailOn(err)
-
-	cmdChan := ipcServer.CommandChan()
-
-	errorCh := make(chan error)
+	errorChan := make(chan error)
 	go func() {
 		for {
 			log.Debug("sensor: error collector - waiting for errors...")
 			select {
-			case <-doneChan:
+			case <-sensorCtx.Done():
 				log.Debug("sensor: error collector - done...")
 				return
-			case err := <-errorCh:
+			case err := <-errorChan:
 				log.Infof("sensor: error collector - forwarding error = %+v", err)
 				ipcServer.TryPublishEvt(&event.Message{Name: event.Error, Data: err}, 3)
 			}
 		}
 	}()
 
-	monStartAckChan := make(chan bool, 3)
-	monDoneChan := make(chan bool, 1)
-	monDoneAckChan := make(chan bool)
-	pidsChan := make(chan []int, 1)
-	ptmonStartChan := make(chan int, 1)
+	// TODO: Do we need to forward signals to the target app in the controlled mode?
+	signalChan := make(chan os.Signal)
+
+	monitorCtx, monitorCtxCancel := context.WithCancel(sensorCtx)
+
+	var startCmd *command.StartMonitor
+	var monRes monResult
 
 	log.Info("sensor: waiting for commands...")
-doneRunning:
+
 	for {
 		select {
-		case cmd := <-cmdChan:
+		case cmd := <-ipcServer.CommandChan():
 			log.Debug("\nsensor: command => ", cmd)
-			switch data := cmd.(type) {
+
+			switch typedCmd := cmd.(type) {
 			case *command.StartMonitor:
-				if data == nil {
+				if typedCmd == nil {
 					log.Info("sensor: 'start' monitor command - no data...")
 					break
 				}
 
-				log.Debugf("sensor: 'start' monitor command (%#v)", data)
-				if data.AppUser != "" {
-					log.Debugf("sensor: 'start' monitor command - run app as user='%s'", data.AppUser)
+				startCmd = typedCmd
+				log.Debugf("sensor: 'start' monitor command (%#v)", startCmd)
+
+				if startCmd.AppUser != "" {
+					log.Debugf("sensor: 'start' monitor command - run app as user=%q", startCmd.AppUser)
 				}
 
-				started := startMonitor(errorCh, monStartAckChan, monDoneChan, monDoneAckChan, pidsChan, ptmonStartChan, data, dirName)
-				if !started {
+				if res, err := startMonitor(monitorCtx, startCmd, false, dirName, mountPoint, signalChan, errorChan); err != nil {
 					log.Info("sensor: monitor not started...")
-					time.Sleep(3 * time.Second) //give error event time to get sent
+					monitorCtxCancel()
 					ipcServer.TryPublishEvt(&event.Message{Name: event.StartMonitorFailed}, 3)
-					break
+					time.Sleep(3 * time.Second) //give error event time to get sent
+				} else {
+					monRes = res
+
+					//target app started by ptmon... (long story :-))
+					//TODO: need to get the target app pid to pemon, so it can filter process events
+
+					log.Infof("sensor: monitor started (%v)...")
+
+					ipcServer.TryPublishEvt(&event.Message{Name: event.StartMonitorDone}, 3)
+
+					log.Debug("sensor: monitor.worker - waiting to stop monitoring...")
 				}
-
-				//target app started by ptmon... (long story :-))
-				//TODO: need to get the target app pid to pemon, so it can filter process events
-				log.Debugf("sensor: starting target app => %v %#v", data.AppName, data.AppArgs)
-				time.Sleep(3 * time.Second)
-
-				log.Info("sensor: waiting for monitor to complete startup...")
-				started = <-monStartAckChan
-				log.Infof("sensor: monitor started (%v)...", started)
-				msg := &event.Message{Name: event.StartMonitorDone}
-				if !started {
-					msg.Name = event.StartMonitorFailed
-				}
-
-				ipcServer.TryPublishEvt(msg, 3)
 
 			case *command.StopMonitor:
 				log.Info("sensor: 'stop' monitor command")
 
-				monDoneChan <- true
+				monitorCtxCancel()
+
 				log.Info("sensor: waiting for monitor to finish...")
-				<-monDoneAckChan
+
+				processReports(startCmd, mountPoint, monRes.peReport(), monRes.fanReport(), monRes.ptReport())
+
 				log.Info("sensor: monitor stopped...")
 				ipcServer.TryPublishEvt(&event.Message{Name: event.StopMonitorDone}, 3)
 
 			case *command.ShutdownSensor:
 				log.Info("sensor: 'shutdown' command")
-				close(doneChan)
-				doneChan = nil
-				break doneRunning
+				ipcServer.TryPublishEvt(&event.Message{Name: event.ShutdownSensorDone}, 3)
+				return // We're done!
+
 			default:
 				log.Info("sensor: ignoring unknown command => ", cmd)
 			}
@@ -286,7 +314,93 @@ doneRunning:
 			log.Debug(".")
 		}
 	}
+}
 
-	ipcServer.TryPublishEvt(&event.Message{Name: event.ShutdownSensorDone}, 3)
-	log.Info("sensor: done!")
+func runStandalone(
+	sensorCtx context.Context,
+	dirName,
+	mountPoint string,
+	stopSignal os.Signal,
+	stopGracePeriod time.Duration,
+) {
+	monitorCtx, monitorCtxCancel := context.WithCancel(sensorCtx)
+
+	var startCmd command.StartMonitor
+	errutil.FailOn(json.Unmarshal([]byte(startCommand), &startCmd))
+
+	errorChan := make(chan error)
+	go func() {
+		for {
+			log.Debug("sensor: error collector - waiting for errors...")
+			select {
+			case <-sensorCtx.Done():
+				log.Debug("sensor: error collector - done...")
+				return
+			case err := <-errorChan:
+				log.Infof("sensor: error collector - forwarding error = %+v", err)
+				log.Infof("sensor: error: %v", event.Message{Name: event.Error, Data: err})
+			}
+		}
+	}()
+
+	signalChan := initSignalForwardingChannel(monitorCtx, stopSignal, stopGracePeriod)
+	monRes, err := startMonitor(monitorCtx, &startCmd, true, dirName, mountPoint, signalChan, errorChan)
+	if err != nil {
+		log.Info("sensor: monitor not started...")
+		monitorCtxCancel()
+		log.Infof("sensor: error: %v", event.Message{Name: event.StartMonitorFailed})
+		return
+	}
+
+	// Wait until the monitored app is terminated.
+	ptReport := monRes.ptReport()
+
+	// Make other monitors stop by canceling their context(s).
+	monitorCtxCancel()
+
+	log.Info("sensor: target app is done.")
+
+	processReports(&startCmd, mountPoint, monRes.peReport(), monRes.fanReport(), ptReport)
+}
+
+func initSignalForwardingChannel(
+	ctx context.Context,
+	stopSignal os.Signal,
+	stopGracePeriod time.Duration,
+) <-chan os.Signal {
+	signalChan := make(chan os.Signal, 10)
+
+	go func() {
+		log.Debug("sensor: starting forwarding signals to target app...")
+
+		ch := make(chan os.Signal)
+		signal.Notify(ch)
+
+		for {
+			select {
+			case <-ctx.Done():
+				log.Debug("sensor: forwarding signal to target app no more - monitor is done")
+				return
+			case s := <-ch:
+				log.WithField("signal", s).Debug("sensor: forwarding signal to target app")
+				signalChan <- s
+
+				if s == stopSignal {
+					log.Debug("sensor: recieved stop signal - starting grace period")
+
+					// Starting the grace period
+					select {
+					case <-ctx.Done():
+						log.Debug("sensor: monitor finished before grace period expired - dismantling SIGKILL")
+					case <-time.After(stopGracePeriod):
+						log.Debug("sensor: grace period expired - sending SIGKILL to target app")
+						signalChan <- syscall.SIGKILL
+					}
+					return
+				}
+			}
+		}
+	}()
+
+	return signalChan
 }

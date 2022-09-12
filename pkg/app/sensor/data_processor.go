@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-package app
+package sensor
 
 import (
 	"fmt"
@@ -20,10 +20,13 @@ import (
 func processReports(
 	cmd *command.StartMonitor,
 	mountPoint string,
-	origPaths map[string]interface{},
+	peReport *report.PeMonitorReport,
 	fanReport *report.FanMonitorReport,
 	ptReport *report.PtMonitorReport,
-	peReport *report.PeMonitorReport) {
+) {
+	//TODO: when peReport is available filter file events from fanReport
+
+	log.Debug("sensor: monitor.worker - processing data...")
 
 	fileCount := 0
 	for _, processFileMap := range fanReport.ProcessFiles {
@@ -38,7 +41,7 @@ func processReports(
 
 	log.Debugf("processReports(): len(fanReport.ProcessFiles)=%v / fileCount=%v", len(fanReport.ProcessFiles), fileCount)
 	allFilesMap := findSymlinks(fileList, mountPoint)
-	saveResults(cmd, origPaths, allFilesMap, fanReport, ptReport, peReport)
+	saveResults(cmd, allFilesMap, fanReport, ptReport, peReport)
 }
 
 func getProcessChildren(pid int, targetPidList map[int]bool, processChildrenMap map[int][]int) {

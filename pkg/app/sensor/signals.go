@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-package app
+package sensor
 
 import (
 	"os"
@@ -20,13 +20,13 @@ var signals = []os.Signal{
 	syscall.SIGCONT,
 }
 
-func initSignalHandlers() {
+func initSignalHandlers(cleanup func()) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, signals...)
 	go func() {
 		sig := <-sigChan
 		log.Debugf("sensor: cleanup on signal (%v)...", sig)
-		cleanupOnShutdown()
+		cleanup()
 		os.Exit(0)
 	}()
 }

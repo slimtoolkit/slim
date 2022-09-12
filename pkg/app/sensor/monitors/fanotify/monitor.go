@@ -5,6 +5,7 @@ package fanotify
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -34,11 +35,13 @@ const (
 )
 
 // Run starts the FANOTIFY monitor
-func Run(errorCh chan error,
+func Run(
+	ctx context.Context,
+	errorCh chan<- error,
 	mountPoint string,
-	stopChan chan struct{},
 	includeNew bool,
-	origPaths map[string]interface{}) <-chan *report.FanMonitorReport {
+	origPaths map[string]interface{},
+) <-chan *report.FanMonitorReport {
 	log.Info("fanmon: Run")
 
 	nd, err := fanapi.Initialize(fanapi.FAN_CLASS_NOTIF, os.O_RDONLY)
@@ -119,7 +122,7 @@ func Run(errorCh chan error,
 
 					select {
 					case eventChan <- e:
-					case <-stopChan:
+					case <-ctx.Done():
 						log.Info("fanmon: collector - stopping....")
 						return
 					}
@@ -130,7 +133,7 @@ func Run(errorCh chan error,
 	done:
 		for {
 			select {
-			case <-stopChan:
+			case <-ctx.Done():
 				log.Info("fanmon: processor - stopping...")
 				break done
 			case e := <-eventChan:
