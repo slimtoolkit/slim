@@ -527,41 +527,49 @@ func readCommandFile() (command.StartMonitor, error) {
 		return cmd, fmt.Errorf("could not decode command: %w", err)
 	}
 
-	// Dockerfile allows to define ENTRYPOINT[] + CMD[]
-	// while sensor's StartMonitor command historically
-	// allows providing only AppName + AppArgs[] making
-	// the sensor's approach inherently inferior.
-	// In the standalone mode the CMD[] part can be
-	// overridden at the run-time, but to be able to
-	// safely override the StartMonitor command, we have
-	// to differentiate between the constant ENTRYPOINT[]
-	// and the dynamic CMD[] part. Because of that, an
-	// extra field StartMonitor.Entrypoint was added.
-	// However, to avoid cascading changes to the rest of
-	// the sensor's code, we do a conversion back to
-	// the AppName + AppArgs[] format early on.
+	// The instrumented image will always have the ENTRYPOINT overwritten
+	// by the instrumentor to make the sensor the PID1 process in the monitored
+	// container.
+	// The original ENTRYPOINT & CMD will be preserved as part of the
+	// `commands.json` file. However, it's also possible to override the
+	// CMD at runtime by supplying extra args to the `docker run` (or alike)
+	// command. Sensor needs to be able to detect this and replace the
+	// baked in CMD with the new list of args. For that, the instrumented image's
+	// ENTRYPOINT has to contain a special separator value `--` denoting the end
+	// of the sensor's flags sequence. Example:
+	//
+	// ENTRYPOINT ["/path/to/sensor", "-m=standalone", "-c=/path/to/commands.json", "--" ]
 
-	// First, check if there is a run-time override of the CMD[] part.
+	// Note on CMD & ENTRYPOINT override: Historically, sensor used
+	// AppName + AppArgs[] to start the target process. With the addition
+	// of the standalone mode, the need for supporting Docker's original
+	// CMD[] + ENTRYPOINT[] approach arose. However, to keep things simple:
+	//
+	//  - These two "modes" of starting the target app will be mutually exclusive
+	//    (from the sensor's users standpoint).
+	//  - The CMD + ENTRYPOINT mode will be converted back to the AppName + AppArgs
+	//    early on in the sensor's processing (to prevent cascading changes).
+
+	// First, check if there is a run-time override of the CMD[] part
+	// (i.e., anything after the `--` separator).
+	// If there is some, it'll essentially "activate" the CMD + ENTRYPOINT mode.
 	if args := flag.Args(); len(args) > 0 {
-		cmd.AppName = args[0]
-		cmd.AppArgs = args[1:]
+		cmd.AppCmd = args
 	}
 
-	// Now, convert from Entrypoint + AppName + AppArgs to just AppName + AppArgs
-	if len(cmd.Entrypoint) > 0 {
-		oldName := cmd.AppName
-		oldArgs := cmd.AppArgs
-
-		cmd.AppName = cmd.Entrypoint[0]
-		cmd.AppArgs = cmd.Entrypoint[1:]
-
-		if len(oldName) > 0 {
-			cmd.AppArgs = append(cmd.AppArgs, oldName)
+	// If it's ENTRYPOINT + CMD mode, converting back to AppName + AppArgs.
+	if len(cmd.AppEntrypoint)+len(cmd.AppCmd) > 0 {
+		if len(cmd.AppName)+len(cmd.AppArgs) > 0 {
+			return cmd, errors.New("ambiguous start command: cannot use [app_name,app_args] and [app_entrypoint,app_cmd] simultaneously")
 		}
-		cmd.AppArgs = append(cmd.AppArgs, oldArgs...)
 
-		// Unset entrypoint.
-		cmd.Entrypoint = []string{}
+		if len(cmd.AppEntrypoint) > 0 {
+			cmd.AppName = cmd.AppEntrypoint[0]
+			cmd.AppArgs = append(cmd.AppEntrypoint[1:], cmd.AppCmd...)
+		} else {
+			cmd.AppName = cmd.AppCmd[0]
+			cmd.AppArgs = cmd.AppCmd[1:]
+		}
 	}
 
 	return cmd, nil
