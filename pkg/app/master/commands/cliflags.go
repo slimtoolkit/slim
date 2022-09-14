@@ -258,7 +258,7 @@ const (
 	FlagCROShmSizeUsage        = "Shared memory size for /dev/shm in the created container"
 
 	FlagUserUsage               = "Override USER analyzing image at runtime"
-	FlagEntrypointUsage         = "Override ENTRYPOINT analyzing image at runtime"
+	FlagEntrypointUsage         = "Override ENTRYPOINT analyzing image at runtime. To persist ENTRYPOINT changes in the output image, pass the --image-overrides=entrypoint or --image-overrides=all flag as well."
 	FlagCmdUsage                = "Override CMD analyzing image at runtime"
 	FlagWorkdirUsage            = "Override WORKDIR analyzing image at runtime"
 	FlagEnvUsage                = "Override or add ENV only during runtime. To persist ENV additions or changes in the output image, pass the --image-overrides=env or --image-overrides=all flag as well."
