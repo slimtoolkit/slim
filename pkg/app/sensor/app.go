@@ -18,6 +18,10 @@ import (
 	"syscall"
 	"time"
 
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
+
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/ipc"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors/fanotify"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors/pevent"
@@ -29,14 +33,10 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
-	"golang.org/x/sys/unix"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const (
-	defaultArtifactDirName = "/opt/dockerslim/artifacts"
-	defaultEventsFileName  = defaultArtifactDirName + "/events.json"
+	defaultEventsFilePath = app.DefaultArtifactDirPath + "/events.json"
 
 	sensorModeControlled = "controlled"
 	sensorModeStandalone = "standalone"
@@ -56,7 +56,7 @@ const (
 	sensorModeFlagDefault = sensorModeControlled
 
 	commandFileFlagUsage   = "JSONL-encoded file with one ore more sensor commands"
-	commandFileFlagDefault = defaultArtifactDirName + "/commands.json"
+	commandFileFlagDefault = app.DefaultArtifactDirPath + "/commands.json"
 
 	stopSignalFlagUsage   = "signal to stop the target app and start producing the report"
 	stopSignalFlagDefault = "TERM"
@@ -203,7 +203,7 @@ func runControlled(sensorCtx context.Context, dirName, mountPoint string) {
 					//target app started by ptmon... (long story :-))
 					//TODO: need to get the target app pid to pemon, so it can filter process events
 
-					log.Infof("sensor: monitor started (%v)...")
+					log.Info("sensor: monitor started...")
 
 					ipcServer.TryPublishEvt(&event.Message{Name: event.StartMonitorDone}, 3)
 
@@ -218,7 +218,7 @@ func runControlled(sensorCtx context.Context, dirName, mountPoint string) {
 				log.Info("sensor: waiting for monitor to finish...")
 
 				processReports(
-					defaultArtifactDirName,
+					app.DefaultArtifactDirPath,
 					startCmd,
 					mountPoint,
 					monRes.peReport(),
@@ -289,7 +289,7 @@ func runStandalone(
 	log.Info("sensor: target app is done.")
 
 	processReports(
-		defaultArtifactDirName,
+		app.DefaultArtifactDirPath,
 		&startCmd,
 		mountPoint,
 		monRes.peReport(),
@@ -348,7 +348,7 @@ func startMonitor(
 		//ProcEvents are not enabled in the default boot2docker kernel
 	}
 
-	prepareEnv(defaultArtifactDirName, cmd)
+	prepareEnv(app.DefaultArtifactDirPath, cmd)
 
 	res.fanReportChan = fanotify.Run(ctx, errorChan, mountPoint, cmd.IncludeNew, origPaths) //cmd.AppName, cmd.AppArgs
 	if res.fanReportChan == nil {
@@ -393,9 +393,9 @@ func runEventReporter(
 	eventChan <-chan event.Message,
 	errorChan <-chan error,
 ) {
-	errutil.FailOn(fsutil.Touch(defaultEventsFileName))
+	errutil.FailOn(fsutil.Touch(defaultEventsFilePath))
 
-	out, err := os.OpenFile(defaultEventsFileName, os.O_APPEND|os.O_WRONLY, 0644)
+	out, err := os.OpenFile(defaultEventsFilePath, os.O_APPEND|os.O_WRONLY, 0644)
 	errutil.FailOn(err)
 	defer out.Close()
 
@@ -435,7 +435,11 @@ func initSignalForwardingChannel(
 				log.Debug("sensor: forwarding signal to target app no more - monitor is done")
 				return
 			case s := <-ch:
-				log.WithField("signal", s).Debug("sensor: forwarding signal to target app")
+				if s != syscall.SIGCHLD {
+					// Due to ptrace, SIGCHLD flood the output.
+					// TODO: Log SIGCHLD if ptrace-ing is off.
+					log.WithField("signal", s).Debug("sensor: forwarding signal to target app")
+				}
 				signalChan <- s
 
 				if s == stopSignal {

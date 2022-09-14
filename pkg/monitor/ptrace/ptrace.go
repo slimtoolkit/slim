@@ -238,7 +238,7 @@ func (app *App) processFileActivity(e *syscallEvent) {
 	if e.pathParam != "" {
 		p, found := syscallProcessors[int(e.callNum)]
 		if !found {
-			log.Debug("ptrace.App.processFileActivity - no syscall processor - %#v", e)
+			log.Debugf("ptrace.App.processFileActivity - no syscall processor - %#v", e)
 			//shouldn't happen
 			return
 		}

@@ -44,6 +44,7 @@ require (
 	github.com/bradfitz/iter v0.0.0-20191230175014-e8f45d346db8 // indirect
 	github.com/docker-slim/uilive v0.0.2 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
+	github.com/google/uuid v1.2.0
 	github.com/gosuri/uilive v0.0.3 // indirect
 	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/klauspost/pgzip v1.2.4 // indirect

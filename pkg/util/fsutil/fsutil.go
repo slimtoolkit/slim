@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"golang.org/x/sys/unix"
 	"io"
 	"io/ioutil"
 	"os"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	"golang.org/x/sys/unix"
 
 	"github.com/docker-slim/docker-slim/pkg/pdiscover"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
@@ -365,7 +366,7 @@ func CopySymlinkFile(clone bool, src, dst string, makeDir bool) error {
 				}
 
 				if err := os.Lchown(dst, int(ssi.Uid), int(ssi.Gid)); err != nil {
-					log.Warnln("CopySymlinkFile(%v,%v)- unable to change owner", src, dst)
+					log.Warnf("CopySymlinkFile(%v,%v)- unable to change owner", src, dst)
 				}
 			}
 		} else {
@@ -453,7 +454,7 @@ func cloneDirPath(src, dst string) {
 				}
 
 				if err := os.Chown(dir.dst, int(dir.sys.Uid), int(dir.sys.Gid)); err != nil {
-					log.Warnln("cloneDirPath()- unable to change owner (%v) - %v", dir.dst, err)
+					log.Warnf("cloneDirPath()- unable to change owner (%v) - %v", dir.dst, err)
 				}
 			}
 		}
@@ -538,7 +539,7 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 
 	//Need to close dst file before chmod works the right way
 	if err := d.Close(); err != nil {
-		log.Debugf("CopyRegularFile(%v,%v,%v) - d.Close error - %v", src, dst, err)
+		log.Debugf("CopyRegularFile() - d.Close error - %v", err)
 		return err
 	}
 
@@ -556,7 +557,7 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 				}
 
 				if err := os.Chown(dst, int(ssi.Uid), int(ssi.Gid)); err != nil {
-					log.Warnln("CopyRegularFile(%v,%v)- unable to change owner", src, dst)
+					log.Warnf("CopyRegularFile(%v,%v)- unable to change owner", src, dst)
 				}
 			}
 		} else {

@@ -17,9 +17,6 @@ type ovars = app.OutVars
 const (
 	LocalBinFile       = "docker-slim-sensor"
 	DefaultConnectWait = 60
-
-	FileArtifactsDirName = "files"
-	FileArtifactsPrefix  = "files/"
 )
 
 func EnsureLocalBinary(xc *app.ExecutionContext, logger *log.Entry, statePath string, printState bool) string {

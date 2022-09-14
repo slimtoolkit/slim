@@ -411,7 +411,7 @@ func OnCommand(
 				targetRef = commands.UpdateImageRef(logger, targetRef, targetComposeSvcImage)
 				//shouldn't need to
 				targetSvcInfo.Config.Image = targetRef
-				logger.Debug("using target service override '%s' -> '%s' ", targetComposeSvcImage, targetRef)
+				logger.Debugf("using target service override '%s' -> '%s' ", targetComposeSvcImage, targetRef)
 			}
 
 			if len(targetSvcInfo.Config.Entrypoint) > 0 {

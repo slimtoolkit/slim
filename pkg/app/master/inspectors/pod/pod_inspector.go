@@ -43,8 +43,7 @@ const (
 	sensorBinFileAbs      = sensorVolumeMountPath + "/" + sensor.LocalBinFile
 	sensorLoaderContainer = "dockerslim-sensor-loader"
 
-	artifactsVolumeName      = "dockerslim-artifacts"
-	artifactsVolumeMountPath = "/opt/dockerslim/artifacts"
+	artifactsVolumeName = "dockerslim-artifacts"
 
 	targetPodLabelName = "dockersl.im/target-pod"
 	targetPodLabelPat  = "dockerslimk_%v_%v"
@@ -230,7 +229,7 @@ func (i *Inspector) FinishMonitoring() {
 		i.pod.Namespace,
 		i.pod.Name,
 		i.workload.TargetContainer().Name,
-		filepath.Join(artifactsVolumeMountPath, report.DefaultContainerReportFileName),
+		filepath.Join(app.DefaultArtifactDirPath, report.DefaultContainerReportFileName),
 		filepath.Join(i.imageInspector.ArtifactLocation, report.DefaultContainerReportFileName),
 	)
 	if err != nil {
@@ -243,8 +242,8 @@ func (i *Inspector) FinishMonitoring() {
 		i.pod.Namespace,
 		i.pod.Name,
 		i.workload.TargetContainer().Name,
-		filepath.Join(artifactsVolumeMountPath, sensor.FileArtifactsDirName),
-		filepath.Join(i.imageInspector.ArtifactLocation, sensor.FileArtifactsPrefix),
+		filepath.Join(app.DefaultArtifactDirPath, app.ArtifactFilesDirName),
+		filepath.Join(i.imageInspector.ArtifactLocation, app.ArtifactFilesDirName+"/"),
 	)
 	if err != nil {
 		errutil.WarnOn(err)
@@ -345,7 +344,7 @@ func (i *Inspector) prepareWorkload() error {
 		},
 		corev1.VolumeMount{
 			Name:      artifactsVolumeName,
-			MountPath: artifactsVolumeMountPath,
+			MountPath: app.DefaultArtifactDirPath,
 		},
 	)
 

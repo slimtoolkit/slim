@@ -291,7 +291,7 @@ func loadSections(filename string, config map[string]interface{}, configDetails 
 func getSection(config map[string]interface{}, key string) map[string]interface{} {
 	section, ok := config[key]
 	if !ok {
-		return make(map[string]interface{})
+		return map[string]interface{}{}
 	}
 	return section.(map[string]interface{})
 }
@@ -376,7 +376,7 @@ func createTransformHook(additionalTransformers ...Transformer) mapstructure.Dec
 // keys needs to be converted to strings for jsonschema
 func convertToStringKeysRecursive(value interface{}, keyPrefix string) (interface{}, error) {
 	if mapping, ok := value.(map[interface{}]interface{}); ok {
-		dict := make(map[string]interface{})
+		dict := map[string]interface{}{}
 		for key, entry := range mapping {
 			str, ok := key.(string)
 			if !ok {
@@ -622,7 +622,7 @@ func transformUlimits(data interface{}) (interface{}, error) {
 // LoadNetworks produces a NetworkConfig map from a compose file Dict
 // the source Dict is not validated if directly used. Use Load() to enable validation
 func LoadNetworks(source map[string]interface{}) (map[string]types.NetworkConfig, error) {
-	networks := make(map[string]types.NetworkConfig)
+	networks := map[string]types.NetworkConfig{}
 	err := Transform(source, &networks)
 	if err != nil {
 		return networks, err
