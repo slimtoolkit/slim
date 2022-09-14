@@ -263,7 +263,7 @@ const (
 	FlagWorkdirUsage            = "Override WORKDIR analyzing image at runtime. To persist WORKDIR changes in the output image, pass the --image-overrides=workdir or --image-overrides=all flag as well."
 	FlagEnvUsage                = "Override or add ENV only during runtime. To persist ENV additions or changes in the output image, pass the --image-overrides=env or --image-overrides=all flag as well."
 	FlagLabelUsage              = "Override or add LABEL analyzing image at runtime"
-	FlagVolumeUsage             = "Add VOLUME analyzing image at runtime"
+	FlagVolumeUsage             = "Add VOLUME analyzing image at runtime. To persist VOLUME additions in the output image, pass the --image-overrides=env or --image-overrides=all flag as well."
 	FlagExposeUsage             = "Use additional EXPOSE instructions analyzing image at runtime. To persist EXPOSE additions in the output image, pass the --image-overrides=expose or --image-overrides=all flag as well."
 	FlagLinkUsage               = "Add link to another container analyzing image at runtime"
 	FlagNetworkUsage            = "Override default container network settings analyzing image at runtime"
