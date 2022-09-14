@@ -261,7 +261,7 @@ const (
 	FlagEntrypointUsage         = "Override ENTRYPOINT analyzing image at runtime"
 	FlagCmdUsage                = "Override CMD analyzing image at runtime"
 	FlagWorkdirUsage            = "Override WORKDIR analyzing image at runtime"
-	FlagEnvUsage                = "Override or add ENV analyzing image at runtime"
+	FlagEnvUsage                = "Override or add ENV only during runtime. To persist ENV additions or changes in the output image, pass the --image-overrides=env or --image-overrides=all flag as well."
 	FlagLabelUsage              = "Override or add LABEL analyzing image at runtime"
 	FlagVolumeUsage             = "Add VOLUME analyzing image at runtime"
 	FlagExposeUsage             = "Use additional EXPOSE instructions analyzing image at runtime"
