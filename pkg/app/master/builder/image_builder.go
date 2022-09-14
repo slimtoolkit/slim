@@ -236,7 +236,7 @@ func NewImageBuilder(client *docker.Client,
 				}
 			case "env":
 				if len(overrides.Env) > 0 {
-					builder.Env = append(builder.Env, instructions.Env...)
+					builder.Env = append(builder.Env, overrides.Env...)
 				}
 			case "label":
 				for k, v := range overrides.Labels {
