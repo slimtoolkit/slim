@@ -365,6 +365,7 @@ func (i *Inspector) prepareWorkload() error {
 		targetCont.SecurityContext.Capabilities.Add,
 		"SYS_ADMIN",
 	)
+	i.workload.SetContainer(targetCont)
 
 	return nil
 }
