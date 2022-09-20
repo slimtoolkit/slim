@@ -1,4 +1,4 @@
-name: Acceptance testing (using e2e tests from docker-slim/examples)
+name: Acceptance testing (using e2e framework and examples)
 on:
   push:
     branches:
@@ -50,7 +50,45 @@ jobs:
           path: dist_mac
           retention-days: 1
 
-  test:
+  # Run sensor tests using the e2e testing framework.
+  test-sensor-e2e:
+    needs: build
+    strategy:
+      matrix:
+        os:
+          # macos runners don't support docker yet
+          - ubuntu-latest
+        include:
+          - os: ubuntu-latest
+            bin_artifacts: dist_linux
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Check out docker-slim/docker-slim repo
+        uses: actions/checkout@v3
+
+      - name: Set up Go development environment
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.16.0'
+
+      - name: Download docker-slim binaries
+        uses: actions/download-artifact@v3
+        with:
+          name: ${{ matrix.bin_artifacts }}
+          path: bin
+
+      - name: Fix docker-slim binaries permissions
+        run: chmod a+x bin/*
+
+      - name: Add docker-slim/bin folder to $PATH
+        run: echo "${GITHUB_WORKSPACE}/bin" >> $GITHUB_PATH
+
+      - name: Run sensor e2e tests
+        timeout-minutes: 60
+        run: make test-e2e-sensor
+
+  # Run full-cycle tests (ab)using the docker-slim/examples repository.
+  test-full-e2e:
     needs: build
     strategy:
       matrix:
@@ -99,4 +137,9 @@ jobs:
         run: echo "${GITHUB_WORKSPACE}/bin" >> $GITHUB_PATH
 
       - name: Run all e2e tests from docker-slim/examples
-        run: DSLIM_EXAMPLES_DIR=e2e make test-e2e-${{ matrix.suite }}
+        timeout-minutes: 60
+        run: |
+          export DSLIM_LOG_LEVEL=debug
+          export DSLIM_SHOW_CLOGS=1
+          export DSLIM_EXAMPLES_DIR=e2e
+          make test-e2e-${{ matrix.suite }}

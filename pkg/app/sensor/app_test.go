@@ -1,5 +1,5 @@
-//go:build linux
-// +build linux
+//go:build e2e
+// +build e2e
 
 package sensor_test
 
@@ -14,7 +14,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
-	"github.com/docker-slim/docker-slim/pkg/testutil"
+	testsensor "github.com/docker-slim/docker-slim/pkg/test/e2e/sensor"
+	testutil "github.com/docker-slim/docker-slim/pkg/test/util"
 )
 
 const (
@@ -25,9 +26,10 @@ const (
 var (
 	sensorFullLifecycleSequence = []string{
 		"sensor: uid=0 euid=0",
-		"sensor: monitor starting...",
-		"fanmon: Run",
-		"ptmon: Run",
+		"sensor: creating monitors...",
+		"sensor: starting monitors...",
+		"fanmon: Start",
+		"ptmon: Start",
 		"sensor: monitor - saving report",
 		"sensor: monitor - saving report",
 	}
@@ -41,15 +43,15 @@ func TestSimpleSensorRun_Controlled_CLI(t *testing.T) {
 	runID := newTestRun(t)
 	ctx := context.Background()
 
-	sensor := testutil.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleCLI)
+	sensor := testsensor.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleCLI)
 	defer sensor.Cleanup(t, ctx)
 
 	sensor.StartControlledOrFail(t, ctx)
 
 	sensor.SendStartCommandOrFail(t, ctx,
-		testutil.NewMonitorStartCommand(
-			testutil.WithSaneDefaults(),
-			testutil.WithAppNameArgs("cat", "/etc/alpine-release"),
+		testsensor.NewMonitorStartCommand(
+			testsensor.WithSaneDefaults(),
+			testsensor.WithAppNameArgs("cat", "/etc/alpine-release"),
 		),
 	)
 	sensor.ExpectEvent(t, event.StartMonitorDone)
@@ -63,8 +65,6 @@ func TestSimpleSensorRun_Controlled_CLI(t *testing.T) {
 	sensor.WaitOrFail(t, ctx)
 
 	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
-	// TODO: Change to strict equality check after the refactoring
-	//       separating the sensor's and the target app's logs.
 	sensor.AssertTargetAppLogsContain(t, ctx, "3.16.2")
 
 	sensor.DownloadArtifactsOrFail(t, ctx)
@@ -76,7 +76,7 @@ func TestSimpleSensorRun_Controlled_Service(t *testing.T) {
 	runID := newTestRun(t)
 	ctx := context.Background()
 
-	sensor := testutil.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleService)
+	sensor := testsensor.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleService)
 	defer sensor.Cleanup(t, ctx)
 
 	sensor.StartControlledOrFail(t, ctx)
@@ -121,27 +121,31 @@ func TestSimpleSensorRun_Standalone_CLI(t *testing.T) {
 	runID := newTestRun(t)
 	ctx := context.Background()
 
-	sensor := testutil.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleCLI)
+	sensor := testsensor.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleCLI)
 	defer sensor.Cleanup(t, ctx)
 
 	sensor.StartStandaloneOrFail(t, ctx, []string{"cat", "/etc/alpine-release"})
 	sensor.WaitOrFail(t, ctx)
 
 	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
-	// TODO: Change to strict equality check after the refactoring
-	//       separating the sensor's and the target app's logs.
 	sensor.AssertTargetAppLogsContain(t, ctx, "3.16.2")
 
 	sensor.DownloadArtifactsOrFail(t, ctx)
 	sensor.AssertReportIncludesFiles(t, "/bin/cat", "/bin/busybox", "/etc/alpine-release")
 	sensor.AssertReportNotIncludesFiles(t, "/bin/echo2", "/etc/resolve.conf")
+
+	sensor.AssertSensorEventFileContains(t, ctx,
+		event.StartMonitorDone,
+		event.StopMonitorDone,
+		event.ShutdownSensorDone,
+	)
 }
 
 func TestSimpleSensorRun_Standalone_Service(t *testing.T) {
 	runID := newTestRun(t)
 	ctx := context.Background()
 
-	sensor := testutil.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleService)
+	sensor := testsensor.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleService)
 	defer sensor.Cleanup(t, ctx)
 
 	sensor.StartStandaloneOrFail(t, ctx, nil)
@@ -177,13 +181,33 @@ func TestSimpleSensorRun_Standalone_Service(t *testing.T) {
 	)
 }
 
+func TestSensorLogsGoToFile(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	sensor := testsensor.NewSensorOrFail(
+		t, ctx, t.TempDir(), runID, imageSimpleCLI,
+		testsensor.WithSensorLogsToFile(),
+	)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartStandaloneOrFail(t, ctx, []string{"echo", "123456879"})
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.AssertTargetAppLogsEqualTo(t, ctx, "123456879")
+
+	// When WithSensorLogsToFile() is used, sensor's logs become part of artifacts.
+	sensor.DownloadArtifactsOrFail(t, ctx)
+	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
+}
+
 func TestAccessedButThenDeletedFilesShouldBeReported(t *testing.T) {
 	runID := newTestRun(t)
 	ctx := context.Background()
 
 	t.Skip("Fix for the sensor's logic is required!")
 
-	sensor := testutil.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleCLI)
+	sensor := testsensor.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleCLI)
 	defer sensor.Cleanup(t, ctx)
 
 	sensor.StartStandaloneOrFail(t, ctx, []string{
@@ -204,13 +228,13 @@ func TestPreservedPathsWorkWithFilesDeletedDuringProbing(t *testing.T) {
 
 	t.Skip("Fix for the sensor's logic is required!")
 
-	sensor := testutil.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleCLI)
+	sensor := testsensor.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleCLI)
 	defer sensor.Cleanup(t, ctx)
 
 	sensor.StartStandaloneOrFail(t, ctx,
 		[]string{"sh", "-c", "cat /etc/alpine-release; rm /etc/alpine-release"},
-		testutil.NewMonitorStartCommand(
-			testutil.WithPreserves("/etc/alpine-release"),
+		testsensor.NewMonitorStartCommand(
+			testsensor.WithPreserves("/etc/alpine-release"),
 		),
 	)
 	sensor.WaitOrFail(t, ctx)

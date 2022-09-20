@@ -5,17 +5,38 @@ package sensor
 
 import (
 	"fmt"
+	"os"
 
+	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	log "github.com/sirupsen/logrus"
 )
 
-func configureLogger(enableDebug bool, levelName, format string) error {
+func configureLogger(
+	enableDebug bool,
+	levelName string,
+	format string,
+	logFile string,
+) error {
 	if err := setLogLevel(enableDebug, levelName); err != nil {
 		return fmt.Errorf("failed to set log-level: %v", err)
 	}
 
 	if err := setLogFormat(format); err != nil {
 		return fmt.Errorf("failed to set log format: %v", err)
+	}
+
+	if len(logFile) > 0 {
+		// This touch is not ideal - need to understand how to merge this logic with artifacts.PrepareEnv().
+		if err := fsutil.Touch(logFile); err != nil {
+			return fmt.Errorf("failed to set log output destination to %q, touch failed with: %v", logFile, err)
+		}
+
+		f, err := os.OpenFile(logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
+		if err != nil {
+			return fmt.Errorf("failed to set log output destination to %q: %w", logFile, err)
+		}
+
+		log.SetOutput(f)
 	}
 
 	return nil

@@ -29,9 +29,14 @@ inspect: ## report suspicious constructs and linting errors
 tools: ## install necessary tools
 	'$(CURDIR)/scripts/tools.get.sh'
 
+## run unit tests
+test: export GO_TEST_FLAGS ?=
+test:
+	'$(CURDIR)/scripts/src.test.sh'
+
 clean: ## clean up
 	'$(CURDIR)/scripts/src.cleanup.sh'
 
-.PHONY: default help build_in_docker build_m1_in_docker build build_m1 build_dev fmt inspect tools clean
-
 include $(CURDIR)/test/e2e-tests.mk
+
+.PHONY: default help build_in_docker build_m1_in_docker build build_m1 build_dev fmt inspect tools test clean

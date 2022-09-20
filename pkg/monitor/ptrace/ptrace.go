@@ -1,3 +1,6 @@
+//go:build !arm64
+// +build !arm64
+
 package ptrace
 
 import (
@@ -32,28 +35,22 @@ const (
 
 func Run(
 	ctx context.Context,
-	rtaSourcePT bool,
-	standalone bool,
-	cmd string,
-	args []string,
-	dir string,
-	user string,
-	runAsUser bool,
-	reportCh chan<- *report.PtMonitorReport,
-	errorCh chan<- error,
-	stateCh chan<- AppState,
-	signalCh <-chan os.Signal,
+	runOpt AppRunOpt,
+	// TODO(ivan): includeNew & origPaths logic should be applied at the artifact dumping stage.
 	includeNew bool,
-	origPaths map[string]interface{},
+	origPaths map[string]struct{},
+	signalCh <-chan os.Signal,
+	errorCh chan<- error,
 ) (*App, error) {
 	log.Debug("ptrace.Run")
-	app, err := newApp(ctx, rtaSourcePT, standalone, cmd, args, dir, user, runAsUser, signalCh, reportCh, errorCh, stateCh, includeNew, origPaths)
+
+	app, err := newApp(ctx, runOpt, includeNew, origPaths, signalCh, errorCh)
 	if err != nil {
 		app.StateCh <- AppFailed
 		return nil, err
 	}
 
-	if rtaSourcePT {
+	if runOpt.RTASourcePT {
 		log.Debug("ptrace.Run - tracing target app")
 		app.Report.Enabled = true
 		go app.process()
@@ -64,8 +61,8 @@ func Run(
 			log.Debug("ptrace.Run - not tracing target app - start app")
 			if err := app.start(); err != nil {
 				log.Debugf("ptrace.Run - not tracing target app - start app error - %v", err)
+				app.errorCh <- errors.SE("ptrace.App.trace.app.start", "call.error", err)
 				app.StateCh <- AppFailed
-				app.ErrorCh <- errors.SE("ptrace.App.trace.app.start", "call.error", err)
 				return
 			}
 
@@ -111,28 +108,35 @@ type syscallState struct {
 }
 
 type App struct {
-	ctx             context.Context
-	RTASourcePT     bool
-	standalone      bool
-	Cmd             string
-	Args            []string
-	Dir             string
-	User            string
-	RunAsUser       bool
-	Report          report.PtMonitorReport
-	signalCh        <-chan os.Signal
-	ReportCh        chan<- *report.PtMonitorReport
-	ErrorCh         chan<- error
-	StateCh         chan<- AppState
+	ctx       context.Context
+	Cmd       string
+	Args      []string
+	WorkDir   string
+	User      string
+	RunAsUser bool
+
+	RTASourcePT         bool
+	reportOnMainPidExit bool
+
+	includeNew bool
+	origPaths  map[string]struct{}
+
+	signalCh <-chan os.Signal
+	errorCh  chan<- error
+
+	StateCh  chan AppState
+	ReportCh chan *report.PtMonitorReport
+
+	cmd    *exec.Cmd
+	pgid   int
+	Report report.PtMonitorReport
+
 	fsActivity      map[string]*report.FSActivityInfo
 	syscallActivity map[uint32]uint64
 	//syscallResolver system.NumberResolverFunc
-	cmd             *exec.Cmd
-	pgid            int
+
 	eventCh         chan syscallEvent
 	collectorDoneCh chan int
-	includeNew      bool
-	origPaths       map[string]interface{}
 }
 
 func (a *App) MainPID() int {
@@ -154,58 +158,48 @@ type syscallEvent struct {
 
 func newApp(
 	ctx context.Context,
-	rtaSourcePT bool,
-	standalone bool,
-	cmd string,
-	args []string,
-	dir string,
-	user string,
-	runAsUser bool,
-	signalCh <-chan os.Signal,
-	reportCh chan<- *report.PtMonitorReport,
-	errorCh chan<- error,
-	stateCh chan<- AppState,
+	runOpt AppRunOpt,
 	includeNew bool,
-	origPaths map[string]interface{},
+	origPaths map[string]struct{},
+	signalCh <-chan os.Signal,
+	errorCh chan<- error,
 ) (*App, error) {
 	log.Debug("ptrace.newApp")
-
-	if errorCh == nil {
-		errorCh = make(chan error, 100)
-	}
-
-	if stateCh == nil {
-		stateCh = make(chan AppState, 10)
-	}
 
 	sysInfo := system.GetSystemInfo()
 	archName := system.MachineToArchName(sysInfo.Machine)
 
 	a := App{
-		ctx:             ctx,
-		RTASourcePT:     rtaSourcePT,
-		standalone:      standalone,
-		Cmd:             cmd,
-		Args:            args,
-		Dir:             dir,
-		User:            user,
-		RunAsUser:       runAsUser,
-		signalCh:        signalCh,
-		ReportCh:        reportCh,
-		ErrorCh:         errorCh,
-		StateCh:         stateCh,
-		fsActivity:      map[string]*report.FSActivityInfo{},
-		syscallActivity: map[uint32]uint64{},
-		eventCh:         make(chan syscallEvent, eventBufSize),
-		collectorDoneCh: make(chan int, 1),
-		//syscallResolver: system.CallNumberResolver(archName),
+		ctx:       ctx,
+		Cmd:       runOpt.Cmd,
+		Args:      runOpt.Args,
+		WorkDir:   runOpt.WorkDir,
+		User:      runOpt.User,
+		RunAsUser: runOpt.RunAsUser,
+
+		RTASourcePT:         runOpt.RTASourcePT,
+		reportOnMainPidExit: runOpt.ReportOnMainPidExit,
+
+		includeNew: includeNew,
+		origPaths:  origPaths,
+
+		signalCh: signalCh,
+		errorCh:  errorCh,
+
+		StateCh:  make(chan AppState, 5),
+		ReportCh: make(chan *report.PtMonitorReport),
+
 		Report: report.PtMonitorReport{
 			ArchName:     string(archName),
 			SyscallStats: map[string]report.SyscallStatInfo{},
 			FSActivity:   map[string]*report.FSActivityInfo{},
 		},
-		includeNew: includeNew,
-		origPaths:  origPaths,
+
+		fsActivity:      map[string]*report.FSActivityInfo{},
+		syscallActivity: map[uint32]uint64{},
+
+		eventCh:         make(chan syscallEvent, eventBufSize),
+		collectorDoneCh: make(chan int, 2),
 	}
 
 	return &a, nil
@@ -215,11 +209,10 @@ func (app *App) trace() {
 	log.Debug("ptrace.App.trace")
 	runtime.LockOSThread()
 
-	err := app.start()
-	if err != nil {
+	if err := app.start(); err != nil {
 		app.collectorDoneCh <- 1
+		app.errorCh <- errors.SE("ptrace.App.trace.app.start", "call.error", err)
 		app.StateCh <- AppFailed
-		app.ErrorCh <- errors.SE("ptrace.App.trace.app.start", "call.error", err)
 		return
 	}
 
@@ -288,12 +281,7 @@ func (app *App) process() {
 done:
 	for {
 		select {
-		case rc := <-app.collectorDoneCh:
-			log.Debugf("ptrace.App.process: collector finished => %v", rc)
-			if rc > 0 {
-				state = AppFailed
-			}
-			break done
+		// Highest priority - monitor's context has been cancelled from the outside.
 		case <-app.ctx.Done():
 			log.Debug("ptrace.App.process: stopping...")
 			//NOTE: need a better way to stop the target app...
@@ -305,12 +293,42 @@ done:
 				}
 			}
 			break done
+
 		case e := <-app.eventCh:
 			app.Report.SyscallCount++
 			log.Debugf("ptrace.App.process: event ==> {pid=%v cn=%d}", e.pid, e.callNum)
 
 			app.processSyscallActivity(&e)
 			app.processFileActivity(&e)
+
+		case rc := <-app.collectorDoneCh:
+			log.Debugf("ptrace.App.process: collector finished => %v", rc)
+			if rc > 0 {
+				state = AppFailed
+			}
+			break done
+		}
+	}
+
+	// Drainign the remaining events after the collection is done.
+	// Note that it likely introduces a race when ReportOnMainPidExit is true.
+	// Events might be generated by the child processes (indefinitely) long after
+	// the main process' exit, and this could make the sensor hang. However, the
+	// alternative race (when events aren't drained) is even worse - it leads to
+	// loosing files in the report.
+drain:
+	for {
+		select {
+		case e := <-app.eventCh:
+			app.Report.SyscallCount++
+			log.Debugf("ptrace.App.process: event (drained) ==> {pid=%v cn=%d}", e.pid, e.callNum)
+
+			app.processSyscallActivity(&e)
+			app.processFileActivity(&e)
+
+		default:
+			log.Debug("ptrace.App.process: event draining is finished")
+			break drain
 		}
 	}
 
@@ -386,10 +404,12 @@ func (app *App) FileActivity() map[string]*report.FSActivityInfo {
 func (app *App) start() error {
 	log.Debug("ptrace.App.start")
 	var err error
-	app.cmd, err = launcher.Start(app.Cmd, app.Args, app.Dir, app.User, app.RunAsUser, app.RTASourcePT)
+	app.cmd, err = launcher.Start(app.Cmd, app.Args, app.WorkDir, app.User, app.RunAsUser, app.RTASourcePT)
 	if err != nil {
-		log.Errorf("ptrace.App.start: cmd='%v' args='%+v' dir='%v' error=%v\n",
-			app.Cmd, app.Args, app.Dir, err)
+		log.WithError(err).Errorf(
+			"ptrace.App.start: cmd='%v' args='%+v' dir='%v'",
+			app.Cmd, app.Args, app.WorkDir,
+		)
 		return err
 	}
 
@@ -551,7 +571,7 @@ func (app *App) collect() {
 					log.Debugf("ptrace.App.collect: trace syscall - (likely) tracee terminated pid=%v sig=%v error - %v (errno=%d)", callPid, callSig, err, err.(syscall.Errno))
 				} else {
 					log.Errorf("ptrace.App.collect: trace syscall pid=%v sig=%v error - %v (errno=%d)", callPid, callSig, err, err.(syscall.Errno))
-					app.ErrorCh <- errors.SE("ptrace.App.collect.ptsyscall", "call.error", err)
+					app.errorCh <- errors.SE("ptrace.App.collect.ptsyscall", "call.error", err)
 				}
 				//keep waiting for other syscalls
 			}
@@ -568,7 +588,7 @@ func (app *App) collect() {
 			}
 
 			log.Debugf("ptrace.App.collect: wait4 error - %v (errno=%d)", err, err.(syscall.Errno))
-			app.ErrorCh <- errors.SE("ptrace.App.collect.wait4", "call.error", err)
+			app.errorCh <- errors.SE("ptrace.App.collect.wait4", "call.error", err)
 			app.StateCh <- AppFailed
 			app.collectorDoneCh <- 2
 			return
@@ -587,7 +607,7 @@ func (app *App) collect() {
 		if wpid == -1 {
 			log.Error("ptrace.App.collect: wpid = -1")
 			app.StateCh <- AppFailed
-			app.ErrorCh <- errors.SE("ptrace.App.collect.wpid", "call.error", fmt.Errorf("wpid is -1"))
+			app.errorCh <- errors.SE("ptrace.App.collect.wpid", "call.error", fmt.Errorf("wpid is -1"))
 			// TODO(ivan): Investigate if this code branch leads to sensor becoming stuck.
 			//             Should we collectorDoneCh <- 42?
 			return
@@ -637,7 +657,7 @@ func (app *App) collect() {
 					log.Debug("ptrace.App.collect: unexpected main PID termination...")
 				}
 
-				if len(pidSyscallState) > 0 && app.standalone {
+				if len(pidSyscallState) > 0 && app.reportOnMainPidExit {
 					// Announce the end of event collection but don't stop the tracing loop.
 					//
 					// This makes the monitor report the tracing results unblocking the sensor
@@ -785,8 +805,7 @@ func (app *App) collect() {
 
 		doSyscall = true
 		callPid = wpid
-	}
-
+	} // eof: main for loop
 }
 
 func (app *App) startSignalForwarding() context.CancelFunc {
@@ -801,8 +820,6 @@ func (app *App) startSignalForwarding() context.CancelFunc {
 				return
 
 			case s := <-app.signalCh:
-				log.WithField("signal", s).Debug("ptrace.App - signal forwarder - received signal")
-
 				if s == syscall.SIGCHLD {
 					continue
 				}

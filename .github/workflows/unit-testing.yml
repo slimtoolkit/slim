@@ -1,0 +1,23 @@
+name: Unit testing
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+    types: [opened, synchronize, closed]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out docker-slim/docker-slim repo
+        uses: actions/checkout@v3
+
+      - name: Set up Go development environment
+        uses: actions/setup-go@v3
+        with:
+          go-version: '1.16.0'
+
+      - name: Run tests
+        run: make test

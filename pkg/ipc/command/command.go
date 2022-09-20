@@ -47,6 +47,7 @@ type StartMonitor struct {
 	AppCmd                       []string                      `json:"app_cmd,omitempty"`
 	AppUser                      string                        `json:"app_user,omitempty"`
 	RunTargetAsUser              bool                          `json:"run_tas_user,omitempty"`
+	ReportOnMainPidExit          bool                          `json:"report_on_main_pid_exit"`
 	KeepPerms                    bool                          `json:"keep_perms,omitempty"`
 	Perms                        map[string]*fsutil.AccessInfo `json:"perms,omitempty"`
 	Excludes                     []string                      `json:"excludes,omitempty"`

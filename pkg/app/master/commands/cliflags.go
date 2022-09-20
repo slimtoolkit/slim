@@ -299,9 +299,10 @@ func GlobalFlags() []cli.Flag {
 			Usage: "enable info logs",
 		},
 		&cli.StringFlag{
-			Name:  FlagLogLevel,
-			Value: "warn",
-			Usage: "set the logging level ('debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')",
+			Name:    FlagLogLevel,
+			Value:   "warn",
+			Usage:   "set the logging level ('debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')",
+			EnvVars: []string{"DSLIM_LOG_LEVEL"},
 		},
 		&cli.StringFlag{
 			Name:  FlagLog,
