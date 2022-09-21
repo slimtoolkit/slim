@@ -817,7 +817,7 @@ func (ref *Execution) CleanupServices() error {
 }
 
 func (ref *Execution) StopService(key string) error {
-	ref.logger.Debug("Execution.StopService(%s)\n", key)
+	ref.logger.Debugf("Execution.StopService(%s)\n", key)
 	service, running := ref.RunningServices[key]
 	if !running {
 		ref.logger.Debugf("Execution.StopService(%s) - no running service", key)
@@ -981,7 +981,7 @@ func EnvVarsFromService(varMap types.MappingWithEquals, varFiles types.StringLis
 	for _, file := range varFiles {
 		data, err := ioutil.ReadFile(file)
 		if err != nil {
-			log.Debugf("compose.EnvVarsFromService: error reading '%s' - %v", err)
+			log.Debugf("compose.EnvVarsFromService: error reading '%s' - %v", file, err)
 			continue
 		}
 

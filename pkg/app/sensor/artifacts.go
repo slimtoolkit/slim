@@ -22,6 +22,7 @@ import (
 	"github.com/bmatcuk/doublestar/v3"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/detectors/binfile"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/inspectors/sodeps"
 	"github.com/docker-slim/docker-slim/pkg/certdiscover"
@@ -36,7 +37,6 @@ const (
 	pidFileSuffix    = ".pid"
 	varRunDir        = "/var/run/"
 	fileTypeCmdName  = "file"
-	filesDirName     = "files"
 	filesArchiveName = "files.tar"
 	preservedDirName = "preserved"
 )
@@ -170,7 +170,7 @@ func findFileTypeCmd() {
 func prepareEnv(storeLocation string, cmd *command.StartMonitor) {
 	log.Debug("sensor.app.prepareEnv()")
 
-	dstRootPath := filepath.Join(storeLocation, filesDirName)
+	dstRootPath := filepath.Join(storeLocation, app.ArtifactFilesDirName)
 	log.Debugf("sensor.app.prepareEnv - prep file artifacts root dir - '%s'", dstRootPath)
 	err := os.MkdirAll(dstRootPath, 0777)
 	errutil.FailOn(err)
@@ -513,7 +513,7 @@ func (p *artifactStore) resolveLinks() {
 
 		fileInfo, err := os.Lstat(fpath)
 		if err != nil {
-			log.Debugf("resolveLinks.files - os.Lstat(%s) error: ", fpath, err)
+			log.Debugf("resolveLinks.files - os.Lstat(%s) error: %v", fpath, err)
 			continue
 		}
 
@@ -524,7 +524,7 @@ func (p *artifactStore) resolveLinks() {
 
 		linkRef, err := os.Readlink(fpath)
 		if err != nil {
-			log.Debugf("resolveLinks.files - os.Readlink(%s) error: ", fpath, err)
+			log.Debugf("resolveLinks.files - os.Readlink(%s) error: %v", fpath, err)
 			continue
 		}
 
@@ -612,7 +612,7 @@ func preparePaths(pathList []string) map[string]bool {
 	for _, pathValue := range pathList {
 		pathInfo, err := os.Stat(pathValue)
 		if err != nil {
-			log.Debug("preparePaths(): skipping path = ", pathValue)
+			log.WithError(err).Debug("preparePaths(): skipping path = ", pathValue)
 			continue
 		}
 
@@ -873,7 +873,7 @@ func (p *artifactStore) saveArtifacts() {
 	log.Debugf("saveArtifacts - merged newPerms(%v): %+v", len(newPerms), newPerms)
 
 	//moved to prepareEnv
-	//dstRootPath := filepath.Join(p.storeLocation, filesDirName)
+	//dstRootPath := filepath.Join(p.storeLocation, app.ArtifactFilesDirName)
 	//log.Debugf("saveArtifacts - prep file artifacts root dir - '%s'", dstRootPath)
 	//err := os.MkdirAll(dstRootPath, 0777)
 	//errutil.FailOn(err)
@@ -1039,7 +1039,7 @@ copyFiles:
 			if isNuxtConfigFile(fileName) {
 				nuxtConfig, err := getNuxtConfig(fileName)
 				if err != nil {
-					log.Warn("saveArtifacts: failed to get nuxt config: %v", err)
+					log.Warnf("saveArtifacts: failed to get nuxt config: %v", err)
 					continue
 				}
 				if nuxtConfig == nil {
@@ -1422,11 +1422,11 @@ copyIncludes:
 	}
 
 	if len(p.cmd.Preserves) > 0 {
-		log.Debug("saveArtifacts: restoring preserved paths - %d", len(p.cmd.Preserves))
+		log.Debugf("saveArtifacts: restoring preserved paths - %d", len(p.cmd.Preserves))
 
 		preservedDirPath := filepath.Join(p.storeLocation, preservedDirName)
 		if fsutil.Exists(preservedDirPath) {
-			filesDirPath := filepath.Join(p.storeLocation, filesDirName)
+			filesDirPath := filepath.Join(p.storeLocation, app.ArtifactFilesDirName)
 			preservePaths := preparePaths(getKeys(p.cmd.Preserves))
 			for inPath, isDir := range preservePaths {
 				srcPath := fmt.Sprintf("%s%s", preservedDirPath, inPath)
@@ -1628,7 +1628,7 @@ func detectNodePkgDir(fileName string) string {
 }
 
 func (p *artifactStore) archiveArtifacts() {
-	src := filepath.Join(p.storeLocation, filesDirName)
+	src := filepath.Join(p.storeLocation, app.ArtifactFilesDirName)
 	dst := filepath.Join(p.storeLocation, filesArchiveName)
 	log.Debugf("artifactStore.archiveArtifacts: src='%s' dst='%s'", src, dst)
 
@@ -1642,7 +1642,7 @@ func (p *artifactStore) archiveArtifacts() {
 // Hopefully, just a temporary workaround until a proper refactoring.
 func (p *artifactStore) enumerateArtifacts() {
 	knownFiles := list2map(p.nameList)
-	artifactFilesDir := filepath.Join(p.storeLocation, filesDirName)
+	artifactFilesDir := filepath.Join(p.storeLocation, app.ArtifactFilesDirName)
 
 	var curpath string
 	dirqueue := []string{artifactFilesDir}
@@ -1730,8 +1730,6 @@ func (p *artifactStore) saveReport() {
 		creport.Image.Files = append(creport.Image.Files, p.rawNames[fname])
 	}
 
-	reportName := report.DefaultContainerReportFileName
-
 	_, err := os.Stat(p.storeLocation)
 	if os.IsNotExist(err) {
 		os.MkdirAll(p.storeLocation, 0777)
@@ -1739,7 +1737,7 @@ func (p *artifactStore) saveReport() {
 		errutil.FailOn(err)
 	}
 
-	reportFilePath := filepath.Join(p.storeLocation, reportName)
+	reportFilePath := filepath.Join(p.storeLocation, report.DefaultContainerReportFileName)
 	log.Debugf("sensor: monitor - saving report to '%s'", reportFilePath)
 
 	var reportData bytes.Buffer

@@ -1,6 +1,15 @@
 ARCH ?= $(shell uname -m)
 DSLIM_EXAMPLES_DIR ?= '$(CURDIR)/../examples'
 
+GO_TEST_FLAGS = -v
+
+ifneq ($(GO_TEST_RUN),)
+	GO_TEST_FLAGS += -run $(GO_TEST_RUN)
+endif
+
+# run sensor only e2e tests
+test-e2e-sensor:
+	go test $(GO_TEST_FLAGS) $(CURDIR)/pkg/app/sensor
 
 # run all e2e tests at once
 .PHONY:
