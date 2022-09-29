@@ -11,6 +11,7 @@ import (
 	"math/rand"
 	"net"
 	"os"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -186,12 +187,17 @@ func (s *Server) Stop() {
 
 type EventServer struct {
 	*Server
+
+	mu    sync.Mutex
 	links []net.Conn
+
+	pending chan struct{}
 }
 
 func NewEventServer(addr string) *EventServer {
 	server := &EventServer{
-		Server: NewServer(addr),
+		Server:  NewServer(addr),
+		pending: make(chan struct{}),
 	}
 
 	server.SetConnHandler(server)
@@ -199,7 +205,21 @@ func NewEventServer(addr string) *EventServer {
 }
 
 func (s *EventServer) OnConnection(conn net.Conn) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
 	s.links = append(s.links, conn)
+
+	select {
+	case <-s.pending: // Has already been closed
+		break
+	default:
+		close(s.pending)
+	}
+}
+
+func (s *EventServer) WaitForConnection() {
+	<-s.pending
 }
 
 func (s *EventServer) Publish(data []byte, retries uint) error {
@@ -572,11 +592,14 @@ type RequestHandler interface {
 type CommandServer struct {
 	*Server
 	handler RequestHandler
+
+	pending chan struct{}
 }
 
 func NewCommandServer(addr string, handler RequestHandler) *CommandServer {
 	server := &CommandServer{
-		Server: NewServer(addr),
+		Server:  NewServer(addr),
+		pending: make(chan struct{}),
 	}
 
 	server.SetConnHandler(server)
@@ -588,8 +611,19 @@ func (s *CommandServer) SetReqHandler(handler RequestHandler) {
 	s.handler = handler
 }
 
+func (s *CommandServer) WaitForConnection() {
+	<-s.pending
+}
+
 func (s *CommandServer) OnConnection(conn net.Conn) {
 	log.Debugf("channel.CommandServer.OnConnection: %s -> %s", conn.RemoteAddr(), conn.LocalAddr())
+
+	select {
+	case <-s.pending: // Has already been closed
+		break
+	default:
+		close(s.pending)
+	}
 
 	go func() {
 		defer func() {

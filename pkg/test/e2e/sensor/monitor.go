@@ -1,4 +1,4 @@
-package testutil
+package sensor
 
 import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"

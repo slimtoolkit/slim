@@ -178,9 +178,10 @@ type SystemReport struct {
 
 // ContainerReport contains container report fields
 type ContainerReport struct {
-	System   SystemReport   `json:"system"`
-	Monitors MonitorReports `json:"monitors"`
-	Image    ImageReport    `json:"image"`
+	SensorVersion string         `json:"system"`
+	System        SystemReport   `json:"system"`
+	Monitors      MonitorReports `json:"monitors"`
+	Image         ImageReport    `json:"image"`
 }
 
 // PermSetFromFlags maps artifact flags to permissions

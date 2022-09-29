@@ -57,3 +57,14 @@ func SE(op string, kind string, err error) *SensorError {
 
 	return e
 }
+
+func Drain(ch <-chan error) (arr []error) {
+	for {
+		select {
+		case e := <-ch:
+			arr = append(arr, e)
+		default:
+			return arr
+		}
+	}
+}

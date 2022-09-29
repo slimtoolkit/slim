@@ -11,12 +11,18 @@ import (
 	"os"
 	"strconv"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/docker-slim/docker-slim/pkg/errors"
 	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-
 	fanapi "github.com/docker-slim/docker-slim/pkg/third_party/madmo/fanotify"
-	log "github.com/sirupsen/logrus"
+)
+
+const (
+	errorBufSize   = 10
+	eventBufSize   = 1000
+	procFsFdInfo   = "/proc/self/fd/%d"
+	procFsFilePath = "/proc/%v/%v"
 )
 
 // Event is file operation event
@@ -28,42 +34,81 @@ type Event struct {
 	IsWrite bool
 }
 
-const (
-	eventBufSize   = 1000
-	procFsFdInfo   = "/proc/self/fd/%d"
-	procFsFilePath = "/proc/%v/%v"
-)
+type Monitor interface {
+	// Starts the long running monitoring. The method itself is not
+	// blocking and not reentrant!
+	Start() error
 
-// Run starts the FANOTIFY monitor
-func Run(
+	// Cancels the underlying ptrace execution context but doesn't
+	// make the current monitor done immediately. You still need to await
+	// the final cleanup with <-mon.Done() before accessing the status.
+	Cancel()
+
+	// With Done clients can await for the monitoring completion.
+	// The method is reentrant - every invocation returns the same
+	// instance of the channel.
+	Done() <-chan struct{}
+
+	Status() (*report.FanMonitorReport, error)
+}
+
+type status struct {
+	report *report.FanMonitorReport
+	err    error
+}
+
+type monitor struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	mountPoint string
+
+	// TODO: Move the logic behind these two fields to the artifact processig stage.
+	includeNew bool
+	origPaths  map[string]struct{}
+
+	status status
+	doneCh chan struct{}
+}
+
+func NewMonitor(
 	ctx context.Context,
-	errorCh chan<- error,
 	mountPoint string,
 	includeNew bool,
-	origPaths map[string]interface{},
-) <-chan *report.FanMonitorReport {
-	log.Info("fanmon: Run")
+	origPaths map[string]struct{},
+) Monitor {
+	ctx, cancel := context.WithCancel(ctx)
+	return &monitor{
+		ctx:    ctx,
+		cancel: cancel,
+
+		mountPoint: mountPoint,
+		includeNew: includeNew,
+		origPaths:  origPaths,
+
+		doneCh: make(chan struct{}),
+	}
+}
+
+func (m *monitor) Start() error {
+	log.Info("fanmon: Start")
 
 	nd, err := fanapi.Initialize(fanapi.FAN_CLASS_NOTIF, os.O_RDONLY)
-	//TODO: need to propagate the FANOTIFY init failure back to the master instead of just crashing the sensor!
-	//errutil.FailOn(err)
 	if err != nil {
-		sensorErr := errors.SE("sensor.fanotify.Run/fanapi.Initialize", "call.error", err)
-		errorCh <- sensorErr
-		return nil
+		return errors.SE("sensor.fanotify.Run/fanapi.Initialize", "call.error", err)
 	}
 
-	err = nd.Mark(fanapi.FAN_MARK_ADD|fanapi.FAN_MARK_MOUNT,
-		fanapi.FAN_MODIFY|fanapi.FAN_ACCESS|fanapi.FAN_OPEN, -1, mountPoint)
-	//errutil.FailOn(err)
-	if err != nil {
-		sensorErr := errors.SE("sensor.fanotify.Run/nd.Mark", "call.error", err)
-		errorCh <- sensorErr
-		return nil
+	if err = nd.Mark(
+		fanapi.FAN_MARK_ADD|fanapi.FAN_MARK_MOUNT,
+		fanapi.FAN_MODIFY|fanapi.FAN_ACCESS|fanapi.FAN_OPEN,
+		-1, m.mountPoint,
+	); err != nil {
+		return errors.SE("sensor.fanotify.Run/nd.Mark", "call.error", err)
 	}
 
-	resultChan := make(chan *report.FanMonitorReport, 1)
+	// Sync part of the start was successful.
 
+	// Tracking the completetion of the monitor....
 	go func() {
 		log.Debug("fanmon: processor - starting...")
 
@@ -71,6 +116,7 @@ func Run(
 			MonitorPid:       os.Getpid(),
 			MonitorParentPid: os.Getppid(),
 			ProcessFiles:     map[string]map[string]*report.FileInfo{},
+			Processes:        map[string]*report.ProcessInfo{},
 		}
 
 		eventChan := make(chan Event, eventBufSize)
@@ -81,7 +127,11 @@ func Run(
 			for {
 				//TODO: enhance FA Notify to return the original file handle too
 				data, err := nd.GetEvent()
-				errutil.FailOn(err)
+				if err != nil {
+					m.status.err = errors.SE("sensor.fanotify.Run/nd.GetEvent", "call.error", err)
+					close(m.doneCh)
+					return
+				}
 				log.Debugf("fanmon: collector - data.Mask => %x", data.Mask)
 
 				if (data.Mask & fanapi.FAN_Q_OVERFLOW) == fanapi.FAN_Q_OVERFLOW {
@@ -111,7 +161,11 @@ func Run(
 				}
 
 				path, err := os.Readlink(fmt.Sprintf(procFsFdInfo, data.File.Fd()))
-				errutil.FailOn(err)
+				if err != nil {
+					m.status.err = errors.SE("sensor.fanotify.Run/os.Readlink", "call.error", err)
+					close(m.doneCh)
+					return
+				}
 
 				log.Debugf("fanmon: collector - file path => %v", path)
 
@@ -122,7 +176,7 @@ func Run(
 
 					select {
 					case eventChan <- e:
-					case <-ctx.Done():
+					case <-m.ctx.Done():
 						log.Info("fanmon: collector - stopping....")
 						return
 					}
@@ -133,15 +187,15 @@ func Run(
 	done:
 		for {
 			select {
-			case <-ctx.Done():
+			case <-m.ctx.Done():
 				log.Info("fanmon: processor - stopping...")
 				break done
 			case e := <-eventChan:
 				fanReport.EventCount++
 				log.Debugf("fanmon: processor - [%v] handling event %v", fanReport.EventCount, e)
 
-				_, ok := origPaths[e.File]
-				if includeNew {
+				_, ok := m.origPaths[e.File]
+				if m.includeNew {
 					ok = true
 				}
 
@@ -153,7 +207,6 @@ func Run(
 					//first event represents the main process
 					if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
 						fanReport.MainProcess = pinfo
-						fanReport.Processes = map[string]*report.ProcessInfo{}
 						fanReport.Processes[strconv.Itoa(int(e.Pid))] = pinfo
 					}
 				} else {
@@ -207,10 +260,23 @@ func Run(
 		}
 
 		log.Debugf("fanmon: processor - sending report (processed %v events)...", fanReport.EventCount)
-		resultChan <- fanReport
+		m.status.report = fanReport
+		close(m.doneCh)
 	}()
 
-	return resultChan
+	return nil
+}
+
+func (m *monitor) Cancel() {
+	m.cancel()
+}
+
+func (m *monitor) Done() <-chan struct{} {
+	return m.doneCh
+}
+
+func (m *monitor) Status() (*report.FanMonitorReport, error) {
+	return m.status.report, m.status.err
 }
 
 func procFilePath(pid int, key string) string {

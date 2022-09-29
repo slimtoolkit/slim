@@ -6,9 +6,11 @@ package sensor
 import (
 	"os"
 	"os/signal"
+	"strings"
 	"syscall"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
 )
 
 var signals = []os.Signal{
@@ -29,4 +31,11 @@ func initSignalHandlers(cleanup func()) {
 		cleanup()
 		os.Exit(0)
 	}()
+}
+
+func signalFromString(s string) syscall.Signal {
+	if !strings.HasPrefix(s, "SIG") {
+		s = "SIG" + s
+	}
+	return unix.SignalNum(s)
 }

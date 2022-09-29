@@ -101,6 +101,9 @@ func (s *Server) Run() error {
 		return err
 	}
 
+	s.cmdChannel.WaitForConnection()
+	s.evtChannel.WaitForConnection()
+
 	go func() {
 		for {
 			log.Debug("sensor: ipc.Server.Run - waiting for done signal...")

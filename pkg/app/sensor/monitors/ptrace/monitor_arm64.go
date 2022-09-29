@@ -10,16 +10,14 @@ import (
 	"runtime"
 	"strconv"
 	"syscall"
-	"time"
+
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
 
 	"github.com/docker-slim/docker-slim/pkg/errors"
 	"github.com/docker-slim/docker-slim/pkg/launcher"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/system"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-
-	log "github.com/sirupsen/logrus"
-	"golang.org/x/sys/unix"
 )
 
 type syscallEvent struct {
@@ -44,30 +42,74 @@ const (
 	syscall.PTRACE_O_TRACECLONE|syscall.PTRACE_O_TRACEEXIT
 */
 
-// Run starts the PTRACE monitor
-func Run(
+type status struct {
+	report *report.PtMonitorReport
+	err    error
+}
+
+type monitor struct {
+	ctx    context.Context
+	cancel context.CancelFunc
+
+	runOpt AppRunOpt
+
+	// TODO: Move the logic behind these two fields to the artifact processig stage.
+	includeNew bool
+	origPaths  map[string]struct{}
+
+	// To receive signals that should be delivered to the target app.
+	signalCh <-chan os.Signal
+
+	status status
+	doneCh chan struct{}
+}
+
+func NewMonitor(
 	ctx context.Context,
-	rtaSourcePT bool,
-	standalone bool, // TODO: Implement me!
-	errorCh chan<- error,
-	appStartAckCh chan<- bool,
-	signalCh <-chan os.Signal,
-	appName string,
-	appArgs []string,
-	dirName string,
-	appUser string,
-	runTargetAsUser bool,
+	runOpt AppRunOpt,
 	includeNew bool,
-	origPaths map[string]interface{},
-) <-chan *report.PtMonitorReport {
-	log.Info("ptmon: Run")
+	origPaths map[string]struct{},
+	signalCh <-chan os.Signal,
+	errorCh chan<- error,
+) Monitor {
+	ctx, cancel := context.WithCancel(ctx)
+	return &monitor{
+		ctx:    ctx,
+		cancel: cancel,
+
+		runOpt: runOpt,
+
+		includeNew: includeNew,
+		origPaths:  origPaths,
+
+		signalCh: signalCh,
+
+		doneCh: make(chan struct{}),
+	}
+}
+
+func (m *monitor) Start() error {
+	log.
+		WithField("name", m.runOpt.Cmd).
+		WithField("args", m.runOpt.Args).
+		Debug("sensor: starting target app...")
+	log.Info("ptmon: Start")
 
 	sysInfo := system.GetSystemInfo()
 	archName := system.MachineToArchName(sysInfo.Machine)
 	syscallResolver := system.CallNumberResolver(archName)
 
-	resultChan := make(chan *report.PtMonitorReport, 1)
+	appName := m.runOpt.Cmd
+	appArgs := m.runOpt.Args
+	workDir := m.runOpt.WorkDir
+	appUser := m.runOpt.User
+	runTargetAsUser := m.runOpt.RunAsUser
+	rtaSourcePT := m.runOpt.RTASourcePT
+	// TODO(ivan): Implement the runOpt.ReportOnMainPidExit handling.
 
+	// The sync part of the start was successful.
+
+	// Starting the async part...
 	go func() {
 		log.Debug("ptmon: processor - starting...")
 
@@ -88,21 +130,18 @@ func Run(
 			runtime.LockOSThread()
 
 			var err error
-			app, err = launcher.Start(appName, appArgs, dirName, appUser, runTargetAsUser, rtaSourcePT)
+			app, err = launcher.Start(appName, appArgs, workDir, appUser, runTargetAsUser, rtaSourcePT)
 			if err != nil {
-				appStartAckCh <- false
-				errorCh <- errors.SE("sensor.ptrace.Run/launcher.Start", "call.error", err)
-				time.Sleep(3 * time.Second)
-				errutil.FailOn(err)
+				m.status.err = errors.SE("sensor.ptrace.Run/launcher.Start", "call.error", err)
+				close(m.doneCh)
+				return
 			}
 
 			// TODO: Apparently, rtaSourcePT is ignored by this below code.
 			//       The x86-64 version of it has an alternative code branch
 			//       to run the target app w/o tracing.
 
-			appStartAckCh <- true
-
-			cancelSignalForwarding := startSignalForwarding(ctx, app, signalCh)
+			cancelSignalForwarding := startSignalForwarding(m.ctx, app, m.signalCh)
 			defer cancelSignalForwarding()
 
 			targetPid := app.Process.Pid
@@ -202,7 +241,7 @@ func Run(
 						callNum: uint32(callNum),
 						retVal:  retVal,
 					}:
-					case <-ctx.Done():
+					case <-m.ctx.Done():
 						log.Info("ptmon: collector - stopping...")
 						return
 					}
@@ -219,7 +258,7 @@ func Run(
 			case rc := <-collectorDoneChan:
 				log.Info("ptmon: processor - collector finished =>", rc)
 				break done
-			case <-ctx.Done():
+			case <-m.ctx.Done():
 				log.Info("ptmon: processor - stopping...")
 				//NOTE: need a better way to stop the target app...
 				if err := app.Process.Signal(unix.SIGTERM); err != nil {
@@ -254,10 +293,24 @@ func Run(
 		}
 
 		ptReport.SyscallNum = uint32(len(ptReport.SyscallStats))
-		resultChan <- ptReport
+
+		m.status.report = ptReport
+		close(m.doneCh)
 	}()
 
-	return resultChan
+	return nil
+}
+
+func (m *monitor) Cancel() {
+	m.cancel()
+}
+
+func (m *monitor) Done() <-chan struct{} {
+	return m.doneCh
+}
+
+func (m *monitor) Status() (*report.PtMonitorReport, error) {
+	return m.status.report, m.status.err
 }
 
 func startSignalForwarding(

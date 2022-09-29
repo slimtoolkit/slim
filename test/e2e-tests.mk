@@ -1,15 +1,11 @@
 ARCH ?= $(shell uname -m)
 DSLIM_EXAMPLES_DIR ?= '$(CURDIR)/../examples'
 
-GO_TEST_FLAGS = -v
-
-ifneq ($(GO_TEST_RUN),)
-	GO_TEST_FLAGS += -run $(GO_TEST_RUN)
-endif
+GO_TEST_FLAGS =  # E.g.: make test-e2e-sensor GO_TEST_FLAGS='-run TestXyz'
 
 # run sensor only e2e tests
 test-e2e-sensor:
-	go test $(GO_TEST_FLAGS) $(CURDIR)/pkg/app/sensor
+	go test -v -tags e2e -count 10 $(GO_TEST_FLAGS) $(CURDIR)/pkg/app/sensor
 
 # run all e2e tests at once
 .PHONY:
@@ -105,7 +101,6 @@ test-e2e-ruby:
 	[ "${ARCH}" = "arm64" ] || make -f $(DSLIM_EXAMPLES_DIR)/ruby2_rails5_alpine/Makefile test-e2e
 	[ "${ARCH}" = "arm64" ] || make -f $(DSLIM_EXAMPLES_DIR)/ruby2_rails5_alpine_puma/Makefile test-e2e
 	[ "${ARCH}" = "arm64" ] || make -f $(DSLIM_EXAMPLES_DIR)/ruby2_rails5_alpine_puma_sh/Makefile test-e2e
-	[ "${ARCH}" = "arm64" ] || make -f $(DSLIM_EXAMPLES_DIR)/ruby2_rails5_alpine_unicorn_rails/Makefile test-e2e
 	[ "${ARCH}" = "arm64" ] || make -f $(DSLIM_EXAMPLES_DIR)/ruby2_rails5_alpine_unicorn_rails/Makefile test-e2e
 	[ "${ARCH}" = "arm64" ] || make -f $(DSLIM_EXAMPLES_DIR)/ruby2_rails5_standard/Makefile test-e2e
 	[ "${ARCH}" = "arm64" ] || make -f $(DSLIM_EXAMPLES_DIR)/ruby2_rails5_standard_puma/Makefile test-e2e
