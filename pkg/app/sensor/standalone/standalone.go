@@ -63,12 +63,14 @@ func (s *Sensor) Run() error {
 		log.
 			WithField("cmd", fmt.Sprintf("%+v", cmd)).
 			Error("sensor: unexpected start monitor command")
+		s.exe.HookMonitorFailed()
 		s.exe.PubEvent(event.StartMonitorFailed)
 		return fmt.Errorf("unexpected start monitor command: %+v", cmd)
 	}
 
 	if err := s.artifactor.PrepareEnv(cmd); err != nil {
 		log.WithError(err).Error("sensor: artifactor.PrepareEnv() failed")
+		s.exe.HookMonitorFailed()
 		s.exe.PubEvent(event.StartMonitorFailed)
 		return fmt.Errorf("failed to prepare artifacts env: %w", err)
 	}
@@ -78,6 +80,8 @@ func (s *Sensor) Run() error {
 		log.WithError(err).Error("sensor: artifactor.GetCurrentPaths() failed")
 		return fmt.Errorf("failed to enumerate current paths: %w", err)
 	}
+
+	s.exe.HookMonitorPreStart()
 
 	mon, err := s.newMonitor(
 		s.ctx,
@@ -89,12 +93,14 @@ func (s *Sensor) Run() error {
 	)
 	if err != nil {
 		log.WithError(err).Error("sensor: failed to create composite monitor")
+		s.exe.HookMonitorFailed()
 		s.exe.PubEvent(event.StartMonitorFailed)
 		return err
 	}
 
 	if err := mon.Start(); err != nil {
 		log.WithError(err).Error("sensor: failed to start composite monitor")
+		s.exe.HookMonitorFailed()
 		s.exe.PubEvent(event.StartMonitorFailed)
 		return err
 	}
@@ -108,6 +114,7 @@ func (s *Sensor) Run() error {
 		return err
 	}
 	log.Info("sensor: target app is done")
+	s.exe.HookMonitorPostShutdown()
 	s.exe.PubEvent(event.StopMonitorDone)
 
 	if err := s.artifactor.ProcessReports(

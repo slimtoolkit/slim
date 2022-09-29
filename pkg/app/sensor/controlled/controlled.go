@@ -64,6 +64,7 @@ func (s *Sensor) Run() error {
 	for {
 		mon, err := s.runWithoutMonitor()
 		if err != nil {
+			s.exe.HookMonitorFailed()
 			s.exe.PubEvent(event.StartMonitorFailed)
 			return fmt.Errorf("run sensor without monitor failed: %w", err)
 		}
@@ -80,6 +81,7 @@ func (s *Sensor) Run() error {
 			return fmt.Errorf("run sensor with monitor failed: %w", err)
 		}
 
+		s.exe.HookMonitorPostShutdown()
 		s.exe.PubEvent(event.StopMonitorDone)
 	}
 }
@@ -118,6 +120,8 @@ func (s *Sensor) startMonitor(cmd *command.StartMonitor) (monitors.CompositeMoni
 		log.WithError(err).Error("sensor: artifactor.GetCurrentPaths() failed")
 		return nil, fmt.Errorf("failed to enumerate current paths: %w", err)
 	}
+
+	s.exe.HookMonitorPreStart()
 
 	mon, err := s.newMonitor(
 		s.ctx,

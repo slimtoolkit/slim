@@ -40,13 +40,17 @@ const (
 	logFormatFlagUsage   = "set the format used by logs ('text' (default), or 'json')"
 	logFormatFlagDefault = "text"
 
-	logFileFlagUsage = "set the log redirection to a file (allowing to keep sensor's output separate from the target app's output)"
+	logFileFlagUsage   = "set the log redirection to a file (allowing to keep sensor's output separate from the target app's output)"
+	logFileFlagDefault = ""
 
 	sensorModeFlagUsage   = "set the sensor execution mode ('controlled' when sensor expect the driver docker-slim app to manipulate its lifecycle; or 'standalone' when sensor depends on nothing but the target app"
 	sensorModeFlagDefault = sensorModeControlled
 
 	commandFileFlagUsage   = "JSONL-encoded file with one ore more sensor commands"
 	commandFileFlagDefault = app.DefaultArtifactDirPath + "/commands.json"
+
+	lifecycleHookCommandFlagUsage   = "(optional) path to an executable that'll be invoked at various sensor lifecycle events (post-start, pre-shutdown, etc)"
+	lifecycleHookCommandFlagDefault = ""
 
 	stopSignalFlagUsage   = "signal to stop the target app and start producing the report"
 	stopSignalFlagDefault = "TERM"
@@ -59,14 +63,15 @@ const (
 )
 
 var (
-	enableDebug     *bool          = flag.Bool("debug", enableDebugFlagDefault, enableDebugFlagUsage)
-	logLevel        *string        = flag.String("log-level", logLevelFlagDefault, logLevelFlagUsage)
-	logFormat       *string        = flag.String("log-format", logFormatFlagDefault, logFormatFlagUsage)
-	logFile         *string        = flag.String("log-file", "", logFileFlagUsage)
-	sensorMode      *string        = flag.String("mode", sensorModeFlagDefault, sensorModeFlagUsage)
-	commandFile     *string        = flag.String("command-file", commandFileFlagDefault, commandFileFlagUsage)
-	stopSignal      *string        = flag.String("stop-signal", stopSignalFlagDefault, stopSignalFlagUsage)
-	stopGracePeriod *time.Duration = flag.Duration("stop-grace-period", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
+	enableDebug          *bool          = flag.Bool("debug", enableDebugFlagDefault, enableDebugFlagUsage)
+	logLevel             *string        = flag.String("log-level", logLevelFlagDefault, logLevelFlagUsage)
+	logFormat            *string        = flag.String("log-format", logFormatFlagDefault, logFormatFlagUsage)
+	logFile              *string        = flag.String("log-file", logFormatFlagDefault, logFileFlagUsage)
+	sensorMode           *string        = flag.String("mode", sensorModeFlagDefault, sensorModeFlagUsage)
+	commandFile          *string        = flag.String("command-file", commandFileFlagDefault, commandFileFlagUsage)
+	lifecycleHookCommand *string        = flag.String("lifecycle-hook", lifecycleHookCommandFlagDefault, lifecycleHookCommandFlagUsage)
+	stopSignal           *string        = flag.String("stop-signal", stopSignalFlagDefault, stopSignalFlagUsage)
+	stopGracePeriod      *time.Duration = flag.Duration("stop-grace-period", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
 
 	errUnknownMode = errors.New("unknown sensor mode")
 )
@@ -78,6 +83,7 @@ func init() {
 	flag.StringVar(logFile, "o", "", logFormatFlagUsage)
 	flag.StringVar(sensorMode, "m", sensorModeFlagDefault, sensorModeFlagUsage)
 	flag.StringVar(commandFile, "c", commandFileFlagDefault, commandFileFlagUsage)
+	flag.StringVar(lifecycleHookCommand, "a", lifecycleHookCommandFlagDefault, lifecycleHookCommandFlagUsage)
 	flag.StringVar(stopSignal, "s", stopSignalFlagDefault, stopSignalFlagUsage)
 	flag.DurationVar(stopGracePeriod, "w", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
 }
@@ -100,13 +106,17 @@ func Run() {
 	log.Debugf("sensor: args => %#v", os.Args)
 
 	ctx := context.Background()
-	exe := newExecution(ctx, *sensorMode, *commandFile)
+	exe := newExecution(ctx, *sensorMode, *commandFile, *lifecycleHookCommand)
 	defer exe.Close()
+
+	exe.HookSensorPostStart()
 
 	sen := newSensor(ctx, exe, *sensorMode)
 	if err := sen.Run(); err != nil {
 		exe.PubEvent(event.Error, err.Error())
 	}
+
+	exe.HookSensorPreShutdown()
 
 	log.Info("sensor: done!")
 }
@@ -115,15 +125,21 @@ func newExecution(
 	ctx context.Context,
 	mode string,
 	commandFile string,
+	lifecycleHookCommand string,
 ) execution.Interface {
 	if mode == sensorModeControlled {
-		exe, err := execution.NewControlled(ctx)
+		exe, err := execution.NewControlled(ctx, lifecycleHookCommand)
 		errutil.FailOn(err)
 		return exe
 	}
 
 	if mode == sensorModeStandalone {
-		exe, err := execution.NewStandalone(ctx, commandFile, defaultEventsFilePath)
+		exe, err := execution.NewStandalone(
+			ctx,
+			commandFile,
+			defaultEventsFilePath,
+			lifecycleHookCommand,
+		)
 		errutil.FailOn(err)
 		return exe
 	}

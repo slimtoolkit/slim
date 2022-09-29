@@ -9,4 +9,11 @@ type Interface interface {
 	Commands() <-chan command.Message
 	PubEvent(etype event.Type, data ...interface{})
 	Close()
+
+	// Lifecycle hooks (extension points)
+	HookSensorPostStart()
+	HookSensorPreShutdown()
+	HookMonitorPreStart()
+	HookMonitorPostShutdown()
+	HookMonitorFailed()
 }

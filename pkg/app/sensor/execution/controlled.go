@@ -11,10 +11,15 @@ import (
 )
 
 type controlledExe struct {
+	hookExecutor
+
 	ipcServer *ipc.Server
 }
 
-func NewControlled(ctx context.Context) (Interface, error) {
+func NewControlled(
+	ctx context.Context,
+	lifecycleHookCommand string,
+) (Interface, error) {
 	log.Debug("sensor: starting IPC server...")
 
 	ipcServer, err := ipc.NewServer(ctx.Done())
@@ -27,6 +32,10 @@ func NewControlled(ctx context.Context) (Interface, error) {
 	}
 
 	return &controlledExe{
+		hookExecutor: hookExecutor{
+			ctx: ctx,
+			cmd: lifecycleHookCommand,
+		},
 		ipcServer: ipcServer,
 	}, nil
 }
