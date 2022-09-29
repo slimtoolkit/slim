@@ -27,7 +27,6 @@ type Sensor struct {
 
 	workDir    string
 	mountPoint string
-	origPaths  map[string]struct{}
 }
 
 func NewSensor(
@@ -37,7 +36,6 @@ func NewSensor(
 	artifactor artifacts.Artifactor,
 	workDir string,
 	mountPoint string,
-	origPaths map[string]struct{},
 ) *Sensor {
 	return &Sensor{
 		ctx:        ctx,
@@ -46,7 +44,6 @@ func NewSensor(
 		artifactor: artifactor,
 		workDir:    workDir,
 		mountPoint: mountPoint,
-		origPaths:  origPaths,
 	}
 }
 
@@ -112,8 +109,14 @@ func (s *Sensor) runWithoutMonitor() (monitors.CompositeMonitor, error) {
 
 func (s *Sensor) startMonitor(cmd *command.StartMonitor) (monitors.CompositeMonitor, error) {
 	if err := s.artifactor.PrepareEnv(cmd); err != nil {
-		log.WithError(err).Error("sensor: artifacts.PrepareEnv() failed")
+		log.WithError(err).Error("sensor: artifactor.PrepareEnv() failed")
 		return nil, fmt.Errorf("failed to prepare artifacts env: %w", err)
+	}
+
+	origPaths, err := s.artifactor.GetCurrentPaths(s.mountPoint, cmd.Excludes)
+	if err != nil {
+		log.WithError(err).Error("sensor: artifactor.GetCurrentPaths() failed")
+		return nil, fmt.Errorf("failed to enumerate current paths: %w", err)
 	}
 
 	mon, err := s.newMonitor(
@@ -121,7 +124,7 @@ func (s *Sensor) startMonitor(cmd *command.StartMonitor) (monitors.CompositeMoni
 		cmd,
 		s.workDir,
 		s.mountPoint,
-		s.origPaths,
+		origPaths,
 		// TODO: Do we need to forward signals to the target app in the controlled mode?
 		//       Sounds like a good idea but will change the historical behavior.
 		make(chan os.Signal),

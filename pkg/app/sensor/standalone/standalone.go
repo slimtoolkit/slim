@@ -30,7 +30,6 @@ type Sensor struct {
 
 	workDir    string
 	mountPoint string
-	origPaths  map[string]struct{}
 
 	stopSignal      os.Signal
 	stopGracePeriod time.Duration
@@ -43,7 +42,6 @@ func NewSensor(
 	artifactor artifacts.Artifactor,
 	workDir string,
 	mountPoint string,
-	origPaths map[string]struct{},
 	stopSignal os.Signal,
 	stopGracePeriod time.Duration,
 ) *Sensor {
@@ -54,7 +52,6 @@ func NewSensor(
 		artifactor:      artifactor,
 		workDir:         workDir,
 		mountPoint:      mountPoint,
-		origPaths:       origPaths,
 		stopSignal:      stopSignal,
 		stopGracePeriod: stopGracePeriod,
 	}
@@ -71,9 +68,15 @@ func (s *Sensor) Run() error {
 	}
 
 	if err := s.artifactor.PrepareEnv(cmd); err != nil {
-		log.WithError(err).Error("sensor: artifacts.PrepareEnv() failed")
+		log.WithError(err).Error("sensor: artifactor.PrepareEnv() failed")
 		s.exe.PubEvent(event.StartMonitorFailed)
 		return fmt.Errorf("failed to prepare artifacts env: %w", err)
+	}
+
+	origPaths, err := s.artifactor.GetCurrentPaths(s.mountPoint, cmd.Excludes)
+	if err != nil {
+		log.WithError(err).Error("sensor: artifactor.GetCurrentPaths() failed")
+		return fmt.Errorf("failed to enumerate current paths: %w", err)
 	}
 
 	mon, err := s.newMonitor(
@@ -81,7 +84,7 @@ func (s *Sensor) Run() error {
 		cmd,
 		s.workDir,
 		s.mountPoint,
-		s.origPaths,
+		origPaths,
 		initSignalForwardingChannel(s.ctx, s.stopSignal, s.stopGracePeriod),
 	)
 	if err != nil {

@@ -54,6 +54,14 @@ type artifactorStub struct{}
 
 var _ artifacts.Artifactor = &artifactorStub{}
 
+func (a *artifactorStub) GetCurrentPaths(root string, excludes []string) (map[string]struct{}, error) {
+	return map[string]struct{}{}, nil
+}
+
+func (a *artifactorStub) PrepareEnv(cmd *command.StartMonitor) error {
+	return nil
+}
+
 func (a *artifactorStub) ProcessReports(
 	cmd *command.StartMonitor,
 	mountPoint string,
@@ -61,10 +69,6 @@ func (a *artifactorStub) ProcessReports(
 	fanReport *report.FanMonitorReport,
 	ptReport *report.PtMonitorReport,
 ) error {
-	return nil
-}
-
-func (a *artifactorStub) PrepareEnv(cmd *command.StartMonitor) error {
 	return nil
 }
 
@@ -79,7 +83,7 @@ func TestStartStopShutdown(t *testing.T) {
 		exe,
 		newStubMonitorFunc(ctx, nil, nil),
 		&artifactorStub{},
-		"", "", nil,
+		"", "",
 	)
 
 	go func() {
@@ -98,33 +102,6 @@ func TestStartStopShutdown(t *testing.T) {
 	}
 }
 
-// func TestStartDoneStopShutdown(t *testing.T) {
-// 	ctx := context.Background()
-// 	exe := execution.NewExecution()
-// 	sen := controlled.NewSensor(
-// 		ctx,
-// 		exe,
-// 		newStubMonitorFunc(ctx, nil, nil),
-// 		&artifactorStub{},
-// 		"", "", nil,
-// 	)
-//
-// 	go func() {
-// 		time.Sleep(100 * time.Millisecond)
-// 		exe.SendCommand(&command.StartMonitor{})
-//
-// 		time.Sleep(100 * time.Millisecond)
-// 		exe.SendCommand(&command.StopMonitor{})
-//
-// 		time.Sleep(100 * time.Millisecond)
-// 		exe.SendCommand(&command.ShutdownSensor{})
-// 	}()
-//
-// 	if err := sen.Run(); err != nil {
-// 		t.Fatal("Unexpected sensor run error:", err)
-// 	}
-// }
-
 func TestShutdownBeforeStart(t *testing.T) {
 	ctx := context.Background()
 	exe := execution.NewExecution()
@@ -133,7 +110,7 @@ func TestShutdownBeforeStart(t *testing.T) {
 		exe,
 		newStubMonitorFunc(ctx, nil, nil),
 		&artifactorStub{},
-		"", "", nil,
+		"", "",
 	)
 
 	go func() {
@@ -153,7 +130,7 @@ func TestStartFollowedByShutdown(t *testing.T) {
 		exe,
 		newStubMonitorFunc(ctx, nil, nil),
 		&artifactorStub{},
-		"", "", nil,
+		"", "",
 	)
 
 	go func() {
@@ -174,7 +151,7 @@ func TestStopNonStartedMonitor(t *testing.T) {
 		exe,
 		newStubMonitorFunc(ctx, nil, nil),
 		&artifactorStub{},
-		"", "", nil,
+		"", "",
 	)
 
 	go func() {

@@ -148,12 +148,6 @@ func newSensor(
 	mountPoint := "/"
 	log.Debugf("sensor: mount point => %s", mountPoint)
 
-	origPaths, err := getCurrentPaths(mountPoint)
-	if err != nil {
-		exe.PubEvent(event.StartMonitorFailed, err.Error())
-		errutil.FailOn(err)
-	}
-
 	if mode == sensorModeControlled {
 		ctx, cancel := context.WithCancel(ctx)
 
@@ -171,7 +165,6 @@ func newSensor(
 			artifacts.NewArtifactor(app.DefaultArtifactDirPath),
 			workDir,
 			mountPoint,
-			origPaths,
 		)
 	}
 
@@ -183,7 +176,6 @@ func newSensor(
 			artifacts.NewArtifactor(app.DefaultArtifactDirPath),
 			workDir,
 			mountPoint,
-			origPaths,
 			signalFromString(*stopSignal),
 			*stopGracePeriod,
 		)
