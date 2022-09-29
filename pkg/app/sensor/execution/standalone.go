@@ -18,6 +18,8 @@ import (
 )
 
 type standaloneExe struct {
+	hookExecutor
+
 	commandCh chan command.Message
 	eventFile io.WriteCloser
 }
@@ -26,6 +28,7 @@ func NewStandalone(
 	ctx context.Context,
 	commandFileName string,
 	eventFileName string,
+	lifecycleHookCommand string,
 ) (Interface, error) {
 	// fsutil.Touch() creates (potentially missing) folder(s).
 	if err := fsutil.Touch(eventFileName); err != nil {
@@ -55,6 +58,10 @@ func NewStandalone(
 	commandCh <- &cmd
 
 	return &standaloneExe{
+		hookExecutor: hookExecutor{
+			ctx: ctx,
+			cmd: lifecycleHookCommand,
+		},
 		commandCh: commandCh,
 		eventFile: eventFile,
 	}, nil

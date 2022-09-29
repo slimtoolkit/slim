@@ -38,3 +38,23 @@ func (e *executionStub) PubEvent(etype event.Type, data ...interface{}) {
 func (e *executionStub) Close() {
 	close(e.commands)
 }
+
+func (e *executionStub) HookSensorPostStart() {
+	// noop
+}
+
+func (e *executionStub) HookSensorPreShutdown() {
+	// noop
+}
+
+func (e *executionStub) HookMonitorPreStart() {
+	// noop
+}
+
+func (e *executionStub) HookMonitorPostShutdown() {
+	// noop
+}
+
+func (e *executionStub) HookMonitorFailed() {
+	// noop
+}

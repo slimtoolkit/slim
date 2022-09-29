@@ -169,6 +169,14 @@ func findFileTypeCmd() {
 
 // Needed mostly to be able to mock it in the sensor tests.
 type Artifactor interface {
+	// Enumerate all files under a given root (used later on to tell the files
+	// that were created during probing and the existed files appart).
+	GetCurrentPaths(root string, excludes []string) (map[string]struct{}, error)
+
+	// Create the artifacts folder, preserve some files, etc.
+	PrepareEnv(cmd *command.StartMonitor) error
+
+	// Dump the creport and the files to the artifacts folder.
 	ProcessReports(
 		cmd *command.StartMonitor,
 		mountPoint string,
@@ -176,8 +184,6 @@ type Artifactor interface {
 		fanReport *report.FanMonitorReport,
 		ptReport *report.PtMonitorReport,
 	) error
-
-	PrepareEnv(cmd *command.StartMonitor) error
 }
 
 type artifactor struct {
@@ -190,31 +196,61 @@ func NewArtifactor(artifactDirName string) Artifactor {
 	}
 }
 
-func (a *artifactor) ProcessReports(
-	cmd *command.StartMonitor,
-	mountPoint string,
-	peReport *report.PeMonitorReport,
-	fanReport *report.FanMonitorReport,
-	ptReport *report.PtMonitorReport,
-) error {
-	//TODO: when peReport is available filter file events from fanReport
+func (a *artifactor) GetCurrentPaths(root string, excludes []string) (map[string]struct{}, error) {
+	pathMap := map[string]struct{}{}
+	err := filepath.Walk(root,
+		func(pth string, info os.FileInfo, err error) error {
+			if strings.HasPrefix(pth, "/proc/") {
+				log.Debugf("sensor: getCurrentPaths() - skipping /proc file system objects...")
+				return filepath.SkipDir
+			}
 
-	log.Debug("sensor: monitor.worker - processing data...")
+			if strings.HasPrefix(pth, "/sys/") {
+				log.Debugf("sensor: getCurrentPaths() - skipping /sys file system objects...")
+				return filepath.SkipDir
+			}
 
-	fileCount := 0
-	for _, processFileMap := range fanReport.ProcessFiles {
-		fileCount += len(processFileMap)
+			if strings.HasPrefix(pth, "/dev/") {
+				log.Debugf("sensor: getCurrentPaths() - skipping /dev file system objects...")
+				return filepath.SkipDir
+			}
+
+			// Optimization: Exclude folders early on to prevent slow enumerat
+			//               Can help with mounting big folders from the host.
+			// TODO: Combine this logic with the similar logic in artifacts.go
+			for _, xpattern := range excludes {
+				if match, _ := doublestar.Match(xpattern, pth); match {
+					if info.Mode().IsDir() {
+						return filepath.SkipDir
+					}
+					return nil
+				}
+			}
+
+			if !info.Mode().IsRegular() {
+				return nil
+			}
+
+			pth, err = filepath.Abs(pth)
+			if err != nil {
+				return nil
+			}
+
+			if strings.HasPrefix(pth, "/proc/") ||
+				strings.HasPrefix(pth, "/sys/") ||
+				strings.HasPrefix(pth, "/dev/") {
+				return nil
+			}
+
+			pathMap[pth] = struct{}{}
+			return nil
+		})
+
+	if err != nil {
+		return nil, err
 	}
-	fileList := make([]string, 0, fileCount)
-	for _, processFileMap := range fanReport.ProcessFiles {
-		for fpath := range processFileMap {
-			fileList = append(fileList, fpath)
-		}
-	}
 
-	log.Debugf("sensor: processReports(): len(fanReport.ProcessFiles)=%v / fileCount=%v", len(fanReport.ProcessFiles), fileCount)
-	allFilesMap := findSymlinks(fileList, mountPoint)
-	return saveResults(a.artifactDirName, cmd, allFilesMap, fanReport, ptReport, peReport)
+	return pathMap, nil
 }
 
 func (a *artifactor) PrepareEnv(cmd *command.StartMonitor) error {
@@ -272,6 +308,33 @@ func (a *artifactor) PrepareEnv(cmd *command.StartMonitor) error {
 	}
 
 	return nil
+}
+
+func (a *artifactor) ProcessReports(
+	cmd *command.StartMonitor,
+	mountPoint string,
+	peReport *report.PeMonitorReport,
+	fanReport *report.FanMonitorReport,
+	ptReport *report.PtMonitorReport,
+) error {
+	//TODO: when peReport is available filter file events from fanReport
+
+	log.Debug("sensor: monitor.worker - processing data...")
+
+	fileCount := 0
+	for _, processFileMap := range fanReport.ProcessFiles {
+		fileCount += len(processFileMap)
+	}
+	fileList := make([]string, 0, fileCount)
+	for _, processFileMap := range fanReport.ProcessFiles {
+		for fpath := range processFileMap {
+			fileList = append(fileList, fpath)
+		}
+	}
+
+	log.Debugf("sensor: processReports(): len(fanReport.ProcessFiles)=%v / fileCount=%v", len(fanReport.ProcessFiles), fileCount)
+	allFilesMap := findSymlinks(fileList, mountPoint, cmd.Excludes)
+	return saveResults(a.artifactDirName, cmd, allFilesMap, fanReport, ptReport, peReport)
 }
 
 func saveResults(
@@ -2334,7 +2397,7 @@ func list2map(l []string) map[string]bool {
 	return m
 }
 
-func findSymlinks(files []string, mountPoint string) map[string]*report.ArtifactProps {
+func findSymlinks(files []string, mountPoint string, excludes []string) map[string]*report.ArtifactProps {
 	log.Debugf("findSymlinks(%v,%v)", len(files), mountPoint)
 
 	result := map[string]*report.ArtifactProps{}
@@ -2448,6 +2511,19 @@ func findSymlinks(files []string, mountPoint string) map[string]*report.Artifact
 			if strings.HasPrefix(fullName, "/dev/") {
 				log.Debugf("findSymlinks: skipping /dev file system objects...")
 				return filepath.SkipDir
+			}
+
+			// Optimization: Avoid walking excluded folders. Supposed to help with
+			//               mounting big folders from the host (they should be explicitly
+			//               excluded).
+			// TODO: Combine this logic with the similar logic in artifacts.go
+			for _, xpattern := range excludes {
+				if match, _ := doublestar.Match(xpattern, fullName); match {
+					if fileInfo.Mode().IsDir() {
+						return filepath.SkipDir
+					}
+					return nil
+				}
 			}
 
 			if err != nil {

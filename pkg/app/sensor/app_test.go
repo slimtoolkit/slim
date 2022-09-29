@@ -33,6 +33,13 @@ var (
 		"sensor: monitor - saving report",
 		"sensor: monitor - saving report",
 	}
+
+	sensorLifecycleHookSequence = []string{
+		"sensor-post-start",
+		"monitor-pre-start",
+		"monitor-post-shutdown",
+		"sensor-pre-shutdown",
+	}
 )
 
 func init() {
@@ -250,4 +257,63 @@ func newTestRun(t *testing.T) string {
 	runID := t.Name() + "-" + strings.SplitN(uuid.New().String(), "-", 2)[0]
 	log.Debugf("New test run %s", runID)
 	return runID
+}
+
+func TestLifecycleHook_Controlled_CLI(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	sensor := testsensor.NewSensorOrFail(
+		t,
+		ctx,
+		t.TempDir(),
+		runID,
+		imageSimpleCLI,
+		testsensor.WithLifecycleHook("echo"),
+	)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartControlledOrFail(t, ctx)
+
+	sensor.SendStartCommandOrFail(t, ctx,
+		testsensor.NewMonitorStartCommand(
+			testsensor.WithSaneDefaults(),
+			testsensor.WithAppNameArgs("cat", "/etc/alpine-release"),
+		),
+	)
+
+	time.Sleep(1 * time.Second)
+
+	sensor.SendStopCommandOrFail(t, ctx)
+
+	sensor.ShutdownOrFail(t, ctx)
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.AssertTargetAppLogsContain(t, ctx, "3.16.2")
+
+	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
+	sensor.AssertSensorLogsContain(t, ctx, sensorLifecycleHookSequence...)
+}
+
+func TestLifecycleHook_Standalone_CLI(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	sensor := testsensor.NewSensorOrFail(
+		t,
+		ctx,
+		t.TempDir(),
+		runID,
+		imageSimpleCLI,
+		testsensor.WithLifecycleHook("echo"),
+	)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartStandaloneOrFail(t, ctx, []string{"cat", "/etc/alpine-release"})
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.AssertTargetAppLogsContain(t, ctx, "3.16.2")
+
+	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
+	sensor.AssertSensorLogsContain(t, ctx, sensorLifecycleHookSequence...)
 }

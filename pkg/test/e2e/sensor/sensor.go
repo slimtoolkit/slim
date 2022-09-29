@@ -47,12 +47,20 @@ func WithSensorLogsToFile() sensorOpt {
 	}
 }
 
+func WithLifecycleHook(cmd string) sensorOpt {
+	return func(s *Sensor) {
+		s.lifecycleHook = cmd
+	}
+}
+
 type Sensor struct {
 	image          dockerapi.Image
 	contName       string
 	sensorExePath  string
 	contextDirPath string
-	useLogFile     bool
+
+	useLogFile    bool
+	lifecycleHook string
 
 	// "Nullable"
 	contID  string
@@ -608,6 +616,9 @@ func (s *Sensor) commonStartFlags() []string {
 	flags := []string{"-l", "debug", "-d"}
 	if s.useLogFile {
 		flags = append(flags, "-o", filepath.Join(artifactDirPath, sensorLogFileName))
+	}
+	if len(s.lifecycleHook) > 0 {
+		flags = append(flags, "-a", s.lifecycleHook)
 	}
 	return flags
 }
