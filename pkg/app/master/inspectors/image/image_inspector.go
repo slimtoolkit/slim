@@ -281,7 +281,6 @@ func (i *Inspector) Inspect() error {
 func (i *Inspector) processImageName() {
 	if len(i.ImageRecordInfo.RepoTags) > 0 {
 		if rtInfo := strings.Split(i.ImageRecordInfo.RepoTags[0], ":"); len(rtInfo) > 1 {
-			log.Info(rtInfo[0])
 			if rtInfo[0] == "<none>" {
 				rtInfo[0] = "slimmedimage"
 			}
