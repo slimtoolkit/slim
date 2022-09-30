@@ -217,7 +217,7 @@ func (a *artifactor) GetCurrentPaths(root string, excludes []string) (map[string
 
 			// Optimization: Exclude folders early on to prevent slow enumerat
 			//               Can help with mounting big folders from the host.
-			// TODO: Combine this logic with the similar logic in artifacts.go
+			// TODO: Combine this logic with the similar logic in findSymlinks().
 			for _, xpattern := range excludes {
 				if match, _ := doublestar.Match(xpattern, pth); match {
 					if info.Mode().IsDir() {
@@ -2480,15 +2480,6 @@ func findSymlinks(files []string, mountPoint string, excludes []string) map[stri
 		symlinks[symlinkFileName] = linkRef
 	}
 
-	//getting the root device is a leftover from the legacy code (not really necessary anymore)
-	devID, err := getFileDevice(mountPoint)
-	if err != nil {
-		log.Debugf("findSymlinks - no device ID (%v)", err)
-		return result
-	}
-
-	log.Debugf("findSymlinks - deviceId=%v", devID)
-
 	inodes, devices := filesToInodesNative(files)
 	log.Debugf("findSymlinks - len(inodes)=%v len(devices)=%v", len(inodes), len(devices))
 
@@ -2516,7 +2507,7 @@ func findSymlinks(files []string, mountPoint string, excludes []string) map[stri
 			// Optimization: Avoid walking excluded folders. Supposed to help with
 			//               mounting big folders from the host (they should be explicitly
 			//               excluded).
-			// TODO: Combine this logic with the similar logic in artifacts.go
+			// TODO: Combine this logic with the similar logic in GetCurrentPaths().
 			for _, xpattern := range excludes {
 				if match, _ := doublestar.Match(xpattern, fullName); match {
 					if fileInfo.Mode().IsDir() {
