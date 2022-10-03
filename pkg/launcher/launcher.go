@@ -4,6 +4,7 @@
 package launcher
 
 import (
+	"io"
 	"os"
 	"os/exec"
 	"strings"
@@ -75,7 +76,16 @@ func fixStdioPermissionsAlt(uid int) error {
 }
 
 // Start starts the target application in the container
-func Start(appName string, appArgs []string, appDir, appUser string, runTargetAsUser, doPtrace bool) (*exec.Cmd, error) {
+func Start(
+	appName string,
+	appArgs []string,
+	appDir string,
+	appUser string,
+	runTargetAsUser bool,
+	doPtrace bool,
+	appStdout io.Writer,
+	appStderr io.Writer,
+) (*exec.Cmd, error) {
 	log.Debugf("launcher.Start(%v,%v,%v,%v)", appName, appArgs, appDir, appUser)
 	if !runTargetAsUser {
 		appUser = ""
@@ -126,9 +136,9 @@ func Start(appName string, appArgs []string, appDir, appUser string, runTargetAs
 	}
 
 	app.Dir = appDir
-	app.Stdout = os.Stdout
-	app.Stderr = os.Stderr
 	app.Stdin = os.Stdin
+	app.Stdout = appStdout
+	app.Stderr = appStderr
 
 	err := app.Start()
 	if err != nil {

@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path"
@@ -115,6 +116,9 @@ type App struct {
 	User      string
 	RunAsUser bool
 
+	appStdout io.Writer
+	appStderr io.Writer
+
 	RTASourcePT         bool
 	reportOnMainPidExit bool
 
@@ -176,6 +180,9 @@ func newApp(
 		WorkDir:   runOpt.WorkDir,
 		User:      runOpt.User,
 		RunAsUser: runOpt.RunAsUser,
+
+		appStdout: runOpt.AppStdout,
+		appStderr: runOpt.AppStderr,
 
 		RTASourcePT:         runOpt.RTASourcePT,
 		reportOnMainPidExit: runOpt.ReportOnMainPidExit,
@@ -404,7 +411,16 @@ func (app *App) FileActivity() map[string]*report.FSActivityInfo {
 func (app *App) start() error {
 	log.Debug("ptrace.App.start")
 	var err error
-	app.cmd, err = launcher.Start(app.Cmd, app.Args, app.WorkDir, app.User, app.RunAsUser, app.RTASourcePT)
+	app.cmd, err = launcher.Start(
+		app.Cmd,
+		app.Args,
+		app.WorkDir,
+		app.User,
+		app.RunAsUser,
+		app.RTASourcePT,
+		app.appStdout,
+		app.appStderr,
+	)
 	if err != nil {
 		log.WithError(err).Errorf(
 			"ptrace.App.start: cmd='%v' args='%+v' dir='%v'",

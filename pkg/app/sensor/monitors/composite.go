@@ -3,18 +3,20 @@ package monitors
 import (
 	"context"
 	"fmt"
+	"io"
 	"os"
+	"path/filepath"
 	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors/fanotify"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors/pevent"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors/ptrace"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/system"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
 
 const (
@@ -79,6 +81,9 @@ type monitor struct {
 	fanMon fanotify.Monitor
 	ptMon  ptrace.Monitor
 
+	// Inspired by os/exec.Cmd
+	closeAfterDone []io.Closer
+
 	doneCh   chan struct{}
 	doneOnce sync.Once
 
@@ -104,15 +109,6 @@ func NewCompositeMonitor(
 ) (CompositeMonitor, error) {
 	log.Info("sensor: creating monitors...")
 
-	//tmp: disable PEVENTs (due to problems with the new boot2docker host OS)
-	usePEMon, err := system.DefaultKernelFeatures.IsCompiled("CONFIG_PROC_EVENTS")
-	usePEMon = false
-	if (err == nil) && usePEMon {
-		log.Info("sensor: proc events are available!")
-		_ = pevent.Run(ctx.Done())
-		//ProcEvents are not enabled in the default boot2docker kernel
-	}
-
 	errorCh := make(chan error, errorChanBufSize)
 
 	fanMon := fanotify.NewMonitor(
@@ -123,11 +119,36 @@ func NewCompositeMonitor(
 		errorCh,
 	)
 
+	var closeAfterDone []io.Closer
+
+	appStdout := os.Stdout
+	if cmd.AppStdoutToFile {
+		sink, file, err := dupAppStdStream(os.Stdout, "stdout")
+		if err != nil {
+			return nil, err
+		}
+		closeAfterDone = append(closeAfterDone, sink, file)
+		appStdout = sink
+	}
+
+	appStderr := os.Stderr
+	if cmd.AppStderrToFile {
+		sink, file, err := dupAppStdStream(os.Stderr, "stderr")
+		if err != nil {
+			closeAll(closeAfterDone)
+			return nil, err
+		}
+		closeAfterDone = append(closeAfterDone, sink, file)
+		appStderr = sink
+	}
+
 	ptMon := ptrace.NewMonitor(
 		ctx,
 		ptrace.AppRunOpt{
 			Cmd:                 cmd.AppName,
 			Args:                cmd.AppArgs,
+			AppStdout:           appStdout,
+			AppStderr:           appStderr,
 			WorkDir:             workDir,
 			User:                cmd.AppUser,
 			RunAsUser:           cmd.RunTargetAsUser,
@@ -140,7 +161,10 @@ func NewCompositeMonitor(
 		errorCh,
 	)
 
-	return Compose(cmd, fanMon, ptMon, errorCh), nil
+	m := Compose(cmd, fanMon, ptMon, errorCh)
+	m.closeAfterDone = closeAfterDone
+
+	return m, nil
 }
 
 func Compose(
@@ -173,6 +197,8 @@ func (m *monitor) Start() error {
 		log.
 			WithError(err).
 			Error("sensor: composite monitor - FAN failed to start running")
+
+		closeAll(m.closeAfterDone)
 		return err
 	}
 
@@ -180,6 +206,8 @@ func (m *monitor) Start() error {
 		log.
 			WithError(err).
 			Error("sensor: composite monitor - PTAN failed to start running")
+
+		closeAll(m.closeAfterDone)
 		return err
 	}
 
@@ -225,6 +253,8 @@ func (m *monitor) Done() <-chan struct{} {
 			// <-m.peMon.Done()
 			<-m.fanMon.Done()
 			log.Debug("sensor: composite monitor - fanmon is done")
+
+			closeAll(m.closeAfterDone)
 
 			// The composite is done when all its subordinates are done.
 			close(m.doneCh)
@@ -273,4 +303,37 @@ func (m *monitor) Status() (*CompositeReport, error) {
 
 func NonCriticalError(err error) error {
 	return fmt.Errorf("non-critical monitor error: %w", err)
+}
+
+// Using simple io.MultiWriter(os.Stdout, os.File) would make cmd.Wait()
+// block until either the cmd's stdout is closed or the multi-writer is closed.
+// However, both are impossible. We need the Wait() to return much earlier
+// than the process termination (see pkg/monitors/ptrace logic), and multi-writer
+// cannot be closed at all. Hence, the pipe trick.
+func dupAppStdStream(w io.Writer, kind string) (*os.File, *os.File, error) {
+	filename := filepath.Join(app.DefaultArtifactDirPath, "app_"+kind+".log")
+
+	f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return nil, nil, fmt.Errorf("cannot open file %q to duplicate app's %s stream: %w", filename, kind, err)
+	}
+
+	pr, pw, err := os.Pipe()
+	if err != nil {
+		f.Close()
+		return nil, nil, fmt.Errorf("cannot create pipe for app %s stream: %w", kind, err)
+	}
+
+	go func() {
+		n, err := io.Copy(io.MultiWriter(w, f), pr)
+		log.Debugf("dupAppStdStream: io.Copy() finished; written=%d error=%v", n, err)
+	}()
+
+	return pw, f, nil
+}
+
+func closeAll(cs []io.Closer) {
+	for _, c := range cs {
+		errutil.WarnOn(c.Close())
+	}
 }

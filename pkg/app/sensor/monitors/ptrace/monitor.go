@@ -94,7 +94,7 @@ func (m *monitor) Start() error {
 	if appState == ptrace.AppFailed {
 		// Don't need to wait for the 'done' state.
 		log.Error("ptmon: pta state watcher - target app failed")
-		return errors.SE("sensor.ptrace.Run/ptrace.Run", "call.error", err)
+		return fmt.Errorf("ptmon: target app startup failed: %q", appState)
 	}
 	if appState != ptrace.AppStarted {
 		// Cannot really happen.

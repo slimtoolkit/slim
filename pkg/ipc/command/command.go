@@ -46,6 +46,8 @@ type StartMonitor struct {
 	AppEntrypoint                []string                      `json:"app_entrypoint,omitempty"`
 	AppCmd                       []string                      `json:"app_cmd,omitempty"`
 	AppUser                      string                        `json:"app_user,omitempty"`
+	AppStdoutToFile              bool                          `json:"app_stdout_to_file"`
+	AppStderrToFile              bool                          `json:"app_stderr_to_file"`
 	RunTargetAsUser              bool                          `json:"run_tas_user,omitempty"`
 	ReportOnMainPidExit          bool                          `json:"report_on_main_pid_exit"`
 	KeepPerms                    bool                          `json:"keep_perms,omitempty"`
