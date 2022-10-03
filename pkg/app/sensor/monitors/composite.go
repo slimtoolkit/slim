@@ -20,6 +20,12 @@ import (
 const (
 	errorChanBufSize   = 100
 	errorChanDrainTime = 200 * time.Millisecond
+
+	// Some monitors are passive. If the driving monitor
+	// is too fast, the passive ones may not have a chance
+	// to track all the needed events (used to happen often
+	// between the driving ptrace and observing fanotify mons).
+	minPassiveMonitoring = 1 * time.Second
 )
 
 type CompositeReport struct {
@@ -67,6 +73,8 @@ type CompositeMonitor interface {
 type monitor struct {
 	cmd *command.StartMonitor
 
+	startedAt time.Time
+
 	// peMon  *pevent.Monitor
 	fanMon fanotify.Monitor
 	ptMon  ptrace.Monitor
@@ -105,9 +113,16 @@ func NewCompositeMonitor(
 		//ProcEvents are not enabled in the default boot2docker kernel
 	}
 
-	fanMon := fanotify.NewMonitor(ctx, mountPoint, cmd.IncludeNew, origPaths)
-
 	errorCh := make(chan error, errorChanBufSize)
+
+	fanMon := fanotify.NewMonitor(
+		ctx,
+		mountPoint,
+		cmd.IncludeNew,
+		origPaths,
+		errorCh,
+	)
+
 	ptMon := ptrace.NewMonitor(
 		ctx,
 		ptrace.AppRunOpt{
@@ -168,6 +183,8 @@ func (m *monitor) Start() error {
 		return err
 	}
 
+	m.startedAt = time.Now()
+
 	return nil
 }
 
@@ -192,6 +209,15 @@ func (m *monitor) Done() <-chan struct{} {
 			// driving one while the others are rather passive observers.
 			<-m.ptMon.Done()
 			log.Debug("sensor: composite monitor - ptmon is done")
+
+			// This code smells... If the ptrace monitor finished too quickly,
+			// we have to give the other monitors more time to increase their
+			// chances to track the needed events. But we only do this if the
+			// driving monitor finished successfully.
+			elapsed := time.Since(m.startedAt)
+			if _, err := m.ptMon.Status(); err == nil && elapsed < minPassiveMonitoring {
+				time.Sleep(minPassiveMonitoring - elapsed)
+			}
 
 			// m.peMon.Cancel()
 			m.fanMon.Cancel()

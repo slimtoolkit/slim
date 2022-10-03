@@ -67,8 +67,9 @@ type monitor struct {
 	includeNew bool
 	origPaths  map[string]struct{}
 
-	status status
-	doneCh chan struct{}
+	status  status
+	doneCh  chan struct{}
+	errorCh chan<- error
 }
 
 func NewMonitor(
@@ -76,6 +77,7 @@ func NewMonitor(
 	mountPoint string,
 	includeNew bool,
 	origPaths map[string]struct{},
+	errorCh chan<- error,
 ) Monitor {
 	ctx, cancel := context.WithCancel(ctx)
 	return &monitor{
@@ -86,7 +88,8 @@ func NewMonitor(
 		includeNew: includeNew,
 		origPaths:  origPaths,
 
-		doneCh: make(chan struct{}),
+		doneCh:  make(chan struct{}),
+		errorCh: errorCh,
 	}
 }
 
@@ -107,161 +110,119 @@ func (m *monitor) Start() error {
 	}
 
 	// Sync part of the start was successful.
-
 	// Tracking the completetion of the monitor....
+
 	go func() {
-		log.Debug("fanmon: processor - starting...")
+		log.Debug("fanmon: collector - starting...")
 
-		fanReport := &report.FanMonitorReport{
-			MonitorPid:       os.Getpid(),
-			MonitorParentPid: os.Getppid(),
-			ProcessFiles:     map[string]map[string]*report.FileInfo{},
-			Processes:        map[string]*report.ProcessInfo{},
-		}
+		var eventID uint32
+		eventCh := make(chan Event, eventBufSize)
 
-		eventChan := make(chan Event, eventBufSize)
 		go func() {
-			log.Debug("fanmon: collector - starting...")
-			var eventID uint32
+			log.Debug("fanmon: processor - starting...")
 
+			fanReport := &report.FanMonitorReport{
+				MonitorPid:       os.Getpid(),
+				MonitorParentPid: os.Getppid(),
+				ProcessFiles:     map[string]map[string]*report.FileInfo{},
+				Processes:        map[string]*report.ProcessInfo{},
+			}
+
+		process:
 			for {
-				//TODO: enhance FA Notify to return the original file handle too
-				data, err := nd.GetEvent()
-				if err != nil {
-					m.status.err = errors.SE("sensor.fanotify.Run/nd.GetEvent", "call.error", err)
-					close(m.doneCh)
-					return
-				}
-				log.Debugf("fanmon: collector - data.Mask => %x", data.Mask)
+				select {
+				case <-m.ctx.Done():
+					log.Info("fanmon: processor - stopping...")
+					break process
 
-				if (data.Mask & fanapi.FAN_Q_OVERFLOW) == fanapi.FAN_Q_OVERFLOW {
-					log.Debug("fanmon: collector - overflow event")
-					continue
-				}
-
-				doNotify := false
-				isRead := false
-				isWrite := false
-
-				if (data.Mask & fanapi.FAN_OPEN) == fanapi.FAN_OPEN {
-					log.Debug("fanmon: collector - file open")
-					doNotify = true
-				}
-
-				if (data.Mask & fanapi.FAN_ACCESS) == fanapi.FAN_ACCESS {
-					log.Debug("fanmon: collector - file read")
-					isRead = true
-					doNotify = true
-				}
-
-				if (data.Mask & fanapi.FAN_MODIFY) == fanapi.FAN_MODIFY {
-					log.Debug("fanmon: collector - file write")
-					isWrite = true
-					doNotify = true
-				}
-
-				path, err := os.Readlink(fmt.Sprintf(procFsFdInfo, data.File.Fd()))
-				if err != nil {
-					m.status.err = errors.SE("sensor.fanotify.Run/os.Readlink", "call.error", err)
-					close(m.doneCh)
-					return
-				}
-
-				log.Debugf("fanmon: collector - file path => %v", path)
-
-				data.File.Close()
-				if doNotify {
-					eventID++
-					e := Event{ID: eventID, Pid: data.Pid, File: path, IsRead: isRead, IsWrite: isWrite}
-
-					select {
-					case eventChan <- e:
-					case <-m.ctx.Done():
-						log.Info("fanmon: collector - stopping....")
-						return
-					}
+				case e := <-eventCh:
+					m.processEvent(e, fanReport)
 				}
 			}
+
+			log.Debug("fanmon: processor - done, draining - starting...")
+
+		drain:
+			for {
+				select {
+				case e := <-eventCh:
+					m.processEvent(e, fanReport)
+
+				default:
+					log.Debug("fanmon: draining - done")
+					break drain
+				}
+			}
+
+			log.Debugf("fanmon: processor - sending report (processed %v events)...", fanReport.EventCount)
+			m.status.report = fanReport
+			close(m.doneCh)
 		}()
 
-	done:
 		for {
 			select {
 			case <-m.ctx.Done():
-				log.Info("fanmon: processor - stopping...")
-				break done
-			case e := <-eventChan:
-				fanReport.EventCount++
-				log.Debugf("fanmon: processor - [%v] handling event %v", fanReport.EventCount, e)
+				return
+			default:
+			}
 
-				_, ok := m.origPaths[e.File]
-				if m.includeNew {
-					ok = true
-				}
+			//TODO: enhance FA Notify to return the original file handle too
+			data, err := nd.GetEvent()
+			if err != nil {
+				m.errorCh <- errors.SE("sensor.fanotify.Run/nd.GetEvent", "call.error", err)
+				continue
+			}
+			log.Debugf("fanmon: collector - data.Mask => %x", data.Mask)
 
-				if !ok {
-					continue done
-				}
+			if (data.Mask & fanapi.FAN_Q_OVERFLOW) == fanapi.FAN_Q_OVERFLOW {
+				log.Debug("fanmon: collector - overflow event")
+				continue
+			}
 
-				if e.ID == 1 {
-					//first event represents the main process
-					if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
-						fanReport.MainProcess = pinfo
-						fanReport.Processes[strconv.Itoa(int(e.Pid))] = pinfo
-					}
-				} else {
-					if _, ok := fanReport.Processes[strconv.Itoa(int(e.Pid))]; !ok {
-						if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
-							fanReport.Processes[strconv.Itoa(int(e.Pid))] = pinfo
-						}
-					}
-				}
+			doNotify := false
+			isRead := false
+			isWrite := false
 
-				if _, ok := fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))]; !ok {
-					fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))] = map[string]*report.FileInfo{}
-				}
+			if (data.Mask & fanapi.FAN_OPEN) == fanapi.FAN_OPEN {
+				log.Debug("fanmon: collector - file open")
+				doNotify = true
+			}
 
-				if existingFi, ok := fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))][e.File]; !ok {
-					fi := &report.FileInfo{
-						EventCount:   1,
-						Name:         e.File,
-						FirstEventID: e.ID,
-					}
+			if (data.Mask & fanapi.FAN_ACCESS) == fanapi.FAN_ACCESS {
+				log.Debug("fanmon: collector - file read")
+				isRead = true
+				doNotify = true
+			}
 
-					if e.IsRead {
-						fi.ReadCount = 1
-					}
+			if (data.Mask & fanapi.FAN_MODIFY) == fanapi.FAN_MODIFY {
+				log.Debug("fanmon: collector - file write")
+				isWrite = true
+				doNotify = true
+			}
 
-					if e.IsWrite {
-						fi.WriteCount = 1
-					}
+			// Ivan: It might be a good idea to move this from collector to processor.
+			// Probably, the fanotify events should be read as quick as just possible.
+			path, err := os.Readlink(fmt.Sprintf(procFsFdInfo, data.File.Fd()))
+			if err != nil {
+				m.errorCh <- errors.SE("sensor.fanotify.Run/os.Readlink", "call.error", err)
+				continue
+			}
 
-					if pi, ok := fanReport.Processes[strconv.Itoa(int(e.Pid))]; ok && (e.File == pi.Path) {
-						fi.ExeCount = 1
-					}
+			log.Debugf("fanmon: collector - file path => %v", path)
 
-					fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))][e.File] = fi
-				} else {
-					existingFi.EventCount++
+			data.File.Close()
+			if doNotify {
+				eventID++
+				e := Event{ID: eventID, Pid: data.Pid, File: path, IsRead: isRead, IsWrite: isWrite}
 
-					if e.IsRead {
-						existingFi.ReadCount++
-					}
-
-					if e.IsWrite {
-						existingFi.WriteCount++
-					}
-
-					if pi, ok := fanReport.Processes[strconv.Itoa(int(e.Pid))]; ok && (e.File == pi.Path) {
-						existingFi.ExeCount++
-					}
+				select {
+				case eventCh <- e:
+				case <-m.ctx.Done():
+					log.Info("fanmon: collector - stopping....")
+					return
 				}
 			}
 		}
-
-		log.Debugf("fanmon: processor - sending report (processed %v events)...", fanReport.EventCount)
-		m.status.report = fanReport
-		close(m.doneCh)
 	}()
 
 	return nil
@@ -277,6 +238,72 @@ func (m *monitor) Done() <-chan struct{} {
 
 func (m *monitor) Status() (*report.FanMonitorReport, error) {
 	return m.status.report, m.status.err
+}
+
+func (m *monitor) processEvent(e Event, fanReport *report.FanMonitorReport) {
+	fanReport.EventCount++
+	log.Debugf("fanmon: processor - [%v] handling event %v", fanReport.EventCount, e)
+
+	if _, ok := m.origPaths[e.File]; !ok && !m.includeNew {
+		return
+	}
+
+	if e.ID == 1 {
+		//first event represents the main process
+		if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
+			fanReport.MainProcess = pinfo
+			fanReport.Processes[strconv.Itoa(int(e.Pid))] = pinfo
+		}
+	} else {
+		if _, ok := fanReport.Processes[strconv.Itoa(int(e.Pid))]; !ok {
+			if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
+				// Ivan: PIDs can be reused, so we might be overwriting pinfo here.
+				// But if we consider this probability as too low to care about,
+				// then we should probably start caching getProcessInfo() calls :)
+				fanReport.Processes[strconv.Itoa(int(e.Pid))] = pinfo
+			}
+		}
+	}
+
+	if _, ok := fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))]; !ok {
+		fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))] = map[string]*report.FileInfo{}
+	}
+
+	if existingFi, ok := fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))][e.File]; !ok {
+		fi := &report.FileInfo{
+			EventCount:   1,
+			Name:         e.File,
+			FirstEventID: e.ID,
+		}
+
+		if e.IsRead {
+			fi.ReadCount = 1
+		}
+
+		if e.IsWrite {
+			fi.WriteCount = 1
+		}
+
+		if pi, ok := fanReport.Processes[strconv.Itoa(int(e.Pid))]; ok && (e.File == pi.Path) {
+			fi.ExeCount = 1
+		}
+
+		fanReport.ProcessFiles[strconv.Itoa(int(e.Pid))][e.File] = fi
+	} else {
+		existingFi.EventCount++
+
+		if e.IsRead {
+			existingFi.ReadCount++
+		}
+
+		if e.IsWrite {
+			existingFi.WriteCount++
+		}
+
+		if pi, ok := fanReport.Processes[strconv.Itoa(int(e.Pid))]; ok && (e.File == pi.Path) {
+			existingFi.ExeCount++
+		}
+	}
 }
 
 func procFilePath(pid int, key string) string {

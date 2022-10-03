@@ -34,7 +34,7 @@ func TestCompositeMonitor_Lifecycle(t *testing.T) {
 	select {
 	case <-mon.Done():
 		break
-	case <-time.After(1 * time.Second):
+	case <-time.After(1*time.Second + minPassiveMonitoring):
 		t.Fatal("composite monitor must be done by this time")
 	}
 
