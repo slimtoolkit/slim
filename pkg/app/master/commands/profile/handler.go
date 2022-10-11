@@ -241,6 +241,7 @@ func OnCommand(
 		dnsServers,
 		dnsSearchDomains,
 		doShowContainerLogs,
+		doRunTargetAsUser,
 		false, //doKeepPerms,
 		nil,   //pathPerms,
 		excludePatterns,

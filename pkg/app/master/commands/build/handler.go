@@ -826,6 +826,7 @@ func OnCommand(
 		dnsServers,
 		dnsSearchDomains,
 		doShowContainerLogs,
+		doRunTargetAsUser,
 		doKeepPerms,
 		pathPerms,
 		excludePatterns,
