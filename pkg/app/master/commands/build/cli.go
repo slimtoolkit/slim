@@ -124,6 +124,8 @@ var CLI = &cli.Command{
 		cflag(FlagIncludeExeFile),
 		cflag(FlagIncludeExe),
 		cflag(FlagIncludeShell),
+		cflag(FlagIncludePathsCreportFile),
+		cflag(FlagIncludeOSLibsNet),
 		cflag(FlagIncludeCertAll),
 		cflag(FlagIncludeCertBundles),
 		cflag(FlagIncludeCertDirs),
@@ -509,6 +511,20 @@ var CLI = &cli.Command{
 			}
 		}
 
+		creportIncludePaths, err := commands.ParsePathsCreportFile(ctx.String(FlagIncludePathsCreportFile))
+		if err != nil {
+			xc.Out.Error("param.error.include.paths.creport.file", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		} else {
+			for k, v := range creportIncludePaths {
+				includePaths[k] = v
+			}
+		}
+
 		pathPerms := commands.ParsePaths(ctx.StringSlice(FlagPathPerms))
 		morePathPerms, err := commands.ParsePathsFile(ctx.String(FlagPathPermsFile))
 		if err != nil {
@@ -555,6 +571,8 @@ var CLI = &cli.Command{
 		}
 
 		doIncludeShell := ctx.Bool(FlagIncludeShell)
+
+		doIncludeOSLibsNet := ctx.Bool(FlagIncludeOSLibsNet)
 
 		doIncludeCertAll := ctx.Bool(FlagIncludeCertAll)
 		doIncludeCertBundles := ctx.Bool(FlagIncludeCertBundles)
@@ -639,6 +657,7 @@ var CLI = &cli.Command{
 			includeBins,
 			includeExes,
 			doIncludeShell,
+			doIncludeOSLibsNet,
 			doIncludeCertAll,
 			doIncludeCertBundles,
 			doIncludeCertDirs,

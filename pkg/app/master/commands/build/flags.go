@@ -31,6 +31,10 @@ const (
 	FlagIncludeExeFile   = "include-exe-file"
 	FlagIncludeShell     = "include-shell"
 
+	FlagIncludePathsCreportFile = "include-paths-creport-file"
+
+	FlagIncludeOSLibsNet = "include-oslibs-net"
+
 	FlagIncludeCertAll     = "include-cert-all"
 	FlagIncludeCertBundles = "include-cert-bundles-only"
 	FlagIncludeCertDirs    = "include-cert-dirs"
@@ -103,6 +107,10 @@ const (
 	FlagIncludeBinUsage       = "Keep binary from original image (executable or shared object using its absolute path)"
 	FlagIncludeExeUsage       = "Keep executable from original image (by executable name)"
 	FlagIncludeShellUsage     = "Keep basic shell functionality"
+
+	FlagIncludePathsCreportFileUsage = "Keep files from the referenced creport"
+
+	FlagIncludeOSLibsNetUsage = "Keep the common networking OS libraries"
 
 	FlagIncludeCertAllUsage     = "Keep all discovered cert files"
 	FlagIncludeCertBundlesUsage = "Keep only cert bundles"
@@ -218,6 +226,20 @@ var Flags = map[string]cli.Flag{
 		Name:    FlagIncludeShell,
 		Usage:   FlagIncludeShellUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_SHELL"},
+	},
+	////
+	FlagIncludePathsCreportFile: &cli.StringFlag{
+		Name:    FlagIncludePathsCreportFile,
+		Value:   "",
+		Usage:   FlagIncludePathsCreportFileUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_PATHS_CREPORT_FILE"},
+	},
+	////
+	FlagIncludeOSLibsNet: &cli.BoolFlag{
+		Name:    FlagIncludeOSLibsNet,
+		Value:   true, //enabled by default
+		Usage:   FlagIncludeOSLibsNetUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_OSLIBS_NET"},
 	},
 	////
 	FlagIncludeCertAll: &cli.BoolFlag{

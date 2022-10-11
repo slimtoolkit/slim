@@ -3,6 +3,7 @@ package commands
 //Flag value parsers
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -19,6 +20,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
+	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/sysenv"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
@@ -528,6 +530,52 @@ func ParsePathsFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
 
 	return paths, nil
 }
+
+/////
+func ParsePathsCreportFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
+	const op = "commands.ParsePathsCreportFile"
+	paths := map[string]*fsutil.AccessInfo{}
+
+	if filePath == "" {
+		return paths, nil
+	}
+
+	fullPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return paths, err
+	}
+
+	_, err = os.Stat(fullPath)
+	if err != nil {
+		return paths, err
+	}
+
+	fileData, err := ioutil.ReadFile(fullPath) //[]byte
+	if err != nil {
+		return paths, err
+	}
+
+	if len(fileData) == 0 {
+		return paths, nil
+	}
+
+	var creport report.ContainerReport
+	if err = json.NewDecoder(bytes.NewReader(fileData)).Decode(&creport); err != nil {
+		return paths, err
+	}
+
+	for _, finfo := range creport.Image.Files {
+		if finfo == nil || finfo.FilePath == "" {
+			continue
+		}
+
+		paths[finfo.FilePath] = nil
+	}
+
+	return paths, nil
+}
+
+/////
 
 func ParseHTTPProbes(values []string) ([]config.HTTPProbeCmd, error) {
 	probes := []config.HTTPProbeCmd{}

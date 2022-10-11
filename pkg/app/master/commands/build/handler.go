@@ -118,6 +118,7 @@ func OnCommand(
 	includeBins map[string]*fsutil.AccessInfo,
 	includeExes map[string]*fsutil.AccessInfo,
 	doIncludeShell bool,
+	doIncludeOSLibsNet bool,
 	doIncludeCertAll bool,
 	doIncludeCertBundles bool,
 	doIncludeCertDirs bool,
