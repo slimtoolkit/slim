@@ -208,6 +208,60 @@ func TestSensorLogsGoToFile(t *testing.T) {
 	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
 }
 
+func TestAppStdoutToFile(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	sensor := testsensor.NewSensorOrFail(
+		t, ctx, t.TempDir(), runID, imageSimpleCLI,
+		testsensor.WithSensorLogsToFile(),
+	)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartStandaloneOrFail(
+		t, ctx,
+		[]string{"sh", "-c", "echo 123456789; echo 987654321 >&2"},
+		testsensor.NewMonitorStartCommand(
+			testsensor.WithSaneDefaults(),
+			testsensor.WithAppStdoutToFile(),
+		),
+	)
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.DownloadArtifactsOrFail(t, ctx)
+	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
+	sensor.AssertTargetAppLogsContain(t, ctx, "123456789")
+	sensor.AssertTargetAppLogsContain(t, ctx, "987654321")
+	sensor.AssertTargetAppStdoutFileEqualsTo(t, ctx, "123456789")
+}
+
+func TestAppStderrToFile(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	sensor := testsensor.NewSensorOrFail(
+		t, ctx, t.TempDir(), runID, imageSimpleCLI,
+		testsensor.WithSensorLogsToFile(),
+	)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartStandaloneOrFail(
+		t, ctx,
+		[]string{"sh", "-c", "echo 123456789; echo 987654321 >&2"},
+		testsensor.NewMonitorStartCommand(
+			testsensor.WithSaneDefaults(),
+			testsensor.WithAppStderrToFile(),
+		),
+	)
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.DownloadArtifactsOrFail(t, ctx)
+	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
+	sensor.AssertTargetAppLogsContain(t, ctx, "123456789")
+	sensor.AssertTargetAppLogsContain(t, ctx, "987654321")
+	sensor.AssertTargetAppStderrFileEqualsTo(t, ctx, "987654321")
+}
+
 func TestAccessedButThenDeletedFilesShouldBeReported(t *testing.T) {
 	runID := newTestRun(t)
 	ctx := context.Background()

@@ -52,13 +52,16 @@ const (
 	lifecycleHookCommandFlagUsage   = "(optional) path to an executable that'll be invoked at various sensor lifecycle events (post-start, pre-shutdown, etc)"
 	lifecycleHookCommandFlagDefault = ""
 
+	// Should stopSignal and stopGracePeriod become StartMonitor
+	// command's fields instead? Hypothetically, in a multi-command
+	// monitoring run, these two params may have different values.
 	stopSignalFlagUsage   = "signal to stop the target app and start producing the report"
 	stopSignalFlagDefault = "TERM"
 
 	stopGracePeriodFlagUsage   = "time to wait for the graceful termination of the target app (before sensor will send it SIGKILL)"
 	stopGracePeriodFlagDefault = 5 * time.Second
 
-	// Soon to become flags?
+	// Soon to become a flag?
 	defaultEventsFilePath = app.DefaultArtifactDirPath + "/events.json"
 )
 

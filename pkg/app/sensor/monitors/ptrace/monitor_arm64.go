@@ -130,7 +130,16 @@ func (m *monitor) Start() error {
 			runtime.LockOSThread()
 
 			var err error
-			app, err = launcher.Start(appName, appArgs, workDir, appUser, runTargetAsUser, rtaSourcePT)
+			app, err = launcher.Start(
+				appName,
+				appArgs,
+				workDir,
+				appUser,
+				runTargetAsUser,
+				rtaSourcePT,
+				m.runOpt.AppStdout,
+				m.runOpt.AppStderr,
+			)
 			if err != nil {
 				m.status.err = errors.SE("sensor.ptrace.Run/launcher.Start", "call.error", err)
 				close(m.doneCh)

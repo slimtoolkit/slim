@@ -27,6 +27,18 @@ func WithAppNameArgs(name string, arg ...string) startMonitorOpt {
 	}
 }
 
+func WithAppStdoutToFile() startMonitorOpt {
+	return func(cmd *command.StartMonitor) {
+		cmd.AppStdoutToFile = true
+	}
+}
+
+func WithAppStderrToFile() startMonitorOpt {
+	return func(cmd *command.StartMonitor) {
+		cmd.AppStderrToFile = true
+	}
+}
+
 func WithPreserves(path ...string) startMonitorOpt {
 	return func(cmd *command.StartMonitor) {
 		cmd.Preserves = commands.ParsePaths(path)

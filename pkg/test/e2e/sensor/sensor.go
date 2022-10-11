@@ -32,6 +32,8 @@ const (
 	artifactDirPath   = "/opt/dockerslim/" + artifactDirName
 	commandFileName   = "commands.json"
 	sensorLogFileName = "sensor.log"
+	appStdoutFileName = "app_stdout.log"
+	appStderrFileName = "app_stderr.log"
 	eventFileName     = "events.json"
 )
 
@@ -393,7 +395,7 @@ func (s *Sensor) DownloadArtifacts(ctx context.Context) error {
 	if s.client == nil {
 		rawEvents, err := os.ReadFile(filepath.Join(s.contextDirPath, artifactDirName, eventFileName))
 		if err != nil {
-			return fmt.Errorf("cannot load %s file: %w", eventFileName, err)
+			return fmt.Errorf("cannot read %s file: %w", eventFileName, err)
 		}
 		s.rawEvents = string(rawEvents)
 	}
@@ -504,7 +506,7 @@ func (s *Sensor) ExpectEvent(t *testing.T, name event.Type) {
 	}
 
 	if evt.Name != name {
-		t.Fatalf("unexpected event type %q (expected %q)", evt.Name, name)
+		t.Fatalf("Unexpected event type %q (expected %q)", evt.Name, name)
 	}
 }
 
@@ -541,24 +543,37 @@ func (s *Sensor) AssertTargetAppLogsEqualTo(t *testing.T, ctx context.Context, w
 
 	contLogs := strings.TrimSpace(s.ContainerLogsOrFail(t, ctx))
 	if contLogs != what {
-		t.Errorf("Unexpected container logs %q. Expected %q", contLogs, what)
+		t.Errorf("Unexpected container logs %q. Expected %q.", contLogs, what)
 	}
 }
 
-func parseEvents(rawEvents string) (events []event.Message) {
-	for _, line := range strings.Split(rawEvents, "\n") {
-		if len(line) == 0 {
-			continue
-		}
+func (s *Sensor) AssertTargetAppStdoutFileEqualsTo(t *testing.T, ctx context.Context, expected string) {
+	s.assertTargetAppStdFileEqualsTo(t, ctx, appStdoutFileName, expected)
+}
 
-		var event event.Message
-		if err := json.Unmarshal([]byte(line), &event); err != nil {
-			log.WithError(err).Errorf("Cannot parse event file entry: %q", line)
-		}
+func (s *Sensor) AssertTargetAppStderrFileEqualsTo(t *testing.T, ctx context.Context, expected string) {
+	s.assertTargetAppStdFileEqualsTo(t, ctx, appStderrFileName, expected)
+}
 
-		events = append(events, event)
+func (s *Sensor) assertTargetAppStdFileEqualsTo(
+	t *testing.T,
+	ctx context.Context,
+	kind string,
+	expected string,
+) {
+	if len(s.contID) == 0 {
+		t.Fatal("Test sensor container hasn't been started yet")
 	}
-	return events
+
+	data, err := os.ReadFile(filepath.Join(s.contextDirPath, artifactDirName, kind))
+	if err != nil {
+		t.Fatalf("cannot read %s file: %v", kind, err)
+	}
+
+	actual := strings.TrimSpace(string(data))
+	if actual != expected {
+		t.Errorf("Unexpected target app %s content %q. Expected %q.", kind, actual, expected)
+	}
 }
 
 // Checks the presense of the expected events AND the occurrence order.
@@ -670,6 +685,22 @@ func startCommandStandalone(
 	cmd.ReportOnMainPidExit = true
 
 	return cmd
+}
+
+func parseEvents(rawEvents string) (events []event.Message) {
+	for _, line := range strings.Split(rawEvents, "\n") {
+		if len(line) == 0 {
+			continue
+		}
+
+		var event event.Message
+		if err := json.Unmarshal([]byte(line), &event); err != nil {
+			log.WithError(err).Errorf("Cannot parse event file entry: %q", line)
+		}
+
+		events = append(events, event)
+	}
+	return events
 }
 
 func jsonDump(filename string, val interface{}) error {
