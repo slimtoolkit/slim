@@ -371,3 +371,22 @@ func TestLifecycleHook_Standalone_CLI(t *testing.T) {
 	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
 	sensor.AssertSensorLogsContain(t, ctx, sensorLifecycleHookSequence...)
 }
+
+func TestRunTargetAsUser(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	sensor := testsensor.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleCLI)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartStandaloneOrFail(
+		t, ctx, []string{"whoami"},
+		testsensor.NewMonitorStartCommand(
+			testsensor.WithAppUser("daemon"),
+		),
+	)
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
+	sensor.AssertTargetAppLogsContain(t, ctx, "daemon")
+}

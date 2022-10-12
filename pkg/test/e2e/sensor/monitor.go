@@ -27,6 +27,13 @@ func WithAppNameArgs(name string, arg ...string) startMonitorOpt {
 	}
 }
 
+func WithAppUser(user string) startMonitorOpt {
+	return func(cmd *command.StartMonitor) {
+		cmd.AppUser = user
+		cmd.RunTargetAsUser = true
+	}
+}
+
 func WithAppStdoutToFile() startMonitorOpt {
 	return func(cmd *command.StartMonitor) {
 		cmd.AppStdoutToFile = true
