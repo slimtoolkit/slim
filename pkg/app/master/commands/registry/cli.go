@@ -14,12 +14,14 @@ const (
 	Usage = "Execute registry operations"
 	Alias = "r"
 
-	PullCmdName      = "pull"
-	PullCmdNameUsage = "Pull a container image from registry"
-	PushCmdName      = "push"
-	PushCmdNameUsage = "Push a container image to a registry"
-	CopyCmdName      = "copy"
-	CopyCmdNameUsage = "Copy a container image from one registry to another"
+	PullCmdName        = "pull"
+	PullCmdNameUsage   = "Pull a container image from registry"
+	PushCmdName        = "push"
+	PushCmdNameUsage   = "Push a container image to a registry"
+	CopyCmdName        = "copy"
+	CopyCmdNameUsage   = "Copy a container image from one registry to another"
+	ServerCmdName      = "server"
+	ServerCmdNameUsage = "Start a registry server"
 )
 
 func fullCmdName(subCmdName string) string {
@@ -104,6 +106,20 @@ var CLI = &cli.Command{
 
 				xc := app.NewExecutionContext(fullCmdName(CopyCmdName), ctx.String(commands.FlagConsoleFormat))
 				OnCopyCommand(xc, gcvalues)
+				return nil
+			},
+		},
+		{
+			Name:  ServerCmdName,
+			Usage: ServerCmdNameUsage,
+			Action: func(ctx *cli.Context) error {
+				gcvalues, err := commands.GlobalFlagValues(ctx)
+				if err != nil {
+					return err
+				}
+
+				xc := app.NewExecutionContext(fullCmdName(ServerCmdName), ctx.String(commands.FlagConsoleFormat))
+				OnServerCommand(xc, gcvalues)
 				return nil
 			},
 		},

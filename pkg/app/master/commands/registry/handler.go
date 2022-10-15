@@ -221,6 +221,64 @@ func OnCopyCommand(
 	}
 }
 
+// OnServerCommand implements the 'registry server' docker-slim command
+func OnServerCommand(
+	xc *app.ExecutionContext,
+	gparams *commands.GenericParams) {
+	cmdName := fullCmdName(ServerCmdName)
+	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
+	Name := fmt.Sprintf("cmd=%s", cmdName)
+
+	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
+
+	cmdReport := report.NewRegistryCommand(gparams.ReportLocation, gparams.InContainer)
+	cmdReport.State = command.StateStarted
+
+	xc.Out.State("started")
+
+	client, err := dockerclient.New(gparams.ClientConfig)
+	if err == dockerclient.ErrNoDockerInfo {
+		exitMsg := "missing Docker connection info"
+		if gparams.InContainer && gparams.IsDSImage {
+			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
+		}
+
+		xc.Out.Info("docker.connect.error",
+			ovars{
+				"message": exitMsg,
+			})
+
+		exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
+		xc.Out.State("exited",
+			ovars{
+				"exit.code": exitCode,
+				"version":   v.Current(),
+				"location":  fsutil.ExeDir(),
+			})
+		xc.Exit(exitCode)
+	}
+	errutil.FailOn(err)
+
+	if gparams.Debug {
+		version.Print(xc, Name, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+	}
+
+	xc.Out.State("completed")
+	cmdReport.State = command.StateCompleted
+	xc.Out.State("done")
+
+	vinfo := <-viChan
+	version.PrintCheckVersion(xc, "", vinfo)
+
+	cmdReport.State = command.StateDone
+	if cmdReport.Save() {
+		xc.Out.Info("report",
+			ovars{
+				"file": cmdReport.ReportLocation(),
+			})
+	}
+}
+
 func outImageInfo(
 	xc *app.ExecutionContext,
 	targetImage gocrv1.Image) {
