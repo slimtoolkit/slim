@@ -276,9 +276,10 @@ If you don't specify any command `docker-slim` will start in the interactive pro
 
 ### COMMANDS
 
-- `build` - Analyzes, profiles and optimizes your container image generating the supported security profiles. This is the most popular command.
 - `xray` - Performs static analysis for the target container image (including 'reverse engineering' the Dockerfile for the image). Use this command if you want to know what's inside of your container image and what makes it fat.
 - `lint` - Analyzes container instructions in Dockerfiles (Docker image support is WIP)
+- `build` - Analyzes, profiles and optimizes your container image generating the supported security profiles. This is the most popular command.
+- `registry` - Execute registry operations.
 - `profile` - Performs basic container image analysis and dynamic container analysis, but it doesn't generate an optimized image.
 - `run` - Runs one or more containers (for now runs a single container similar to `docker run`)
 - `version` - Shows the version information.
@@ -299,9 +300,10 @@ If you run `docker-slim` without any parameters you'll get an interactive prompt
 
 Commands:
 
-- `lint` - Lint the target Dockerfile (or image, in the future)
 - `xray` - Show what's in the container image and reverse engineer its Dockerfile
+- `lint` - Lint the target Dockerfile (or image, in the future)
 - `build` - Analyze the target container image along with its application and build an optimized image from it
+- `registry` - Execute registry operations.
 - `profile` - Collect fat image information and generate a fat container report
 - `version` - Show docker-slim and docker version information
 - `update` - Update docker-slim
@@ -539,6 +541,23 @@ The `--include-shell` option provides a simple way to keep a basic shell in the 
 The `--dockerfile` option makes it possible to build a new minified image directly from source Dockerfile. Pass the Dockerfile name as the value for this flag and pass the build context directory or URL instead of the docker image name as the last parameter for the `docker-slim` build command: `docker-slim build --dockerfile Dockerfile --tag my/custom_minified_image_name .` If you want to see the console output from the build stages (when the fat and slim images are built) add the `--show-blogs` build flag. Note that the build console output is not interactive and it's printed only after the corresponding build step is done. The fat image created during the build process has the `.fat` suffix in its name. If you specify a custom image tag (with the `--tag` flag) the `.fat` suffix is added to the name part of the tag. If you don't provide a custom tag the generated fat image name will have the following format: `docker-slim-tmp-fat-image.<pid_of_docker-slim>.<current_timestamp>`. The minified image name will have the `.slim` suffix added to that auto-generated container image name (`docker-slim-tmp-fat-image.<pid_of_docker-slim>.<current_timestamp>.slim`). Take a look at this [python examples](https://github.com/docker-slim/examples/tree/master/python_ubuntu_18_py27_from_dockerfile) to see how it's using the `--dockerfile` flag.
 
 The `--use-local-mounts` option is used to choose how the `docker-slim` sensor is added to the target container and how the sensor artifacts are delivered back to the master. If you enable this option you'll get the original `docker-slim` behavior where it uses local file system volume mounts to add the sensor executable and to extract the artifacts from the target container. This option doesn't always work as expected in the dockerized environment where `docker-slim` itself is running in a Docker container. When this option is disabled (default behavior) then a separate Docker volume is used to mount the sensor and the sensor artifacts are explicitly copied from the target container.
+
+### `REGISTRY` COMMAND OPTIONS
+
+#### `PULL` SUBCOMMAND OPTIONS
+
+USAGE: docker-slim registry pull [IMAGE]
+
+- `--target value` - Target container image (name or ID) [$DSLIM_TARGET]
+- `--save-to-docker`- Save pulled image to docker (default: true) [$DSLIM_REG_PULL_SAVE_TO_DOCKER]
+
+#### `PUSH` SUBCOMMAND OPTIONS
+
+USAGE: docker-slim registry push [IMAGE]
+
+#### `COPY` SUBCOMMAND OPTIONS
+
+USAGE: docker-slim registry copy [SRC_IMAGE] [DST_IMAGE]
 
 ## RUNNING CONTAINERIZED
 
