@@ -5,9 +5,9 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 )
 
-type startMonitorOpt func(*command.StartMonitor)
+type StartMonitorOpt func(*command.StartMonitor)
 
-func WithSaneDefaults() startMonitorOpt {
+func WithSaneDefaults() StartMonitorOpt {
 	return func(cmd *command.StartMonitor) {
 		cmd.RTASourcePT = true
 		cmd.KeepPerms = true
@@ -20,39 +20,39 @@ func WithSaneDefaults() startMonitorOpt {
 	}
 }
 
-func WithAppNameArgs(name string, arg ...string) startMonitorOpt {
+func WithAppNameArgs(name string, arg ...string) StartMonitorOpt {
 	return func(cmd *command.StartMonitor) {
 		cmd.AppName = name
 		cmd.AppArgs = arg
 	}
 }
 
-func WithAppUser(user string) startMonitorOpt {
+func WithAppUser(user string) StartMonitorOpt {
 	return func(cmd *command.StartMonitor) {
 		cmd.AppUser = user
 		cmd.RunTargetAsUser = true
 	}
 }
 
-func WithAppStdoutToFile() startMonitorOpt {
+func WithAppStdoutToFile() StartMonitorOpt {
 	return func(cmd *command.StartMonitor) {
 		cmd.AppStdoutToFile = true
 	}
 }
 
-func WithAppStderrToFile() startMonitorOpt {
+func WithAppStderrToFile() StartMonitorOpt {
 	return func(cmd *command.StartMonitor) {
 		cmd.AppStderrToFile = true
 	}
 }
 
-func WithPreserves(path ...string) startMonitorOpt {
+func WithPreserves(path ...string) StartMonitorOpt {
 	return func(cmd *command.StartMonitor) {
 		cmd.Preserves = commands.ParsePaths(path)
 	}
 }
 
-func NewMonitorStartCommand(opts ...startMonitorOpt) command.StartMonitor {
+func NewMonitorStartCommand(opts ...StartMonitorOpt) command.StartMonitor {
 	cmd := command.StartMonitor{}
 
 	for _, opt := range opts {

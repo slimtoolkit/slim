@@ -390,3 +390,57 @@ func TestRunTargetAsUser(t *testing.T) {
 	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
 	sensor.AssertTargetAppLogsContain(t, ctx, "daemon")
 }
+
+func TestTargetAppEnvVars(t *testing.T) {
+	cases := []struct {
+		image string
+		user  string
+		home  string
+	}{
+		// Alpine
+		{image: imageSimpleCLI, home: "/root"},
+		{image: imageSimpleCLI, user: "root", home: "/root"},
+		{image: imageSimpleCLI, user: "0", home: "/root"},
+		{image: imageSimpleCLI, user: "nobody", home: "/"},
+		{image: imageSimpleCLI, user: "65534", home: "/"}, // nobody's UID
+		{image: imageSimpleCLI, user: "bin", home: "/bin"},
+		{image: imageSimpleCLI, user: "1", home: "/bin"}, // bin's UID
+		{image: imageSimpleCLI, user: "daemon", home: "/sbin"},
+		{image: imageSimpleCLI, user: "2", home: "/sbin"}, // daemon's UID
+		{image: imageSimpleCLI, user: "nosuchuser", home: "/"},
+		{image: imageSimpleCLI, user: "14567", home: "/"}, // hopefully, no such UID
+
+		// Nginx
+		{image: imageSimpleService, user: "nginx", home: "/nonexistent"},
+		{image: imageSimpleService, user: "101", home: "/nonexistent"}, // nginx's UID
+		{image: imageSimpleService, user: "nobody", home: "/"},
+		{image: imageSimpleService, user: "65534", home: "/"}, // nobody's UID
+		{image: imageSimpleService, user: "daemon", home: "/usr/sbin"},
+		{image: imageSimpleService, user: "1", home: "/usr/sbin"}, // daemon's UID
+		{image: imageSimpleService, user: "nosuchuser", home: "/"},
+		{image: imageSimpleService, user: "14567", home: "/"}, // hopefully, no such UID
+	}
+
+	for _, tcase := range cases {
+		func() {
+			runID := newTestRun(t)
+			ctx := context.Background()
+
+			sensor := testsensor.NewSensorOrFail(t, ctx, t.TempDir(), runID, tcase.image)
+			defer sensor.Cleanup(t, ctx)
+
+			var startOpts []testsensor.StartMonitorOpt
+			if len(tcase.user) > 0 {
+				startOpts = append(startOpts, testsensor.WithAppUser(tcase.user))
+			}
+			sensor.StartStandaloneOrFail(
+				t, ctx, []string{"env"},
+				testsensor.NewMonitorStartCommand(startOpts...),
+			)
+			sensor.WaitOrFail(t, ctx)
+
+			sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
+			sensor.AssertTargetAppLogsContain(t, ctx, "HOME="+tcase.home)
+		}()
+	}
+}
