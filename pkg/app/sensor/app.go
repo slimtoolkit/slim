@@ -34,31 +34,31 @@ const (
 	enableDebugFlagUsage   = "enable debug logging"
 	enableDebugFlagDefault = false
 
-	logLevelFlagUsage   = "set the logging level ('debug', 'info' (default), 'warn', 'error', 'fatal', 'panic')"
+	logLevelFlagUsage   = "set the logging level ('debug', 'info', 'warn', 'error', 'fatal', 'panic')"
 	logLevelFlagDefault = "info"
 
-	logFormatFlagUsage   = "set the format used by logs ('text' (default), or 'json')"
+	logFormatFlagUsage   = "set the logging format ('text', or 'json')"
 	logFormatFlagDefault = "text"
 
-	logFileFlagUsage   = "set the log redirection to a file (allowing to keep sensor's output separate from the target app's output)"
+	logFileFlagUsage   = "enable logging redirection to a file (allowing to keep sensor's output separate from the target app's output)"
 	logFileFlagDefault = ""
 
 	sensorModeFlagUsage   = "set the sensor execution mode ('controlled' when sensor expect the driver docker-slim app to manipulate its lifecycle; or 'standalone' when sensor depends on nothing but the target app"
 	sensorModeFlagDefault = sensorModeControlled
 
-	commandFileFlagUsage   = "JSONL-encoded file with one ore more sensor commands"
+	commandFileFlagUsage   = "provide a JSONL-encoded file with one ore more sensor commands (standalone mode only)"
 	commandFileFlagDefault = app.DefaultArtifactDirPath + "/commands.json"
 
-	lifecycleHookCommandFlagUsage   = "(optional) path to an executable that'll be invoked at various sensor lifecycle events (post-start, pre-shutdown, etc)"
+	lifecycleHookCommandFlagUsage   = "set path to an executable that'll be invoked at various sensor lifecycle events (post-start, pre-shutdown, etc)"
 	lifecycleHookCommandFlagDefault = ""
 
 	// Should stopSignal and stopGracePeriod become StartMonitor
 	// command's fields instead? Hypothetically, in a multi-command
 	// monitoring run, these two params may have different values.
-	stopSignalFlagUsage   = "signal to stop the target app and start producing the report"
+	stopSignalFlagUsage   = "set the signal to stop the target app (and, eventually, the sensor)"
 	stopSignalFlagDefault = "TERM"
 
-	stopGracePeriodFlagUsage   = "time to wait for the graceful termination of the target app (before sensor will send it SIGKILL)"
+	stopGracePeriodFlagUsage   = "set the time to wait for the graceful termination of the target app (before sensor SIGKILL's it)"
 	stopGracePeriodFlagDefault = 5 * time.Second
 
 	// Soon to become a flag?
@@ -69,7 +69,7 @@ var (
 	enableDebug          *bool          = flag.Bool("debug", enableDebugFlagDefault, enableDebugFlagUsage)
 	logLevel             *string        = flag.String("log-level", logLevelFlagDefault, logLevelFlagUsage)
 	logFormat            *string        = flag.String("log-format", logFormatFlagDefault, logFormatFlagUsage)
-	logFile              *string        = flag.String("log-file", logFormatFlagDefault, logFileFlagUsage)
+	logFile              *string        = flag.String("log-file", logFileFlagDefault, logFileFlagUsage)
 	sensorMode           *string        = flag.String("mode", sensorModeFlagDefault, sensorModeFlagUsage)
 	commandFile          *string        = flag.String("command-file", commandFileFlagDefault, commandFileFlagUsage)
 	lifecycleHookCommand *string        = flag.String("lifecycle-hook", lifecycleHookCommandFlagDefault, lifecycleHookCommandFlagUsage)
@@ -83,7 +83,7 @@ func init() {
 	flag.BoolVar(enableDebug, "d", enableDebugFlagDefault, enableDebugFlagUsage)
 	flag.StringVar(logLevel, "l", logLevelFlagDefault, logLevelFlagUsage)
 	flag.StringVar(logFormat, "f", logFormatFlagDefault, logFormatFlagUsage)
-	flag.StringVar(logFile, "o", "", logFormatFlagUsage)
+	flag.StringVar(logFile, "o", logFileFlagDefault, logFileFlagUsage)
 	flag.StringVar(sensorMode, "m", sensorModeFlagDefault, sensorModeFlagUsage)
 	flag.StringVar(commandFile, "c", commandFileFlagDefault, commandFileFlagUsage)
 	flag.StringVar(lifecycleHookCommand, "a", lifecycleHookCommandFlagDefault, lifecycleHookCommandFlagUsage)
