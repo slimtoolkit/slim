@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"os/user"
 	"strings"
 	"syscall"
 
@@ -100,6 +101,11 @@ func Start(
 		}
 	}
 
+	app.Dir = appDir
+	app.Stdin = os.Stdin
+	app.Stdout = appStdout
+	app.Stderr = appStderr
+
 	if appUser != "" {
 		if app.SysProcAttr == nil {
 			app.SysProcAttr = &syscall.SysProcAttr{}
@@ -107,7 +113,7 @@ func Start(
 
 		appUserParts := strings.Split(appUser, ":")
 		if len(appUserParts) > 0 {
-			uid, gid, err := system.ResolveUser(appUserParts[0])
+			uid, gid, home, err := system.ResolveUser(appUserParts[0])
 			if err == nil {
 				if len(appUserParts) > 1 {
 					xgid, err := system.ResolveGroup(appUserParts[1])
@@ -129,16 +135,21 @@ func Start(
 					log.Errorf("launcher.Start: error fixing i/o perms for user (%v/%v) - %v", appUser, uid, err)
 				}
 
+				app.Env = appEnv(home)
 			} else {
 				log.Errorf("launcher.Start: error resolving user identity (%v/%v) - %v", appUser, appUserParts[0], err)
 			}
 		}
+	} else {
+		// This is not exactly the same as leaving app.Env unset.
+		// When cmd.Env == nil, Go stdlib takes the os.Environ() list
+		// **AND** adds the PWD=`cmd.Dir` unless Dir is empty. This doesn't
+		// match the Docker's standard behavior - even when an image has
+		// the WORKDIR set, there is no PWD env var unless it's set
+		// explicitly. Thus, before this change was made to the sensor
+		// logic, instrumented containers would have non-identical ENV list.
+		app.Env = os.Environ()
 	}
-
-	app.Dir = appDir
-	app.Stdin = os.Stdin
-	app.Stdout = appStdout
-	app.Stderr = appStderr
 
 	err := app.Start()
 	if err != nil {
@@ -148,4 +159,46 @@ func Start(
 
 	log.Debugf("launcher.Start: started target app --> PID=%d", app.Process.Pid)
 	return app, nil
+}
+
+func appEnv(appUserHome string) (appEnv []string) {
+	// Another attempt to make the sensor's presence invisible to the target app.
+	// Instrumented containers must be started as "root". But it makes Docker
+	// (and other container runtimes) setting the HOME env var accordingly
+	// (typically, using "/root" if /etc/passwd record exists or defaulting to "/"
+	// otherwise to stay POSIX-conformant). However, when the target app needs
+	// to be run as `appUser` != "root", the HOME env var may very well be different.
+	// So we need to restore it by reading the corresponding /etc/passwd record.
+	//
+	// Note that the above logic is applicable only to the HOME env var. Other
+	// typical env vars like USER or PATH don't need to be restored. Container
+	// runtimes typically don't touch the USER var and almost always do set
+	// the PATH var explicitly (during image building). So we just (implicitly)
+	// propagate these values to app.Env from os.Environ().
+
+	sensorUser, err := user.Current()
+	if err != nil {
+		log.WithError(err).Error("launcher.Start: couldn't get current user")
+		return os.Environ()
+	}
+
+	for _, e := range os.Environ() {
+		if !strings.HasPrefix(e, "HOME=") {
+			appEnv = append(appEnv, e) // Just copy everything... except HOME.
+			continue
+		}
+
+		if "HOME="+sensorUser.HomeDir == e {
+			// Since current HOME var is equal to the sensor's user HomeDir,
+			// it's highly likely it wasn't set explicitly in the `docker run`
+			// command (or alike) and instead was "computed" by the runtime upon
+			// launching the container. Since the target app user != sensor's user,
+			// we need to "recompute" it.
+			appEnv = append(appEnv, "HOME="+appUserHome)
+		} else {
+			appEnv = append(appEnv, e) // Likely the HOME var was set explicitly - don't mess with it.
+		}
+	}
+
+	return appEnv
 }

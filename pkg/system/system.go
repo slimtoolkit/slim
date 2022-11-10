@@ -22,31 +22,31 @@ type DistroInfo struct {
 	DisplayName string `json:"display_name"`
 }
 
-func ResolveUser(identity string) (uint32, uint32, error) {
+func ResolveUser(identity string) (uid uint32, gid uint32, home string, err error) {
 	var userInfo *user.User
 	if _, err := strconv.ParseUint(identity, 10, 32); err == nil {
 		userInfo, err = user.LookupId(identity)
 		if err != nil {
-			return 0, 0, err
+			return 0, 0, "", err
 		}
 	} else {
 		userInfo, err = user.Lookup(identity)
 		if err != nil {
-			return 0, 0, err
+			return 0, 0, "", err
 		}
 	}
 
-	uid, err := strconv.ParseUint(userInfo.Uid, 10, 32)
+	uid64, err := strconv.ParseUint(userInfo.Uid, 10, 32)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, "", err
 	}
 
-	gid, err := strconv.ParseUint(userInfo.Gid, 10, 32)
+	gid64, err := strconv.ParseUint(userInfo.Gid, 10, 32)
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, "", err
 	}
 
-	return uint32(uid), uint32(gid), nil
+	return uint32(uid64), uint32(gid64), userInfo.HomeDir, nil
 }
 
 func ResolveGroup(identity string) (uint32, error) {
