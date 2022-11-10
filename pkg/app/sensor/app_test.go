@@ -397,6 +397,10 @@ func TestTargetAppEnvVars(t *testing.T) {
 		user  string
 		home  string
 	}{
+		// nixery.dev/shell lacks the /etc/passwd file: all UIDs should end up with HOME=/
+		{image: "nixery.dev/shell", user: "0", home: "/"},
+		{image: "nixery.dev/shell", user: "65534", home: "/"},
+
 		// Alpine
 		{image: imageSimpleCLI, home: "/root"},
 		{image: imageSimpleCLI, user: "root", home: "/root"},
