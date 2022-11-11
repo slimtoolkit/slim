@@ -38,6 +38,7 @@ const (
 	varRunDir        = "/var/run/"
 	fileTypeCmdName  = "file"
 	filesArchiveName = "files.tar"
+	runArchiveName   = "run.tar"
 	preservedDirName = "preserved"
 )
 
@@ -184,16 +185,25 @@ type Artifactor interface {
 		fanReport *report.FanMonitorReport,
 		ptReport *report.PtMonitorReport,
 	) error
+
+	// Archives commands.json, creport.json, events.json, sensor.log, etc
+	// to a tar ball.
+	Archive() error
 }
 
 type artifactor struct {
 	artifactDirName string
-	origPathMap     map[string]struct{}
+
+	// Extra files to put into the artifacts archive before exiting.
+	artifactsExtra []string
+
+	origPathMap map[string]struct{}
 }
 
-func NewArtifactor(artifactDirName string) Artifactor {
+func NewArtifactor(artifactDirName string, artifactsExtra []string) Artifactor {
 	return &artifactor{
 		artifactDirName: artifactDirName,
+		artifactsExtra:  artifactsExtra,
 	}
 }
 
@@ -338,6 +348,36 @@ func (a *artifactor) ProcessReports(
 	log.Debugf("sensor: processReports(): len(fanReport.ProcessFiles)=%v / fileCount=%v", len(fanReport.ProcessFiles), fileCount)
 	allFilesMap := findSymlinks(fileList, mountPoint, cmd.Excludes)
 	return saveResults(a.origPathMap, a.artifactDirName, cmd, allFilesMap, fanReport, ptReport, peReport)
+}
+
+func (a *artifactor) Archive() error {
+	var toArchive []string
+	for _, f := range a.artifactsExtra {
+		if fsutil.Exists(f) {
+			toArchive = append(toArchive, f)
+		}
+	}
+
+	artifacts, err := ioutil.ReadDir(a.artifactDirName)
+	if err != nil {
+		return err
+	}
+
+	// We archive everything in the /otp/dockerslim/artifacts folder
+	// except (rather legacy and potentially large) `files` and `files.tar` entries.
+	// In particular, this may include:
+	//   - creport.json
+	//   - events.json
+	//   - app_stdout.log
+	//   - app_stderr.log
+	for _, f := range artifacts {
+		if f.Name() != app.ArtifactFilesDirName && f.Name() != filesArchiveName {
+			toArchive = append(toArchive, filepath.Join(a.artifactDirName, f.Name()))
+		}
+	}
+
+	return fsutil.ArchiveFiles(
+		filepath.Join(a.artifactDirName, runArchiveName), toArchive, false, "")
 }
 
 func saveResults(

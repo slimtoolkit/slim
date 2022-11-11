@@ -62,6 +62,10 @@ func (a *artifactorStub) PrepareEnv(cmd *command.StartMonitor) error {
 	return nil
 }
 
+func (a *artifactorStub) Archive() error {
+	return nil
+}
+
 func (a *artifactorStub) ProcessReports(
 	cmd *command.StartMonitor,
 	mountPoint string,
