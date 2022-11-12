@@ -188,6 +188,7 @@ type Artifactor interface {
 
 type artifactor struct {
 	artifactDirName string
+	origPathMap     map[string]struct{}
 }
 
 func NewArtifactor(artifactDirName string) Artifactor {
@@ -250,6 +251,7 @@ func (a *artifactor) GetCurrentPaths(root string, excludes []string) (map[string
 		return nil, err
 	}
 
+	a.origPathMap = pathMap
 	return pathMap, nil
 }
 
@@ -334,10 +336,11 @@ func (a *artifactor) ProcessReports(
 
 	log.Debugf("sensor: processReports(): len(fanReport.ProcessFiles)=%v / fileCount=%v", len(fanReport.ProcessFiles), fileCount)
 	allFilesMap := findSymlinks(fileList, mountPoint, cmd.Excludes)
-	return saveResults(a.artifactDirName, cmd, allFilesMap, fanReport, ptReport, peReport)
+	return saveResults(a.origPathMap, a.artifactDirName, cmd, allFilesMap, fanReport, ptReport, peReport)
 }
 
 func saveResults(
+	origPathMap map[string]struct{},
 	artifactDirName string,
 	cmd *command.StartMonitor,
 	fileNames map[string]*report.ArtifactProps,
@@ -347,7 +350,7 @@ func saveResults(
 ) error {
 	log.Debugf("saveResults(%v,...)", len(fileNames))
 
-	artifactStore := newArtifactStore(artifactDirName, fileNames, fanMonReport, ptMonReport, peReport, cmd)
+	artifactStore := newArtifactStore(origPathMap, artifactDirName, fileNames, fanMonReport, ptMonReport, peReport, cmd)
 	artifactStore.prepareArtifacts()
 	artifactStore.saveArtifacts()
 	artifactStore.enumerateArtifacts()
@@ -356,6 +359,7 @@ func saveResults(
 }
 
 type artifactStore struct {
+	origPathMap   map[string]struct{}
 	storeLocation string
 	fanMonReport  *report.FanMonitorReport
 	ptMonReport   *report.PtMonitorReport
@@ -371,6 +375,7 @@ type artifactStore struct {
 }
 
 func newArtifactStore(
+	origPathMap map[string]struct{},
 	storeLocation string,
 	rawNames map[string]*report.ArtifactProps,
 	fanMonReport *report.FanMonitorReport,
@@ -378,6 +383,7 @@ func newArtifactStore(
 	peMonReport *report.PeMonitorReport,
 	cmd *command.StartMonitor) *artifactStore {
 	store := &artifactStore{
+		origPathMap:   origPathMap,
 		storeLocation: storeLocation,
 		fanMonReport:  fanMonReport,
 		ptMonReport:   ptMonReport,
@@ -780,6 +786,148 @@ func linkTargetToFullPath(fullPath, target string) string {
 	d := filepath.Dir(fullPath)
 
 	return filepath.Clean(filepath.Join(d, target))
+}
+
+const (
+	osLibDir       = "/lib/"
+	osUsrLibDir    = "/usr/lib/"
+	osUsrLib64Dir  = "/usr/lib64/"
+	osLibNssDns    = "/libnss_dns"
+	osLibNssResolv = "/libresolv"
+	osLibNssFiles  = "/libnss_files"
+	osLibSO        = ".so"
+)
+
+func (p *artifactStore) saveOSLibsNetwork() {
+	if !p.cmd.IncludeOSLibsNet {
+		return
+	}
+
+	if len(p.origPathMap) == 0 {
+		log.Debug("sensor.artifactStore.saveOSLibsNetwork: no origPathMap")
+		return
+	}
+
+	pathMap := map[string]struct{}{}
+	for fileName := range p.origPathMap {
+		if (strings.Contains(fileName, osLibNssDns) ||
+			strings.Contains(fileName, osLibNssResolv) ||
+			strings.Contains(fileName, osLibNssFiles)) &&
+			(strings.Contains(fileName, osLibDir) ||
+				strings.Contains(fileName, osUsrLibDir) ||
+				strings.Contains(fileName, osUsrLib64Dir)) &&
+			strings.Contains(fileName, osLibSO) {
+			log.Debugf("sensor.artifactStore.saveOSLibsNetwork: match - %s", fileName)
+			pathMap[fileName] = struct{}{}
+		}
+	}
+
+	allPathMap := map[string]struct{}{}
+	for fpath := range pathMap {
+		if !fsutil.Exists(fpath) {
+			continue
+		}
+
+		fpaths, err := resloveLink(fpath)
+		if err != nil {
+			log.Debugf("sensor.artifactStore.saveOSLibsNetwork: error resolving link - %s", fpath)
+			continue
+		}
+
+		fpaths = append(fpaths, fpath)
+		for _, fp := range fpaths {
+			if fp == "" {
+				continue
+			}
+
+			if !fsutil.Exists(fp) {
+				continue
+			}
+
+			allPathMap[fp] = struct{}{}
+			if isBin, _ := binfile.Detected(fp); isBin {
+				binArtifacts, err := sodeps.AllDependencies(fp)
+				if err != nil {
+					if err == sodeps.ErrDepResolverNotFound {
+						log.Debug("sensor.artifactStore.saveOSLibsNetwork[bsa] - no static bin dep resolver")
+					} else {
+						log.Warnf("sensor.artifactStore.saveOSLibsNetwork[bsa] - %v - error getting bin artifacts => %v\n", fp, err)
+					}
+					continue
+				}
+
+				for _, bpath := range binArtifacts {
+					bfpaths, err := resloveLink(bpath)
+					if err != nil {
+						log.Debugf("sensor.artifactStore.saveOSLibsNetwork: error resolving link - %s", bpath)
+						continue
+					}
+
+					for _, bfp := range bfpaths {
+						if bfp == "" {
+							continue
+						}
+
+						if !fsutil.Exists(bfp) {
+							continue
+						}
+						allPathMap[bfp] = struct{}{}
+					}
+				}
+			}
+		}
+	}
+
+	log.Debugf("sensor.artifactStore.saveOSLibsNetwork: - allPathMap(%v) = %+v", len(allPathMap), allPathMap)
+	for fp := range allPathMap {
+		if !fsutil.Exists(fp) {
+			continue
+		}
+
+		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, fp)
+		if err := fsutil.CopyFile(p.cmd.KeepPerms, fp, dstPath, true); err != nil {
+			log.Warnf("sensor.artifactStore.saveOSLibsNetwork: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
+		}
+	}
+}
+
+func resloveLink(fpath string) ([]string, error) {
+	finfo, err := os.Lstat(fpath)
+	if err != nil {
+		return nil, err
+	}
+
+	if finfo.Mode()&os.ModeSymlink == 0 {
+		return nil, nil
+	}
+
+	linkRef, err := os.Readlink(fpath)
+	if err != nil {
+		return nil, err
+	}
+
+	var out []string
+	var target string
+	if filepath.IsAbs(linkRef) {
+		target = linkRef
+	} else {
+		linkDir := filepath.Dir(fpath)
+		fullLinkRef := filepath.Clean(filepath.Join(linkDir, linkRef))
+		if fullLinkRef != "." {
+			target = fullLinkRef
+		}
+	}
+
+	if target != "" {
+		out = append(out, target)
+		if evalLinkRef, err := filepath.EvalSymlinks(target); err == nil {
+			if evalLinkRef != target {
+				out = append(out, evalLinkRef)
+			}
+		}
+	}
+
+	return out, nil
 }
 
 func (p *artifactStore) saveCertsData() {
@@ -1496,6 +1644,8 @@ copyIncludes:
 
 	}
 
+	p.saveOSLibsNetwork()
+
 	p.saveCertsData()
 
 	if fsutil.DirExists("/tmp") {
@@ -1514,6 +1664,7 @@ copyIncludes:
 	if fsutil.DirExists("/run") {
 		tdTargetPath := fmt.Sprintf("%s/files/run", p.storeLocation)
 		if !fsutil.DirExists(tdTargetPath) {
+			//should use perms from source
 			if err := os.MkdirAll(tdTargetPath, 0755); err != nil {
 				log.Warn("saveArtifacts - error creating run directory => ", err)
 			}

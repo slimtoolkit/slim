@@ -125,7 +125,6 @@ func OnCommand(
 	doIncludeCertPKAll bool,
 	doIncludeCertPKDirs bool,
 	doIncludeNew bool,
-
 	doUseLocalMounts bool,
 	doUseSensorVolume string,
 	doKeepTmpArtifacts bool,
@@ -841,6 +840,7 @@ func OnCommand(
 		doIncludeCertPKAll,
 		doIncludeCertPKDirs,
 		doIncludeNew,
+		doIncludeOSLibsNet,
 		selectedNetworks,
 		gparams.Debug,
 		gparams.LogLevel,

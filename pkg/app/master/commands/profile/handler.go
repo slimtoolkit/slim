@@ -256,6 +256,7 @@ func OnCommand(
 		false, //doIncludeCertPKAll
 		false, //doIncludeCertPKDirs
 		false, //doIncludeNew
+		false, //doIncludeOSLibsNet
 		nil,   //selectedNetNames
 		//nil,
 		gparams.Debug,
