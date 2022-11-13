@@ -228,7 +228,8 @@ func (a *artifactor) GetCurrentPaths(root string, excludes []string) (map[string
 				}
 			}
 
-			if !info.Mode().IsRegular() {
+			if !(info.Mode().IsRegular() || (info.Mode()&os.ModeSymlink) != 0) {
+				//need symlinks too
 				return nil
 			}
 
@@ -789,18 +790,43 @@ func linkTargetToFullPath(fullPath, target string) string {
 }
 
 const (
-	osLibDir       = "/lib/"
-	osUsrLibDir    = "/usr/lib/"
-	osUsrLib64Dir  = "/usr/lib64/"
-	osLibNssDns    = "/libnss_dns"
-	osLibNssResolv = "/libresolv"
-	osLibNssFiles  = "/libnss_files"
-	osLibSO        = ".so"
+	osLibDir          = "/lib/"
+	osUsrLibDir       = "/usr/lib/"
+	osUsrLib64Dir     = "/usr/lib64/"
+	osLibNssDns       = "/libnss_dns"
+	osLibNssResolv    = "/libresolv"
+	osLibNssFiles     = "/libnss_files"
+	osLibSO           = ".so"
+	osLibResolveConf  = "/etc/resolv.conf"
+	osLibNsswitchConf = "/etc/nsswitch.conf"
+	osLibHostConf     = "/etc/host.conf"
 )
+
+var osLibsNetFiles = []string{
+	osLibResolveConf,
+	osLibNsswitchConf,
+	osLibHostConf,
+}
 
 func (p *artifactStore) saveOSLibsNetwork() {
 	if !p.cmd.IncludeOSLibsNet {
 		return
+	}
+
+	for _, fp := range osLibsNetFiles {
+		if !fsutil.Exists(fp) {
+			continue
+		}
+
+		log.Debugf("sensor.artifactStore.saveOSLibsNetwork: copy %s", fp)
+		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, fp)
+		if fsutil.Exists(dstPath) {
+			continue
+		}
+
+		if err := fsutil.CopyFile(p.cmd.KeepPerms, fp, dstPath, true); err != nil {
+			log.Warnf("sensor.artifactStore.saveOSLibsNetwork: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
+		}
 	}
 
 	if len(p.origPathMap) == 0 {
@@ -885,6 +911,10 @@ func (p *artifactStore) saveOSLibsNetwork() {
 		}
 
 		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, fp)
+		if fsutil.Exists(dstPath) {
+			continue
+		}
+
 		if err := fsutil.CopyFile(p.cmd.KeepPerms, fp, dstPath, true); err != nil {
 			log.Warnf("sensor.artifactStore.saveOSLibsNetwork: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
 		}
