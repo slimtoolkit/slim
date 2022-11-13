@@ -191,7 +191,7 @@ Elixir application images:
 
 ## RECENT UPDATES
 
-Latest version: 1.39.0 (10/24/2022)
+Latest version: 1.39.1 (11/12/2022)
 
 The 1.37.x, 1.38.x and 1.39.x releases add an experimental docker-compose support and various improved application tracing capabilities for the build command.
 
@@ -210,15 +210,15 @@ docker-slim update
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.39.0/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.39.0/dist_mac.zip`)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.39.1/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.39.1/dist_mac.zip`)
 
-   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.39.0/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.39.0/dist_mac_m1.zip`)
+   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.39.1/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.39.1/dist_mac_m1.zip`)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.39.0/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.39.0/dist_linux.tar.gz`)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.39.1/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.39.1/dist_linux.tar.gz`)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.39.0/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.39.0/dist_linux_arm.tar.gz`)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.39.1/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.39.1/dist_linux_arm.tar.gz`)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.39.0/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.39.0/dist_linux_arm64.tar.gz`)
+   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.39.1/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.39.1/dist_linux_arm64.tar.gz`)
 
 2. Unzip the package and optionally move it to your bin directory.
 
@@ -462,7 +462,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-cert-pk-all` - Keep all discovered cert private keys
 - `--include-cert-pk-dirs` - Keep known cert private key directories and all files in them
 - `--include-new` - Keep new files created by target during dynamic analysis (default value: true)
-
+- `--include-oslibs-net` - Keep the common networking OS libraries (default value: true)
 - `--include-app-nuxt-dir` - Keep the root Nuxt.js app directory (default value: false)
 - `--include-app-nuxt-build-dir` - Keep the build Nuxt.js app directory (default value: false)
 - `--include-app-nuxt-dist-dir` - Keep the dist Nuxt.js app directory (default value: false)
@@ -779,7 +779,7 @@ You can use the generated profile with your original image or with the minified 
 
 The demo runs on Mac OS X, but you can build a linux version. Note that these steps are different from the steps in the demo video.
 
-1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.39.0/dist_mac.zip), [Mac M1](https://downloads.dockerslim.com/releases/1.39.0/dist_mac_m1.zip), [Linux](https://downloads.dockerslim.com/releases/1.39.0/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.39.0/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.39.0/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
+1. Get the docker-slim [Mac](https://downloads.dockerslim.com/releases/1.39.1/dist_mac.zip), [Mac M1](https://downloads.dockerslim.com/releases/1.39.1/dist_mac_m1.zip), [Linux](https://downloads.dockerslim.com/releases/1.39.1/dist_linux.tar.gz), [Linux ARM](https://downloads.dockerslim.com/releases/1.39.1/dist_linux_arm.tar.gz) or [Linux ARM64](https://downloads.dockerslim.com/releases/1.39.1/dist_linux_arm64.tar.gz) binaries. Unzip them and optionally add their directory to your PATH environment variable if you want to use the app from other locations.
 
 The extracted directory contains two binaries:
 
