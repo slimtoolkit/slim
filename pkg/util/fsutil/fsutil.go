@@ -1178,8 +1178,8 @@ func ArchiveFiles(afname string,
 			}
 
 			defer close(f)
-			if _, err := io.Copy(tw, f); err != nil {
-				return err
+			if _, err := io.CopyN(tw, f, th.Size); err != nil {
+				return fmt.Errorf("cannot write %s file: %w", fname, err)
 			}
 		} else {
 			log.Errorf("fsutil.ArchiveFiles: bad file - %s", fname)

@@ -46,8 +46,8 @@ const (
 	sensorModeFlagUsage   = "set the sensor execution mode ('controlled' when sensor expect the driver docker-slim app to manipulate its lifecycle; or 'standalone' when sensor depends on nothing but the target app"
 	sensorModeFlagDefault = sensorModeControlled
 
-	commandFileFlagUsage   = "provide a JSONL-encoded file with one ore more sensor commands (standalone mode only)"
-	commandFileFlagDefault = app.DefaultArtifactDirPath + "/commands.json"
+	commandsFileFlagUsage   = "provide a JSONL-encoded file with one ore more sensor commands (standalone mode only)"
+	commandsFileFlagDefault = app.DefaultArtifactDirPath + "/commands.json"
 
 	lifecycleHookCommandFlagUsage   = "set path to an executable that'll be invoked at various sensor lifecycle events (post-start, pre-shutdown, etc)"
 	lifecycleHookCommandFlagDefault = ""
@@ -62,7 +62,7 @@ const (
 	stopGracePeriodFlagDefault = 5 * time.Second
 
 	// Soon to become a flag?
-	defaultEventsFilePath = app.DefaultArtifactDirPath + "/events.json"
+	defaultEventsFile = app.DefaultArtifactDirPath + "/events.json"
 )
 
 var (
@@ -71,7 +71,7 @@ var (
 	logFormat            *string        = flag.String("log-format", logFormatFlagDefault, logFormatFlagUsage)
 	logFile              *string        = flag.String("log-file", logFileFlagDefault, logFileFlagUsage)
 	sensorMode           *string        = flag.String("mode", sensorModeFlagDefault, sensorModeFlagUsage)
-	commandFile          *string        = flag.String("command-file", commandFileFlagDefault, commandFileFlagUsage)
+	commandsFile         *string        = flag.String("command-file", commandsFileFlagDefault, commandsFileFlagUsage)
 	lifecycleHookCommand *string        = flag.String("lifecycle-hook", lifecycleHookCommandFlagDefault, lifecycleHookCommandFlagUsage)
 	stopSignal           *string        = flag.String("stop-signal", stopSignalFlagDefault, stopSignalFlagUsage)
 	stopGracePeriod      *time.Duration = flag.Duration("stop-grace-period", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
@@ -85,7 +85,7 @@ func init() {
 	flag.StringVar(logFormat, "f", logFormatFlagDefault, logFormatFlagUsage)
 	flag.StringVar(logFile, "o", logFileFlagDefault, logFileFlagUsage)
 	flag.StringVar(sensorMode, "m", sensorModeFlagDefault, sensorModeFlagUsage)
-	flag.StringVar(commandFile, "c", commandFileFlagDefault, commandFileFlagUsage)
+	flag.StringVar(commandsFile, "c", commandsFileFlagDefault, commandsFileFlagUsage)
 	flag.StringVar(lifecycleHookCommand, "a", lifecycleHookCommandFlagDefault, lifecycleHookCommandFlagUsage)
 	flag.StringVar(stopSignal, "s", stopSignalFlagDefault, stopSignalFlagUsage)
 	flag.DurationVar(stopGracePeriod, "w", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
@@ -108,47 +108,73 @@ func Run() {
 	log.Debugf("sensor: kernel flags => %#v", system.DefaultKernelFeatures.Raw)
 	log.Debugf("sensor: args => %#v", os.Args)
 
+	var artifactsExtra []string
+	if len(*commandsFile) > 0 {
+		artifactsExtra = append(artifactsExtra, *commandsFile)
+	}
+	if len(*logFile) > 0 {
+		artifactsExtra = append(artifactsExtra, *logFile)
+	}
+	artifactor := artifacts.NewArtifactor(app.DefaultArtifactDirPath, artifactsExtra)
+
 	ctx := context.Background()
-	exe := newExecution(ctx, *sensorMode, *commandFile, *lifecycleHookCommand)
-	defer exe.Close()
+	exe, err := newExecution(
+		ctx,
+		*sensorMode,
+		*commandsFile,
+		defaultEventsFile,
+		*lifecycleHookCommand,
+	)
+	if err != nil {
+		errutil.WarnOn(artifactor.Archive())
+		errutil.FailOn(err) // calls os.Exit(1)
+	}
+
+	// There is a number of errutil.FailOn() below, so no way to rely on defer:
+	// We need to make sure `exe` is closed before archiving - otherwise some
+	// artifacts might be missing due to the non-flushed buffers!
 
 	exe.HookSensorPostStart()
 
-	sen := newSensor(ctx, exe, *sensorMode)
+	sen, err := newSensor(ctx, exe, *sensorMode, artifactor)
+	if err != nil {
+		exe.Close()
+		errutil.WarnOn(artifactor.Archive())
+		errutil.FailOn(err) // calls os.Exit(1)
+	}
+
 	if err := sen.Run(); err != nil {
 		exe.PubEvent(event.Error, err.Error())
 	}
 
-	exe.HookSensorPreShutdown()
-
 	log.Info("sensor: done!")
+
+	exe.Close()
+	errutil.WarnOn(artifactor.Archive())
+	exe.HookSensorPreShutdown() // Not nice calling it after exec.Close() but should be safe...
 }
 
 func newExecution(
 	ctx context.Context,
 	mode string,
-	commandFile string,
+	commandsFile string,
+	eventsFile string,
 	lifecycleHookCommand string,
-) execution.Interface {
+) (execution.Interface, error) {
 	if mode == sensorModeControlled {
-		exe, err := execution.NewControlled(ctx, lifecycleHookCommand)
-		errutil.FailOn(err)
-		return exe
+		return execution.NewControlled(ctx, lifecycleHookCommand)
 	}
 
 	if mode == sensorModeStandalone {
-		exe, err := execution.NewStandalone(
+		return execution.NewStandalone(
 			ctx,
-			commandFile,
-			defaultEventsFilePath,
+			commandsFile,
+			eventsFile,
 			lifecycleHookCommand,
 		)
-		errutil.FailOn(err)
-		return exe
 	}
 
-	errutil.FailOn(errUnknownMode)
-	return nil
+	return nil, errUnknownMode
 }
 
 type sensor interface {
@@ -159,7 +185,8 @@ func newSensor(
 	ctx context.Context,
 	exe execution.Interface,
 	mode string,
-) sensor {
+	artifactor artifacts.Artifactor,
+) (sensor, error) {
 	workDir, err := os.Getwd()
 	errutil.WarnOn(err)
 	log.Debugf("sensor: cwd => %s", workDir)
@@ -181,10 +208,10 @@ func newSensor(
 			ctx,
 			exe,
 			monitors.NewCompositeMonitor,
-			artifacts.NewArtifactor(app.DefaultArtifactDirPath),
+			artifactor,
 			workDir,
 			mountPoint,
-		)
+		), nil
 	}
 
 	if mode == sensorModeStandalone {
@@ -192,15 +219,14 @@ func newSensor(
 			ctx,
 			exe,
 			monitors.NewCompositeMonitor,
-			artifacts.NewArtifactor(app.DefaultArtifactDirPath),
+			artifactor,
 			workDir,
 			mountPoint,
 			signalFromString(*stopSignal),
 			*stopGracePeriod,
-		)
+		), nil
 	}
 
 	exe.PubEvent(event.StartMonitorFailed, errUnknownMode.Error())
-	errutil.FailOn(errUnknownMode)
-	return nil
+	return nil, errUnknownMode
 }

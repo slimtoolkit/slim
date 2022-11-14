@@ -14,6 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
+	"github.com/docker-slim/docker-slim/pkg/report"
 	testsensor "github.com/docker-slim/docker-slim/pkg/test/e2e/sensor"
 	testutil "github.com/docker-slim/docker-slim/pkg/test/util"
 )
@@ -32,6 +33,7 @@ var (
 		"ptmon: Start",
 		"sensor: monitor - saving report",
 		"sensor: monitor - saving report",
+		"sensor: done!",
 	}
 
 	sensorLifecycleHookSequence = []string{
@@ -141,7 +143,7 @@ func TestSimpleSensorRun_Standalone_CLI(t *testing.T) {
 	sensor.AssertReportIncludesFiles(t, "/bin/cat", "/bin/busybox", "/etc/alpine-release")
 	sensor.AssertReportNotIncludesFiles(t, "/bin/echo2", "/etc/resolve.conf")
 
-	sensor.AssertSensorEventFileContains(t, ctx,
+	sensor.AssertSensorEventsFileContains(t, ctx,
 		event.StartMonitorDone,
 		event.StopMonitorDone,
 		event.ShutdownSensorDone,
@@ -447,4 +449,81 @@ func TestTargetAppEnvVars(t *testing.T) {
 			sensor.AssertTargetAppLogsContain(t, ctx, "HOME="+tcase.home)
 		}()
 	}
+}
+
+func TestArchiveArtifacts_HappyPath(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	sensor := testsensor.NewSensorOrFail(
+		t, ctx, t.TempDir(), runID, imageSimpleCLI,
+		testsensor.WithSensorLogsToFile(),
+	)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartStandaloneOrFail(
+		t, ctx,
+		[]string{"cat", "/etc/alpine-release"},
+		testsensor.NewMonitorStartCommand(
+			testsensor.WithSaneDefaults(),
+			testsensor.WithAppStdoutToFile(),
+			testsensor.WithAppStderrToFile(),
+		),
+	)
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.DownloadArtifactsOrFail(t, ctx)
+
+	sensor.AssertArtifactsArchiveContains(t, ctx,
+		report.DefaultContainerReportFileName,
+		testsensor.EventsFileName,
+		testsensor.CommandsFileName,
+		testsensor.SensorLogFileName,
+		testsensor.AppStdoutFileName,
+		testsensor.AppStderrFileName,
+	)
+}
+
+func TestArchiveArtifacts_SensorFailure_NoCaps(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	sensor := testsensor.NewSensorOrFail(
+		t, ctx, t.TempDir(), runID, imageSimpleCLI,
+		testsensor.WithSensorLogsToFile(),
+		testsensor.WithCapabilities(), // Cancels out the default --cap-add=ALL.
+	)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartStandaloneOrFail(
+		t, ctx,
+		[]string{"cat", "/etc/alpine-release"},
+		testsensor.NewMonitorStartCommand(
+			testsensor.WithSaneDefaults(),
+			testsensor.WithAppStdoutToFile(),
+			testsensor.WithAppStderrToFile(),
+			testsensor.WithAppStderrToFile(),
+		),
+	)
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.DownloadArtifactsOrFail(t, ctx)
+
+	sensor.AssertSensorLogsContain(t, ctx, []string{
+		"sensor: creating monitors...",
+		"sensor: starting monitors...",
+		"sensor: composite monitor - FAN failed to start running", // <-- failure!
+		"sensor: done!",
+	}...)
+
+	sensor.AssertArtifactsArchiveContains(t, ctx,
+		testsensor.EventsFileName,
+		testsensor.CommandsFileName,
+		testsensor.SensorLogFileName,
+	)
+}
+
+func TestArchiveArtifacts_SensorFailure_NoRoot(t *testing.T) {
+	// It's a fairly common failure scenario.
+	t.Skip("Implement me!")
 }
