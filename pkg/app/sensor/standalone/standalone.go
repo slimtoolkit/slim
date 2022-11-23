@@ -87,6 +87,7 @@ func (s *Sensor) Run() error {
 		s.ctx,
 		cmd,
 		s.workDir,
+		s.artifactor.ArtifactsDir(),
 		s.mountPoint,
 		origPaths,
 		initSignalForwardingChannel(s.ctx, s.stopSignal, s.stopGracePeriod),

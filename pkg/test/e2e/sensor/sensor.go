@@ -19,6 +19,7 @@ import (
 	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/ipc"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/sensor"
 	"github.com/docker-slim/docker-slim/pkg/ipc/channel"
@@ -31,8 +32,6 @@ import (
 const (
 	// Intentionally duplicating values here since to make sure a refactoing
 	// of the paths on the sensor side won't be unnoticed.
-	artifactDirName   = "artifacts"
-	artifactDirPath   = "/opt/dockerslim/" + artifactDirName
 	CommandsFileName  = "commands.json"
 	SensorLogFileName = "sensor.log"
 	AppStdoutFileName = "app_stdout.log"
@@ -53,19 +52,25 @@ func WithSensorLogsToFile() sensorOpt {
 	}
 }
 
-func WithLifecycleHook(cmd string) sensorOpt {
+func WithSensorArtifactsDir(dir string) sensorOpt {
+	return func(s *Sensor) {
+		s.artifactsDirPath = dir
+	}
+}
+
+func WithSensorLifecycleHook(cmd string) sensorOpt {
 	return func(s *Sensor) {
 		s.lifecycleHook = cmd
 	}
 }
 
-func WithCapabilities(caps ...string) sensorOpt {
+func WithSensorCapabilities(caps ...string) sensorOpt {
 	return func(s *Sensor) {
 		s.capAdd = caps
 	}
 }
 
-func WithoutCapabilities(caps ...string) sensorOpt {
+func WithoutSensorCapabilities(caps ...string) sensorOpt {
 	return func(s *Sensor) {
 		s.capDrop = caps
 	}
@@ -78,11 +83,12 @@ type Sensor struct {
 	contextDirPath string
 
 	// "Opts"
-	useLogFile    bool
-	lifecycleHook string
-	capAdd        []string
-	capDrop       []string
-	user          string
+	useLogFile       bool
+	artifactsDirPath string
+	lifecycleHook    string
+	capAdd           []string
+	capDrop          []string
+	user             string
 
 	// "Nullable"
 	contID      string
@@ -406,17 +412,16 @@ func (s *Sensor) DownloadArtifacts(ctx context.Context) error {
 		return errNotStarted
 	}
 
-	localArtifactPath := filepath.Join(s.contextDirPath, artifactDirName)
 	if err := containerCopyFrom(
 		ctx,
 		s.contID,
-		artifactDirPath,
-		localArtifactPath,
+		s.remoteArtifactsDirPath(),
+		s.localArtifactsDirPath(),
 	); err != nil {
 		return fmt.Errorf("cannot download test sensor's artifacts: %w", err)
 	}
 
-	creportFilePath := filepath.Join(localArtifactPath, report.DefaultContainerReportFileName)
+	creportFilePath := filepath.Join(s.localArtifactsDirPath(), report.DefaultContainerReportFileName)
 	rawCReport, err := ioutil.ReadFile(creportFilePath)
 	if err == nil {
 		s.rawCReport = string(rawCReport)
@@ -429,7 +434,7 @@ func (s *Sensor) DownloadArtifacts(ctx context.Context) error {
 	}
 
 	if s.client == nil {
-		rawEvents, err := os.ReadFile(filepath.Join(s.contextDirPath, artifactDirName, EventsFileName))
+		rawEvents, err := os.ReadFile(filepath.Join(s.localArtifactsDirPath(), EventsFileName))
 		if err != nil {
 			return fmt.Errorf("cannot read %s file: %w", EventsFileName, err)
 		}
@@ -479,7 +484,7 @@ func (s *Sensor) ContainerLogsOrFail(t *testing.T, ctx context.Context) string {
 func (s *Sensor) SensorLogs(ctx context.Context) (string, error) {
 	if s.useLogFile {
 		bytes, err := os.ReadFile(
-			filepath.Join(s.contextDirPath, artifactDirName, SensorLogFileName),
+			filepath.Join(s.localArtifactsDirPath(), SensorLogFileName),
 		)
 		return string(bytes), err
 	}
@@ -611,7 +616,7 @@ func (s *Sensor) assertTargetAppStdFileEqualsTo(
 		t.Fatal("Test sensor container hasn't been started yet")
 	}
 
-	data, err := os.ReadFile(filepath.Join(s.contextDirPath, artifactDirName, kind))
+	data, err := os.ReadFile(filepath.Join(s.localArtifactsDirPath(), kind))
 	if err != nil {
 		t.Fatalf("cannot read %s file: %v", kind, err)
 	}
@@ -678,7 +683,7 @@ func (s *Sensor) AssertArtifactsArchiveContains(
 	ctx context.Context,
 	filename ...string,
 ) {
-	archiveFilePath := filepath.Join(s.contextDirPath, artifactDirName, runArchiveName)
+	archiveFilePath := filepath.Join(s.localArtifactsDirPath(), runArchiveName)
 	archiveFile, err := os.Open(archiveFilePath)
 	if err != nil {
 		t.Errorf("Cannot open report archive %q: %v", archiveFilePath, err)
@@ -724,8 +729,11 @@ func (s *Sensor) AssertArtifactsArchiveContains(
 
 func (s *Sensor) commonStartFlags() []string {
 	flags := []string{"-l", "debug", "-d"}
+	if len(s.artifactsDirPath) > 0 {
+		flags = append(flags, "-e", s.artifactsDirPath)
+	}
 	if s.useLogFile {
-		flags = append(flags, "-o", filepath.Join(artifactDirPath, SensorLogFileName))
+		flags = append(flags, "-o", filepath.Join(s.remoteArtifactsDirPath(), SensorLogFileName))
 	}
 	if len(s.lifecycleHook) > 0 {
 		flags = append(flags, "-a", s.lifecycleHook)
@@ -741,6 +749,17 @@ func (s *Sensor) capabilities() (caps []string) {
 		caps = append(caps, "--cap-drop="+c)
 	}
 	return caps
+}
+
+func (s *Sensor) localArtifactsDirPath() string {
+	return filepath.Join(s.contextDirPath, filepath.Base(s.remoteArtifactsDirPath()))
+}
+
+func (s *Sensor) remoteArtifactsDirPath() string {
+	if len(s.artifactsDirPath) > 0 {
+		return s.artifactsDirPath
+	}
+	return app.DefaultArtifactsDirPath
 }
 
 func startCommandControlled(

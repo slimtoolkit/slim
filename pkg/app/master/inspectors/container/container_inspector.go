@@ -430,17 +430,17 @@ func (i *Inspector) RunContainer() error {
 		vm := dockerapi.HostMount{
 			Type:   "bind",
 			Source: artifactsPath,
-			Target: app.DefaultArtifactDirPath,
+			Target: app.DefaultArtifactsDirPath,
 		}
 
 		mkey := fmt.Sprintf("%s:%s:%s", vm.Type, vm.Source, vm.Target)
 		allMountsMap[mkey] = vm
 	} else {
-		//artifactsMountInfo = app.DefaultArtifactDirPath
+		//artifactsMountInfo = app.DefaultArtifactsDirPath
 		//configVolumes[artifactsMountInfo] = struct{}{}
 		vm := dockerapi.HostMount{
 			Type:   "volume",
-			Target: app.DefaultArtifactDirPath,
+			Target: app.DefaultArtifactsDirPath,
 		}
 
 		mkey := fmt.Sprintf("%s:%s:%s", vm.Type, vm.Source, vm.Target)
@@ -1124,7 +1124,7 @@ func (i *Inspector) ShutdownContainer() error {
 		}
 
 		reportLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, ReportArtifactTar)
-		reportRemotePath := filepath.Join(app.DefaultArtifactDirPath, report.DefaultContainerReportFileName)
+		reportRemotePath := filepath.Join(app.DefaultArtifactsDirPath, report.DefaultContainerReportFileName)
 		err := dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, reportRemotePath, reportLocalPath, true, deleteOrig)
 		if err != nil {
 			errutil.FailOn(err)
@@ -1133,7 +1133,7 @@ func (i *Inspector) ShutdownContainer() error {
 		/*
 			//ALTERNATIVE WAY TO XFER THE FILE ARTIFACTS
 			filesOutLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, FileArtifactsArchiveTar)
-			filesTarRemotePath := filepath.Join(app.DefaultArtifactDirPath, fileArtifactsTar)
+			filesTarRemotePath := filepath.Join(app.DefaultArtifactsDirPath, fileArtifactsTar)
 			err = dockerutil.CopyFromContainer(i.APIClient,
 				i.ContainerID,
 				filesTarRemotePath,
@@ -1146,7 +1146,7 @@ func (i *Inspector) ShutdownContainer() error {
 		*/
 
 		filesOutLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, FileArtifactsOutTar)
-		filesRemotePath := filepath.Join(app.DefaultArtifactDirPath, app.ArtifactFilesDirName)
+		filesRemotePath := filepath.Join(app.DefaultArtifactsDirPath, app.ArtifactFilesDirName)
 		err = dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, filesRemotePath, filesOutLocalPath, false, false)
 		if err != nil {
 			errutil.FailOn(err)

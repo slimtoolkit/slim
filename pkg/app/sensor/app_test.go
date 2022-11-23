@@ -325,7 +325,7 @@ func TestLifecycleHook_Controlled_CLI(t *testing.T) {
 		t.TempDir(),
 		runID,
 		imageSimpleCLI,
-		testsensor.WithLifecycleHook("echo"),
+		testsensor.WithSensorLifecycleHook("echo"),
 	)
 	defer sensor.Cleanup(t, ctx)
 
@@ -361,7 +361,7 @@ func TestLifecycleHook_Standalone_CLI(t *testing.T) {
 		t.TempDir(),
 		runID,
 		imageSimpleCLI,
-		testsensor.WithLifecycleHook("echo"),
+		testsensor.WithSensorLifecycleHook("echo"),
 	)
 	defer sensor.Cleanup(t, ctx)
 
@@ -484,6 +484,40 @@ func TestArchiveArtifacts_HappyPath(t *testing.T) {
 	)
 }
 
+func TestArchiveArtifacts_CustomLocation(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	sensor := testsensor.NewSensorOrFail(
+		t, ctx, t.TempDir(), runID, imageSimpleCLI,
+		testsensor.WithSensorLogsToFile(),
+		testsensor.WithSensorArtifactsDir("/opt/not-dockerslim-at-all/files"),
+	)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartStandaloneOrFail(
+		t, ctx,
+		[]string{"cat", "/etc/alpine-release"},
+		testsensor.NewMonitorStartCommand(
+			testsensor.WithSaneDefaults(),
+			testsensor.WithAppStdoutToFile(),
+			testsensor.WithAppStderrToFile(),
+		),
+	)
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.DownloadArtifactsOrFail(t, ctx)
+
+	sensor.AssertArtifactsArchiveContains(t, ctx,
+		report.DefaultContainerReportFileName,
+		testsensor.EventsFileName,
+		testsensor.CommandsFileName,
+		testsensor.SensorLogFileName,
+		testsensor.AppStdoutFileName,
+		testsensor.AppStderrFileName,
+	)
+}
+
 func TestArchiveArtifacts_SensorFailure_NoCaps(t *testing.T) {
 	runID := newTestRun(t)
 	ctx := context.Background()
@@ -491,7 +525,7 @@ func TestArchiveArtifacts_SensorFailure_NoCaps(t *testing.T) {
 	sensor := testsensor.NewSensorOrFail(
 		t, ctx, t.TempDir(), runID, imageSimpleCLI,
 		testsensor.WithSensorLogsToFile(),
-		testsensor.WithCapabilities(), // Cancels out the default --cap-add=ALL.
+		testsensor.WithSensorCapabilities(), // Cancels out the default --cap-add=ALL.
 	)
 	defer sensor.Cleanup(t, ctx)
 
