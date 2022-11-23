@@ -8,6 +8,8 @@ import (
 	"errors"
 	"flag"
 	"os"
+	"path/filepath"
+	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -61,20 +63,21 @@ const (
 	stopGracePeriodFlagUsage   = "set the time to wait for the graceful termination of the target app (before sensor SIGKILL's it)"
 	stopGracePeriodFlagDefault = 5 * time.Second
 
-	// Soon to become a flag?
-	defaultEventsFile = app.DefaultArtifactDirPath + "/events.json"
+	artifactsDirFlagDefault = app.DefaultArtifactDirPath
+	artifactsDirFlagUsage   = "output director for all sensor artifacts"
 )
 
 var (
 	enableDebug          *bool          = flag.Bool("debug", enableDebugFlagDefault, enableDebugFlagUsage)
 	logLevel             *string        = flag.String("log-level", logLevelFlagDefault, logLevelFlagUsage)
 	logFormat            *string        = flag.String("log-format", logFormatFlagDefault, logFormatFlagUsage)
-	logFile              *string        = flag.String("log-file", logFileFlagDefault, logFileFlagUsage)
+	logFileF             *string        = flag.String("log-file", logFileFlagDefault, logFileFlagUsage)
 	sensorMode           *string        = flag.String("mode", sensorModeFlagDefault, sensorModeFlagUsage)
-	commandsFile         *string        = flag.String("command-file", commandsFileFlagDefault, commandsFileFlagUsage)
+	commandsFileF        *string        = flag.String("command-file", commandsFileFlagDefault, commandsFileFlagUsage)
 	lifecycleHookCommand *string        = flag.String("lifecycle-hook", lifecycleHookCommandFlagDefault, lifecycleHookCommandFlagUsage)
 	stopSignal           *string        = flag.String("stop-signal", stopSignalFlagDefault, stopSignalFlagUsage)
 	stopGracePeriod      *time.Duration = flag.Duration("stop-grace-period", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
+	artifactsDirF        *string        = flag.String("artifacts-dir", artifactsDirFlagDefault, artifactsDirFlagUsage)
 
 	errUnknownMode = errors.New("unknown sensor mode")
 )
@@ -83,9 +86,9 @@ func init() {
 	flag.BoolVar(enableDebug, "d", enableDebugFlagDefault, enableDebugFlagUsage)
 	flag.StringVar(logLevel, "l", logLevelFlagDefault, logLevelFlagUsage)
 	flag.StringVar(logFormat, "f", logFormatFlagDefault, logFormatFlagUsage)
-	flag.StringVar(logFile, "o", logFileFlagDefault, logFileFlagUsage)
+	flag.StringVar(logFileF, "o", logFileFlagDefault, logFileFlagUsage)
 	flag.StringVar(sensorMode, "m", sensorModeFlagDefault, sensorModeFlagUsage)
-	flag.StringVar(commandsFile, "c", commandsFileFlagDefault, commandsFileFlagUsage)
+	flag.StringVar(commandsFileF, "c", commandsFileFlagDefault, commandsFileFlagUsage)
 	flag.StringVar(lifecycleHookCommand, "a", lifecycleHookCommandFlagDefault, lifecycleHookCommandFlagUsage)
 	flag.StringVar(stopSignal, "s", stopSignalFlagDefault, stopSignalFlagUsage)
 	flag.DurationVar(stopGracePeriod, "w", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
@@ -95,7 +98,13 @@ func init() {
 func Run() {
 	flag.Parse()
 
-	errutil.FailOn(configureLogger(*enableDebug, *logLevel, *logFormat, *logFile))
+	artifactsDir := *artifactsDirF
+	commandsFile := *commandsFileF
+	logFile := *logFileF
+
+	eventsFile := filepath.Join(artifactsDir, "events.json")
+
+	errutil.FailOn(configureLogger(*enableDebug, *logLevel, *logFormat, logFile))
 
 	activeCaps, maxCaps, err := sysenv.Capabilities(0)
 	errutil.WarnOn(err)
@@ -109,20 +118,21 @@ func Run() {
 	log.Debugf("sensor: args => %#v", os.Args)
 
 	var artifactsExtra []string
-	if len(*commandsFile) > 0 {
-		artifactsExtra = append(artifactsExtra, *commandsFile)
+	if commandsFile != "" && pathNotIn(artifactsDir, commandsFile) {
+		artifactsExtra = append(artifactsExtra, commandsFile)
 	}
-	if len(*logFile) > 0 {
-		artifactsExtra = append(artifactsExtra, *logFile)
+	if logFile != "" && pathNotIn(artifactsDir, logFile) {
+		artifactsExtra = append(artifactsExtra, logFile)
 	}
-	artifactor := artifacts.NewArtifactor(app.DefaultArtifactDirPath, artifactsExtra)
+
+	artifactor := artifacts.NewArtifactor(artifactsDir, artifactsExtra)
 
 	ctx := context.Background()
 	exe, err := newExecution(
 		ctx,
 		*sensorMode,
-		*commandsFile,
-		defaultEventsFile,
+		commandsFile,
+		eventsFile,
 		*lifecycleHookCommand,
 	)
 	if err != nil {
@@ -161,11 +171,10 @@ func newExecution(
 	eventsFile string,
 	lifecycleHookCommand string,
 ) (execution.Interface, error) {
-	if mode == sensorModeControlled {
+	switch mode {
+	case sensorModeControlled:
 		return execution.NewControlled(ctx, lifecycleHookCommand)
-	}
-
-	if mode == sensorModeStandalone {
+	case sensorModeStandalone:
 		return execution.NewStandalone(
 			ctx,
 			commandsFile,
@@ -194,7 +203,8 @@ func newSensor(
 	mountPoint := "/"
 	log.Debugf("sensor: mount point => %s", mountPoint)
 
-	if mode == sensorModeControlled {
+	switch mode {
+	case sensorModeControlled:
 		ctx, cancel := context.WithCancel(ctx)
 
 		// To preserve the backward compatibility, don't forward
@@ -212,9 +222,7 @@ func newSensor(
 			workDir,
 			mountPoint,
 		), nil
-	}
-
-	if mode == sensorModeStandalone {
+	case sensorModeStandalone:
 		return standalone.NewSensor(
 			ctx,
 			exe,
@@ -229,4 +237,18 @@ func newSensor(
 
 	exe.PubEvent(event.StartMonitorFailed, errUnknownMode.Error())
 	return nil, errUnknownMode
+}
+
+func pathNotIn(parent, child string) bool {
+	parent = strings.TrimSuffix(absPath(parent), "/") + "/"
+	return !strings.HasPrefix(absPath(child), parent)
+}
+
+func absPath(p string) string {
+	pa, err := filepath.Abs(p)
+	if err != nil {
+		errutil.WarnOn(err)
+		pa = p
+	}
+	return pa
 }
