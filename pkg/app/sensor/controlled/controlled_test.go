@@ -37,6 +37,7 @@ func newStubMonitorFunc(
 		ctx context.Context,
 		cmd *command.StartMonitor,
 		workDir string,
+		artifactsDir string,
 		mountPoint string,
 		origPaths map[string]struct{},
 		signalCh <-chan os.Signal,
@@ -53,6 +54,10 @@ func newStubMonitorFunc(
 type artifactorStub struct{}
 
 var _ artifacts.Artifactor = &artifactorStub{}
+
+func (a *artifactorStub) ArtifactsDir() string {
+	return ""
+}
 
 func (a *artifactorStub) GetCurrentPaths(root string, excludes []string) (map[string]struct{}, error) {
 	return map[string]struct{}{}, nil

@@ -229,7 +229,7 @@ func (i *Inspector) FinishMonitoring() {
 		i.pod.Namespace,
 		i.pod.Name,
 		i.workload.TargetContainer().Name,
-		filepath.Join(app.DefaultArtifactDirPath, report.DefaultContainerReportFileName),
+		filepath.Join(app.DefaultArtifactsDirPath, report.DefaultContainerReportFileName),
 		filepath.Join(i.imageInspector.ArtifactLocation, report.DefaultContainerReportFileName),
 	)
 	if err != nil {
@@ -242,7 +242,7 @@ func (i *Inspector) FinishMonitoring() {
 		i.pod.Namespace,
 		i.pod.Name,
 		i.workload.TargetContainer().Name,
-		filepath.Join(app.DefaultArtifactDirPath, app.ArtifactFilesDirName),
+		filepath.Join(app.DefaultArtifactsDirPath, app.ArtifactFilesDirName),
 		filepath.Join(i.imageInspector.ArtifactLocation, app.ArtifactFilesDirName+"/"),
 	)
 	if err != nil {
@@ -344,7 +344,7 @@ func (i *Inspector) prepareWorkload() error {
 		},
 		corev1.VolumeMount{
 			Name:      artifactsVolumeName,
-			MountPath: app.DefaultArtifactDirPath,
+			MountPath: app.DefaultArtifactsDirPath,
 		},
 	)
 

@@ -11,7 +11,6 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors/fanotify"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors/ptrace"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
@@ -94,6 +93,7 @@ type NewCompositeMonitorFunc func(
 	ctx context.Context,
 	cmd *command.StartMonitor,
 	workDir string,
+	artifactsDir string,
 	mountPoint string,
 	origPaths map[string]struct{},
 	signalCh <-chan os.Signal,
@@ -103,6 +103,7 @@ func NewCompositeMonitor(
 	ctx context.Context,
 	cmd *command.StartMonitor,
 	workDir string,
+	artifactsDir string,
 	mountPoint string,
 	origPaths map[string]struct{},
 	signalChan <-chan os.Signal,
@@ -123,7 +124,7 @@ func NewCompositeMonitor(
 
 	appStdout := os.Stdout
 	if cmd.AppStdoutToFile {
-		sink, file, err := dupAppStdStream(os.Stdout, "stdout")
+		sink, file, err := dupAppStdStream(artifactsDir, os.Stdout, "stdout")
 		if err != nil {
 			return nil, err
 		}
@@ -133,7 +134,7 @@ func NewCompositeMonitor(
 
 	appStderr := os.Stderr
 	if cmd.AppStderrToFile {
-		sink, file, err := dupAppStdStream(os.Stderr, "stderr")
+		sink, file, err := dupAppStdStream(artifactsDir, os.Stderr, "stderr")
 		if err != nil {
 			closeAll(closeAfterDone)
 			return nil, err
@@ -310,8 +311,8 @@ func NonCriticalError(err error) error {
 // However, both are impossible. We need the Wait() to return much earlier
 // than the process termination (see pkg/monitors/ptrace logic), and multi-writer
 // cannot be closed at all. Hence, the pipe trick.
-func dupAppStdStream(w io.Writer, kind string) (*os.File, *os.File, error) {
-	filename := filepath.Join(app.DefaultArtifactDirPath, "app_"+kind+".log")
+func dupAppStdStream(artifactsDir string, w io.Writer, kind string) (*os.File, *os.File, error) {
+	filename := filepath.Join(artifactsDir, "app_"+kind+".log")
 
 	f, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0o644)
 	if err != nil {

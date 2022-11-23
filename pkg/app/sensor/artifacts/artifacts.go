@@ -170,6 +170,9 @@ func findFileTypeCmd() {
 
 // Needed mostly to be able to mock it in the sensor tests.
 type Artifactor interface {
+	// Current location of the artifacts folder.
+	ArtifactsDir() string
+
 	// Enumerate all files under a given root (used later on to tell the files
 	// that were created during probing and the existed files appart).
 	GetCurrentPaths(root string, excludes []string) (map[string]struct{}, error)
@@ -192,7 +195,7 @@ type Artifactor interface {
 }
 
 type artifactor struct {
-	artifactDirName string
+	artifactsDirName string
 
 	// Extra files to put into the artifacts archive before exiting.
 	artifactsExtra []string
@@ -200,11 +203,15 @@ type artifactor struct {
 	origPathMap map[string]struct{}
 }
 
-func NewArtifactor(artifactDirName string, artifactsExtra []string) Artifactor {
+func NewArtifactor(artifactsDirName string, artifactsExtra []string) Artifactor {
 	return &artifactor{
-		artifactDirName: artifactDirName,
-		artifactsExtra:  artifactsExtra,
+		artifactsDirName: artifactsDirName,
+		artifactsExtra:   artifactsExtra,
 	}
+}
+
+func (a *artifactor) ArtifactsDir() string {
+	return a.artifactsDirName
 }
 
 func (a *artifactor) GetCurrentPaths(root string, excludes []string) (map[string]struct{}, error) {
@@ -269,7 +276,7 @@ func (a *artifactor) GetCurrentPaths(root string, excludes []string) (map[string
 func (a *artifactor) PrepareEnv(cmd *command.StartMonitor) error {
 	log.Debug("sensor.app.prepareEnv()")
 
-	dstRootPath := filepath.Join(a.artifactDirName, app.ArtifactFilesDirName)
+	dstRootPath := filepath.Join(a.artifactsDirName, app.ArtifactFilesDirName)
 	log.Debugf("sensor.app.prepareEnv - prep file artifacts root dir - '%s'", dstRootPath)
 	if err := os.MkdirAll(dstRootPath, 0777); err != nil {
 		return err
@@ -278,7 +285,7 @@ func (a *artifactor) PrepareEnv(cmd *command.StartMonitor) error {
 	if cmd != nil && len(cmd.Preserves) > 0 {
 		log.Debugf("sensor.app.prepareEnv(): preserving paths - %d", len(cmd.Preserves))
 
-		preservedDirPath := filepath.Join(a.artifactDirName, preservedDirName)
+		preservedDirPath := filepath.Join(a.artifactsDirName, preservedDirName)
 		log.Debugf("sensor.app.prepareEnv - prep preserved artifacts root dir - '%s'", preservedDirPath)
 		if err := os.MkdirAll(preservedDirPath, 0777); err != nil {
 			return err
@@ -347,18 +354,18 @@ func (a *artifactor) ProcessReports(
 
 	log.Debugf("sensor: processReports(): len(fanReport.ProcessFiles)=%v / fileCount=%v", len(fanReport.ProcessFiles), fileCount)
 	allFilesMap := findSymlinks(fileList, mountPoint, cmd.Excludes)
-	return saveResults(a.origPathMap, a.artifactDirName, cmd, allFilesMap, fanReport, ptReport, peReport)
+	return saveResults(a.origPathMap, a.artifactsDirName, cmd, allFilesMap, fanReport, ptReport, peReport)
 }
 
 func (a *artifactor) Archive() error {
-	var toArchive []string
+	toArchive := map[string]struct{}{}
 	for _, f := range a.artifactsExtra {
 		if fsutil.Exists(f) {
-			toArchive = append(toArchive, f)
+			toArchive[f] = struct{}{}
 		}
 	}
 
-	artifacts, err := ioutil.ReadDir(a.artifactDirName)
+	artifacts, err := ioutil.ReadDir(a.artifactsDirName)
 	if err != nil {
 		return err
 	}
@@ -372,17 +379,21 @@ func (a *artifactor) Archive() error {
 	//   - app_stderr.log
 	for _, f := range artifacts {
 		if f.Name() != app.ArtifactFilesDirName && f.Name() != filesArchiveName {
-			toArchive = append(toArchive, filepath.Join(a.artifactDirName, f.Name()))
+			toArchive[filepath.Join(a.artifactsDirName, f.Name())] = struct{}{}
 		}
 	}
 
+	var toArchiveList []string
+	for name := range toArchive {
+		toArchiveList = append(toArchiveList, name)
+	}
 	return fsutil.ArchiveFiles(
-		filepath.Join(a.artifactDirName, runArchiveName), toArchive, false, "")
+		filepath.Join(a.artifactsDirName, runArchiveName), toArchiveList, false, "")
 }
 
 func saveResults(
 	origPathMap map[string]struct{},
-	artifactDirName string,
+	artifactsDirName string,
 	cmd *command.StartMonitor,
 	fileNames map[string]*report.ArtifactProps,
 	fanMonReport *report.FanMonitorReport,
@@ -391,7 +402,7 @@ func saveResults(
 ) error {
 	log.Debugf("saveResults(%v,...)", len(fileNames))
 
-	artifactStore := newArtifactStore(origPathMap, artifactDirName, fileNames, fanMonReport, ptMonReport, peReport, cmd)
+	artifactStore := newArtifactStore(origPathMap, artifactsDirName, fileNames, fanMonReport, ptMonReport, peReport, cmd)
 	artifactStore.prepareArtifacts()
 	artifactStore.saveArtifacts()
 	artifactStore.enumerateArtifacts()

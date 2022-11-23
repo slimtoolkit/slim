@@ -127,6 +127,7 @@ func (s *Sensor) startMonitor(cmd *command.StartMonitor) (monitors.CompositeMoni
 		s.ctx,
 		cmd,
 		s.workDir,
+		s.artifactor.ArtifactsDir(),
 		s.mountPoint,
 		origPaths,
 		// TODO: Do we need to forward signals to the target app in the controlled mode?
