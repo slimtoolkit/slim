@@ -353,6 +353,8 @@ func buildOutputImage(
 			opts.Labels[consts.SourceImageLabelName] = imageInspector.ImageRef
 		}
 
+		opts.Labels[consts.ContainerLabelName] = v.Current()
+
 		//(new) instructions have higher value precedence over the runtime overrides
 		UpdateBuildOptionsWithNewInstructions(&opts, instructions)
 
@@ -369,6 +371,7 @@ func buildOutputImage(
 			}
 
 			opts.Layers = append(opts.Layers, layerInfo)
+			hasData = true
 		} else {
 			dataDir := filepath.Join(imageInspector.ArtifactLocation, "files")
 			if fsutil.Exists(dataTar) && fsutil.IsDir(dataDir) {
@@ -381,6 +384,7 @@ func buildOutputImage(
 				}
 
 				opts.Layers = append(opts.Layers, layerInfo)
+				hasData = true
 			} else {
 				logger.Info("WARNING - no data artifacts")
 			}
@@ -390,6 +394,9 @@ func buildOutputImage(
 		if err != nil {
 			onError(err)
 		}
+
+		outputImageName = customImageTag // engine.RepoName
+		imageCreated = true
 	case IBEBuildKit:
 	case IBEDocker:
 		engine, err := builder.NewImageBuilder(client,
@@ -602,7 +609,8 @@ func UpdateBuildOptionsWithSrcImageInfo(
 	options.WorkDir = imageInfo.Config.WorkingDir
 	options.EnvVars = imageInfo.Config.Env
 	options.Volumes = imageInfo.Config.Volumes
-	//imageInfo.Config.OnBuild ???
+	options.OnBuild = imageInfo.Config.OnBuild
+	options.StopSignal = imageInfo.Config.StopSignal
 
 	for k, v := range imageInfo.Config.ExposedPorts {
 		options.ExposedPorts[string(k)] = v

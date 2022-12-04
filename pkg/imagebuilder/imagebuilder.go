@@ -14,6 +14,8 @@ type SimpleBuildOptions struct {
 	Cmd          []string
 	WorkDir      string
 	User         string
+	StopSignal   string
+	OnBuild      []string
 	Volumes      map[string]struct{}
 	EnvVars      []string
 	ExposedPorts map[string]struct{}

@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"time"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -80,6 +81,8 @@ func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
 		Entrypoint:   options.Entrypoint,
 		Cmd:          options.Cmd,
 		WorkingDir:   options.WorkDir,
+		StopSignal:   options.StopSignal,
+		OnBuild:      options.OnBuild,
 		Labels:       options.Labels,
 		Env:          options.EnvVars,
 		User:         options.User,
@@ -88,6 +91,7 @@ func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
 	}
 
 	imgCfgFile := &v1.ConfigFile{
+		Created:      v1.Time{Time: time.Now()},
 		Author:       "docker-slim",
 		Config:       imgCfg,
 		Architecture: options.Architecture,
