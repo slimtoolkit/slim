@@ -15,6 +15,9 @@ import (
 
 // Build command flag names
 const (
+	FlagImageBuildEngine = "image-build-engine"
+	FlagImageBuildArch   = "image-build-arch"
+
 	FlagDeleteFatImage = "delete-generated-fat-image"
 
 	FlagShowBuildLogs = "show-blogs"
@@ -94,6 +97,9 @@ const (
 
 // Build command flag usage info
 const (
+	FlagImageBuildEngineUsage = "Select image build engine: internal | docker | none"
+	FlagImageBuildArchUsage   = "Select output image build architecture"
+
 	FlagDeleteFatImageUsage = "Delete generated fat image requires --dockerfile flag"
 
 	FlagShowBuildLogsUsage = "Show image build logs"
@@ -451,6 +457,17 @@ var Flags = map[string]cli.Flag{
 		Usage:   FlagCBONetworkUsage,
 		EnvVars: []string{"DSLIM_CBO_NETWORK"},
 	},
+	FlagImageBuildEngine: &cli.StringFlag{
+		Name:    FlagImageBuildEngine,
+		Value:   "docker",
+		Usage:   FlagImageBuildEngineUsage,
+		EnvVars: []string{"DSLIM_IMAGE_BUILD_ENG"},
+	},
+	FlagImageBuildArch: &cli.StringFlag{
+		Name:    FlagImageBuildArch,
+		Usage:   FlagImageBuildArchUsage,
+		EnvVars: []string{"DSLIM_IMAGE_BUILD_ARCH"},
+	},
 	FlagDeleteFatImage: &cli.BoolFlag{
 		Name:    FlagDeleteFatImage,
 		Usage:   FlagDeleteFatImageUsage,
@@ -720,4 +737,37 @@ func GetKubernetesOptions(ctx *cli.Context) (config.KubernetesOptions, error) {
 	}
 
 	return cfg, nil
+}
+
+const (
+	IBENone     = "none"
+	IBEInternal = "internal"
+	IBEDocker   = "docker"
+	IBEBuildKit = "buildkit"
+)
+
+func getImageBuildEngine(ctx *cli.Context) (string, error) {
+	value := ctx.String(FlagImageBuildEngine)
+	switch value {
+	case IBENone, IBEInternal, IBEDocker, IBEBuildKit:
+		return value, nil
+	default:
+		return "", fmt.Errorf("bad value")
+	}
+}
+
+const (
+	ArchEmpty = ""
+	ArchAmd64 = "amd64"
+	ArchArm64 = "arm64"
+)
+
+func getImageBuildArch(ctx *cli.Context) (string, error) {
+	value := ctx.String(FlagImageBuildArch)
+	switch value {
+	case ArchEmpty, ArchAmd64, ArchArm64:
+		return value, nil
+	default:
+		return "", fmt.Errorf("bad value")
+	}
 }

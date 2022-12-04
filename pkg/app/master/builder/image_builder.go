@@ -16,6 +16,8 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+//todo: move/refactor this to be a "pkg/imagebuilder" engine
+
 var (
 	ErrInvalidContextDir = errors.New("invalid context directory")
 )
@@ -134,7 +136,8 @@ func (b *BasicImageBuilder) Remove() error {
 }
 
 // NewImageBuilder creates a new ImageBuilder instances
-func NewImageBuilder(client *docker.Client,
+func NewImageBuilder(
+	client *docker.Client,
 	imageRepoNameTag string,
 	additionalTags []string,
 	imageInfo *docker.Image,

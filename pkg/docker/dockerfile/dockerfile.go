@@ -49,7 +49,8 @@ const (
 )
 
 // GenerateFromInfo builds and saves a Dockerfile file object
-func GenerateFromInfo(location string,
+func GenerateFromInfo(
+	location string,
 	volumes map[string]struct{},
 	workingDir string,
 	env []string,

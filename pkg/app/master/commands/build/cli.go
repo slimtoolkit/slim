@@ -91,6 +91,8 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagExpose),
 		commands.Cflag(commands.FlagMount),
 		//Container Build Options
+		cflag(FlagImageBuildEngine),
+		cflag(FlagImageBuildArch),
 		cflag(FlagBuildFromDockerfile),
 		cflag(FlagDockerfileContext),
 		cflag(FlagTagFat),
@@ -604,6 +606,26 @@ var CLI = &cli.Command{
 		rtaOnbuildBaseImage := ctx.Bool(commands.FlagRTAOnbuildBaseImage)
 		rtaSourcePT := ctx.Bool(commands.FlagRTASourcePT)
 
+		imageBuildEngine, err := getImageBuildEngine(ctx)
+		if err != nil {
+			xc.Out.Error("param.error.image-build-engine", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
+		imageBuildArch, err := getImageBuildArch(ctx)
+		if err != nil {
+			xc.Out.Error("param.error.image-build-arch", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
 		OnCommand(
 			xc,
 			gparams,
@@ -676,7 +698,9 @@ var CLI = &cli.Command{
 			ctx.String(commands.FlagSensorIPCEndpoint),
 			ctx.String(commands.FlagSensorIPCMode),
 			kubeOpts,
-			GetAppNodejsInspectOptions(ctx))
+			GetAppNodejsInspectOptions(ctx),
+			imageBuildEngine,
+			imageBuildArch)
 
 		return nil
 	},

@@ -92,9 +92,11 @@ type kubeHandleOptions struct {
 	PortBindings          map[dockerapi.Port][]dockerapi.PortBinding
 	DoPublishExposedPorts bool
 
-	httpProbeOpts config.HTTPProbeOptions
-	continueAfter *config.ContinueAfter
-	execCmd       string
+	httpProbeOpts    config.HTTPProbeOptions
+	continueAfter    *config.ContinueAfter
+	execCmd          string
+	imageBuildEngine string
+	imageBuildArch   string
 }
 
 func (h *kubeHandler) Handle(
@@ -202,7 +204,7 @@ func (h *kubeHandler) Handle(
 	// 7. Build the slim image & create AppArmor and seccomp profiles
 	h.processCollectedDataOrFail(podInspector, imageInspector)
 
-	minifiedImageName := buildSlimImage(
+	minifiedImageName := buildOutputImage(
 		h.ExecutionContext,
 		opts.CustomImageTag,
 		opts.AdditionalTags,
@@ -215,9 +217,11 @@ func (h *kubeHandler) Handle(
 		imageInspector,
 		h.dockerClient,
 		h.logger,
-		h.report)
+		h.report,
+		opts.imageBuildEngine,
+		opts.imageBuildArch)
 
-	slimmingPostProcess(
+	finishCommand(
 		h.ExecutionContext,
 		minifiedImageName,
 		opts.CopyMetaArtifactsLocation,
@@ -227,7 +231,8 @@ func (h *kubeHandler) Handle(
 		imageInspector,
 		h.dockerClient,
 		h.logger,
-		h.report)
+		h.report,
+		opts.imageBuildEngine)
 }
 
 func (h *kubeHandler) findWorkloadOrFail(target config.KubernetesTarget) *kubernetes.Workload {

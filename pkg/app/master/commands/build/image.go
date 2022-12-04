@@ -3,6 +3,7 @@ package build
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/image"
 	"github.com/docker-slim/docker-slim/pkg/command"
 	"github.com/docker-slim/docker-slim/pkg/consts"
+	"github.com/docker-slim/docker-slim/pkg/imagebuilder"
+	"github.com/docker-slim/docker-slim/pkg/imagebuilder/internalbuilder"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
@@ -266,7 +269,7 @@ func buildFatImage(
 	return fatImageRepoNameTag
 }
 
-func buildSlimImage(
+func buildOutputImage(
 	xc *app.ExecutionContext,
 	customImageTag string,
 	additionalTags []string,
@@ -280,46 +283,14 @@ func buildSlimImage(
 	client *dockerapi.Client,
 	logger *log.Entry,
 	cmdReport *report.BuildCommand,
+	imageBuildEngine string,
+	imageBuildArch string,
 ) string {
-	xc.Out.State("building",
-		ovars{
-			"message": "building optimized image",
-		})
-
-	if customImageTag == "" {
-		customImageTag = imageInspector.SlimImageRepo
-	}
-
-	builder, err := builder.NewImageBuilder(client,
-		customImageTag,
-		additionalTags,
-		imageInspector.ImageInfo,
-		imageInspector.ArtifactLocation,
-		doShowBuildLogs,
-		imageOverrideSelectors,
-		overrides,
-		instructions,
-		imageInspector.ImageRef)
-	xc.FailOn(err)
-
-	if !builder.HasData {
-		logger.Info("WARNING - no data artifacts")
-	}
-
-	err = builder.Build()
-
-	if doShowBuildLogs || err != nil {
-		xc.Out.LogDump("optimized.image.build", builder.BuildLog.String(),
-			ovars{
-				"tag": customImageTag,
-			})
-	}
-
-	if err != nil {
+	onError := func(e error) {
 		xc.Out.Info("build.error",
 			ovars{
 				"status": "optimized.image.build.error",
-				"error":  err,
+				"error":  e,
 			})
 
 		exitCode := commands.ECTBuild | ecbImageBuildError
@@ -334,27 +305,349 @@ func buildSlimImage(
 		xc.Exit(exitCode)
 	}
 
-	xc.Out.State("completed")
-	cmdReport.State = command.StateCompleted
+	if customImageTag == "" {
+		customImageTag = imageInspector.SlimImageRepo
+	}
 
-	if cbOpts.Dockerfile != "" {
-		if doDeleteFatImage {
-			xc.Out.Info("Dockerfile", ovars{
-				"image.name":        cbOpts.Tag,
-				"image.fat.deleted": "true",
-			})
-			var err = client.RemoveImage(cbOpts.Tag)
-			errutil.WarnOn(err)
+	cmdReport.ImageBuildEngine = imageBuildEngine
+
+	logger.Debugf("image build engine - %v", imageBuildEngine)
+	xc.Out.State("building",
+		ovars{
+			"message": "building optimized image",
+			"engine":  imageBuildEngine,
+		})
+
+	var outputImageName string
+	var hasData bool
+	var imageCreated bool
+	switch imageBuildEngine {
+	case IBENone:
+	case IBEInternal:
+		engine, err := internalbuilder.New(doShowBuildLogs,
+			true, //pushToDaemon - TODO: have a param to control this &
+			//output image tar (if not 'saving' to daemon)
+			false)
+		xc.FailOn(err)
+
+		opts := imagebuilder.SimpleBuildOptions{
+			ExposedPorts: map[string]struct{}{},
+			Volumes:      map[string]struct{}{},
+			Labels:       map[string]string{},
+			Architecture: imageBuildArch,
+		}
+
+		if customImageTag != "" {
+			//must be first
+			opts.Tags = append(opts.Tags, customImageTag)
+		}
+
+		if len(additionalTags) > 0 {
+			opts.Tags = append(opts.Tags, additionalTags...)
+		}
+
+		UpdateBuildOptionsWithSrcImageInfo(&opts, imageInspector.ImageInfo)
+		UpdateBuildOptionsWithOverrides(&opts, imageOverrideSelectors, overrides)
+
+		if imageInspector.ImageRef != "" {
+			opts.Labels[consts.SourceImageLabelName] = imageInspector.ImageRef
+		}
+
+		//(new) instructions have higher value precedence over the runtime overrides
+		UpdateBuildOptionsWithNewInstructions(&opts, instructions)
+
+		dataTar := filepath.Join(imageInspector.ArtifactLocation, "files.tar")
+		if fsutil.Exists(dataTar) &&
+			fsutil.IsRegularFile(dataTar) &&
+			fsutil.IsTarFile(dataTar) {
+			layerInfo := imagebuilder.LayerDataInfo{
+				Type:   imagebuilder.TarSource,
+				Source: dataTar,
+				Params: &imagebuilder.DataParams{
+					TargetPath: "/",
+				},
+			}
+
+			opts.Layers = append(opts.Layers, layerInfo)
 		} else {
-			xc.Out.Info("Dockerfile", ovars{
-				"image.name":        cbOpts.Tag,
-				"image.fat.deleted": "false",
-			})
+			dataDir := filepath.Join(imageInspector.ArtifactLocation, "files")
+			if fsutil.Exists(dataTar) && fsutil.IsDir(dataDir) {
+				layerInfo := imagebuilder.LayerDataInfo{
+					Type:   imagebuilder.DirSource,
+					Source: dataDir,
+					Params: &imagebuilder.DataParams{
+						TargetPath: "/",
+					},
+				}
+
+				opts.Layers = append(opts.Layers, layerInfo)
+			} else {
+				logger.Info("WARNING - no data artifacts")
+			}
+		}
+
+		err = engine.Build(opts)
+		if err != nil {
+			onError(err)
+		}
+	case IBEBuildKit:
+	case IBEDocker:
+		engine, err := builder.NewImageBuilder(client,
+			customImageTag,
+			additionalTags,
+			imageInspector.ImageInfo,
+			imageInspector.ArtifactLocation,
+			doShowBuildLogs,
+			imageOverrideSelectors,
+			overrides,
+			instructions,
+			imageInspector.ImageRef)
+		xc.FailOn(err)
+
+		if !engine.HasData {
+			logger.Info("WARNING - no data artifacts")
+		}
+
+		err = engine.Build()
+		if doShowBuildLogs || err != nil {
+			xc.Out.LogDump("optimized.image.build", engine.BuildLog.String(),
+				ovars{
+					"tag": customImageTag,
+				})
+		}
+
+		if err != nil {
+			onError(err)
+		}
+
+		if cbOpts.Dockerfile != "" {
+			if doDeleteFatImage {
+				xc.Out.Info("Dockerfile", ovars{
+					"image.name":        cbOpts.Tag,
+					"image.fat.deleted": "true",
+				})
+				var err = client.RemoveImage(cbOpts.Tag)
+				errutil.WarnOn(err)
+			} else {
+				xc.Out.Info("Dockerfile", ovars{
+					"image.name":        cbOpts.Tag,
+					"image.fat.deleted": "false",
+				})
+			}
+		}
+
+		outputImageName = engine.RepoName
+		hasData = engine.HasData
+		imageCreated = true
+	default:
+		logger.Errorf("bad image build engine - %v", imageBuildEngine)
+		onError(fmt.Errorf("bad image build engine - %v", imageBuildEngine))
+	}
+
+	cmdReport.State = command.StateCompleted
+	cmdReport.MinifiedImage = outputImageName
+	cmdReport.MinifiedImageHasData = hasData
+	cmdReport.ImageCreated = imageCreated
+	xc.Out.State("completed")
+
+	return outputImageName
+}
+
+//NOTE: lots of C&P from image_builder (TODO: refactor)
+const (
+	dsCmdPortInfo = "65501/tcp"
+	dsEvtPortInfo = "65502/tcp"
+)
+
+func UpdateBuildOptionsWithNewInstructions(
+	options *imagebuilder.SimpleBuildOptions,
+	instructions *config.ImageNewInstructions) {
+	if instructions != nil {
+		log.Debugf("NewImageBuilder: Using new image instructions => %+v", instructions)
+
+		if instructions.Workdir != "" {
+			options.WorkDir = instructions.Workdir
+		}
+
+		if len(instructions.Env) > 0 {
+			options.EnvVars = append(options.EnvVars, instructions.Env...)
+		}
+
+		for k, v := range instructions.ExposedPorts {
+			options.ExposedPorts[string(k)] = v
+		}
+
+		for k, v := range instructions.Volumes {
+			options.Volumes[k] = v
+		}
+
+		for k, v := range instructions.Labels {
+			options.Labels[k] = v
+		}
+
+		if len(instructions.Entrypoint) > 0 {
+			options.Entrypoint = instructions.Entrypoint
+		}
+
+		if len(instructions.Cmd) > 0 {
+			options.Cmd = instructions.Cmd
+		}
+
+		if len(options.ExposedPorts) > 0 &&
+			len(instructions.RemoveExposedPorts) > 0 {
+			for k := range instructions.RemoveExposedPorts {
+				if _, ok := options.ExposedPorts[string(k)]; ok {
+					delete(options.ExposedPorts, string(k))
+				}
+			}
+		}
+
+		if len(options.Volumes) > 0 &&
+			len(instructions.RemoveVolumes) > 0 {
+			for k := range instructions.RemoveVolumes {
+				if _, ok := options.Volumes[k]; ok {
+					delete(options.Volumes, k)
+				}
+			}
+		}
+
+		if len(options.Labels) > 0 &&
+			len(instructions.RemoveLabels) > 0 {
+			for k := range instructions.RemoveLabels {
+				if _, ok := options.Labels[k]; ok {
+					delete(options.Labels, k)
+				}
+			}
+		}
+
+		if len(instructions.RemoveEnvs) > 0 &&
+			len(options.EnvVars) > 0 {
+			var newEnv []string
+			for _, envPair := range options.EnvVars {
+				envParts := strings.SplitN(envPair, "=", 2)
+				if len(envParts) > 0 && envParts[0] != "" {
+					if _, ok := instructions.RemoveEnvs[envParts[0]]; !ok {
+						newEnv = append(newEnv, envPair)
+					}
+				}
+			}
+
+			options.EnvVars = newEnv
+		}
+	}
+}
+
+func UpdateBuildOptionsWithOverrides(
+	options *imagebuilder.SimpleBuildOptions,
+	overrideSelectors map[string]bool,
+	overrides *config.ContainerOverrides) {
+	if overrides != nil && len(overrideSelectors) > 0 {
+		log.Debugf("UpdateBuildOptionsWithOverrides: Using container runtime overrides => %+v", overrideSelectors)
+		for k := range overrideSelectors {
+			switch k {
+			case "entrypoint":
+				if len(overrides.Entrypoint) > 0 {
+					options.Entrypoint = overrides.Entrypoint
+				}
+			case "cmd":
+				if len(overrides.Cmd) > 0 {
+					options.Cmd = overrides.Cmd
+				}
+			case "workdir":
+				if overrides.Workdir != "" {
+					options.WorkDir = overrides.Workdir
+				}
+			case "env":
+				if len(overrides.Env) > 0 {
+					options.EnvVars = append(options.EnvVars, overrides.Env...)
+				}
+			case "label":
+				for k, v := range overrides.Labels {
+					options.Labels[k] = v
+				}
+			case "volume":
+				for k, v := range overrides.Volumes {
+					options.Volumes[k] = v
+				}
+			case "expose":
+				dsCmdPort := dockerapi.Port(dsCmdPortInfo)
+				dsEvtPort := dockerapi.Port(dsEvtPortInfo)
+
+				for k, v := range overrides.ExposedPorts {
+					if k == dsCmdPort || k == dsEvtPort {
+						continue
+					}
+					options.ExposedPorts[string(k)] = v
+				}
+			}
+		}
+	}
+}
+
+func UpdateBuildOptionsWithSrcImageInfo(
+	options *imagebuilder.SimpleBuildOptions,
+	imageInfo *dockerapi.Image) {
+	options.Labels = SourceToOutputImageLabels(imageInfo.Config.Labels)
+
+	//note: not passing imageInfo.OS explicitly
+	//because it gets "hardcoded" to "linux" internally
+	//(other OS types are not supported)
+	if options.Architecture == "" {
+		options.Architecture = imageInfo.Architecture
+	}
+
+	options.User = imageInfo.Config.User
+	options.Entrypoint = imageInfo.Config.Entrypoint
+	options.Cmd = imageInfo.Config.Cmd
+	options.WorkDir = imageInfo.Config.WorkingDir
+	options.EnvVars = imageInfo.Config.Env
+	options.Volumes = imageInfo.Config.Volumes
+	//imageInfo.Config.OnBuild ???
+
+	for k, v := range imageInfo.Config.ExposedPorts {
+		options.ExposedPorts[string(k)] = v
+	}
+
+	if options.ExposedPorts == nil {
+		options.ExposedPorts = map[string]struct{}{}
+	}
+
+	if options.Volumes == nil {
+		options.Volumes = map[string]struct{}{}
+	}
+
+	if options.Labels == nil {
+		options.Labels = map[string]string{}
+	}
+}
+
+func SourceToOutputImageLabels(srcLabels map[string]string) map[string]string {
+	labels := map[string]string{}
+	if srcLabels != nil {
+		//cleanup non-standard labels from buildpacks
+		for k, v := range srcLabels {
+			lineLen := len(k) + len(v) + 7
+			if lineLen > 65535 {
+				//TODO: improve JSON data splitting
+				valueLen := len(v)
+				parts := valueLen / 50000
+				parts++
+				offset := 0
+				for i := 0; i < parts && offset < valueLen; i++ {
+					chunkSize := 50000
+					if (offset + chunkSize) > valueLen {
+						chunkSize = valueLen - offset
+					}
+					value := v[offset:(offset + chunkSize)]
+					offset += chunkSize
+					key := fmt.Sprintf("%s.%d", k, i)
+					labels[key] = value
+				}
+			} else {
+				labels[k] = v
+			}
 		}
 	}
 
-	cmdReport.MinifiedImage = builder.RepoName
-	cmdReport.MinifiedImageHasData = builder.HasData
-
-	return builder.RepoName
+	return labels
 }

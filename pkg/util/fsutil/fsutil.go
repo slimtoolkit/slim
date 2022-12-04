@@ -256,6 +256,25 @@ func IsSymlink(target string) bool {
 	return (info.Mode() & os.ModeSymlink) == os.ModeSymlink
 }
 
+// IsTarFile returns true if the target file system object is a tar archive
+func IsTarFile(target string) bool {
+	tf, err := os.Open(target)
+	if err != nil {
+		log.Debugf("fsutil.IsTarFile(%s): error - %v", target, err)
+		return false
+	}
+
+	defer tf.Close()
+	tr := tar.NewReader(tf)
+	_, err = tr.Next()
+	if err != nil {
+		log.Debugf("fsutil.IsTarFile(%s): error - %v", target, err)
+		return false
+	}
+
+	return true
+}
+
 // SetAccess updates the access permissions on the destination
 func SetAccess(dst string, access *AccessInfo) error {
 	if dst == "" || access == nil {

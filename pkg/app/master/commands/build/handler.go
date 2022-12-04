@@ -136,9 +136,10 @@ func OnCommand(
 	rtaSourcePT bool,
 	sensorIPCEndpoint string,
 	sensorIPCMode string,
-
 	kubeOpts config.KubernetesOptions,
 	appNodejsInspectOpts config.AppNodejsInspectOptions,
+	imageBuildEngine string,
+	imageBuildArch string,
 ) {
 	printState := true
 	logger := log.WithFields(log.Fields{"app": appName, "command": Name})
@@ -261,6 +262,8 @@ func OnCommand(
 				httpProbeOpts:             httpProbeOpts,
 				continueAfter:             continueAfter,
 				execCmd:                   execCmd,
+				imageBuildEngine:          imageBuildEngine,
+				imageBuildArch:            imageBuildArch,
 			})
 
 		vinfo := <-viChan
@@ -964,7 +967,7 @@ func OnCommand(
 
 	xc.Out.State("container.inspection.done")
 
-	minifiedImageName := buildSlimImage(
+	minifiedImageName := buildOutputImage(
 		xc,
 		customImageTag,
 		additionalTags,
@@ -977,10 +980,11 @@ func OnCommand(
 		imageInspector,
 		client,
 		logger,
-		cmdReport)
+		cmdReport,
+		imageBuildEngine,
+		imageBuildArch)
 
-	// (Re)Name me please!
-	slimmingPostProcess(
+	finishCommand(
 		xc,
 		minifiedImageName,
 		copyMetaArtifactsLocation,
@@ -990,7 +994,8 @@ func OnCommand(
 		imageInspector,
 		client,
 		logger,
-		cmdReport)
+		cmdReport,
+		imageBuildEngine)
 
 	vinfo := <-viChan
 	version.PrintCheckVersion(xc, "", vinfo)
@@ -1232,7 +1237,7 @@ func monitorContainer(
 	}
 }
 
-func slimmingPostProcess(
+func finishCommand(
 	xc *app.ExecutionContext,
 	minifiedImageName string,
 	copyMetaArtifactsLocation string,
@@ -1243,6 +1248,7 @@ func slimmingPostProcess(
 	client *dockerapi.Client,
 	logger *log.Entry,
 	cmdReport *report.BuildCommand,
+	imageBuildEngine string,
 ) {
 	newImageInspector, err := image.NewInspector(client, minifiedImageName)
 	xc.FailOn(err)

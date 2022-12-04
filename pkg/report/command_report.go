@@ -103,7 +103,7 @@ type SystemMetadata struct {
 }
 
 // Output Version for 'build'
-const OVBuildCommand = "1.0"
+const OVBuildCommand = "1.1"
 
 // BuildCommand is the 'build' command report data
 type BuildCommand struct {
@@ -121,6 +121,8 @@ type BuildCommand struct {
 	SeccompProfileName     string               `json:"seccomp_profile_name"`
 	AppArmorProfileName    string               `json:"apparmor_profile_name"`
 	ImageStack             []*reverse.ImageInfo `json:"image_stack"`
+	ImageCreated           bool                 `json:"image_created"`
+	ImageBuildEngine       string               `json:"image_build_engine"`
 }
 
 // Output Version for 'profile'

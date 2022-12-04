@@ -148,6 +148,8 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagRTASourcePT), Description: commands.FlagRTASourcePTUsage},
 		{Text: commands.FullFlagName(commands.FlagSensorIPCMode), Description: commands.FlagSensorIPCModeUsage},
 		{Text: commands.FullFlagName(commands.FlagSensorIPCEndpoint), Description: commands.FlagSensorIPCEndpointUsage},
+		{Text: commands.FullFlagName(FlagImageBuildEngine), Description: FlagImageBuildEngineUsage},
+		{Text: commands.FullFlagName(FlagImageBuildArch), Description: FlagImageBuildArchUsage},
 	},
 	Values: map[string]commands.CompleteValue{
 		//NOTE: with FlagPull target complete needs to check remote registries too
@@ -213,5 +215,27 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(commands.FlagRTAOnbuildBaseImage): commands.CompleteBool,
 		commands.FullFlagName(commands.FlagRTASourcePT):         commands.CompleteBool,
 		commands.FullFlagName(commands.FlagSensorIPCMode):       commands.CompleteIPCMode,
+		commands.FullFlagName(FlagImageBuildEngine):             CompleteImageBuildEngine,
+		commands.FullFlagName(FlagImageBuildArch):               CompleteImageBuildArch,
 	},
+}
+
+var imageBuildEngineValues = []prompt.Suggest{
+	{Text: IBENone, Description: "no image build engine (output image is not built)"},
+	{Text: IBEInternal, Description: "internal image build engine"},
+	{Text: IBEDocker, Description: "standard Docker image build engine"},
+	{Text: IBEBuildKit, Description: "BuildKit image build engine"},
+}
+
+func CompleteImageBuildEngine(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	return prompt.FilterHasPrefix(imageBuildEngineValues, token, true)
+}
+
+var imageBuildArchValues = []prompt.Suggest{
+	{Text: ArchAmd64, Description: "amd64 architecture"},
+	{Text: ArchArm64, Description: "arm64 architecture"},
+}
+
+func CompleteImageBuildArch(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+	return prompt.FilterHasPrefix(imageBuildArchValues, token, true)
 }
