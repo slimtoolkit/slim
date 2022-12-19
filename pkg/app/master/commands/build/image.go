@@ -460,7 +460,7 @@ func buildOutputImage(
 	return outputImageName
 }
 
-//NOTE: lots of C&P from image_builder (TODO: refactor)
+// NOTE: lots of C&P from image_builder (TODO: refactor)
 const (
 	dsCmdPortInfo = "65501/tcp"
 	dsEvtPortInfo = "65502/tcp"

@@ -531,7 +531,7 @@ func ParsePathsFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
 	return paths, nil
 }
 
-/////
+// ///
 func ParsePathsCreportFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
 	const op = "commands.ParsePathsCreportFile"
 	paths := map[string]*fsutil.AccessInfo{}

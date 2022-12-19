@@ -49,15 +49,15 @@ func NewSensor(
 
 // Sensor can be in two interchanging (and mutually exclusive) "states":
 //
-//  - (I) No monitor is running
-//        -> ShutdownSensor command arrives => clean exit
-//        -> StartMonitor command arrives   => go to state II.
-//        -> Any other command              => grumble but keep waiting
+//   - (I) No monitor is running
+//     -> ShutdownSensor command arrives => clean exit
+//     -> StartMonitor command arrives   => go to state II.
+//     -> Any other command              => grumble but keep waiting
 //
-//  - (II) Monitor is running
-//        -> StopMonitor command arrives    => stop the mon, dump the report, and go to state I.
-//        -> ShutdownSensor command arrives => cancel monitoring, grumble, and exit
-//        -> Any other command              => grumble but keep waiting
+//   - (II) Monitor is running
+//     -> StopMonitor command arrives    => stop the mon, dump the report, and go to state I.
+//     -> ShutdownSensor command arrives => cancel monitoring, grumble, and exit
+//     -> Any other command              => grumble but keep waiting
 func (s *Sensor) Run() error {
 	log.Info("sensor: waiting for commands...")
 

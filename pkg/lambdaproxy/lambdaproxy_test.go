@@ -13,7 +13,7 @@ var (
 	request *HTTPRequest
 )
 
-///WIP Test
+// /WIP Test
 func TestHandleRequest(t *testing.T) {
 
 	// Create a new HTTPProbeCmd
@@ -71,7 +71,7 @@ func TestEncodeRequest(t *testing.T) {
 `)
 }
 
-//function to decode response from lambda proxy
+// function to decode response from lambda proxy
 func TestDecodeResponse(t *testing.T) {
 
 	// Call DecodeResponse

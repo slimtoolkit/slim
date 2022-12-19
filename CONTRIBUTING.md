@@ -43,3 +43,7 @@ Yes :-)
 ### Pull Requests
 
 Standard guidelines for [pull requests](https://help.github.com/articles/using-pull-requests)
+
+### Sign Your Code
+
+Please certify your [Developer Certificate of Origin (DCO)](https://developercertificate.org/), by signing off your commit with `git commit -s` (use your real name).
