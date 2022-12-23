@@ -245,6 +245,11 @@ func (a *artifactor) GetCurrentPaths(root string, excludes []string) (map[string
 				}
 			}
 
+			if err != nil {
+				log.Warnf("sensor: getCurrentPaths() - skipping %s with error: %v", pth, err)
+				return nil
+			}
+
 			if !(info.Mode().IsRegular() || (info.Mode()&os.ModeSymlink) != 0) {
 				//need symlinks too
 				return nil
