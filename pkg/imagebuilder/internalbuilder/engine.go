@@ -173,7 +173,7 @@ func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
 			return err
 		}
 
-		log.Debug("DefaultSimpleBuilder.Build: pushed image to daemon - %s", imageLoadResponseStr)
+		log.Debugf("DefaultSimpleBuilder.Build: pushed image to daemon - %s", imageLoadResponseStr)
 		if ref.ShowBuildLogs {
 			//TBD (need execution context to display the build logs)
 		}
