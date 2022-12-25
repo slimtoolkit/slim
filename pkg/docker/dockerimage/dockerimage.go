@@ -84,6 +84,7 @@ type ImageReport struct {
 	OSShells     []*system.OSShell                `json:"shells,omitempty"`
 	Certs        CertsInfo                        `json:"certs"`
 	CACerts      CertsInfo                        `json:"ca_certs"`
+	BuildInfo    *BuildKitBuildInfo               `json:"build_info,omitempty"`
 }
 
 type DuplicateFilesReport struct {
@@ -529,6 +530,10 @@ func LoadPackage(archivePath string,
 				if err := jsonFromStream(tr, &imageConfig); err != nil {
 					log.Errorf("dockerimage.LoadPackage: error reading config object from archive(%v/%v) - %v", archivePath, configObjectFileName, err)
 					return nil, err
+				}
+
+				if imageConfig.BuildInfoRaw != "" {
+					imageConfig.BuildInfoDecoded, err = buildInfoDecode(imageConfig.BuildInfoRaw)
 				}
 
 				pkg.Config = &imageConfig

@@ -73,6 +73,10 @@ type ImageMetadata struct {
 	Distro         *DistroInfo        `json:"distro,omitempty"`
 	Buildpack      *BuildpackInfo     `json:"buildpack,omitempty"`
 	ContainerEntry ContainerEntryInfo `json:"container_entry"`
+
+	//Base image info
+	BaseImageDigest string `json:"base_image_digest,omitempty"`
+	BaseImageName   string `json:"base_image_name,omitempty"`
 }
 
 type ContainerEntryInfo struct {
@@ -146,7 +150,7 @@ type ProfileCommand struct {
 }
 
 // Output Version for 'xray'
-const OVXrayCommand = "1.2"
+const OVXrayCommand = "1.2.2"
 
 // XrayCommand is the 'xray' command report data
 type XrayCommand struct {
