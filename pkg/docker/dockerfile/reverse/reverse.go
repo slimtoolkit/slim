@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -50,29 +51,41 @@ type InstructionInfo struct {
 	Type string `json:"type"`
 	Time string `json:"time"`
 	//Time              time.Time `json:"time"`
-	IsLastInstruction   bool     `json:"is_last_instruction,omitempty"`
-	IsNop               bool     `json:"is_nop"`
-	IsExecForm          bool     `json:"is_exec_form,omitempty"` //is exec/json format (a valid field for RUN, ENTRYPOINT, CMD)
-	LocalImageExists    bool     `json:"local_image_exists"`
-	IntermediateImageID string   `json:"intermediate_image_id,omitempty"`
-	LayerIndex          int      `json:"layer_index"` //-1 for an empty layer
-	LayerID             string   `json:"layer_id,omitempty"`
-	LayerFSDiffID       string   `json:"layer_fsdiff_id,omitempty"`
-	Size                int64    `json:"size"`
-	SizeHuman           string   `json:"size_human,omitempty"`
-	Params              string   `json:"params,omitempty"`
-	CommandSnippet      string   `json:"command_snippet"`
-	CommandAll          string   `json:"command_all"`
-	SystemCommands      []string `json:"system_commands,omitempty"`
-	Comment             string   `json:"comment,omitempty"`
-	Author              string   `json:"author,omitempty"`
-	EmptyLayer          bool     `json:"empty_layer,omitempty"`
-	instPosition        string
-	imageFullName       string
-	RawTags             []string `json:"raw_tags,omitempty"`
-	Target              string   `json:"target,omitempty"`      //for ADD and COPY
-	SourceType          string   `json:"source_type,omitempty"` //for ADD and COPY
+	IsLastInstruction     bool     `json:"is_last_instruction,omitempty"`
+	IsNop                 bool     `json:"is_nop"`
+	IsExecForm            bool     `json:"is_exec_form,omitempty"` //is exec/json format (a valid field for RUN, ENTRYPOINT, CMD)
+	LocalImageExists      bool     `json:"local_image_exists"`
+	IntermediateImageID   string   `json:"intermediate_image_id,omitempty"`
+	LayerIndex            int      `json:"layer_index"` //-1 for an empty layer
+	LayerID               string   `json:"layer_id,omitempty"`
+	LayerFSDiffID         string   `json:"layer_fsdiff_id,omitempty"`
+	Size                  int64    `json:"size"`
+	SizeHuman             string   `json:"size_human,omitempty"`
+	Params                string   `json:"params,omitempty"`
+	CommandSnippet        string   `json:"command_snippet"`
+	CommandAll            string   `json:"command_all"`
+	SystemCommands        []string `json:"system_commands,omitempty"`
+	Comment               string   `json:"comment,omitempty"`
+	Author                string   `json:"author,omitempty"`
+	EmptyLayer            bool     `json:"empty_layer,omitempty"`
+	instPosition          string
+	imageFullName         string
+	RawTags               []string  `json:"raw_tags,omitempty"`
+	Target                string    `json:"target,omitempty"`      //for ADD and COPY
+	SourceType            string    `json:"source_type,omitempty"` //for ADD and COPY
+	IsBuildKitInstruction bool      `json:"is_buildkit_instruction,omitempty"`
+	BuildKitInfo          string    `json:"buildkit_info,omitempty"`
+	TimeValue             time.Time `json:"-"`
+	InstSetTimeBucket     time.Time `json:"inst_set_time_bucket,omitempty"`
+	InstSetTimeIndex      int       `json:"inst_set_time_index,omitempty"`
 }
+
+const (
+	buildkitCreatedBySuffix  = "# buildkit"
+	buildkitPrefix           = "buildkit."
+	buildkitDockerfilePrefix = "buildkit.dockerfile."
+	buildkitDockerfileV0     = "buildkit.dockerfile.v0"
+)
 
 //The 'History' API doesn't expose the 'author' in the records it returns
 //The 'author' field is useful in detecting if it's a Dockerfile instruction
@@ -90,6 +103,7 @@ const (
 
 const (
 	//MAINTAINER:
+	instTypeMaintainer   = "MAINTAINER"
 	instPrefixMaintainer = "MAINTAINER "
 	//ENTRYPOINT:
 	instTypeEntrypoint   = "ENTRYPOINT"
@@ -118,10 +132,66 @@ const (
 	instTypeAdd = "ADD"
 	//COPY:
 	instTypeCopy = "COPY"
+
+	instTypeVolume     = "VOLUME"
+	instTypeEnv        = "ENV"
+	instTypeLabel      = "LABEL"
+	instTypeStopSignal = "STOPSIGNAL"
+	instTypeShell      = "SHELL"
+	instTypeArg        = "ARG" //shouldn't see it as an standalone instruction
 )
+
+var instructionTypes = map[string]struct{}{
+	instTypeRun:         {},
+	instTypeEntrypoint:  {},
+	instTypeCmd:         {},
+	instTypeUser:        {},
+	instTypeExpose:      {},
+	instTypeWorkdir:     {},
+	instTypeHealthcheck: {},
+	instTypeOnbuild:     {},
+	instTypeAdd:         {},
+	instTypeCopy:        {},
+	instTypeMaintainer:  {},
+	instTypeVolume:      {},
+	instTypeEnv:         {},
+	instTypeLabel:       {},
+	instTypeStopSignal:  {},
+	instTypeShell:       {},
+	instTypeArg:         {},
+}
+
+func isInstructionType(input string) bool {
+	_, found := instructionTypes[input]
+	return found
+}
+
+func hasInstructionPrefix(input string) bool {
+	if !strings.Contains(input, " ") {
+		return false
+	}
+
+	parts := strings.SplitN(input, " ", 2)
+	return isInstructionType(parts[0])
+}
+
+const (
+	mapPrefix        = "map["
+	portMapKeySuffix = ":{}]"
+)
+
+type tbrecord struct {
+	index       int
+	instruction *InstructionInfo
+	tb          time.Time
+}
+
+const tbDuration = (15 * time.Minute)
 
 // DockerfileFromHistory recreates Dockerfile information from container image history
 func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfile, error) {
+	//TODO: make it possible to pass the history information as a param
+	//TODO: pass the other image metadata (including OCI and buildkit base image info)
 	imageHistory, err := apiClient.ImageHistory(imageID)
 	if err != nil {
 		return nil, err
@@ -131,7 +201,8 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 
 	log.Debugf("\n\nIMAGE HISTORY =>\n%#v\n\n", imageHistory)
 
-	var fatImageDockerInstructions []InstructionInfo
+	var timeBuckets = map[time.Time][]tbrecord{}
+	var reversedInstructions []*InstructionInfo
 	var currentImageInfo *ImageInfo
 	var prevImageID string
 
@@ -140,10 +211,25 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 	startNewImage := true
 	if imageLayerCount > 0 {
 		for idx := imageLayerStart; idx >= 0; idx-- {
-			isNop := false
-
 			rawLine := imageHistory[idx].CreatedBy
+
+			var isNop bool
 			var inst string
+
+			var isBuildKitInstruction bool
+			if strings.HasSuffix(rawLine, buildkitCreatedBySuffix) {
+				isBuildKitInstruction = true
+				rawLine = strings.TrimSuffix(rawLine, buildkitCreatedBySuffix)
+			}
+
+			var rawInst string
+			isRunInst := strings.HasPrefix(rawLine, instPrefixRun)
+			if isRunInst {
+				parts := strings.SplitN(rawLine, " ", 2)
+				rawInst = parts[1]
+			} else {
+				rawInst = rawLine
+			}
 
 			if strings.Contains(rawLine, "#(nop)") {
 				isNop = true
@@ -152,14 +238,17 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 			isExecForm := false
 
 			switch {
-			case len(rawLine) == 0:
+			case len(rawInst) == 0:
 				inst = ""
-			case strings.HasPrefix(rawLine, notRunInstPrefix):
+				//NOTE:
+				//still keeping a placeholder for the empty instructions in history
+				//because not all builders populate all history record fields (e.g., buildkits)
+			case strings.HasPrefix(rawInst, notRunInstPrefix):
 				//Instructions that are not RUN
-				inst = strings.TrimPrefix(rawLine, notRunInstPrefix)
-			case strings.HasPrefix(rawLine, runInstShellPrefix):
+				inst = strings.TrimPrefix(rawInst, notRunInstPrefix)
+			case strings.HasPrefix(rawInst, runInstShellPrefix):
 				//RUN instruction in shell form
-				runData := strings.TrimPrefix(rawLine, runInstShellPrefix)
+				runData := strings.TrimPrefix(rawInst, runInstShellPrefix)
 				if strings.Contains(runData, "&&") {
 					parts := strings.Split(runData, "&&")
 					for i := range parts {
@@ -177,7 +266,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 			default:
 				//TODO: need to refactor
 				processed := false
-				rawInst := rawLine
+				//rawInst := rawLine
 				if strings.HasPrefix(rawInst, runInstArgsPrefix) {
 					parts := strings.SplitN(rawInst, " ", 2)
 					if len(parts) == 2 {
@@ -222,18 +311,22 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 						log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - unexpected number of parts - %v", rawInst)
 					}
 				}
-
-				if !processed {
-					//default to RUN instruction in exec form
-					isExecForm = true
-					inst = instPrefixRun + rawInst
-					if outArray, err := shlex.Split(rawInst); err == nil {
-						var outJson bytes.Buffer
-						encoder := json.NewEncoder(&outJson)
-						encoder.SetEscapeHTML(false)
-						err := encoder.Encode(outArray)
-						if err == nil {
-							inst = fmt.Sprintf("RUN %s", outJson.String())
+				//todo: RUN inst with ARGS for buildkit
+				if hasInstructionPrefix(rawInst) {
+					inst = rawInst
+				} else {
+					if !processed {
+						//default to RUN instruction in exec form
+						isExecForm = true
+						inst = instPrefixRun + rawInst
+						if outArray, err := shlex.Split(rawInst); err == nil {
+							var outJson bytes.Buffer
+							encoder := json.NewEncoder(&outJson)
+							encoder.SetEscapeHTML(false)
+							err := encoder.Encode(outArray)
+							if err == nil {
+								inst = fmt.Sprintf("RUN %s", outJson.String())
+							}
 						}
 					}
 				}
@@ -302,6 +395,12 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				parts := strings.SplitN(cleanInst, " ", 2)
 				if len(parts) == 2 {
 					portInfo := strings.TrimSpace(parts[1])
+					if strings.HasPrefix(portInfo, mapPrefix) &&
+						strings.HasSuffix(portInfo, portMapKeySuffix) {
+						portInfo = strings.TrimPrefix(portInfo, mapPrefix)
+						portInfo = strings.TrimSuffix(portInfo, portMapKeySuffix)
+						cleanInst = fmt.Sprintf("EXPOSE %s", portInfo)
+					}
 
 					out.ExposedPorts = append(out.ExposedPorts, portInfo)
 				} else {
@@ -310,14 +409,22 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 			}
 
 			instInfo := InstructionInfo{
-				IsNop:      isNop,
-				IsExecForm: isExecForm,
-				CommandAll: cleanInst,
-				Time:       time.Unix(imageHistory[idx].Created, 0).UTC().Format(time.RFC3339),
-				//Time:    time.Unix(imageHistory[idx].Created, 0),
-				Comment: imageHistory[idx].Comment,
-				RawTags: imageHistory[idx].Tags,
-				Size:    imageHistory[idx].Size,
+				IsNop:                 isNop,
+				IsExecForm:            isExecForm,
+				CommandAll:            cleanInst,
+				Time:                  time.Unix(imageHistory[idx].Created, 0).UTC().Format(time.RFC3339),
+				TimeValue:             time.Unix(imageHistory[idx].Created, 0),
+				Comment:               imageHistory[idx].Comment,
+				RawTags:               imageHistory[idx].Tags,
+				Size:                  imageHistory[idx].Size,
+				IsBuildKitInstruction: isBuildKitInstruction,
+				InstSetTimeIndex:      -1,
+			}
+
+			instInfo.InstSetTimeBucket = instInfo.TimeValue.Truncate(tbDuration)
+
+			if strings.HasPrefix(instInfo.Comment, buildkitPrefix) {
+				instInfo.IsBuildKitInstruction = true
 			}
 
 			instParts := strings.SplitN(cleanInst, " ", 2)
@@ -331,7 +438,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 
 			if instInfo.CommandAll == "" {
 				instInfo.Type = "NONE"
-				instInfo.CommandAll = "#no instruction info"
+				instInfo.CommandAll = "# no instruction info"
 			}
 
 			if instInfo.Type == instTypeRun {
@@ -361,18 +468,20 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 
 			switch instInfo.Type {
 			case instTypeAdd, instTypeCopy:
-				pparts := strings.SplitN(instInfo.Params, ":", 2)
-				if len(pparts) == 2 {
-					instInfo.SourceType = pparts[0]
-					tparts := strings.SplitN(pparts[1], " in ", 2)
-					if len(tparts) == 2 {
-						instInfo.Target = tparts[1]
+				if strings.Contains(instInfo.Params, ":") && strings.Contains(instInfo.Params, " in ") {
+					pparts := strings.SplitN(instInfo.Params, ":", 2)
+					if len(pparts) == 2 {
+						instInfo.SourceType = pparts[0]
+						tparts := strings.SplitN(pparts[1], " in ", 2)
+						if len(tparts) == 2 {
+							instInfo.Target = tparts[1]
 
-						instInfo.CommandAll = fmt.Sprintf("%s %s:%s %s",
-							instInfo.Type,
-							instInfo.SourceType,
-							tparts[0],
-							instInfo.Target)
+							instInfo.CommandAll = fmt.Sprintf("%s %s:%s %s",
+								instInfo.Type,
+								instInfo.SourceType,
+								tparts[0],
+								instInfo.Target)
+						}
 					}
 				}
 			}
@@ -452,7 +561,14 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 
 			instInfo.instPosition = instPosition
 
-			fatImageDockerInstructions = append(fatImageDockerInstructions, instInfo)
+			reversedInstructions = append(reversedInstructions, &instInfo)
+
+			tbr := tbrecord{
+				index:       len(reversedInstructions) - 1,
+				instruction: &instInfo,
+				tb:          instInfo.InstSetTimeBucket,
+			}
+			timeBuckets[instInfo.InstSetTimeBucket] = append(timeBuckets[instInfo.InstSetTimeBucket], tbr)
 		}
 
 		if currentImageInfo != nil {
@@ -460,12 +576,41 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 		}
 	}
 
+	tkeys := make([]time.Time, 0, len(timeBuckets))
+	for k := range timeBuckets {
+		tkeys = append(tkeys, k)
+	}
+
+	sort.SliceStable(tkeys, func(i, j int) bool { return tkeys[i].Before(tkeys[j]) })
+	for i, k := range tkeys {
+		tbrList := timeBuckets[k]
+		for _, tbr := range tbrList {
+			tbr.instruction.InstSetTimeIndex = i
+		}
+	}
+
 	//Always adding "FROM scratch" as the first line
 	//GOAL: to have a reversed Dockerfile that can be used to build a new image
 	out.Lines = append(out.Lines, "FROM scratch")
-	for idx, instInfo := range fatImageDockerInstructions {
+	prevInstSetTimeIndex := -1
+	for idx, instInfo := range reversedInstructions {
 		if instInfo.instPosition == "first" {
 			out.Lines = append(out.Lines, "# new image")
+		}
+
+		if instInfo.InstSetTimeIndex != prevInstSetTimeIndex {
+			out.Lines = append(out.Lines, fmt.Sprintf("\n# instruction set group %d\n", instInfo.InstSetTimeIndex+1))
+			prevInstSetTimeIndex = instInfo.InstSetTimeIndex
+		}
+
+		if instInfo.Comment != "" {
+			outComment := fmt.Sprintf("# %s", instInfo.Comment)
+			if instInfo.IsBuildKitInstruction {
+				outComment = fmt.Sprintf("%s (a buildkit instruction)", outComment)
+			}
+			out.Lines = append(out.Lines, outComment)
+		} else if instInfo.IsBuildKitInstruction {
+			out.Lines = append(out.Lines, "# a buildkit instruction")
 		}
 
 		out.Lines = append(out.Lines, instInfo.CommandAll)
@@ -475,16 +620,10 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 
 			out.Lines = append(out.Lines, commentText)
 			out.Lines = append(out.Lines, "")
-			if idx < (len(fatImageDockerInstructions) - 1) {
+			if idx < (len(reversedInstructions) - 1) {
 				out.Lines = append(out.Lines, "# new image")
 			}
 		}
-
-		if instInfo.Comment != "" {
-			out.Lines = append(out.Lines, "# "+instInfo.Comment)
-		}
-
-		//TODO: use time diff to separate each instruction
 	}
 
 	log.Debugf("IMAGE INSTRUCTIONS:")
