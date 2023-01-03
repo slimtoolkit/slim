@@ -19,7 +19,7 @@
 
 Note that **DockerSlim** is now just **Slim** (**SlimToolkit** is the full name, so it's easier to find it online) to show its growing support for additional container tools and runtimes in the cloud native ecosystem.
 
-**Slim** was created by [Kyle](https://github.com/kcq) [Quest](https://twitter.com/kcqon) and it's been improved by many [contributors](https://github.com/slimtoolkits/slim/graphs/contributors). The project is supported by [Slim.AI](https://slim.ai).
+**Slim** was created by [Kyle](https://github.com/kcq) [Quest](https://twitter.com/kcqon) and it's been improved by many [contributors](https://github.com/slimtoolkit/slim/graphs/contributors). The project is supported by [Slim.AI](https://slim.ai).
 
 ## Overview
 
