@@ -11,7 +11,7 @@ jobs:
   test:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out docker-slim/docker-slim repo
+      - name: Check out slimtoolkit/slim repo
         uses: actions/checkout@v3
 
       - name: Set up Go development environment

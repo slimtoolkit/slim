@@ -18,7 +18,7 @@ const appName = commands.AppName
 
 type ovars = app.OutVars
 
-// OnCommand implements the 'edit' docker-slim command
+// OnCommand implements the 'edit' command
 func OnCommand(
 	xc *app.ExecutionContext,
 	gparams *commands.GenericParams,
@@ -41,7 +41,7 @@ func OnCommand(
 	if err == dockerclient.ErrNoDockerInfo {
 		exitMsg := "missing Docker connection info"
 		if gparams.InContainer && gparams.IsDSImage {
-			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
+			exitMsg = "make sure to pass the Docker connect parameters to the slim app container"
 		}
 
 		xc.Out.Info("docker.connect.error",

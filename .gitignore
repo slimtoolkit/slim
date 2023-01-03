@@ -1,6 +1,8 @@
 .DS_Store
 /docker-slim
+/slim
 /docker-slim-sensor
+/slim-sensor
 /dist_linux*/
 /dist_mac/
 /dist_mac_m1/

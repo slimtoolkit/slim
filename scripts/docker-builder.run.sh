@@ -7,7 +7,7 @@ while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
 BDIR="$( cd -P "$( dirname "$SOURCE" )/.." && pwd )"
 
 pushd $BDIR
-docker run -v $(pwd):/go/src/github.com/docker-slim/docker-slim -w /go/src/github.com/docker-slim/docker-slim -it --rm --name="docker-slim-builder" golang:1.19 make build
+docker run -v $(pwd):/go/src/github.com/slimtoolkit/slim -w /go/src/github.com/slimtoolkit/slim -it --rm --name="slim-builder" golang:1.19 make build
 
 if [ ! -f dist_mac.zip ]; then
 if hash zip 2> /dev/null; then

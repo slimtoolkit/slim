@@ -45,10 +45,10 @@ func NewInteractiveApp(app *cli.App, gparams *GenericParams) *InteractiveApp {
 	if err == dockerclient.ErrNoDockerInfo {
 		exitMsg := "missing Docker connection info"
 		if gparams.InContainer && gparams.IsDSImage {
-			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
+			exitMsg = "make sure to pass the Docker connect parameters to the slim app container"
 		}
-		fmt.Printf("docker-slim: info=docker.connect.error message='%s'\n", exitMsg)
-		fmt.Printf("docker-slim: state=exited version=%s location='%s'\n", version.Current(), fsutil.ExeDir())
+		fmt.Printf("slim: info=docker.connect.error message='%s'\n", exitMsg)
+		fmt.Printf("slim: state=exited version=%s location='%s'\n", version.Current(), fsutil.ExeDir())
 		os.Exit(-777)
 	}
 	errutil.FailOn(err)

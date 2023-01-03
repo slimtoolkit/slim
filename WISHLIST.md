@@ -2,7 +2,7 @@
 
 This is a list of non-core related enhancements and features. If you want to help feel free to submit a PR! You can also open an issue to track the work and to have a place to talk about it.
 
-## Publish DockerSlim to various package repos
+## Publish Slim to various package repos
 
 Package Managers:
 

@@ -32,7 +32,7 @@ jobs:
         with:
           go-version: ${{ matrix.go }}
 
-      - name: Build DockerSlim (quick dev)
+      - name: Build Slim (quick dev)
         run: make build_dev
 
       - name: Run the bats test suite

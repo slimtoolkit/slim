@@ -15,7 +15,7 @@ import (
 type ovars = app.OutVars
 
 const (
-	LocalBinFile       = "docker-slim-sensor"
+	LocalBinFile       = "slim-sensor"
 	DefaultConnectWait = 60
 )
 

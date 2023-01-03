@@ -39,16 +39,16 @@ import (
 const (
 	SensorIPCModeDirect = "direct"
 	SensorIPCModeProxy  = "proxy"
-	SensorBinPath       = "/opt/dockerslim/bin/docker-slim-sensor"
-	ContainerNamePat    = "dockerslimk_%v_%v"
+	SensorBinPath       = "/opt/_slim/bin/slim-sensor"
+	ContainerNamePat    = "slimk_%v_%v"
 	ArtifactsDir        = "artifacts"
 	ReportArtifactTar   = "creport.tar"
 	fileArtifactsTar    = "files.tar"
 	FileArtifactsOutTar = "files_out.tar"
 	// FileArtifactsArchiveTar = "files_archive.tar"
-	SensorMountPat       = "%s:/opt/dockerslim/bin/docker-slim-sensor:ro"
-	VolumeSensorMountPat = "%s:/opt/dockerslim/bin:ro"
-	LabelName            = "dockerslim"
+	SensorMountPat       = "%s:/opt/_slim/bin/slim-sensor:ro"
+	VolumeSensorMountPat = "%s:/opt/_slim/bin:ro"
+	LabelName            = "_slim"
 )
 
 type ovars = app.OutVars
@@ -63,7 +63,7 @@ var (
 var ErrStartMonitorTimeout = goerr.New("start monitor timeout")
 
 const (
-	sensorVolumeBaseName = "docker-slim-sensor"
+	sensorVolumeBaseName = "slim-sensor"
 )
 
 type NetNameInfo struct {
@@ -424,7 +424,7 @@ func (i *Inspector) RunContainer() error {
 
 	//var artifactsMountInfo string
 	if i.DoUseLocalMounts {
-		//"%s:/opt/dockerslim/artifacts"
+		//"%s:/opt/_slim/artifacts"
 		//artifactsMountInfo = fmt.Sprintf(ArtifactsMountPat, artifactsPath)
 		//volumeBinds = append(volumeBinds, artifactsMountInfo)
 		vm := dockerapi.HostMount{
@@ -464,7 +464,7 @@ func (i *Inspector) RunContainer() error {
 		vm := dockerapi.HostMount{
 			Type:     "volume",
 			Source:   volumeName,
-			Target:   "/opt/dockerslim/bin",
+			Target:   "/opt/_slim/bin",
 			ReadOnly: true,
 		}
 
@@ -706,7 +706,7 @@ func (i *Inspector) RunContainer() error {
 	go func() {
 		<-signals
 		_ = i.APIClient.KillContainer(dockerapi.KillContainerOptions{ID: i.ContainerID})
-		i.logger.Fatalf("KillContainer: docker-slim received SIGINT, killing container %s", i.ContainerID)
+		i.logger.Fatalf("KillContainer: slim received SIGINT, killing container %s", i.ContainerID)
 	}()
 
 	if err := i.APIClient.StartContainer(i.ContainerID, nil); err != nil {
@@ -718,12 +718,12 @@ func (i *Inspector) RunContainer() error {
 		return err
 	}
 
-	errutil.FailWhen(i.ContainerInfo.NetworkSettings == nil, "docker-slim: error => no network info")
+	errutil.FailWhen(i.ContainerInfo.NetworkSettings == nil, "slim: error => no network info")
 
 	if hCfg := i.ContainerInfo.HostConfig; hCfg != nil && !i.isHostNetworked() {
 		i.logger.Debugf("RunContainer: container HostConfig.NetworkMode => %s len(ports)=%d",
 			hCfg.NetworkMode, len(i.ContainerInfo.NetworkSettings.Ports))
-		errutil.FailWhen(len(i.ContainerInfo.NetworkSettings.Ports) < len(commsExposedPorts), "docker-slim: error => missing comms ports")
+		errutil.FailWhen(len(i.ContainerInfo.NetworkSettings.Ports) < len(commsExposedPorts), "slim: error => missing comms ports")
 	}
 
 	i.logger.Debugf("RunContainer: container NetworkSettings.Ports => %#v", i.ContainerInfo.NetworkSettings.Ports)
@@ -836,7 +836,7 @@ func (i *Inspector) RunContainer() error {
 						})
 				}
 
-				i.logger.Debug("timeout waiting for the docker-slim container to start...")
+				i.logger.Debug("timeout waiting for the slim container to start...")
 				continue
 			}
 
@@ -844,7 +844,7 @@ func (i *Inspector) RunContainer() error {
 		}
 
 		if evt == nil || evt.Name == "" {
-			i.logger.Warn("empty event waiting for the docker-slim container to start (trying again)...")
+			i.logger.Warn("empty event waiting for the slim container to start (trying again)...")
 			continue
 		}
 
@@ -1102,11 +1102,11 @@ func (i *Inspector) ShowContainerLogs() {
 	} else {
 		outw.Flush()
 		errw.Flush()
-		fmt.Println("docker-slim: container stdout:")
+		fmt.Println("slim: container stdout:")
 		_, _ = outData.WriteTo(os.Stdout)
-		fmt.Println("docker-slim: container stderr:")
+		fmt.Println("slim: container stderr:")
 		_, _ = errData.WriteTo(os.Stdout)
-		fmt.Println("docker-slim: end of container logs =============")
+		fmt.Println("slim: end of container logs =============")
 	}
 }
 
@@ -1172,7 +1172,7 @@ func (i *Inspector) ShutdownContainer() error {
 	err := i.APIClient.StopContainer(i.ContainerID, 9)
 
 	if _, ok := err.(*dockerapi.ContainerNotRunning); ok {
-		i.logger.Info("can't stop the docker-slim container (container is not running)...")
+		i.logger.Info("can't stop the slim container (container is not running)...")
 	} else {
 		errutil.WarnOn(err)
 	}
@@ -1242,7 +1242,7 @@ func (i *Inspector) initContainerChannels() error {
 	ipAddr := i.ContainerInfo.NetworkSettings.IPAddress
 	if cn != "" {
 		network, found := i.ContainerInfo.NetworkSettings.Networks[cn]
-		errutil.FailWhen(!found, fmt.Sprintf("docker-slim: error => expected NetworkSettings.Networks to contain %s: %v",
+		errutil.FailWhen(!found, fmt.Sprintf("slim: error => expected NetworkSettings.Networks to contain %s: %v",
 			cn, i.ContainerInfo.NetworkSettings.Networks))
 
 		ipAddr = network.IPAddress

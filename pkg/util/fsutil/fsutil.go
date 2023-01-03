@@ -134,7 +134,7 @@ func FileModeIsSetuid(mode os.FileMode) bool {
 }
 
 const (
-	rootStateKey           = ".docker-slim-state"
+	rootStateKey           = ".slim-state"
 	releasesStateKey       = "releases"
 	imageStateBaseKey      = "images"
 	imageStateArtifactsKey = "artifacts"
@@ -153,8 +153,8 @@ var badInstallPaths = [...]string{
 
 const (
 	tmpPath        = "/tmp"
-	stateTmpPath   = "/tmp/docker-slim-state"
-	sensorFileName = "docker-slim-sensor"
+	stateTmpPath   = "/tmp/slim-state"
+	sensorFileName = "slim-sensor"
 )
 
 // AccessInfo provides the file object access properties

@@ -11,7 +11,7 @@ import (
 
 const (
 	Name  = "update"
-	Usage = "Updates docker-slim"
+	Usage = "Updates slim"
 	Alias = "u"
 )
 

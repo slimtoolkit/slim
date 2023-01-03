@@ -375,7 +375,7 @@ func (a *artifactor) Archive() error {
 		return err
 	}
 
-	// We archive everything in the /otp/dockerslim/artifacts folder
+	// We archive everything in the /opt/_slim/artifacts folder
 	// except (rather legacy and potentially large) `files` and `files.tar` entries.
 	// In particular, this may include:
 	//   - creport.json
@@ -1204,8 +1204,8 @@ func (p *artifactStore) saveArtifacts() {
 	syscall.Umask(0)
 
 	excludePatterns := p.cmd.Excludes
-	excludePatterns = append(excludePatterns, "/opt/dockerslim")
-	excludePatterns = append(excludePatterns, "/opt/dockerslim/**")
+	excludePatterns = append(excludePatterns, "/opt/_slim")
+	excludePatterns = append(excludePatterns, "/opt/_slim/**")
 	log.Debugf("saveArtifacts - excludePatterns(%v): %+v", len(excludePatterns), excludePatterns)
 
 	includePaths = preparePaths(getKeys(p.cmd.Includes))
@@ -2010,7 +2010,7 @@ func (p *artifactStore) enumerateArtifacts() {
 
 		// Leaf element - empty dir.
 		if len(entries) == 0 {
-			// Trim /opt/dockerslim/artifacts/files prefix from the dirpath.
+			// Trim /opt/_slim/artifacts/files prefix from the dirpath.
 			curpath = strings.TrimPrefix(curpath, artifactFilesDir)
 
 			if knownFiles[curpath] {
@@ -2037,7 +2037,7 @@ func (p *artifactStore) enumerateArtifacts() {
 				continue
 			}
 
-			// Trim /opt/dockerslim/artifacts/files prefix from the filepath.
+			// Trim /opt/_slim/artifacts/files prefix from the filepath.
 			childpath = strings.TrimPrefix(childpath, artifactFilesDir)
 
 			// Leaf element - regular file or symlink.

@@ -24,7 +24,7 @@ const appName = commands.AppName
 
 type ovars = app.OutVars
 
-// OnPullCommand implements the 'registry pull' docker-slim command
+// OnPullCommand implements the 'registry pull' command
 func OnPullCommand(
 	xc *app.ExecutionContext,
 	gparams *commands.GenericParams,

@@ -2,8 +2,8 @@ package consts
 
 // App version constants
 const (
-	AppName              = "docker-slim"
+	AppName              = "slim"
 	AppVersionName       = "Transformer"
-	ContainerLabelName   = "docker-slim.version"
-	SourceImageLabelName = "docker-slim.source.image"
+	ContainerLabelName   = "slimtoolkit.version"
+	SourceImageLabelName = "slimtoolkit.source.image"
 )

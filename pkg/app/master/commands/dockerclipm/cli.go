@@ -29,9 +29,9 @@ var CLI = &cli.Command{
 	Action: func(ctx *cli.Context) error {
 		metadata := pluginMetadata{
 			SchemaVersion:    "0.1.0",
-			Vendor:           "DockerSlim",
+			Vendor:           "SlimToolkit",
 			Version:          version.Current(),
-			ShortDescription: "DockerSlim commands (build=minify, xray=static analyze, profile=dynamic analyze, lint=validate, more)",
+			ShortDescription: "SlimToolkit commands (build=minify, xray=static analyze, profile=dynamic analyze, lint=validate, more)",
 			URL:              "https://dockersl.im",
 		}
 

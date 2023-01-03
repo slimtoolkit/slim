@@ -16,18 +16,18 @@ import (
 
 type ovars = app.OutVars
 
-// OnCommand implements the 'version' docker-slim command
+// OnCommand implements the 'version' command
 func OnCommand(
 	xc *app.ExecutionContext,
 	doDebug, inContainer, isDSImage bool,
 	clientConfig *config.DockerClient) {
-	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": command.Version})
+	logger := log.WithFields(log.Fields{"app": "slim", "command": command.Version})
 
 	client, err := dockerclient.New(clientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
 		exitMsg := "missing Docker connection info"
 		if inContainer && isDSImage {
-			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
+			exitMsg = "make sure to pass the Docker connect parameters to the slim app container"
 		}
 
 		xc.Out.Info("docker.connect.error",

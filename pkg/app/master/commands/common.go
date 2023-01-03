@@ -86,8 +86,8 @@ const (
 )
 
 const (
-	AppName = "docker-slim"
-	appName = "docker-slim"
+	AppName = "slim"
+	appName = "slim"
 )
 
 //Common command handler code

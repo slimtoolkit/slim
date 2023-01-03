@@ -38,15 +38,15 @@ type ovars = app.OutVars
 
 // TODO: unify with similar constants in container_inspector.go
 const (
-	sensorVolumeName      = "dockerslim-sensor"
-	sensorVolumeMountPath = "/opt/dockerslim/bin"
+	sensorVolumeName      = "slim-sensor"
+	sensorVolumeMountPath = "/opt/_slim/bin"
 	sensorBinFileAbs      = sensorVolumeMountPath + "/" + sensor.LocalBinFile
-	sensorLoaderContainer = "dockerslim-sensor-loader"
+	sensorLoaderContainer = "slim-sensor-loader"
 
-	artifactsVolumeName = "dockerslim-artifacts"
+	artifactsVolumeName = "slim-artifacts"
 
 	targetPodLabelName = "dockersl.im/target-pod"
-	targetPodLabelPat  = "dockerslimk_%v_%v"
+	targetPodLabelPat  = "slimk_%v_%v"
 )
 
 type portInfo struct {
@@ -253,9 +253,9 @@ func (i *Inspector) FinishMonitoring() {
 
 func (i *Inspector) ShowPodLogs() {
 	// TODO: Implement me!
-	fmt.Println("docker-slim: pod stdout:")
-	fmt.Println("docker-slim: pod stderr:")
-	fmt.Println("docker-slim: end of pod logs =============")
+	fmt.Println("slim: pod stdout:")
+	fmt.Println("slim: pod stderr:")
+	fmt.Println("slim: end of pod logs =============")
 }
 
 func (i *Inspector) ShutdownPod(resetChanges bool) {
@@ -632,7 +632,7 @@ func (i *Inspector) sensorCommandStart() error {
 						"status": "receive.timeout",
 					})
 
-				i.logger.Debug("timeout waiting for the docker-slim container to start...")
+				i.logger.Debug("timeout waiting for the slim container to start...")
 				continue
 			}
 
@@ -640,7 +640,7 @@ func (i *Inspector) sensorCommandStart() error {
 		}
 
 		if evt == nil || evt.Name == "" {
-			i.logger.Debug("empty event waiting for the docker-slim container to start (trying again)...")
+			i.logger.Debug("empty event waiting for the slim container to start (trying again)...")
 			continue
 		}
 

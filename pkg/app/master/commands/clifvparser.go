@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	DefaultStateArchiveVolumeName = "docker-slim-state"
+	DefaultStateArchiveVolumeName = "slim-state"
 )
 
 func IsInContainer(flag bool) (bool, bool) {

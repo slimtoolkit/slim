@@ -317,8 +317,8 @@ func (i *Inspector) ProcessCollectedData() error {
 // ShowFatImageDockerInstructions prints the original target image Dockerfile instructions
 func (i *Inspector) ShowFatImageDockerInstructions() {
 	if i.DockerfileInfo != nil && i.DockerfileInfo.Lines != nil {
-		fmt.Println("docker-slim: Fat image - Dockerfile instructures: start ====")
+		fmt.Println("slim: Fat image - Dockerfile instructures: start ====")
 		fmt.Println(strings.Join(i.DockerfileInfo.Lines, "\n"))
-		fmt.Println("docker-slim: Fat image - Dockerfile instructures: end ======")
+		fmt.Println("slim: Fat image - Dockerfile instructures: end ======")
 	}
 }

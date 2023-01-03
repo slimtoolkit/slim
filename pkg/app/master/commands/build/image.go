@@ -217,7 +217,7 @@ func buildFatImage(
 			xc.Exit(exitCode)
 		}
 	} else {
-		fatImageRepoNameTag = fmt.Sprintf("docker-slim-tmp-fat-image.%v.%v",
+		fatImageRepoNameTag = fmt.Sprintf("slim-tmp-fat-image.%v.%v",
 			os.Getpid(), time.Now().UTC().Format("20060102150405"))
 	}
 

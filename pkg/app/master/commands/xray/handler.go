@@ -48,7 +48,7 @@ const (
 	azureLabelBaseImageDigest = "image.base.digest"
 )
 
-// OnCommand implements the 'xray' docker-slim command
+// OnCommand implements the 'xray' command
 func OnCommand(
 	xc *app.ExecutionContext,
 	gparams *commands.GenericParams,
