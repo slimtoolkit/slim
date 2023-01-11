@@ -73,10 +73,10 @@ function get_slim() {
   # /usr/local/bin should be present on Linux and macOS hosts. Just be sure.
   if [ -d /usr/local/bin ]; then
     echo " - Placing slim in /usr/local/bin"
-    mv "${TMP_DIR}/dist_${DIST}/slim" /usr/local/bin/
-    mv "${TMP_DIR}/dist_${DIST}/slim-sensor" /usr/local/bin/
-    chmod +x /usr/local/bin/slim
-    chmod +x /usr/local/bin/slim-sensor
+    mv "${TMP_DIR}/dist_${DIST}/docker-slim" /usr/local/bin/
+    mv "${TMP_DIR}/dist_${DIST}/docker-slim-sensor" /usr/local/bin/
+    chmod +x /usr/local/bin/docker-slim
+    chmod +x /usr/local/bin/docker-slim-sensor
 
     echo " - Cleaning up"
     rm -rf "${TMP_DIR}"
