@@ -11,8 +11,7 @@ function get_slim() {
   local VER=""
 
   # Get the current released tag_name
-  VER=$(curl -sL https://api.github.com/repos/docker-slim/docker-slim/releases \
-        | grep tag_name | head -n1 | cut -d'"' -f4)
+  VER="1.39.0"
 
   if [ -n "${VER}" ]; then
     URL="https://downloads.dockerslim.com/releases/${VER}"
