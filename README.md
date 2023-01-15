@@ -197,9 +197,9 @@ Elixir application images:
 
 ## RECENT UPDATES
 
-Latest version: 1.39.1 (11/12/2022)
+Latest version: 1.40.0 (1/15/2023)
 
-The 1.37.x, 1.38.x and 1.39.x releases add an experimental docker-compose support and various improved application tracing capabilities for the build command.
+The 1.37.x-1.40.x releases add an experimental docker-compose support and various improved application tracing capabilities for the build command.
 
 For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
@@ -216,15 +216,15 @@ slim update
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.39.1/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.39.1/dist_mac.zip`)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.40.0/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.0/dist_mac.zip`)
 
-   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.39.1/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.39.1/dist_mac_m1.zip`)
+   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.40.0/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.0/dist_mac_m1.zip`)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.39.1/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.39.1/dist_linux.tar.gz`)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.40.0/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.0/dist_linux.tar.gz`)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.39.1/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.39.1/dist_linux_arm.tar.gz`)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.40.0/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.0/dist_linux_arm.tar.gz`)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.39.1/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.39.1/dist_linux_arm64.tar.gz`)
+   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.40.0/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.0/dist_linux_arm64.tar.gz`)
 
 2. Unzip the package and optionally move it to your bin directory.
 
@@ -781,11 +781,11 @@ The demo runs on Mac OS X, but you can build a linux version. Note that these st
 
 1. Get the Slim app binaries:
 
-* [Mac](https://downloads.dockerslim.com/releases/1.39.1/dist_mac.zip),
-* [Mac M1](https://downloads.dockerslim.com/releases/1.39.1/dist_mac_m1.zip), 
-* [Linux](https://downloads.dockerslim.com/releases/1.39.1/dist_linux.tar.gz), 
-* [Linux ARM](https://downloads.dockerslim.com/releases/1.39.1/dist_linux_arm.tar.gz),
-* [Linux ARM64](https://downloads.dockerslim.com/releases/1.39.1/dist_linux_arm64.tar.gz) 
+* [Mac](https://downloads.dockerslim.com/releases/1.40.0/dist_mac.zip),
+* [Mac M1](https://downloads.dockerslim.com/releases/1.40.0/dist_mac_m1.zip), 
+* [Linux](https://downloads.dockerslim.com/releases/1.40.0/dist_linux.tar.gz), 
+* [Linux ARM](https://downloads.dockerslim.com/releases/1.40.0/dist_linux_arm.tar.gz),
+* [Linux ARM64](https://downloads.dockerslim.com/releases/1.40.0/dist_linux_arm64.tar.gz) 
 
 Unzip them and optionally add their directory to your `PATH` environment variable if you want to use the app from other locations.
 
