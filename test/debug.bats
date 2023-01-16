@@ -13,7 +13,7 @@ teardown() {
 }
 
 function debug_command_with_default_image_works { # @test
-    run docker-slim debug debug_me -- ps
+    run slim debug debug_me -- ps
 
     assert [ $status -eq 0 ]
 
@@ -21,7 +21,7 @@ function debug_command_with_default_image_works { # @test
 }
 
 function debug_command_with_custom_image_works { # @test
-    run docker-slim debug --debug-image busybox debug_me -- cat /proc/1/root/etc/os-release
+    run slim debug --debug-image busybox debug_me -- cat /proc/1/root/etc/os-release
 
     assert [ $status -eq 0 ]
 
