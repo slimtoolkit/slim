@@ -209,7 +209,7 @@ const (
 
 	FlagHTTPProbeUsage                 = "Enable or disable HTTP probing"
 	FlagHTTPProbeOffUsage              = "Alternative way to disable HTTP probing"
-	FlagHTTPProbeCmdUsage              = "User defined HTTP probes"
+	FlagHTTPProbeCmdUsage              = "User defined HTTP probe(s) as [[[[\"crawl\":]PROTO:]METHOD:]PATH]"
 	FlagHTTPProbeCmdFileUsage          = "File with user defined HTTP probes"
 	FlagHTTPProbeStartWaitUsage        = "Number of seconds to wait before starting HTTP probing"
 	FlagHTTPProbeRetryCountUsage       = "Number of retries for each HTTP probe"
