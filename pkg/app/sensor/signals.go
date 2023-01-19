@@ -22,7 +22,7 @@ var signals = []os.Signal{
 	syscall.SIGCONT,
 }
 
-func initSignalHandlers(cleanup func()) {
+func startSystemSignalsMonitor(cleanup func()) {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, signals...)
 	go func() {

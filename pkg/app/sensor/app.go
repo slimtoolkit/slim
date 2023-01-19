@@ -202,7 +202,7 @@ func newSensor(
 
 		// To preserve the backward compatibility, don't forward
 		// signals to the target app in the default (controlled) mode.
-		initSignalHandlers(func() {
+		startSystemSignalsMonitor(func() {
 			cancel()
 			time.Sleep(2 * time.Second)
 		})
