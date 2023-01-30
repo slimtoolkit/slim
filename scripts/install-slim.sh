@@ -81,7 +81,7 @@ function get_slim() {
     echo " - Cleaning up"
     rm -rf "${TMP_DIR}"
     echo -en " - "
-    docker-slim --version
+    slim --version
   else
     echo "ERROR! /usr/local/bin is not present. Install aborted."
     rm -rf "${TMP_DIR}"
