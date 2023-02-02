@@ -4,6 +4,7 @@ import (
 	"context"
 	"os/exec"
 
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -49,16 +50,17 @@ func (h *hookExecutor) doHook(k kind) {
 
 	cmd := exec.CommandContext(h.ctx, h.cmd, string(k))
 	out, err := cmd.CombinedOutput()
-	if err == nil {
-		log.
-			WithField("kind", k).
-			WithField("output", string(out)).
-			Info("lifecycle hook command succeeded")
+
+	logger := log.
+		WithField("kind", k).
+		WithField("command", h.cmd).
+		WithField("exit_code", cmd.ProcessState.ExitCode()).
+		WithField("output", string(out))
+
+	// Some lifecycle hooks are really fast - hence, the IsNoChildProcesses() check.
+	if err == nil || errutil.IsNoChildProcesses(err) {
+		logger.Info("lifecycle hook command succeeded")
 	} else {
-		log.
-			WithError(err).
-			WithField("kind", k).
-			WithField("output", string(out)).
-			Info("lifecycle hook command failed")
+		logger.WithError(err).Info("lifecycle hook command failed")
 	}
 }
