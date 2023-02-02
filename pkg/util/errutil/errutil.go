@@ -3,6 +3,7 @@ package errutil
 import (
 	"fmt"
 	"runtime/debug"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
@@ -79,4 +80,21 @@ func showCommunityInfo() {
 	fmt.Printf("docker-slim: message='join the Gitter channel to get help with this failure' info='%s'\n", consts.CommunityGitter)
 	fmt.Printf("docker-slim: message='join the Discord server to get help with this failure' info='%s'\n", consts.CommunityDiscord)
 	fmt.Printf("docker-slim: message='Github discussions' info='%s'\n", consts.CommunityDiscussions)
+}
+
+// exec.Command().Run() and its derivatives sometimes return
+// "wait: no child processes" or "waitid: no child processes"
+// even for successful runs. It's a race condition between the
+// Start() + Wait() calls and the actual underlying command
+// execution. The shorter the execution time, the higher are
+// the chances to get this error.
+//
+// Some examples from the wild:
+//  - https://github.com/gitpod-io/gitpod/blob/405d44b74b5ac1dffe20e076d59c2b5986f18960/components/common-go/process/process.go#L18.
+func IsNoChildProcesses(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	return strings.HasSuffix(err.Error(), ": no child processes")
 }
