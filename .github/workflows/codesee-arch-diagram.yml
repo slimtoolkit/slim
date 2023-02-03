@@ -13,7 +13,7 @@ jobs:
     steps:
       - name: checkout
         id: checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v2.6.0
         with:
           repository: ${{ github.event.pull_request.head.repo.full_name }}
           ref: ${{ github.event.pull_request.head.ref }}
@@ -22,10 +22,10 @@ jobs:
       # codesee-detect-languages has an output with id languages.
       - name: Detect Languages
         id: detect-languages
-        uses: Codesee-io/codesee-detect-languages-action@latest
+        uses: Codesee-io/codesee-detect-languages-action@v1
 
       - name: Configure JDK 16
-        uses: actions/setup-java@v2
+        uses: actions/setup-java@v2.5.0
         if: ${{ fromJSON(steps.detect-languages.outputs.languages).java }}
         with:
           java-version: '16'
@@ -34,20 +34,20 @@ jobs:
       # CodeSee Maps Go support uses a static binary so there's no setup step required.
 
       - name: Configure Node.js 14
-        uses: actions/setup-node@v2
+        uses: actions/setup-node@v2.5.1
         if: ${{ fromJSON(steps.detect-languages.outputs.languages).javascript }}
         with:
           node-version: '14'
 
       - name: Configure Python 3.x
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v2.3.2
         if: ${{ fromJSON(steps.detect-languages.outputs.languages).python }}
         with:
           python-version: '3.x'
           architecture: 'x64'
 
       - name: Configure Ruby '3.x'
-        uses: ruby/setup-ruby@v1
+        uses: ruby/setup-ruby@v1.134.0
         if: ${{ fromJSON(steps.detect-languages.outputs.languages).ruby }}
         with:
           ruby-version: '3.0'
@@ -56,7 +56,7 @@ jobs:
 
       - name: Generate Map
         id: generate-map
-        uses: Codesee-io/codesee-map-action@latest
+        uses: Codesee-io/codesee-map-action@v1
         with:
           step: map
           github_ref: ${{ github.ref }}
@@ -64,7 +64,7 @@ jobs:
 
       - name: Upload Map
         id: upload-map
-        uses: Codesee-io/codesee-map-action@latest
+        uses: Codesee-io/codesee-map-action@v1
         with:
           step: mapUpload
           api_token: ${{ secrets.CODESEE_ARCH_DIAG_API_TOKEN }}
@@ -72,7 +72,7 @@ jobs:
       
       - name: Insights
         id: insights
-        uses: Codesee-io/codesee-map-action@latest
+        uses: Codesee-io/codesee-map-action@v1
         with:
           step: insights
           api_token: ${{ secrets.CODESEE_ARCH_DIAG_API_TOKEN }}
