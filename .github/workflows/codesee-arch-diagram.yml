@@ -40,7 +40,7 @@ jobs:
           node-version: '14'
 
       - name: Configure Python 3.x
-        uses: actions/setup-python@v2.3.2
+        uses: actions/setup-python@v4.5.0
         if: ${{ fromJSON(steps.detect-languages.outputs.languages).python }}
         with:
           python-version: '3.x'
