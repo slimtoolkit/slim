@@ -188,80 +188,6 @@ type tbrecord struct {
 
 const tbDuration = (15 * time.Minute)
 
-func processRawInst(rawInst string) (string, bool) {
-	var inst string
-	isExecForm := false
-
-	//TODO: need to refactor
-	processed := false
-	//rawInst := rawLine
-	if strings.HasPrefix(rawInst, runInstArgsPrefix) {
-		parts := strings.SplitN(rawInst, " ", 2)
-		if len(parts) == 2 {
-			withArgs := strings.TrimSpace(parts[1])
-			argNumStr := parts[0][1:]
-			argNum, err := strconv.Atoi(argNumStr)
-			if err == nil {
-				if withArgsArray, err := shlex.Split(withArgs); err == nil {
-					if len(withArgsArray) > argNum {
-						rawInstParts := withArgsArray[argNum:]
-						processed = true
-						if len(rawInstParts) > 2 &&
-							rawInstParts[0] == defaultRunInstShell &&
-							rawInstParts[1] == "-c" {
-							isExecForm = false
-							rawInstParts = rawInstParts[2:]
-
-							inst = fmt.Sprintf("RUN %s", strings.Join(rawInstParts, " "))
-							inst = strings.TrimSpace(inst)
-						} else {
-							isExecForm = true
-
-							var outJson bytes.Buffer
-							encoder := json.NewEncoder(&outJson)
-							encoder.SetEscapeHTML(false)
-							err := encoder.Encode(rawInstParts)
-							if err == nil {
-								inst = fmt.Sprintf("RUN %s", outJson.String())
-							}
-						}
-					} else {
-						log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed - %v (%v)", rawInst, err)
-					}
-				} else {
-					log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed - %v (%v)", rawInst, err)
-				}
-
-			} else {
-				log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed number of ARGs - %v (%v)", rawInst, err)
-			}
-		} else {
-			log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - unexpected number of parts - %v", rawInst)
-		}
-	}
-	//todo: RUN inst with ARGS for buildkit
-	if hasInstructionPrefix(rawInst) {
-		inst = rawInst
-	} else {
-		if !processed {
-			//default to RUN instruction in exec form
-			isExecForm = true
-			inst = instPrefixRun + rawInst
-			if outArray, err := shlex.Split(rawInst); err == nil {
-				var outJson bytes.Buffer
-				encoder := json.NewEncoder(&outJson)
-				encoder.SetEscapeHTML(false)
-				err := encoder.Encode(outArray)
-				if err == nil {
-					inst = fmt.Sprintf("RUN %s", outJson.String())
-				}
-			}
-		}
-	}
-
-	return inst, isExecForm
-}
-
 // DockerfileFromHistory recreates Dockerfile information from container image history
 func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfile, error) {
 	//TODO: make it possible to pass the history information as a param
@@ -338,7 +264,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 					inst = instPrefixRun + runData
 				}
 			default:
-				inst, isExecForm := processRawInst(rawInst)
+				inst, isExecForm = processRawInst(rawInst)
 			}
 
 			//NOTE: Dockerfile instructions can be any case, but the instructions from history are always uppercase
@@ -652,6 +578,80 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 	   https://github.com/CenturyLinkLabs/imagelayers
 	   https://github.com/CenturyLinkLabs/imagelayers-graph
 	*/
+}
+
+func processRawInst(rawInst string) (string, bool) {
+	var inst string
+	isExecForm := false
+
+	//TODO: need to refactor
+	processed := false
+	//rawInst := rawLine
+	if strings.HasPrefix(rawInst, runInstArgsPrefix) {
+		parts := strings.SplitN(rawInst, " ", 2)
+		if len(parts) == 2 {
+			withArgs := strings.TrimSpace(parts[1])
+			argNumStr := parts[0][1:]
+			argNum, err := strconv.Atoi(argNumStr)
+			if err == nil {
+				if withArgsArray, err := shlex.Split(withArgs); err == nil {
+					if len(withArgsArray) > argNum {
+						rawInstParts := withArgsArray[argNum:]
+						processed = true
+						if len(rawInstParts) > 2 &&
+							rawInstParts[0] == defaultRunInstShell &&
+							rawInstParts[1] == "-c" {
+							isExecForm = false
+							rawInstParts = rawInstParts[2:]
+
+							inst = fmt.Sprintf("RUN %s", strings.Join(rawInstParts, " "))
+							inst = strings.TrimSpace(inst)
+						} else {
+							isExecForm = true
+
+							var outJson bytes.Buffer
+							encoder := json.NewEncoder(&outJson)
+							encoder.SetEscapeHTML(false)
+							err := encoder.Encode(rawInstParts)
+							if err == nil {
+								inst = fmt.Sprintf("RUN %s", outJson.String())
+							}
+						}
+					} else {
+						log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed - %v (%v)", rawInst, err)
+					}
+				} else {
+					log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed - %v (%v)", rawInst, err)
+				}
+
+			} else {
+				log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed number of ARGs - %v (%v)", rawInst, err)
+			}
+		} else {
+			log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - unexpected number of parts - %v", rawInst)
+		}
+	}
+	//todo: RUN inst with ARGS for buildkit
+	if hasInstructionPrefix(rawInst) {
+		inst = rawInst
+	} else {
+		if !processed {
+			//default to RUN instruction in exec form
+			isExecForm = true
+			inst = instPrefixRun + rawInst
+			if outArray, err := shlex.Split(rawInst); err == nil {
+				var outJson bytes.Buffer
+				encoder := json.NewEncoder(&outJson)
+				encoder.SetEscapeHTML(false)
+				err := encoder.Encode(outArray)
+				if err == nil {
+					inst = fmt.Sprintf("RUN %s", outJson.String())
+				}
+			}
+		}
+	}
+
+	return inst, isExecForm
 }
 
 // SaveDockerfileData saves the Dockerfile information to a file
