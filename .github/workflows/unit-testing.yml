@@ -12,10 +12,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out slimtoolkit/slim repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v3.3.0
 
       - name: Set up Go development environment
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v3.5.0
         with:
           go-version: '1.16.0'
 
