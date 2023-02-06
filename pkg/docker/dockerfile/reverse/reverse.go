@@ -643,17 +643,14 @@ func processAsArgsFormat(rawInst string) (string, bool, error) {
 	}
 
 	rawInstParts := withArgsArray[argNum:]
-	fmt.Println("rawInstParts:", rawInstParts)
 
 	if detectRawShellForm(rawInstParts) {
 		isExecForm = false
-		fmt.Println("processInstArgsFormat Branch A")
 		rawInstParts = rawInstParts[2:]
 
 		inst = fmt.Sprintf("RUN %s", strings.Join(rawInstParts, " "))
 		inst = strings.TrimSpace(inst)
 	} else {
-		fmt.Println("processInstArgsFormat Branch B")
 		isExecForm = true
 
 		exec, err := execify(rawInstParts)
