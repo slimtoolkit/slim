@@ -282,11 +282,6 @@ func TestProcessRawInst(t *testing.T) {
 		})
 	})
 
-	t.Run("when the instruction is in shell format", func(t *testing.T) {})
-
-	t.Run("when the instruction is in  no-op format", func(t *testing.T) {})
-
-	t.Run("when the instruction is in shell command format", func(t *testing.T) {})
 }
 
 type fakeLogger struct {
