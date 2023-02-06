@@ -580,78 +580,136 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 	*/
 }
 
+// processRawInst handles the processing for non-standard instructions that
+// are otherwise uncaught by the main processor. It returns both the processed
+// instruction as well as its status as an exec format command.
 func processRawInst(rawInst string) (string, bool) {
+	// Try to process as an uncaught standard instruction
+	inst, ief, err = processAsUncaughtInst(rawInst)
+	if err == nil {
+		return inst, ief
+	}
+
+	// Failing that, try to process as an args format RUN instruction
+	inst, ief, err := processAsArgsFormat(rawInst)
+	if err == nil {
+		return inst, ief
+	}
+
+	// Fallback: process as an exec format RUN instruction
+	return processAsExecRun(rawInst)
+}
+
+// processAsArgsFormat attempts to process the given instruction as an
+// args style RUN, resulting in an encoded RUN string, a boolean that
+// reflects if the output is in exec format, and an error.
+//
+// Provided there are no issues along the way, the error will be nil.
+//
+// If the resulting error is non-nil, the other returned values should
+// not be used.
+func processAsArgsFormat(rawInst string) (string, bool, error) {
+	if !strings.HasPrefix(rawInst, runInstArgsPrefix) {
+		return "", false, errors.New("not inst args format")
+	}
+
 	var inst string
-	isExecForm := false
+	var isExecForm bool
 
-	//TODO: need to refactor
-	processed := false
-	//rawInst := rawLine
-	if strings.HasPrefix(rawInst, runInstArgsPrefix) {
-		parts := strings.SplitN(rawInst, " ", 2)
-		if len(parts) == 2 {
-			withArgs := strings.TrimSpace(parts[1])
-			argNumStr := parts[0][1:]
-			argNum, err := strconv.Atoi(argNumStr)
-			if err == nil {
-				if withArgsArray, err := shlex.Split(withArgs); err == nil {
-					if len(withArgsArray) > argNum {
-						rawInstParts := withArgsArray[argNum:]
-						processed = true
-						if len(rawInstParts) > 2 &&
-							rawInstParts[0] == defaultRunInstShell &&
-							rawInstParts[1] == "-c" {
-							isExecForm = false
-							rawInstParts = rawInstParts[2:]
+	parts := strings.SplitN(rawInst, " ", 2)
 
-							inst = fmt.Sprintf("RUN %s", strings.Join(rawInstParts, " "))
-							inst = strings.TrimSpace(inst)
-						} else {
-							isExecForm = true
-
-							var outJson bytes.Buffer
-							encoder := json.NewEncoder(&outJson)
-							encoder.SetEscapeHTML(false)
-							err := encoder.Encode(rawInstParts)
-							if err == nil {
-								inst = fmt.Sprintf("RUN %s", outJson.String())
-							}
-						}
-					} else {
-						log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed - %v (%v)", rawInst, err)
-					}
-				} else {
-					log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed - %v (%v)", rawInst, err)
-				}
-
-			} else {
-				log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed number of ARGs - %v (%v)", rawInst, err)
-			}
-		} else {
-			log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - unexpected number of parts - %v", rawInst)
-		}
+	if len(parts) != 2 {
+		log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - unexpected number of parts - %v", rawInst)
+		return "", false, errors.New("inst args format - unexpected number of parts")
 	}
-	//todo: RUN inst with ARGS for buildkit
-	if hasInstructionPrefix(rawInst) {
-		inst = rawInst
+
+	withArgs := strings.TrimSpace(parts[1])
+	argNumStr := parts[0][1:]
+	argNum, err := strconv.Atoi(argNumStr)
+	if err != nil {
+		log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed number of ARGs - %v (%v)", rawInst, err)
+		return "", false, err
+	}
+
+	withArgsArray, err := shlex.Split(withArgs)
+	if err != nil {
+		log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed - %v (%v)", rawInst, err)
+		return "", false, err
+	}
+
+	if len(withArgsArray) <= argNum {
+		log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed - %v (%v)", rawInst, err)
+		return "", false, errors.New("inst args format - not enough args")
+	}
+
+	rawInstParts := withArgsArray[argNum:]
+	fmt.Println("rawInstParts:", rawInstParts)
+
+	if detectRawShellForm(rawInstParts) {
+		isExecForm = false
+		fmt.Println("processInstArgsFormat Branch A")
+		rawInstParts = rawInstParts[2:]
+
+		inst = fmt.Sprintf("RUN %s", strings.Join(rawInstParts, " "))
+		inst = strings.TrimSpace(inst)
 	} else {
-		if !processed {
-			//default to RUN instruction in exec form
-			isExecForm = true
-			inst = instPrefixRun + rawInst
-			if outArray, err := shlex.Split(rawInst); err == nil {
-				var outJson bytes.Buffer
-				encoder := json.NewEncoder(&outJson)
-				encoder.SetEscapeHTML(false)
-				err := encoder.Encode(outArray)
-				if err == nil {
-					inst = fmt.Sprintf("RUN %s", outJson.String())
-				}
-			}
+		fmt.Println("processInstArgsFormat Branch B")
+		isExecForm = true
+
+		exec, err := execify(rawInstParts)
+		if err == nil {
+			inst = exec
 		}
 	}
 
-	return inst, isExecForm
+	return inst, isExecForm, nil
+}
+
+// processAsUncaughtInst attempts to process the given instruction as an
+// otherwise uncaught standard instruction. If the instruction is determined
+// not to be an uncaught instruction, an error is returned.
+func processAsUncaughtInst(rawInst string) (string, bool, error) {
+	if hasInstructionPrefix(rawInst) {
+		return rawInst, false, nil
+	}
+
+	return "", false, errors.New("not an uncaught instruction")
+}
+
+// processAsExecRun recieves a raw instruction, implicitly encodes it as
+// a RUN instruction, and returns that encoded instruction in exec format
+func processAsExecRun(rawInst string) (string, bool) {
+	inst := instPrefixRun + rawInst
+
+	if outArray, err := shlex.Split(rawInst); err == nil {
+		if exec, eErr := execify(outArray); eErr == nil {
+			inst = exec
+		}
+	}
+
+	return inst, true
+}
+
+// execify encodes an array of strings as an exec format RUN instruction
+func execify(parts []string) (string, error) {
+	var outJson bytes.Buffer
+
+	encoder := json.NewEncoder(&outJson)
+	encoder.SetEscapeHTML(false)
+	err := encoder.Encode(parts)
+	if err != nil {
+		return "", err
+	}
+
+	return fmt.Sprintf("RUN %s", outJson.String()), nil
+}
+
+// detectRawShellForm determines if an array of strings can be treated as
+// the arguments for a shell format RUN instruction
+func detectRawShellForm(parts []string) bool {
+	return len(parts) > 2 &&
+		parts[0] == defaultRunInstShell &&
+		parts[1] == "-c"
 }
 
 // SaveDockerfileData saves the Dockerfile information to a file
