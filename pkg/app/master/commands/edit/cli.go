@@ -21,7 +21,7 @@ var CLI = &cli.Command{
 	Usage:   Usage,
 	Action: func(ctx *cli.Context) error {
 		if ctx.Args().Len() < 1 {
-			fmt.Printf("docker-slim[%s]: missing target info...\n\n", Name)
+			fmt.Printf("slim[%s]: missing target info...\n\n", Name)
 			cli.ShowCommandHelp(ctx, Name)
 			return nil
 		}

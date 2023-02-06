@@ -27,8 +27,8 @@ const (
 	hdrUserAgent     = "User-Agent"
 	hdrContentLength = "Content-Length"
 	downloadEndpoint = "https://downloads.dockerslim.com/releases"
-	masterAppName    = "docker-slim"
-	sensorAppName    = "docker-slim-sensor"
+	masterAppName    = "slim"
+	sensorAppName    = "slim-sensor"
 	distDirName      = "dist"
 	artifactsPerms   = 0740
 )
@@ -39,7 +39,7 @@ var (
 
 // Run checks the current version and updates it if it doesn't match the latest available version
 func Run(doDebug bool, statePath string, inContainer, isDSImage, doShowProgress bool) {
-	logger := log.WithFields(log.Fields{"app": "docker-slim", "command": "update"})
+	logger := log.WithFields(log.Fields{"app": "slim", "command": "update"})
 
 	appPath, err := os.Executable()
 	errutil.FailOn(err)
@@ -49,18 +49,18 @@ func Run(doDebug bool, statePath string, inContainer, isDSImage, doShowProgress 
 	logger.Debugf("Version Status => %+v", vstatus)
 
 	if vstatus == nil || vstatus.Status != "success" {
-		fmt.Printf("docker-slim[update]: info=status message='version check was not successful'\n")
-		fmt.Printf("docker-slim[update]: state=exited version=%s\n", vinfo.Current())
+		fmt.Printf("slim[update]: info=status message='version check was not successful'\n")
+		fmt.Printf("slim[update]: state=exited version=%s\n", vinfo.Current())
 		return
 	}
 
 	if !vstatus.Outdated {
-		fmt.Printf("docker-slim[update]: info=status message='already using the current version'\n")
-		fmt.Printf("docker-slim[update]: state=exited version=%s\n", vinfo.Current())
+		fmt.Printf("slim[update]: info=status message='already using the current version'\n")
+		fmt.Printf("slim[update]: state=exited version=%s\n", vinfo.Current())
 		return
 	}
 
-	fmt.Printf("docker-slim[update]: info=version local=%s current=%s\n", vinfo.Tag(), vstatus.Current)
+	fmt.Printf("slim[update]: info=version local=%s current=%s\n", vinfo.Tag(), vstatus.Current)
 
 	blobNameBase, blobNameExt := getReleaseBlobInfo()
 	errutil.FailWhen(blobNameBase == "", "could not discover platform-specific release package name")
@@ -74,19 +74,19 @@ func Run(doDebug bool, statePath string, inContainer, isDSImage, doShowProgress 
 
 	if fsutil.Exists(blobPath) {
 		//feature: not removing/replacing the existing release package blob if it's already there
-		fmt.Printf("docker-slim[update]: info=status message='release package already downloaded'\n")
-		fmt.Printf("docker-slim[update]: state=exited version=%s\n", vinfo.Current())
+		fmt.Printf("slim[update]: info=status message='release package already downloaded'\n")
+		fmt.Printf("slim[update]: state=exited version=%s\n", vinfo.Current())
 		return
 	}
 
-	fmt.Println("docker-slim[update]: state=update.download.started")
+	fmt.Println("slim[update]: state=update.download.started")
 
 	releaseDownloadPath := fmt.Sprintf("%s/%s/%s", downloadEndpoint, vstatus.Current, blobName)
 	logger.Debugf("release download path: %v", releaseDownloadPath)
 
 	if !isGoodDownloadSource(logger, releaseDownloadPath) {
-		fmt.Printf("docker-slim[update]: info=status message='release package download location is not accessible'\n")
-		fmt.Printf("docker-slim[update]: state=exited version=%s\n", vinfo.Current())
+		fmt.Printf("slim[update]: info=status message='release package download location is not accessible'\n")
+		fmt.Printf("slim[update]: state=exited version=%s\n", vinfo.Current())
 		return
 	}
 
@@ -99,31 +99,31 @@ func Run(doDebug bool, statePath string, inContainer, isDSImage, doShowProgress 
 	err = downloadRelease(logger, blobPath, releaseDownloadPath, brConstructor)
 	if err != nil {
 		logger.Debugf("error downloading release: %v", err)
-		fmt.Printf("docker-slim[update]: info=status message='error downloading release package'\n")
-		fmt.Printf("docker-slim[update]: state=exited version=%s\n", vinfo.Current())
+		fmt.Printf("slim[update]: info=status message='error downloading release package'\n")
+		fmt.Printf("slim[update]: state=exited version=%s\n", vinfo.Current())
 		return
 	}
 
-	fmt.Println("docker-slim[update]: state=update.download.completed")
+	fmt.Println("slim[update]: state=update.download.completed")
 
 	if err := unpackRelease(logger, blobPath, releaseDirPath, blobNameBase); err != nil {
 		logger.Debugf("error unpacking release package: %v", err)
-		fmt.Printf("docker-slim[update]: info=status message='error unpacking release package'\n")
-		fmt.Printf("docker-slim[update]: state=exited version=%s\n", vinfo.Current())
+		fmt.Printf("slim[update]: info=status message='error unpacking release package'\n")
+		fmt.Printf("slim[update]: state=exited version=%s\n", vinfo.Current())
 		return
 	}
 
-	fmt.Println("docker-slim[update]: state=update.unpacked")
+	fmt.Println("slim[update]: state=update.unpacked")
 
 	if err := installRelease(logger, appDirPath, statePath, releaseDirPath); err != nil {
 		logger.Debugf("error installing release: %v", err)
-		fmt.Printf("docker-slim[update]: info=status message='error installing release'\n")
-		fmt.Printf("docker-slim[update]: state=exited version=%s\n", vinfo.Current())
+		fmt.Printf("slim[update]: info=status message='error installing release'\n")
+		fmt.Printf("slim[update]: state=exited version=%s\n", vinfo.Current())
 		return
 	}
 
-	fmt.Println("docker-slim[update]: state=update.installed")
-	fmt.Printf("docker-slim[update]: state=exited version=%s\n", vinfo.Current())
+	fmt.Println("slim[update]: state=update.installed")
+	fmt.Printf("slim[update]: state=exited version=%s\n", vinfo.Current())
 }
 
 func getReleaseBlobInfo() (base string, ext string) {

@@ -44,9 +44,9 @@ const (
 	FlagVerifyTLSUsage     = "verify TLS"
 	FlagTLSCertPathUsage   = "path to TLS cert files"
 	FlagHostUsage          = "Docker host address or socket (prefix with 'tcp://' or 'unix://')"
-	FlagStatePathUsage     = "DockerSlim state base path"
-	FlagInContainerUsage   = "DockerSlim is running in a container"
-	FlagArchiveStateUsage  = "archive DockerSlim state to the selected Docker volume (default volume - docker-slim-state). By default, enabled when DockerSlim is running in a container (disabled otherwise). Set it to \"off\" to disable explicitly."
+	FlagStatePathUsage     = "app state base path"
+	FlagInContainerUsage   = "app is running in a container"
+	FlagArchiveStateUsage  = "archive app state to the selected Docker volume (default volume - slim-state). By default, enabled when app is running in a container (disabled otherwise). Set it to \"off\" to disable explicitly."
 	FlagNoColorUsage       = "disable color output"
 )
 
@@ -209,7 +209,7 @@ const (
 
 	FlagHTTPProbeUsage                 = "Enable or disable HTTP probing"
 	FlagHTTPProbeOffUsage              = "Alternative way to disable HTTP probing"
-	FlagHTTPProbeCmdUsage              = "User defined HTTP probes"
+	FlagHTTPProbeCmdUsage              = "User defined HTTP probe(s) as [[[[\"crawl\":]PROTO:]METHOD:]PATH]"
 	FlagHTTPProbeCmdFileUsage          = "File with user defined HTTP probes"
 	FlagHTTPProbeStartWaitUsage        = "Number of seconds to wait before starting HTTP probing"
 	FlagHTTPProbeRetryCountUsage       = "Number of retries for each HTTP probe"
@@ -341,16 +341,16 @@ func GlobalFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:  FlagStatePath,
 			Value: "",
-			Usage: "DockerSlim state base path",
+			Usage: "app state base path",
 		},
 		&cli.BoolFlag{
 			Name:  FlagInContainer,
-			Usage: "DockerSlim is running in a container",
+			Usage: "app is running in a container",
 		},
 		&cli.StringFlag{
 			Name:  FlagArchiveState,
 			Value: "",
-			Usage: "archive DockerSlim state to the selected Docker volume (default volume - docker-slim-state). By default, enabled when DockerSlim is running in a container (disabled otherwise). Set it to \"off\" to disable explicitly.",
+			Usage: "archive app state to the selected Docker volume (default volume - slim-state). By default, enabled when app is running in a container (disabled otherwise). Set it to \"off\" to disable explicitly.",
 		},
 		&cli.BoolFlag{
 			Name:  FlagNoColor,

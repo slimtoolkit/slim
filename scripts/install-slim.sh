@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-function get_dockerslim() {
+function get_slim() {
   local DIST=""
   local EXT=""
   local FILENAME=""
@@ -17,7 +17,7 @@ function get_dockerslim() {
   if [ -n "${VER}" ]; then
     URL="https://downloads.dockerslim.com/releases/${VER}"
   else
-    echo "ERROR! Could not retrieve the current DockerSlim version number."
+    echo "ERROR! Could not retrieve the current Slim version number."
     exit 1
   fi
 
@@ -72,16 +72,16 @@ function get_dockerslim() {
 
   # /usr/local/bin should be present on Linux and macOS hosts. Just be sure.
   if [ -d /usr/local/bin ]; then
-    echo " - Placing docker-slim in /usr/local/bin"
-    mv "${TMP_DIR}/dist_${DIST}/docker-slim" /usr/local/bin/
-    mv "${TMP_DIR}/dist_${DIST}/docker-slim-sensor" /usr/local/bin/
-    chmod +x /usr/local/bin/docker-slim
-    chmod +x /usr/local/bin/docker-slim-sensor
+    echo " - Placing slim in /usr/local/bin"
+    mv "${TMP_DIR}/dist_${DIST}/slim" /usr/local/bin/
+    mv "${TMP_DIR}/dist_${DIST}/slim-sensor" /usr/local/bin/
+    chmod +x /usr/local/bin/slim
+    chmod +x /usr/local/bin/slim-sensor
 
     echo " - Cleaning up"
     rm -rf "${TMP_DIR}"
     echo -en " - "
-    docker-slim --version
+    slim --version
   else
     echo "ERROR! /usr/local/bin is not present. Install aborted."
     rm -rf "${TMP_DIR}"
@@ -89,11 +89,11 @@ function get_dockerslim() {
   fi
 }
 
-echo "DockerSlim scripted install"
+echo "Slim scripted install"
 
 if [ "$(id -u)" -ne 0 ]; then
   echo "ERROR! You must run this script as root."
   exit 1
 fi
 
-get_dockerslim
+get_slim

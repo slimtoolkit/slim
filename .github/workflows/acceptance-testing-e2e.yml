@@ -11,40 +11,40 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Check out docker-slim/docker-slim repo
-        uses: actions/checkout@v3
+      - name: Check out slimtoolkit/slim repo
+        uses: actions/checkout@v3.3.0
 
       - name: Set up Go development environment
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v3.5.0
         with:
           go-version: '1.16.0'
 
-      - name: Build DockerSlim (multi-arch)
+      - name: Build Slim (multi-arch)
         run: make build
 
-      - name: Upload docker-slim binaries (Linux, amd64)
-        uses: actions/upload-artifact@v3
+      - name: Upload Slim app binaries (Linux, amd64)
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: dist_linux
           path: dist_linux
           retention-days: 1
 
-      - name: Upload docker-slim binaries (Linux, arm64)
-        uses: actions/upload-artifact@v3
+      - name: Upload Slim app binaries (Linux, arm64)
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: dist_linux_arm64
           path: dist_linux_arm64
           retention-days: 1
 
-      - name: Upload docker-slim binaries (Linux, arm)
-        uses: actions/upload-artifact@v3
+      - name: Upload Slim app binaries (Linux, arm)
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: dist_linux_arm
           path: dist_linux_arm
           retention-days: 1
 
-      - name: Upload docker-slim binaries (macOS, amd64)
-        uses: actions/upload-artifact@v3
+      - name: Upload Slim app binaries (macOS, amd64)
+        uses: actions/upload-artifact@v3.1.2
         with:
           name: dist_mac
           path: dist_mac
@@ -63,31 +63,31 @@ jobs:
             bin_artifacts: dist_linux
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Check out docker-slim/docker-slim repo
-        uses: actions/checkout@v3
+      - name: Check out slimtoolkit/slim repo
+        uses: actions/checkout@v3.3.0
 
       - name: Set up Go development environment
-        uses: actions/setup-go@v3
+        uses: actions/setup-go@v3.5.0
         with:
           go-version: '1.16.0'
 
-      - name: Download docker-slim binaries
-        uses: actions/download-artifact@v3
+      - name: Download Slim app binaries
+        uses: actions/download-artifact@v3.0.2
         with:
           name: ${{ matrix.bin_artifacts }}
           path: bin
 
-      - name: Fix docker-slim binaries permissions
+      - name: Fix Slim app binaries permissions
         run: chmod a+x bin/*
 
-      - name: Add docker-slim/bin folder to $PATH
+      - name: Add Slim bin folder to $PATH
         run: echo "${GITHUB_WORKSPACE}/bin" >> $GITHUB_PATH
 
       - name: Run sensor e2e tests
         timeout-minutes: 60
         run: make test-e2e-sensor
 
-  # Run full-cycle tests (ab)using the docker-slim/examples repository.
+  # Run full-cycle tests (ab)using the slimtoolkit/examples repository.
   test-full-e2e:
     needs: build
     strategy:
@@ -115,28 +115,28 @@ jobs:
             bin_artifacts: dist_linux
     runs-on: ${{ matrix.os }}
     steps:
-      - name: Check out docker-slim/docker-slim repo
-        uses: actions/checkout@v3
+      - name: Check out slimtoolkit/slim repo
+        uses: actions/checkout@v3.3.0
 
-      - name: Check out docker-slim/examples repo
-        uses: actions/checkout@v3
+      - name: Check out slimtoolkit/examples repo
+        uses: actions/checkout@v3.3.0
         with:
-          repository: docker-slim/examples
+          repository: slimtoolkit/examples
           path: e2e
 
-      - name: Download docker-slim binaries
-        uses: actions/download-artifact@v3
+      - name: Download Slim app binaries
+        uses: actions/download-artifact@v3.0.2
         with:
           name: ${{ matrix.bin_artifacts }}
           path: bin
 
-      - name: Fix docker-slim binaries permissions
+      - name: Fix Slim app binaries permissions
         run: chmod a+x bin/*
 
-      - name: Add docker-slim/bin folder to $PATH
+      - name: Add Slim app bin folder to $PATH
         run: echo "${GITHUB_WORKSPACE}/bin" >> $GITHUB_PATH
 
-      - name: Run all e2e tests from docker-slim/examples
+      - name: Run all e2e tests from slimtoolkit/examples
         timeout-minutes: 60
         run: |
           export DSLIM_LOG_LEVEL=debug

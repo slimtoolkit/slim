@@ -18,9 +18,7 @@ import (
 	stubmonitor "github.com/docker-slim/docker-slim/pkg/test/stub/sensor/monitor"
 )
 
-//
 // Stubs
-//
 func newStubMonitorFunc(
 	ctx context.Context,
 	fanMon fanotify.Monitor,
@@ -81,9 +79,7 @@ func (a *artifactorStub) ProcessReports(
 	return nil
 }
 
-//
 // Tests
-//
 func TestStartStopShutdown(t *testing.T) {
 	ctx := context.Background()
 	exe := execution.NewExecution()

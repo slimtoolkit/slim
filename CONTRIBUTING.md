@@ -1,4 +1,4 @@
-# Contributing to DockerSlim
+# Contributing to SlimToolkit
 
 If you want to contribute submit a GitHub pull request or open an issue. Thank you!
 
@@ -8,7 +8,7 @@ Any contribution is better than no contribution :-) Submit a [pull request](http
 
 ## Code
 
-To learn more about the code take a look at the `DockerSlim Code` videos on ['YouTube'](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA?sub_confirmation=1)
+To learn more about the code take a look at the `SlimToolkit Code` videos on ['YouTube'](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA?sub_confirmation=1)
 
 ## Guidelines
 
@@ -30,7 +30,7 @@ The coding standards are based on the [Golang community standards](https://githu
 
 ### Dependencies
 
-TBD - information about adding dependencies to DockerSlim
+TBD - information about adding dependencies
 
 ### Testing
 
@@ -43,3 +43,7 @@ Yes :-)
 ### Pull Requests
 
 Standard guidelines for [pull requests](https://help.github.com/articles/using-pull-requests)
+
+### Sign Your Code
+
+Please certify your [Developer Certificate of Origin (DCO)](https://developercertificate.org/), by signing off your commit with `git commit -s` (use your real name).

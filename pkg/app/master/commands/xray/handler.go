@@ -40,7 +40,15 @@ const (
 	fatDockerfileName = "Dockerfile.fat"
 )
 
-// OnCommand implements the 'xray' docker-slim command
+const (
+	ociLabelImageAuthors      = "org.opencontainers.image.authors"
+	ociLabelBaseImageDigest   = "org.opencontainers.image.base.digest"
+	ociLabelBaseImageName     = "org.opencontainers.image.base.name"
+	azureLabelBaseImageName   = "image.base.ref.name"
+	azureLabelBaseImageDigest = "image.base.digest"
+)
+
+// OnCommand implements the 'xray' command
 func OnCommand(
 	xc *app.ExecutionContext,
 	gparams *commands.GenericParams,
@@ -274,8 +282,15 @@ func OnCommand(
 	}
 
 	for k, v := range cmdReport.SourceImage.Labels {
-		if strings.ToLower(k) == "maintainer" || strings.ToLower(k) == "author" || strings.ToLower(k) == "authors" || k == "org.opencontainers.image.authors" {
+		if strings.ToLower(k) == "maintainer" || strings.ToLower(k) == "author" || strings.ToLower(k) == "authors" || k == ociLabelImageAuthors {
 			maintainers[v] = struct{}{}
+		} else {
+			switch k {
+			case ociLabelBaseImageDigest, azureLabelBaseImageDigest:
+				cmdReport.SourceImage.BaseImageDigest = v
+			case ociLabelBaseImageName, azureLabelBaseImageName:
+				cmdReport.SourceImage.BaseImageName = v
+			}
 		}
 	}
 
@@ -477,6 +492,29 @@ func OnCommand(
 
 	if doAddImageConfig {
 		cmdReport.RawImageConfig = imagePkg.Config
+	}
+
+	cmdReport.ImageReport.BuildInfo = imagePkg.Config.BuildInfoDecoded
+
+	if (cmdReport.SourceImage.BaseImageDigest == "" || cmdReport.SourceImage.BaseImageName == "") &&
+		cmdReport.ImageReport.BuildInfo != nil &&
+		len(cmdReport.ImageReport.BuildInfo.Sources) > 0 {
+		var lastImageSource *dockerimage.BuildSource
+		for _, s := range cmdReport.ImageReport.BuildInfo.Sources {
+			if s.Type == dockerimage.SourceTypeDockerImage {
+				lastImageSource = s
+			}
+		}
+
+		if lastImageSource != nil {
+			if lastImageSource.Ref != "" && cmdReport.SourceImage.BaseImageName == "" {
+				cmdReport.SourceImage.BaseImageName = lastImageSource.Ref
+			}
+
+			if lastImageSource.Pin != "" && cmdReport.SourceImage.BaseImageDigest == "" {
+				cmdReport.SourceImage.BaseImageDigest = lastImageSource.Pin
+			}
+		}
 	}
 
 	xc.Out.State("completed")

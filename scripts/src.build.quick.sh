@@ -20,5 +20,5 @@ BINDIR="${BDIR}/bin"
 mkdir -p "$BINDIR"
 rm -rf "${BINDIR}/"*
 
-CGO_ENABLED=0 go build -ldflags="${LD_FLAGS}" -mod=vendor -o "${BINDIR}/docker-slim" "${BDIR}/cmd/docker-slim/main.go"
-CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="${LD_FLAGS}" -mod=vendor -o "${BINDIR}/docker-slim-sensor" "${BDIR}/cmd/docker-slim-sensor/main.go"
+CGO_ENABLED=0 go build -ldflags="${LD_FLAGS}" -mod=vendor -o "${BINDIR}/slim" "${BDIR}/cmd/slim/main.go"
+CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="${LD_FLAGS}" -mod=vendor -o "${BINDIR}/slim-sensor" "${BDIR}/cmd/slim-sensor/main.go"

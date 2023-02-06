@@ -42,7 +42,7 @@ func PrintCheckVersion(
 	printPrefix string,
 	info *CheckVersionInfo) {
 	if info != nil && info.Status == "success" && info.Outdated {
-		msg := "Your version of DockerSlim is out of date! Use the \"update\" command or download the new version from https://dockersl.im/install.html"
+		msg := "Your version of SlimToolkit is out of date! Use the \"update\" command or download the new version from https://dockersl.im/install.html"
 		if xc == nil {
 			fmt.Printf("%s info=version status=OUTDATED local=%s current=%s\n", printPrefix, v.Tag(), info.Current)
 			fmt.Printf("%s info=message message='%s'\n", printPrefix, msg)

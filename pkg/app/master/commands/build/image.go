@@ -217,7 +217,7 @@ func buildFatImage(
 			xc.Exit(exitCode)
 		}
 	} else {
-		fatImageRepoNameTag = fmt.Sprintf("docker-slim-tmp-fat-image.%v.%v",
+		fatImageRepoNameTag = fmt.Sprintf("slim-tmp-fat-image.%v.%v",
 			os.Getpid(), time.Now().UTC().Format("20060102150405"))
 	}
 
@@ -460,7 +460,7 @@ func buildOutputImage(
 	return outputImageName
 }
 
-//NOTE: lots of C&P from image_builder (TODO: refactor)
+// NOTE: lots of C&P from image_builder (TODO: refactor)
 const (
 	dsCmdPortInfo = "65501/tcp"
 	dsEvtPortInfo = "65502/tcp"

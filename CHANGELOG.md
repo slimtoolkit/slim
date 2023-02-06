@@ -1,5 +1,22 @@
 # Releases
 
+## 1.40.0 (1/15/2022)
+
+### New Features
+
+- Base image metadata for xray
+- Basic support for multiple image build engines (`--image-build-engine`, `--image-build-arch` parameters)
+
+### Improvements
+
+- dockerfile reverse engineering updates
+- buildkit dockerfile instruction support
+- name change
+
+### Bug Fixes
+
+- todo: add info
+
 ## 1.39.1 (11/12/2022)
 
 ## 1.39.0 (10/24/2022)

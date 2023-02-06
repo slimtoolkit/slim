@@ -7,5 +7,5 @@ while [ -h "$SOURCE" ] ; do SOURCE="$(readlink "$SOURCE")"; done
 BDIR="$( cd -P "$( dirname "$SOURCE" )/.." && pwd )"
 
 pushd $BDIR
-license-bill-of-materials github.com/docker-slim/docker-slim/cmd/docker-slim > $BDIR/lib-licenses.json
+license-bill-of-materials github.com/docker-slim/docker-slim/cmd/slim > $BDIR/lib-licenses.json
 popd

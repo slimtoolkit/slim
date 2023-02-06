@@ -48,7 +48,7 @@ const (
 	sensorModeFlagDefault = sensorModeControlled
 
 	commandsFileFlagUsage   = "provide a JSONL-encoded file with one ore more sensor commands (standalone mode only)"
-	commandsFileFlagDefault = "/opt/dockerslim/commands.json"
+	commandsFileFlagDefault = "/opt/_slim/commands.json"
 
 	lifecycleHookCommandFlagUsage   = "set path to an executable that'll be invoked at various sensor lifecycle events (post-start, pre-shutdown, etc)"
 	lifecycleHookCommandFlagDefault = ""
@@ -202,7 +202,7 @@ func newSensor(
 
 		// To preserve the backward compatibility, don't forward
 		// signals to the target app in the default (controlled) mode.
-		initSignalHandlers(func() {
+		startSystemSignalsMonitor(func() {
 			cancel()
 			time.Sleep(2 * time.Second)
 		})

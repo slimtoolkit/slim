@@ -8,7 +8,7 @@ import (
 
 const (
 	Name  = "install"
-	Usage = "Installs docker-slim"
+	Usage = "Installs slim"
 	Alias = "i"
 )
 

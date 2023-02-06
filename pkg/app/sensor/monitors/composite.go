@@ -186,7 +186,8 @@ func Compose(
 }
 
 // TODO: Consider adding an option to make fanotify
-//       and pevent monitor errors non-fatal.
+//
+//	and pevent monitor errors non-fatal.
 func (m *monitor) Start() error {
 	log.Info("sensor: starting monitors...")
 

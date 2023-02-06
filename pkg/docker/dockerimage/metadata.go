@@ -1,6 +1,8 @@
 package dockerimage
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"path/filepath"
 	"strings"
 	"time"
@@ -93,6 +95,10 @@ type ConfigObject struct {
 	History    []XHistory `json:"history,omitempty"`
 	OSVersion  string     `json:"os.version,omitempty"`
 	OSFeatures []string   `json:"os.features,omitempty"`
+
+	//buildkit build info
+	BuildInfoRaw     string `json:"moby.buildkit.buildinfo.v1,omitempty"`
+	BuildInfoDecoded *BuildKitBuildInfo
 }
 
 //data structures from https://github.com/moby/moby/blob/master/image/rootfs.go
@@ -178,4 +184,56 @@ type HealthConfig struct {
 	// Retries is the number of consecutive failures needed to consider a container as unhealthy.
 	// Zero means inherit.
 	Retries int `json:",omitempty"`
+}
+
+//data structures from https://github.com/moby/buildkit/blob/master/util/buildinfo/types/types.go
+
+type BuildKitBuildInfo struct {
+	// Frontend defines the frontend used to build.
+	Frontend string `json:"frontend,omitempty"`
+	// Attrs defines build request attributes.
+	Attrs map[string]*string `json:"attrs,omitempty"`
+	// Sources defines build dependencies.
+	Sources []*BuildSource `json:"sources,omitempty"`
+	// Deps defines context dependencies.
+	Deps map[string]BuildKitBuildInfo `json:"deps,omitempty"`
+}
+
+type BuildSource struct {
+	// Type defines the SourceType source type (docker-image, git, http).
+	Type SourceType `json:"type,omitempty"`
+	// Ref is the reference of the source.
+	Ref string `json:"ref,omitempty"`
+	// Alias is a special field used to match with the actual source ref
+	// because frontend might have already transformed a string user typed
+	// before generating LLB.
+	Alias string `json:"alias,omitempty"`
+	// Pin is the source digest.
+	Pin string `json:"pin,omitempty"`
+}
+
+type SourceType string
+
+const (
+	SourceTypeDockerImage SourceType = "docker-image"
+	SourceTypeGit         SourceType = "git"
+	SourceTypeHTTP        SourceType = "http"
+)
+
+func buildInfoDecode(encoded string) (*BuildKitBuildInfo, error) {
+	if encoded == "" {
+		return nil, nil
+	}
+
+	raw, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return nil, err
+	}
+
+	var info BuildKitBuildInfo
+	if err = json.Unmarshal(raw, &info); err != nil {
+		return nil, err
+	}
+
+	return &info, nil
 }

@@ -33,10 +33,10 @@ import (
 	v "github.com/docker-slim/docker-slim/pkg/version"
 )
 
-// DockerSlim app CLI constants
+// Main/driver app CLI constants
 const (
-	AppName  = "docker-slim"
-	AppUsage = "optimize and secure your Docker containers!"
+	AppName  = "slim"
+	AppUsage = "inspect, optimize and debug your containers!"
 )
 
 func registerCommands() {

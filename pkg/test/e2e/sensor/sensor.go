@@ -170,10 +170,10 @@ func (s *Sensor) StartControlled(ctx context.Context) error {
 			[]string{
 				"--name", s.contName,
 				"--user", s.user,
-				"--volume", s.sensorExePath + ":/opt/dockerslim/sensor",
+				"--volume", s.sensorExePath + ":/opt/_slim/sensor",
 				"--publish", fmt.Sprintf("%d", channel.CmdPort),
 				"--publish", fmt.Sprintf("%d", channel.EvtPort),
-				"--entrypoint", "/opt/dockerslim/sensor",
+				"--entrypoint", "/opt/_slim/sensor",
 			},
 		),
 		s.image.ID,
@@ -265,9 +265,9 @@ func (s *Sensor) StartStandalone(
 			[]string{
 				"--name", s.contName,
 				"--user", s.user,
-				"--volume", s.sensorExePath + ":/opt/dockerslim/sensor",
-				"--volume", commandsFilePath + ":/opt/dockerslim/commands.json",
-				"--entrypoint", "/opt/dockerslim/sensor",
+				"--volume", s.sensorExePath + ":/opt/_slim/sensor",
+				"--volume", commandsFilePath + ":/opt/_slim/commands.json",
+				"--entrypoint", "/opt/_slim/sensor",
 			},
 		),
 		s.image.ID,
@@ -276,7 +276,7 @@ func (s *Sensor) StartStandalone(
 			// Standalone flags
 			[]string{
 				"-m", "standalone",
-				"-c", "/opt/dockerslim/commands.json",
+				"-c", "/opt/_slim/commands.json",
 				"-s", stopSignal,
 				"-w", stopTimeout.String(),
 				"--",

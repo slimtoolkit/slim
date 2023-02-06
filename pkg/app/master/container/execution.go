@@ -272,10 +272,10 @@ func (ref *Execution) Start() error {
 		}
 	}
 
-	ref.monitorContainerExit()
+	go ref.monitorContainerExitSync()
 
 	if ref.cleanupOnSysExit {
-		ref.monitorSysExit()
+		go ref.monitorSysExitSync()
 	}
 
 	if ref.options != nil {
@@ -344,7 +344,7 @@ func (ref *Execution) Start() error {
 	}
 
 	if ref.options != nil && ref.options.Terminal {
-		ref.monitorTerminalSize()
+		go ref.monitorTerminalSizeSync()
 
 		if ref.terminalExitChan != nil {
 			attachErr := <-ref.terminalExitChan
@@ -419,110 +419,108 @@ func (ref *Execution) Wait() (int, error) {
 	return ref.APIClient.WaitContainer(ref.ContainerID)
 }
 
-func (ref *Execution) monitorContainerExit() {
+func (ref *Execution) monitorContainerExitSync() {
 	ref.APIClient.AddEventListener(ref.dockerEventCh)
-	go func() {
-		for {
-			select {
-			case devent := <-ref.dockerEventCh:
-				if devent == nil || devent.ID == "" || devent.Status == "" {
-					break
-				}
 
-				if devent.ID == ref.ContainerID {
-					if devent.Status == "die" {
-						ref.State = XSExited
+	for {
+		select {
+		case devent := <-ref.dockerEventCh:
+			if devent == nil || devent.ID == "" || devent.Status == "" {
+				break
+			}
 
-						exitEvent := &ExecutionEvenInfo{
-							Event: XEExited,
-						}
+			if devent.ID == ref.ContainerID {
+				if devent.Status == "die" {
+					ref.State = XSExited
 
-						nonZeroExitCode := false
-						exitCodeStr, ok := devent.Actor.Attributes["exitCode"]
-						if ok && exitCodeStr != "" && exitCodeStr != "0" {
-							nonZeroExitCode = true
-						}
+					exitEvent := &ExecutionEvenInfo{
+						Event: XEExited,
+					}
 
-						if nonZeroExitCode {
-							if ref.isInterrupted && exitCodeStr == "137" {
-								if ref.logger != nil {
-									ref.logger.Tracef("container interrupted (expected) = %s", ref.ContainerID)
-								}
-							} else {
-								ref.State = XSExitedCrash
-								ref.Crashed = true
-								if ref.printState && ref.xc != nil {
-									ref.xc.Out.Info("container",
-										ovars{
-											"status":    "crashed",
-											"id":        ref.ContainerID,
-											"exit.code": exitCodeStr,
-										})
+					nonZeroExitCode := false
+					exitCodeStr, ok := devent.Actor.Attributes["exitCode"]
+					if ok && exitCodeStr != "" && exitCodeStr != "0" {
+						nonZeroExitCode = true
+					}
 
-									if ref.logger != nil {
-										ref.logger.Tracef("container crashed = %s", ref.ContainerID)
-									}
-								}
-
-								exitEvent.Event = XEExitedCrash
+					if nonZeroExitCode {
+						if ref.isInterrupted && exitCodeStr == "137" {
+							if ref.logger != nil {
+								ref.logger.Tracef("container interrupted (expected) = %s", ref.ContainerID)
 							}
-						}
-
-						if exitEvent.Event == XEExited {
+						} else {
+							ref.State = XSExitedCrash
+							ref.Crashed = true
 							if ref.printState && ref.xc != nil {
 								ref.xc.Out.Info("container",
 									ovars{
-										"status":    "exited",
+										"status":    "crashed",
 										"id":        ref.ContainerID,
 										"exit.code": exitCodeStr,
 									})
 
 								if ref.logger != nil {
-									ref.logger.Tracef("container exited = %s", ref.ContainerID)
+									ref.logger.Tracef("container crashed = %s", ref.ContainerID)
 								}
 							}
-						}
 
-						if ref.eventCh != nil {
-							ref.eventCh <- exitEvent
+							exitEvent.Event = XEExitedCrash
 						}
 					}
-				}
 
-			case <-ref.dockerEventStopCh:
-				if ref.logger != nil {
-					ref.logger.Debug("execution.Run: Docker event monitor stopped")
+					if exitEvent.Event == XEExited {
+						if ref.printState && ref.xc != nil {
+							ref.xc.Out.Info("container",
+								ovars{
+									"status":    "exited",
+									"id":        ref.ContainerID,
+									"exit.code": exitCodeStr,
+								})
+
+							if ref.logger != nil {
+								ref.logger.Tracef("container exited = %s", ref.ContainerID)
+							}
+						}
+					}
+
+					if ref.eventCh != nil {
+						ref.eventCh <- exitEvent
+					}
 				}
-				return
 			}
+
+		case <-ref.dockerEventStopCh:
+			if ref.logger != nil {
+				ref.logger.Debug("container.Execution.monitorContainerExitSync: Docker event monitor stopped")
+			}
+			return
 		}
-	}()
+	}
 }
 
-func (ref *Execution) monitorSysExit() {
+func (ref *Execution) monitorSysExitSync() {
 	signals := make(chan os.Signal, 1)
 	signal.Notify(signals, syscall.SIGINT)
-	go func() {
-		<-signals
-		ref.isInterrupted = true
-		//_ = ref.APIClient.KillContainer(dockerapi.KillContainerOptions{ID: ref.ContainerID})
-		//if ref.logger != nil {
-		//	ref.logger.Debugf("Execution.monitorSysExit: received SIGINT, killing container %s", ref.ContainerID)
-		//}
 
-		if ref.eventCh != nil {
-			ref.eventCh <- &ExecutionEvenInfo{
-				Event: XEInterrupt,
-			}
-		}
+	<-signals
+	ref.isInterrupted = true
+	//_ = ref.APIClient.KillContainer(dockerapi.KillContainerOptions{ID: ref.ContainerID})
+	//if ref.logger != nil {
+	//	ref.logger.Debugf("Execution.monitorSysExitSync: received SIGINT, killing container %s", ref.ContainerID)
+	//}
 
-		err := ref.Stop()
-		if err != nil {
-			if ref.logger != nil {
-				ref.logger.Debugf("ref.Stop error: id=%s err=%v", ref.ContainerID, err)
-			}
+	if ref.eventCh != nil {
+		ref.eventCh <- &ExecutionEvenInfo{
+			Event: XEInterrupt,
 		}
-	}()
+	}
+
+	err := ref.Stop()
+	if err != nil {
+		if ref.logger != nil {
+			ref.logger.Debugf("ref.Stop error: id=%s err=%v", ref.ContainerID, err)
+		}
+	}
 }
 
 func (ref *Execution) startTerminal() {
@@ -608,18 +606,16 @@ func (ref *Execution) ShowContainerLogs() {
 	}
 }
 
-func (ref *Execution) monitorTerminalSize() {
+func (ref *Execution) monitorTerminalSizeSync() {
 	ref.updateTerminalSize()
 
-	go func() {
-		winchCh := make(chan os.Signal, 1)
-		signal.Notify(winchCh, syscall.SIGWINCH)
-		defer signal.Stop(winchCh)
+	winchCh := make(chan os.Signal, 1)
+	signal.Notify(winchCh, syscall.SIGWINCH)
+	defer signal.Stop(winchCh)
 
-		for range winchCh {
-			ref.updateTerminalSize()
-		}
-	}()
+	for range winchCh {
+		ref.updateTerminalSize()
+	}
 }
 
 func (ref *Execution) updateTerminalSize() error {

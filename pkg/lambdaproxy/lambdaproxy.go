@@ -64,7 +64,7 @@ type HTTPResponse struct {
 	Body       string   `json:"body"`
 }
 
-//encode and decode options - future placeholder for v1 and v2 options of lambda results
+// encode and decode options - future placeholder for v1 and v2 options of lambda results
 type EncodeOptions struct {
 	version string `json:"version"`
 }

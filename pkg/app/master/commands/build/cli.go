@@ -513,6 +513,17 @@ var CLI = &cli.Command{
 			}
 		}
 
+		if len(includePaths) > 0 {
+			if _, found := includePaths["/"]; found {
+				delete(includePaths, "/")
+				xc.Out.Info("params",
+					ovars{
+						"include.path": "/",
+						"message":      "ignoring",
+					})
+			}
+		}
+
 		creportIncludePaths, err := commands.ParsePathsCreportFile(ctx.String(FlagIncludePathsCreportFile))
 		if err != nil {
 			xc.Out.Error("param.error.include.paths.creport.file", err.Error())
