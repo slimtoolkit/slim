@@ -57,7 +57,7 @@ function get_slim() {
   FILENAME="dist_${DIST}.${EXT}"
 
   echo " - Downloading ${URL}/${FILENAME}"
-  TMP_DIR=$(mktemp --directory)
+  TMP_DIR=$(mktemp -d)
   curl -sLo "${TMP_DIR}/${FILENAME}" "${URL}/${FILENAME}"
 
   echo " - Unpacking ${FILENAME}"
