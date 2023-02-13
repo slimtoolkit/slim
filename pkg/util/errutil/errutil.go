@@ -90,7 +90,7 @@ func showCommunityInfo() {
 // the chances to get this error.
 //
 // Some examples from the wild:
-//  - https://github.com/gitpod-io/gitpod/blob/405d44b74b5ac1dffe20e076d59c2b5986f18960/components/common-go/process/process.go#L18.
+//   - https://github.com/gitpod-io/gitpod/blob/405d44b74b5ac1dffe20e076d59c2b5986f18960/components/common-go/process/process.go#L18.
 func IsNoChildProcesses(err error) bool {
 	if err == nil {
 		return false

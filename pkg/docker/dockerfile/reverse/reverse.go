@@ -188,6 +188,16 @@ type tbrecord struct {
 
 const tbDuration = (15 * time.Minute)
 
+// DockerfileFromHistoryData recreates Dockerfile information from container image history
+func DockerfileFromHistoryData(data string) (*Dockerfile, error) {
+	var imageHistory []docker.ImageHistory
+	if err := json.NewDecoder(strings.NewReader(data)).Decode(&imageHistory); err != nil {
+		return nil, err
+	}
+
+	return DockerfileFromHistoryStruct(imageHistory)
+}
+
 // DockerfileFromHistory recreates Dockerfile information from container image history
 func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfile, error) {
 	//TODO: make it possible to pass the history information as a param
@@ -197,6 +207,11 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 		return nil, err
 	}
 
+	return DockerfileFromHistoryStruct(imageHistory)
+}
+
+// DockerfileFromHistoryStruct recreates Dockerfile information from container image history
+func DockerfileFromHistoryStruct(imageHistory []docker.ImageHistory) (*Dockerfile, error) {
 	var out Dockerfile
 
 	log.Debugf("\n\nIMAGE HISTORY =>\n%#v\n\n", imageHistory)
@@ -268,50 +283,13 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 				processed := false
 				//rawInst := rawLine
 				if strings.HasPrefix(rawInst, runInstArgsPrefix) {
-					parts := strings.SplitN(rawInst, " ", 2)
-					if len(parts) == 2 {
-						withArgs := strings.TrimSpace(parts[1])
-						argNumStr := parts[0][1:]
-						argNum, err := strconv.Atoi(argNumStr)
-						if err == nil {
-							if withArgsArray, err := shlex.Split(withArgs); err == nil {
-								if len(withArgsArray) > argNum {
-									rawInstParts := withArgsArray[argNum:]
-									processed = true
-									if len(rawInstParts) > 2 &&
-										rawInstParts[0] == defaultRunInstShell &&
-										rawInstParts[1] == "-c" {
-										isExecForm = false
-										rawInstParts = rawInstParts[2:]
-
-										inst = fmt.Sprintf("RUN %s", strings.Join(rawInstParts, " "))
-										inst = strings.TrimSpace(inst)
-									} else {
-										isExecForm = true
-
-										var outJson bytes.Buffer
-										encoder := json.NewEncoder(&outJson)
-										encoder.SetEscapeHTML(false)
-										err := encoder.Encode(rawInstParts)
-										if err == nil {
-											inst = fmt.Sprintf("RUN %s", outJson.String())
-										}
-									}
-								} else {
-									log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed - %v (%v)", rawInst, err)
-								}
-							} else {
-								log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed - %v (%v)", rawInst, err)
-							}
-
-						} else {
-							log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - malformed number of ARGs - %v (%v)", rawInst, err)
-						}
-					} else {
-						log.Infof("ReverseDockerfileFromHistory - RUN with ARGs - unexpected number of parts - %v", rawInst)
+					var err error
+					inst, processed, isExecForm, err = stripRunInstArgs(rawInst) //should not be ':='
+					if err != nil {
+						log.Debugf("stripRunInstArgs: err -> %v\n", err)
 					}
 				}
-				//todo: RUN inst with ARGS for buildkit
+
 				if hasInstructionPrefix(rawInst) {
 					inst = rawInst
 				} else {
@@ -643,6 +621,57 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 	   https://github.com/CenturyLinkLabs/imagelayers
 	   https://github.com/CenturyLinkLabs/imagelayers-graph
 	*/
+}
+
+func stripRunInstArgs(rawInst string) (string, bool, bool, error) {
+	parts := strings.SplitN(rawInst, " ", 2)
+	if len(parts) == 2 {
+		withArgs := strings.TrimSpace(parts[1])
+		argNumStr := parts[0][1:]
+		argNum, err := strconv.Atoi(argNumStr)
+		if err == nil {
+			if withArgsArray, err := shlex.Split(withArgs); err == nil {
+				if len(withArgsArray) > argNum {
+					rawInstParts := withArgsArray[argNum:]
+					isExecForm := false
+					processed := true
+					inst := ""
+					if len(rawInstParts) > 2 &&
+						rawInstParts[0] == defaultRunInstShell &&
+						rawInstParts[1] == "-c" {
+						isExecForm = false
+						rawInstParts = rawInstParts[2:]
+
+						inst = fmt.Sprintf("RUN %s", strings.Join(rawInstParts, " "))
+						inst = strings.TrimSpace(inst)
+					} else {
+						isExecForm = true
+
+						var outJson bytes.Buffer
+						encoder := json.NewEncoder(&outJson)
+						encoder.SetEscapeHTML(false)
+						err = encoder.Encode(rawInstParts)
+						if err == nil {
+							inst = fmt.Sprintf("RUN %s", outJson.String())
+						}
+					}
+
+					return inst, processed, isExecForm, err
+				} else {
+					log.Infof("reverse.stripRunInstArgs - RUN with ARGs - malformed - %v (%v)", rawInst, err)
+				}
+			} else {
+				log.Infof("reverse.stripRunInstArgs - RUN with ARGs - malformed - %v (%v)", rawInst, err)
+			}
+
+		} else {
+			log.Infof("reverse.stripRunInstArgs - RUN with ARGs - malformed number of ARGs - %v (%v)", rawInst, err)
+		}
+	} else {
+		log.Infof("reverse.stripRunInstArgs - RUN with ARGs - unexpected number of parts - %v", rawInst)
+	}
+
+	return "", false, false, nil
 }
 
 // SaveDockerfileData saves the Dockerfile information to a file
