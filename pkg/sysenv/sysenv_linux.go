@@ -180,7 +180,7 @@ var seccompModes = map[string]SeccompModeName{
 const procStatusPat = "/proc/%s/status"
 
 func SeccompMode(pid int) (SeccompModeName, error) {
-	fname := procFileName(0, "status")
+	fname := procFileName(pid, "status")
 	fdata, err := fileData(fname)
 	if err != nil {
 		return "", err
