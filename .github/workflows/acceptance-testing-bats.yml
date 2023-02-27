@@ -14,7 +14,7 @@ jobs:
         go: ['1.16', '1.18']
     runs-on: 'ubuntu-latest'
     steps:
-      - uses: actions/cache@v3.2.4
+      - uses: actions/cache@v3.2.6
         with:
           path: |
             ~/.cache/go-build
