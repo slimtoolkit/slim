@@ -1330,7 +1330,10 @@ func (p *artifactStore) saveArtifacts() {
 		}
 	}
 
-	log.Debugf("saveArtifacts - copy files (%v)", len(p.fileMap))
+	//NOTE: need to copy the files after the links are copied
+	log.Debugf("saveArtifacts - copy files (%v) and copy additional files checked at runtime...", len(p.fileMap))
+	ngxEnsured := false
+
 copyFiles:
 	for srcFileName, artifactInfo := range p.fileMap {
 		for _, xpattern := range excludePatterns {
@@ -1359,8 +1362,8 @@ copyFiles:
 			continue
 		}
 
-		dstFilePath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFileName)
-		log.Debug("saveArtifacts - saving file data => ", dstFilePath)
+		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFileName)
+		log.Debug("saveArtifacts - saving file data => ", filePath)
 
 		if artifactInfo != nil &&
 			artifactInfo.FSActivity != nil &&
@@ -1369,17 +1372,13 @@ copyFiles:
 			//NOTE: later have an option to save 'checked' only files without data
 		}
 
-		err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, dstFilePath, true)
+		err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, filePath, true)
 		if err != nil {
 			log.Warn("saveArtifacts - error saving file => ", err)
 		}
-	}
 
-	//NOTE: need to copy the files after the links are copied
-	log.Debug("saveArtifacts - copy additional files checked at runtime....")
-	ngxEnsured := false
-	for fileName := range p.fileMap {
-		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, fileName)
+		///////////////////
+		fileName := srcFileName
 		p.detectAppStack(fileName)
 
 		if p.cmd.IncludeAppNuxtDir ||
@@ -1591,6 +1590,7 @@ copyFiles:
 				log.Warn("saveArtifacts - error fixing py3 cache file => ", err)
 			}
 		}
+		///////////////////
 	}
 
 	log.Debugf("saveArtifacts[bsa] - copy files (%v)", len(p.saFileMap))
