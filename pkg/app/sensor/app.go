@@ -103,13 +103,14 @@ func Run() {
 	activeCaps, maxCaps, err := sysenv.Capabilities(0)
 	errutil.WarnOn(err)
 	log.Infof("sensor: ver=%v", version.Current())
-	log.Debugf("sensor: uid=%v euid=%v", os.Getuid(), os.Geteuid())
-	log.Debugf("sensor: privileged => %v", sysenv.IsPrivileged())
-	log.Debugf("sensor: active capabilities => %#v", activeCaps)
-	log.Debugf("sensor: max capabilities => %#v", maxCaps)
-	log.Debugf("sensor: sysinfo => %#v", system.GetSystemInfo())
-	log.Debugf("sensor: kernel flags => %#v", system.DefaultKernelFeatures.Raw)
 	log.Debugf("sensor: args => %#v", os.Args)
+
+	log.Tracef("sensor: uid=%v euid=%v", os.Getuid(), os.Geteuid())
+	log.Tracef("sensor: privileged => %v", sysenv.IsPrivileged())
+	log.Tracef("sensor: active capabilities => %#v", activeCaps)
+	log.Tracef("sensor: max capabilities => %#v", maxCaps)
+	log.Tracef("sensor: sysinfo => %#v", system.GetSystemInfo())
+	log.Tracef("sensor: kernel flags => %#v", system.DefaultKernelFeatures.Raw)
 
 	var artifactsExtra []string
 	if len(*commandsFile) > 0 {

@@ -246,7 +246,7 @@ func (a *artifactor) GetCurrentPaths(root string, excludes []string) (map[string
 			}
 
 			if err != nil {
-				log.Warnf("sensor: getCurrentPaths() - skipping %s with error: %v", pth, err)
+				log.Debugf("sensor: getCurrentPaths() - skipping %s with error: %v", pth, err)
 				return nil
 			}
 
@@ -309,15 +309,15 @@ func (a *artifactor) PrepareEnv(cmd *command.StartMonitor) error {
 			if isDir {
 				err, errs := fsutil.CopyDir(cmd.KeepPerms, inPath, dstPath, true, true, nil, nil, nil)
 				if err != nil {
-					log.Warnf("sensor.app.prepareEnv.CopyDir(%v,%v) error: %v", inPath, dstPath, err)
+					log.Debugf("sensor.app.prepareEnv.CopyDir(%v,%v) error: %v", inPath, dstPath, err)
 				}
 
 				if len(errs) > 0 {
-					log.Warnf("sensor.app.prepareEnv.CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
+					log.Debugf("sensor.app.prepareEnv.CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
 				}
 			} else {
 				if err := fsutil.CopyFile(cmd.KeepPerms, inPath, dstPath, true); err != nil {
-					log.Warnf("sensor.app.prepareEnv.CopyFile(%v,%v) error: %v", inPath, dstPath, err)
+					log.Debugf("sensor.app.prepareEnv.CopyFile(%v,%v) error: %v", inPath, dstPath, err)
 				}
 			}
 		}
@@ -326,7 +326,7 @@ func (a *artifactor) PrepareEnv(cmd *command.StartMonitor) error {
 			dstPath := fmt.Sprintf("%s%s", preservedDirPath, inPath)
 			if fsutil.Exists(dstPath) {
 				if err := fsutil.SetAccess(dstPath, perms); err != nil {
-					log.Warnf("sensor.app.prepareEnv.SetPerms(%v,%v) error: %v", dstPath, perms, err)
+					log.Debugf("sensor.app.prepareEnv.SetPerms(%v,%v) error: %v", dstPath, perms, err)
 				}
 			}
 		}
@@ -486,7 +486,7 @@ func (p *artifactStore) getArtifactFlags(artifactFileName string) map[string]boo
 func (p *artifactStore) prepareArtifact(artifactFileName string) {
 	srcLinkFileInfo, err := os.Lstat(artifactFileName)
 	if err != nil {
-		log.Warnf("prepareArtifact - artifact don't exist: %v (%v)", artifactFileName, os.IsNotExist(err))
+		log.Debugf("prepareArtifact - artifact don't exist: %v (%v)", artifactFileName, os.IsNotExist(err))
 		return
 	}
 
@@ -501,7 +501,7 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 
 	props.Flags = p.getArtifactFlags(artifactFileName)
 
-	log.Debugf("prepareArtifact - file mode:%v", srcLinkFileInfo.Mode())
+	log.Tracef("prepareArtifact - file mode:%v", srcLinkFileInfo.Mode())
 	switch {
 	case srcLinkFileInfo.Mode().IsRegular():
 		props.FileType = report.FileArtifactType
@@ -516,7 +516,7 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 	case (srcLinkFileInfo.Mode() & os.ModeSymlink) != 0:
 		linkRef, err := os.Readlink(artifactFileName)
 		if err != nil {
-			log.Warnf("prepareArtifact - error getting reference for symlink (%v) -> %v", err, artifactFileName)
+			log.Debugf("prepareArtifact - error getting reference for symlink (%v) -> %v", err, artifactFileName)
 			return
 		}
 
@@ -535,19 +535,19 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 			fullLinkRef := filepath.Join(linkDir, linkRef)
 			absLinkRef, err = filepath.Abs(fullLinkRef)
 			if err != nil {
-				log.Warnf("prepareArtifact - error getting absolute path for symlink ref (%v) -> %v => %v", err, artifactFileName, fullLinkRef)
+				log.Debugf("prepareArtifact - error getting absolute path for symlink ref (%v) -> %v => %v", err, artifactFileName, fullLinkRef)
 			}
 		} else {
 			absLinkRef, err = filepath.Abs(linkRef)
 			if err != nil {
-				log.Warnf("prepareArtifact - error getting absolute path for symlink ref 2 (%v) -> %v => %v", err, artifactFileName, linkRef)
+				log.Debugf("prepareArtifact - error getting absolute path for symlink ref 2 (%v) -> %v => %v", err, artifactFileName, linkRef)
 			}
 		}
 
 		if absLinkRef != "" {
 			evalLinkRef, err := filepath.EvalSymlinks(absLinkRef)
 			if err != nil {
-				log.Warnf("prepareArtifact - error evaluating symlink (%v) -> %v => %v", err, artifactFileName, absLinkRef)
+				log.Debugf("prepareArtifact - error evaluating symlink (%v) -> %v => %v", err, artifactFileName, absLinkRef)
 			} else {
 				if evalLinkRef != absLinkRef {
 					if _, ok := p.rawNames[evalLinkRef]; !ok {
@@ -565,10 +565,10 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 		p.rawNames[artifactFileName] = props
 
 	case srcLinkFileInfo.Mode().IsDir():
-		log.Warnf("prepareArtifact - is a directory (shouldn't see it)")
+		log.Debugf("prepareArtifact - is a directory (shouldn't see it) - %v", artifactFileName)
 		props.FileType = report.DirArtifactType
 	default:
-		log.Warn("prepareArtifact - other type (shouldn't see it)")
+		log.Debugf("prepareArtifact - other type (shouldn't see it) - %v", artifactFileName)
 	}
 }
 
@@ -593,7 +593,7 @@ func (p *artifactStore) prepareArtifacts() {
 				if found {
 					artifactInfo.FSActivity = fsaInfo
 				} else {
-					log.Errorf("prepareArtifacts - fsa artifact - missing in rawNames => %v", artifactFileName)
+					log.Debugf("[warn] prepareArtifacts - fsa artifact - missing in rawNames => %v", artifactFileName)
 				}
 
 				//TMP:
@@ -614,7 +614,7 @@ func (p *artifactStore) prepareArtifacts() {
 			if err == sodeps.ErrDepResolverNotFound {
 				log.Debug("prepareArtifacts.binArtifacts[bsa] - no static bin dep resolver")
 			} else {
-				log.Warnf("prepareArtifacts.binArtifacts[bsa] - %v - error getting bin artifacts => %v\n", artifactFileName, err)
+				log.Debugf("prepareArtifacts.binArtifacts[bsa] - %v - error getting bin artifacts => %v\n", artifactFileName, err)
 			}
 			continue
 		}
@@ -632,7 +632,7 @@ func (p *artifactStore) prepareArtifacts() {
 
 			bpathFileInfo, err := os.Lstat(bpath)
 			if err != nil {
-				log.Warnf("prepareArtifacts.binArtifacts[bsa] - artifact doesn't exist: %v (%v)", bpath, os.IsNotExist(err))
+				log.Debugf("prepareArtifacts.binArtifacts[bsa] - artifact doesn't exist: %v (%v)", bpath, os.IsNotExist(err))
 				continue
 			}
 
@@ -660,7 +660,7 @@ func (p *artifactStore) prepareArtifacts() {
 				p.rawNames[bpath] = bprops
 			default:
 				fsType = "unexpected"
-				log.Warnf("prepareArtifacts.binArtifacts[bsa] - unexpected ft - %s", bpath)
+				log.Debugf("prepareArtifacts.binArtifacts[bsa] - unexpected ft - %s", bpath)
 			}
 
 			log.Debugf("prepareArtifacts.binArtifacts[bsa] - bin artifact (%s) fsType=%s [%d]bdep=%s", artifactFileName, fsType, idx, bpath)
@@ -716,14 +716,14 @@ func (p *artifactStore) resolveLinks() {
 			var err error
 			absLinkRef, err = filepath.Abs(fullLinkRef)
 			if err != nil {
-				log.Warnf("resolveLinks.files - error getting absolute path for symlink ref (1) (%v) -> %v => %v", err, fpath, fullLinkRef)
+				log.Debugf("resolveLinks.files - error getting absolute path for symlink ref (1) (%v) -> %v => %v", err, fpath, fullLinkRef)
 				continue
 			}
 		} else {
 			var err error
 			absLinkRef, err = filepath.Abs(linkRef)
 			if err != nil {
-				log.Warnf("resolveLinks.files - error getting absolute path for symlink ref (2) (%v) -> %v => %v", err, fpath, linkRef)
+				log.Debugf("resolveLinks.files - error getting absolute path for symlink ref (2) (%v) -> %v => %v", err, fpath, linkRef)
 				continue
 			}
 		}
@@ -731,7 +731,7 @@ func (p *artifactStore) resolveLinks() {
 		//todo: skip "/proc/..." references
 		evalLinkRef, err := filepath.EvalSymlinks(absLinkRef)
 		if err != nil {
-			log.Warnf("resolveLinks.files - error evaluating symlink (%v) -> %v => %v", err, fpath, absLinkRef)
+			log.Debugf("resolveLinks.files - error evaluating symlink (%v) -> %v => %v", err, fpath, absLinkRef)
 		}
 
 		//detecting intermediate dir symlinks
@@ -881,7 +881,7 @@ func (p *artifactStore) saveOSLibsNetwork() {
 		}
 
 		if err := fsutil.CopyFile(p.cmd.KeepPerms, fp, dstPath, true); err != nil {
-			log.Warnf("sensor.artifactStore.saveOSLibsNetwork: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
+			log.Debugf("sensor.artifactStore.saveOSLibsNetwork: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
 		}
 	}
 
@@ -933,7 +933,7 @@ func (p *artifactStore) saveOSLibsNetwork() {
 					if err == sodeps.ErrDepResolverNotFound {
 						log.Debug("sensor.artifactStore.saveOSLibsNetwork[bsa] - no static bin dep resolver")
 					} else {
-						log.Warnf("sensor.artifactStore.saveOSLibsNetwork[bsa] - %v - error getting bin artifacts => %v\n", fp, err)
+						log.Debugf("sensor.artifactStore.saveOSLibsNetwork[bsa] - %v - error getting bin artifacts => %v\n", fp, err)
 					}
 					continue
 				}
@@ -972,7 +972,7 @@ func (p *artifactStore) saveOSLibsNetwork() {
 		}
 
 		if err := fsutil.CopyFile(p.cmd.KeepPerms, fp, dstPath, true); err != nil {
-			log.Warnf("sensor.artifactStore.saveOSLibsNetwork: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
+			log.Debugf("sensor.artifactStore.saveOSLibsNetwork: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
 		}
 	}
 }
@@ -1023,7 +1023,7 @@ func (p *artifactStore) saveCertsData() {
 			if fsutil.Exists(fname) {
 				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, fname)
 				if err := fsutil.CopyFile(p.cmd.KeepPerms, fname, dstPath, true); err != nil {
-					log.Warnf("sensor.artifactStore.saveCertsData.copyCertFiles: fsutil.CopyFile(%v,%v) error - %v", fname, dstPath, err)
+					log.Debugf("sensor.artifactStore.saveCertsData.copyCertFiles: fsutil.CopyFile(%v,%v) error - %v", fname, dstPath, err)
 				}
 			}
 		}
@@ -1038,7 +1038,7 @@ func (p *artifactStore) saveCertsData() {
 				if fsutil.IsDir(fname) {
 					err, errs := fsutil.CopyDir(p.cmd.KeepPerms, fname, dstPath, true, true, nil, nil, nil)
 					if err != nil {
-						log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyDir(%v,%v) error: %v", fname, dstPath, err)
+						log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyDir(%v,%v) error: %v", fname, dstPath, err)
 					} else if copyLinkTargets {
 						foList, err := ioutil.ReadDir(fname)
 						if err == nil {
@@ -1049,7 +1049,7 @@ func (p *artifactStore) saveCertsData() {
 								if fsutil.IsSymlink(fullPath) {
 									linkRef, err := os.Readlink(fullPath)
 									if err != nil {
-										log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: os.Readlink(%v) error - %v", fullPath, err)
+										log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: os.Readlink(%v) error - %v", fullPath, err)
 										continue
 									}
 
@@ -1062,28 +1062,28 @@ func (p *artifactStore) saveCertsData() {
 												fname, fullPath, linkRef, targetFilePath)
 											dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, targetFilePath)
 											if err := fsutil.CopyFile(p.cmd.KeepPerms, targetFilePath, dstPath, true); err != nil {
-												log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyFile(%v,%v) error - %v", targetFilePath, dstPath, err)
+												log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyFile(%v,%v) error - %v", targetFilePath, dstPath, err)
 											}
 										} else {
-											log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: targetFilePath does not exist - %v", targetFilePath)
+											log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: targetFilePath does not exist - %v", targetFilePath)
 										}
 									}
 								}
 							}
 						} else {
-							log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: os.ReadDir(%v) error - %v", fname, err)
+							log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: os.ReadDir(%v) error - %v", fname, err)
 						}
 					}
 
 					if len(errs) > 0 {
-						log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyDir(%v,%v) copy errors: %+v", fname, dstPath, errs)
+						log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyDir(%v,%v) copy errors: %+v", fname, dstPath, errs)
 					}
 				} else if fsutil.IsSymlink(fname) {
 					if err := fsutil.CopySymlinkFile(p.cmd.KeepPerms, fname, dstPath, true); err != nil {
-						log.Warnf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopySymlinkFile(%v,%v) error - %v", fname, dstPath, err)
+						log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopySymlinkFile(%v,%v) error - %v", fname, dstPath, err)
 					}
 				} else {
-					log.Warnf("artifactStore.saveCertsData.copyDir: unexpected obect type - %s", fname)
+					log.Debugf("artifactStore.saveCertsData.copyDir: unexpected obect type - %s", fname)
 				}
 			}
 		}
@@ -1097,7 +1097,7 @@ func (p *artifactStore) saveCertsData() {
 			if subdirPrefix != "" {
 				foList, err := ioutil.ReadDir(dirName)
 				if err != nil {
-					log.Warnf("sensor.artifactStore.saveCertsData.copyAppCertFiles: os.ReadDir(%v) error - %v", dirName, err)
+					log.Debugf("sensor.artifactStore.saveCertsData.copyAppCertFiles: os.ReadDir(%v) error - %v", dirName, err)
 					continue
 				}
 
@@ -1113,7 +1113,7 @@ func (p *artifactStore) saveCertsData() {
 			if fsutil.Exists(srcFilePath) {
 				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFilePath)
 				if err := fsutil.CopyFile(p.cmd.KeepPerms, srcFilePath, dstPath, true); err != nil {
-					log.Warnf("sensor.artifactStore.saveCertsData.copyAppCertFiles: fsutil.CopyFile(%v,%v) error - %v", srcFilePath, dstPath, err)
+					log.Debugf("sensor.artifactStore.saveCertsData.copyAppCertFiles: fsutil.CopyFile(%v,%v) error - %v", srcFilePath, dstPath, err)
 				}
 			}
 		}
@@ -1243,14 +1243,14 @@ func (p *artifactStore) saveArtifacts() {
 	symlinkWalk := func(linkName string, val interface{}) bool {
 		linkProps, ok := val.(*report.ArtifactProps)
 		if !ok {
-			log.Warnf("saveArtifacts.symlinkWalk: could not convert data - %s\n", linkName)
+			log.Debugf("saveArtifacts.symlinkWalk: could not convert data - %s\n", linkName)
 			return false
 		}
 
 		for _, xpattern := range excludePatterns {
 			found, err := doublestar.Match(xpattern, linkName)
 			if err != nil {
-				log.Warnf("saveArtifacts.symlinkWalk - copy links - [%v] excludePatterns Match error - %v\n", linkName, err)
+				log.Debugf("saveArtifacts.symlinkWalk - copy links - [%v] excludePatterns Match error - %v\n", linkName, err)
 				//should only happen when the pattern is malformed
 				return false
 			}
@@ -1274,7 +1274,7 @@ func (p *artifactStore) saveArtifacts() {
 		//log.Debugf("saveArtifacts.symlinkWalk - saving symlink - create subdir: linkName=%s linkDir=%s linkPath=%s", linkName, linkDir, linkPath)
 		err := os.MkdirAll(linkDir, 0777)
 		if err != nil {
-			log.Warnf("saveArtifacts.symlinkWalk - dir error (linkName=%s linkDir=%s linkPath=%s) => error=%v", linkName, linkDir, linkPath, err)
+			log.Debugf("saveArtifacts.symlinkWalk - dir error (linkName=%s linkDir=%s linkPath=%s) => error=%v", linkName, linkDir, linkPath, err)
 			//save it and try again later
 			symlinkFailed[linkName] = linkProps
 			return false
@@ -1292,7 +1292,7 @@ func (p *artifactStore) saveArtifacts() {
 			if os.IsExist(err) {
 				log.Debug("saveArtifacts.symlinkWalk - symlink already exists")
 			} else {
-				log.Warn("saveArtifacts.symlinkWalk - symlink create error ==> ", err)
+				log.Debugf("saveArtifacts.symlinkWalk - symlink create error ==> ", err)
 			}
 		}
 
@@ -1308,7 +1308,7 @@ func (p *artifactStore) saveArtifacts() {
 		//log.Debugf("saveArtifacts.symlinkFailed - saving symlink - create subdir: linkName=%s linkDir=%s linkPath=%s", linkName, linkDir, linkPath)
 		err := os.MkdirAll(linkDir, 0777)
 		if err != nil {
-			log.Warnf("saveArtifacts.symlinkFailed - dir error (linkName=%s linkDir=%s linkPath=%s) => error=%v", linkName, linkDir, linkPath, err)
+			log.Debugf("saveArtifacts.symlinkFailed - dir error (linkName=%s linkDir=%s linkPath=%s) => error=%v", linkName, linkDir, linkPath, err)
 			continue
 		}
 
@@ -1325,7 +1325,7 @@ func (p *artifactStore) saveArtifacts() {
 			if os.IsExist(err) {
 				log.Debug("saveArtifacts.symlinkFailed - symlink already exists")
 			} else {
-				log.Warn("saveArtifacts.symlinkFailed - symlink create error ==> ", err)
+				log.Debugf("saveArtifacts.symlinkFailed - symlink create error ==> %v", err)
 			}
 		}
 	}
@@ -1339,7 +1339,7 @@ copyFiles:
 		for _, xpattern := range excludePatterns {
 			found, err := doublestar.Match(xpattern, srcFileName)
 			if err != nil {
-				log.Warnf("saveArtifacts - copy files - [%v] excludePatterns Match error - %v\n", srcFileName, err)
+				log.Debugf("saveArtifacts - copy files - [%v] excludePatterns Match error - %v\n", srcFileName, err)
 				//should only happen when the pattern is malformed
 				continue
 			}
@@ -1368,13 +1368,13 @@ copyFiles:
 		if artifactInfo != nil &&
 			artifactInfo.FSActivity != nil &&
 			artifactInfo.FSActivity.OpsCheckFile > 0 {
-			log.Debug("saveArtifacts - saving 'checked' file => ", srcFileName)
+			log.Debugf("saveArtifacts - saving 'checked' file => %v", srcFileName)
 			//NOTE: later have an option to save 'checked' only files without data
 		}
 
 		err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, filePath, true)
 		if err != nil {
-			log.Warn("saveArtifacts - error saving file => ", err)
+			log.Debugf("saveArtifacts - error saving file => %v", err)
 		}
 
 		///////////////////
@@ -1389,11 +1389,11 @@ copyFiles:
 			if isNuxtConfigFile(fileName) {
 				nuxtConfig, err := getNuxtConfig(fileName)
 				if err != nil {
-					log.Warnf("saveArtifacts: failed to get nuxt config: %v", err)
+					log.Debugf("saveArtifacts: failed to get nuxt config: %v", err)
 					continue
 				}
 				if nuxtConfig == nil {
-					log.Warn("saveArtifacts: nuxt config not found: ", fileName)
+					log.Debugf("saveArtifacts: nuxt config not found: %v", fileName)
 					continue
 				}
 
@@ -1554,13 +1554,13 @@ copyFiles:
 			log.Debug("saveArtifacts - processing ruby gem spec ==>", fileName)
 			err := rbEnsureGemFiles(fileName, p.storeLocation, "/files")
 			if err != nil {
-				log.Warn("saveArtifacts - error ensuring ruby gem files => ", err)
+				log.Debugf("saveArtifacts - error ensuring ruby gem files => %v", err)
 			}
 		} else if isNodePackageFile(fileName) {
 			log.Debug("saveArtifacts - processing node package file ==>", fileName)
 			err := nodeEnsurePackageFiles(p.cmd.KeepPerms, fileName, p.storeLocation, "/files")
 			if err != nil {
-				log.Warn("saveArtifacts - error ensuring node package files => ", err)
+				log.Debugf("saveArtifacts - error ensuring node package files => %v", err)
 			}
 
 			if len(p.cmd.IncludeNodePackages) > 0 {
@@ -1576,7 +1576,7 @@ copyFiles:
 						}
 					}
 				} else {
-					log.Warn("saveArtifacts - error getting node package config file => ", err)
+					log.Debugf("saveArtifacts - error getting node package config file => %v", err)
 				}
 			}
 
@@ -1587,7 +1587,7 @@ copyFiles:
 		} else {
 			err := fixPy3CacheFile(fileName, filePath)
 			if err != nil {
-				log.Warn("saveArtifacts - error fixing py3 cache file => ", err)
+				log.Debugf("saveArtifacts - error fixing py3 cache file => %v", err)
 			}
 		}
 		///////////////////
@@ -1599,7 +1599,7 @@ copyBsaFiles:
 		for _, xpattern := range excludePatterns {
 			found, err := doublestar.Match(xpattern, srcFileName)
 			if err != nil {
-				log.Warnf("saveArtifacts[bsa] - copy files - [%v] excludePatterns Match error - %v\n", srcFileName, err)
+				log.Debugf("saveArtifacts[bsa] - copy files - [%v] excludePatterns Match error - %v\n", srcFileName, err)
 				//should only happen when the pattern is malformed
 				continue
 			}
@@ -1618,7 +1618,7 @@ copyBsaFiles:
 		} else {
 			err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, dstFilePath, true)
 			if err != nil {
-				log.Warn("saveArtifacts[bsa] - error saving file => ", err)
+				log.Debugf("saveArtifacts[bsa] - error saving file => %v", err)
 			} else {
 				log.Debugf("saveArtifacts[bsa] - saved file (%s)", dstFilePath)
 			}
@@ -1633,7 +1633,7 @@ copyBsaFiles:
 		if _, err := os.Stat(passwdFilePath); err == nil {
 			//if err := cpFile(passwdFilePath, passwdFileTargetPath); err != nil {
 			if err := fsutil.CopyRegularFile(p.cmd.KeepPerms, passwdFilePath, passwdFileTargetPath, true); err != nil {
-				log.Warn("sensor: monitor - error copying user info file =>", err)
+				log.Debugf("sensor: monitor - error copying user info file => %v", err)
 			}
 		} else {
 			if os.IsNotExist(err) {
@@ -1650,17 +1650,17 @@ copyIncludes:
 		if isDir {
 			err, errs := fsutil.CopyDir(p.cmd.KeepPerms, inPath, dstPath, true, true, excludePatterns, nil, nil)
 			if err != nil {
-				log.Warnf("CopyDir(%v,%v) error: %v", inPath, dstPath, err)
+				log.Debugf("CopyDir(%v,%v) error: %v", inPath, dstPath, err)
 			}
 
 			if len(errs) > 0 {
-				log.Warnf("CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
+				log.Debugf("CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
 			}
 		} else {
 			for _, xpattern := range excludePatterns {
 				found, err := doublestar.Match(xpattern, inPath)
 				if err != nil {
-					log.Warnf("saveArtifacts - copy includes - [%v] excludePatterns Match error - %v\n", inPath, err)
+					log.Debugf("saveArtifacts - copy includes - [%v] excludePatterns Match error - %v\n", inPath, err)
 					//should only happen when the pattern is malformed
 					continue
 				}
@@ -1671,7 +1671,7 @@ copyIncludes:
 			}
 
 			if err := fsutil.CopyFile(p.cmd.KeepPerms, inPath, dstPath, true); err != nil {
-				log.Warnf("CopyFile(%v,%v) error: %v", inPath, dstPath, err)
+				log.Debugf("CopyFile(%v,%v) error: %v", inPath, dstPath, err)
 			}
 		}
 	}
@@ -1679,7 +1679,7 @@ copyIncludes:
 	for _, exePath := range p.cmd.IncludeExes {
 		exeArtifacts, err := sodeps.AllExeDependencies(exePath, true)
 		if err != nil {
-			log.Warnf("saveArtifacts - %v - error getting exe artifacts => %v\n", exePath, err)
+			log.Debugf("saveArtifacts - %v - error getting exe artifacts => %v", exePath, err)
 			continue
 		}
 
@@ -1689,7 +1689,7 @@ copyIncludes:
 		for _, apath := range exeArtifacts {
 			dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, apath)
 			if err := fsutil.CopyFile(p.cmd.KeepPerms, apath, dstPath, true); err != nil {
-				log.Warnf("CopyFile(%v,%v) error: %v", apath, dstPath, err)
+				log.Debugf("CopyFile(%v,%v) error: %v", apath, dstPath, err)
 			}
 		}
 	}
@@ -1697,17 +1697,17 @@ copyIncludes:
 	for _, binPath := range p.cmd.IncludeBins {
 		binArtifacts, err := sodeps.AllDependencies(binPath)
 		if err != nil {
-			log.Warnf("saveArtifacts - %v - error getting bin artifacts => %v\n", binPath, err)
+			log.Debugf("saveArtifacts - %v - error getting bin artifacts => %v", binPath, err)
 			continue
 		}
 
-		log.Debugf("saveArtifacts - include bin [%s]: artifacts (%d):\n%v\n",
+		log.Debugf("saveArtifacts - include bin [%s]: artifacts (%d):\n%v",
 			binPath, len(binArtifacts), strings.Join(binArtifacts, "\n"))
 
 		for _, bpath := range binArtifacts {
 			dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, bpath)
 			if err := fsutil.CopyFile(p.cmd.KeepPerms, bpath, dstPath, true); err != nil {
-				log.Warnf("CopyFile(%v,%v) error: %v", bpath, dstPath, err)
+				log.Debugf("CopyFile(%v,%v) error: %v", bpath, dstPath, err)
 			}
 		}
 	}
@@ -1721,11 +1721,11 @@ copyIncludes:
 			for _, spath := range shellArtifacts {
 				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, spath)
 				if err := fsutil.CopyFile(p.cmd.KeepPerms, spath, dstPath, true); err != nil {
-					log.Warnf("CopyFile(%v,%v) error: %v", spath, dstPath, err)
+					log.Debugf("CopyFile(%v,%v) error: %v", spath, dstPath, err)
 				}
 			}
 		} else {
-			log.Warnf("saveArtifacts - error getting shell artifacts => %v", err)
+			log.Debugf("saveArtifacts - error getting shell artifacts => %v", err)
 		}
 
 	}
@@ -1738,11 +1738,11 @@ copyIncludes:
 		tdTargetPath := fmt.Sprintf("%s/files/tmp", p.storeLocation)
 		if !fsutil.DirExists(tdTargetPath) {
 			if err := os.MkdirAll(tdTargetPath, os.ModeSticky|os.ModeDir|0777); err != nil {
-				log.Warn("saveArtifacts - error creating tmp directory => ", err)
+				log.Debugf("saveArtifacts - error creating tmp directory => %v", err)
 			}
 		} else {
 			if err := os.Chmod(tdTargetPath, os.ModeSticky|os.ModeDir|0777); err != nil {
-				log.Warn("saveArtifacts - error setting tmp directory permission ==> ", err)
+				log.Debugf("saveArtifacts - error setting tmp directory permission ==> %v", err)
 			}
 		}
 	}
@@ -1752,7 +1752,7 @@ copyIncludes:
 		if !fsutil.DirExists(tdTargetPath) {
 			//should use perms from source
 			if err := os.MkdirAll(tdTargetPath, 0755); err != nil {
-				log.Warn("saveArtifacts - error creating run directory => ", err)
+				log.Debugf("saveArtifacts - error creating run directory => %v", err)
 			}
 		}
 	}
@@ -1761,7 +1761,7 @@ copyIncludes:
 		tdTargetPath := fmt.Sprintf("%s/files%s", p.storeLocation, extraDir)
 		if fsutil.DirExists(extraDir) && !fsutil.DirExists(tdTargetPath) {
 			if err := fsutil.CopyDirOnly(p.cmd.KeepPerms, extraDir, tdTargetPath); err != nil {
-				log.Warnf("CopyDirOnly(%v,%v) error: %v", extraDir, tdTargetPath, err)
+				log.Debugf("CopyDirOnly(%v,%v) error: %v", extraDir, tdTargetPath, err)
 			}
 		}
 	}
@@ -1770,7 +1770,7 @@ copyIncludes:
 		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, inPath)
 		if fsutil.Exists(dstPath) {
 			if err := fsutil.SetAccess(dstPath, perms); err != nil {
-				log.Warnf("SetPerms(%v,%v) error: %v", dstPath, perms, err)
+				log.Debugf("SetPerms(%v,%v) error: %v", dstPath, perms, err)
 			}
 		}
 	}
@@ -1789,15 +1789,15 @@ copyIncludes:
 				if isDir {
 					err, errs := fsutil.CopyDir(p.cmd.KeepPerms, srcPath, dstPath, true, true, nil, nil, nil)
 					if err != nil {
-						log.Warnf("saveArtifacts.CopyDir(%v,%v) error: %v", srcPath, dstPath, err)
+						log.Debugf("saveArtifacts.CopyDir(%v,%v) error: %v", srcPath, dstPath, err)
 					}
 
 					if len(errs) > 0 {
-						log.Warnf("saveArtifacts.CopyDir(%v,%v) copy errors: %+v", srcPath, dstPath, errs)
+						log.Debugf("saveArtifacts.CopyDir(%v,%v) copy errors: %+v", srcPath, dstPath, errs)
 					}
 				} else {
 					if err := fsutil.CopyFile(p.cmd.KeepPerms, srcPath, dstPath, true); err != nil {
-						log.Warnf("saveArtifacts.CopyFile(%v,%v) error: %v", srcPath, dstPath, err)
+						log.Debugf("saveArtifacts.CopyFile(%v,%v) error: %v", srcPath, dstPath, err)
 					}
 				}
 			}
@@ -2004,7 +2004,7 @@ func (p *artifactStore) enumerateArtifacts() {
 
 		entries, err := os.ReadDir(curpath)
 		if err != nil {
-			log.WithError(err).Warn("artifactStore.enumerateArtifacts: readdir error")
+			log.WithError(err).Debug("artifactStore.enumerateArtifacts: readdir error")
 			// Keep processing though since it might have been a partial result.
 		}
 
@@ -2025,7 +2025,7 @@ func (p *artifactStore) enumerateArtifacts() {
 				log.
 					WithError(err).
 					WithField("path", curpath).
-					Warn("artifactStore.enumerateArtifacts: failed computing dir artifact props")
+					Debug("artifactStore.enumerateArtifacts: failed computing dir artifact props")
 			}
 			continue
 		}
@@ -2052,8 +2052,8 @@ func (p *artifactStore) enumerateArtifacts() {
 			} else {
 				log.
 					WithError(err).
-					WithField("paht", childpath).
-					Warn("artifactStore.enumerateArtifacts: failed computing artifact props")
+					WithField("path", childpath).
+					Debug("artifactStore.enumerateArtifacts: failed computing artifact props")
 			}
 		}
 	}
@@ -2248,7 +2248,7 @@ func fixPy3CacheFile(src, dst string) error {
 	if _, err := os.Stat(dstPyFilePath); err != nil && os.IsNotExist(err) {
 		//if err := cpFile(srcPyFilePath, dstPyFilePath); err != nil {
 		if err := fsutil.CopyRegularFile(true, srcPyFilePath, dstPyFilePath, true); err != nil {
-			log.Warnln("sensor: monitor - fixPy3CacheFile - error copying file =>", dstPyFilePath)
+			log.Debugf("sensor: monitor - fixPy3CacheFile - error copying file => %v", dstPyFilePath)
 			return err
 		}
 	}
@@ -2297,7 +2297,7 @@ func rbEnsureGemFiles(src, storeLocation, prefix string) error {
 					if _, err := os.Stat(extBuildFlagFilePathDst); err != nil && os.IsNotExist(err) {
 						//if err := cpFile(extBuildFlagFilePath, extBuildFlagFilePathDst); err != nil {
 						if err := fsutil.CopyRegularFile(true, extBuildFlagFilePath, extBuildFlagFilePathDst, true); err != nil {
-							log.Warnln("sensor: monitor - rbEnsureGemFiles - error copying file =>", extBuildFlagFilePathDst)
+							log.Debugf("sensor: monitor - rbEnsureGemFiles - error copying file => %v", extBuildFlagFilePathDst)
 							return err
 						}
 					}
@@ -2418,7 +2418,7 @@ func getNodePackageFileData(filePath string) (*NodePackageConfigSimple, error) {
 	var result NodePackageConfigSimple
 	err := fsutil.LoadStructFromFile(filePath, &result)
 	if err != nil {
-		log.Warnf("sensor: getNodePackageFileData(%s) - error loading data => %v", filePath, err)
+		log.Debugf("sensor: getNodePackageFileData(%s) - error loading data => %v", filePath, err)
 		return nil, err
 	}
 
@@ -2434,7 +2434,7 @@ func nodeEnsurePackageFiles(keepPerms bool, src, storeLocation, prefix string) e
 		if _, err := os.Stat(nodeGypFilePath); err == nil {
 			nodeGypFilePathDst := fmt.Sprintf("%s%s%s", storeLocation, prefix, nodeGypFilePath)
 			if err := fsutil.CopyRegularFile(keepPerms, nodeGypFilePath, nodeGypFilePathDst, true); err != nil {
-				log.Warnf("sensor: nodeEnsurePackageFiles - error copying %s => %v", nodeGypFilePath, err)
+				log.Debugf("sensor: nodeEnsurePackageFiles - error copying %s => %v", nodeGypFilePath, err)
 			}
 		}
 	}
@@ -2485,7 +2485,7 @@ func ngxEnsure(prefix string) {
 				err := os.MkdirAll(dstPath, 0777)
 				//err, errs := fsutil.CopyDir(true, ngxCommonTemp, dstPath, true, true, nil, nil, nil)
 				if err != nil {
-					log.Warnf("ngxEnsure - MkdirAll(%v) error: %v", dstPath, err)
+					log.Debugf("ngxEnsure - MkdirAll(%v) error: %v", dstPath, err)
 				}
 				//if len(errs) > 0 {
 				//	log.Warnf("ngxEnsure - CopyDir copy error: %+v", errs)
@@ -2506,7 +2506,7 @@ func ngxEnsure(prefix string) {
 			if !fsutil.DirExists(dstPath) {
 				err := os.MkdirAll(dstPath, 0777)
 				if err != nil {
-					log.Warnf("ngxEnsure -  MkdirAll(%v) error: %v", dstPath, err)
+					log.Debugf("ngxEnsure -  MkdirAll(%v) error: %v", dstPath, err)
 				}
 			}
 		} else {
@@ -2524,7 +2524,7 @@ func ngxEnsure(prefix string) {
 			if !fsutil.DirExists(dstPath) {
 				err := os.MkdirAll(dstPath, 0777)
 				if err != nil {
-					log.Warnf("ngxEnsure -  MkdirAll(%v) error: %v", dstPath, err)
+					log.Debugf("ngxEnsure -  MkdirAll(%v) error: %v", dstPath, err)
 				}
 			}
 		} else {
@@ -2568,7 +2568,7 @@ func shellDependencies() ([]string, error) {
 
 		exeArtifacts, err := sodeps.AllExeDependencies(shellPath, true)
 		if err != nil {
-			log.Warnf("shellDependencies - %v - error getting shell artifacts => %v", shellPath, err)
+			log.Debugf("shellDependencies - %v - error getting shell artifacts => %v", shellPath, err)
 			return nil, err
 		}
 
@@ -2577,7 +2577,7 @@ func shellDependencies() ([]string, error) {
 	}
 
 	if len(allDeps) == 0 {
-		log.Warnf("shellDependencies - no shell found")
+		log.Debug("shellDependencies - no shell found")
 		return nil, nil
 	}
 
@@ -2590,7 +2590,7 @@ func shellDependencies() ([]string, error) {
 
 		cmdArtifacts, err := sodeps.AllExeDependencies(cmdPath, true)
 		if err != nil {
-			log.Warnf("shellDependencies - %v - error getting cmd artifacts => %v", cmdPath, err)
+			log.Debugf("shellDependencies - %v - error getting cmd artifacts => %v", cmdPath, err)
 			return nil, err
 		}
 
@@ -2642,32 +2642,32 @@ func findSymlinks(files []string, mountPoint string, excludes []string) map[stri
 
 	checkPathSymlinks := func(symlinkFileName string) {
 		if _, ok := result[symlinkFileName]; ok {
-			log.Debugf("findSymlinks.checkPathSymlinks - symlink already in files -> %v", symlinkFileName)
+			log.Tracef("findSymlinks.checkPathSymlinks - symlink already in files -> %v", symlinkFileName)
 			return
 		}
 
 		linkRef, err := os.Readlink(symlinkFileName)
 		if err != nil {
-			log.Warnf("findSymlinks.checkPathSymlinks - error getting reference for symlink (%v) -> %v", err, symlinkFileName)
+			log.Debugf("findSymlinks.checkPathSymlinks - error getting reference for symlink (%v) -> %v", err, symlinkFileName)
 			return
 		}
 
 		var absLinkRef string
 		if !filepath.IsAbs(linkRef) {
 			linkDir := filepath.Dir(symlinkFileName)
-			log.Debugf("findSymlinks.checkPathSymlinks - relative linkRef %v -> %v +/+ %v", symlinkFileName, linkDir, linkRef)
+			log.Tracef("findSymlinks.checkPathSymlinks - relative linkRef %v -> %v +/+ %v", symlinkFileName, linkDir, linkRef)
 			fullLinkRef := filepath.Join(linkDir, linkRef)
 			var err error
 			absLinkRef, err = filepath.Abs(fullLinkRef)
 			if err != nil {
-				log.Warnf("findSymlinks.checkPathSymlinks - error getting absolute path for symlink ref (1) (%v) -> %v => %v", err, symlinkFileName, fullLinkRef)
+				log.Debugf("findSymlinks.checkPathSymlinks - error getting absolute path for symlink ref (1) (%v) -> %v => %v", err, symlinkFileName, fullLinkRef)
 				return
 			}
 		} else {
 			var err error
 			absLinkRef, err = filepath.Abs(linkRef)
 			if err != nil {
-				log.Warnf("findSymlinks.checkPathSymlinks - error getting absolute path for symlink ref (2) (%v) -> %v => %v", err, symlinkFileName, linkRef)
+				log.Debugf("findSymlinks.checkPathSymlinks - error getting absolute path for symlink ref (2) (%v) -> %v => %v", err, symlinkFileName, linkRef)
 				return
 			}
 		}
@@ -2675,7 +2675,7 @@ func findSymlinks(files []string, mountPoint string, excludes []string) map[stri
 		//todo: skip "/proc/..." references
 		evalLinkRef, err := filepath.EvalSymlinks(absLinkRef)
 		if err != nil {
-			log.Warnf("findSymlinks.checkPathSymlinks - error evaluating symlink (%v) -> %v => %v", err, symlinkFileName, absLinkRef)
+			log.Debugf("findSymlinks.checkPathSymlinks - error evaluating symlink (%v) -> %v => %v", err, symlinkFileName, absLinkRef)
 		}
 
 		//detecting intermediate dir symlinks
@@ -2691,13 +2691,13 @@ func findSymlinks(files []string, mountPoint string, excludes []string) map[stri
 			added := false
 			if strings.HasPrefix(fname, symlinkPrefix) {
 				result[symlinkFileName] = nil
-				log.Debugf("findSymlinks.checkPathSymlinks - added path symlink to files (0) -> %v", symlinkFileName)
+				log.Tracef("findSymlinks.checkPathSymlinks - added path symlink to files (0) -> %v", symlinkFileName)
 				added = true
 			}
 
 			if strings.HasPrefix(fname, absPrefix) {
 				result[symlinkFileName] = nil
-				log.Debugf("findSymlinks.checkPathSymlinks - added path symlink to files (1) -> %v", symlinkFileName)
+				log.Tracef("findSymlinks.checkPathSymlinks - added path symlink to files (1) -> %v", symlinkFileName)
 				added = true
 			}
 
@@ -2705,7 +2705,7 @@ func findSymlinks(files []string, mountPoint string, excludes []string) map[stri
 				absPrefix != evalPrefix &&
 				strings.HasPrefix(fname, evalPrefix) {
 				result[symlinkFileName] = nil
-				log.Debugf("findSymlinks.checkPathSymlinks - added path symlink to files (2) -> %v", symlinkFileName)
+				log.Tracef("findSymlinks.checkPathSymlinks - added path symlink to files (2) -> %v", symlinkFileName)
 				added = true
 			}
 
@@ -2832,14 +2832,14 @@ func findSymlinks(files []string, mountPoint string, excludes []string) map[stri
 			var err error
 			absLinkRef, err = filepath.Abs(fullLinkRef)
 			if err != nil {
-				log.Warnf("findSymlinks.walkSymlinks - error getting absolute path for symlink ref (1) (%v) -> %v => %v", err, symlinkFileName, fullLinkRef)
+				log.Debugf("findSymlinks.walkSymlinks - error getting absolute path for symlink ref (1) (%v) -> %v => %v", err, symlinkFileName, fullLinkRef)
 				break
 			}
 		} else {
 			var err error
 			absLinkRef, err = filepath.Abs(linkRef)
 			if err != nil {
-				log.Warnf("findSymlinks.walkSymlinks - error getting absolute path for symlink ref (2) (%v) -> %v => %v", err, symlinkFileName, linkRef)
+				log.Debugf("findSymlinks.walkSymlinks - error getting absolute path for symlink ref (2) (%v) -> %v => %v", err, symlinkFileName, linkRef)
 				break
 			}
 		}
@@ -2847,7 +2847,7 @@ func findSymlinks(files []string, mountPoint string, excludes []string) map[stri
 		//todo: skip "/proc/..." references
 		evalLinkRef, err := filepath.EvalSymlinks(absLinkRef)
 		if err != nil {
-			log.Warnf("findSymlinks.walkSymlinks - error evaluating symlink (%v) -> %v => %v", err, symlinkFileName, absLinkRef)
+			log.Debugf("findSymlinks.walkSymlinks - error evaluating symlink (%v) -> %v => %v", err, symlinkFileName, absLinkRef)
 		}
 
 		//detecting intermediate dir symlinks

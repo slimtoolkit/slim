@@ -38,6 +38,8 @@ type monitor struct {
 
 	status status
 	doneCh chan struct{}
+
+	logger *log.Entry
 }
 
 func NewMonitor(
@@ -48,6 +50,11 @@ func NewMonitor(
 	signalCh <-chan os.Signal,
 	errorCh chan<- error,
 ) Monitor {
+	logger := log.WithFields(log.Fields{
+		"app": "sensor",
+		"com": "ptmon",
+	})
+
 	ctx, cancel := context.WithCancel(ctx)
 	return &monitor{
 		ctx:    ctx,
@@ -62,15 +69,19 @@ func NewMonitor(
 		errorCh:  errorCh,
 
 		doneCh: make(chan struct{}),
+		logger: logger,
 	}
 }
 
 func (m *monitor) Start() error {
-	log.
-		WithField("name", m.runOpt.Cmd).
-		WithField("args", m.runOpt.Args).
-		Debug("sensor: starting target app...")
-	log.Info("ptmon: Start")
+	logger := m.logger.WithField("op", "Start")
+	logger.Info("call")
+	defer logger.Info("exit")
+
+	logger.WithFields(log.Fields{
+		"name": m.runOpt.Cmd,
+		"args": m.runOpt.Args,
+	}).Debug("starting target app...")
 
 	// Despite the name, ptrace.Run() is not blocking.
 	app, err := ptrace.Run(
@@ -87,18 +98,18 @@ func (m *monitor) Start() error {
 	m.app = app
 
 	appState := <-app.StateCh
-	log.
+	logger.
 		WithField("state", appState).
-		Debugf("ptmon: pta state watcher - new target app state")
+		Debugf("pta state watcher - new target app state")
 
 	if appState == ptrace.AppFailed {
 		// Don't need to wait for the 'done' state.
-		log.Error("ptmon: pta state watcher - target app failed")
+		logger.Error("pta state watcher - target app failed")
 		return fmt.Errorf("ptmon: target app startup failed: %q", appState)
 	}
 	if appState != ptrace.AppStarted {
 		// Cannot really happen.
-		log.Error("ptmon: pta state watcher - unexpected target app state")
+		logger.Error("pta state watcher - unexpected target app state")
 		return fmt.Errorf("ptmon: unexpected target app state %q", appState)
 	}
 
@@ -106,6 +117,10 @@ func (m *monitor) Start() error {
 
 	// Tracking the completetion of the monitor.
 	go func() {
+		logger := m.logger.WithField("op", "completetion.monitor")
+		logger.Info("call")
+		defer logger.Info("exit")
+
 		appState := <-app.StateCh
 		if appState == ptrace.AppDone {
 			m.status.report = <-app.ReportCh

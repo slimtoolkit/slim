@@ -43,7 +43,13 @@ func Run(
 	signalCh <-chan os.Signal,
 	errorCh chan<- error,
 ) (*App, error) {
-	log.Debug("ptrace.Run")
+	logger := log.WithFields(log.Fields{
+		"com": "pt",
+		"op":  "Run",
+	})
+
+	logger.Debug("call")
+	defer logger.Debug("exit")
 
 	app, err := newApp(ctx, runOpt, includeNew, origPaths, signalCh, errorCh)
 	if err != nil {
@@ -52,16 +58,16 @@ func Run(
 	}
 
 	if runOpt.RTASourcePT {
-		log.Debug("ptrace.Run - tracing target app")
+		logger.Debug("tracing target app")
 		app.Report.Enabled = true
 		go app.process()
 		go app.trace()
 	} else {
-		log.Debug("ptrace.Run - not tracing target app...")
+		logger.Debug("not tracing target app...")
 		go func() {
-			log.Debug("ptrace.Run - not tracing target app - start app")
+			logger.Debug("not tracing target app - start app")
 			if err := app.start(); err != nil {
-				log.Debugf("ptrace.Run - not tracing target app - start app error - %v", err)
+				logger.Debugf("not tracing target app - start app error - %v", err)
 				app.errorCh <- errors.SE("ptrace.App.trace.app.start", "call.error", err)
 				app.StateCh <- AppFailed
 				return
@@ -73,10 +79,10 @@ func Run(
 			app.StateCh <- AppStarted
 
 			if err := app.cmd.Wait(); err != nil {
-				log.WithError(err).Debug("ptrace.Run - not tracing target app - state<-AppFailed")
+				logger.WithError(err).Debug("not tracing target app - state<-AppFailed")
 				app.StateCh <- AppFailed
 			} else {
-				log.Debug("ptrace.Run - not tracing target app - state<-AppDone")
+				logger.Debug("not tracing target app - state<-AppDone")
 				app.StateCh <- AppDone
 			}
 
@@ -141,6 +147,8 @@ type App struct {
 
 	eventCh         chan syscallEvent
 	collectorDoneCh chan int
+
+	logger *log.Entry
 }
 
 func (a *App) MainPID() int {
@@ -168,7 +176,9 @@ func newApp(
 	signalCh <-chan os.Signal,
 	errorCh chan<- error,
 ) (*App, error) {
-	log.Debug("ptrace.newApp")
+	logger := log.WithFields(log.Fields{
+		"com": "pt.App",
+	})
 
 	sysInfo := system.GetSystemInfo()
 	archName := system.MachineToArchName(sysInfo.Machine)
@@ -207,13 +217,18 @@ func newApp(
 
 		eventCh:         make(chan syscallEvent, eventBufSize),
 		collectorDoneCh: make(chan int, 2),
+
+		logger: logger,
 	}
 
 	return &a, nil
 }
 
 func (app *App) trace() {
-	log.Debug("ptrace.App.trace")
+	logger := app.logger.WithField("op", "trace")
+	logger.Debug("call")
+	defer logger.Debug("exit")
+
 	runtime.LockOSThread()
 
 	if err := app.start(); err != nil {
@@ -238,7 +253,7 @@ func (app *App) processFileActivity(e *syscallEvent) {
 	if e.pathParam != "" {
 		p, found := syscallProcessors[int(e.callNum)]
 		if !found {
-			log.Debugf("ptrace.App.processFileActivity - no syscall processor - %#v", e)
+			app.logger.WithField("op", "processFileActivity").Debugf("no syscall processor - %#v", e)
 			//shouldn't happen
 			return
 		}
@@ -282,7 +297,10 @@ func (app *App) processFileActivity(e *syscallEvent) {
 }
 
 func (app *App) process() {
-	log.Debug("ptrace.App.process")
+	logger := app.logger.WithField("op", "process")
+	logger.Debug("call")
+	defer logger.Debug("exit")
+
 	state := AppDone
 
 done:
@@ -290,26 +308,26 @@ done:
 		select {
 		// Highest priority - monitor's context has been cancelled from the outside.
 		case <-app.ctx.Done():
-			log.Debug("ptrace.App.process: stopping...")
+			logger.Debug("done - stopping...")
 			//NOTE: need a better way to stop the target app...
 			//"os: process already finished" error is ok
 			if err := app.cmd.Process.Signal(syscall.SIGTERM); err != nil {
-				log.Debug("ptrace.App.process: error stopping target app => ", err)
+				logger.Debug("error stopping target app => ", err)
 				if err := app.cmd.Process.Kill(); err != nil {
-					log.Debug("ptrace.App.process: error killing target app => ", err)
+					logger.Debug("error killing target app => ", err)
 				}
 			}
 			break done
 
 		case e := <-app.eventCh:
 			app.Report.SyscallCount++
-			log.Debugf("ptrace.App.process: event ==> {pid=%v cn=%d}", e.pid, e.callNum)
+			logger.Tracef("event ==> {pid=%v cn=%d}", e.pid, e.callNum)
 
 			app.processSyscallActivity(&e)
 			app.processFileActivity(&e)
 
 		case rc := <-app.collectorDoneCh:
-			log.Debugf("ptrace.App.process: collector finished => %v", rc)
+			logger.Debugf("collector finished => %v", rc)
 			if rc > 0 {
 				state = AppFailed
 			}
@@ -328,19 +346,19 @@ drain:
 		select {
 		case e := <-app.eventCh:
 			app.Report.SyscallCount++
-			log.Debugf("ptrace.App.process: event (drained) ==> {pid=%v cn=%d}", e.pid, e.callNum)
+			logger.Tracef("event (drained) ==> {pid=%v cn=%d}", e.pid, e.callNum)
 
 			app.processSyscallActivity(&e)
 			app.processFileActivity(&e)
 
 		default:
-			log.Debug("ptrace.App.process: event draining is finished")
+			logger.Trace("event draining is finished")
 			break drain
 		}
 	}
 
-	log.Debugf("ptrace.App.process: - executed syscall count = %d", app.Report.SyscallCount)
-	log.Debugf("ptrace.App.process: - number of syscalls: %v", len(app.syscallActivity))
+	logger.Tracef("executed syscall count = %d", app.Report.SyscallCount)
+	logger.Tracef("number of syscalls: %v", len(app.syscallActivity))
 
 	for scNum, scCount := range app.syscallActivity {
 		//syscallName := app.syscallResolver(scNum)
@@ -362,7 +380,9 @@ drain:
 }
 
 func (app *App) FileActivity() map[string]*report.FSActivityInfo {
-	log.Debugf("ptrace.App.FileActivity [all records - %d]", len(app.fsActivity))
+	logger := app.logger.WithField("op", "FileActivity")
+	logger.Debugf("call - [all records - %d]", len(app.fsActivity))
+
 	//get the file activity info (ignore intermediate directories)
 	t := radix.New()
 	for k, v := range app.fsActivity {
@@ -404,12 +424,15 @@ func (app *App) FileActivity() map[string]*report.FSActivityInfo {
 		result[k] = v
 	}
 
-	log.Debugf("ptrace.App.FileActivity [file records - %d]", len(result))
+	logger.Debugf("exit - [file records - %d]", len(result))
 	return result
 }
 
 func (app *App) start() error {
-	log.Debug("ptrace.App.start")
+	logger := app.logger.WithField("op", "start")
+	logger.Debug("call")
+	defer logger.Debug("exit")
+
 	var err error
 	app.cmd, err = launcher.Start(
 		app.Cmd,
@@ -422,8 +445,8 @@ func (app *App) start() error {
 		app.appStderr,
 	)
 	if err != nil {
-		log.WithError(err).Errorf(
-			"ptrace.App.start: cmd='%v' args='%+v' dir='%v'",
+		logger.WithError(err).Errorf(
+			"cmd='%v' args='%+v' dir='%v'",
 			app.Cmd, app.Args, app.WorkDir,
 		)
 		return err
@@ -439,15 +462,15 @@ func (app *App) start() error {
 	}
 
 	err = app.cmd.Wait()
-	log.Debugf("ptrace.App.start: app.cmd.Wait err - %v", err)
-	log.Debugf("ptrace.App.start: Target process state info - Exited=%v ExitCode=%v SysWaitStatus=%v",
+	logger.Debugf("app.cmd.Wait err - %v", err)
+	logger.Debugf("Target process state info - Exited=%v ExitCode=%v SysWaitStatus=%v",
 		app.cmd.ProcessState.Exited(),
 		app.cmd.ProcessState.ExitCode(),
 		app.cmd.ProcessState.Sys())
 
 	waitStatus, ok := app.cmd.ProcessState.Sys().(syscall.WaitStatus)
 	if ok {
-		log.Debugf("ptrace.App.start: Target process wait status - %v (Exited=%v Signaled=%v Signal='%v' Stopped=%v StopSignal='%v' TrapCause=%v)",
+		logger.Debugf("Target process wait status - %v (Exited=%v Signaled=%v Signal='%v' Stopped=%v StopSignal='%v' TrapCause=%v)",
 			waitStatus,
 			waitStatus.Exited(),
 			waitStatus.Signaled(),
@@ -457,19 +480,19 @@ func (app *App) start() error {
 			waitStatus.TrapCause())
 
 		if waitStatus.Exited() {
-			log.Debug("ptrace.App.start: unexpected app exit")
+			logger.Debug("unexpected app exit")
 			return fmt.Errorf("unexpected app exit")
 		}
 
 		if waitStatus.Signaled() {
-			log.Debug("ptrace.App.start: unexpected app signalled")
+			logger.Debug("unexpected app signalled")
 			return fmt.Errorf("unexpected app signalled")
 		}
 
 		//we should be in the Stopped state
 		if waitStatus.Stopped() {
 			sigEnum := SignalEnum(int(waitStatus.StopSignal()))
-			log.Debugf("ptrace.App.start: Process Stop Signal - code=%d enum=%s str=%s",
+			logger.Debugf("Process Stop Signal - code=%d enum=%s str=%s",
 				waitStatus.StopSignal(), sigEnum, waitStatus.StopSignal())
 		} else {
 			//TODO:
@@ -477,6 +500,7 @@ func (app *App) start() error {
 			//do it for context indicating that we are in a failed state
 		}
 	} else {
+		logger.WithError(err).Error("process status error")
 		return fmt.Errorf("process status error")
 	}
 
@@ -485,7 +509,7 @@ func (app *App) start() error {
 		return err
 	}
 
-	log.Debugf("ptrace.App.start: started target app --> PID=%d PGID=%d",
+	logger.Debugf("started target app --> PID=%d PGID=%d",
 		app.cmd.Process.Pid, app.pgid)
 
 	err = syscall.PtraceSetOptions(app.cmd.Process.Pid, ptOptions)
@@ -549,11 +573,14 @@ var ptEventMap = map[int]string{
 }
 
 func (app *App) collect() {
-	log.Debug("ptrace.App.collect")
+	logger := app.logger.WithField("op", "collect")
+	logger.Debug("call")
+	defer logger.Debug("exit")
+
 	callPid := app.MainPID()
 	prevPid := callPid
 
-	log.Debugf("ptrace.App.collect: trace syscall mainPID=%v", callPid)
+	logger.Debugf("trace syscall mainPID=%v", callPid)
 
 	pidSyscallState := map[int]*syscallState{}
 	pidSyscallState[callPid] = &syscallState{pid: callPid}
@@ -565,13 +592,13 @@ func (app *App) collect() {
 	for {
 		select {
 		case <-app.ctx.Done():
-			log.Debug("ptrace.App.collect: stop (exiting)")
+			logger.Debug("done - stop (exiting)")
 			return
 		default:
 		}
 
 		if doSyscall {
-			log.Tracef("ptrace.App.collect: trace syscall (pid=%v sig=%v)", callPid, callSig)
+			logger.Tracef("trace syscall (pid=%v sig=%v)", callPid, callSig)
 			err := syscall.PtraceSyscall(callPid, callSig)
 			if err != nil {
 				if strings.Contains(strings.ToLower(err.Error()), "no such process") {
@@ -584,33 +611,33 @@ func (app *App) collect() {
 					// and regular `strace -f ./app` would produce similar results.
 					// Sending this error event back to the master process would make
 					// the `docker-slim build` command fail with the exit code -124.
-					log.Debugf("ptrace.App.collect: trace syscall - (likely) tracee terminated pid=%v sig=%v error - %v (errno=%d)", callPid, callSig, err, err.(syscall.Errno))
+					logger.Debugf("trace syscall - (likely) tracee terminated pid=%v sig=%v error - %v (errno=%d)", callPid, callSig, err, err.(syscall.Errno))
 				} else {
-					log.Errorf("ptrace.App.collect: trace syscall pid=%v sig=%v error - %v (errno=%d)", callPid, callSig, err, err.(syscall.Errno))
+					logger.Errorf("trace syscall pid=%v sig=%v error - %v (errno=%d)", callPid, callSig, err, err.(syscall.Errno))
 					app.errorCh <- errors.SE("ptrace.App.collect.ptsyscall", "call.error", err)
 				}
 				//keep waiting for other syscalls
 			}
 		}
 
-		log.Trace("ptrace.App.collect: waiting for syscall...")
+		logger.Trace("waiting for syscall...")
 		var ws syscall.WaitStatus
 		wpid, err := syscall.Wait4(waitFor, &ws, syscall.WALL, nil)
 		if err != nil {
 			if err.(syscall.Errno) == syscall.ECHILD {
-				log.Debug("ptrace.App.collect: wait4 ECHILD error (ignoring)")
+				logger.Debug("wait4 ECHILD error (ignoring)")
 				doSyscall = false
 				continue
 			}
 
-			log.Debugf("ptrace.App.collect: wait4 error - %v (errno=%d)", err, err.(syscall.Errno))
+			logger.Debugf("wait4 error - %v (errno=%d)", err, err.(syscall.Errno))
 			app.errorCh <- errors.SE("ptrace.App.collect.wait4", "call.error", err)
 			app.StateCh <- AppFailed
 			app.collectorDoneCh <- 2
 			return
 		}
 
-		log.Tracef("ptrace.App.collect: wait4 -> wpid=%v wstatus=%v (Exited=%v Signaled=%v Signal='%v' Stopped=%v StopSignalInfo=%s TrapCause=%s)",
+		logger.Tracef("wait4 -> wpid=%v wstatus=%v (Exited=%v Signaled=%v Signal='%v' Stopped=%v StopSignalInfo=%s TrapCause=%s)",
 			wpid,
 			ws,
 			ws.Exited(),
@@ -621,7 +648,7 @@ func (app *App) collect() {
 			SigTrapCauseInfo(ws.TrapCause()))
 
 		if wpid == -1 {
-			log.Error("ptrace.App.collect: wpid = -1")
+			logger.Error("wpid = -1")
 			app.StateCh <- AppFailed
 			app.errorCh <- errors.SE("ptrace.App.collect.wpid", "call.error", fmt.Errorf("wpid is -1"))
 			// TODO(ivan): Investigate if this code branch leads to sensor becoming stuck.
@@ -656,21 +683,21 @@ func (app *App) collect() {
 
 		if terminated {
 			if _, ok := pidSyscallState[wpid]; !ok {
-				log.Debugf("ptrace.App.collect[%d/%d]: unknown process is terminated (pid=%v)",
+				logger.Debugf("[%d/%d]: unknown process is terminated (pid=%v)",
 					app.cmd.Process.Pid, app.pgid, wpid)
 			} else {
 				if !pidSyscallState[wpid].exiting {
-					log.Debugf("ptrace.App.collect[%d/%d]: unexpected process termination (pid=%v)",
+					logger.Debugf("[%d/%d]: unexpected process termination (pid=%v)",
 						app.cmd.Process.Pid, app.pgid, wpid)
 				}
 			}
 
 			delete(pidSyscallState, wpid)
 			if app.MainPID() == wpid {
-				log.Debugf("ptrace.App.collect[%d/%d]: wpid(%v) is main PID and terminated...",
+				logger.Debugf("[%d/%d]: wpid(%v) is main PID and terminated...",
 					app.cmd.Process.Pid, app.pgid, wpid)
 				if !mainExiting {
-					log.Debug("ptrace.App.collect: unexpected main PID termination...")
+					logger.Debug("unexpected main PID termination...")
 				}
 
 				if len(pidSyscallState) > 0 && app.reportOnMainPidExit {
@@ -684,7 +711,7 @@ func (app *App) collect() {
 			}
 
 			if len(pidSyscallState) == 0 {
-				log.Debugf("ptrace.App.collect[%d/%d]: all processes terminated...", app.cmd.Process.Pid, app.pgid)
+				logger.Debugf("[%d/%d]: all processes terminated...", app.cmd.Process.Pid, app.pgid)
 				app.collectorDoneCh <- 0 // TODO(ivan): Should it be collectorDoneCh <- statusCode instead?
 				return
 			}
@@ -698,7 +725,7 @@ func (app *App) collect() {
 			if _, ok := pidSyscallState[wpid]; ok {
 				cstate = pidSyscallState[wpid]
 			} else {
-				log.Debugf("ptrace.App.collect[%d/%d]: collector loop - new pid - mainPid=%v pid=%v (prevPid=%v) - add state",
+				logger.Debugf("[%d/%d]: collector loop - new pid - mainPid=%v pid=%v (prevPid=%v) - add state",
 					app.cmd.Process.Pid, app.pgid, app.MainPID(), wpid, prevPid)
 				//TODO: create new process records from clones/forks
 				cstate = &syscallState{pid: wpid}
@@ -708,7 +735,7 @@ func (app *App) collect() {
 			if !cstate.expectReturn {
 				genEvent, err := onSyscall(wpid, cstate)
 				if err != nil {
-					log.Debugf("ptrace.App.collect[%d/%d]: wpid=%v onSyscall error - %v",
+					logger.Debugf("[%d/%d]: wpid=%v onSyscall error - %v",
 						app.cmd.Process.Pid, app.pgid, wpid, err)
 					continue
 				}
@@ -720,18 +747,18 @@ func (app *App) collect() {
 						pathParam: cstate.pathParam,
 					}
 
-					log.Debugf("ptrace.App.collect[%d/%d]: event.onSyscall - wpid=%v (evt=%#v)",
+					logger.Debugf("[%d/%d]: event.onSyscall - wpid=%v (evt=%#v)",
 						app.cmd.Process.Pid, app.pgid, wpid, evt)
 					select {
 					case app.eventCh <- evt:
 					default:
-						log.Debugf("ptrace.App.collect[%d/%d]: event.onSyscall - wpid=%v app.eventCh send error (evt=%#v)",
+						logger.Debugf("[%d/%d]: event.onSyscall - wpid=%v app.eventCh send error (evt=%#v)",
 							app.cmd.Process.Pid, app.pgid, wpid, evt)
 					}
 				}
 			} else {
 				if err := onSyscallReturn(wpid, cstate); err != nil {
-					log.Debugf("ptrace.App.collect[%d/%d]: wpid=%v onSyscallReturn error - %v",
+					logger.Debugf("[%d/%d]: wpid=%v onSyscallReturn error - %v",
 						app.cmd.Process.Pid, app.pgid, wpid, err)
 					continue
 				}
@@ -759,7 +786,7 @@ func (app *App) collect() {
 					select {
 					case app.eventCh <- evt:
 					default:
-						log.Debugf("ptrace.App.collect[%d/%d]: wpid=%v app.eventCh send error (evt=%#v)",
+						logger.Debugf("[%d/%d]: wpid=%v app.eventCh send error (evt=%#v)",
 							app.cmd.Process.Pid, app.pgid, wpid, evt)
 					}
 				}
@@ -767,7 +794,7 @@ func (app *App) collect() {
 		}
 
 		if eventStop {
-			log.Debugf("ptrace.App.collect[%d/%d]: eventStop eventCode=%d(0x%04x)",
+			logger.Debugf("[%d/%d]: eventStop eventCode=%d(0x%04x)",
 				app.cmd.Process.Pid, app.pgid, eventCode, eventCode)
 
 			switch eventCode {
@@ -777,13 +804,13 @@ func (app *App) collect() {
 				syscall.PTRACE_EVENT_VFORK_DONE:
 				newPid, err := syscall.PtraceGetEventMsg(wpid)
 				if err != nil {
-					log.Debugf("ptrace.App.collect[%d/%d]: PTRACE_EVENT_CLONE/[V]FORK[_DONE] - error getting cloned pid - %v",
+					logger.Debugf("[%d/%d]: PTRACE_EVENT_CLONE/[V]FORK[_DONE] - error getting cloned pid - %v",
 						app.cmd.Process.Pid, app.pgid, err)
 				} else {
-					log.Debugf("ptrace.App.collect[%d/%d]: PTRACE_EVENT_CLONE/[V]FORK[_DONE] - cloned pid - %v",
+					logger.Debugf("[%d/%d]: PTRACE_EVENT_CLONE/[V]FORK[_DONE] - cloned pid - %v",
 						app.cmd.Process.Pid, app.pgid, newPid)
 					if _, ok := pidSyscallState[int(newPid)]; ok {
-						log.Debugf("ptrace.App.collect[%d/%d]: PTRACE_EVENT_CLONE/[V]FORK[_DONE] - pid already exists - %v",
+						logger.Debugf("[%d/%d]: PTRACE_EVENT_CLONE/[V]FORK[_DONE] - pid already exists - %v",
 							app.cmd.Process.Pid, app.pgid, newPid)
 						pidSyscallState[int(newPid)].started = true
 					} else {
@@ -794,26 +821,26 @@ func (app *App) collect() {
 			case syscall.PTRACE_EVENT_EXEC:
 				oldPid, err := syscall.PtraceGetEventMsg(wpid)
 				if err != nil {
-					log.Debugf("ptrace.App.collect[%d/%d]: PTRACE_EVENT_EXEC - error getting old pid - %v",
+					logger.Debugf("[%d/%d]: PTRACE_EVENT_EXEC - error getting old pid - %v",
 						app.cmd.Process.Pid, app.pgid, err)
 				} else {
-					log.Debugf("ptrace.App.collect[%d/%d]: PTRACE_EVENT_EXEC - old pid - %v",
+					logger.Debugf("[%d/%d]: PTRACE_EVENT_EXEC - old pid - %v",
 						app.cmd.Process.Pid, app.pgid, oldPid)
 				}
 
 			case syscall.PTRACE_EVENT_EXIT:
-				log.Debugf("ptrace.App.collect[%d/%d]: PTRACE_EVENT_EXIT - process exiting pid=%v",
+				logger.Debugf("[%d/%d]: PTRACE_EVENT_EXIT - process exiting pid=%v",
 					app.cmd.Process.Pid, app.pgid, wpid)
 				if app.MainPID() == wpid {
 					mainExiting = true
-					log.Debugf("ptrace.App.collect[%d/%d]: main process is exiting (%v)",
+					logger.Debugf("[%d/%d]: main process is exiting (%v)",
 						app.cmd.Process.Pid, app.pgid, wpid)
 				}
 
 				if _, ok := pidSyscallState[wpid]; ok {
 					pidSyscallState[wpid].exiting = true
 				} else {
-					log.Debugf("ptrace.App.collect[%d/%d]: unknown process is exiting (pid=%v)",
+					logger.Debugf("[%d/%d]: unknown process is exiting (pid=%v)",
 						app.cmd.Process.Pid, app.pgid, wpid)
 				}
 			}
@@ -825,11 +852,17 @@ func (app *App) collect() {
 }
 
 func (app *App) startSignalForwarding() context.CancelFunc {
-	log.Debug("ptrace.App - signal forwarder - starting...")
+	logger := app.logger.WithField("op", "startSignalForwarding")
+	logger.Debug("call")
+	defer logger.Debug("exit")
 
 	ctx, cancel := context.WithCancel(app.ctx)
 
 	go func() {
+		logger := app.logger.WithField("op", "startSignalForwarding.worker")
+		logger.Debug("call")
+		defer logger.Debug("exit")
+
 		for {
 			select {
 			case <-ctx.Done():
@@ -840,11 +873,11 @@ func (app *App) startSignalForwarding() context.CancelFunc {
 					continue
 				}
 
-				log.WithField("signal", s).Debug("ptrace.App - signal forwarder - forwarding signal")
+				logger.WithField("signal", s).Debug("forwarding signal")
 
 				ss, ok := s.(syscall.Signal)
 				if !ok {
-					log.WithField("signal", s).Debug("ptrace.App - signal forwarder - unsupported signal type")
+					logger.WithField("signal", s).Debug("unsupported signal type")
 					continue
 				}
 
@@ -853,10 +886,10 @@ func (app *App) startSignalForwarding() context.CancelFunc {
 				// process termination making Signal() think the process exited and
 				// not even trying to deliver the signal.
 				if err := syscall.Kill(app.cmd.Process.Pid, ss); err != nil {
-					log.
+					logger.
 						WithError(err).
 						WithField("signal", ss).
-						Debug("ptrace.App - signal forwarder - failed to signal target app")
+						Debug("failed to signal target app")
 				}
 			}
 		}
@@ -1020,7 +1053,7 @@ func (ref *syscallProcessorCore) OnReturn(pid int, regs syscall.PtraceRegs, csta
 	//TODO: get/use error code enums
 
 	if cstate.pathParamErr == nil {
-		log.Debugf("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s('%s') = %d", pid, cstate.callNum, ref.Name, cstate.pathParam, int(cstate.retVal))
+		log.Tracef("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s('%s') = %d", pid, cstate.callNum, ref.Name, cstate.pathParam, int(cstate.retVal))
 	} else {
 		log.Debugf("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s(<unknown>/'%s') = %d [pp err => %v]", pid, cstate.callNum, ref.Name, cstate.pathParam, int(cstate.retVal), cstate.pathParamErr)
 	}
