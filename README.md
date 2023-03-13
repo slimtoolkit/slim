@@ -230,9 +230,10 @@ slim update
 
 Linux (for non-intel replace `dist_linux` with the platform-specific extracted path):
 ```
-tar -xvf ds.tar.gz
+tar -xvf dist_linux.tar.gz
 mv  dist_linux/docker-slim /usr/local/bin/
-mv  dist_linux/docker-slim-sensor /usr/local/bin/
+mv  dist_linux/slim-sensor /usr/local/bin/
+mv  dist_linux/slim /usr/local/bin/
 ```
 Mac:
 ```
