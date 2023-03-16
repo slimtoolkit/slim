@@ -26,14 +26,11 @@ const (
 
 var (
 	sensorFullLifecycleSequence = []string{
-		"sensor: uid=0 euid=0",
+		"sensor: ver=",
 		"sensor: creating monitors...",
 		"sensor: starting monitors...",
-		"sensor: fanmon - starting...",
-		"sensor: ptmon - starting...",
 		"sensor: monitor - saving report",
-		"sensor: monitor - saving report",
-		"sensor: run finished succesfully",
+		"sensor: done!",
 	}
 
 	sensorLifecycleHookSequence = []string{
@@ -547,7 +544,7 @@ func TestArchiveArtifacts_SensorFailure_NoCaps(t *testing.T) {
 		"sensor: creating monitors...",
 		"sensor: starting monitors...",
 		"sensor: Instrumented containers require root and ALL capabilities enabled", // <-- failure!
-		"sensor: exiting...",
+		"sensor: done!",
 	}...)
 
 	sensor.AssertArtifactsArchiveContains(t, ctx,
