@@ -1292,7 +1292,7 @@ func (p *artifactStore) saveArtifacts() {
 			if os.IsExist(err) {
 				log.Debug("saveArtifacts.symlinkWalk - symlink already exists")
 			} else {
-				log.Debugf("saveArtifacts.symlinkWalk - symlink create error ==> ", err)
+				log.Debug("saveArtifacts.symlinkWalk - symlink create error ==> ", err)
 			}
 		}
 
