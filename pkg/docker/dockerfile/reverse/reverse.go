@@ -214,7 +214,7 @@ func DockerfileFromHistory(apiClient *docker.Client, imageID string) (*Dockerfil
 func DockerfileFromHistoryStruct(imageHistory []docker.ImageHistory) (*Dockerfile, error) {
 	var out Dockerfile
 
-	log.Debugf("\n\nIMAGE HISTORY =>\n%#v\n\n", imageHistory)
+	log.Tracef("\n\nreverse.DockerfileFromHistoryStruct - IMAGE HISTORY:\n%#v\n\n", imageHistory)
 
 	var timeBuckets = map[time.Time][]tbrecord{}
 	var reversedInstructions []*InstructionInfo

@@ -11,23 +11,29 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/version"
 )
 
-// FailOnWithInfo logs the error information with additional context info and terminates the application if there's an error
+// FailOnWithInfo logs the error information with additional context info (terminates the application)
 func FailOnWithInfo(err error, info map[string]string) {
 	if err != nil {
 		showInfo(info)
 
 		stackData := debug.Stack()
-		log.WithError(err).WithField("version", version.Current()).WithField("stack", string(stackData)).Fatal("docker-slim: failure")
+		log.WithError(err).WithFields(log.Fields{
+			"version": version.Current(),
+			"stack":   string(stackData),
+		}).Fatal("slim: failure")
 
 		showCommunityInfo()
 	}
 }
 
-// FailOn logs the error information and terminates the application if there's an error
+// FailOn logs the error information (terminates the application)
 func FailOn(err error) {
 	if err != nil {
 		stackData := debug.Stack()
-		log.WithError(err).WithField("version", version.Current()).WithField("stack", string(stackData)).Fatal("docker-slim: failure")
+		log.WithError(err).WithFields(log.Fields{
+			"version": version.Current(),
+			"stack":   string(stackData),
+		}).Fatal("slim: failure")
 
 		showCommunityInfo()
 	}
@@ -37,7 +43,10 @@ func FailOn(err error) {
 func WarnOn(err error) {
 	if err != nil {
 		stackData := debug.Stack()
-		log.WithError(err).WithField("version", version.Current()).WithField("stack", string(stackData)).Warn("docker-slim: warning")
+		log.WithError(err).WithFields(log.Fields{
+			"version": version.Current(),
+			"stack":   string(stackData),
+		}).Warn("slim: warning")
 	}
 }
 
@@ -49,7 +58,7 @@ func FailWhen(cond bool, msg string) {
 			"version": version.Current(),
 			"error":   msg,
 			"stack":   string(stackData),
-		}).Fatal("docker-slim: failure")
+		}).Fatal("slim: failure")
 
 		showCommunityInfo()
 	}
@@ -62,7 +71,7 @@ func Fail(msg string) {
 		"version": version.Current(),
 		"error":   msg,
 		"stack":   string(stackData),
-	}).Fatal("docker-slim: failure")
+	}).Fatal("slim: failure")
 
 	showCommunityInfo()
 }
@@ -77,9 +86,9 @@ func showInfo(info map[string]string) {
 }
 
 func showCommunityInfo() {
-	fmt.Printf("docker-slim: message='join the Gitter channel to get help with this failure' info='%s'\n", consts.CommunityGitter)
-	fmt.Printf("docker-slim: message='join the Discord server to get help with this failure' info='%s'\n", consts.CommunityDiscord)
-	fmt.Printf("docker-slim: message='Github discussions' info='%s'\n", consts.CommunityDiscussions)
+	fmt.Printf("slim: message='join the Gitter channel to get help with this failure' info='%s'\n", consts.CommunityGitter)
+	fmt.Printf("slim: message='join the Discord server to get help with this failure' info='%s'\n", consts.CommunityDiscord)
+	fmt.Printf("slim: message='Github discussions' info='%s'\n", consts.CommunityDiscussions)
 }
 
 // exec.Command().Run() and its derivatives sometimes return

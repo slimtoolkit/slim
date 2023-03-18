@@ -279,7 +279,7 @@ func (m *monitor) Start() error {
 				break done
 			case e := <-eventChan:
 				ptReport.SyscallCount++
-				log.Debugf("ptmon: syscall ==> %d", e.callNum)
+				log.Tracef("ptmon: syscall ==> %d", e.callNum)
 
 				if _, ok := syscallStats[e.callNum]; ok {
 					syscallStats[e.callNum]++
@@ -292,8 +292,8 @@ func (m *monitor) Start() error {
 		log.Debugf("ptmon: processor - executed syscall count = %d", ptReport.SyscallCount)
 		log.Debugf("ptmon: processor - number of syscalls: %v", len(syscallStats))
 		for scNum, scCount := range syscallStats {
-			log.Debugf("%v", syscallResolver(scNum))
-			log.Debugf("[%v] %v = %v", scNum, syscallResolver(scNum), scCount)
+			log.Tracef("%v", syscallResolver(scNum))
+			log.Tracef("[%v] %v = %v", scNum, syscallResolver(scNum), scCount)
 			ptReport.SyscallStats[strconv.FormatInt(int64(scNum), 10)] = report.SyscallStatInfo{
 				Number: scNum,
 				Name:   syscallResolver(scNum),
