@@ -34,6 +34,8 @@ const (
 	FlagIncludeExeFile   = "include-exe-file"
 	FlagIncludeShell     = "include-shell"
 
+	FlagIncludeWorkdir = "include-workdir"
+
 	FlagIncludePathsCreportFile = "include-paths-creport-file"
 
 	FlagIncludeOSLibsNet = "include-oslibs-net"
@@ -113,6 +115,8 @@ const (
 	FlagIncludeBinUsage       = "Keep binary from original image (executable or shared object using its absolute path)"
 	FlagIncludeExeUsage       = "Keep executable from original image (by executable name)"
 	FlagIncludeShellUsage     = "Keep basic shell functionality"
+
+	FlagIncludeWorkdirUsage = "Keep files in working directory"
 
 	FlagIncludePathsCreportFileUsage = "Keep files from the referenced creport"
 
@@ -232,6 +236,12 @@ var Flags = map[string]cli.Flag{
 		Name:    FlagIncludeShell,
 		Usage:   FlagIncludeShellUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_SHELL"},
+	},
+	////
+	FlagIncludeWorkdir: &cli.BoolFlag{
+		Name:    FlagIncludeWorkdir,
+		Usage:   FlagIncludeWorkdirUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_WORKDIR"},
 	},
 	////
 	FlagIncludePathsCreportFile: &cli.StringFlag{

@@ -845,6 +845,41 @@ func linkTargetToFullPath(fullPath, target string) string {
 	return filepath.Clean(filepath.Join(d, target))
 }
 
+func (p *artifactStore) saveWorkdir(excludePatterns []string) {
+	if p.cmd.IncludeWorkdir == "" {
+		return
+	}
+
+	if !fsutil.DirExists(p.cmd.IncludeWorkdir) {
+		log.Debugf("sensor.artifactStore.saveWorkdir: workdir does not exist %s", p.cmd.IncludeWorkdir)
+		return
+	}
+
+	dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, p.cmd.IncludeWorkdir)
+	if fsutil.Exists(dstPath) {
+		log.Debug("sensor.artifactStore.saveWorkdir: workdir dst path already exists")
+		//it's possible that some of the files in the work dir are already copied
+		//the copy logic will improve when we copy the files separately
+		//for now just copy the whole workdir
+	}
+
+	log.Debugf("sensor.artifactStore.saveWorkdir: workdir=%s", p.cmd.IncludeWorkdir)
+
+	err, errs := fsutil.CopyDir(p.cmd.KeepPerms, p.cmd.IncludeWorkdir, dstPath, true, true, excludePatterns, nil, nil)
+	if err != nil {
+		log.Debugf("sensor.artifactStore.saveWorkdir: CopyDir(%v,%v) error: %v", p.cmd.IncludeWorkdir, dstPath, err)
+	}
+
+	if len(errs) > 0 {
+		log.Debugf("sensor.artifactStore.saveWorkdir: CopyDir(%v,%v) copy errors: %+v", p.cmd.IncludeWorkdir, dstPath, errs)
+	}
+
+	//todo:
+	//copy files separately and
+	//apply 'workdir-exclude' patterns in addition to the global excludes (excludePatterns)
+	//resolve symlinks
+}
+
 const (
 	osLibDir          = "/lib/"
 	osUsrLibDir       = "/usr/lib/"
@@ -1729,6 +1764,8 @@ copyIncludes:
 		}
 
 	}
+
+	p.saveWorkdir(excludePatterns)
 
 	p.saveOSLibsNetwork()
 

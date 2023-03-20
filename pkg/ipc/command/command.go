@@ -58,6 +58,7 @@ type StartMonitor struct {
 	IncludeBins                  []string                      `json:"include_bins,omitempty"`
 	IncludeExes                  []string                      `json:"include_exes,omitempty"`
 	IncludeShell                 bool                          `json:"include_shell,omitempty"`
+	IncludeWorkdir               string                        `json:"include_workdir,omitempty"`
 	IncludeCertAll               bool                          `json:"include_cert_all,omitempty"`
 	IncludeCertBundles           bool                          `json:"include_cert_bundles,omitempty"`
 	IncludeCertDirs              bool                          `json:"include_cert_dirs,omitempty"`

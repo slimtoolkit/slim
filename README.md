@@ -459,6 +459,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-exe value` - Include executable from image (by executable name)
 - `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
 - `--include-shell` - Include basic shell functionality (default value: false)
+- `--include-workdir` - Keep files in working directory (default value: false)
 - `--include-cert-all` - Keep all discovered cert files (default: true)
 - `--include-cert-bundles-only` - Keep only cert bundles
 - `--include-cert-dirs` - Keep known cert directories and all files in them

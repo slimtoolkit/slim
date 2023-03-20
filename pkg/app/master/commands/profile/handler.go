@@ -250,6 +250,7 @@ func OnCommand(
 		nil,   //includeBins,
 		nil,   //includeExes,
 		false, //doIncludeShell,
+		false, //doIncludeWorkdir,
 		false, //doIncludeCertAll
 		false, //doIncludeCertBundles
 		false, //doIncludeCertDirs

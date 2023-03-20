@@ -114,6 +114,7 @@ type Inspector struct {
 	IncludeBins           map[string]*fsutil.AccessInfo
 	IncludeExes           map[string]*fsutil.AccessInfo
 	DoIncludeShell        bool
+	DoIncludeWorkdir      bool
 	DoIncludeCertAll      bool
 	DoIncludeCertBundles  bool
 	DoIncludeCertDirs     bool
@@ -188,6 +189,7 @@ func NewInspector(
 	includeBins map[string]*fsutil.AccessInfo,
 	includeExes map[string]*fsutil.AccessInfo,
 	doIncludeShell bool,
+	doIncludeWorkdir bool,
 	doIncludeCertAll bool,
 	doIncludeCertBundles bool,
 	doIncludeCertDirs bool,
@@ -239,6 +241,7 @@ func NewInspector(
 		IncludeBins:           includeBins,
 		IncludeExes:           includeExes,
 		DoIncludeShell:        doIncludeShell,
+		DoIncludeWorkdir:      doIncludeWorkdir,
 		DoIncludeCertAll:      doIncludeCertAll,
 		DoIncludeCertBundles:  doIncludeCertBundles,
 		DoIncludeCertDirs:     doIncludeCertDirs,
@@ -787,6 +790,11 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	cmd.IncludeShell = i.DoIncludeShell
+
+	if i.DoIncludeWorkdir {
+		cmd.IncludeWorkdir = i.ImageInspector.ImageInfo.Config.WorkingDir
+	}
+
 	cmd.IncludeCertAll = i.DoIncludeCertAll
 	cmd.IncludeCertBundles = i.DoIncludeCertBundles
 	cmd.IncludeCertDirs = i.DoIncludeCertDirs
