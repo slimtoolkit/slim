@@ -149,13 +149,25 @@ func Run() {
 
 	if err := sen.Run(); err != nil {
 		exe.PubEvent(event.Error, err.Error())
+		log.WithError(err).Error("sensor: run finished with error")
+		if errors.Is(err, monitors.ErrInsufficientPermissions) {
+			log.Info("sensor: Instrumented containers require root and ALL capabilities enabled. Example: `docker run --user root --cap-add ALL app:v1-instrumented`")
+		}
+		if errors.Is(err, monitors.ErrInsufficientPermissions) {
+		}
+	} else {
+		log.Info("sensor: run finished succesfully")
 	}
-
-	log.Info("sensor: done!")
 
 	exe.Close()
 	errutil.WarnOn(artifactor.Archive())
-	exe.HookSensorPreShutdown() // Not nice calling it after exec.Close() but should be safe...
+
+	// We have to "stop" the execution and dump the artifacts
+	// before calling the pre-shutdown hook (that may want to
+	// upload the artifacts somewhere).
+	// Not ideal calling it after exe.Close() but should be safe.
+	exe.HookSensorPreShutdown()
+	log.Info("sensor: exiting...")
 }
 
 func newExecution(

@@ -74,7 +74,7 @@ func NewMonitor(
 }
 
 func (m *monitor) Start() error {
-	logger := m.logger.WithField("op", "Start")
+	logger := m.logger.WithField("op", "sensor.pt.monitor.Start")
 	logger.Info("call")
 	defer logger.Info("exit")
 
@@ -117,7 +117,7 @@ func (m *monitor) Start() error {
 
 	// Tracking the completetion of the monitor.
 	go func() {
-		logger := m.logger.WithField("op", "completetion.monitor")
+		logger := m.logger.WithField("op", "sensor.pt.monitor.completetion.monitor")
 		logger.Info("call")
 		defer logger.Info("exit")
 

@@ -153,7 +153,7 @@ func Start(
 
 	err := app.Start()
 	if err != nil {
-		log.Warnf("launcher.Start: error - %v", err)
+		log.Errorf("launcher.Start: error - %v", err)
 		return nil, err
 	}
 

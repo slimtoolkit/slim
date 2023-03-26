@@ -34,7 +34,16 @@ const (
 	FlagIncludeExeFile   = "include-exe-file"
 	FlagIncludeShell     = "include-shell"
 
-	FlagIncludeWorkdir = "include-workdir"
+	FlagIncludeWorkdir            = "include-workdir"
+	FlagWorkdirExclude            = "workdir-exclude"
+	FlagIncludeAppImageAddCopyAll = "include-app-image-addcopy-all"
+	FlagIncludeAppImageRun        = "include-app-image-run"
+	FlagIncludeAppImageAll        = "include-app-image-all"
+
+	FlagAppImageStartInst       = "app-image-start-instruction"
+	FlagAppImageStartLayerCount = "app-image-start-layer-count"
+	FlagAppImageStartInstGroup  = "app-image-start-instruction-group"
+	FlagAppImageStartDetect     = "app-image-start-detect"
 
 	FlagIncludePathsCreportFile = "include-paths-creport-file"
 

@@ -52,15 +52,14 @@ func (h *hookExecutor) doHook(k kind) {
 	out, err := cmd.CombinedOutput()
 
 	logger := log.
-		WithField("kind", k).
 		WithField("command", h.cmd).
 		WithField("exit_code", cmd.ProcessState.ExitCode()).
 		WithField("output", string(out))
 
 	// Some lifecycle hooks are really fast - hence, the IsNoChildProcesses() check.
 	if err == nil || errutil.IsNoChildProcesses(err) {
-		logger.Info("lifecycle hook command succeeded")
+		logger.Debugf("sensor: %s hook succeeded", k)
 	} else {
-		logger.WithError(err).Info("lifecycle hook command failed")
+		logger.WithError(err).Warnf("sensor: %s hook failed", k)
 	}
 }

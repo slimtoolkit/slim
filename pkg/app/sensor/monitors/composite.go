@@ -2,10 +2,12 @@ package monitors
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 	"time"
 
@@ -27,6 +29,10 @@ const (
 	// to track all the needed events (used to happen often
 	// between the driving ptrace and observing fanotify mons).
 	minPassiveMonitoring = 1 * time.Second
+)
+
+var (
+	ErrInsufficientPermissions = errors.New("insufficient permissions")
 )
 
 type CompositeReport struct {
@@ -196,18 +202,20 @@ func (m *monitor) Start() error {
 	// }
 
 	if err := m.fanMon.Start(); err != nil {
-		log.
-			WithError(err).
-			Error("sensor: composite monitor - FAN failed to start running")
+		log.WithError(err).Debug("sensor: composite monitor - FAN error")
+		log.Error("sensor: composite monitor - FAN failed to start running")
+
+		if strings.Contains(err.Error(), "operation not permitted") {
+			return ErrInsufficientPermissions
+		}
 
 		closeAll(m.closeAfterDone)
 		return err
 	}
 
 	if err := m.ptMon.Start(); err != nil {
-		log.
-			WithError(err).
-			Error("sensor: composite monitor - PTAN failed to start running")
+		log.WithError(err).Debug("sensor: composite monitor - PTAN error")
+		log.Error("sensor: composite monitor - PTAN failed to start running")
 
 		closeAll(m.closeAfterDone)
 		return err

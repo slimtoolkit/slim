@@ -89,11 +89,14 @@ func NewMonitor(
 }
 
 func (m *monitor) Start() error {
-	log.
-		WithField("name", m.runOpt.Cmd).
-		WithField("args", m.runOpt.Args).
-		Debug("sensor: starting target app...")
-	log.Info("ptmon: Start")
+	logger := log.WithField("op", "sensor.pt.monitor.Start")
+	logger.Info("call")
+	defer logger.Info("exit")
+
+	logger.WithFields(log.Fields{
+		"name": m.runOpt.Cmd,
+		"args": m.runOpt.Args,
+	}).Debug("starting target app...")
 
 	sysInfo := system.GetSystemInfo()
 	archName := system.MachineToArchName(sysInfo.Machine)
@@ -111,7 +114,9 @@ func (m *monitor) Start() error {
 
 	// Starting the async part...
 	go func() {
-		log.Debug("ptmon: processor - starting...")
+		logger := log.WithField("op", "sensor.pt.monitor.processor")
+		logger.Debug("call")
+		defer logger.Debug("exit")
 
 		ptReport := &report.PtMonitorReport{
 			ArchName:     string(archName),
@@ -125,7 +130,11 @@ func (m *monitor) Start() error {
 		var app *exec.Cmd
 
 		go func() {
-			log.Debug("ptmon: collector - starting...")
+			logger := log.WithField("op", "sensor.pt.monitor.collector")
+			logger.Debug("call")
+			defer logger.Debug("exit")
+
+			//IMPORTANT:
 			//Ptrace is not pretty... and it requires that you do all ptrace calls from the same thread
 			runtime.LockOSThread()
 
@@ -162,14 +171,14 @@ func (m *monitor) Start() error {
 			//	return
 			//}
 
-			log.Debugf("ptmon: collector - target PID ==> %d", targetPid)
+			logger.Debugf("target PID ==> %d", targetPid)
 
 			var wstat unix.WaitStatus
 
 			//pid, err := syscall.Wait4(-1, &wstat, syscall.WALL, nil) - WIP
 			pid, err := unix.Wait4(targetPid, &wstat, 0, nil)
 			if err != nil {
-				log.Warnf("ptmon: collector - error waiting for %d: %v", targetPid, err)
+				logger.Warnf("unix.Wait4 - error waiting for %d: %v", targetPid, err)
 				collectorDoneChan <- 2
 				return
 			}
@@ -181,16 +190,16 @@ func (m *monitor) Start() error {
 			//	return
 			//}
 
-			log.Debugf("ptmon: initial process status = %v (pid=%d)\n", wstat, pid)
+			logger.Debugf("initial process status = %v (pid=%d)\n", wstat, pid)
 
 			if wstat.Exited() {
-				log.Warn("ptmon: collector - app exited (unexpected)")
+				logger.Warn("app exited (unexpected)")
 				collectorDoneChan <- 4
 				return
 			}
 
 			if wstat.Signaled() {
-				log.Warn("ptmon: collector - app signalled (unexpected)")
+				logger.Warn("app signalled (unexpected)")
 				collectorDoneChan <- 5
 				return
 			}
@@ -205,10 +214,10 @@ func (m *monitor) Start() error {
 
 				switch syscallReturn {
 				case false:
-					log.Infof("target pid is %d", targetPid)
+					logger.Infof("target pid is %d", targetPid)
 					if err := unix.PtraceGetRegSetArm64(targetPid, 1, &regs); err != nil {
 						//if err := syscall.PtraceGetRegs(pid, &regs); err != nil {
-						log.Fatalf("ptmon: collector - PtraceGetRegsArm64(call): %v", err)
+						logger.Fatalf("unix.PtraceGetRegsArm64(call): %v", err)
 					}
 
 					callNum = system.CallNumber(regs)
@@ -218,7 +227,7 @@ func (m *monitor) Start() error {
 				case true:
 					if err := unix.PtraceGetRegSetArm64(targetPid, 1, &regs); err != nil {
 						//if err := syscall.PtraceGetRegs(pid, &regs); err != nil {
-						log.Fatalf("ptmon: collector - PtraceGetRegsArm64(return): %v", err)
+						logger.Fatalf("unix.PtraceGetRegsArm64(return): %v", err)
 					}
 
 					retVal = system.CallReturnValue(regs)
@@ -230,14 +239,14 @@ func (m *monitor) Start() error {
 				//err = syscall.PtraceSyscall(pid, 0)
 				err = unix.PtraceSyscall(targetPid, 0)
 				if err != nil {
-					log.Warnf("ptmon: collector - PtraceSyscall error: %v", err)
+					logger.Warnf("unix.PtraceSyscall error: %v", err)
 					break
 				}
 
 				//pid, err = syscall.Wait4(-1, &wstat, syscall.WALL, nil)
 				pid, err = unix.Wait4(targetPid, &wstat, 0, nil)
 				if err != nil {
-					log.Warnf("ptmon: collector - error waiting 4 %d: %v", targetPid, err)
+					logger.Warnf("unix.Wait4 - error waiting 4 %d: %v", targetPid, err)
 					break
 				}
 
@@ -251,13 +260,13 @@ func (m *monitor) Start() error {
 						retVal:  retVal,
 					}:
 					case <-m.ctx.Done():
-						log.Info("ptmon: collector - stopping...")
+						logger.Info("stopping...")
 						return
 					}
 				}
 			}
 
-			log.Infoln("ptmon: collector - exiting... status=", wstat)
+			logger.Infof("exiting... status=%v", wstat)
 			collectorDoneChan <- 0
 		}()
 
@@ -265,21 +274,21 @@ func (m *monitor) Start() error {
 		for {
 			select {
 			case rc := <-collectorDoneChan:
-				log.Info("ptmon: processor - collector finished =>", rc)
+				logger.Info("collector finished =>", rc)
 				break done
 			case <-m.ctx.Done():
-				log.Info("ptmon: processor - stopping...")
+				logger.Info("stopping...")
 				//NOTE: need a better way to stop the target app...
 				if err := app.Process.Signal(unix.SIGTERM); err != nil {
-					log.Warnln("ptmon: processor - error stopping target app =>", err)
+					logger.Warnf("app.Process.Signal(unix.SIGTERM) - error stopping target app => %v", err)
 					if err := app.Process.Kill(); err != nil {
-						log.Warnln("ptmon: processor - error killing target app =>", err)
+						logger.Warnf("app.Process.Kill - error killing target app => %v")
 					}
 				}
 				break done
 			case e := <-eventChan:
 				ptReport.SyscallCount++
-				log.Tracef("ptmon: syscall ==> %d", e.callNum)
+				logger.Tracef("syscall ==> %d", e.callNum)
 
 				if _, ok := syscallStats[e.callNum]; ok {
 					syscallStats[e.callNum]++
@@ -289,11 +298,11 @@ func (m *monitor) Start() error {
 			}
 		}
 
-		log.Debugf("ptmon: processor - executed syscall count = %d", ptReport.SyscallCount)
-		log.Debugf("ptmon: processor - number of syscalls: %v", len(syscallStats))
+		logger.Debugf("executed syscall count = %d", ptReport.SyscallCount)
+		logger.Debugf("number of syscalls: %v", len(syscallStats))
 		for scNum, scCount := range syscallStats {
-			log.Tracef("%v", syscallResolver(scNum))
-			log.Tracef("[%v] %v = %v", scNum, syscallResolver(scNum), scCount)
+			logger.Tracef("%v", syscallResolver(scNum))
+			logger.Tracef("[%v] %v = %v", scNum, syscallResolver(scNum), scCount)
 			ptReport.SyscallStats[strconv.FormatInt(int64(scNum), 10)] = report.SyscallStatInfo{
 				Number: scNum,
 				Name:   syscallResolver(scNum),
