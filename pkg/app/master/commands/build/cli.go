@@ -11,6 +11,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
+	"github.com/docker-slim/docker-slim/pkg/artifact"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
 
@@ -499,6 +500,35 @@ var CLI = &cli.Command{
 			}
 		}
 
+		if len(preservePaths) > 0 {
+			for filtered := range artifact.FilteredPaths {
+				if _, found := preservePaths[filtered]; found {
+					delete(preservePaths, filtered)
+					xc.Out.Info("params",
+						ovars{
+							"preserve.path": filtered,
+							"message":       "ignoring",
+						})
+				}
+			}
+
+			var toDelete []string
+			for ip := range preservePaths {
+				if artifact.IsFilteredPath(ip) {
+					toDelete = append(toDelete, ip)
+				}
+			}
+
+			for _, dp := range toDelete {
+				delete(preservePaths, dp)
+				xc.Out.Info("params",
+					ovars{
+						"preserve.path": dp,
+						"message":       "ignoring",
+					})
+			}
+		}
+
 		includePaths := commands.ParsePaths(ctx.StringSlice(FlagIncludePath))
 		moreIncludePaths, err := commands.ParsePathsFile(ctx.String(FlagIncludePathFile))
 		if err != nil {
@@ -515,11 +545,29 @@ var CLI = &cli.Command{
 		}
 
 		if len(includePaths) > 0 {
-			if _, found := includePaths["/"]; found {
-				delete(includePaths, "/")
+			for filtered := range artifact.FilteredPaths {
+				if _, found := includePaths[filtered]; found {
+					delete(includePaths, filtered)
+					xc.Out.Info("params",
+						ovars{
+							"include.path": filtered,
+							"message":      "ignoring",
+						})
+				}
+			}
+
+			var toDelete []string
+			for ip := range includePaths {
+				if artifact.IsFilteredPath(ip) {
+					toDelete = append(toDelete, ip)
+				}
+			}
+
+			for _, dp := range toDelete {
+				delete(includePaths, dp)
 				xc.Out.Info("params",
 					ovars{
-						"include.path": "/",
+						"include.path": dp,
 						"message":      "ignoring",
 					})
 			}
@@ -566,6 +614,36 @@ var CLI = &cli.Command{
 		} else {
 			for k, v := range moreIncludeBins {
 				includeBins[k] = v
+			}
+		}
+
+		if len(includeBins) > 0 {
+			//shouldn't happen, but filtering either way
+			for filtered := range artifact.FilteredPaths {
+				if _, found := includeBins[filtered]; found {
+					delete(includeBins, filtered)
+					xc.Out.Info("params",
+						ovars{
+							"include.bin": filtered,
+							"message":     "ignoring",
+						})
+				}
+			}
+
+			var toDelete []string
+			for ip := range includeBins {
+				if artifact.IsFilteredPath(ip) {
+					toDelete = append(toDelete, ip)
+				}
+			}
+
+			for _, dp := range toDelete {
+				delete(includeBins, dp)
+				xc.Out.Info("params",
+					ovars{
+						"include.bin": dp,
+						"message":     "ignoring",
+					})
 			}
 		}
 

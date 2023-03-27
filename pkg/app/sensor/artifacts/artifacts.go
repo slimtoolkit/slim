@@ -25,6 +25,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/detectors/binfile"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/inspectors/sodeps"
+	"github.com/docker-slim/docker-slim/pkg/artifact"
 	"github.com/docker-slim/docker-slim/pkg/certdiscover"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
@@ -303,6 +304,11 @@ func (a *artifactor) PrepareEnv(cmd *command.StartMonitor) error {
 		log.Debugf("sensor.app.prepareEnv - newPerms(%v): %+v", len(newPerms), newPerms)
 
 		for inPath, isDir := range preservePaths {
+			if artifact.IsFilteredPath(inPath) {
+				log.Debugf("sensor.app.prepareEnv(): skipping filtered path [isDir=%v] %s", isDir, inPath)
+				continue
+			}
+
 			dstPath := fmt.Sprintf("%s%s", preservedDirPath, inPath)
 			log.Debugf("sensor.app.prepareEnv(): [isDir=%v] %s", isDir, dstPath)
 
@@ -850,6 +856,11 @@ func (p *artifactStore) saveWorkdir(excludePatterns []string) {
 		return
 	}
 
+	if artifact.IsFilteredPath(p.cmd.IncludeWorkdir) {
+		log.Debug("sensor.artifactStore.saveWorkdir(): skipping filtered workdir")
+		return
+	}
+
 	if !fsutil.DirExists(p.cmd.IncludeWorkdir) {
 		log.Debugf("sensor.artifactStore.saveWorkdir: workdir does not exist %s", p.cmd.IncludeWorkdir)
 		return
@@ -1371,6 +1382,12 @@ func (p *artifactStore) saveArtifacts() {
 
 copyFiles:
 	for srcFileName, artifactInfo := range p.fileMap {
+		//need to make sure we don't filter out something we need
+		if artifact.IsFilteredPath(srcFileName) {
+			log.Debugf("saveArtifacts - skipping filtered copy file - %s", srcFileName)
+			continue
+		}
+
 		for _, xpattern := range excludePatterns {
 			found, err := doublestar.Match(xpattern, srcFileName)
 			if err != nil {
@@ -1681,6 +1698,24 @@ copyBsaFiles:
 
 copyIncludes:
 	for inPath, isDir := range includePaths {
+		if artifact.IsFilteredPath(inPath) {
+			log.Debugf("saveArtifacts - skipping filtered include path [isDir=%v] %s", isDir, inPath)
+			continue
+		}
+
+		for _, xpattern := range excludePatterns {
+			found, err := doublestar.Match(xpattern, inPath)
+			if err != nil {
+				log.Debugf("saveArtifacts - copy includes - [%v] excludePatterns Match error - %v\n", inPath, err)
+				//should only happen when the pattern is malformed
+				continue
+			}
+			if found {
+				log.Debugf("saveArtifacts - copy includes - [%v] - excluding (%s) ", inPath, xpattern)
+				continue copyIncludes
+			}
+		}
+
 		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, inPath)
 		if isDir {
 			err, errs := fsutil.CopyDir(p.cmd.KeepPerms, inPath, dstPath, true, true, excludePatterns, nil, nil)
@@ -1692,19 +1727,6 @@ copyIncludes:
 				log.Debugf("CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
 			}
 		} else {
-			for _, xpattern := range excludePatterns {
-				found, err := doublestar.Match(xpattern, inPath)
-				if err != nil {
-					log.Debugf("saveArtifacts - copy includes - [%v] excludePatterns Match error - %v\n", inPath, err)
-					//should only happen when the pattern is malformed
-					continue
-				}
-				if found {
-					log.Debugf("saveArtifacts - copy includes - [%v] - excluding (%s) ", inPath, xpattern)
-					continue copyIncludes
-				}
-			}
-
 			if err := fsutil.CopyFile(p.cmd.KeepPerms, inPath, dstPath, true); err != nil {
 				log.Debugf("CopyFile(%v,%v) error: %v", inPath, dstPath, err)
 			}
@@ -1729,7 +1751,26 @@ copyIncludes:
 		}
 	}
 
+copyBinIncludes:
 	for _, binPath := range p.cmd.IncludeBins {
+		if artifact.IsFilteredPath(binPath) {
+			log.Debugf("saveArtifacts - skipping filtered include bin - %s", binPath)
+			continue
+		}
+
+		for _, xpattern := range excludePatterns {
+			found, err := doublestar.Match(xpattern, binPath)
+			if err != nil {
+				log.Debugf("saveArtifacts - copy bin includes - [%v] excludePatterns Match error - %v\n", binPath, err)
+				//should only happen when the pattern is malformed
+				continue
+			}
+			if found {
+				log.Debugf("saveArtifacts - copy bin includes - [%v] - excluding (%s) ", binPath, xpattern)
+				continue copyBinIncludes
+			}
+		}
+
 		binArtifacts, err := sodeps.AllDependencies(binPath)
 		if err != nil {
 			log.Debugf("saveArtifacts - %v - error getting bin artifacts => %v", binPath, err)
@@ -1820,6 +1861,11 @@ copyIncludes:
 			filesDirPath := filepath.Join(p.storeLocation, app.ArtifactFilesDirName)
 			preservePaths := preparePaths(getKeys(p.cmd.Preserves))
 			for inPath, isDir := range preservePaths {
+				if artifact.IsFilteredPath(inPath) {
+					log.Debugf("saveArtifacts: skipping filtered preserved path [isDir=%v] %s", isDir, inPath)
+					continue
+				}
+
 				srcPath := fmt.Sprintf("%s%s", preservedDirPath, inPath)
 				dstPath := fmt.Sprintf("%s%s", filesDirPath, inPath)
 
@@ -2574,29 +2620,9 @@ func ngxEnsure(prefix string) {
 	}
 }
 
-var shellNames = []string{
-	"bash",
-	"sh",
-}
-
-var shellCommands = []string{
-	"ls",
-	"pwd",
-	"cd",
-	"ps",
-	"head",
-	"tail",
-	"cat",
-	"more",
-	"find",
-	"grep",
-	"awk",
-	"env",
-}
-
 func shellDependencies() ([]string, error) {
 	var allDeps []string
-	for _, name := range shellNames {
+	for _, name := range artifact.ShellNames {
 		shellPath, err := exec.LookPath(name)
 		if err != nil {
 			log.Debugf("shellDependencies - checking '%s' shell (not found: %s)", name, err)
@@ -2618,7 +2644,7 @@ func shellDependencies() ([]string, error) {
 		return nil, nil
 	}
 
-	for _, name := range shellCommands {
+	for _, name := range artifact.ShellCommands {
 		cmdPath, err := exec.LookPath(name)
 		if err != nil {
 			log.Debugf("shellDependencies - checking '%s' cmd (not found: %s)", name, err)
