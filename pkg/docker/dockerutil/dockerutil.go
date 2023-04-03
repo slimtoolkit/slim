@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/pkg/archive"
+	"github.com/docker/docker/pkg/idtools"
 	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
@@ -283,8 +284,10 @@ func SaveImage(dclient *dockerapi.Client, imageRef, local string, extract, remov
 
 		tarOptions := &archive.TarOptions{
 			NoLchown: true,
-			UIDMaps:  arc.IDMapping.UIDs(),
-			GIDMaps:  arc.IDMapping.GIDs(),
+			IDMap: idtools.IdentityMapping{
+				UIDMaps: arc.IDMapping.UIDs(),
+				GIDMaps: arc.IDMapping.GIDs(),
+			},
 		}
 		err = arc.Untar(afile, dstDir, tarOptions)
 		if err != nil {
@@ -591,8 +594,10 @@ func CopyFromContainer(dclient *dockerapi.Client, containerID, remote, local str
 
 		tarOptions := &archive.TarOptions{
 			NoLchown: true,
-			UIDMaps:  arc.IDMapping.UIDs(),
-			GIDMaps:  arc.IDMapping.GIDs(),
+			IDMap: idtools.IdentityMapping{
+				UIDMaps: arc.IDMapping.UIDs(),
+				GIDMaps: arc.IDMapping.GIDs(),
+			},
 		}
 		err = arc.Untar(afile, dstDir, tarOptions)
 		if err != nil {

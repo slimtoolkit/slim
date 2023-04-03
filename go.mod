@@ -11,7 +11,7 @@ require (
 	github.com/compose-spec/compose-go v0.0.0-20210916141509-a7e1bc322970
 	github.com/docker-slim/go-update v0.0.0-20190422071557-ed40247aff59
 	github.com/docker-slim/uiprogress v0.0.0-20190505193231-9d4396e6d40b
-	github.com/docker/docker v20.10.12+incompatible
+	github.com/docker/docker v23.0.2+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.13.0
@@ -28,7 +28,7 @@ require (
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/net v0.0.0-20220127200216-cd36cc0744dd
-	golang.org/x/sys v0.0.0-20220209214540-3681064d5158
+	golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
 	k8s.io/api v0.22.9
 	k8s.io/apimachinery v0.22.9
 	k8s.io/cli-runtime v0.22.9
@@ -50,6 +50,8 @@ require (
 	github.com/klauspost/pgzip v1.2.4 // indirect
 	github.com/mattn/go-runewidth v0.0.9 // indirect
 	github.com/mattn/go-tty v0.0.3 // indirect
+	github.com/moby/patternmatcher v0.5.0 // indirect
+	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03 // indirect
 	github.com/spf13/cobra v1.4.0 // indirect
 	github.com/stretchr/testify v1.7.1
