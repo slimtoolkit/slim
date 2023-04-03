@@ -4,29 +4,6 @@ github.com/Azure/go-ansiterm/winterm
 # github.com/Microsoft/go-winio v0.5.1
 github.com/Microsoft/go-winio
 github.com/Microsoft/go-winio/pkg/guid
-github.com/Microsoft/go-winio/pkg/security
-github.com/Microsoft/go-winio/vhd
-# github.com/Microsoft/hcsshim v0.8.23
-github.com/Microsoft/hcsshim
-github.com/Microsoft/hcsshim/computestorage
-github.com/Microsoft/hcsshim/internal/cow
-github.com/Microsoft/hcsshim/internal/hcs
-github.com/Microsoft/hcsshim/internal/hcs/schema1
-github.com/Microsoft/hcsshim/internal/hcs/schema2
-github.com/Microsoft/hcsshim/internal/hcserror
-github.com/Microsoft/hcsshim/internal/hns
-github.com/Microsoft/hcsshim/internal/interop
-github.com/Microsoft/hcsshim/internal/log
-github.com/Microsoft/hcsshim/internal/logfields
-github.com/Microsoft/hcsshim/internal/longpath
-github.com/Microsoft/hcsshim/internal/mergemaps
-github.com/Microsoft/hcsshim/internal/oc
-github.com/Microsoft/hcsshim/internal/safefile
-github.com/Microsoft/hcsshim/internal/timeout
-github.com/Microsoft/hcsshim/internal/vmcompute
-github.com/Microsoft/hcsshim/internal/wclayer
-github.com/Microsoft/hcsshim/internal/winapi
-github.com/Microsoft/hcsshim/osversion
 # github.com/PuerkitoBio/goquery v1.5.1
 ## explicit
 github.com/PuerkitoBio/goquery
@@ -71,14 +48,8 @@ github.com/compose-spec/compose-go/interpolation
 github.com/compose-spec/compose-go/loader
 github.com/compose-spec/compose-go/template
 github.com/compose-spec/compose-go/types
-# github.com/containerd/cgroups v1.0.1
-github.com/containerd/cgroups/stats/v1
 # github.com/containerd/containerd v1.5.8
-github.com/containerd/containerd/errdefs
-github.com/containerd/containerd/log
 github.com/containerd/containerd/pkg/userns
-github.com/containerd/containerd/platforms
-github.com/containerd/containerd/sys
 # github.com/containerd/stargz-snapshotter/estargz v0.10.1
 github.com/containerd/stargz-snapshotter/estargz
 github.com/containerd/stargz-snapshotter/estargz/errorutil
@@ -109,9 +80,8 @@ github.com/docker/cli/cli/config/types
 # github.com/docker/distribution v2.7.1+incompatible
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
-github.com/docker/distribution/registry/api/errcode
 github.com/docker/distribution/registry/client/auth/challenge
-# github.com/docker/docker v20.10.12+incompatible
+# github.com/docker/docker v23.0.2+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
@@ -204,9 +174,7 @@ github.com/gocolly/colly/v2
 github.com/gocolly/colly/v2/debug
 github.com/gocolly/colly/v2/storage
 # github.com/gogo/protobuf v1.3.2
-github.com/gogo/protobuf/gogoproto
 github.com/gogo/protobuf/proto
-github.com/gogo/protobuf/protoc-gen-gogo/descriptor
 github.com/gogo/protobuf/sortkeys
 # github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 github.com/golang/groupcache/lru
@@ -319,10 +287,12 @@ github.com/mattn/go-tty
 github.com/mitchellh/go-homedir
 # github.com/mitchellh/mapstructure v1.4.3
 github.com/mitchellh/mapstructure
-# github.com/moby/sys/mount v0.2.0
-github.com/moby/sys/mount
-# github.com/moby/sys/mountinfo v0.4.1
-github.com/moby/sys/mountinfo
+# github.com/moby/patternmatcher v0.5.0
+## explicit
+github.com/moby/patternmatcher
+# github.com/moby/sys/sequential v0.5.0
+## explicit
+github.com/moby/sys/sequential
 # github.com/moby/term v0.0.0-20210619224110-3f7ff695adc6
 ## explicit
 github.com/moby/term
@@ -388,12 +358,6 @@ github.com/urfave/cli/v2
 github.com/vbatts/tar-split/archive/tar
 # github.com/xlab/treeprint v0.0.0-20181112141820-a009c3971eca
 github.com/xlab/treeprint
-# go.opencensus.io v0.23.0
-go.opencensus.io
-go.opencensus.io/internal
-go.opencensus.io/trace
-go.opencensus.io/trace/internal
-go.opencensus.io/trace/tracestate
 # go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5
 go.starlark.net/internal/compile
 go.starlark.net/internal/spell
@@ -419,7 +383,7 @@ golang.org/x/oauth2
 golang.org/x/oauth2/internal
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 golang.org/x/sync/errgroup
-# golang.org/x/sys v0.0.0-20220209214540-3681064d5158
+# golang.org/x/sys v0.0.0-20220520151302-bc2c85ada10a
 ## explicit
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
@@ -461,12 +425,6 @@ google.golang.org/appengine/internal/log
 google.golang.org/appengine/internal/remote_api
 google.golang.org/appengine/internal/urlfetch
 google.golang.org/appengine/urlfetch
-# google.golang.org/genproto v0.0.0-20211208223120-3a66f561d7aa
-google.golang.org/genproto/googleapis/rpc/status
-# google.golang.org/grpc v1.43.0
-google.golang.org/grpc/codes
-google.golang.org/grpc/internal/status
-google.golang.org/grpc/status
 # google.golang.org/protobuf v1.27.1
 google.golang.org/protobuf/encoding/prototext
 google.golang.org/protobuf/encoding/protowire

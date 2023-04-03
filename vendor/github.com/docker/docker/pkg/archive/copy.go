@@ -4,7 +4,6 @@ import (
 	"archive/tar"
 	"errors"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -30,8 +29,8 @@ var (
 // clean path already ends in the separator, then another is not added.
 func PreserveTrailingDotOrSeparator(cleanedPath string, originalPath string, sep byte) string {
 	// Ensure paths are in platform semantics
-	cleanedPath = strings.Replace(cleanedPath, "/", string(sep), -1)
-	originalPath = strings.Replace(originalPath, "/", string(sep), -1)
+	cleanedPath = strings.ReplaceAll(cleanedPath, "/", string(sep))
+	originalPath = strings.ReplaceAll(originalPath, "/", string(sep))
 
 	if !specifiesCurrentDir(cleanedPath) && specifiesCurrentDir(originalPath) {
 		if !hasTrailingPathSeparator(cleanedPath, sep) {
@@ -261,7 +260,7 @@ func PrepareArchiveCopy(srcContent io.Reader, srcInfo, dstInfo CopyInfo) (dstDir
 		// The destination exists as a directory. No alteration
 		// to srcContent is needed as its contents can be
 		// simply extracted to the destination directory.
-		return dstInfo.Path, ioutil.NopCloser(srcContent), nil
+		return dstInfo.Path, io.NopCloser(srcContent), nil
 	case dstInfo.Exists && srcInfo.IsDir:
 		// The destination exists as some type of file and the source
 		// content is a directory. This is an error condition since
@@ -304,7 +303,6 @@ func PrepareArchiveCopy(srcContent io.Reader, srcInfo, dstInfo CopyInfo) (dstDir
 		}
 		return dstDir, RebaseArchiveEntries(srcContent, srcBase, dstBase), nil
 	}
-
 }
 
 // RebaseArchiveEntries rewrites the given srcContent archive replacing
@@ -354,6 +352,16 @@ func RebaseArchiveEntries(srcContent io.Reader, oldBase, newBase string) io.Read
 				return
 			}
 
+			// Ignoring GoSec G110. See https://github.com/securego/gosec/pull/433
+			// and https://cure53.de/pentest-report_opa.pdf, which recommends to
+			// replace io.Copy with io.CopyN7. The latter allows to specify the
+			// maximum number of bytes that should be read. By properly defining
+			// the limit, it can be assured that a GZip compression bomb cannot
+			// easily cause a Denial-of-Service.
+			// After reviewing with @tonistiigi and @cpuguy83, this should not
+			// affect us, because here we do not read into memory, hence should
+			// not be vulnerable to this code consuming memory.
+			//nolint:gosec // G110: Potential DoS vulnerability via decompression bomb (gosec)
 			if _, err = io.Copy(rebasedTar, srcTar); err != nil {
 				w.CloseWithError(err)
 				return
@@ -363,9 +371,6 @@ func RebaseArchiveEntries(srcContent io.Reader, oldBase, newBase string) io.Read
 
 	return rebased
 }
-
-// TODO @gupta-ak. These might have to be changed in the future to be
-// continuity driver aware as well to support LCOW.
 
 // CopyResource performs an archive copy from the given source path to the
 // given destination path. The source path MUST exist and the destination
