@@ -115,8 +115,8 @@ require (
 	github.com/antchfx/xmlquery v1.2.4 // indirect
 	github.com/antchfx/xpath v1.1.8 // indirect
 	github.com/bradfitz/iter v0.0.0-20191230175014-e8f45d346db8 // indirect
-	github.com/containerd/containerd v1.5.8 // indirect
-	github.com/davecgh/go-spew v1.1.1
+	github.com/containerd/containerd v1.5.18 // indirect
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker-slim/uilive v0.0.2 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/google/uuid v1.3.0
