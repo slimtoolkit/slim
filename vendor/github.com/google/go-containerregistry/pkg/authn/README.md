@@ -68,7 +68,7 @@ import (
 
 func main() {
 	// ...
-	ecrHelper := ecr.ECRHelper{ClientFactory: api.DefaultClientFactory()}
+	ecrHelper := ecr.ECRHelper{ClientFactory: api.DefaultClientFactory{}}
 	img, err := remote.Get(ref, remote.WithAuthFromKeychain(authn.NewKeychainFromHelper(ecrHelper)))
 	if err != nil {
 		panic(err)
@@ -110,8 +110,8 @@ For example:
 kc := authn.NewMultiKeychain(
     authn.DefaultKeychain,
     google.Keychain,
-    authn.NewFromHelper(ecr.ECRHelper{ClientFactory: api.DefaultClientFactory{}}),
-    authn.NewFromHelper(acr.ACRCredHelper{}),
+    authn.NewKeychainFromHelper(ecr.ECRHelper{ClientFactory: api.DefaultClientFactory{}}),
+    authn.NewKeychainFromHelper(acr.ACRCredHelper{}),
 )
 ```
 

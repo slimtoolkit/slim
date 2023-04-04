@@ -133,11 +133,8 @@ func MultiSaveOCI(imgMap map[string]v1.Image, path string) error {
 			return err
 		}
 	}
-	for ref, img := range imgMap {
-		anns := map[string]string{
-			"dev.ggcr.image.name": ref,
-		}
-		if err = p.AppendImage(img, layout.WithAnnotations(anns)); err != nil {
+	for _, img := range imgMap {
+		if err = p.AppendImage(img); err != nil {
 			return err
 		}
 	}

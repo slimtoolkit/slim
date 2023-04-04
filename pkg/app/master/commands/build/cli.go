@@ -128,6 +128,7 @@ var CLI = &cli.Command{
 		cflag(FlagIncludeExe),
 		cflag(FlagIncludeShell),
 		cflag(FlagIncludeWorkdir),
+		cflag(FlagIncludeLastImageLayers),
 		cflag(FlagIncludePathsCreportFile),
 		cflag(FlagIncludeOSLibsNet),
 		cflag(FlagIncludeCertAll),
@@ -665,6 +666,7 @@ var CLI = &cli.Command{
 		doIncludeShell := ctx.Bool(FlagIncludeShell)
 
 		doIncludeWorkdir := ctx.Bool(FlagIncludeWorkdir)
+		includeLastImageLayers := ctx.Uint(FlagIncludeWorkdir)
 
 		doIncludeOSLibsNet := ctx.Bool(FlagIncludeOSLibsNet)
 
@@ -772,6 +774,7 @@ var CLI = &cli.Command{
 			includeExes,
 			doIncludeShell,
 			doIncludeWorkdir,
+			includeLastImageLayers,
 			doIncludeOSLibsNet,
 			doIncludeCertAll,
 			doIncludeCertBundles,

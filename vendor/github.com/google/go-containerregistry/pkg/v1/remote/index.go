@@ -194,10 +194,12 @@ func (r *remoteIndex) imageByPlatform(platform v1.Platform) (v1.Image, error) {
 // This naively matches the first manifest with matching platform attributes.
 //
 // We should probably use this instead:
-//	 github.com/containerd/containerd/platforms
+//
+//	github.com/containerd/containerd/platforms
 //
 // But first we'd need to migrate to:
-//   github.com/opencontainers/image-spec/specs-go/v1
+//
+//	github.com/opencontainers/image-spec/specs-go/v1
 func (r *remoteIndex) childByPlatform(platform v1.Platform) (*Descriptor, error) {
 	index, err := r.IndexManifest()
 	if err != nil {
@@ -248,6 +250,16 @@ func (r *remoteIndex) childDescriptor(child v1.Descriptor, platform v1.Platform)
 			return nil, err
 		}
 	}
+
+	if child.MediaType.IsImage() {
+		mf, _ := v1.ParseManifest(bytes.NewReader(manifest))
+		// Failing to parse as a manifest should just be ignored.
+		// The manifest might not be valid, and that's okay.
+		if mf != nil && !mf.Config.MediaType.IsConfig() {
+			child.ArtifactType = string(mf.Config.MediaType)
+		}
+	}
+
 	return &Descriptor{
 		fetcher: fetcher{
 			Ref:     ref,

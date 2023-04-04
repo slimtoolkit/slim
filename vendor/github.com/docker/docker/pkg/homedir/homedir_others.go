@@ -1,3 +1,4 @@
+//go:build !linux
 // +build !linux
 
 package homedir // import "github.com/docker/docker/pkg/homedir"
@@ -24,4 +25,9 @@ func GetDataHome() (string, error) {
 // GetConfigHome is unsupported on non-linux system.
 func GetConfigHome() (string, error) {
 	return "", errors.New("homedir.GetConfigHome() is not supported on this system")
+}
+
+// GetLibHome is unsupported on non-linux system.
+func GetLibHome() (string, error) {
+	return "", errors.New("homedir.GetLibHome() is not supported on this system")
 }

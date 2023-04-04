@@ -87,32 +87,31 @@ func MultiWrite(m map[name.Reference]Taggable, options ...Option) (rerr error) {
 		return err
 	}
 	w := writer{
-		repo:       repo,
-		client:     &http.Client{Transport: tr},
-		context:    o.context,
-		updates:    o.updates,
-		lastUpdate: &v1.Update{},
-		backoff:    o.retryBackoff,
-		predicate:  o.retryPredicate,
+		repo:      repo,
+		client:    &http.Client{Transport: tr},
+		backoff:   o.retryBackoff,
+		predicate: o.retryPredicate,
 	}
 
 	// Collect the total size of blobs and manifests we're about to write.
 	if o.updates != nil {
+		w.progress = &progress{updates: o.updates}
+		w.progress.lastUpdate = &v1.Update{}
 		defer close(o.updates)
-		defer func() { _ = sendError(o.updates, rerr) }()
+		defer func() { _ = w.progress.err(rerr) }()
 		for _, b := range blobs {
 			size, err := b.Size()
 			if err != nil {
 				return err
 			}
-			w.lastUpdate.Total += size
+			w.progress.total(size)
 		}
 		countManifest := func(t Taggable) error {
 			b, err := t.RawManifest()
 			if err != nil {
 				return err
 			}
-			w.lastUpdate.Total += int64(len(b))
+			w.progress.total(int64(len(b)))
 			return nil
 		}
 		for _, i := range images {

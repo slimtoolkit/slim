@@ -16,7 +16,6 @@ package layout
 
 import (
 	"io"
-	"io/ioutil"
 	"os"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -30,7 +29,7 @@ func (l Path) Blob(h v1.Hash) (io.ReadCloser, error) {
 // Bytes is a convenience function to return a blob from the Path as
 // a byte slice.
 func (l Path) Bytes(h v1.Hash) ([]byte, error) {
-	return ioutil.ReadFile(l.blobPath(h))
+	return os.ReadFile(l.blobPath(h))
 }
 
 func (l Path) blobPath(h v1.Hash) string {

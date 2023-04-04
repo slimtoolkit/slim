@@ -26,6 +26,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/kubernetes"
 	"github.com/docker-slim/docker-slim/pkg/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/command"
+	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
@@ -119,6 +120,7 @@ func OnCommand(
 	includeExes map[string]*fsutil.AccessInfo,
 	doIncludeShell bool,
 	doIncludeWorkdir bool,
+	includeLastImageLayers uint,
 	doIncludeOSLibsNet bool,
 	doIncludeCertAll bool,
 	doIncludeCertBundles bool,
@@ -613,6 +615,86 @@ func OnCommand(
 		client,
 		logger,
 		cmdReport)
+
+	///
+	if includeLastImageLayers > 0 {
+		includeLayerPaths := map[string]*fsutil.AccessInfo{}
+
+		imageID := dockerutil.CleanImageID(imageInspector.ImageInfo.ID)
+		iaName := fmt.Sprintf("%s.tar", imageID)
+		iaPath := filepath.Join(localVolumePath, "image", iaName)
+		iaPathReady := fmt.Sprintf("%s.ready", iaPath)
+
+		var doSave bool
+		if fsutil.IsRegularFile(iaPath) {
+			//if !doReuseSavedImage {
+			//	doSave = true
+			//}
+
+			if !fsutil.Exists(iaPathReady) {
+				doSave = true
+			}
+		} else {
+			doSave = true
+		}
+
+		if doSave {
+			if fsutil.Exists(iaPathReady) {
+				fsutil.Remove(iaPathReady)
+			}
+
+			xc.Out.Info("image.data.inspection.save.image.start")
+			err = dockerutil.SaveImage(client, imageID, iaPath, false, false)
+			errutil.FailOn(err)
+
+			err = fsutil.Touch(iaPathReady)
+			errutil.WarnOn(err)
+
+			xc.Out.Info("image.data.inspection.save.image.end")
+		} else {
+			logger.Debugf("exported image already exists - %s", iaPath)
+		}
+
+		xc.Out.Info("image.data.inspection.list.files.start")
+		imgFiles, err := dockerimage.NewPackageFiles(iaPath)
+		if err != nil {
+			logger.Errorf("dockerimage.NewPackageFiles(%v) error - %v", iaPath, err)
+		} else {
+			layerCount := imgFiles.LayerCount()
+			if includeLastImageLayers > uint(layerCount) {
+				logger.Debugf("includeLastImageLayers(%v) > layerCount(%v)", includeLastImageLayers, layerCount)
+				includeLastImageLayers = uint(layerCount)
+			}
+
+			selectors := []dockerimage.FileSelector{
+				{
+					Type:              dockerimage.FSTIndexRange,
+					IndexKey:          0,
+					IndexEndKey:       int(includeLastImageLayers) - 1,
+					ReverseIndexRange: true,
+					NoDirs:            true,
+					Deleted:           false,
+				},
+			}
+
+			if layerFiles, err := imgFiles.ListLayerFiles(selectors); err != nil {
+				logger.Errorf("imgFiles.ListLayerFiles() error - %v", err)
+			} else {
+				for _, lf := range layerFiles {
+					for _, fileInfo := range lf.Files {
+						includeLayerPaths[fileInfo.Name] = nil
+					}
+				}
+			}
+
+		}
+		xc.Out.Info("image.data.inspection.list.files.end")
+
+		for k := range includeLayerPaths {
+			includePaths[k] = nil
+		}
+	}
+	///
 
 	//refresh the target refs
 	targetRef = imageInspector.ImageRef

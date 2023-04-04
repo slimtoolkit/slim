@@ -15,7 +15,9 @@
 package v1
 
 import (
+	"fmt"
 	"sort"
+	"strings"
 )
 
 // Platform represents the target os/arch for an image.
@@ -28,11 +30,100 @@ type Platform struct {
 	Features     []string `json:"features,omitempty"`
 }
 
+func (p Platform) String() string {
+	if p.OS == "" {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(p.OS)
+	if p.Architecture != "" {
+		b.WriteString("/")
+		b.WriteString(p.Architecture)
+	}
+	if p.Variant != "" {
+		b.WriteString("/")
+		b.WriteString(p.Variant)
+	}
+	if p.OSVersion != "" {
+		b.WriteString(":")
+		b.WriteString(p.OSVersion)
+	}
+	return b.String()
+}
+
+// ParsePlatform parses a string representing a Platform, if possible.
+func ParsePlatform(s string) (*Platform, error) {
+	var p Platform
+	parts := strings.Split(strings.TrimSpace(s), ":")
+	if len(parts) == 2 {
+		p.OSVersion = parts[1]
+	}
+	parts = strings.Split(parts[0], "/")
+	if len(parts) > 0 {
+		p.OS = parts[0]
+	}
+	if len(parts) > 1 {
+		p.Architecture = parts[1]
+	}
+	if len(parts) > 2 {
+		p.Variant = parts[2]
+	}
+	if len(parts) > 3 {
+		return nil, fmt.Errorf("too many slashes in platform spec: %s", s)
+	}
+	return &p, nil
+}
+
 // Equals returns true if the given platform is semantically equivalent to this one.
 // The order of Features and OSFeatures is not important.
 func (p Platform) Equals(o Platform) bool {
-	return p.OS == o.OS && p.Architecture == o.Architecture && p.Variant == o.Variant && p.OSVersion == o.OSVersion &&
-		stringSliceEqualIgnoreOrder(p.OSFeatures, o.OSFeatures) && stringSliceEqualIgnoreOrder(p.Features, o.Features)
+	return p.OS == o.OS &&
+		p.Architecture == o.Architecture &&
+		p.Variant == o.Variant &&
+		p.OSVersion == o.OSVersion &&
+		stringSliceEqualIgnoreOrder(p.OSFeatures, o.OSFeatures) &&
+		stringSliceEqualIgnoreOrder(p.Features, o.Features)
+}
+
+// Satisfies returns true if this Platform "satisfies" the given spec Platform.
+//
+// Note that this is different from Equals and that Satisfies is not reflexive.
+//
+// The given spec represents "requirements" such that any missing values in the
+// spec are not compared.
+//
+// For OSFeatures and Features, Satisfies will return true if this Platform's
+// fields contain a superset of the values in the spec's fields (order ignored).
+func (p Platform) Satisfies(spec Platform) bool {
+	return satisfies(spec.OS, p.OS) &&
+		satisfies(spec.Architecture, p.Architecture) &&
+		satisfies(spec.Variant, p.Variant) &&
+		satisfies(spec.OSVersion, p.OSVersion) &&
+		satisfiesList(spec.OSFeatures, p.OSFeatures) &&
+		satisfiesList(spec.Features, p.Features)
+}
+
+func satisfies(want, have string) bool {
+	return want == "" || want == have
+}
+
+func satisfiesList(want, have []string) bool {
+	if len(want) == 0 {
+		return true
+	}
+
+	set := map[string]struct{}{}
+	for _, h := range have {
+		set[h] = struct{}{}
+	}
+
+	for _, w := range want {
+		if _, ok := set[w]; !ok {
+			return false
+		}
+	}
+
+	return true
 }
 
 // stringSliceEqual compares 2 string slices and returns if their contents are identical.

@@ -18,7 +18,6 @@ import (
 	"bytes"
 	"context"
 	"io"
-	"io/ioutil"
 	"sync"
 
 	"github.com/google/go-containerregistry/pkg/name"
@@ -31,6 +30,7 @@ type image struct {
 	ref          name.Reference
 	opener       *imageOpener
 	tarballImage v1.Image
+	id           *v1.Hash
 
 	once sync.Once
 	err  error
@@ -62,12 +62,12 @@ func (i *imageOpener) bufferedOpener() (io.ReadCloser, error) {
 			}
 			defer rc.Close()
 
-			return ioutil.ReadAll(rc)
+			return io.ReadAll(rc)
 		}()
 	})
 
 	// Wrap the bytes in a ReadCloser so it looks like an opened file.
-	return ioutil.NopCloser(bytes.NewReader(i.bytes)), i.err
+	return io.NopCloser(bytes.NewReader(i.bytes)), i.err
 }
 
 func (i *imageOpener) opener() tarball.Opener {
@@ -95,10 +95,20 @@ func Image(ref name.Reference, options ...Option) (v1.Image, error) {
 		ctx:      o.ctx,
 	}
 
-	return &image{
+	img := &image{
 		ref:    ref,
 		opener: i,
-	}, nil
+	}
+
+	// Eagerly fetch Image ID to ensure it actually exists.
+	// https://github.com/google/go-containerregistry/issues/1186
+	id, err := img.ConfigName()
+	if err != nil {
+		return nil, err
+	}
+	img.id = &id
+
+	return img, nil
 }
 
 func (i *image) initialize() error {
@@ -133,6 +143,9 @@ func (i *image) Size() (int64, error) {
 }
 
 func (i *image) ConfigName() (v1.Hash, error) {
+	if i.id != nil {
+		return *i.id, nil
+	}
 	res, _, err := i.opener.client.ImageInspectWithRaw(i.opener.ctx, i.ref.String())
 	if err != nil {
 		return v1.Hash{}, err

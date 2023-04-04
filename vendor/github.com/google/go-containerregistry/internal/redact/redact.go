@@ -17,6 +17,8 @@ package redact
 
 import (
 	"context"
+	"errors"
+	"net/url"
 )
 
 type contextKey string
@@ -32,4 +34,56 @@ func NewContext(ctx context.Context, reason string) context.Context {
 func FromContext(ctx context.Context) (bool, string) {
 	reason, ok := ctx.Value(redactKey).(string)
 	return ok, reason
+}
+
+// Error redacts potentially sensitive query parameter values in the URL from the error's message.
+//
+// If the error is a *url.Error, this returns a *url.Error with the URL redacted.
+// Any other error type, or nil, is returned unchanged.
+func Error(err error) error {
+	// If the error is a url.Error, we can redact the URL.
+	// Otherwise (including if err is nil), we can't redact.
+	var uerr *url.Error
+	if ok := errors.As(err, &uerr); !ok {
+		return err
+	}
+	u, perr := url.Parse(uerr.URL)
+	if perr != nil {
+		return err // If the URL can't be parsed, just return the original error.
+	}
+	uerr.URL = URL(u).String() // Update the URL to the redacted URL.
+	return uerr
+}
+
+// The set of query string keys that we expect to send as part of the registry
+// protocol. Anything else is potentially dangerous to leak, as it's probably
+// from a redirect. These redirects often included tokens or signed URLs.
+var paramAllowlist = map[string]struct{}{
+	// Token exchange
+	"scope":   {},
+	"service": {},
+	// Cross-repo mounting
+	"mount": {},
+	"from":  {},
+	// Layer PUT
+	"digest": {},
+	// Listing tags and catalog
+	"n":    {},
+	"last": {},
+}
+
+// URL redacts potentially sensitive query parameter values from the URL's query string.
+func URL(u *url.URL) *url.URL {
+	qs := u.Query()
+	for k, v := range qs {
+		for i := range v {
+			if _, ok := paramAllowlist[k]; !ok {
+				// key is not in the Allowlist
+				v[i] = "REDACTED"
+			}
+		}
+	}
+	r := *u
+	r.RawQuery = qs.Encode()
+	return &r
 }

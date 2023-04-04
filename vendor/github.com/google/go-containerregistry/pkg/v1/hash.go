@@ -15,7 +15,7 @@
 package v1
 
 import (
-	"crypto/sha256"
+	"crypto"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -78,7 +78,7 @@ func (h *Hash) UnmarshalText(text []byte) error {
 func Hasher(name string) (hash.Hash, error) {
 	switch name {
 	case "sha256":
-		return sha256.New(), nil
+		return crypto.SHA256.New(), nil
 	default:
 		return nil, fmt.Errorf("unsupported hash: %q", name)
 	}
@@ -111,7 +111,7 @@ func (h *Hash) parse(unquoted string) error {
 
 // SHA256 computes the Hash of the provided io.Reader's content.
 func SHA256(r io.Reader) (Hash, int64, error) {
-	hasher := sha256.New()
+	hasher := crypto.SHA256.New()
 	n, err := io.Copy(hasher, r)
 	if err != nil {
 		return Hash{}, 0, err

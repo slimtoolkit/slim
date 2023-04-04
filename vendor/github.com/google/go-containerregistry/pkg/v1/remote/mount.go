@@ -93,3 +93,16 @@ func (mi *mountableImage) LayerByDiffID(d v1.Hash) (v1.Layer, error) {
 func (mi *mountableImage) Descriptor() (*v1.Descriptor, error) {
 	return partial.Descriptor(mi.Image)
 }
+
+// ConfigLayer retains the original reference so that it can be mounted.
+// See partial.ConfigLayer.
+func (mi *mountableImage) ConfigLayer() (v1.Layer, error) {
+	l, err := partial.ConfigLayer(mi.Image)
+	if err != nil {
+		return nil, err
+	}
+	return &MountableLayer{
+		Layer:     l,
+		Reference: mi.Reference,
+	}, nil
+}

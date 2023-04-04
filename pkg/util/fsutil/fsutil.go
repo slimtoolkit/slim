@@ -456,11 +456,20 @@ func cloneDirPath(src, dst string) {
 	}
 
 	for _, dir := range dirs {
-		//fmt.Printf("cloning dir path = %#v\n", dir)
-		err = os.Mkdir(dir.dst, 0777)
-		if err != nil && !os.IsExist(err) {
-			errutil.FailOn(err)
+		if Exists(dir.dst) {
+			log.Debugf("cloneDirPath() - dst dir exists - %v", dir.dst)
+			continue
 		}
+
+		//using os.MkdirAll instead of os.Mkdir to make sure we don't miss any intermediate directories
+		//need to research when we might miss intermediate directories
+		err = os.MkdirAll(dir.dst, 0777)
+		if err != nil {
+			log.Errorf("cloneDirPath() - os.MkdirAll(%v) error - %v", dir.dst)
+		}
+		//if err != nil && !os.IsExist(err) {
+		//	errutil.FailOn(err)
+		//}
 
 		if err == nil {
 			if err := os.Chmod(dir.dst, dir.perms); err != nil {

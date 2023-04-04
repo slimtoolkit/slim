@@ -12,6 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+// Package types holds common OCI media types.
 package types
 
 // MediaType is an enumeration of the supported mime types that an element of an image might have.
@@ -24,6 +25,7 @@ const (
 	OCIManifestSchema1             MediaType = "application/vnd.oci.image.manifest.v1+json"
 	OCIConfigJSON                  MediaType = "application/vnd.oci.image.config.v1+json"
 	OCILayer                       MediaType = "application/vnd.oci.image.layer.v1.tar+gzip"
+	OCILayerZStd                   MediaType = "application/vnd.oci.image.layer.v1.tar+zstd"
 	OCIRestrictedLayer             MediaType = "application/vnd.oci.image.layer.nondistributable.v1.tar+gzip"
 	OCIUncompressedLayer           MediaType = "application/vnd.oci.image.layer.v1.tar"
 	OCIUncompressedRestrictedLayer MediaType = "application/vnd.oci.image.layer.nondistributable.v1.tar"
@@ -65,6 +67,15 @@ func (m MediaType) IsImage() bool {
 func (m MediaType) IsIndex() bool {
 	switch m {
 	case OCIImageIndex, DockerManifestList:
+		return true
+	}
+	return false
+}
+
+// IsConfig returns true if the mediaType represents a config, as opposed to something else, like an image.
+func (m MediaType) IsConfig() bool {
+	switch m {
+	case OCIConfigJSON, DockerConfigJSON:
 		return true
 	}
 	return false

@@ -19,11 +19,12 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"strings"
+	"time"
 
 	authchallenge "github.com/docker/distribution/registry/client/auth/challenge"
+	"github.com/google/go-containerregistry/pkg/logs"
 	"github.com/google/go-containerregistry/pkg/name"
 )
 
@@ -34,6 +35,9 @@ const (
 	basic     challenge = "basic"
 	bearer    challenge = "bearer"
 )
+
+// 300ms is the default fallback period for go's DNS dialer but we could make this configurable.
+var fallbackDelay = 300 * time.Millisecond
 
 type pingResp struct {
 	challenge challenge
@@ -50,27 +54,7 @@ func (c challenge) Canonical() challenge {
 	return challenge(strings.ToLower(string(c)))
 }
 
-func parseChallenge(suffix string) map[string]string {
-	kv := make(map[string]string)
-	for _, token := range strings.Split(suffix, ",") {
-		// Trim any whitespace around each token.
-		token = strings.Trim(token, " ")
-
-		// Break the token into a key/value pair
-		if parts := strings.SplitN(token, "=", 2); len(parts) == 2 {
-			// Unquote the value, if it is quoted.
-			kv[parts[0]] = strings.Trim(parts[1], `"`)
-		} else {
-			// If there was only one part, treat is as a key with an empty value
-			kv[token] = ""
-		}
-	}
-	return kv
-}
-
 func ping(ctx context.Context, reg name.Registry, t http.RoundTripper) (*pingResp, error) {
-	client := http.Client{Transport: t}
-
 	// This first attempts to use "https" for every request, falling back to http
 	// if the registry matches our localhost heuristic or if it is intentionally
 	// set to insecure via name.NewInsecureRegistry.
@@ -78,54 +62,117 @@ func ping(ctx context.Context, reg name.Registry, t http.RoundTripper) (*pingRes
 	if reg.Scheme() == "http" {
 		schemes = append(schemes, "http")
 	}
+	if len(schemes) == 1 {
+		return pingSingle(ctx, reg, t, schemes[0])
+	}
+	return pingParallel(ctx, reg, t, schemes)
+}
 
-	var errs []string
-	for _, scheme := range schemes {
-		url := fmt.Sprintf("%s://%s/v2/", scheme, reg.Name())
-		req, err := http.NewRequest(http.MethodGet, url, nil)
-		if err != nil {
-			return nil, err
-		}
-		resp, err := client.Do(req.WithContext(ctx))
-		if err != nil {
-			errs = append(errs, err.Error())
-			// Potentially retry with http.
-			continue
-		}
-		defer func() {
-			// By draining the body, make sure to reuse the connection made by
-			// the ping for the following access to the registry
-			io.Copy(ioutil.Discard, resp.Body)
-			resp.Body.Close()
-		}()
+func pingSingle(ctx context.Context, reg name.Registry, t http.RoundTripper, scheme string) (*pingResp, error) {
+	client := http.Client{Transport: t}
+	url := fmt.Sprintf("%s://%s/v2/", scheme, reg.Name())
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
+		return nil, err
+	}
+	resp, err := client.Do(req.WithContext(ctx))
+	if err != nil {
+		return nil, err
+	}
+	defer func() {
+		// By draining the body, make sure to reuse the connection made by
+		// the ping for the following access to the registry
+		io.Copy(io.Discard, resp.Body)
+		resp.Body.Close()
+	}()
 
-		switch resp.StatusCode {
-		case http.StatusOK:
-			// If we get a 200, then no authentication is needed.
+	switch resp.StatusCode {
+	case http.StatusOK:
+		// If we get a 200, then no authentication is needed.
+		return &pingResp{
+			challenge: anonymous,
+			scheme:    scheme,
+		}, nil
+	case http.StatusUnauthorized:
+		if challenges := authchallenge.ResponseChallenges(resp); len(challenges) != 0 {
+			// If we hit more than one, let's try to find one that we know how to handle.
+			wac := pickFromMultipleChallenges(challenges)
 			return &pingResp{
-				challenge: anonymous,
-				scheme:    scheme,
+				challenge:  challenge(wac.Scheme).Canonical(),
+				parameters: wac.Parameters,
+				scheme:     scheme,
 			}, nil
-		case http.StatusUnauthorized:
-			if challenges := authchallenge.ResponseChallenges(resp); len(challenges) != 0 {
-				// If we hit more than one, let's try to find one that we know how to handle.
-				wac := pickFromMultipleChallenges(challenges)
-				return &pingResp{
-					challenge:  challenge(wac.Scheme).Canonical(),
-					parameters: wac.Parameters,
-					scheme:     scheme,
-				}, nil
+		}
+		// Otherwise, just return the challenge without parameters.
+		return &pingResp{
+			challenge: challenge(resp.Header.Get("WWW-Authenticate")).Canonical(),
+			scheme:    scheme,
+		}, nil
+	default:
+		return nil, CheckError(resp, http.StatusOK, http.StatusUnauthorized)
+	}
+}
+
+// Based on the golang happy eyeballs dialParallel impl in net/dial.go.
+func pingParallel(ctx context.Context, reg name.Registry, t http.RoundTripper, schemes []string) (*pingResp, error) {
+	returned := make(chan struct{})
+	defer close(returned)
+
+	type pingResult struct {
+		*pingResp
+		error
+		primary bool
+		done    bool
+	}
+
+	results := make(chan pingResult)
+
+	startRacer := func(ctx context.Context, scheme string) {
+		pr, err := pingSingle(ctx, reg, t, scheme)
+		select {
+		case results <- pingResult{pingResp: pr, error: err, primary: scheme == "https", done: true}:
+		case <-returned:
+			if pr != nil {
+				logs.Debug.Printf("%s lost race", scheme)
 			}
-			// Otherwise, just return the challenge without parameters.
-			return &pingResp{
-				challenge: challenge(resp.Header.Get("WWW-Authenticate")).Canonical(),
-				scheme:    scheme,
-			}, nil
-		default:
-			return nil, CheckError(resp, http.StatusOK, http.StatusUnauthorized)
 		}
 	}
-	return nil, errors.New(strings.Join(errs, "; "))
+
+	var primary, fallback pingResult
+
+	primaryCtx, primaryCancel := context.WithCancel(ctx)
+	defer primaryCancel()
+	go startRacer(primaryCtx, schemes[0])
+
+	fallbackTimer := time.NewTimer(fallbackDelay)
+	defer fallbackTimer.Stop()
+
+	for {
+		select {
+		case <-fallbackTimer.C:
+			fallbackCtx, fallbackCancel := context.WithCancel(ctx)
+			defer fallbackCancel()
+			go startRacer(fallbackCtx, schemes[1])
+
+		case res := <-results:
+			if res.error == nil {
+				return res.pingResp, nil
+			}
+			if res.primary {
+				primary = res
+			} else {
+				fallback = res
+			}
+			if primary.done && fallback.done {
+				return nil, multierrs([]error{primary.error, fallback.error})
+			}
+			if res.primary && fallbackTimer.Stop() {
+				// Primary failed and we haven't started the fallback,
+				// reset time to start fallback immediately.
+				fallbackTimer.Reset(0)
+			}
+		}
+	}
 }
 
 func pickFromMultipleChallenges(challenges []authchallenge.Challenge) authchallenge.Challenge {
@@ -144,4 +191,37 @@ func pickFromMultipleChallenges(challenges []authchallenge.Challenge) authchalle
 	}
 
 	return challenges[0]
+}
+
+type multierrs []error
+
+func (m multierrs) Error() string {
+	var b strings.Builder
+	hasWritten := false
+	for _, err := range m {
+		if hasWritten {
+			b.WriteString("; ")
+		}
+		hasWritten = true
+		b.WriteString(err.Error())
+	}
+	return b.String()
+}
+
+func (m multierrs) As(target any) bool {
+	for _, err := range m {
+		if errors.As(err, target) {
+			return true
+		}
+	}
+	return false
+}
+
+func (m multierrs) Is(target error) bool {
+	for _, err := range m {
+		if errors.Is(err, target) {
+			return true
+		}
+	}
+	return false
 }

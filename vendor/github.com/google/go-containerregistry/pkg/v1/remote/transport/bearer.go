@@ -19,7 +19,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net"
 	"net/http"
 	"net/url"
@@ -87,25 +87,26 @@ func (bt *bearerTransport) RoundTrip(in *http.Request) (*http.Response, error) {
 
 	// If we hit a WWW-Authenticate challenge, it might be due to expired tokens or insufficient scope.
 	if challenges := authchallenge.ResponseChallenges(res); len(challenges) != 0 {
+		// close out old response, since we will not return it.
+		res.Body.Close()
+
+		newScopes := []string{}
 		for _, wac := range challenges {
 			// TODO(jonjohnsonjr): Should we also update "realm" or "service"?
-			if scope, ok := wac.Parameters["scope"]; ok {
-				// From https://tools.ietf.org/html/rfc6750#section-3
-				// The "scope" attribute is defined in Section 3.3 of [RFC6749].  The
-				// "scope" attribute is a space-delimited list of case-sensitive scope
-				// values indicating the required scope of the access token for
-				// accessing the requested resource.
-				scopes := strings.Split(scope, " ")
-
+			if want, ok := wac.Parameters["scope"]; ok {
 				// Add any scopes that we don't already request.
 				got := stringSet(bt.scopes)
-				for _, want := range scopes {
-					if _, ok := got[want]; !ok {
-						bt.scopes = append(bt.scopes, want)
-					}
+				if _, ok := got[want]; !ok {
+					newScopes = append(newScopes, want)
 				}
 			}
 		}
+
+		// Some registries seem to only look at the first scope parameter during a token exchange.
+		// If a request fails because it's missing a scope, we should put those at the beginning,
+		// otherwise the registry might just ignore it :/
+		newScopes = append(newScopes, bt.scopes...)
+		bt.scopes = newScopes
 
 		// TODO(jonjohnsonjr): Teach transport.Error about "error" and "error_description" from challenge.
 
@@ -235,7 +236,9 @@ func (bt *bearerTransport) refreshOauth(ctx context.Context) ([]byte, error) {
 
 	v := url.Values{}
 	v.Set("scope", strings.Join(bt.scopes, " "))
-	v.Set("service", bt.service)
+	if bt.service != "" {
+		v.Set("service", bt.service)
+	}
 	v.Set("client_id", defaultUserAgent)
 	if auth.IdentityToken != "" {
 		v.Set("grant_type", "refresh_token")
@@ -265,11 +268,13 @@ func (bt *bearerTransport) refreshOauth(ctx context.Context) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if err := CheckError(resp, http.StatusOK); err != nil {
-		logs.Warn.Printf("No matching credentials were found for %q", bt.registry)
+		if bt.basic == authn.Anonymous {
+			logs.Warn.Printf("No matching credentials were found for %q", bt.registry)
+		}
 		return nil, err
 	}
 
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }
 
 // https://docs.docker.com/registry/spec/auth/token/
@@ -305,9 +310,11 @@ func (bt *bearerTransport) refreshBasic(ctx context.Context) ([]byte, error) {
 	defer resp.Body.Close()
 
 	if err := CheckError(resp, http.StatusOK); err != nil {
-		logs.Warn.Printf("No matching credentials were found for %q", bt.registry)
+		if bt.basic == authn.Anonymous {
+			logs.Warn.Printf("No matching credentials were found for %q", bt.registry)
+		}
 		return nil, err
 	}
 
-	return ioutil.ReadAll(resp.Body)
+	return io.ReadAll(resp.Body)
 }

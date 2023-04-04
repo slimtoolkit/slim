@@ -283,9 +283,14 @@ func SaveImage(dclient *dockerapi.Client, imageRef, local string, extract, remov
 
 		tarOptions := &archive.TarOptions{
 			NoLchown: true,
-			UIDMaps:  arc.IDMapping.UIDs(),
-			GIDMaps:  arc.IDMapping.GIDs(),
+			//UIDMaps:  arc.IDMapping.UIDs(),
+			//GIDMaps:  arc.IDMapping.GIDs(),
+
 		}
+
+		tarOptions.IDMap.UIDMaps = arc.IDMapping.UIDs()
+		tarOptions.IDMap.GIDMaps = arc.IDMapping.GIDs()
+
 		err = arc.Untar(afile, dstDir, tarOptions)
 		if err != nil {
 			log.Errorf("dockerutil.SaveImage: error unpacking tar - %v", err)
@@ -591,9 +596,13 @@ func CopyFromContainer(dclient *dockerapi.Client, containerID, remote, local str
 
 		tarOptions := &archive.TarOptions{
 			NoLchown: true,
-			UIDMaps:  arc.IDMapping.UIDs(),
-			GIDMaps:  arc.IDMapping.GIDs(),
+			//UIDMaps:  arc.IDMapping.UIDs(),
+			//GIDMaps:  arc.IDMapping.GIDs(),
 		}
+
+		tarOptions.IDMap.UIDMaps = arc.IDMapping.UIDs()
+		tarOptions.IDMap.GIDMaps = arc.IDMapping.GIDs()
+
 		err = arc.Untar(afile, dstDir, tarOptions)
 		if err != nil {
 			log.Errorf("dockerutil.CopyFromContainer: error unpacking tar - %v", err)

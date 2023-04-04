@@ -59,5 +59,6 @@ func (i emptyIndex) ImageIndex(v1.Hash) (v1.ImageIndex, error) {
 func base() *v1.IndexManifest {
 	return &v1.IndexManifest{
 		SchemaVersion: 2,
+		MediaType:     types.OCIImageIndex,
 	}
 }

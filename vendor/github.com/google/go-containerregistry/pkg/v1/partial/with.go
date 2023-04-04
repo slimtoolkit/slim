@@ -19,7 +19,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/types"
@@ -67,12 +66,12 @@ func (cl *configLayer) DiffID() (v1.Hash, error) {
 
 // Uncompressed implements v1.Layer
 func (cl *configLayer) Uncompressed() (io.ReadCloser, error) {
-	return ioutil.NopCloser(bytes.NewBuffer(cl.content)), nil
+	return io.NopCloser(bytes.NewBuffer(cl.content)), nil
 }
 
 // Compressed implements v1.Layer
 func (cl *configLayer) Compressed() (io.ReadCloser, error) {
-	return ioutil.NopCloser(bytes.NewBuffer(cl.content)), nil
+	return io.NopCloser(bytes.NewBuffer(cl.content)), nil
 }
 
 // Size implements v1.Layer
@@ -88,9 +87,22 @@ func (cl *configLayer) MediaType() (types.MediaType, error) {
 
 var _ v1.Layer = (*configLayer)(nil)
 
+// withConfigLayer allows partial image implementations to provide a layer
+// for their config file.
+type withConfigLayer interface {
+	ConfigLayer() (v1.Layer, error)
+}
+
 // ConfigLayer implements v1.Layer from the raw config bytes.
 // This is so that clients (e.g. remote) can access the config as a blob.
+//
+// Images that want to return a specific layer implementation can implement
+// withConfigLayer.
 func ConfigLayer(i WithRawConfigFile) (v1.Layer, error) {
+	if wcl, ok := unwrap(i).(withConfigLayer); ok {
+		return wcl.ConfigLayer()
+	}
+
 	h, err := ConfigName(i)
 	if err != nil {
 		return nil, err
@@ -316,8 +328,26 @@ func Descriptor(d Describable) (*v1.Descriptor, error) {
 	if desc.MediaType, err = d.MediaType(); err != nil {
 		return nil, err
 	}
+	if wat, ok := d.(withArtifactType); ok {
+		if desc.ArtifactType, err = wat.ArtifactType(); err != nil {
+			return nil, err
+		}
+	} else {
+		if wrm, ok := d.(WithRawManifest); ok && desc.MediaType.IsImage() {
+			mf, _ := Manifest(wrm)
+			// Failing to parse as a manifest should just be ignored.
+			// The manifest might not be valid, and that's okay.
+			if mf != nil && !mf.Config.MediaType.IsConfig() {
+				desc.ArtifactType = string(mf.Config.MediaType)
+			}
+		}
+	}
 
 	return &desc, nil
+}
+
+type withArtifactType interface {
+	ArtifactType() (string, error)
 }
 
 type withUncompressedSize interface {
@@ -342,7 +372,7 @@ func UncompressedSize(l v1.Layer) (int64, error) {
 	}
 	defer rc.Close()
 
-	return io.Copy(ioutil.Discard, rc)
+	return io.Copy(io.Discard, rc)
 }
 
 type withExists interface {
@@ -372,7 +402,7 @@ func Exists(l v1.Layer) (bool, error) {
 
 // Recursively unwrap our wrappers so that we can check for the original implementation.
 // We might want to expose this?
-func unwrap(i interface{}) interface{} {
+func unwrap(i any) any {
 	if ule, ok := i.(*uncompressedLayerExtender); ok {
 		return unwrap(ule.UncompressedLayer)
 	}
@@ -386,4 +416,21 @@ func unwrap(i interface{}) interface{} {
 		return unwrap(cie.CompressedImageCore)
 	}
 	return i
+}
+
+// ArtifactType returns the artifact type for the given manifest.
+//
+// If the manifest reports its own artifact type, that's returned, otherwise
+// the manifest is parsed and, if successful, its config.mediaType is returned.
+func ArtifactType(w WithManifest) (string, error) {
+	if wat, ok := w.(withArtifactType); ok {
+		return wat.ArtifactType()
+	}
+	mf, _ := w.Manifest()
+	// Failing to parse as a manifest should just be ignored.
+	// The manifest might not be valid, and that's okay.
+	if mf != nil && !mf.Config.MediaType.IsConfig() {
+		return string(mf.Config.MediaType), nil
+	}
+	return "", nil
 }
