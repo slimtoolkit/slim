@@ -4,10 +4,25 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"regexp"
 	"strconv"
 	"strings"
+	"sync"
+	"unicode"
 )
+
+// Defined an interface of stringBuilder that compatible with 
+// strings.Builder(go 1.10) and bytes.Buffer(< go 1.10)
+type stringBuilder interface {
+	WriteRune(r rune) (n int, err error)
+	WriteString(s string) (int, error)
+	Reset()
+	Grow(n int)
+	String() string
+}
+
+var builderPool = sync.Pool{New: func() interface{} {
+	return newStringBuilder()
+}}
 
 // The XPath function list.
 
@@ -58,6 +73,7 @@ func lastFunc(q query, t iterator) interface{} {
 // countFunc is a XPath Node Set functions count(node-set).
 func countFunc(q query, t iterator) interface{} {
 	var count = 0
+	q = functionArgs(q)
 	test := predicate(q)
 	switch typ := q.Evaluate(t).(type) {
 	case query:
@@ -73,7 +89,7 @@ func countFunc(q query, t iterator) interface{} {
 // sumFunc is a XPath Node Set functions sum(node-set).
 func sumFunc(q query, t iterator) interface{} {
 	var sum float64
-	switch typ := q.Evaluate(t).(type) {
+	switch typ := functionArgs(q).Evaluate(t).(type) {
 	case query:
 		for node := typ.Select(t); node != nil; node = typ.Select(t) {
 			if v, err := strconv.ParseFloat(node.Value(), 64); err == nil {
@@ -116,19 +132,19 @@ func asNumber(t iterator, o interface{}) float64 {
 
 // ceilingFunc is a XPath Node Set functions ceiling(node-set).
 func ceilingFunc(q query, t iterator) interface{} {
-	val := asNumber(t, q.Evaluate(t))
+	val := asNumber(t, functionArgs(q).Evaluate(t))
 	return math.Ceil(val)
 }
 
 // floorFunc is a XPath Node Set functions floor(node-set).
 func floorFunc(q query, t iterator) interface{} {
-	val := asNumber(t, q.Evaluate(t))
+	val := asNumber(t, functionArgs(q).Evaluate(t))
 	return math.Floor(val)
 }
 
 // roundFunc is a XPath Node Set functions round(node-set).
 func roundFunc(q query, t iterator) interface{} {
-	val := asNumber(t, q.Evaluate(t))
+	val := asNumber(t, functionArgs(q).Evaluate(t))
 	//return math.Round(val)
 	return round(val)
 }
@@ -201,7 +217,7 @@ func asBool(t iterator, v interface{}) bool {
 	case *NodeIterator:
 		return v.MoveNext()
 	case bool:
-		return bool(v)
+		return v
 	case float64:
 		return v != 0
 	case string:
@@ -239,19 +255,19 @@ func asString(t iterator, v interface{}) string {
 
 // booleanFunc is a XPath functions boolean([node-set]).
 func booleanFunc(q query, t iterator) interface{} {
-	v := q.Evaluate(t)
+	v := functionArgs(q).Evaluate(t)
 	return asBool(t, v)
 }
 
 // numberFunc is a XPath functions number([node-set]).
 func numberFunc(q query, t iterator) interface{} {
-	v := q.Evaluate(t)
+	v := functionArgs(q).Evaluate(t)
 	return asNumber(t, v)
 }
 
 // stringFunc is a XPath functions string([node-set]).
 func stringFunc(q query, t iterator) interface{} {
-	v := q.Evaluate(t)
+	v := functionArgs(q).Evaluate(t)
 	return asString(t, v)
 }
 
@@ -338,15 +354,10 @@ func containsFunc(arg1, arg2 query) func(query, iterator) interface{} {
 	}
 }
 
-var (
-	regnewline  = regexp.MustCompile(`[\r\n\t]`)
-	regseqspace = regexp.MustCompile(`\s{2,}`)
-)
-
 // normalizespaceFunc is XPath functions normalize-space(string?)
 func normalizespaceFunc(q query, t iterator) interface{} {
 	var m string
-	switch typ := q.Evaluate(t).(type) {
+	switch typ := functionArgs(q).Evaluate(t).(type) {
 	case string:
 		m = typ
 	case query:
@@ -356,10 +367,26 @@ func normalizespaceFunc(q query, t iterator) interface{} {
 		}
 		m = node.Value()
 	}
-	m = strings.TrimSpace(m)
-	m = regnewline.ReplaceAllString(m, " ")
-	m = regseqspace.ReplaceAllString(m, " ")
-	return m
+	var b = builderPool.Get().(stringBuilder)
+	b.Grow(len(m))
+
+	runeStr := []rune(strings.TrimSpace(m))
+	l := len(runeStr)
+	for i := range runeStr {
+		r := runeStr[i]
+		isSpace := unicode.IsSpace(r)
+		if !(isSpace && (i+1 < l && unicode.IsSpace(runeStr[i+1]))) {
+			if isSpace {
+				r = ' '
+			}
+			b.WriteRune(r)
+		}
+	}
+	result := b.String()
+	b.Reset()
+	builderPool.Put(b)
+
+	return result
 }
 
 // substringFunc is XPath functions substring function returns a part of a given string.
@@ -466,7 +493,7 @@ func translateFunc(arg1, arg2, arg3 query) func(query, iterator) interface{} {
 		src := asString(t, functionArgs(arg2).Evaluate(t))
 		dst := asString(t, functionArgs(arg3).Evaluate(t))
 
-		var replace []string
+		replace := make([]string, 0, len(src))
 		for i, s := range src {
 			d := ""
 			if i < len(dst) {
@@ -491,7 +518,7 @@ func replaceFunc(arg1, arg2, arg3 query) func(query, iterator) interface{} {
 
 // notFunc is XPATH functions not(expression) function operation.
 func notFunc(q query, t iterator) interface{} {
-	switch v := q.Evaluate(t).(type) {
+	switch v := functionArgs(q).Evaluate(t).(type) {
 	case bool:
 		return !v
 	case query:
@@ -507,20 +534,25 @@ func notFunc(q query, t iterator) interface{} {
 // concat( string1 , string2 [, stringn]* )
 func concatFunc(args ...query) func(query, iterator) interface{} {
 	return func(q query, t iterator) interface{} {
-		var a []string
+		b := builderPool.Get().(stringBuilder)
 		for _, v := range args {
 			v = functionArgs(v)
+
 			switch v := v.Evaluate(t).(type) {
 			case string:
-				a = append(a, v)
+				b.WriteString(v)
 			case query:
 				node := v.Select(t)
 				if node != nil {
-					a = append(a, node.Value())
+					b.WriteString(node.Value())
 				}
 			}
 		}
-		return strings.Join(a, "")
+		result := b.String()
+		b.Reset()
+		builderPool.Put(b)
+
+		return result
 	}
 }
 

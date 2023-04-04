@@ -22,10 +22,10 @@ github.com/andybalholm/cascadia
 # github.com/antchfx/htmlquery v1.2.3
 ## explicit; go 1.14
 github.com/antchfx/htmlquery
-# github.com/antchfx/xmlquery v1.2.4
+# github.com/antchfx/xmlquery v1.3.1
 ## explicit; go 1.14
 github.com/antchfx/xmlquery
-# github.com/antchfx/xpath v1.1.8
+# github.com/antchfx/xpath v1.1.10
 ## explicit
 github.com/antchfx/xpath
 # github.com/armon/go-radix v1.0.0

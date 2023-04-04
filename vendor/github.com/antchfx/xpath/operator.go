@@ -173,7 +173,7 @@ func cmpNodeSetNodeSet(t iterator, op string, m, n interface{}) bool {
 	if y == nil {
 		return false
 	}
-	return cmpStringStringF(op,x.Value(),y.Value())
+	return cmpStringStringF(op, x.Value(), y.Value())
 }
 
 func cmpStringNumeric(t iterator, op string, m, n interface{}) bool {
