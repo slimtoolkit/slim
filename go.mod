@@ -116,7 +116,7 @@ require (
 	github.com/antchfx/xpath v1.1.8 // indirect
 	github.com/bradfitz/iter v0.0.0-20191230175014-e8f45d346db8 // indirect
 	github.com/containerd/containerd v1.5.8 // indirect
-	github.com/davecgh/go-spew v1.1.1
+	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/docker-slim/uilive v0.0.2 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/google/uuid v1.3.0
@@ -132,7 +132,7 @@ require (
 	github.com/moby/sys/sequential v0.5.0 // indirect
 	github.com/pkg/term v0.0.0-20200520122047-c3ffed290a03 // indirect
 	github.com/stretchr/testify v1.8.1
-	github.com/ulikunitz/xz v0.5.7 // indirect
+	github.com/ulikunitz/xz v0.5.8 // indirect
 	k8s.io/klog/v2 v2.60.1 // indirect
 	k8s.io/kube-openapi v0.0.0-20220328201542-3ee0da9b0b42 // indirect
 	k8s.io/utils v0.0.0-20220210201930-3a6ce19ff2f9 // indirect
