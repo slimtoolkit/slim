@@ -362,8 +362,8 @@ github.com/opencontainers/go-digest
 ## explicit; go 1.17
 github.com/opencontainers/image-spec/specs-go
 github.com/opencontainers/image-spec/specs-go/v1
-# github.com/opencontainers/runc v1.0.2
-## explicit; go 1.13
+# github.com/opencontainers/runc v1.1.5
+## explicit; go 1.16
 github.com/opencontainers/runc/libcontainer/user
 # github.com/peterbourgon/diskv v2.0.1+incompatible
 ## explicit
