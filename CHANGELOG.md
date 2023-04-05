@@ -1,5 +1,16 @@
 # Releases
 
+## 1.40.1 (1/15/2022)
+
+### Improvements
+
+- New include flags for the `build` command (`--include-workdir`, `--include-last-image-layers`)
+- Debug/trace logging improvements
+
+### Bug Fixes
+
+- todo: add info
+
 ## 1.40.0 (1/15/2022)
 
 ### New Features

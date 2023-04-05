@@ -197,7 +197,7 @@ Elixir application images:
 
 ## RECENT UPDATES
 
-Latest version: 1.40.0 (1/15/2023)
+Latest version: 1.40.1 (4/5/2023)
 
 The 1.37.x-1.40.x releases add an experimental docker-compose support and various improved application tracing capabilities for the build command.
 
@@ -216,15 +216,15 @@ slim update
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.40.0/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.0/dist_mac.zip`)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.40.1/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.1/dist_mac.zip`)
 
-   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.40.0/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.0/dist_mac_m1.zip`)
+   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.40.1/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.1/dist_mac_m1.zip`)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.40.0/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.0/dist_linux.tar.gz`)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.40.1/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.1/dist_linux.tar.gz`)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.40.0/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.0/dist_linux_arm.tar.gz`)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.40.1/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.1/dist_linux_arm.tar.gz`)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.40.0/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.0/dist_linux_arm64.tar.gz`)
+   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.40.1/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.1/dist_linux_arm64.tar.gz`)
 
 2. Unzip the package and optionally move it to your bin directory.
 
@@ -460,6 +460,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
 - `--include-shell` - Include basic shell functionality (default value: false)
 - `--include-workdir` - Keep files in working directory (default value: false)
+- `--include-last-image-layers` - Keep all files from the last number of layers in the image (default value: 0)
 - `--include-cert-all` - Keep all discovered cert files (default: true)
 - `--include-cert-bundles-only` - Keep only cert bundles
 - `--include-cert-dirs` - Keep known cert directories and all files in them
@@ -783,11 +784,11 @@ The demo runs on Mac OS X, but you can build a linux version. Note that these st
 
 1. Get the Slim app binaries:
 
-* [Mac](https://downloads.dockerslim.com/releases/1.40.0/dist_mac.zip),
-* [Mac M1](https://downloads.dockerslim.com/releases/1.40.0/dist_mac_m1.zip), 
-* [Linux](https://downloads.dockerslim.com/releases/1.40.0/dist_linux.tar.gz), 
-* [Linux ARM](https://downloads.dockerslim.com/releases/1.40.0/dist_linux_arm.tar.gz),
-* [Linux ARM64](https://downloads.dockerslim.com/releases/1.40.0/dist_linux_arm64.tar.gz) 
+* [Mac](https://downloads.dockerslim.com/releases/1.40.1/dist_mac.zip),
+* [Mac M1](https://downloads.dockerslim.com/releases/1.40.1/dist_mac_m1.zip), 
+* [Linux](https://downloads.dockerslim.com/releases/1.40.1/dist_linux.tar.gz), 
+* [Linux ARM](https://downloads.dockerslim.com/releases/1.40.1/dist_linux_arm.tar.gz),
+* [Linux ARM64](https://downloads.dockerslim.com/releases/1.40.1/dist_linux_arm64.tar.gz) 
 
 Unzip them and optionally add their directory to your `PATH` environment variable if you want to use the app from other locations.
 
