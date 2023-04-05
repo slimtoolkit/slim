@@ -11,7 +11,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go: ['1.16', '1.18']
+        go: ['1.19']
     runs-on: 'ubuntu-latest'
     steps:
       - uses: actions/cache@v3.2.4
