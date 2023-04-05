@@ -93,7 +93,7 @@ github.com/docker/cli/cli/config/types
 github.com/docker/distribution/digestset
 github.com/docker/distribution/reference
 github.com/docker/distribution/registry/client/auth/challenge
-# github.com/docker/docker v23.0.1+incompatible
+# github.com/docker/docker v23.0.3+incompatible
 ## explicit
 github.com/docker/docker/api
 github.com/docker/docker/api/types
