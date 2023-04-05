@@ -666,7 +666,7 @@ var CLI = &cli.Command{
 		doIncludeShell := ctx.Bool(FlagIncludeShell)
 
 		doIncludeWorkdir := ctx.Bool(FlagIncludeWorkdir)
-		includeLastImageLayers := ctx.Uint(FlagIncludeWorkdir)
+		includeLastImageLayers := ctx.Uint(FlagIncludeLastImageLayers)
 
 		doIncludeOSLibsNet := ctx.Bool(FlagIncludeOSLibsNet)
 

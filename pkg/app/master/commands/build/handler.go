@@ -616,8 +616,8 @@ func OnCommand(
 		logger,
 		cmdReport)
 
-	///
 	if includeLastImageLayers > 0 {
+		logger.Debugf("includeLastImageLayers=%v", includeLastImageLayers)
 		includeLayerPaths := map[string]*fsutil.AccessInfo{}
 
 		imageID := dockerutil.CleanImageID(imageInspector.ImageInfo.ID)
@@ -681,7 +681,13 @@ func OnCommand(
 				logger.Errorf("imgFiles.ListLayerFiles() error - %v", err)
 			} else {
 				for _, lf := range layerFiles {
+					logger.Tracef("layerFiles=%v/%v/%v fileCount=%v",
+						lf.Layer.Index,
+						lf.Layer.Digest,
+						lf.Layer.DiffID,
+						len(lf.Files))
 					for _, fileInfo := range lf.Files {
+						logger.Tracef("layerFiles.File=%v", fileInfo.Name)
 						includeLayerPaths[fileInfo.Name] = nil
 					}
 				}
@@ -694,7 +700,6 @@ func OnCommand(
 			includePaths[k] = nil
 		}
 	}
-	///
 
 	//refresh the target refs
 	targetRef = imageInspector.ImageRef
