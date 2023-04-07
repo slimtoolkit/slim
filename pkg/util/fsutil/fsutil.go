@@ -465,7 +465,7 @@ func cloneDirPath(src, dst string) {
 		//need to research when we might miss intermediate directories
 		err = os.MkdirAll(dir.dst, 0777)
 		if err != nil {
-			log.Errorf("cloneDirPath() - os.MkdirAll(%v) error - %v", dir.dst)
+			log.Errorf("cloneDirPath() - os.MkdirAll(%v) error - %v", dir.dst, dir.dst)
 		}
 		//if err != nil && !os.IsExist(err) {
 		//	errutil.FailOn(err)
