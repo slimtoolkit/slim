@@ -23,7 +23,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-go-
 
-      - uses: actions/checkout@v3.3.0
+      - uses: actions/checkout@v3.5.1
         with:
           fetch-depth: 0
           submodules: recursive
