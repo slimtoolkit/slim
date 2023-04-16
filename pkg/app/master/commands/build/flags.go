@@ -129,6 +129,9 @@ const (
 	FlagIncludeWorkdirUsage         = "Keep files in working directory"
 	FlagIncludeLastImageLayersUsage = "Keep all files from the last number of layers in the image"
 
+	FlagIncludeAppImageAllUsage     = "Keep everything in the app part of the container image"
+	FlagAppImageStartInstGroupUsage = "Instruction group (reverse) index that indicates where the app starts in the container image"
+
 	FlagIncludePathsCreportFileUsage = "Keep files from the referenced creport"
 
 	FlagIncludeOSLibsNetUsage = "Keep the common networking OS libraries"
@@ -259,6 +262,17 @@ var Flags = map[string]cli.Flag{
 		Value:   0,
 		Usage:   FlagIncludeLastImageLayersUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_LAST_IMAGE_LAYERS"},
+	},
+	FlagIncludeAppImageAll: &cli.BoolFlag{
+		Name:    FlagIncludeAppImageAll,
+		Usage:   FlagIncludeAppImageAllUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_APP_IMAGE_ALL"},
+	},
+	FlagAppImageStartInstGroup: &cli.IntFlag{
+		Name:    FlagAppImageStartInstGroup,
+		Value:   -1,
+		Usage:   FlagAppImageStartInstGroupUsage,
+		EnvVars: []string{"DSLIM_APP_IMAGE_START_INST_GROUP"},
 	},
 	////
 	FlagIncludePathsCreportFile: &cli.StringFlag{

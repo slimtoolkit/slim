@@ -103,6 +103,28 @@ func (ref *PackageFiles) ImageID() string {
 	return ref.imgID
 }
 
+func (ref *PackageFiles) ListImageHistory() ([]XHistory, error) {
+	configFile, err := ref.img.ConfigFile()
+	if err != nil {
+		return nil, err
+	}
+
+	var list []XHistory
+	for _, record := range configFile.History {
+		info := XHistory{
+			Created:    record.Created.Time,
+			CreatedBy:  record.CreatedBy,
+			Comment:    record.Comment,
+			EmptyLayer: record.EmptyLayer,
+			Author:     record.Author,
+		}
+
+		list = append(list, info)
+	}
+
+	return list, nil
+}
+
 func (ref *PackageFiles) LayerCount() int {
 	layers, _ := ref.img.Layers()
 	return len(layers)

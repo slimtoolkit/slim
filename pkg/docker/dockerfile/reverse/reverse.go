@@ -23,14 +23,16 @@ var (
 
 // Dockerfile represents the reverse engineered Dockerfile info
 type Dockerfile struct {
-	Lines           []string
-	Maintainers     []string
-	AllUsers        []string
-	ExeUser         string
-	ExposedPorts    []string
-	ImageStack      []*ImageInfo
-	AllInstructions []*InstructionInfo
-	HasOnbuild      bool
+	Lines                    []string             `json:"lines,omitempty"`
+	Maintainers              []string             `json:"maintainers,omitempty"`
+	AllUsers                 []string             `json:"all_users,omitempty"`
+	ExeUser                  string               `json:"exe_user,omitempty"`
+	ExposedPorts             []string             `json:"exposed_ports,omitempty"`
+	ImageStack               []*ImageInfo         `json:"image_stack"`
+	AllInstructions          []*InstructionInfo   `json:"all_instructions"`
+	InstructionGroups        [][]*InstructionInfo `json:"instruction_groups"`
+	InstructionGroupsReverse [][]*InstructionInfo `json:"instruction_groups_reverse"`
+	HasOnbuild               bool                 `json:"has_onbuild"`
 }
 
 type ImageInfo struct {
@@ -51,33 +53,34 @@ type InstructionInfo struct {
 	Type string `json:"type"`
 	Time string `json:"time"`
 	//Time              time.Time `json:"time"`
-	IsLastInstruction     bool     `json:"is_last_instruction,omitempty"`
-	IsNop                 bool     `json:"is_nop"`
-	IsExecForm            bool     `json:"is_exec_form,omitempty"` //is exec/json format (a valid field for RUN, ENTRYPOINT, CMD)
-	LocalImageExists      bool     `json:"local_image_exists"`
-	IntermediateImageID   string   `json:"intermediate_image_id,omitempty"`
-	LayerIndex            int      `json:"layer_index"` //-1 for an empty layer
-	LayerID               string   `json:"layer_id,omitempty"`
-	LayerFSDiffID         string   `json:"layer_fsdiff_id,omitempty"`
-	Size                  int64    `json:"size"`
-	SizeHuman             string   `json:"size_human,omitempty"`
-	Params                string   `json:"params,omitempty"`
-	CommandSnippet        string   `json:"command_snippet"`
-	CommandAll            string   `json:"command_all"`
-	SystemCommands        []string `json:"system_commands,omitempty"`
-	Comment               string   `json:"comment,omitempty"`
-	Author                string   `json:"author,omitempty"`
-	EmptyLayer            bool     `json:"empty_layer,omitempty"`
-	instPosition          string
-	imageFullName         string
-	RawTags               []string  `json:"raw_tags,omitempty"`
-	Target                string    `json:"target,omitempty"`      //for ADD and COPY
-	SourceType            string    `json:"source_type,omitempty"` //for ADD and COPY
-	IsBuildKitInstruction bool      `json:"is_buildkit_instruction,omitempty"`
-	BuildKitInfo          string    `json:"buildkit_info,omitempty"`
-	TimeValue             time.Time `json:"-"`
-	InstSetTimeBucket     time.Time `json:"inst_set_time_bucket,omitempty"`
-	InstSetTimeIndex      int       `json:"inst_set_time_index,omitempty"`
+	IsLastInstruction       bool     `json:"is_last_instruction,omitempty"`
+	IsNop                   bool     `json:"is_nop"`
+	IsExecForm              bool     `json:"is_exec_form,omitempty"` //is exec/json format (a valid field for RUN, ENTRYPOINT, CMD)
+	LocalImageExists        bool     `json:"local_image_exists"`
+	IntermediateImageID     string   `json:"intermediate_image_id,omitempty"`
+	LayerIndex              int      `json:"layer_index"` //-1 for an empty layer
+	LayerID                 string   `json:"layer_id,omitempty"`
+	LayerFSDiffID           string   `json:"layer_fsdiff_id,omitempty"`
+	Size                    int64    `json:"size"`
+	SizeHuman               string   `json:"size_human,omitempty"`
+	Params                  string   `json:"params,omitempty"`
+	CommandSnippet          string   `json:"command_snippet"`
+	CommandAll              string   `json:"command_all"`
+	SystemCommands          []string `json:"system_commands,omitempty"`
+	Comment                 string   `json:"comment,omitempty"`
+	Author                  string   `json:"author,omitempty"`
+	EmptyLayer              bool     `json:"empty_layer,omitempty"`
+	instPosition            string
+	imageFullName           string
+	RawTags                 []string  `json:"raw_tags,omitempty"`
+	Target                  string    `json:"target,omitempty"`      //for ADD and COPY
+	SourceType              string    `json:"source_type,omitempty"` //for ADD and COPY
+	IsBuildKitInstruction   bool      `json:"is_buildkit_instruction,omitempty"`
+	BuildKitInfo            string    `json:"buildkit_info,omitempty"`
+	TimeValue               time.Time `json:"-"`
+	InstSetTimeBucket       time.Time `json:"inst_set_time_bucket,omitempty"`
+	InstSetTimeIndex        int       `json:"inst_set_time_index"`
+	InstSetTimeReverseIndex int       `json:"inst_set_time_reverse_index"`
 }
 
 const (
@@ -387,16 +390,17 @@ func DockerfileFromHistoryStruct(imageHistory []docker.ImageHistory) (*Dockerfil
 			}
 
 			instInfo := InstructionInfo{
-				IsNop:                 isNop,
-				IsExecForm:            isExecForm,
-				CommandAll:            cleanInst,
-				Time:                  time.Unix(imageHistory[idx].Created, 0).UTC().Format(time.RFC3339),
-				TimeValue:             time.Unix(imageHistory[idx].Created, 0),
-				Comment:               imageHistory[idx].Comment,
-				RawTags:               imageHistory[idx].Tags,
-				Size:                  imageHistory[idx].Size,
-				IsBuildKitInstruction: isBuildKitInstruction,
-				InstSetTimeIndex:      -1,
+				IsNop:                   isNop,
+				IsExecForm:              isExecForm,
+				CommandAll:              cleanInst,
+				Time:                    time.Unix(imageHistory[idx].Created, 0).UTC().Format(time.RFC3339),
+				TimeValue:               time.Unix(imageHistory[idx].Created, 0),
+				Comment:                 imageHistory[idx].Comment,
+				RawTags:                 imageHistory[idx].Tags,
+				Size:                    imageHistory[idx].Size,
+				IsBuildKitInstruction:   isBuildKitInstruction,
+				InstSetTimeIndex:        -1,
+				InstSetTimeReverseIndex: -1,
 			}
 
 			instInfo.InstSetTimeBucket = instInfo.TimeValue.Truncate(tbDuration)
@@ -560,12 +564,17 @@ func DockerfileFromHistoryStruct(imageHistory []docker.ImageHistory) (*Dockerfil
 	}
 
 	sort.SliceStable(tkeys, func(i, j int) bool { return tkeys[i].Before(tkeys[j]) })
+	tkListLen := len(tkeys)
 	for i, k := range tkeys {
 		tbrList := timeBuckets[k]
 		for _, tbr := range tbrList {
 			tbr.instruction.InstSetTimeIndex = i
+			tbr.instruction.InstSetTimeReverseIndex = tkListLen - 1 - i
 		}
 	}
+
+	out.InstructionGroups = make([][]*InstructionInfo, tkListLen)
+	out.InstructionGroupsReverse = make([][]*InstructionInfo, tkListLen)
 
 	//Always adding "FROM scratch" as the first line
 	//GOAL: to have a reversed Dockerfile that can be used to build a new image
@@ -580,6 +589,9 @@ func DockerfileFromHistoryStruct(imageHistory []docker.ImageHistory) (*Dockerfil
 			out.Lines = append(out.Lines, fmt.Sprintf("\n# instruction set group %d\n", instInfo.InstSetTimeIndex+1))
 			prevInstSetTimeIndex = instInfo.InstSetTimeIndex
 		}
+
+		out.InstructionGroups[instInfo.InstSetTimeIndex] = append(out.InstructionGroups[instInfo.InstSetTimeIndex], instInfo)
+		out.InstructionGroupsReverse[instInfo.InstSetTimeReverseIndex] = append(out.InstructionGroupsReverse[instInfo.InstSetTimeReverseIndex], instInfo)
 
 		if instInfo.Comment != "" {
 			outComment := fmt.Sprintf("# %s", instInfo.Comment)
@@ -611,16 +623,12 @@ func DockerfileFromHistoryStruct(imageHistory []docker.ImageHistory) (*Dockerfil
 
 	return &out, nil
 
-	/*
-	   TODO:
-	   need to have a set of signature for common base images
-	   long path: need to discover base images dynamically
-	   https://imagelayers.io/?images=alpine:3.1,ubuntu:14.04.1&lock=alpine:3.1
-
-	   https://imagelayers.io/
-	   https://github.com/CenturyLinkLabs/imagelayers
-	   https://github.com/CenturyLinkLabs/imagelayers-graph
-	*/
+	//BASE LAYER IDENTIFICATION:
+	//* tags from the instruction history
+	//* instruction time-based clustering
+	//* instruction patterns (e.g., base images often have their own ENTRYPOINT/CMD instructions)
+	//* base image metadata from the image labels (e.g., "org.opencontainers.image.base.digest" OCI label)
+	//* database with pre-indexed common base image digests (will require a network lookup)
 }
 
 func stripRunInstArgs(rawInst string) (string, bool, bool, error) {
