@@ -131,6 +131,8 @@ var CLI = &cli.Command{
 		cflag(FlagIncludeLastImageLayers),
 		cflag(FlagIncludeAppImageAll),
 		cflag(FlagAppImageStartInstGroup),
+		cflag(FlagAppImageStartInst),
+		cflag(FlagAppImageDockerfile),
 		cflag(FlagIncludePathsCreportFile),
 		cflag(FlagIncludeOSLibsNet),
 		cflag(FlagIncludeCertAll),
@@ -197,7 +199,7 @@ var CLI = &cli.Command{
 		composeSvcStartWait := ctx.Int(commands.FlagComposeSvcStartWait)
 
 		composeEnvNoHost := ctx.Bool(commands.FlagComposeEnvNoHost)
-		composeEnvVars, err := commands.ParseEnvFile(ctx.String(commands.FlagComposeEnvFile))
+		composeEnvVars, err := commands.ParseLinesWithCommentsFile(ctx.String(commands.FlagComposeEnvFile))
 		if err != nil {
 			xc.Out.Error("param.error.compose.env.file", err.Error())
 			xc.Out.State("exited",
@@ -671,6 +673,18 @@ var CLI = &cli.Command{
 		includeLastImageLayers := ctx.Uint(FlagIncludeLastImageLayers)
 		doIncludeAppImageAll := ctx.Bool(FlagIncludeAppImageAll)
 		appImageStartInstGroup := ctx.Int(FlagAppImageStartInstGroup)
+		appImageStartInst := ctx.String(FlagAppImageStartInst)
+
+		appImageDockerfilePath := ctx.String(FlagAppImageDockerfile)
+		appImageDockerfileInsts, err := commands.ParseLinesWithCommentsFile(appImageDockerfilePath)
+		if err != nil {
+			xc.Out.Error("param.error.app.image.dockerfile", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
 
 		doIncludeOSLibsNet := ctx.Bool(FlagIncludeOSLibsNet)
 
@@ -781,6 +795,8 @@ var CLI = &cli.Command{
 			includeLastImageLayers,
 			doIncludeAppImageAll,
 			appImageStartInstGroup,
+			appImageStartInst,
+			appImageDockerfileInsts,
 			doIncludeOSLibsNet,
 			doIncludeCertAll,
 			doIncludeCertBundles,

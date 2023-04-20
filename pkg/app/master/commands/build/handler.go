@@ -123,6 +123,8 @@ func OnCommand(
 	includeLastImageLayers uint,
 	doIncludeAppImageAll bool,
 	appImageStartInstGroup int,
+	appImageStartInst string,
+	appImageDockerfileInsts []string,
 	doIncludeOSLibsNet bool,
 	doIncludeCertAll bool,
 	doIncludeCertBundles bool,
@@ -620,10 +622,13 @@ func OnCommand(
 
 	loadExtraIncludePaths := func() {
 		if (includeLastImageLayers > 0) ||
-			(appImageStartInstGroup > -1) {
-			logger.Debugf("loadExtraIncludePaths: includeLastImageLayers=%v", includeLastImageLayers)
-			includeLayerPaths := map[string]*fsutil.AccessInfo{}
+			(appImageStartInstGroup > -1) ||
+			(appImageStartInst != "") ||
+			(len(appImageDockerfileInsts) > 0) {
+			logger.Debugf("loadExtraIncludePaths: includeLastImageLayers=%v appImageStartInstGroup=%v appImageStartInst='%v' len.appImageDockerfileInsts=%v",
+				includeLastImageLayers, appImageStartInstGroup, appImageStartInst, len(appImageDockerfileInsts))
 
+			includeLayerPaths := map[string]*fsutil.AccessInfo{}
 			imageID := dockerutil.CleanImageID(imageInspector.ImageInfo.ID)
 			iaName := fmt.Sprintf("%s.tar", imageID)
 			iaPath := filepath.Join(localVolumePath, "image", iaName)
@@ -666,7 +671,10 @@ func OnCommand(
 			} else {
 				layerCount := imgFiles.LayerCount()
 
-				if (layerCount > 0) && (appImageStartInstGroup > -1) && doIncludeAppImageAll {
+				if (layerCount > 0) &&
+					((appImageStartInstGroup > -1) || (appImageStartInst != "") || (len(appImageDockerfileInsts) > 0)) &&
+					doIncludeAppImageAll {
+					//TODO: refactor the condition logic
 					//appImageStartInstGroup - reverse index
 					history, err := imgFiles.ListImageHistory()
 					if err != nil {
@@ -690,10 +698,52 @@ func OnCommand(
 					appImageStartLayerIndex := -1
 					//var appImageStartLayerInfo *dockerimage.LayerMetadata
 
-					for idx, instInfo := range imageInspector.DockerfileInfo.AllInstructions {
-						if instInfo.InstSetTimeReverseIndex == appImageStartInstGroup {
-							appImageStartInstIndex = idx
-							break
+					//calculate the start instruction index by iterating over df instruction list
+					var instCount int
+					if len(appImageDockerfileInsts) > 0 {
+						//use the instructions from the last 'stage' (first 'FROM' in reverse)
+						for i := len(appImageDockerfileInsts) - 1; i > -1; i-- {
+							if strings.HasPrefix(appImageDockerfileInsts[i], "FROM ") {
+								logger.Tracef("loadExtraIncludePaths: app image dockerfile (reverse) instruction count - [%v] %v", i, instCount)
+								break
+							}
+
+							if strings.HasPrefix(appImageDockerfileInsts[i], "ARG ") {
+								continue
+							}
+
+							instCount++
+						}
+					}
+
+					if instCount > 0 {
+						//NOTE: prefer reverse instruction cloud from the app image Dockerfile
+						for current, idx := 0, len(imageInspector.DockerfileInfo.AllInstructions)-1; idx > -1; idx-- {
+							current++
+							if current == instCount {
+								appImageStartInstIndex = idx
+								logger.Tracef("loadExtraIncludePaths: app image start instruction from app dockerfile - [%v][%v] %#v",
+									instCount, idx, imageInspector.DockerfileInfo.AllInstructions[idx])
+								break
+							}
+						}
+					} else {
+						for idx, instInfo := range imageInspector.DockerfileInfo.AllInstructions {
+							if appImageStartInst != "" {
+								//NOTE: prefer to use the start instruction prefix if it's provided
+								if strings.HasPrefix(instInfo.CommandAll, appImageStartInst) {
+									//use the fist match
+									appImageStartInstIndex = idx
+									logger.Tracef("loadExtraIncludePaths: app image start instruction match - [%v] %#v", idx, instInfo)
+									break
+								}
+							} else {
+								if instInfo.InstSetTimeReverseIndex == appImageStartInstGroup {
+									appImageStartInstIndex = idx
+									logger.Tracef("loadExtraIncludePaths: app image start instruction group match - [%v] => [%v] %#v", appImageStartInstGroup, idx, instInfo)
+									break
+								}
+							}
 						}
 					}
 

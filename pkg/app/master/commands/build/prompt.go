@@ -114,6 +114,8 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagIncludeLastImageLayers), Description: FlagIncludeLastImageLayersUsage},
 		{Text: commands.FullFlagName(FlagIncludeAppImageAll), Description: FlagIncludeAppImageAllUsage},
 		{Text: commands.FullFlagName(FlagAppImageStartInstGroup), Description: FlagAppImageStartInstGroupUsage},
+		{Text: commands.FullFlagName(FlagAppImageStartInst), Description: FlagAppImageStartInstUsage},
+		{Text: commands.FullFlagName(FlagAppImageDockerfile), Description: FlagAppImageDockerfileUsage},
 		{Text: commands.FullFlagName(FlagIncludePathsCreportFile), Description: FlagIncludePathsCreportFileUsage},
 		{Text: commands.FullFlagName(FlagIncludeOSLibsNet), Description: FlagIncludeOSLibsNetUsage},
 		{Text: commands.FullFlagName(FlagIncludeCertAll), Description: FlagIncludeCertAllUsage},
@@ -223,6 +225,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(commands.FlagSensorIPCMode):       commands.CompleteIPCMode,
 		commands.FullFlagName(FlagImageBuildEngine):             CompleteImageBuildEngine,
 		commands.FullFlagName(FlagImageBuildArch):               CompleteImageBuildArch,
+		commands.FullFlagName(FlagAppImageDockerfile):           commands.CompleteFile,
 	},
 }
 

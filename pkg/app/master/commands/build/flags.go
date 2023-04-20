@@ -45,6 +45,7 @@ const (
 	FlagAppImageStartLayerCount = "app-image-start-layer-count"
 	FlagAppImageStartInstGroup  = "app-image-start-instruction-group"
 	FlagAppImageStartDetect     = "app-image-start-detect"
+	FlagAppImageDockerfile      = "app-image-dockerfile" //TODO: make it work with FlagBuildFromDockerfile too
 
 	FlagIncludePathsCreportFile = "include-paths-creport-file"
 
@@ -131,6 +132,8 @@ const (
 
 	FlagIncludeAppImageAllUsage     = "Keep everything in the app part of the container image"
 	FlagAppImageStartInstGroupUsage = "Instruction group (reverse) index that indicates where the app starts in the container image"
+	FlagAppImageStartInstUsage      = "Instruction (prefix) that indicates where the app starts in the container image"
+	FlagAppImageDockerfileUsage     = "Path to app image Dockerfile"
 
 	FlagIncludePathsCreportFileUsage = "Keep files from the referenced creport"
 
@@ -273,6 +276,16 @@ var Flags = map[string]cli.Flag{
 		Value:   -1,
 		Usage:   FlagAppImageStartInstGroupUsage,
 		EnvVars: []string{"DSLIM_APP_IMAGE_START_INST_GROUP"},
+	},
+	FlagAppImageStartInst: &cli.StringFlag{
+		Name:    FlagAppImageStartInst,
+		Usage:   FlagAppImageStartInstUsage,
+		EnvVars: []string{"DSLIM_APP_IMAGE_START_INST"},
+	},
+	FlagAppImageDockerfile: &cli.StringFlag{
+		Name:    FlagAppImageDockerfile,
+		Usage:   FlagAppImageDockerfileUsage,
+		EnvVars: []string{"DSLIM_APP_IMAGE_DOCKERFILE"},
 	},
 	////
 	FlagIncludePathsCreportFile: &cli.StringFlag{

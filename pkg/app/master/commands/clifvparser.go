@@ -803,40 +803,40 @@ func ParseHTTPProbeExecFile(filePath string) ([]string, error) {
 	return appCalls, nil
 }
 
-func ParseEnvFile(filePath string) ([]string, error) {
-	var envVars []string
+func ParseLinesWithCommentsFile(filePath string) ([]string, error) {
+	var output []string
 
 	if filePath == "" {
-		return envVars, nil
+		return output, nil
 	}
 
 	fullPath, err := filepath.Abs(filePath)
 	if err != nil {
-		return envVars, err
+		return output, err
 	}
 
 	_, err = os.Stat(fullPath)
 	if err != nil {
-		return envVars, err
+		return output, err
 	}
 
 	fileData, err := ioutil.ReadFile(fullPath)
 	if err != nil {
-		return envVars, err
+		return output, err
 	}
 
 	if len(fileData) == 0 {
-		return envVars, nil
+		return output, nil
 	}
 
 	lines := strings.Split(string(fileData), "\n")
 
-	for _, envVar := range lines {
-		envVar = strings.TrimSpace(envVar)
-		if len(envVar) != 0 && !strings.HasPrefix(envVar, "#") {
-			envVars = append(envVars, envVar)
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if len(line) != 0 && !strings.HasPrefix(line, "#") {
+			output = append(output, line)
 		}
 	}
 
-	return envVars, nil
+	return output, nil
 }
