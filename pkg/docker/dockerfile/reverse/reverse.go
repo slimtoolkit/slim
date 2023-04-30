@@ -124,8 +124,9 @@ const (
 	instTypeWorkdir   = "WORKDIR"
 	instPrefixWorkdir = "WORKDIR "
 	//HEALTHCHECK:
-	instTypeHealthcheck   = "HEALTHCHECK"
-	instPrefixHealthcheck = "HEALTHCHECK "
+	instTypeHealthcheck           = "HEALTHCHECK"
+	instPrefixHealthcheck         = "HEALTHCHECK "
+	instPrefixBasicEncHealthcheck = "HEALTHCHECK --"
 	//ONBUILD:
 	instTypeOnbuild = "ONBUILD"
 	//RUN:
@@ -715,108 +716,162 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 	// HEALTHCHECK &{["CMD" "/healthcheck" "8080"] "5s" "10s" "0s" '\x03'}
 	// HEALTHCHECK --interval=5s --timeout=10s --retries=3 CMD [ "/healthcheck", "8080" ]
 	//Note: CMD can be specified with both formats (shell and json)
+	//Buildah example (raw/full):
+	// /bin/sh -c #(nop) HEALTHCHECK --interval=5m --timeout=3s  CMD curl -f http://localhost/ || exit 1
 	cleanInst := strings.TrimSpace(data)
 	if !strings.HasPrefix(cleanInst, instPrefixHealthcheck) {
 		return "", nil, ErrBadInstPrefix
 	}
 
-	cleanInst = strings.Replace(cleanInst, "&{[", "", -1)
-
-	//Splits the string into two parts - first part pointer to array of string and rest of the string with } in end.
-	instParts := strings.SplitN(cleanInst, "]", 2)
-	// Cleans HEALTHCHECK part and splits the first part further
-	parts := strings.SplitN(instParts[0], " ", 2)
-	// joins the first part of the string
-	instPart1 := strings.Join(parts[1:], " ")
-	// removes quotes from the first part of the string
-	instPart1 = strings.ReplaceAll(instPart1, "\"", "")
-
-	// cleans it to assign it to the pointer config.Test
-	config := docker.HealthConfig{
-		Test: strings.Split(instPart1, " "),
-	}
-
-	// removes the } from the second part of the string
-	instPart2 := strings.Replace(instParts[1], "}", "", -1)
-	// removes extra spaces from string
-	instPart2 = strings.TrimSpace(instPart2)
-
-	paramParts := strings.SplitN(instPart2, " ", 4)
-	for i, param := range paramParts {
-		paramParts[i] = strings.Trim(param, "\"'")
-	}
-
-	var err error
-	config.Interval, err = time.ParseDuration(paramParts[0])
-	if err != nil {
-		fmt.Printf("[%s] config.Interval err = %v\n", paramParts[0], err)
-	}
-
-	config.Timeout, err = time.ParseDuration(paramParts[1])
-	if err != nil {
-		fmt.Printf("[%s] config.Timeout err = %v\n", paramParts[1], err)
-	}
-
-	config.StartPeriod, err = time.ParseDuration(paramParts[2])
-	if err != nil {
-		fmt.Printf("[%s] config.StartPeriod err = %v\n", paramParts[2], err)
-	}
-
-	var retries int64
-	if strings.Index(paramParts[3], `\x`) != -1 {
-		// retries are hex encoded
-		retries, err = strconv.ParseInt(strings.TrimPrefix(paramParts[3], `\x`), 16, 64)
-	} else if strings.Index(paramParts[3], `\U`) != -1 {
-		// retries are a unicode string
-		retries, err = strconv.ParseInt(strings.TrimPrefix(paramParts[3], `\U`), 16, 64)
-	} else if strings.Index(paramParts[3], `\`) == 0 {
-		// retries is printed as a C-escape
-		if len(paramParts[3]) != 2 {
-			err = errors.New(fmt.Sprintf("expected retries (%s) to be an escape sequence", paramParts[3]))
-		} else {
-			escapeCodes := map[byte]int64{
-				byte('a'): 7,
-				byte('b'): 8,
-				byte('t'): 9,
-				byte('n'): 10,
-				byte('v'): 11,
-				byte('f'): 12,
-				byte('r'): 13,
-			}
-			var ok bool
-			if retries, ok = escapeCodes[(paramParts[3])[1]]; !ok {
-				err = errors.New(fmt.Sprintf("got an invalid escape sequence: %s", paramParts[3]))
-			}
-		}
-	} else {
-		retries = int64((paramParts[3])[0])
-	}
-
-	if err != nil {
-		fmt.Printf("[%s] config.Retries err = %v\n", paramParts[3], err)
-	} else {
-		config.Retries = int(retries)
-	}
-
-	var testType string
-	if len(config.Test) > 0 {
-		testType = config.Test[0]
-	}
-
+	var config docker.HealthConfig
 	var strTest string
-	switch testType {
-	case "NONE":
-		strTest = "NONE"
-	case "CMD":
-		if len(config.Test) == 1 {
-			strTest = "CMD []"
-		} else {
-			strTest = fmt.Sprintf(`CMD ["%s"]`, strings.Join(config.Test[1:], `", "`))
+	if strings.HasPrefix(cleanInst, instPrefixBasicEncHealthcheck) || !strings.Contains(cleanInst, "&{[") {
+		//handling the basic Buildah encoding
+
+		var err error
+		if strings.Contains(cleanInst, "--interval=") {
+			vparts := strings.SplitN(cleanInst, "--interval=", 2)
+			vparts = strings.SplitN(vparts[1], " ", 2)
+
+			config.Interval, err = time.ParseDuration(vparts[0])
+			if err != nil {
+				log.Errorf("[%s] config.Interval err = %v", vparts[0], err)
+			}
 		}
-	case "CMD-SHELL":
-		cmdShell := strings.Join(config.Test[1:], " ")
-		strTest = fmt.Sprintf("CMD %s", cmdShell)
-		config.Test = []string{config.Test[0], cmdShell}
+
+		if strings.Contains(cleanInst, "--timeout=") {
+			vparts := strings.SplitN(cleanInst, "--timeout=", 2)
+			vparts = strings.SplitN(vparts[1], " ", 2)
+
+			config.Timeout, err = time.ParseDuration(vparts[0])
+			if err != nil {
+				log.Errorf("[%s] config.Timeout err = %v", vparts[0], err)
+			}
+		}
+
+		if strings.Contains(cleanInst, "--start-period=") {
+			vparts := strings.SplitN(cleanInst, "--start-period=", 2)
+			vparts = strings.SplitN(vparts[1], " ", 2)
+
+			config.StartPeriod, err = time.ParseDuration(vparts[0])
+			if err != nil {
+				log.Errorf("[%s] config.StartPeriod err = %v", vparts[0], err)
+			}
+		}
+
+		if strings.Contains(cleanInst, "--retries=") {
+			vparts := strings.SplitN(cleanInst, "--retries=", 2)
+			vparts = strings.SplitN(vparts[1], " ", 2)
+
+			retries, err := strconv.ParseInt(vparts[0], 16, 64)
+			if err != nil {
+				log.Errorf("[%s] config.Retries err = %v", vparts[0], err)
+			} else {
+				config.Retries = int(retries)
+			}
+		}
+
+		if strings.Contains(cleanInst, " CMD ") {
+			parts := strings.SplitN(cleanInst, " CMD ", 2)
+			strTest = fmt.Sprintf("CMD %s", parts[1])
+			config.Test = []string{"CMD", parts[1]}
+		}
+	} else {
+		cleanInst = strings.Replace(cleanInst, "&{[", "", -1)
+
+		//Splits the string into two parts - first part pointer to array of string and rest of the string with } in end.
+		instParts := strings.SplitN(cleanInst, "]", 2)
+		// Cleans HEALTHCHECK part and splits the first part further
+		parts := strings.SplitN(instParts[0], " ", 2)
+		// joins the first part of the string
+		instPart1 := strings.Join(parts[1:], " ")
+		// removes quotes from the first part of the string
+		instPart1 = strings.ReplaceAll(instPart1, "\"", "")
+
+		// cleans it to assign it to the pointer config.Test
+		config.Test = strings.Split(instPart1, " ")
+
+		// removes the } from the second part of the string
+		instPart2 := strings.Replace(instParts[1], "}", "", -1)
+		// removes extra spaces from string
+		instPart2 = strings.TrimSpace(instPart2)
+
+		paramParts := strings.SplitN(instPart2, " ", 4)
+		for i, param := range paramParts {
+			paramParts[i] = strings.Trim(param, "\"'")
+		}
+
+		var err error
+		config.Interval, err = time.ParseDuration(paramParts[0])
+		if err != nil {
+			log.Errorf("[%s] config.Interval err = %v", paramParts[0], err)
+		}
+
+		config.Timeout, err = time.ParseDuration(paramParts[1])
+		if err != nil {
+			log.Errorf("[%s] config.Timeout err = %v", paramParts[1], err)
+		}
+
+		config.StartPeriod, err = time.ParseDuration(paramParts[2])
+		if err != nil {
+			log.Errorf("[%s] config.StartPeriod err = %v", paramParts[2], err)
+		}
+
+		var retries int64
+		if strings.Index(paramParts[3], `\x`) != -1 {
+			// retries are hex encoded
+			retries, err = strconv.ParseInt(strings.TrimPrefix(paramParts[3], `\x`), 16, 64)
+		} else if strings.Index(paramParts[3], `\U`) != -1 {
+			// retries are a unicode string
+			retries, err = strconv.ParseInt(strings.TrimPrefix(paramParts[3], `\U`), 16, 64)
+		} else if strings.Index(paramParts[3], `\`) == 0 {
+			// retries is printed as a C-escape
+			if len(paramParts[3]) != 2 {
+				err = errors.New(fmt.Sprintf("expected retries (%s) to be an escape sequence", paramParts[3]))
+			} else {
+				escapeCodes := map[byte]int64{
+					byte('a'): 7,
+					byte('b'): 8,
+					byte('t'): 9,
+					byte('n'): 10,
+					byte('v'): 11,
+					byte('f'): 12,
+					byte('r'): 13,
+				}
+				var ok bool
+				if retries, ok = escapeCodes[(paramParts[3])[1]]; !ok {
+					err = errors.New(fmt.Sprintf("got an invalid escape sequence: %s", paramParts[3]))
+				}
+			}
+		} else {
+			retries = int64((paramParts[3])[0])
+		}
+
+		if err != nil {
+			log.Errorf("[%s] config.Retries err = %v", paramParts[3], err)
+		} else {
+			config.Retries = int(retries)
+		}
+
+		var testType string
+		if len(config.Test) > 0 {
+			testType = config.Test[0]
+		}
+
+		switch testType {
+		case "NONE":
+			strTest = "NONE"
+		case "CMD":
+			if len(config.Test) == 1 {
+				strTest = "CMD []"
+			} else {
+				strTest = fmt.Sprintf(`CMD ["%s"]`, strings.Join(config.Test[1:], `", "`))
+			}
+		case "CMD-SHELL":
+			cmdShell := strings.Join(config.Test[1:], " ")
+			strTest = fmt.Sprintf("CMD %s", cmdShell)
+			config.Test = []string{config.Test[0], cmdShell}
+		}
 	}
 
 	defaultTimeout := false
