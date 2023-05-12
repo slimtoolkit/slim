@@ -718,7 +718,7 @@ func OnCommand(
 					}
 
 					if instCount > 0 {
-						//NOTE: prefer reverse instruction cloud from the app image Dockerfile
+						//NOTE: prefer reverse instruction count from the app image Dockerfile
 						for current, idx := 0, len(imageInspector.DockerfileInfo.AllInstructions)-1; idx > -1; idx-- {
 							current++
 							if current == instCount {

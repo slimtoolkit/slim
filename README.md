@@ -461,6 +461,10 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-shell` - Include basic shell functionality (default value: false)
 - `--include-workdir` - Keep files in working directory (default value: false)
 - `--include-last-image-layers` - Keep all files from the last number of layers in the image (default value: 0)
+- `--include-app-image-all` - Keep everything in the app part of the container image
+- `--app-image-start-instruction-group` - Instruction group (reverse) index that indicates where the app starts in the container image (stability note: likely to change from index to reverse count)
+- `--app-image-start-instruction` - Instruction (prefix) that indicates where the app starts in the container image
+- `--app-image-dockerfile` - Path to app image Dockerfile (used to determine where the application part of the image starts)
 - `--include-cert-all` - Keep all discovered cert files (default: true)
 - `--include-cert-bundles-only` - Keep only cert bundles
 - `--include-cert-dirs` - Keep known cert directories and all files in them
@@ -532,6 +536,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--sensor-ipc-endpoint` - Override sensor IPC endpoint
 - `--rta-onbuild-base-image` - Enable runtime analysis for onbuild base images (default: false)
 - `--rta-source-ptrace` - Enable PTRACE runtime analysis source (default: true)
+- `--obfuscate-metadata` - Obfuscate the standard system and application metadata to make it more challenging to identify the image components (experimental flag, first version of obfuscation)
+
 
 In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.
 

@@ -136,7 +136,7 @@ const (
 	FlagIncludeAppImageAllUsage     = "Keep everything in the app part of the container image"
 	FlagAppImageStartInstGroupUsage = "Instruction group (reverse) index that indicates where the app starts in the container image"
 	FlagAppImageStartInstUsage      = "Instruction (prefix) that indicates where the app starts in the container image"
-	FlagAppImageDockerfileUsage     = "Path to app image Dockerfile"
+	FlagAppImageDockerfileUsage     = "Path to app image Dockerfile (used to determine where the application part of the image starts)"
 
 	FlagIncludePathsCreportFileUsage = "Keep files from the referenced creport"
 
