@@ -129,6 +129,7 @@ type Inspector struct {
 	PrintState            bool
 	InContainer           bool
 	RTASourcePT           bool
+	DoObfuscateMetadata   bool
 	SensorIPCEndpoint     string
 	SensorIPCMode         string
 	TargetHost            string
@@ -204,6 +205,7 @@ func NewInspector(
 	logFormat string,
 	inContainer bool,
 	rtaSourcePT bool,
+	doObfuscateMetadata bool,
 	sensorIPCEndpoint string,
 	sensorIPCMode string,
 	printState bool,
@@ -256,6 +258,7 @@ func NewInspector(
 		PrintState:            printState,
 		InContainer:           inContainer,
 		RTASourcePT:           rtaSourcePT,
+		DoObfuscateMetadata:   doObfuscateMetadata,
 		SensorIPCEndpoint:     sensorIPCEndpoint,
 		SensorIPCMode:         sensorIPCMode,
 		xc:                    xc,
@@ -824,6 +827,8 @@ func (i *Inspector) RunContainer() error {
 	cmd.IncludeAppNuxtNodeModulesDir = i.appNodejsInspectOpts.NuxtOpts.IncludeNodeModulesDir
 
 	cmd.IncludeNodePackages = i.appNodejsInspectOpts.IncludePackages
+
+	cmd.ObfuscateMetadata = i.DoObfuscateMetadata
 
 	_, err = i.ipcClient.SendCommand(cmd)
 	if err != nil {

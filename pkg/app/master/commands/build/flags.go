@@ -106,6 +106,9 @@ const (
 	FlagCBOTarget           = "cbo-target"
 	FlagCBONetwork          = "cbo-network"
 	FlagCBOCacheFrom        = "cbo-cache-from"
+
+	//Experimenal flags
+	FlagObfuscateMetadata = "obfuscate-metadata"
 )
 
 // Build command flag usage info
@@ -193,6 +196,8 @@ const (
 	FlagCBOTargetUsage           = "Target stage to build for multi-stage Dockerfiles"
 	FlagCBONetworkUsage          = "Networking mode to use for the RUN instructions at build-time"
 	FlagCBOCacheFromUsage        = "Add an image to the build cache"
+
+	FlagObfuscateMetadataUsage = "Obfuscate the standard system and application metadata to make it more challenging to identify the image components"
 )
 
 var Flags = map[string]cli.Flag{
@@ -562,6 +567,12 @@ var Flags = map[string]cli.Flag{
 		Value:   "",
 		Usage:   FlagIncludeExeFileUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_EXE_FILE"},
+	},
+	////
+	FlagObfuscateMetadata: &cli.BoolFlag{
+		Name:    FlagObfuscateMetadata,
+		Usage:   FlagObfuscateMetadataUsage,
+		EnvVars: []string{"DSLIM_OBFUSCATE_METADATA"},
 	},
 }
 

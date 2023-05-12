@@ -91,10 +91,10 @@ const (
 	pyoExt               = ".pyo"
 	pycacheDir           = "/__pycache__/"
 	pycache              = "__pycache__"
-	pyReqsFile           = "/requirements.txt"
-	pyPoetryProjectFile  = "/pyproject.toml"
-	pyPipEnvProjectFile  = "/Pipfile"
-	pyPipEnvLockFile     = "/Pipfile.lock"
+	pyReqsFile           = "requirements.txt"
+	pyPoetryProjectFile  = "pyproject.toml"
+	pyPipEnvProjectFile  = "Pipfile"
+	pyPipEnvLockFile     = "Pipfile.lock"
 	pyDistPkgDir         = "/dist-packages/"
 	pySitePkgDir         = "/site-packages/"
 )
@@ -151,6 +151,46 @@ type appStackInfo struct {
 	language    string //will be reusing language consts from certdiscover (todo: replace it later)
 	codeFiles   uint
 	packageDirs map[string]struct{}
+}
+
+// later: each language pack will register its metadata files
+var appMetadataFiles = map[string]struct{}{
+	//python:
+	pyReqsFile:          {},
+	pyPoetryProjectFile: {},
+	pyPipEnvProjectFile: {},
+	pyPipEnvLockFile:    {},
+	//ruby:
+	rbGemfile:         {},
+	rbGemfileLockFile: {},
+	//node:
+	nodePackageFile:       {},
+	nodePackageLockFile:   {},
+	nodeNpmShrinkwrapFile: {},
+	nodeYarnLockFile:      {},
+	nuxtConfigFile:        {},
+	nextConfigFile:        {},
+	nextConfigFileAlt:     {},
+}
+
+func isAppMetadataFile(filePath string) bool {
+	target := filepath.Base(filePath)
+
+	for name := range appMetadataFiles {
+		if target == name {
+			return true
+		}
+	}
+
+	return false
+}
+
+var binDataReplace = []fsutil.ReplaceInfo{
+	{
+		PathSuffix: "/node",
+		Match:      "node.js/v",
+		Replace:    "dope,fu/v",
+	},
 }
 
 var fileTypeCmd string
@@ -611,7 +651,7 @@ func (p *artifactStore) prepareArtifacts() {
 
 	for artifactFileName := range p.fileMap {
 		//TODO: conditionally detect binary files and their deps
-		if isBin, _ := binfile.Detected(artifactFileName); !isBin {
+		if binProps, _ := binfile.Detected(artifactFileName); binProps == nil || !binProps.IsBin {
 			continue
 		}
 
@@ -973,7 +1013,7 @@ func (p *artifactStore) saveOSLibsNetwork() {
 			}
 
 			allPathMap[fp] = struct{}{}
-			if isBin, _ := binfile.Detected(fp); isBin {
+			if binProps, _ := binfile.Detected(fp); binProps != nil && binProps.IsBin {
 				binArtifacts, err := sodeps.AllDependencies(fp)
 				if err != nil {
 					if err == sodeps.ErrDepResolverNotFound {
@@ -1424,9 +1464,39 @@ copyFiles:
 			//NOTE: later have an option to save 'checked' only files without data
 		}
 
-		err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, filePath, true)
-		if err != nil {
-			log.Debugf("saveArtifacts - error saving file => %v", err)
+		if p.cmd.ObfuscateMetadata {
+			if isAppMetadataFile(srcFileName) {
+				log.Tracef("saveArtifacts - isAppMetadataFile - src(%s)->dst(%s)", srcFileName, filePath)
+				err := fsutil.CopyAndObfuscateFile(p.cmd.KeepPerms, srcFileName, filePath, true)
+				if err != nil {
+					log.Debugf("saveArtifacts [%s,%s] - error saving file => %v", srcFileName, filePath, err)
+				}
+			} else {
+				err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, filePath, true)
+				if err != nil {
+					log.Debugf("saveArtifacts [%s,%s] - error saving file => %v", srcFileName, filePath, err)
+				} else {
+					//NOTE: this covers the main file set (doesn't cover the extra includes)
+					binProps, err := binfile.Detected(filePath)
+					if err == nil && binProps != nil && binProps.IsBin && binProps.IsExe {
+						if err := fsutil.AppendToFile(filePath, []byte("KCQ"), true); err != nil {
+							log.Debugf("saveArtifacts [%s,%s] - fsutil.AppendToFile error => %v", srcFileName, filePath, err)
+						} else {
+							log.Tracef("saveArtifacts - binfile.Detected[IsExe]/fsutil.AppendToFile - %s", filePath)
+
+							err := fsutil.ReplaceFileData(filePath, binDataReplace, true)
+							if err != nil {
+								log.Debugf("saveArtifacts [%s,%s] - fsutil.ReplaceFileData error => %v", srcFileName, filePath, err)
+							}
+						}
+					}
+				}
+			}
+		} else {
+			err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, filePath, true)
+			if err != nil {
+				log.Debugf("saveArtifacts - error saving file => %v", err)
+			}
 		}
 
 		///////////////////
@@ -1668,11 +1738,20 @@ copyBsaFiles:
 			//when we have intermediate symlinks in the path
 			log.Debugf("saveArtifacts[bsa] - target file already exists (%s)", dstFilePath)
 		} else {
-			err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, dstFilePath, true)
-			if err != nil {
-				log.Debugf("saveArtifacts[bsa] - error saving file => %v", err)
+			if p.cmd.ObfuscateMetadata && isAppMetadataFile(srcFileName) {
+				err := fsutil.CopyAndObfuscateFile(p.cmd.KeepPerms, srcFileName, dstFilePath, true)
+				if err != nil {
+					log.Debugf("saveArtifacts[bsa] - error saving file => %v", err)
+				} else {
+					log.Debugf("saveArtifacts[bsa] - saved file (%s)", dstFilePath)
+				}
 			} else {
-				log.Debugf("saveArtifacts[bsa] - saved file (%s)", dstFilePath)
+				err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, dstFilePath, true)
+				if err != nil {
+					log.Debugf("saveArtifacts[bsa] - error saving file => %v", err)
+				} else {
+					log.Debugf("saveArtifacts[bsa] - saved file (%s)", dstFilePath)
+				}
 			}
 		}
 	}
@@ -2512,7 +2591,7 @@ func nodeEnsurePackageFiles(keepPerms bool, src, storeLocation, prefix string) e
 	if strings.HasSuffix(src, nodeNPMNodeGypPackage) {
 		//for now only ensure that we have node-gyp for npm
 		//npm requires it to be there even though it won't use it
-		//'check if exists' condition (not picked up by the current FS monitor)
+		//'check if exists' condition (not picked up by the FAN monitor, but picked up by the PT monitor)
 		nodeGypFilePath := path.Join(filepath.Dir(src), nodeNPMNodeGypFile)
 		if _, err := os.Stat(nodeGypFilePath); err == nil {
 			nodeGypFilePathDst := fmt.Sprintf("%s%s%s", storeLocation, prefix, nodeGypFilePath)

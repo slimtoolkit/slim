@@ -156,6 +156,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagSensorIPCEndpoint), Description: commands.FlagSensorIPCEndpointUsage},
 		{Text: commands.FullFlagName(FlagImageBuildEngine), Description: FlagImageBuildEngineUsage},
 		{Text: commands.FullFlagName(FlagImageBuildArch), Description: FlagImageBuildArchUsage},
+		{Text: commands.FullFlagName(FlagObfuscateMetadata), Description: FlagObfuscateMetadataUsage},
 	},
 	Values: map[string]commands.CompleteValue{
 		//NOTE: with FlagPull target complete needs to check remote registries too
@@ -226,6 +227,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(FlagImageBuildEngine):             CompleteImageBuildEngine,
 		commands.FullFlagName(FlagImageBuildArch):               CompleteImageBuildArch,
 		commands.FullFlagName(FlagAppImageDockerfile):           commands.CompleteFile,
+		commands.FullFlagName(FlagObfuscateMetadata):            commands.CompleteBool,
 	},
 }
 

@@ -611,6 +611,137 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 	return nil
 }
 
+// CopyAndObfuscateFile copies a regular file and performs basic file reference obfuscation
+func CopyAndObfuscateFile(
+	clone bool,
+	src string,
+	dst string,
+	makeDir bool) error {
+	log.Debugf("CopyAndObfuscateFile(%v,%v,%v,%v)", clone, src, dst, makeDir)
+
+	//need to preserve the extension because some of the app stacks
+	//depend on it for its compile/run time behavior
+	base := filepath.Base(dst)
+	ext := filepath.Ext(base)
+	base = strings.ReplaceAll(base, ".", "..")
+	base = fmt.Sprintf(".d.%s", base)
+	if ext != "" {
+		base = fmt.Sprintf("%s%s", base, ext)
+	}
+
+	dirPart := filepath.Dir(dst)
+	dstData := filepath.Join(dirPart, base)
+	err := CopyRegularFile(clone, src, dstData, makeDir)
+	if err != nil {
+		return err
+	}
+
+	err = os.Symlink(base, dst)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// AppendToFile appends the provided data to the target file
+func AppendToFile(target string, data []byte, preserveTimes bool) error {
+	if target == "" || len(data) == 0 {
+		return nil
+	}
+
+	tfi, err := os.Stat(target)
+	if err != nil {
+		return err
+	}
+
+	var ssi SysStat
+	if rawSysStat, ok := tfi.Sys().(*syscall.Stat_t); ok {
+		ssi = SysStatInfo(rawSysStat)
+	}
+
+	tf, err := os.OpenFile(target, os.O_WRONLY|os.O_APPEND, 0644)
+	if err != nil {
+		return err
+	}
+
+	defer tf.Close()
+
+	_, err = tf.Write(data)
+	if err != nil {
+		return err
+	}
+
+	if preserveTimes && ssi.Ok {
+		if err := UpdateFileTimes(target, ssi.Atime, ssi.Mtime); err != nil {
+			log.Warnf("AppendToFile(%v) - UpdateFileTimes error", target)
+		}
+	}
+
+	return nil
+}
+
+type ReplaceInfo struct {
+	PathSuffix   string
+	IsMatchRegex string
+	Match        string
+	Replace      string
+}
+
+// ReplaceFileData file data in target file
+func ReplaceFileData(target string, replace []ReplaceInfo, preserveTimes bool) error {
+	//if 'all' then
+	if target == "" || len(replace) == 0 {
+		return nil
+	}
+
+	tfi, err := os.Stat(target)
+	if err != nil {
+		return err
+	}
+
+	var ssi SysStat
+	if rawSysStat, ok := tfi.Sys().(*syscall.Stat_t); ok {
+		ssi = SysStatInfo(rawSysStat)
+	}
+
+	raw, err := ioutil.ReadFile(target)
+	if err != nil {
+		return err
+	}
+
+	var replaced bool
+	for _, r := range replace {
+		if r.PathSuffix != "" {
+			if !strings.HasSuffix(target, r.PathSuffix) {
+				continue
+			}
+		}
+
+		if r.Match == "" || r.Replace == "" {
+			continue
+		}
+
+		raw = bytes.ReplaceAll(raw, []byte(r.Match), []byte(r.Replace))
+		replaced = true
+	}
+
+	if replaced {
+		err = ioutil.WriteFile(target, raw, 0644)
+		if err != nil {
+			return err
+		}
+
+		if preserveTimes && ssi.Ok {
+			if err := UpdateFileTimes(target, ssi.Atime, ssi.Mtime); err != nil {
+				log.Warnf("ReplaceFileData(%v) - UpdateFileTimes error", target)
+			}
+		}
+	}
+
+	return nil
+}
+
 func copyFileObjectHandler(
 	clone bool,
 	srcBase, dstBase string,

@@ -264,7 +264,8 @@ func OnCommand(
 		logLevel,
 		logFormat,
 		gparams.InContainer,
-		true, //rtaSourcePT
+		true,  //rtaSourcePT
+		false, //doObfuscateMetadata
 		sensorIPCEndpoint,
 		sensorIPCMode,
 		printState,

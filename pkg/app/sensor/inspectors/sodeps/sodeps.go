@@ -61,7 +61,7 @@ func AllDependencies(binFilePath string) ([]string, error) {
 		return nil, err
 	}
 
-	if isBin, _ := binfile.Detected(binFilePath); !isBin {
+	if binProps, _ := binfile.Detected(binFilePath); binProps == nil || !binProps.IsBin {
 		return nil, ErrFileNotBin
 	}
 

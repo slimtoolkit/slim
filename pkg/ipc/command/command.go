@@ -40,6 +40,7 @@ type Message interface {
 
 // StartMonitor contains the start monitor command fields
 type StartMonitor struct {
+	ObfuscateMetadata            bool                          `json:"obfuscate_metadata"`
 	RTASourcePT                  bool                          `json:"rta_source_ptrace"`
 	AppName                      string                        `json:"app_name"`
 	AppArgs                      []string                      `json:"app_args,omitempty"`

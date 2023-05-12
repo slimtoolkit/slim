@@ -156,6 +156,7 @@ var CLI = &cli.Command{
 		cflag(FlagKeepPerms),
 		cflag(FlagPathPerms),
 		cflag(FlagPathPermsFile),
+		cflag(FlagObfuscateMetadata),
 		commands.Cflag(commands.FlagContinueAfter),
 		commands.Cflag(commands.FlagUseLocalMounts),
 		commands.Cflag(commands.FlagUseSensorVolume),
@@ -718,6 +719,8 @@ var CLI = &cli.Command{
 		rtaOnbuildBaseImage := ctx.Bool(commands.FlagRTAOnbuildBaseImage)
 		rtaSourcePT := ctx.Bool(commands.FlagRTASourcePT)
 
+		doObfuscateMetadata := ctx.Bool(FlagObfuscateMetadata)
+
 		imageBuildEngine, err := getImageBuildEngine(ctx)
 		if err != nil {
 			xc.Out.Error("param.error.image-build-engine", err.Error())
@@ -813,6 +816,7 @@ var CLI = &cli.Command{
 			deleteFatImage,
 			rtaOnbuildBaseImage,
 			rtaSourcePT,
+			doObfuscateMetadata,
 			ctx.String(commands.FlagSensorIPCEndpoint),
 			ctx.String(commands.FlagSensorIPCMode),
 			kubeOpts,
