@@ -4,8 +4,6 @@
 
 ### Improvements
 
-- New include flags for the `build` command to identify the application part of the target image (`--app-image-start-instruction`, `--app-image-start-instruction-group`, `--app-image-dockerfile`)
-- New include flag for the `build` command to identify what parts of the application section of the image to include (`--include-app-image-all`)
 - New experimental `build` command flag to prevent the vulnerability scanners from discovering the metadata they need to identify the vulnerabilities (`--obfuscate-metadata`)
 
 ### Bug Fixes
