@@ -36,7 +36,6 @@ const (
 
 	FlagIncludeWorkdir            = "include-workdir"
 	FlagWorkdirExclude            = "workdir-exclude"
-	FlagIncludeLastImageLayers    = "include-last-image-layers"
 	FlagIncludeAppImageAddCopyAll = "include-app-image-addcopy-all"
 	FlagIncludeAppImageRun        = "include-app-image-run"
 	FlagIncludeAppImageAll        = "include-app-image-all"
@@ -130,8 +129,7 @@ const (
 	FlagIncludeExeUsage       = "Keep executable from original image (by executable name)"
 	FlagIncludeShellUsage     = "Keep basic shell functionality"
 
-	FlagIncludeWorkdirUsage         = "Keep files in working directory"
-	FlagIncludeLastImageLayersUsage = "Keep all files from the last number of layers in the image"
+	FlagIncludeWorkdirUsage = "Keep files in working directory"
 
 	FlagIncludeAppImageAllUsage     = "Keep everything in the app part of the container image"
 	FlagAppImageStartInstGroupUsage = "Instruction group (reverse) index that indicates where the app starts in the container image"
@@ -264,12 +262,6 @@ var Flags = map[string]cli.Flag{
 		Name:    FlagIncludeWorkdir,
 		Usage:   FlagIncludeWorkdirUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_WORKDIR"},
-	},
-	FlagIncludeLastImageLayers: &cli.UintFlag{
-		Name:    FlagIncludeLastImageLayers,
-		Value:   0,
-		Usage:   FlagIncludeLastImageLayersUsage,
-		EnvVars: []string{"DSLIM_INCLUDE_LAST_IMAGE_LAYERS"},
 	},
 	FlagIncludeAppImageAll: &cli.BoolFlag{
 		Name:    FlagIncludeAppImageAll,

@@ -17,7 +17,7 @@
 
 ### Improvements
 
-- New include flags for the `build` command (`--include-workdir`, `--include-last-image-layers`)
+- New include flags for the `build` command (`--include-workdir`)
 - Debug/trace logging improvements
 
 ### Bug Fixes

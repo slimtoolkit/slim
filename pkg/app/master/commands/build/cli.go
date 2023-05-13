@@ -128,7 +128,6 @@ var CLI = &cli.Command{
 		cflag(FlagIncludeExe),
 		cflag(FlagIncludeShell),
 		cflag(FlagIncludeWorkdir),
-		cflag(FlagIncludeLastImageLayers),
 		cflag(FlagIncludeAppImageAll),
 		cflag(FlagAppImageStartInstGroup),
 		cflag(FlagAppImageStartInst),
@@ -671,7 +670,7 @@ var CLI = &cli.Command{
 		doIncludeShell := ctx.Bool(FlagIncludeShell)
 
 		doIncludeWorkdir := ctx.Bool(FlagIncludeWorkdir)
-		includeLastImageLayers := ctx.Uint(FlagIncludeLastImageLayers)
+		includeLastImageLayers := uint(0)
 		doIncludeAppImageAll := ctx.Bool(FlagIncludeAppImageAll)
 		appImageStartInstGroup := ctx.Int(FlagAppImageStartInstGroup)
 		appImageStartInst := ctx.String(FlagAppImageStartInst)

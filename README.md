@@ -460,7 +460,6 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
 - `--include-shell` - Include basic shell functionality (default value: false)
 - `--include-workdir` - Keep files in working directory (default value: false)
-- `--include-last-image-layers` - Keep all files from the last number of layers in the image (default value: 0)
 - `--include-app-image-all` - Keep everything in the app part of the container image
 - `--app-image-start-instruction-group` - Instruction group (reverse) index that indicates where the app starts in the container image (stability note: likely to change from index to reverse count)
 - `--app-image-start-instruction` - Instruction (prefix) that indicates where the app starts in the container image

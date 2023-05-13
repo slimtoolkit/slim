@@ -111,7 +111,6 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagIncludeExeFile), Description: FlagIncludeExeFileUsage},
 		{Text: commands.FullFlagName(FlagIncludeShell), Description: FlagIncludeShellUsage},
 		{Text: commands.FullFlagName(FlagIncludeWorkdir), Description: FlagIncludeWorkdirUsage},
-		{Text: commands.FullFlagName(FlagIncludeLastImageLayers), Description: FlagIncludeLastImageLayersUsage},
 		{Text: commands.FullFlagName(FlagIncludeAppImageAll), Description: FlagIncludeAppImageAllUsage},
 		{Text: commands.FullFlagName(FlagAppImageStartInstGroup), Description: FlagAppImageStartInstGroupUsage},
 		{Text: commands.FullFlagName(FlagAppImageStartInst), Description: FlagAppImageStartInstUsage},
