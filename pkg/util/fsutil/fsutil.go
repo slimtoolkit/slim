@@ -688,9 +688,8 @@ type ReplaceInfo struct {
 	Replace      string
 }
 
-// ReplaceFileData file data in target file
+// ReplaceFileData replaces the selected file bytes with the caller provided bytes
 func ReplaceFileData(target string, replace []ReplaceInfo, preserveTimes bool) error {
-	//if 'all' then
 	if target == "" || len(replace) == 0 {
 		return nil
 	}
@@ -736,6 +735,48 @@ func ReplaceFileData(target string, replace []ReplaceInfo, preserveTimes bool) e
 			if err := UpdateFileTimes(target, ssi.Atime, ssi.Mtime); err != nil {
 				log.Warnf("ReplaceFileData(%v) - UpdateFileTimes error", target)
 			}
+		}
+	}
+
+	return nil
+}
+
+type DataUpdaterFn func(data []byte) ([]byte, error)
+
+// UpdateFileData updates all file data in target file using the updater function
+func UpdateFileData(target string, updater DataUpdaterFn, preserveTimes bool) error {
+	if target == "" || updater == nil {
+		return nil
+	}
+
+	tfi, err := os.Stat(target)
+	if err != nil {
+		return err
+	}
+
+	var ssi SysStat
+	if rawSysStat, ok := tfi.Sys().(*syscall.Stat_t); ok {
+		ssi = SysStatInfo(rawSysStat)
+	}
+
+	raw, err := ioutil.ReadFile(target)
+	if err != nil {
+		return err
+	}
+
+	raw, err = updater(raw)
+	if err != nil {
+		return err
+	}
+
+	err = ioutil.WriteFile(target, raw, 0644)
+	if err != nil {
+		return err
+	}
+
+	if preserveTimes && ssi.Ok {
+		if err := UpdateFileTimes(target, ssi.Atime, ssi.Mtime); err != nil {
+			log.Warnf("ReplaceFileData(%v) - UpdateFileTimes error", target)
 		}
 	}
 

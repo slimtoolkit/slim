@@ -4,7 +4,7 @@
 
 ### Improvements
 
-- New experimental `build` command flag to prevent the vulnerability scanners from discovering the metadata they need to identify the vulnerabilities (`--obfuscate-metadata`)
+- New experimental `build` command flag to prevent the vulnerability scanners from discovering the metadata they need to identify the vulnerabilities (`--obfuscate-metadata`) inspired by the [`Malicious Compliance`](https://kccnceu2023.sched.com/event/1Hybu/malicious-compliance-reflections-on-trusting-container-scanners-ian-coldwater-independent-duffie-cooley-isovalent-brad-geesaman-ghost-security-rory-mccune-datadog) KubeCon EU 2023 talk
 
 ### Bug Fixes
 

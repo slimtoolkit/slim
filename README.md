@@ -531,7 +531,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--sensor-ipc-endpoint` - Override sensor IPC endpoint
 - `--rta-onbuild-base-image` - Enable runtime analysis for onbuild base images (default: false)
 - `--rta-source-ptrace` - Enable PTRACE runtime analysis source (default: true)
-- `--obfuscate-metadata` - Obfuscate the standard system and application metadata to make it more challenging to identify the image components (experimental flag, first version of obfuscation)
+- `--obfuscate-metadata` - Obfuscate the standard system and application metadata to make it more challenging to identify the image components (experimental flag, first version of obfuscation; inspired by the [`Malicious Compliance`](https://kccnceu2023.sched.com/event/1Hybu/malicious-compliance-reflections-on-trusting-container-scanners-ian-coldwater-independent-duffie-cooley-isovalent-brad-geesaman-ghost-security-rory-mccune-datadog) KubeCon EU 2023 talk)
 
 
 In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.

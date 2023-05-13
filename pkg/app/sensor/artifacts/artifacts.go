@@ -193,6 +193,50 @@ var binDataReplace = []fsutil.ReplaceInfo{
 	},
 }
 
+var appMetadataFileUpdate = map[string]fsutil.DataUpdaterFn{
+	nodePackageFile: nodePackageJSONVerUpdater,
+}
+
+func appMetadataFileUpdater(filePath string) fsutil.DataUpdaterFn {
+	target := filepath.Base(filePath)
+
+	fn, found := appMetadataFileUpdate[target]
+	if !found {
+		log.Tracef("appMetadataFileUpdater - no updater")
+	}
+
+	return fn
+}
+
+func nodePackageJSONVerUpdater(data []byte) ([]byte, error) {
+	var info map[string]interface{}
+
+	err := json.Unmarshal(data, &info)
+	if err != nil {
+		return nil, err
+	}
+
+	version, ok := info["version"].(string)
+	if !ok {
+		log.Tracef("nodePackageJSONVerUpdater - no version field, return as-is")
+		return data, nil
+	}
+
+	version = fmt.Sprintf("1%s", version)
+	info["version"] = version
+
+	b := new(bytes.Buffer)
+	enc := json.NewEncoder(b)
+	enc.SetEscapeHTML(false)
+	enc.SetIndent("  ", "  ")
+	err = enc.Encode(info)
+	if err != nil {
+		return nil, fmt.Errorf("error encoding updated package data")
+	}
+
+	return b.Bytes(), nil
+}
+
 var fileTypeCmd string
 
 func init() {
@@ -1470,6 +1514,13 @@ copyFiles:
 				err := fsutil.CopyAndObfuscateFile(p.cmd.KeepPerms, srcFileName, filePath, true)
 				if err != nil {
 					log.Debugf("saveArtifacts [%s,%s] - error saving file => %v", srcFileName, filePath, err)
+				}
+
+				if updater := appMetadataFileUpdater(srcFileName); updater != nil {
+					err := fsutil.UpdateFileData(filePath, updater, true)
+					if err != nil {
+						log.Debugf("saveArtifacts [%s,%s] - fsutil.UpdateFileData error => %v", srcFileName, filePath, err)
+					}
 				}
 			} else {
 				err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, filePath, true)
