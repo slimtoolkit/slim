@@ -377,7 +377,12 @@ func DeleteVolume(dclient *dockerapi.Client, name string) error {
 	return nil
 }
 
-func CopyToVolume(dclient *dockerapi.Client, volumeName, source, dstRootDir, dstTargetDir string) error {
+func CopyToVolume(
+	dclient *dockerapi.Client,
+	volumeName string,
+	source string,
+	dstRootDir string,
+	dstTargetDir string) error {
 	var err error
 	if dclient == nil {
 		dclient, err = dockerapi.NewClient(dockerHost)
@@ -421,7 +426,20 @@ func CopyToVolume(dclient *dockerapi.Client, volumeName, source, dstRootDir, dst
 		}
 	}
 
-	tarData, err := archive.Tar(source, archive.Uncompressed)
+	cleanSource, err := filepath.EvalSymlinks(source)
+	if err != nil {
+		log.Errorf("dockerutil.CopyToVolume: filepath.EvalSymlinks(%s) error = %v", source, err)
+		rmContainer()
+		return err
+	}
+
+	if fsutil.IsSymlink(cleanSource) {
+		log.Errorf("dockerutil.CopyToVolume: source is a symlink = %s", cleanSource)
+		rmContainer()
+		return fmt.Errorf("source is symlink")
+	}
+
+	tarData, err := archive.Tar(cleanSource, archive.Uncompressed)
 	if err != nil {
 		log.Errorf("dockerutil.CopyToVolume: archive.Tar() error = %v", err)
 		rmContainer()
@@ -509,7 +527,11 @@ func GenStateDirsTar(rootDir, stateDir string) (io.Reader, error) {
 	return &b, nil
 }
 
-func CreateVolumeWithData(dclient *dockerapi.Client, source, name string, labels map[string]string) error {
+func CreateVolumeWithData(
+	dclient *dockerapi.Client,
+	source string,
+	name string,
+	labels map[string]string) error {
 	if name == "" {
 		return ErrBadParam
 	}

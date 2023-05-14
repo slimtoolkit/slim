@@ -1387,6 +1387,7 @@ func ensureSensorVolume(logger *log.Entry, client *dockerapi.Client, localSensor
 	switch {
 	case err == nil:
 		logger.Debugf("ensureSensorVolume: already have volume = %v", volumeName)
+		//TODO: need to check if the volume has the sensor (otherwise delete and recreate)
 	case err == dockerutil.ErrNotFound:
 		logger.Debugf("ensureSensorVolume: no volume yet = %v", volumeName)
 		if dockerutil.HasEmptyImage(client) == dockerutil.ErrNotFound {
