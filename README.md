@@ -1009,13 +1009,13 @@ DockerSlim was a `Docker Global Hack Day` \#`dockerhackday` project. It barely w
 
 Since then it's been improved and it works pretty well for its core use cases. It can be better though. That's why the project needs your help! You don't need to know much about the container internals, container runtimes and you don't need to know anything about Go. You can contribute in many different ways. For example, use Slim on your images and open Github issues documenting your experience even if it worked just fine :-)
 
-## MINIFIED IMAGES ON DOCKER HUB
-
-- [`container-transform`](https://hub.docker.com/r/dslim/container-transform.slim/)
-
 ## LICENSE
 
 Apache License v2, see [LICENSE](https://github.com/slimtoolkit/slim/blob/master/LICENSE) for details.
+
+## CODE OF CONDUCT
+
+The project follows the [CNCF Code of Conduct](https://github.com/cncf/foundation/blob/main/code-of-conduct.md).
 
 ---
 
