@@ -613,9 +613,9 @@ If the Docker environment variables are not set and if you don't specify any Doc
 
 You may not have the default Unix socket (`/var/run/docker.sock`) configured if you use Docker Desktop. By default, Docker Desktop uses `~/.docker/run/docker.sock` as the Unix socket.
 
-You can either use `--host` or `DOCKER_HOST` to point to the Docker Desktop's Unix socket or you can configure Docker Desktop to create the default/traditional Unix socket (you can also manually create a symlink too).
+You can either use `--host` or `DOCKER_HOST` to point to the Docker Desktop's Unix socket or you can configure Docker Desktop to create the default/traditional Unix socket (creating the `/var/run/docker.sock` symlink manually is an option too).
 
-To configure Docker Desktop to create the default Unix socket open the its UI and go to `Settings -> Advanced` where you need to check the `Enable default Docker socket (Requires password)` option.
+To configure Docker Desktop to create the default Unix socket open its UI and go to `Settings -> Advanced` where you need to check the `Enable default Docker socket (Requires password)` option.
 
 ## HTTP PROBE COMMANDS
 
