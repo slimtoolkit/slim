@@ -1027,4 +1027,11 @@ The project follows the [CNCF Code of Conduct](https://github.com/cncf/foundatio
 
 ---
 
+**We are a [Cloud Native Computing Foundation](https://cncf.io/) sandbox project.**
+
+<img src="assets/images/cncf/cncf.svg" width=300 />
+
+---
+
 [![Go Report Card](https://goreportcard.com/badge/github.com/slimtoolkit/slim)](https://goreportcard.com/report/github.com/slimtoolkit/slim)
+
