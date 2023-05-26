@@ -15,8 +15,8 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
-	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/app/master/signals"
+	"github.com/docker-slim/docker-slim/pkg/docker/dockerclient"
 )
 
 func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, error) {

@@ -19,7 +19,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/config"
-	"github.com/docker-slim/docker-slim/pkg/app/master/docker/dockerclient"
+	"github.com/docker-slim/docker-slim/pkg/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
