@@ -10,6 +10,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/appbom"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/build"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/containerize"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/convert"
@@ -49,6 +50,7 @@ func registerCommands() {
 	registry.RegisterCommand()
 	profile.RegisterCommand()
 	version.RegisterCommand()
+	appbom.RegisterCommand()
 	help.RegisterCommand()
 	update.RegisterCommand()
 	install.RegisterCommand()
