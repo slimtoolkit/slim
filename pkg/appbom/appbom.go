@@ -320,7 +320,7 @@ func Get() *Info {
 			}
 
 			pkg = &PackageInfo{
-				Name:    "",
+				Name:    filepath.Base(depData.Replace.Path),
 				Path:    depData.Replace.Path,
 				Version: depData.Replace.Version,
 				Hash:    depData.Replace.Sum,

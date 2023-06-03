@@ -4,9 +4,12 @@
 package sensor
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
 	"time"
@@ -19,6 +22,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/execution"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone"
+	"github.com/docker-slim/docker-slim/pkg/appbom"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/sysenv"
 	"github.com/docker-slim/docker-slim/pkg/system"
@@ -32,6 +36,10 @@ const (
 	sensorModeStandalone = "standalone"
 
 	// Flags
+
+	getAppBomFlagUsage   = "get sensor application BOM"
+	getAppBomFlagDefault = false
+
 	enableDebugFlagUsage   = "enable debug logging"
 	enableDebugFlagDefault = false
 
@@ -67,6 +75,7 @@ const (
 )
 
 var (
+	getAppBom            *bool          = flag.Bool("appbom", getAppBomFlagDefault, getAppBomFlagUsage)
 	enableDebug          *bool          = flag.Bool("debug", enableDebugFlagDefault, enableDebugFlagUsage)
 	logLevel             *string        = flag.String("log-level", logLevelFlagDefault, logLevelFlagUsage)
 	logFormat            *string        = flag.String("log-format", logFormatFlagDefault, logFormatFlagUsage)
@@ -82,6 +91,7 @@ var (
 )
 
 func init() {
+	flag.BoolVar(getAppBom, "b", getAppBomFlagDefault, getAppBomFlagUsage)
 	flag.BoolVar(enableDebug, "d", enableDebugFlagDefault, enableDebugFlagUsage)
 	flag.StringVar(logLevel, "l", logLevelFlagDefault, logLevelFlagUsage)
 	flag.StringVar(logFormat, "f", logFormatFlagDefault, logFormatFlagUsage)
@@ -94,9 +104,28 @@ func init() {
 	flag.DurationVar(stopGracePeriod, "w", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
 }
 
+func dumpAppBom() {
+	info := appbom.Get()
+	if info == nil {
+		return
+	}
+
+	var out bytes.Buffer
+	encoder := json.NewEncoder(&out)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent(" ", " ")
+	_ = encoder.Encode(info)
+	fmt.Printf("%s\n", out.String())
+}
+
 // Run starts the sensor app
 func Run() {
 	flag.Parse()
+
+	if *getAppBom {
+		dumpAppBom()
+		return
+	}
 
 	errutil.FailOn(configureLogger(*enableDebug, *logLevel, *logFormat, *logFile))
 

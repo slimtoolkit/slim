@@ -1519,7 +1519,7 @@ copyFiles:
 				}
 
 				if err := appMetadataFileUpdater(filePath); err != nil {
-					log.Debugf("saveArtifacts [%s,%s] - appMetadataFileUpdater => not updated %v / err = %v", filePath, err)
+					log.Debugf("saveArtifacts [%s,%s] - appMetadataFileUpdater => not updated / err = %v", srcFileName, filePath, err)
 				}
 			} else {
 				err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, filePath, true)
