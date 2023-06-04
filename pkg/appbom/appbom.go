@@ -12,6 +12,8 @@ const (
 	SettingCompiler  = "-compiler"  // the compiler toolchain flag used
 	SettingTags      = "-tags"
 	SettingTrimPath  = "-trimpath"
+	SettingLdFlags   = "-ldflags"
+	SettingMod       = "-mod"
 
 	SettingEnvVarCgoEnabled  = "CGO_ENABLED"  // the effective CGO_ENABLED environment variable
 	SettingEnvVarCgoCFlags   = "CGO_CFLAGS"   // the effective CGO_CFLAGS environment variable
@@ -73,6 +75,8 @@ const (
 	PNCompiler    = ParamName(SettingCompiler)
 	PNTags        = ParamName(SettingTags)
 	PNTrimPath    = ParamName(SettingTrimPath)
+	PNLdFlags     = ParamName(SettingLdFlags)
+	PNMod         = ParamName(SettingMod)
 	PNCgoEnabled  = ParamName(SettingEnvVarCgoEnabled)
 	PNCgoCFlags   = ParamName(SettingEnvVarCgoCFlags)
 	PNCgoCppFlags = ParamName(SettingEnvVarCgoCppFlags)
@@ -196,6 +200,19 @@ func Get() *Info {
 		case SettingTrimPath:
 			info.BuildParams.Compiler = &ParamInfo{
 				Name:  PNTrimPath,
+				Type:  PTFlag,
+				Value: kv.Value,
+			}
+
+		case SettingLdFlags:
+			info.BuildParams.Compiler = &ParamInfo{
+				Name:  PNLdFlags,
+				Type:  PTFlag,
+				Value: kv.Value,
+			}
+		case SettingMod:
+			info.BuildParams.Compiler = &ParamInfo{
+				Name:  PNMod,
 				Type:  PTFlag,
 				Value: kv.Value,
 			}
