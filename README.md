@@ -79,13 +79,12 @@ archlinux                 latest              ...        ...         467MB
 
 Feel free to join any of these channels or just open a new [`Github issue`](https://github.com/slimtoolkit/slim/issues) if you want to chat or if you need help.
 
-* [`YouTube channel`](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA)
-* [`Gitter channel`](https://gitter.im/docker-slim/community)
+* [`CNCF Slack channel`](https://cloud-native.slack.com/archives/C059QP1RH1S)
 * [`Discord server`](https://discord.gg/9tDyxYS)
+* [`Gitter channel`](https://gitter.im/docker-slim/community)
 * [`Discussions`](https://github.com/slimtoolkit/slim/discussions) (new)
 * [`Twitter`](https://twitter.com/SlimToolkit)
-* [`Slack`](https://join.slack.com/t/dockerslimcommunity/shared_invite/zt-g89azob8-_DzOrn0zLFUT2ErTLu1X9A)
-* Original `IRC channel` on `freenode` (not used anymore, but we can start using it again :-): \#`dockerslim`
+* [`YouTube channel`](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA)
 
 ## Slim on the Internet
 
