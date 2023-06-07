@@ -83,7 +83,7 @@ Feel free to join any of these channels or just open a new [`Github issue`](http
 * [`Gitter channel`](https://gitter.im/docker-slim/community)
 * [`Discord server`](https://discord.gg/9tDyxYS)
 * [`Discussions`](https://github.com/slimtoolkit/slim/discussions) (new)
-* [`Twitter`](https://twitter.com/DockerSlim)
+* [`Twitter`](https://twitter.com/SlimToolkit)
 * [`Slack`](https://join.slack.com/t/dockerslimcommunity/shared_invite/zt-g89azob8-_DzOrn0zLFUT2ErTLu1X9A)
 * Original `IRC channel` on `freenode` (not used anymore, but we can start using it again :-): \#`dockerslim`
 
