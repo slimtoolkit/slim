@@ -24,6 +24,10 @@ func OnCommand(
 		xc.Exit(0)
 	}
 
+	if info.BuilderHash != "" {
+		xc.Out.Info("appbom", ovars{"builder_hash": info.BuilderHash})
+	}
+
 	xc.Out.Info("appbom", ovars{"runtime": info.Runtime})
 	xc.Out.Info("appbom.entrypoint",
 		ovars{

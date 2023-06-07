@@ -1,4 +1,34 @@
+/*
+There are two ways to provide the Go executable hash to "appbom":
+
+1. "go generate" and "embed"
+2. "-ldflags"
+
+Using "go generate" to hash the Go binary:
+
+go generate ./...
+go generate github.com/docker-slim/docker-slim/pkg/appbom
+
+With "go generate" you also need to use embedding (enabled by default).
+If you can't use "embed" you can disable it with the "appbom_noembed" tag:
+
+go build -tags appbom_noembed
+
+If you disable embedding then you'll need to pass the Go executable hash using "-ldflags":
+
+Mac:
+
+go build -ldflags "-X github.com/docker-slim/docker-slim/pkg/appbom.GoBinHash=sha256:$(shasum -a 256 $(go env GOROOT)/bin/go | head -c 64)"
+
+Linux:
+
+go build -ldflags "-X github.com/docker-slim/docker-slim/pkg/appbom.GoBinHash=sha256:$(sha256sum $(go env GOROOT)/bin/go | head -c 64)"
+
+You can use "-ldflags" instead of go generate/embed if that approach works better for you.
+*/
 package appbom
+
+//go:generate go run gobinhasher.go
 
 import (
 	"fmt"
@@ -116,6 +146,7 @@ type BuildParams struct {
 }
 
 type Info struct {
+	BuilderHash   string             `json:"builder_hash,omitempty"`
 	Runtime       string             `json:"runtime"`
 	Entrypoint    MainPackageInfo    `json:"entrypoint"`
 	BuildParams   BuildParams        `json:"build_params"`
@@ -131,6 +162,7 @@ func Get() *Info {
 	}
 
 	info := &Info{
+		BuilderHash: goBinHash,
 		Runtime:     raw.GoVersion,
 		OtherParams: map[string]string{},
 	}

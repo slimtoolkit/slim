@@ -16,6 +16,8 @@ fi
 
 LD_FLAGS="-s -w -X github.com/docker-slim/docker-slim/pkg/version.appVersionTag=${TAG} -X github.com/docker-slim/docker-slim/pkg/version.appVersionRev=${REVISION} -X github.com/docker-slim/docker-slim/pkg/version.appVersionTime=${BUILD_TIME}"
 
+go generate github.com/docker-slim/docker-slim/pkg/appbom
+
 BINDIR="${BDIR}/bin"
 mkdir -p "$BINDIR"
 rm -rf "${BINDIR}/"*
