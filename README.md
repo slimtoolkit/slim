@@ -186,8 +186,6 @@ Elixir application images:
   - [DYNAMIC ANALYSIS OPTIONS](#dynamic-analysis-options)
   - [SECURITY](#security)
   - [CHALLENGES](#challenges)
-- [DEVELOPMENT PROGRESS](#development-progress)
-  - [TODO](#todo)
 - [ORIGINS](#origins)
 - [MINIFIED IMAGES ON DOCKER HUB](#minified-images-on-docker-hub)
 - [LICENSE](#license)
@@ -963,7 +961,7 @@ Notes:
 
 ## CONTRIBUTING
 
-If the project sounds interesting or if you found a bug see [`CONTRIBUTING.md`](https://github.com/slimtoolkit/slim/blob/master/CONTRIBUTING.md) and submit a PR!
+If the project sounds interesting or if you found a bug see [`CONTRIBUTING.md`](CONTRIBUTING.md) and submit a PR or open an issue! Non-code contributions including docs are highly appreciated! Open an issue even if you have a question or something is not clear.
 
 ## DESIGN
 
@@ -994,19 +992,6 @@ The goal is to auto-generate Seccomp, AppArmor, (and potentially SELinux) profil
 ### CHALLENGES
 
 Some of the advanced analysis options require a number of Linux kernel features that are not always included. The kernel you get with Docker Machine / Boot2docker is a great example of that.
-
-## DEVELOPMENT PROGRESS
-
-### TODO
-
-- AppArmor profile improvements
-- Better support for command line applications (e.g., ability to specify multiple executions)
-- Discover HTTP endpoints to make the HTTP probe more intelligent.
-- Scripting language dependency discovery in the "scanner" app.
-- Explore additional dependency discovery methods.
-- "Live" image create mode - to create new images from containers where users install their applications interactively.
-
-The [`WISHLIST`](WISHLIST.md) doc includes even more potential improvements.
 
 ## ORIGINS
 

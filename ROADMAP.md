@@ -37,7 +37,13 @@ This is a high level roadmap that identies the current areas of focus. Note that
   * System sensor subsystem design
   * External sensor integrations for Tetragon, Falco and Tracee as plugins
 
-* Installers for all major platforms/package managers
+* Installers for all major platforms/package managers and publishing the packages to the official package manager distribution repos
+  * Homebrew (official tap), Mac Ports
+  * Apt
+  * Yum/Dnf/Rpm
+  * Apk
+  * Aur
+  * Nix
 
 * Example
   * More build/optimize/minify examples

@@ -1,15 +1,18 @@
 # Enhancements Wishlist
 
-This is a list of non-core related enhancements and features. If you want to help feel free to submit a PR! You can also open an issue to track the work and to have a place to talk about it.
+If you want to help feel free to submit a PR! You can also open an issue to track the work and to have a place to talk about it.
 
-## Publish Slim to various package repos
+## AppArmor profile improvements
 
-Package Managers:
+## Better support for command line applications (e.g., ability to specify multiple executions)
 
-- Homebrew
-- Mac Ports
-- Apt/Debian
-- ???
+## Discover HTTP endpoints to make the HTTP probe more intelligent.
+
+## Scripting language dependency discovery in the "scanner" app.
+
+## Explore additional dependency discovery methods.
+
+## "Live" image create mode - to create new images from containers where users install their applications interactively.
 
 ## Classic container image optimizations (aka ability to disable minification based on dynamic/static analysis)
 
