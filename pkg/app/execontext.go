@@ -314,8 +314,13 @@ func ShowCommunityInfo(consoleFormat string) {
 	}{
 		{
 			App:     consts.AppName,
-			Message: "Join the Gitter channel to ask questions or to share your feedback",
-			Info:    consts.CommunityGitter,
+			Message: "GitHub Discussions",
+			Info:    consts.CommunityDiscussions,
+		},
+		{
+			App:     consts.AppName,
+			Message: "Join the CNCF Slack channel to ask questions or to share your feedback",
+			Info:    consts.CommunityCNCFSlack,
 		},
 		{
 			App:     consts.AppName,
@@ -324,8 +329,8 @@ func ShowCommunityInfo(consoleFormat string) {
 		},
 		{
 			App:     consts.AppName,
-			Message: "GitHub Discussions",
-			Info:    consts.CommunityDiscussions,
+			Message: "Join the Gitter channel to ask questions or to share your feedback",
+			Info:    consts.CommunityGitter,
 		},
 	}
 
