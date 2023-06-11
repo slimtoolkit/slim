@@ -738,6 +738,28 @@ drwxr-xr-x    3 root     root        4.0K Sep  2 15:51 node_modules
 
 Some of the useful debugging commands include `cat /proc/<TARGET_PID>/cmdline`, `ls -l /proc/<TARGET_PID>/cwd`, `cat /proc/1/environ`, `cat /proc/<TARGET_PID>/limits`, `cat /proc/<TARGET_PID>/status` and `ls -l /proc/<TARGET_PID>/fd`.
 
+### DEBUG COMMAND OPTIONS
+- `--debug-image value`  (default: nicolaka/netshoot)
+- `--help`, -h           show help (default: false)
+
+### Example
+
+The `debug` command is pretty basic and it does require the target container you are debugging has ipc sharable namespace. By default, in Docker containers are started with the IPC namespace being "non-sharable". A simple note is to start the target container using the docker run with the `--ipc 'shareable'` flag. The main mode for the debug command is to interact with the debugged target image through the `slim debug` command through terminal/interface.
+
+### Steps to debug your container (nginx example) - 
+1. Start the target container you want to debug (it doesn't need to be minified)
+2. Run the debug command
+
+```bash
+>> docker run -it --rm -p 80:80 --ipc 'shareable' --name mycontainer nginx
+...
+
+>> slim debug mycontainer
+...
+
+```
+Now you should have an interactive shell into the debug container started by `slim` and you can type your regular shell commands to explore the debugger container and to explore the debugged target container.
+
 ## MINIFYING COMMAND LINE TOOLS
 
 Unless the default CMD instruction in your Dockerfile is sufficient you'll have to specify command line parameters when you execute the `build` command in Slim. This can be done with the `--cmd` option.
