@@ -548,9 +548,8 @@ The `--dockerfile` option makes it possible to build a new minified image direct
 The `--use-local-mounts` option is used to choose how the Slim sensor is added to the target container and how the sensor artifacts are delivered back to the master. If you enable this option you'll get the original Slim app behavior where it uses local file system volume mounts to add the sensor executable and to extract the artifacts from the target container. This option doesn't always work as expected in the dockerized environment where Slim itself is running in a Docker container. When this option is disabled (default behavior) then a separate Docker volume is used to mount the sensor and the sensor artifacts are explicitly copied from the target container.
 
 ### `DEBUG` COMMAND OPTIONS
-
+- `--debug-image` - you can debug target conatiner image using `--debug-image` flag. The default value for this flag is `nicolaka/netshoot`. 
 - `--target` - you can specify the target docker container or it's name/ID (not docker image name/ID) using the `--target`. Note that the target container must be running. You can use the `docker run` command to start the target container.
-- `--ipc 'value'` - By default, docker containers are started with the IPC namespace being "non-sharable". A simple note is to start the target container using the docker run with the `--ipc 'shareable'` flag
 - `--help` show help (default: false)
 
 ### `REGISTRY` COMMAND OPTIONS
