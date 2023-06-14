@@ -20,6 +20,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/help"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/install"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/lint"
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands/merge"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/probe"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/profile"
 	"github.com/docker-slim/docker-slim/pkg/app/master/commands/registry"
@@ -47,6 +48,7 @@ func registerCommands() {
 	xray.RegisterCommand()
 	lint.RegisterCommand()
 	build.RegisterCommand()
+	merge.RegisterCommand()
 	registry.RegisterCommand()
 	profile.RegisterCommand()
 	version.RegisterCommand()

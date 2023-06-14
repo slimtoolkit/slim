@@ -49,7 +49,8 @@ func New(
 }
 
 func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
-	if len(options.Entrypoint) == 0 && len(options.Cmd) == 0 {
+	if len(options.ImageConfig.Config.Entrypoint) == 0 &&
+		len(options.ImageConfig.Config.Cmd) == 0 {
 		return fmt.Errorf("missing startup info")
 	}
 
@@ -61,9 +62,9 @@ func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
 		return fmt.Errorf("too many layers")
 	}
 
-	switch options.Architecture {
+	switch options.ImageConfig.Architecture {
 	case "":
-		options.Architecture = "amd64"
+		options.ImageConfig.Architecture = "amd64"
 	case "arm64", "amd64":
 	default:
 		return fmt.Errorf("bad architecture value")
@@ -77,30 +78,71 @@ func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
 		return fmt.Errorf("custom base images are not supported yet")
 	}
 
-	imgCfg := v1.Config{
-		Entrypoint:   options.Entrypoint,
-		Cmd:          options.Cmd,
-		WorkingDir:   options.WorkDir,
-		StopSignal:   options.StopSignal,
-		OnBuild:      options.OnBuild,
-		Labels:       options.Labels,
-		Env:          options.EnvVars,
-		User:         options.User,
-		Volumes:      options.Volumes,
-		ExposedPorts: options.ExposedPorts,
+	imgRunConfig := v1.Config{
+		User:            options.ImageConfig.Config.User,
+		ExposedPorts:    options.ImageConfig.Config.ExposedPorts,
+		Env:             options.ImageConfig.Config.Env,
+		Entrypoint:      options.ImageConfig.Config.Entrypoint,
+		Cmd:             options.ImageConfig.Config.Cmd,
+		Volumes:         options.ImageConfig.Config.Volumes,
+		WorkingDir:      options.ImageConfig.Config.WorkingDir,
+		Labels:          options.ImageConfig.Config.Labels,
+		StopSignal:      options.ImageConfig.Config.StopSignal,
+		ArgsEscaped:     options.ImageConfig.Config.ArgsEscaped,
+		AttachStderr:    options.ImageConfig.Config.AttachStderr,
+		AttachStdin:     options.ImageConfig.Config.AttachStdin,
+		AttachStdout:    options.ImageConfig.Config.AttachStdout,
+		Domainname:      options.ImageConfig.Config.Domainname,
+		Hostname:        options.ImageConfig.Config.Hostname,
+		Image:           options.ImageConfig.Config.Image,
+		OnBuild:         options.ImageConfig.Config.OnBuild,
+		OpenStdin:       options.ImageConfig.Config.OpenStdin,
+		StdinOnce:       options.ImageConfig.Config.StdinOnce,
+		Tty:             options.ImageConfig.Config.Tty,
+		NetworkDisabled: options.ImageConfig.Config.NetworkDisabled,
+		MacAddress:      options.ImageConfig.Config.MacAddress,
+		Shell:           options.ImageConfig.Config.Shell,
 	}
 
-	imgCfgFile := &v1.ConfigFile{
+	if options.ImageConfig.Config.Healthcheck != nil {
+		imgRunConfig.Healthcheck = &v1.HealthConfig{
+			Test:        options.ImageConfig.Config.Healthcheck.Test,
+			Interval:    options.ImageConfig.Config.Healthcheck.Interval,
+			Timeout:     options.ImageConfig.Config.Healthcheck.Timeout,
+			StartPeriod: options.ImageConfig.Config.Healthcheck.StartPeriod,
+			Retries:     options.ImageConfig.Config.Healthcheck.Retries,
+		}
+	}
+
+	imgConfig := &v1.ConfigFile{
 		Created:      v1.Time{Time: time.Now()},
-		Author:       "docker-slim",
-		Config:       imgCfg,
-		Architecture: options.Architecture,
-		OS:           "linux",
+		Author:       options.ImageConfig.Author,
+		Architecture: options.ImageConfig.Architecture,
+		OS:           options.ImageConfig.OS,
+		OSVersion:    options.ImageConfig.OSVersion,
+		OSFeatures:   options.ImageConfig.OSFeatures,
+		Variant:      options.ImageConfig.Variant,
+		Config:       imgRunConfig,
+		//History - not setting for now (actual history needs to match the added layers)
+		Container:     options.ImageConfig.Container,
+		DockerVersion: options.ImageConfig.DockerVersion,
+	}
+
+	if imgConfig.OS == "" {
+		imgConfig.OS = "linux"
+	}
+
+	if imgConfig.Author == "" {
+		imgConfig.Author = "docker-slim"
+	}
+
+	if !options.ImageConfig.Created.IsZero() {
+		imgConfig.Created = v1.Time{Time: options.ImageConfig.Created}
 	}
 
 	log.Debug("DefaultSimpleBuilder.Build: config image")
 
-	img, err := mutate.ConfigFile(img, imgCfgFile)
+	img, err := mutate.ConfigFile(img, imgConfig)
 	if err != nil {
 		return err
 	}
