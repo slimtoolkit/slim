@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"strconv"
 
@@ -345,7 +344,7 @@ func getProcessInfo(pid int32) (*report.ProcessInfo, error) {
 		return nil, err
 	}
 
-	rawCmdline, err := ioutil.ReadFile(procFilePath(int(pid), "cmdline"))
+	rawCmdline, err := os.ReadFile(procFilePath(int(pid), "cmdline"))
 	if err != nil {
 		return nil, err
 	}
@@ -358,7 +357,7 @@ func getProcessInfo(pid int32) (*report.ProcessInfo, error) {
 	}
 
 	//note: will need to get "environ" at some point :)
-	//rawEnviron, err := ioutil.ReadFile(procFilePath(int(pid), "environ"))
+	//rawEnviron, err := os.ReadFile(procFilePath(int(pid), "environ"))
 	//if err != nil {
 	//	return nil, err
 	//}
@@ -370,7 +369,7 @@ func getProcessInfo(pid int32) (*report.ProcessInfo, error) {
 	info.Name = "unknown"
 	info.ParentPid = -1
 
-	stat, err := ioutil.ReadFile(procFilePath(int(pid), "stat"))
+	stat, err := os.ReadFile(procFilePath(int(pid), "stat"))
 	if err == nil {
 		var procPid int
 		var procName string

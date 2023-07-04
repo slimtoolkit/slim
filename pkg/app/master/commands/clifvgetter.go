@@ -4,7 +4,6 @@ package commands
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -38,7 +37,7 @@ func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, erro
 	}
 	hostConfigFileName := ctx.String(FlagCROHostConfigFile)
 	if len(hostConfigFileName) > 0 {
-		hostConfigBytes, err := ioutil.ReadFile(hostConfigFileName)
+		hostConfigBytes, err := os.ReadFile(hostConfigFileName)
 		if err != nil {
 			log.WithFields(log.Fields{
 				"op":        op,

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -215,7 +214,7 @@ func NewConfigInfo(
 			cv.BaseComposeDir = workingDir
 		}
 
-		b, err := ioutil.ReadFile(fullComposeFilePath)
+		b, err := os.ReadFile(fullComposeFilePath)
 		if err != nil {
 			return nil, err
 		}
@@ -979,7 +978,7 @@ func EnvVarsFromService(varMap types.MappingWithEquals, varFiles types.StringLis
 	}
 
 	for _, file := range varFiles {
-		data, err := ioutil.ReadFile(file)
+		data, err := os.ReadFile(file)
 		if err != nil {
 			log.Debugf("compose.EnvVarsFromService: error reading '%s' - %v", file, err)
 			continue

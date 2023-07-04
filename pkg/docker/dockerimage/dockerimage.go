@@ -10,7 +10,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -1206,7 +1205,7 @@ func inspectFile(
 		utf8Detector != nil ||
 		(!isKnownCertFile && doDetectAllCertFiles) ||
 		(!isKnownCertFile && doDetectAllCertPKFiles) {
-		data, err := ioutil.ReadAll(reader)
+		data, err := io.ReadAll(reader)
 		if err != nil {
 			return err
 		}
@@ -1353,7 +1352,7 @@ func inspectFile(
 							}
 						}
 
-						err := ioutil.WriteFile(dumpPath, data, 0644)
+						err := os.WriteFile(dumpPath, data, 0644)
 						if err != nil {
 							fmt.Printf("cmd=xray info=detect.utf8.match.dump.error file='%s' target='%s' error='%s'):\n",
 								fullPath, dumpPath, err)
@@ -1394,7 +1393,7 @@ func inspectFile(
 						}
 					}
 
-					err := ioutil.WriteFile(dumpPath, data, 0644)
+					err := os.WriteFile(dumpPath, data, 0644)
 					if err != nil {
 						fmt.Printf("cmd=xray info=change.data.hash.match.dump.error file='%s' hash='%s' target='%s' error='%s'):\n",
 							fullPath, hash, dumpPath, err)
@@ -1442,7 +1441,7 @@ func inspectFile(
 						}
 					}
 
-					err := ioutil.WriteFile(dumpPath, data, 0644)
+					err := os.WriteFile(dumpPath, data, 0644)
 					if err != nil {
 						fmt.Printf("cmd=xray info=change.path.match.dump.error file='%s' ppattern='%s' target='%s' error='%s'):\n",
 							fullPath, cpm.PathPattern, dumpPath, err)
@@ -1494,7 +1493,7 @@ func inspectFile(
 							}
 						}
 
-						err := ioutil.WriteFile(dumpPath, data, 0644)
+						err := os.WriteFile(dumpPath, data, 0644)
 						if err != nil {
 							fmt.Printf("cmd=xray info=change.data.match.dump.error file='%s' ppattern='%s' dpattern='%s' target='%s' error='%s'):\n",
 								fullPath, cdm.PathPattern, cdm.DataPattern, dumpPath, err)
@@ -1632,7 +1631,7 @@ func FileDataFromTar(tarPath, filePath string) ([]byte, error) {
 		if hdr.Name == filePath {
 			switch hdr.Typeflag {
 			case tar.TypeReg, tar.TypeSymlink, tar.TypeLink:
-				return ioutil.ReadAll(tr)
+				return io.ReadAll(tr)
 			}
 		}
 	}

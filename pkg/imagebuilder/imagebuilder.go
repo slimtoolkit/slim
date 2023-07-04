@@ -2,7 +2,7 @@ package imagebuilder
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 	"time"
 
@@ -200,7 +200,7 @@ func SimpleBuildOptionsFromDockerfileData(data string, ignoreExeInstructions boo
 }
 
 func SimpleBuildOptionsFromDockerfile(path string, ignoreExeInstructions bool) (*SimpleBuildOptions, error) {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
 	}

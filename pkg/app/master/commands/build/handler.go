@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -1606,7 +1605,7 @@ func finishCommand(
 
 	if cmdReport.ArtifactLocation != "" {
 		creportPath := filepath.Join(cmdReport.ArtifactLocation, cmdReport.ContainerReportName)
-		if creportData, err := ioutil.ReadFile(creportPath); err == nil {
+		if creportData, err := os.ReadFile(creportPath); err == nil {
 			var creport report.ContainerReport
 			if err := json.Unmarshal(creportData, &creport); err == nil {
 				cmdReport.System = report.SystemMetadata{

@@ -2,7 +2,7 @@ package system
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"syscall"
 )
 
@@ -39,7 +39,7 @@ func distroInfo() DistroInfo {
 		DisplayName: "unknown",
 	}
 
-	bdata, err := ioutil.ReadFile(OSReleaseFile)
+	bdata, err := os.ReadFile(OSReleaseFile)
 	if err != nil {
 		return distro
 	}
@@ -76,7 +76,7 @@ func distroInfo() DistroInfo {
 
 /*
 func getOperatingSystem() string {
-	bdata, err := ioutil.ReadFile("/etc/os-release")
+	bdata, err := os.ReadFile("/etc/os-release")
 	if err != nil {
 		print("error reading /etc/os-release")
 		return ""

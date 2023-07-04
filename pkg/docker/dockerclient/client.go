@@ -3,7 +3,6 @@ package dockerclient
 import (
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -61,19 +60,19 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 	newTLSClient := func(host string, certPath string, verify bool) (*docker.Client, error) {
 		var ca []byte
 
-		cert, err := ioutil.ReadFile(filepath.Join(certPath, "cert.pem"))
+		cert, err := os.ReadFile(filepath.Join(certPath, "cert.pem"))
 		if err != nil {
 			return nil, err
 		}
 
-		key, err := ioutil.ReadFile(filepath.Join(certPath, "key.pem"))
+		key, err := os.ReadFile(filepath.Join(certPath, "key.pem"))
 		if err != nil {
 			return nil, err
 		}
 
 		if verify {
 			var err error
-			ca, err = ioutil.ReadFile(filepath.Join(certPath, "ca.pem"))
+			ca, err = os.ReadFile(filepath.Join(certPath, "ca.pem"))
 			if err != nil {
 				return nil, err
 			}

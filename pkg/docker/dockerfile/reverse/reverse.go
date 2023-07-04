@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"sort"
 	"strconv"
 	"strings"
@@ -687,7 +687,7 @@ func stripRunInstArgs(rawInst string) (string, bool, bool, error) {
 func SaveDockerfileData(fatImageDockerfileLocation string, fatImageDockerfileLines []string) error {
 	var data bytes.Buffer
 	data.WriteString(strings.Join(fatImageDockerfileLines, "\n"))
-	return ioutil.WriteFile(fatImageDockerfileLocation, data.Bytes(), 0644)
+	return os.WriteFile(fatImageDockerfileLocation, data.Bytes(), 0644)
 }
 
 func fixJSONArray(in string) string {

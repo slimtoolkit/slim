@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -170,7 +169,7 @@ func downloadRelease(logger *log.Entry, localBlobPath, downloadSource string, c 
 	resp, err := client.Do(req)
 	if err != nil {
 		if resp != nil && resp.Body != nil {
-			io.Copy(ioutil.Discard, resp.Body)
+			io.Copy(io.Discard, resp.Body)
 			resp.Body.Close()
 		}
 
@@ -181,7 +180,7 @@ func downloadRelease(logger *log.Entry, localBlobPath, downloadSource string, c 
 
 	if resp.StatusCode != http.StatusOK {
 		logger.Debugf("downloadRelease: unexpected status code - %v", resp.StatusCode)
-		io.Copy(ioutil.Discard, resp.Body)
+		io.Copy(io.Discard, resp.Body)
 		resp.Body.Close()
 		d.Close()
 		os.Remove(localBlobPath)
@@ -235,7 +234,7 @@ func isGoodDownloadSource(logger *log.Entry, location string) bool {
 	resp, err := client.Do(req)
 	if resp != nil && resp.Body != nil {
 		defer func() {
-			io.Copy(ioutil.Discard, resp.Body)
+			io.Copy(io.Discard, resp.Body)
 			resp.Body.Close()
 		}()
 	}
@@ -385,6 +384,6 @@ func (pr *progressReader) Close() error {
 	if pr.progress != nil {
 		pr.progress.Stop()
 	}
-	io.Copy(ioutil.Discard, pr.rc)
+	io.Copy(io.Discard, pr.rc)
 	return pr.rc.Close()
 }

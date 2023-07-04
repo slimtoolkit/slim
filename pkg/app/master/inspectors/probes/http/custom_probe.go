@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -490,7 +489,7 @@ func (p *CustomProbe) Start() {
 
 						if res != nil {
 							if res.Body != nil {
-								io.Copy(ioutil.Discard, res.Body)
+								io.Copy(io.Discard, res.Body)
 							}
 
 							res.Body.Close()

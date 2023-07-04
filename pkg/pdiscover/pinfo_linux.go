@@ -1,7 +1,6 @@
 package pdiscover
 
 import (
-	"io/ioutil"
 	"os"
 	"strconv"
 )
@@ -27,7 +26,7 @@ func GetProcInfo(pid int) map[string]string {
 	}
 
 	for _, name := range valFields {
-		val, err := ioutil.ReadFile(procFileName(pid, name))
+		val, err := os.ReadFile(procFileName(pid, name))
 
 		if err != nil {
 			return nil

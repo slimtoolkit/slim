@@ -9,7 +9,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path"
@@ -462,7 +461,7 @@ func (a *artifactor) Archive() error {
 		}
 	}
 
-	artifacts, err := ioutil.ReadDir(a.artifactsDirName)
+	artifacts, err := os.ReadDir(a.artifactsDirName)
 	if err != nil {
 		return err
 	}
@@ -767,9 +766,9 @@ func (p *artifactStore) resolveLinks() {
 	//the links should be resolved in findSymlinks, but
 	//the current design needs to be improved to catch all symlinks
 	//this is a backup to catch the root level symlinks
-	files, err := ioutil.ReadDir("/")
+	files, err := os.ReadDir("/")
 	if err != nil {
-		log.Debug("resolveLinks - ioutil.ReadDir error: ", err)
+		log.Debug("resolveLinks - os.ReadDir error: ", err)
 		return
 	}
 
@@ -1172,7 +1171,7 @@ func (p *artifactStore) saveCertsData() {
 					if err != nil {
 						log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyDir(%v,%v) error: %v", fname, dstPath, err)
 					} else if copyLinkTargets {
-						foList, err := ioutil.ReadDir(fname)
+						foList, err := os.ReadDir(fname)
 						if err == nil {
 							log.Debugf("sensor.artifactStore.saveCertsData.copyDirs(): dir=%v fcount=%v", fname, len(foList))
 							for _, fo := range foList {
@@ -1227,7 +1226,7 @@ func (p *artifactStore) saveCertsData() {
 			suffix, dirs, subdirPrefix)
 		for _, dirName := range dirs {
 			if subdirPrefix != "" {
-				foList, err := ioutil.ReadDir(dirName)
+				foList, err := os.ReadDir(dirName)
 				if err != nil {
 					log.Debugf("sensor.artifactStore.saveCertsData.copyAppCertFiles: os.ReadDir(%v) error - %v", dirName, err)
 					continue
@@ -2315,11 +2314,11 @@ func (p *artifactStore) saveReport() error {
 		return err
 	}
 
-	return ioutil.WriteFile(reportFilePath, reportData.Bytes(), 0644)
+	return os.WriteFile(reportFilePath, reportData.Bytes(), 0644)
 }
 
 func getFileHash(artifactFileName string) (string, error) {
-	fileData, err := ioutil.ReadFile(artifactFileName)
+	fileData, err := os.ReadFile(artifactFileName)
 	if err != nil {
 		return "", err
 	}
@@ -2478,7 +2477,7 @@ func rbEnsureGemFiles(src, storeLocation, prefix string) error {
 	gemName := strings.TrimSuffix(file, rbGemSpecExt)
 
 	extBasePath := filepath.Join(base, rgExtSibDir)
-	foList, err := ioutil.ReadDir(extBasePath)
+	foList, err := os.ReadDir(extBasePath)
 	if err != nil {
 		return err
 	}
@@ -2488,7 +2487,7 @@ func rbEnsureGemFiles(src, storeLocation, prefix string) error {
 			platform := fo.Name()
 
 			extPlatformPath := filepath.Join(extBasePath, platform)
-			foVerList, err := ioutil.ReadDir(extPlatformPath)
+			foVerList, err := os.ReadDir(extPlatformPath)
 			if err != nil {
 				return err
 			}
@@ -2532,7 +2531,7 @@ func getNuxtConfig(path string) (*nuxtDirs, error) {
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error getting file => %s", path)
 	}
 
-	dat, err := ioutil.ReadFile(path)
+	dat, err := os.ReadFile(path)
 	if err != nil {
 		log.Debugf("sensor: monitor - getNuxtConfig - err reading file => %s - %s", path, err.Error())
 		return nil, fmt.Errorf("sensor: artifact - getNuxtConfig - error reading file => %s", path)

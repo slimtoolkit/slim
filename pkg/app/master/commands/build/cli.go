@@ -2,7 +2,7 @@ package build
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	log "github.com/sirupsen/logrus"
@@ -348,7 +348,7 @@ var CLI = &cli.Command{
 		}
 		var execFileCmd []byte
 		if len(execFile) > 0 {
-			execFileCmd, err = ioutil.ReadFile(execFile)
+			execFileCmd, err = os.ReadFile(execFile)
 			errutil.FailOn(err)
 
 			if !strings.Contains(continueAfter.Mode, config.CAMExec) {

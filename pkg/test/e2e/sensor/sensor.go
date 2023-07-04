@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -241,7 +240,7 @@ func (s *Sensor) StartStandalone(
 		return fmt.Errorf("cannot create %s file: %w", CommandsFileName, err)
 	}
 
-	rawCommands, err := ioutil.ReadFile(commandsFilePath)
+	rawCommands, err := os.ReadFile(commandsFilePath)
 	if err != nil {
 		return fmt.Errorf("cannot re-read %s file: %w", CommandsFileName, err)
 	}
@@ -422,7 +421,7 @@ func (s *Sensor) DownloadArtifacts(ctx context.Context) error {
 	}
 
 	creportFilePath := filepath.Join(s.localArtifactsDirPath(), report.DefaultContainerReportFileName)
-	rawCReport, err := ioutil.ReadFile(creportFilePath)
+	rawCReport, err := os.ReadFile(creportFilePath)
 	if err == nil {
 		s.rawCReport = string(rawCReport)
 
@@ -711,7 +710,7 @@ func (s *Sensor) AssertArtifactsArchiveContains(
 			continue
 		}
 
-		_, err = ioutil.ReadAll(reader)
+		_, err = io.ReadAll(reader)
 		if err != nil {
 			t.Errorf("Failed reading expected tar archive entry %q: %v", header.Name, err)
 			continue
