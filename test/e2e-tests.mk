@@ -5,6 +5,7 @@ GO_TEST_FLAGS =  # E.g.: make test-e2e-sensor GO_TEST_FLAGS='-run TestXyz'
 
 # run sensor only e2e tests
 test-e2e-sensor:
+	go generate github.com/docker-slim/docker-slim/pkg/appbom
 	go test -v -tags e2e -count 10 -timeout 30m $(GO_TEST_FLAGS) $(CURDIR)/pkg/app/sensor
 
 # run all e2e tests at once

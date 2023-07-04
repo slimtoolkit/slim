@@ -331,10 +331,14 @@ func buildOutputImage(
 		xc.FailOn(err)
 
 		opts := imagebuilder.SimpleBuildOptions{
-			ExposedPorts: map[string]struct{}{},
-			Volumes:      map[string]struct{}{},
-			Labels:       map[string]string{},
-			Architecture: imageBuildArch,
+			ImageConfig: imagebuilder.ImageConfig{
+				Architecture: imageBuildArch,
+				Config: imagebuilder.RunConfig{
+					ExposedPorts: map[string]struct{}{},
+					Volumes:      map[string]struct{}{},
+					Labels:       map[string]string{},
+				},
+			},
 		}
 
 		if customImageTag != "" {
@@ -350,10 +354,10 @@ func buildOutputImage(
 		UpdateBuildOptionsWithOverrides(&opts, imageOverrideSelectors, overrides)
 
 		if imageInspector.ImageRef != "" {
-			opts.Labels[consts.SourceImageLabelName] = imageInspector.ImageRef
+			opts.ImageConfig.Config.Labels[consts.SourceImageLabelName] = imageInspector.ImageRef
 		}
 
-		opts.Labels[consts.ContainerLabelName] = v.Current()
+		opts.ImageConfig.Config.Labels[consts.ContainerLabelName] = v.Current()
 
 		//(new) instructions have higher value precedence over the runtime overrides
 		UpdateBuildOptionsWithNewInstructions(&opts, instructions)
@@ -473,64 +477,64 @@ func UpdateBuildOptionsWithNewInstructions(
 		log.Debugf("NewImageBuilder: Using new image instructions => %+v", instructions)
 
 		if instructions.Workdir != "" {
-			options.WorkDir = instructions.Workdir
+			options.ImageConfig.Config.WorkingDir = instructions.Workdir
 		}
 
 		if len(instructions.Env) > 0 {
-			options.EnvVars = append(options.EnvVars, instructions.Env...)
+			options.ImageConfig.Config.Env = append(options.ImageConfig.Config.Env, instructions.Env...)
 		}
 
 		for k, v := range instructions.ExposedPorts {
-			options.ExposedPorts[string(k)] = v
+			options.ImageConfig.Config.ExposedPorts[string(k)] = v
 		}
 
 		for k, v := range instructions.Volumes {
-			options.Volumes[k] = v
+			options.ImageConfig.Config.Volumes[k] = v
 		}
 
 		for k, v := range instructions.Labels {
-			options.Labels[k] = v
+			options.ImageConfig.Config.Labels[k] = v
 		}
 
 		if len(instructions.Entrypoint) > 0 {
-			options.Entrypoint = instructions.Entrypoint
+			options.ImageConfig.Config.Entrypoint = instructions.Entrypoint
 		}
 
 		if len(instructions.Cmd) > 0 {
-			options.Cmd = instructions.Cmd
+			options.ImageConfig.Config.Cmd = instructions.Cmd
 		}
 
-		if len(options.ExposedPorts) > 0 &&
+		if len(options.ImageConfig.Config.ExposedPorts) > 0 &&
 			len(instructions.RemoveExposedPorts) > 0 {
 			for k := range instructions.RemoveExposedPorts {
-				if _, ok := options.ExposedPorts[string(k)]; ok {
-					delete(options.ExposedPorts, string(k))
+				if _, ok := options.ImageConfig.Config.ExposedPorts[string(k)]; ok {
+					delete(options.ImageConfig.Config.ExposedPorts, string(k))
 				}
 			}
 		}
 
-		if len(options.Volumes) > 0 &&
+		if len(options.ImageConfig.Config.Volumes) > 0 &&
 			len(instructions.RemoveVolumes) > 0 {
 			for k := range instructions.RemoveVolumes {
-				if _, ok := options.Volumes[k]; ok {
-					delete(options.Volumes, k)
+				if _, ok := options.ImageConfig.Config.Volumes[k]; ok {
+					delete(options.ImageConfig.Config.Volumes, k)
 				}
 			}
 		}
 
-		if len(options.Labels) > 0 &&
+		if len(options.ImageConfig.Config.Labels) > 0 &&
 			len(instructions.RemoveLabels) > 0 {
 			for k := range instructions.RemoveLabels {
-				if _, ok := options.Labels[k]; ok {
-					delete(options.Labels, k)
+				if _, ok := options.ImageConfig.Config.Labels[k]; ok {
+					delete(options.ImageConfig.Config.Labels, k)
 				}
 			}
 		}
 
 		if len(instructions.RemoveEnvs) > 0 &&
-			len(options.EnvVars) > 0 {
+			len(options.ImageConfig.Config.Env) > 0 {
 			var newEnv []string
-			for _, envPair := range options.EnvVars {
+			for _, envPair := range options.ImageConfig.Config.Env {
 				envParts := strings.SplitN(envPair, "=", 2)
 				if len(envParts) > 0 && envParts[0] != "" {
 					if _, ok := instructions.RemoveEnvs[envParts[0]]; !ok {
@@ -539,7 +543,7 @@ func UpdateBuildOptionsWithNewInstructions(
 				}
 			}
 
-			options.EnvVars = newEnv
+			options.ImageConfig.Config.Env = newEnv
 		}
 	}
 }
@@ -554,27 +558,27 @@ func UpdateBuildOptionsWithOverrides(
 			switch k {
 			case "entrypoint":
 				if len(overrides.Entrypoint) > 0 {
-					options.Entrypoint = overrides.Entrypoint
+					options.ImageConfig.Config.Entrypoint = overrides.Entrypoint
 				}
 			case "cmd":
 				if len(overrides.Cmd) > 0 {
-					options.Cmd = overrides.Cmd
+					options.ImageConfig.Config.Cmd = overrides.Cmd
 				}
 			case "workdir":
 				if overrides.Workdir != "" {
-					options.WorkDir = overrides.Workdir
+					options.ImageConfig.Config.WorkingDir = overrides.Workdir
 				}
 			case "env":
 				if len(overrides.Env) > 0 {
-					options.EnvVars = append(options.EnvVars, overrides.Env...)
+					options.ImageConfig.Config.Env = append(options.ImageConfig.Config.Env, overrides.Env...)
 				}
 			case "label":
 				for k, v := range overrides.Labels {
-					options.Labels[k] = v
+					options.ImageConfig.Config.Labels[k] = v
 				}
 			case "volume":
 				for k, v := range overrides.Volumes {
-					options.Volumes[k] = v
+					options.ImageConfig.Config.Volumes[k] = v
 				}
 			case "expose":
 				dsCmdPort := dockerapi.Port(dsCmdPortInfo)
@@ -584,7 +588,7 @@ func UpdateBuildOptionsWithOverrides(
 					if k == dsCmdPort || k == dsEvtPort {
 						continue
 					}
-					options.ExposedPorts[string(k)] = v
+					options.ImageConfig.Config.ExposedPorts[string(k)] = v
 				}
 			}
 		}
@@ -594,38 +598,41 @@ func UpdateBuildOptionsWithOverrides(
 func UpdateBuildOptionsWithSrcImageInfo(
 	options *imagebuilder.SimpleBuildOptions,
 	imageInfo *dockerapi.Image) {
-	options.Labels = SourceToOutputImageLabels(imageInfo.Config.Labels)
+	labels := SourceToOutputImageLabels(imageInfo.Config.Labels)
+	for k, v := range labels {
+		options.ImageConfig.Config.Labels[k] = v
+	}
 
 	//note: not passing imageInfo.OS explicitly
 	//because it gets "hardcoded" to "linux" internally
 	//(other OS types are not supported)
-	if options.Architecture == "" {
-		options.Architecture = imageInfo.Architecture
+	if options.ImageConfig.Architecture == "" {
+		options.ImageConfig.Architecture = imageInfo.Architecture
 	}
 
-	options.User = imageInfo.Config.User
-	options.Entrypoint = imageInfo.Config.Entrypoint
-	options.Cmd = imageInfo.Config.Cmd
-	options.WorkDir = imageInfo.Config.WorkingDir
-	options.EnvVars = imageInfo.Config.Env
-	options.Volumes = imageInfo.Config.Volumes
-	options.OnBuild = imageInfo.Config.OnBuild
-	options.StopSignal = imageInfo.Config.StopSignal
+	options.ImageConfig.Config.User = imageInfo.Config.User
+	options.ImageConfig.Config.Entrypoint = imageInfo.Config.Entrypoint
+	options.ImageConfig.Config.Cmd = imageInfo.Config.Cmd
+	options.ImageConfig.Config.WorkingDir = imageInfo.Config.WorkingDir
+	options.ImageConfig.Config.Env = imageInfo.Config.Env
+	options.ImageConfig.Config.Volumes = imageInfo.Config.Volumes
+	options.ImageConfig.Config.OnBuild = imageInfo.Config.OnBuild
+	options.ImageConfig.Config.StopSignal = imageInfo.Config.StopSignal
 
 	for k, v := range imageInfo.Config.ExposedPorts {
-		options.ExposedPorts[string(k)] = v
+		options.ImageConfig.Config.ExposedPorts[string(k)] = v
 	}
 
-	if options.ExposedPorts == nil {
-		options.ExposedPorts = map[string]struct{}{}
+	if options.ImageConfig.Config.ExposedPorts == nil {
+		options.ImageConfig.Config.ExposedPorts = map[string]struct{}{}
 	}
 
-	if options.Volumes == nil {
-		options.Volumes = map[string]struct{}{}
+	if options.ImageConfig.Config.Volumes == nil {
+		options.ImageConfig.Config.Volumes = map[string]struct{}{}
 	}
 
-	if options.Labels == nil {
-		options.Labels = map[string]string{}
+	if options.ImageConfig.Config.Labels == nil {
+		options.ImageConfig.Config.Labels = map[string]string{}
 	}
 }
 
