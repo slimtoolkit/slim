@@ -1,4 +1,4 @@
-package monitors
+package monitor
 
 import (
 	"context"
@@ -13,8 +13,8 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors/fanotify"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors/ptrace"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/fanotify"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/ptrace"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"

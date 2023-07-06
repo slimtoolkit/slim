@@ -10,9 +10,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/artifacts"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/artifact"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/execution"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 )
@@ -25,8 +25,8 @@ type Sensor struct {
 	ctx context.Context
 	exe execution.Interface
 
-	newMonitor monitors.NewCompositeMonitorFunc
-	artifactor artifacts.Artifactor
+	newMonitor monitor.NewCompositeMonitorFunc
+	artifactor artifact.Processor
 
 	workDir    string
 	mountPoint string
@@ -38,8 +38,8 @@ type Sensor struct {
 func NewSensor(
 	ctx context.Context,
 	exe execution.Interface,
-	newMonitor monitors.NewCompositeMonitorFunc,
-	artifactor artifacts.Artifactor,
+	newMonitor monitor.NewCompositeMonitorFunc,
+	artifactor artifact.Processor,
 	workDir string,
 	mountPoint string,
 	stopSignal os.Signal,
@@ -125,7 +125,7 @@ func (s *Sensor) Run() error {
 		report.FanReport,
 		report.PtReport,
 	); err != nil {
-		log.WithError(err).Error("sensor: artifacts.ProcessReports() failed")
+		log.WithError(err).Error("sensor: artifact.ProcessReports() failed")
 		return fmt.Errorf("saving reports failed: %w", err)
 	}
 
@@ -133,7 +133,7 @@ func (s *Sensor) Run() error {
 	return nil
 }
 
-func (s *Sensor) runMonitor(mon monitors.CompositeMonitor) {
+func (s *Sensor) runMonitor(mon monitor.CompositeMonitor) {
 loop:
 	for {
 		select {
@@ -142,7 +142,7 @@ loop:
 
 		case err := <-mon.Errors():
 			log.WithError(err).Warn("sensor: non-critical monitor error condition")
-			s.exe.PubEvent(event.Error, monitors.NonCriticalError(err).Error())
+			s.exe.PubEvent(event.Error, monitor.NonCriticalError(err).Error())
 
 		case <-time.After(time.Second * 5):
 			log.Debug(".")
@@ -158,7 +158,7 @@ loop:
 	// "single-threaded" keeps reasoning about the logic.
 	for _, err := range mon.DrainErrors() {
 		log.WithError(err).Warn("sensor: non-critical monitor error condition (drained)")
-		s.exe.PubEvent(event.Error, monitors.NonCriticalError(err).Error())
+		s.exe.PubEvent(event.Error, monitor.NonCriticalError(err).Error())
 	}
 }
 

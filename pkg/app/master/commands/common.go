@@ -66,6 +66,7 @@ type GenericParams struct {
 	ClientConfig   *config.DockerClient
 }
 
+// TODO: spread these code types across all command definition, so it's not all defined here
 // Exit Code Types
 const (
 	ECTCommon  = 0x01000000
@@ -76,13 +77,15 @@ const (
 	ectVersion = 0x06000000
 	ECTXray    = 0x07000000
 	ECTRun     = 0x08000000
+	ECTMerge   = 0x09000000
 )
 
 // Build command exit codes
 const (
-	ecOther = iota + 1
-	ECNoDockerConnectInfo
-	ECBadNetworkName
+	ECCOther = iota + 1
+	ECCImageNotFound
+	ECCNoDockerConnectInfo
+	ECCBadNetworkName
 )
 
 const (

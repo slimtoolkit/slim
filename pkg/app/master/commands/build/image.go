@@ -62,7 +62,7 @@ func inspectFatImage(
 					"message": "make sure the target image already exists locally (use --pull flag to auto-download it from registry)",
 				})
 
-			exitCode := commands.ECTBuild | ecbImageBuildError
+			exitCode := commands.ECTCommon | commands.ECCImageNotFound
 			xc.Out.State("exited",
 				ovars{
 					"exit.code": exitCode,

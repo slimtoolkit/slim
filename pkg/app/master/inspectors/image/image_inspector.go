@@ -2,7 +2,6 @@ package image
 
 import (
 	"bytes"
-	"errors"
 	"fmt"
 	"path/filepath"
 	"regexp"
@@ -149,7 +148,7 @@ func getRegistryCredential(registryAccount, registrySecret, dockerConfigPath, re
 		return
 	}
 
-	missingAuthConfigErr := errors.New(fmt.Sprintf("could not find an auth config for registry - %s", registry))
+	missingAuthConfigErr := fmt.Errorf("could not find an auth config for registry - %s", registry)
 	if dockerConfigPath != "" {
 		dAuthConfigs, err := docker.NewAuthConfigurationsFromFile(dockerConfigPath)
 		if err != nil {
