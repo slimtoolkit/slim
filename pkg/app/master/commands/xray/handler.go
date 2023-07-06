@@ -33,7 +33,6 @@ type ovars = app.OutVars
 // Xray command exit codes
 const (
 	ecxOther = iota + 1
-	ecxImageNotFound
 )
 
 const (
@@ -125,7 +124,7 @@ func OnCommand(
 
 		xc.Out.Error("docker.connect.error", exitMsg)
 
-		exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
+		exitCode := commands.ECTCommon | commands.ECCNoDockerConnectInfo
 		xc.Out.State("exited",
 			ovars{
 				"exit.code": exitCode,
@@ -157,7 +156,7 @@ func OnCommand(
 		} else {
 			xc.Out.Error("image.not.found", "make sure the target image already exists locally (use --pull flag to auto-download it from registry)")
 
-			exitCode := commands.ECTBuild | ecxImageNotFound
+			exitCode := commands.ECTCommon | commands.ECCImageNotFound
 			xc.Out.State("exited",
 				ovars{
 					"exit.code": exitCode,

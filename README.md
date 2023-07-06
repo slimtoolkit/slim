@@ -161,6 +161,8 @@ Elixir application images:
   - [`LINT` COMMAND OPTIONS](#lint-command-options)
   - [`XRAY` COMMAND OPTIONS](#xray-command-options)
   - [`BUILD` COMMAND OPTIONS](#build-command-options)
+  - [`DEBUG` COMMAND OPTIONS](#debug-command-options)
+  - [`REGISTRY` COMMAND OPTIONS](#registry-command-options)
 - [RUNNING CONTAINERIZED](#running-containerized)
 - [DOCKER CONNECT OPTIONS](#docker-connect-options)
 - [HTTP PROBE COMMANDS](#http-probe-commands)
@@ -274,7 +276,7 @@ Powered by Slim. It will help you understand and troubleshoot your application c
 
 ## BASIC USAGE INFO
 
-`slim [global flags] [lint|xray|build|profile|update|version|help] [command-specific flags] <IMAGE_ID_OR_NAME>`
+`slim [global flags] [lint|xray|build|profile|debug|update|version|help] [command-specific flags] <IMAGE_ID_OR_NAME>`
 
 If you don't specify any command `slim` will start in the interactive prompt mode.
 
@@ -283,7 +285,7 @@ If you don't specify any command `slim` will start in the interactive prompt mod
 - `xray` - Performs static analysis for the target container image (including 'reverse engineering' the Dockerfile for the image). Use this command if you want to know what's inside of your container image and what makes it fat.
 - `lint` - Analyzes container instructions in Dockerfiles (Docker image support is WIP)
 - `build` - Analyzes, profiles and optimizes your container image generating the supported security profiles. This is the most popular command.
-- `debug` - Debug the running target container. This command is useful for troubleshooting the running target container.
+- `debug` - Debug the running target container. This command is useful for troubleshooting running containers created from minimal/minified or regular container images.
 - `registry` - Execute registry operations.
 - `profile` - Performs basic container image analysis and dynamic container analysis, but it doesn't generate an optimized image.
 - `run` - Runs one or more containers (for now runs a single container similar to `docker run`)
@@ -548,8 +550,9 @@ The `--dockerfile` option makes it possible to build a new minified image direct
 The `--use-local-mounts` option is used to choose how the Slim sensor is added to the target container and how the sensor artifacts are delivered back to the master. If you enable this option you'll get the original Slim app behavior where it uses local file system volume mounts to add the sensor executable and to extract the artifacts from the target container. This option doesn't always work as expected in the dockerized environment where Slim itself is running in a Docker container. When this option is disabled (default behavior) then a separate Docker volume is used to mount the sensor and the sensor artifacts are explicitly copied from the target container.
 
 ### `DEBUG` COMMAND OPTIONS
+
 - `--debug-image` - you can debug target conatiner image using `--debug-image` flag. The default value for this flag is `nicolaka/netshoot`. 
-- `--target` - you can specify the target docker container or it's name/ID (not docker image name/ID) using the `--target`. Note that the target container must be running. You can use the `docker run` command to start the target container.
+- `--target` - you can specify the target docker container or its name/ID (not docker image name/ID) using the `--target`. Note that the target container must be running. You can use the `docker run` command to start the target container.
 - `--help` show help (default: false)
 
 ### `REGISTRY` COMMAND OPTIONS
@@ -726,6 +729,8 @@ You can use the `--http-probe-exec` and `--http-probe-exec-file` options to run 
 
 ## DEBUGGING MINIFIED CONTAINERS
 
+### Debugging the "Hard Way"
+
 You can create dedicated debugging side-car container images loaded with the tools you need for debugging target containers. This allows you to keep your production container images small. The debugging side-car containers attach to the running target containers.
 
 Assuming you have a running container named `node_app_alpine` you can attach your debugging side-car with a command like this: `docker run --rm -it --pid=container:node_app_alpine --net=container:node_app_alpine --cap-add sys_admin alpine sh`. In this example, the debugging side-car is a regular alpine image. This is exactly what happens with the `node_alpine` app sample (located in the `node_alpine` directory of the `examples` repo) and the `run_debug_sidecar.command` helper script.
@@ -751,11 +756,12 @@ drwxr-xr-x    3 root     root        4.0K Sep  2 15:51 node_modules
 
 Some of the useful debugging commands include `cat /proc/<TARGET_PID>/cmdline`, `ls -l /proc/<TARGET_PID>/cwd`, `cat /proc/1/environ`, `cat /proc/<TARGET_PID>/limits`, `cat /proc/<TARGET_PID>/status` and `ls -l /proc/<TARGET_PID>/fd`.
 
-### Example
+### Debugging Using the `debug` Command
 
 The `debug` command is pretty basic and it does require the target container you are debugging has ipc sharable namespace. By default, in Docker containers are started with the IPC namespace being "non-sharable". A simple note is to start the target container using the docker run with the `--ipc 'shareable'` flag. The main mode for the debug command is to interact with the debugged target image through the `slim debug` command through terminal/interface.
 
-### Steps to debug your container (nginx example) - 
+#### Steps to debug your container (nginx example) 
+
 1. Start the target container you want to debug (it doesn't need to be minified)
 2. Run the debug command
 

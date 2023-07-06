@@ -1,7 +1,7 @@
 //go:build linux
 // +build linux
 
-package artifacts
+package artifact
 
 import (
 	"bytes"
@@ -23,8 +23,8 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/detectors/binfile"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/inspectors/sodeps"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/detector/binfile"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/inspector/sodeps"
 	"github.com/docker-slim/docker-slim/pkg/artifact"
 	"github.com/docker-slim/docker-slim/pkg/certdiscover"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
@@ -256,7 +256,7 @@ func findFileTypeCmd() {
 }
 
 // Needed mostly to be able to mock it in the sensor tests.
-type Artifactor interface {
+type Processor interface {
 	// Current location of the artifacts folder.
 	ArtifactsDir() string
 
@@ -281,7 +281,7 @@ type Artifactor interface {
 	Archive() error
 }
 
-type artifactor struct {
+type processor struct {
 	artifactsDirName string
 
 	// Extra files to put into the artifacts archive before exiting.
@@ -290,33 +290,37 @@ type artifactor struct {
 	origPathMap map[string]struct{}
 }
 
-func NewArtifactor(artifactsDirName string, artifactsExtra []string) Artifactor {
-	return &artifactor{
+func NewProcessor(artifactsDirName string, artifactsExtra []string) Processor {
+	return &processor{
 		artifactsDirName: artifactsDirName,
 		artifactsExtra:   artifactsExtra,
 	}
 }
 
-func (a *artifactor) ArtifactsDir() string {
+func (a *processor) ArtifactsDir() string {
 	return a.artifactsDirName
 }
 
-func (a *artifactor) GetCurrentPaths(root string, excludes []string) (map[string]struct{}, error) {
+func (a *processor) GetCurrentPaths(root string, excludes []string) (map[string]struct{}, error) {
+	logger := log.WithField("op", "processor.GetCurrentPaths")
+	logger.Trace("call")
+	defer logger.Trace("exit")
+
 	pathMap := map[string]struct{}{}
 	err := filepath.Walk(root,
 		func(pth string, info os.FileInfo, err error) error {
 			if strings.HasPrefix(pth, "/proc/") {
-				log.Debugf("sensor: getCurrentPaths() - skipping /proc file system objects...")
+				logger.Debugf("skipping /proc file system objects... - '%s'", pth)
 				return filepath.SkipDir
 			}
 
 			if strings.HasPrefix(pth, "/sys/") {
-				log.Debugf("sensor: getCurrentPaths() - skipping /sys file system objects...")
+				logger.Debugf("skipping /sys file system objects... - '%s'", pth)
 				return filepath.SkipDir
 			}
 
 			if strings.HasPrefix(pth, "/dev/") {
-				log.Debugf("sensor: getCurrentPaths() - skipping /dev file system objects...")
+				logger.Debugf("skipping /dev file system objects... - '%s'", pth)
 				return filepath.SkipDir
 			}
 
@@ -333,7 +337,7 @@ func (a *artifactor) GetCurrentPaths(root string, excludes []string) (map[string
 			}
 
 			if err != nil {
-				log.Debugf("sensor: getCurrentPaths() - skipping %s with error: %v", pth, err)
+				logger.Debugf("skipping %s with error: %v", pth, err)
 				return nil
 			}
 
@@ -365,51 +369,53 @@ func (a *artifactor) GetCurrentPaths(root string, excludes []string) (map[string
 	return pathMap, nil
 }
 
-func (a *artifactor) PrepareEnv(cmd *command.StartMonitor) error {
-	log.Debug("sensor.app.prepareEnv()")
+func (a *processor) PrepareEnv(cmd *command.StartMonitor) error {
+	logger := log.WithField("op", "processor.PrepareEnv")
+	logger.Trace("call")
+	defer logger.Trace("exit")
 
 	dstRootPath := filepath.Join(a.artifactsDirName, app.ArtifactFilesDirName)
-	log.Debugf("sensor.app.prepareEnv - prep file artifacts root dir - '%s'", dstRootPath)
+	logger.Debugf("prep file artifacts root dir - '%s'", dstRootPath)
 	if err := os.MkdirAll(dstRootPath, 0777); err != nil {
 		return err
 	}
 
 	if cmd != nil && len(cmd.Preserves) > 0 {
-		log.Debugf("sensor.app.prepareEnv(): preserving paths - %d", len(cmd.Preserves))
+		logger.Debugf("preserving paths - %d", len(cmd.Preserves))
 
 		preservedDirPath := filepath.Join(a.artifactsDirName, preservedDirName)
-		log.Debugf("sensor.app.prepareEnv - prep preserved artifacts root dir - '%s'", preservedDirPath)
+		logger.Debugf("prep preserved artifacts root dir - '%s'", preservedDirPath)
 		if err := os.MkdirAll(preservedDirPath, 0777); err != nil {
 			return err
 		}
 
 		preservePaths := preparePaths(getKeys(cmd.Preserves))
-		log.Debugf("sensor.app.prepareEnv - preservePaths(%v): %+v", len(preservePaths), preservePaths)
+		logger.Debugf("preservePaths(%v): %+v", len(preservePaths), preservePaths)
 
 		newPerms := getRecordsWithPerms(cmd.Preserves)
-		log.Debugf("sensor.app.prepareEnv - newPerms(%v): %+v", len(newPerms), newPerms)
+		logger.Debugf("newPerms(%v): %+v", len(newPerms), newPerms)
 
 		for inPath, isDir := range preservePaths {
 			if artifact.IsFilteredPath(inPath) {
-				log.Debugf("sensor.app.prepareEnv(): skipping filtered path [isDir=%v] %s", isDir, inPath)
+				logger.Debugf("skipping filtered path [isDir=%v] %s", isDir, inPath)
 				continue
 			}
 
 			dstPath := fmt.Sprintf("%s%s", preservedDirPath, inPath)
-			log.Debugf("sensor.app.prepareEnv(): [isDir=%v] %s", isDir, dstPath)
+			logger.Debugf("[isDir=%v] %s", isDir, dstPath)
 
 			if isDir {
 				err, errs := fsutil.CopyDir(cmd.KeepPerms, inPath, dstPath, true, true, nil, nil, nil)
 				if err != nil {
-					log.Debugf("sensor.app.prepareEnv.CopyDir(%v,%v) error: %v", inPath, dstPath, err)
+					logger.Debugf("fsutil.CopyDir(%v,%v) error: %v", inPath, dstPath, err)
 				}
 
 				if len(errs) > 0 {
-					log.Debugf("sensor.app.prepareEnv.CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
+					logger.Debugf("fsutil.CopyDir(%v,%v) copy errors: %+v", inPath, dstPath, errs)
 				}
 			} else {
 				if err := fsutil.CopyFile(cmd.KeepPerms, inPath, dstPath, true); err != nil {
-					log.Debugf("sensor.app.prepareEnv.CopyFile(%v,%v) error: %v", inPath, dstPath, err)
+					logger.Debugf("fsutil.CopyFile(%v,%v) error: %v", inPath, dstPath, err)
 				}
 			}
 		}
@@ -418,7 +424,7 @@ func (a *artifactor) PrepareEnv(cmd *command.StartMonitor) error {
 			dstPath := fmt.Sprintf("%s%s", preservedDirPath, inPath)
 			if fsutil.Exists(dstPath) {
 				if err := fsutil.SetAccess(dstPath, perms); err != nil {
-					log.Debugf("sensor.app.prepareEnv.SetPerms(%v,%v) error: %v", dstPath, perms, err)
+					logger.Debugf("fsutil.SetAccess(%v,%v) error: %v", dstPath, perms, err)
 				}
 			}
 		}
@@ -427,7 +433,7 @@ func (a *artifactor) PrepareEnv(cmd *command.StartMonitor) error {
 	return nil
 }
 
-func (a *artifactor) ProcessReports(
+func (a *processor) ProcessReports(
 	cmd *command.StartMonitor,
 	mountPoint string,
 	peReport *report.PeMonitorReport,
@@ -435,8 +441,11 @@ func (a *artifactor) ProcessReports(
 	ptReport *report.PtMonitorReport,
 ) error {
 	//TODO: when peReport is available filter file events from fanReport
+	logger := log.WithField("op", "processor.ProcessReports")
+	logger.Trace("call")
+	defer logger.Trace("exit")
 
-	log.Debug("sensor: monitor.worker - processing data...")
+	logger.Debug("processing data...")
 
 	fileCount := 0
 	for _, processFileMap := range fanReport.ProcessFiles {
@@ -449,12 +458,12 @@ func (a *artifactor) ProcessReports(
 		}
 	}
 
-	log.Debugf("sensor: processReports(): len(fanReport.ProcessFiles)=%v / fileCount=%v", len(fanReport.ProcessFiles), fileCount)
+	logger.Debugf("len(fanReport.ProcessFiles)=%v / fileCount=%v", len(fanReport.ProcessFiles), fileCount)
 	allFilesMap := findSymlinks(fileList, mountPoint, cmd.Excludes)
 	return saveResults(a.origPathMap, a.artifactsDirName, cmd, allFilesMap, fanReport, ptReport, peReport)
 }
 
-func (a *artifactor) Archive() error {
+func (a *processor) Archive() error {
 	toArchive := map[string]struct{}{}
 	for _, f := range a.artifactsExtra {
 		if fsutil.Exists(f) {
@@ -499,7 +508,7 @@ func saveResults(
 ) error {
 	log.Debugf("saveResults(%v,...)", len(fileNames))
 
-	artifactStore := newArtifactStore(origPathMap, artifactsDirName, fileNames, fanMonReport, ptMonReport, peReport, cmd)
+	artifactStore := newStore(origPathMap, artifactsDirName, fileNames, fanMonReport, ptMonReport, peReport, cmd)
 	artifactStore.prepareArtifacts()
 	artifactStore.saveArtifacts()
 	artifactStore.enumerateArtifacts()
@@ -507,7 +516,12 @@ func saveResults(
 	return artifactStore.saveReport()
 }
 
-type artifactStore struct {
+// NOTE:
+// the 'store' is supposed to only store/save/copy the artifacts we identified,
+// but overtime a lot of artifact processing and post-processing logic
+// ended up there too (which belongs in the artifact 'processor').
+// TODO: refactor 'processor' and 'store' to have the right logic in the right places
+type store struct {
 	origPathMap   map[string]struct{}
 	storeLocation string
 	fanMonReport  *report.FanMonitorReport
@@ -523,15 +537,15 @@ type artifactStore struct {
 	appStacks     map[string]*appStackInfo
 }
 
-func newArtifactStore(
+func newStore(
 	origPathMap map[string]struct{},
 	storeLocation string,
 	rawNames map[string]*report.ArtifactProps,
 	fanMonReport *report.FanMonitorReport,
 	ptMonReport *report.PtMonitorReport,
 	peMonReport *report.PeMonitorReport,
-	cmd *command.StartMonitor) *artifactStore {
-	store := &artifactStore{
+	cmd *command.StartMonitor) *store {
+	store := &store{
 		origPathMap:   origPathMap,
 		storeLocation: storeLocation,
 		fanMonReport:  fanMonReport,
@@ -550,7 +564,7 @@ func newArtifactStore(
 	return store
 }
 
-func (p *artifactStore) getArtifactFlags(artifactFileName string) map[string]bool {
+func (p *store) getArtifactFlags(artifactFileName string) map[string]bool {
 	flags := map[string]bool{}
 	for _, processFileMap := range p.fanMonReport.ProcessFiles {
 		if finfo, ok := processFileMap[artifactFileName]; ok {
@@ -575,7 +589,7 @@ func (p *artifactStore) getArtifactFlags(artifactFileName string) map[string]boo
 	return flags
 }
 
-func (p *artifactStore) prepareArtifact(artifactFileName string) {
+func (p *store) prepareArtifact(artifactFileName string) {
 	srcLinkFileInfo, err := os.Lstat(artifactFileName)
 	if err != nil {
 		log.Debugf("prepareArtifact - artifact don't exist: %v (%v)", artifactFileName, os.IsNotExist(err))
@@ -664,7 +678,7 @@ func (p *artifactStore) prepareArtifact(artifactFileName string) {
 	}
 }
 
-func (p *artifactStore) prepareArtifacts() {
+func (p *store) prepareArtifacts() {
 	log.Debugf("p.prepareArtifacts() p.rawNames=%v", len(p.rawNames))
 
 	for artifactFileName := range p.rawNames {
@@ -762,7 +776,7 @@ func (p *artifactStore) prepareArtifacts() {
 	p.resolveLinks()
 }
 
-func (p *artifactStore) resolveLinks() {
+func (p *store) resolveLinks() {
 	//note:
 	//the links should be resolved in findSymlinks, but
 	//the current design needs to be improved to catch all symlinks
@@ -937,38 +951,38 @@ func linkTargetToFullPath(fullPath, target string) string {
 	return filepath.Clean(filepath.Join(d, target))
 }
 
-func (p *artifactStore) saveWorkdir(excludePatterns []string) {
+func (p *store) saveWorkdir(excludePatterns []string) {
 	if p.cmd.IncludeWorkdir == "" {
 		return
 	}
 
 	if artifact.IsFilteredPath(p.cmd.IncludeWorkdir) {
-		log.Debug("sensor.artifactStore.saveWorkdir(): skipping filtered workdir")
+		log.Debug("sensor.store.saveWorkdir(): skipping filtered workdir")
 		return
 	}
 
 	if !fsutil.DirExists(p.cmd.IncludeWorkdir) {
-		log.Debugf("sensor.artifactStore.saveWorkdir: workdir does not exist %s", p.cmd.IncludeWorkdir)
+		log.Debugf("sensor.store.saveWorkdir: workdir does not exist %s", p.cmd.IncludeWorkdir)
 		return
 	}
 
 	dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, p.cmd.IncludeWorkdir)
 	if fsutil.Exists(dstPath) {
-		log.Debug("sensor.artifactStore.saveWorkdir: workdir dst path already exists")
+		log.Debug("sensor.store.saveWorkdir: workdir dst path already exists")
 		//it's possible that some of the files in the work dir are already copied
 		//the copy logic will improve when we copy the files separately
 		//for now just copy the whole workdir
 	}
 
-	log.Debugf("sensor.artifactStore.saveWorkdir: workdir=%s", p.cmd.IncludeWorkdir)
+	log.Debugf("sensor.store.saveWorkdir: workdir=%s", p.cmd.IncludeWorkdir)
 
 	err, errs := fsutil.CopyDir(p.cmd.KeepPerms, p.cmd.IncludeWorkdir, dstPath, true, true, excludePatterns, nil, nil)
 	if err != nil {
-		log.Debugf("sensor.artifactStore.saveWorkdir: CopyDir(%v,%v) error: %v", p.cmd.IncludeWorkdir, dstPath, err)
+		log.Debugf("sensor.store.saveWorkdir: CopyDir(%v,%v) error: %v", p.cmd.IncludeWorkdir, dstPath, err)
 	}
 
 	if len(errs) > 0 {
-		log.Debugf("sensor.artifactStore.saveWorkdir: CopyDir(%v,%v) copy errors: %+v", p.cmd.IncludeWorkdir, dstPath, errs)
+		log.Debugf("sensor.store.saveWorkdir: CopyDir(%v,%v) copy errors: %+v", p.cmd.IncludeWorkdir, dstPath, errs)
 	}
 
 	//todo:
@@ -996,7 +1010,7 @@ var osLibsNetFiles = []string{
 	osLibHostConf,
 }
 
-func (p *artifactStore) saveOSLibsNetwork() {
+func (p *store) saveOSLibsNetwork() {
 	if !p.cmd.IncludeOSLibsNet {
 		return
 	}
@@ -1006,19 +1020,19 @@ func (p *artifactStore) saveOSLibsNetwork() {
 			continue
 		}
 
-		log.Debugf("sensor.artifactStore.saveOSLibsNetwork: copy %s", fp)
+		log.Debugf("sensor.store.saveOSLibsNetwork: copy %s", fp)
 		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, fp)
 		if fsutil.Exists(dstPath) {
 			continue
 		}
 
 		if err := fsutil.CopyFile(p.cmd.KeepPerms, fp, dstPath, true); err != nil {
-			log.Debugf("sensor.artifactStore.saveOSLibsNetwork: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
+			log.Debugf("sensor.store.saveOSLibsNetwork: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
 		}
 	}
 
 	if len(p.origPathMap) == 0 {
-		log.Debug("sensor.artifactStore.saveOSLibsNetwork: no origPathMap")
+		log.Debug("sensor.store.saveOSLibsNetwork: no origPathMap")
 		return
 	}
 
@@ -1031,7 +1045,7 @@ func (p *artifactStore) saveOSLibsNetwork() {
 				strings.Contains(fileName, osUsrLibDir) ||
 				strings.Contains(fileName, osUsrLib64Dir)) &&
 			strings.Contains(fileName, osLibSO) {
-			log.Debugf("sensor.artifactStore.saveOSLibsNetwork: match - %s", fileName)
+			log.Debugf("sensor.store.saveOSLibsNetwork: match - %s", fileName)
 			pathMap[fileName] = struct{}{}
 		}
 	}
@@ -1044,7 +1058,7 @@ func (p *artifactStore) saveOSLibsNetwork() {
 
 		fpaths, err := resloveLink(fpath)
 		if err != nil {
-			log.Debugf("sensor.artifactStore.saveOSLibsNetwork: error resolving link - %s", fpath)
+			log.Debugf("sensor.store.saveOSLibsNetwork: error resolving link - %s", fpath)
 			continue
 		}
 
@@ -1063,9 +1077,9 @@ func (p *artifactStore) saveOSLibsNetwork() {
 				binArtifacts, err := sodeps.AllDependencies(fp)
 				if err != nil {
 					if err == sodeps.ErrDepResolverNotFound {
-						log.Debug("sensor.artifactStore.saveOSLibsNetwork[bsa] - no static bin dep resolver")
+						log.Debug("sensor.store.saveOSLibsNetwork[bsa] - no static bin dep resolver")
 					} else {
-						log.Debugf("sensor.artifactStore.saveOSLibsNetwork[bsa] - %v - error getting bin artifacts => %v\n", fp, err)
+						log.Debugf("sensor.store.saveOSLibsNetwork[bsa] - %v - error getting bin artifacts => %v\n", fp, err)
 					}
 					continue
 				}
@@ -1073,7 +1087,7 @@ func (p *artifactStore) saveOSLibsNetwork() {
 				for _, bpath := range binArtifacts {
 					bfpaths, err := resloveLink(bpath)
 					if err != nil {
-						log.Debugf("sensor.artifactStore.saveOSLibsNetwork: error resolving link - %s", bpath)
+						log.Debugf("sensor.store.saveOSLibsNetwork: error resolving link - %s", bpath)
 						continue
 					}
 
@@ -1092,7 +1106,7 @@ func (p *artifactStore) saveOSLibsNetwork() {
 		}
 	}
 
-	log.Debugf("sensor.artifactStore.saveOSLibsNetwork: - allPathMap(%v) = %+v", len(allPathMap), allPathMap)
+	log.Debugf("sensor.store.saveOSLibsNetwork: - allPathMap(%v) = %+v", len(allPathMap), allPathMap)
 	for fp := range allPathMap {
 		if !fsutil.Exists(fp) {
 			continue
@@ -1104,7 +1118,7 @@ func (p *artifactStore) saveOSLibsNetwork() {
 		}
 
 		if err := fsutil.CopyFile(p.cmd.KeepPerms, fp, dstPath, true); err != nil {
-			log.Debugf("sensor.artifactStore.saveOSLibsNetwork: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
+			log.Debugf("sensor.store.saveOSLibsNetwork: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
 		}
 	}
 }
@@ -1148,21 +1162,21 @@ func resloveLink(fpath string) ([]string, error) {
 	return out, nil
 }
 
-func (p *artifactStore) saveCertsData() {
+func (p *store) saveCertsData() {
 	copyCertFiles := func(list []string) {
-		log.Debugf("sensor.artifactStore.saveCertsData.copyCertFiles(list=%+v)", list)
+		log.Debugf("sensor.store.saveCertsData.copyCertFiles(list=%+v)", list)
 		for _, fname := range list {
 			if fsutil.Exists(fname) {
 				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, fname)
 				if err := fsutil.CopyFile(p.cmd.KeepPerms, fname, dstPath, true); err != nil {
-					log.Debugf("sensor.artifactStore.saveCertsData.copyCertFiles: fsutil.CopyFile(%v,%v) error - %v", fname, dstPath, err)
+					log.Debugf("sensor.store.saveCertsData.copyCertFiles: fsutil.CopyFile(%v,%v) error - %v", fname, dstPath, err)
 				}
 			}
 		}
 	}
 
 	copyDirs := func(list []string, copyLinkTargets bool) {
-		log.Debugf("sensor.artifactStore.saveCertsData.copyDirs(list=%+v,copyLinkTargets=%v)", list, copyLinkTargets)
+		log.Debugf("sensor.store.saveCertsData.copyDirs(list=%+v,copyLinkTargets=%v)", list, copyLinkTargets)
 		for _, fname := range list {
 			if fsutil.Exists(fname) {
 				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, fname)
@@ -1170,52 +1184,52 @@ func (p *artifactStore) saveCertsData() {
 				if fsutil.IsDir(fname) {
 					err, errs := fsutil.CopyDir(p.cmd.KeepPerms, fname, dstPath, true, true, nil, nil, nil)
 					if err != nil {
-						log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyDir(%v,%v) error: %v", fname, dstPath, err)
+						log.Debugf("sensor.store.saveCertsData.copyDirs: fsutil.CopyDir(%v,%v) error: %v", fname, dstPath, err)
 					} else if copyLinkTargets {
 						foList, err := ioutil.ReadDir(fname)
 						if err == nil {
-							log.Debugf("sensor.artifactStore.saveCertsData.copyDirs(): dir=%v fcount=%v", fname, len(foList))
+							log.Debugf("sensor.store.saveCertsData.copyDirs(): dir=%v fcount=%v", fname, len(foList))
 							for _, fo := range foList {
 								fullPath := filepath.Join(fname, fo.Name())
-								log.Debugf("sensor.artifactStore.saveCertsData.copyDirs(): dir=%v fullPath=%v", fname, fullPath)
+								log.Debugf("sensor.store.saveCertsData.copyDirs(): dir=%v fullPath=%v", fname, fullPath)
 								if fsutil.IsSymlink(fullPath) {
 									linkRef, err := os.Readlink(fullPath)
 									if err != nil {
-										log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: os.Readlink(%v) error - %v", fullPath, err)
+										log.Debugf("sensor.store.saveCertsData.copyDirs: os.Readlink(%v) error - %v", fullPath, err)
 										continue
 									}
 
-									log.Debugf("sensor.artifactStore.saveCertsData.copyDirs(): dir=%v fullPath=%v linkRef=%v",
+									log.Debugf("sensor.store.saveCertsData.copyDirs(): dir=%v fullPath=%v linkRef=%v",
 										fname, fullPath, linkRef)
 									if strings.Contains(linkRef, "/") {
 										targetFilePath := linkTargetToFullPath(fullPath, linkRef)
 										if targetFilePath != "" && fsutil.Exists(targetFilePath) {
-											log.Debugf("sensor.artifactStore.saveCertsData.copyDirs(): dir=%v fullPath=%v linkRef=%v targetFilePath=%v",
+											log.Debugf("sensor.store.saveCertsData.copyDirs(): dir=%v fullPath=%v linkRef=%v targetFilePath=%v",
 												fname, fullPath, linkRef, targetFilePath)
 											dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, targetFilePath)
 											if err := fsutil.CopyFile(p.cmd.KeepPerms, targetFilePath, dstPath, true); err != nil {
-												log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyFile(%v,%v) error - %v", targetFilePath, dstPath, err)
+												log.Debugf("sensor.store.saveCertsData.copyDirs: fsutil.CopyFile(%v,%v) error - %v", targetFilePath, dstPath, err)
 											}
 										} else {
-											log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: targetFilePath does not exist - %v", targetFilePath)
+											log.Debugf("sensor.store.saveCertsData.copyDirs: targetFilePath does not exist - %v", targetFilePath)
 										}
 									}
 								}
 							}
 						} else {
-							log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: os.ReadDir(%v) error - %v", fname, err)
+							log.Debugf("sensor.store.saveCertsData.copyDirs: os.ReadDir(%v) error - %v", fname, err)
 						}
 					}
 
 					if len(errs) > 0 {
-						log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopyDir(%v,%v) copy errors: %+v", fname, dstPath, errs)
+						log.Debugf("sensor.store.saveCertsData.copyDirs: fsutil.CopyDir(%v,%v) copy errors: %+v", fname, dstPath, errs)
 					}
 				} else if fsutil.IsSymlink(fname) {
 					if err := fsutil.CopySymlinkFile(p.cmd.KeepPerms, fname, dstPath, true); err != nil {
-						log.Debugf("sensor.artifactStore.saveCertsData.copyDirs: fsutil.CopySymlinkFile(%v,%v) error - %v", fname, dstPath, err)
+						log.Debugf("sensor.store.saveCertsData.copyDirs: fsutil.CopySymlinkFile(%v,%v) error - %v", fname, dstPath, err)
 					}
 				} else {
-					log.Debugf("artifactStore.saveCertsData.copyDir: unexpected obect type - %s", fname)
+					log.Debugf("store.saveCertsData.copyDir: unexpected obect type - %s", fname)
 				}
 			}
 		}
@@ -1223,13 +1237,13 @@ func (p *artifactStore) saveCertsData() {
 
 	copyAppCertFiles := func(suffix string, dirs []string, subdirPrefix string) {
 		//NOTE: dirs end with "/" (need to revisit the formatting to make it consistent)
-		log.Debugf("sensor.artifactStore.saveCertsData.copyAppCertFiles(suffix=%v,dirs=%+v,subdirPrefix=%v)",
+		log.Debugf("sensor.store.saveCertsData.copyAppCertFiles(suffix=%v,dirs=%+v,subdirPrefix=%v)",
 			suffix, dirs, subdirPrefix)
 		for _, dirName := range dirs {
 			if subdirPrefix != "" {
 				foList, err := ioutil.ReadDir(dirName)
 				if err != nil {
-					log.Debugf("sensor.artifactStore.saveCertsData.copyAppCertFiles: os.ReadDir(%v) error - %v", dirName, err)
+					log.Debugf("sensor.store.saveCertsData.copyAppCertFiles: os.ReadDir(%v) error - %v", dirName, err)
 					continue
 				}
 
@@ -1245,7 +1259,7 @@ func (p *artifactStore) saveCertsData() {
 			if fsutil.Exists(srcFilePath) {
 				dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFilePath)
 				if err := fsutil.CopyFile(p.cmd.KeepPerms, srcFilePath, dstPath, true); err != nil {
-					log.Debugf("sensor.artifactStore.saveCertsData.copyAppCertFiles: fsutil.CopyFile(%v,%v) error - %v", srcFilePath, dstPath, err)
+					log.Debugf("sensor.store.saveCertsData.copyAppCertFiles: fsutil.CopyFile(%v,%v) error - %v", srcFilePath, dstPath, err)
 				}
 			}
 		}
@@ -1329,7 +1343,7 @@ func (p *artifactStore) saveCertsData() {
 	}
 }
 
-func (p *artifactStore) saveArtifacts() {
+func (p *store) saveArtifacts() {
 	var includePaths map[string]bool
 	var newPerms map[string]*fsutil.AccessInfo
 
@@ -2019,7 +2033,7 @@ copyBinIncludes:
 	}
 }
 
-func (p *artifactStore) detectAppStack(fileName string) {
+func (p *store) detectAppStack(fileName string) {
 	isPython := detectPythonCodeFile(fileName)
 	if isPython {
 		appStack, ok := p.appStacks[certdiscover.LanguagePython]
@@ -2193,10 +2207,14 @@ func detectNodePkgDir(fileName string) string {
 	return ""
 }
 
-func (p *artifactStore) archiveArtifacts() error {
+func (p *store) archiveArtifacts() error {
+	logger := log.WithField("op", "store.archiveArtifacts")
+	logger.Trace("call")
+	defer logger.Trace("exit")
+
 	src := filepath.Join(p.storeLocation, app.ArtifactFilesDirName)
 	dst := filepath.Join(p.storeLocation, filesArchiveName)
-	log.Debugf("artifactStore.archiveArtifacts: src='%s' dst='%s'", src, dst)
+	logger.Debugf("src='%s' dst='%s'", src, dst)
 
 	trimPrefix := fmt.Sprintf("%s/", src)
 	return fsutil.ArchiveDir(dst, src, trimPrefix, "")
@@ -2205,7 +2223,11 @@ func (p *artifactStore) archiveArtifacts() error {
 // Go over all saved artifacts and update the name list to make
 // sure all the files & folders are reflected in the final report.
 // Hopefully, just a temporary workaround until a proper refactoring.
-func (p *artifactStore) enumerateArtifacts() {
+func (p *store) enumerateArtifacts() {
+	logger := log.WithField("op", "store.enumerateArtifacts")
+	logger.Trace("call")
+	defer logger.Trace("exit")
+
 	knownFiles := list2map(p.nameList)
 	artifactFilesDir := filepath.Join(p.storeLocation, app.ArtifactFilesDirName)
 
@@ -2216,7 +2238,7 @@ func (p *artifactStore) enumerateArtifacts() {
 
 		entries, err := os.ReadDir(curpath)
 		if err != nil {
-			log.WithError(err).Debug("artifactStore.enumerateArtifacts: readdir error")
+			logger.WithError(err).Debugf("os.ReadDir(%s)", curpath)
 			// Keep processing though since it might have been a partial result.
 		}
 
@@ -2234,10 +2256,9 @@ func (p *artifactStore) enumerateArtifacts() {
 				p.rawNames[curpath] = props
 				knownFiles[curpath] = true
 			} else {
-				log.
-					WithError(err).
+				logger.WithError(err).
 					WithField("path", curpath).
-					Debug("artifactStore.enumerateArtifacts: failed computing dir artifact props")
+					Debugf("artifactProps(%s): failed computing dir artifact props", curpath)
 			}
 			continue
 		}
@@ -2262,16 +2283,19 @@ func (p *artifactStore) enumerateArtifacts() {
 				p.rawNames[childpath] = props
 				knownFiles[childpath] = true
 			} else {
-				log.
-					WithError(err).
+				logger.WithError(err).
 					WithField("path", childpath).
-					Debug("artifactStore.enumerateArtifacts: failed computing artifact props")
+					Debugf("artifactProps(%s): failed computing artifact props", childpath)
 			}
 		}
 	}
 }
 
-func (p *artifactStore) saveReport() error {
+func (p *store) saveReport() error {
+	logger := log.WithField("op", "store.saveReport")
+	logger.Trace("call")
+	defer logger.Trace("exit")
+
 	creport := report.ContainerReport{
 		SensorVersion: version.Current(),
 		Monitors: report.MonitorReports{
@@ -2293,7 +2317,12 @@ func (p *artifactStore) saveReport() error {
 
 	sort.Strings(p.nameList)
 	for _, fname := range p.nameList {
-		creport.Image.Files = append(creport.Image.Files, p.rawNames[fname])
+		rawNameRecord, found := p.rawNames[fname]
+		if found {
+			creport.Image.Files = append(creport.Image.Files, rawNameRecord)
+		} else {
+			logger.Debugf("nameList file name (%s) not found in rawNames map", fname)
+		}
 	}
 
 	_, err := os.Stat(p.storeLocation)
@@ -2305,7 +2334,7 @@ func (p *artifactStore) saveReport() error {
 	}
 
 	reportFilePath := filepath.Join(p.storeLocation, report.DefaultContainerReportFileName)
-	log.Debugf("sensor: monitor - saving report to '%s'", reportFilePath)
+	logger.Debugf("saving report to '%s'", reportFilePath)
 
 	var reportData bytes.Buffer
 	encoder := json.NewEncoder(&reportData)

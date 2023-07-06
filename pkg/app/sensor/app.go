@@ -17,10 +17,10 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/artifacts"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/artifact"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/controlled"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/execution"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone"
 	"github.com/docker-slim/docker-slim/pkg/appbom"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
@@ -148,7 +148,7 @@ func Run() {
 	if len(*logFile) > 0 {
 		artifactsExtra = append(artifactsExtra, *logFile)
 	}
-	artifactor := artifacts.NewArtifactor(*artifactsDir, artifactsExtra)
+	artifactor := artifact.NewProcessor(*artifactsDir, artifactsExtra)
 
 	ctx := context.Background()
 	exe, err := newExecution(
@@ -179,10 +179,10 @@ func Run() {
 	if err := sen.Run(); err != nil {
 		exe.PubEvent(event.Error, err.Error())
 		log.WithError(err).Error("sensor: run finished with error")
-		if errors.Is(err, monitors.ErrInsufficientPermissions) {
+		if errors.Is(err, monitor.ErrInsufficientPermissions) {
 			log.Info("sensor: Instrumented containers require root and ALL capabilities enabled. Example: `docker run --user root --cap-add ALL app:v1-instrumented`")
 		}
-		if errors.Is(err, monitors.ErrInsufficientPermissions) {
+		if errors.Is(err, monitor.ErrInsufficientPermissions) {
 		}
 	} else {
 		log.Info("sensor: run finished succesfully")
@@ -229,7 +229,7 @@ func newSensor(
 	ctx context.Context,
 	exe execution.Interface,
 	mode string,
-	artifactor artifacts.Artifactor,
+	artifactor artifact.Processor,
 ) (sensor, error) {
 	workDir, err := os.Getwd()
 	errutil.WarnOn(err)
@@ -252,7 +252,7 @@ func newSensor(
 		return controlled.NewSensor(
 			ctx,
 			exe,
-			monitors.NewCompositeMonitor,
+			monitor.NewCompositeMonitor,
 			artifactor,
 			workDir,
 			mountPoint,
@@ -261,7 +261,7 @@ func newSensor(
 		return standalone.NewSensor(
 			ctx,
 			exe,
-			monitors.NewCompositeMonitor,
+			monitor.NewCompositeMonitor,
 			artifactor,
 			workDir,
 			mountPoint,

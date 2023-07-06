@@ -8,6 +8,7 @@ const (
 	Lint         Type = "lint"
 	Containerize Type = "containerize"
 	Convert      Type = "convert"
+	Merge        Type = "merge"
 	Edit         Type = "edit"
 	Debug        Type = "debug"
 	Probe        Type = "probe"

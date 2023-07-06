@@ -46,6 +46,9 @@ github.com/c-bata/go-prompt/completer
 # github.com/c4milo/unpackit v0.0.0-20170704181138-4ed373e9ef1c
 ## explicit
 github.com/c4milo/unpackit
+# github.com/cespare/xxhash/v2 v2.2.0
+## explicit; go 1.11
+github.com/cespare/xxhash/v2
 # github.com/compose-spec/compose-go v0.0.0-20210916141509-a7e1bc322970 => ./pkg/third_party/compose-go
 ## explicit; go 1.16
 github.com/compose-spec/compose-go/errdefs
