@@ -9,9 +9,9 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/artifacts"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/artifact"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/execution"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 )
@@ -22,8 +22,8 @@ type Sensor struct {
 	ctx context.Context
 	exe execution.Interface
 
-	newMonitor monitors.NewCompositeMonitorFunc
-	artifactor artifacts.Artifactor
+	newMonitor monitor.NewCompositeMonitorFunc
+	artifactor artifact.Processor
 
 	workDir    string
 	mountPoint string
@@ -32,8 +32,8 @@ type Sensor struct {
 func NewSensor(
 	ctx context.Context,
 	exe execution.Interface,
-	newMonitor monitors.NewCompositeMonitorFunc,
-	artifactor artifacts.Artifactor,
+	newMonitor monitor.NewCompositeMonitorFunc,
+	artifactor artifact.Processor,
 	workDir string,
 	mountPoint string,
 ) *Sensor {
@@ -86,7 +86,7 @@ func (s *Sensor) Run() error {
 	}
 }
 
-func (s *Sensor) runWithoutMonitor() (monitors.CompositeMonitor, error) {
+func (s *Sensor) runWithoutMonitor() (monitor.CompositeMonitor, error) {
 	for {
 		select {
 		case cmd := <-s.exe.Commands():
@@ -109,7 +109,7 @@ func (s *Sensor) runWithoutMonitor() (monitors.CompositeMonitor, error) {
 	}
 }
 
-func (s *Sensor) startMonitor(cmd *command.StartMonitor) (monitors.CompositeMonitor, error) {
+func (s *Sensor) startMonitor(cmd *command.StartMonitor) (monitor.CompositeMonitor, error) {
 	if err := s.artifactor.PrepareEnv(cmd); err != nil {
 		log.WithError(err).Error("sensor: artifactor.PrepareEnv() failed")
 		return nil, fmt.Errorf("failed to prepare artifacts env: %w", err)
@@ -149,7 +149,7 @@ func (s *Sensor) startMonitor(cmd *command.StartMonitor) (monitors.CompositeMoni
 	return mon, nil
 }
 
-func (s *Sensor) runWithMonitor(mon monitors.CompositeMonitor) error {
+func (s *Sensor) runWithMonitor(mon monitor.CompositeMonitor) error {
 	log.Debug("sensor: monitor.worker - waiting to stop monitoring...")
 	log.Debug("sensor: error collector - waiting for errors...")
 
@@ -179,7 +179,7 @@ loop:
 
 		case err := <-mon.Errors():
 			log.WithError(err).Warn("sensor: non-critical monitor error condition")
-			s.exe.PubEvent(event.Error, monitors.NonCriticalError(err).Error())
+			s.exe.PubEvent(event.Error, monitor.NonCriticalError(err).Error())
 
 		case <-time.After(time.Second * 5):
 			log.Debug(".")
@@ -197,13 +197,13 @@ loop:
 	return s.processMonitoringResults(mon)
 }
 
-func (s *Sensor) processMonitoringResults(mon monitors.CompositeMonitor) error {
+func (s *Sensor) processMonitoringResults(mon monitor.CompositeMonitor) error {
 	// A bit of code duplication to avoid starting a goroutine
 	// for error event handling - keeping the control flow
 	// "single-threaded" keeps reasoning about the logic.
 	for _, err := range mon.DrainErrors() {
 		log.WithError(err).Warn("sensor: non-critical monitor error condition (drained)")
-		s.exe.PubEvent(event.Error, monitors.NonCriticalError(err).Error())
+		s.exe.PubEvent(event.Error, monitor.NonCriticalError(err).Error())
 	}
 
 	log.Info("sensor: composite monitor is done, checking status...")
@@ -221,7 +221,7 @@ func (s *Sensor) processMonitoringResults(mon monitors.CompositeMonitor) error {
 		report.FanReport,
 		report.PtReport,
 	); err != nil {
-		log.WithError(err).Error("sensor: artifacts.ProcessReports() failed")
+		log.WithError(err).Error("sensor: artifact.ProcessReports() failed")
 		return fmt.Errorf("saving reports failed: %w", err)
 	}
 	return nil // Clean exit

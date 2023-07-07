@@ -24,6 +24,7 @@ var CLI = &cli.Command{
 	Flags: []cli.Flag{
 		cflag(FlagImage),
 		cflag(FlagUseLastImageMetadata),
+		cflag(FlagTag),
 	},
 	Action: func(ctx *cli.Context) error {
 		if ctx.Args().Len() < 1 {
@@ -55,14 +56,16 @@ var CLI = &cli.Command{
 }
 
 type CommandParams struct {
-	FirstImage           string `json:"first_image"`
-	LastImage            string `json:"last_image"`
-	UseLastImageMetadata bool   `json:"use_last_image_metadata"`
+	FirstImage           string   `json:"first_image"`
+	LastImage            string   `json:"last_image"`
+	UseLastImageMetadata bool     `json:"use_last_image_metadata"`
+	OutputTags           []string `json:"output_tags"`
 }
 
 func CommandFlagValues(xc *app.ExecutionContext, ctx *cli.Context) (*CommandParams, error) {
 	values := &CommandParams{
 		UseLastImageMetadata: ctx.Bool(FlagUseLastImageMetadata),
+		OutputTags:           ctx.StringSlice(FlagTag),
 	}
 
 	images := ctx.StringSlice(FlagImage)

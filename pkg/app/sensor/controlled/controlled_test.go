@@ -7,11 +7,11 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/artifacts"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/artifact"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/controlled"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors/fanotify"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitors/ptrace"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/fanotify"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/ptrace"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/test/stub/sensor/execution"
@@ -23,7 +23,7 @@ func newStubMonitorFunc(
 	ctx context.Context,
 	fanMon fanotify.Monitor,
 	ptMon ptrace.Monitor,
-) monitors.NewCompositeMonitorFunc {
+) monitor.NewCompositeMonitorFunc {
 	if fanMon == nil {
 		fanMon = stubmonitor.NewFanMonitor(ctx)
 	}
@@ -39,8 +39,8 @@ func newStubMonitorFunc(
 		mountPoint string,
 		origPaths map[string]struct{},
 		signalCh <-chan os.Signal,
-	) (monitors.CompositeMonitor, error) {
-		return monitors.Compose(
+	) (monitor.CompositeMonitor, error) {
+		return monitor.Compose(
 			cmd,
 			fanMon,
 			ptMon,
@@ -51,7 +51,7 @@ func newStubMonitorFunc(
 
 type artifactorStub struct{}
 
-var _ artifacts.Artifactor = &artifactorStub{}
+var _ artifact.Processor = &artifactorStub{}
 
 func (a *artifactorStub) ArtifactsDir() string {
 	return ""

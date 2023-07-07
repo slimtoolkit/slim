@@ -27,7 +27,7 @@ var (
 const (
 	volumeMountPat       = "%s:/data"
 	volumeBasePath       = "/data"
-	emptyImageName       = "docker-slim-empty-image"
+	emptyImageName       = "docker-slim-empty-image:latest"
 	emptyImageDockerfile = "FROM scratch\nCMD\n"
 )
 
@@ -190,6 +190,7 @@ func ListImages(dclient *dockerapi.Client, imageNameFilter string) (map[string]B
 }
 
 func BuildEmptyImage(dclient *dockerapi.Client) error {
+	//TODO: use the 'internal' build engine that doesn't need Docker
 	var err error
 	if dclient == nil {
 		unixSocketAddr := dockerclient.GetUnixSocketAddr()
@@ -232,7 +233,7 @@ func BuildEmptyImage(dclient *dockerapi.Client) error {
 		ForceRmTmpContainer: true,
 	}
 	if err := dclient.BuildImage(buildOptions); err != nil {
-		log.Errorf("dockerutil.BuildEmptyImage: dockerapi.BuildImage() error = %v", err)
+		log.Errorf("dockerutil.BuildEmptyImage: dockerapi.BuildImage() error = %v / output: %s", err, output.String())
 		return err
 	}
 

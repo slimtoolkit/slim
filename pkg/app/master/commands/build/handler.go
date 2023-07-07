@@ -191,7 +191,7 @@ func OnCommand(
 
 		xc.Out.Error("docker.connect.error", exitMsg)
 
-		exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
+		exitCode := commands.ECTCommon | commands.ECCNoDockerConnectInfo
 		xc.Out.State("exited",
 			ovars{
 				"exit.code": exitCode,
@@ -577,7 +577,7 @@ func OnCommand(
 				"value":  overrides.Network,
 			})
 
-		exitCode := commands.ECTCommon | commands.ECBadNetworkName
+		exitCode := commands.ECTCommon | commands.ECCBadNetworkName
 		xc.Out.State("exited",
 			ovars{
 				"exit.code": exitCode,
@@ -595,7 +595,7 @@ func OnCommand(
 				"value":  overrides.Network,
 			})
 
-		exitCode := commands.ECTCommon | commands.ECBadNetworkName
+		exitCode := commands.ECTCommon | commands.ECCBadNetworkName
 		xc.Out.State("exited",
 			ovars{
 				"exit.code": exitCode,

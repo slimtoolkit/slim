@@ -197,6 +197,17 @@ type ConvertCommand struct {
 	Command
 }
 
+// Output Version for 'merge'
+const OVMergeCommand = "1.0"
+
+// MergeCommand is the 'merge' command report data
+type MergeCommand struct {
+	Command
+	FirstImage           string `json:"first_image"`
+	LastImage            string `json:"last_image"`
+	UseLastImageMetadata bool   `json:"use_last_image_metadata"`
+}
+
 // Output Version for 'edit'
 const OVEditCommand = "1.0"
 
@@ -341,6 +352,21 @@ func NewConvertCommand(reportLocation string, containerized bool) *ConvertComman
 			reportLocation: reportLocation,
 			Version:        OVConvertCommand, //convert command 'results' version (report and artifacts)
 			Type:           command.Convert,
+			State:          command.StateUnknown,
+		},
+	}
+
+	cmd.Command.init(containerized)
+	return cmd
+}
+
+// NewMergeCommand creates a new 'edit' command report
+func NewMergeCommand(reportLocation string, containerized bool) *MergeCommand {
+	cmd := &MergeCommand{
+		Command: Command{
+			reportLocation: reportLocation,
+			Version:        OVMergeCommand, //edit command 'results' version (report and artifacts)
+			Type:           command.Merge,
 			State:          command.StateUnknown,
 		},
 	}

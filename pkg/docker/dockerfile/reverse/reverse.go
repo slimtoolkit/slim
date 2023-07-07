@@ -827,7 +827,7 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 		} else if strings.Index(paramParts[3], `\`) == 0 {
 			// retries is printed as a C-escape
 			if len(paramParts[3]) != 2 {
-				err = errors.New(fmt.Sprintf("expected retries (%s) to be an escape sequence", paramParts[3]))
+				err = fmt.Errorf("expected retries (%s) to be an escape sequence", paramParts[3])
 			} else {
 				escapeCodes := map[byte]int64{
 					byte('a'): 7,
@@ -840,7 +840,7 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 				}
 				var ok bool
 				if retries, ok = escapeCodes[(paramParts[3])[1]]; !ok {
-					err = errors.New(fmt.Sprintf("got an invalid escape sequence: %s", paramParts[3]))
+					err = fmt.Errorf("got an invalid escape sequence: %s", paramParts[3])
 				}
 			}
 		} else {

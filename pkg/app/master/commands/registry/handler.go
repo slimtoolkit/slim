@@ -56,7 +56,7 @@ func OnPullCommand(
 				"message": exitMsg,
 			})
 
-		exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
+		exitCode := commands.ECTCommon | commands.ECCNoDockerConnectInfo
 		xc.Out.State("exited",
 			ovars{
 				"exit.code": exitCode,
@@ -132,7 +132,7 @@ func OnPushCommand(
 				"message": exitMsg,
 			})
 
-		exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
+		exitCode := commands.ECTCommon | commands.ECCNoDockerConnectInfo
 		xc.Out.State("exited",
 			ovars{
 				"exit.code": exitCode,
@@ -190,7 +190,7 @@ func OnCopyCommand(
 				"message": exitMsg,
 			})
 
-		exitCode := commands.ECTCommon | commands.ECNoDockerConnectInfo
+		exitCode := commands.ECTCommon | commands.ECCNoDockerConnectInfo
 		xc.Out.State("exited",
 			ovars{
 				"exit.code": exitCode,
