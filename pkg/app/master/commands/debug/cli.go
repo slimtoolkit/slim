@@ -16,7 +16,8 @@ const (
 	Usage = "Debug the target container image from a debug container"
 	Alias = "dbg"
 
-	FlagDebugImage = "debug-image"
+	FlagDebugImage      = "debug-image"
+	FlagDebugImageUsage = "Debug image to use for the debug side-car container"
 
 	DefaultDebugImage = "nicolaka/netshoot"
 )
@@ -37,10 +38,12 @@ var CLI = &cli.Command{
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Flags: []cli.Flag{
+		commands.Cflag(commands.FlagTarget),
 		&cli.StringFlag{
-			Name:        FlagDebugImage,
-			DefaultText: DefaultDebugImage,
-			Required:    false,
+			Name:    FlagDebugImage,
+			Value:   DefaultDebugImage,
+			Usage:   FlagDebugImageUsage,
+			EnvVars: []string{"DSLIM_DBG_IMAGE"},
 		},
 	},
 	Action: func(ctx *cli.Context) error {

@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"os"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 

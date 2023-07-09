@@ -70,6 +70,16 @@ func OnCommand(
 		version.Print(xc, Name, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
+	targetContainerInfo, err := client.InspectContainer(commandParams.TargetRef)
+	if err != nil {
+		xc.Out.Error("target.container.inspect", err.Error())
+		xc.Out.State("exited",
+			ovars{
+				"exit.code": -1,
+			})
+		xc.Exit(-1)
+	}
+
 	imageInspector, err := image.NewInspector(client, commandParams.DebugContainerImage)
 	options := container.ExecutionOptions{
 		Cmd:      commandParams.DebugContainerImageCmd,
@@ -92,7 +102,11 @@ func OnCommand(
 
 	// attach network, IPC & PIDs, essentially this is run --network container:golang_service --pid container:golang_service --ipc container:golang_service
 	mode := fmt.Sprintf("container:%s", commandParams.TargetRef)
-	exe.IpcMode = mode
+
+	if targetContainerInfo.HostConfig.IpcMode == "shareable" {
+		exe.IpcMode = mode
+	}
+
 	exe.NetworkMode = mode
 	exe.PidMode = mode
 

@@ -731,6 +731,27 @@ You can use the `--http-probe-exec` and `--http-probe-exec-file` options to run 
 
 ## DEBUGGING MINIFIED CONTAINERS
 
+### Debugging Using the `debug` Command
+
+The current version of the `debug` command is pretty basic and it lacks a number of useful capabilities. It also require that the target container you are debugging has ipc mode set to `sharable`. By default, Docker containers are started with the IPC namespace being "non-sharable". When you start your container using the `docker run` command make sure to have the `--ipc 'shareable'` flag. 
+
+By default the `debug` command will provide you with an interactive terminal when it attaches the debugger side-car image to the debugged target container. Future versions will allow you to have different interaction modes with the target.
+
+#### Steps to debug your container (nginx example) 
+
+1. Start the target container you want to debug (it doesn't need to be minified)
+2. Run the debug command
+
+```bash
+>> docker run -it --rm -p 80:80 --ipc 'shareable' --name mycontainer nginx
+...
+
+>> slim debug mycontainer
+...
+
+```
+Now you should have an interactive shell into the debug container started by `slim` and you can type your regular shell commands to explore the debugger container and to explore the debugged target container.
+
 ### Debugging the "Hard Way"
 
 You can create dedicated debugging side-car container images loaded with the tools you need for debugging target containers. This allows you to keep your production container images small. The debugging side-car containers attach to the running target containers.
@@ -758,26 +779,6 @@ drwxr-xr-x    3 root     root        4.0K Sep  2 15:51 node_modules
 
 Some of the useful debugging commands include `cat /proc/<TARGET_PID>/cmdline`, `ls -l /proc/<TARGET_PID>/cwd`, `cat /proc/1/environ`, `cat /proc/<TARGET_PID>/limits`, `cat /proc/<TARGET_PID>/status` and `ls -l /proc/<TARGET_PID>/fd`.
 
-### Debugging Using the `debug` Command
-
-The current version of the `debug` command is pretty basic and it lacks a number of useful capabilities. It also require that the target container you are debugging has ipc mode set to `sharable`. By default, Docker containers are started with the IPC namespace being "non-sharable". When you start your container using the `docker run` command make sure to have the `--ipc 'shareable'` flag. 
-
-By default the `debug` command will provide you with an interactive terminal when it attaches the debugger side-car image to the debugged target container. Future versions will allow you to have different interaction modes with the target.
-
-#### Steps to debug your container (nginx example) 
-
-1. Start the target container you want to debug (it doesn't need to be minified)
-2. Run the debug command
-
-```bash
->> docker run -it --rm -p 80:80 --ipc 'shareable' --name mycontainer nginx
-...
-
->> slim debug mycontainer
-...
-
-```
-Now you should have an interactive shell into the debug container started by `slim` and you can type your regular shell commands to explore the debugger container and to explore the debugged target container.
 
 ## MINIFYING COMMAND LINE TOOLS
 
