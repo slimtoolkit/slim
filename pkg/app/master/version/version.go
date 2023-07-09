@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"time"
 
@@ -196,7 +195,7 @@ func Check(inContainer, isDSImage bool) *CheckVersionInfo {
 	resp, err := client.Do(req)
 	if resp != nil && resp.Body != nil {
 		defer func() {
-			io.Copy(ioutil.Discard, resp.Body)
+			io.Copy(io.Discard, resp.Body)
 			resp.Body.Close()
 		}()
 	}

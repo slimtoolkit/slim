@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strings"
@@ -704,7 +703,7 @@ func ReplaceFileData(target string, replace []ReplaceInfo, preserveTimes bool) e
 		ssi = SysStatInfo(rawSysStat)
 	}
 
-	raw, err := ioutil.ReadFile(target)
+	raw, err := os.ReadFile(target)
 	if err != nil {
 		return err
 	}
@@ -726,7 +725,7 @@ func ReplaceFileData(target string, replace []ReplaceInfo, preserveTimes bool) e
 	}
 
 	if replaced {
-		err = ioutil.WriteFile(target, raw, 0644)
+		err = os.WriteFile(target, raw, 0644)
 		if err != nil {
 			return err
 		}
@@ -759,7 +758,7 @@ func UpdateFileData(target string, updater DataUpdaterFn, preserveTimes bool) er
 		ssi = SysStatInfo(rawSysStat)
 	}
 
-	raw, err := ioutil.ReadFile(target)
+	raw, err := os.ReadFile(target)
 	if err != nil {
 		return err
 	}
@@ -769,7 +768,7 @@ func UpdateFileData(target string, updater DataUpdaterFn, preserveTimes bool) er
 		return err
 	}
 
-	err = ioutil.WriteFile(target, raw, 0644)
+	err = os.WriteFile(target, raw, 0644)
 	if err != nil {
 		return err
 	}
@@ -1526,7 +1525,7 @@ func LoadStructFromFile(filePath string, out interface{}) error {
 		return err
 	}
 
-	raw, err := ioutil.ReadFile(filePath)
+	raw, err := os.ReadFile(filePath)
 	if err != nil {
 		return err
 	}

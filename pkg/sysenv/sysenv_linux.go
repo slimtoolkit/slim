@@ -3,7 +3,6 @@ package sysenv
 import (
 	"fmt"
 	"golang.org/x/sys/unix"
-	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
@@ -28,7 +27,7 @@ func HasDockerEnvPath() bool {
 }
 
 func HasContainerCgroups() bool {
-	if bdata, err := ioutil.ReadFile(procSelfCgroup); err == nil {
+	if bdata, err := os.ReadFile(procSelfCgroup); err == nil {
 		return strings.Contains(string(bdata), ":/docker/")
 	}
 
@@ -246,7 +245,7 @@ func sysSeccompMode() SeccompModeName {
 }
 
 func fileData(fname string) (string, error) {
-	bdata, err := ioutil.ReadFile(fname)
+	bdata, err := os.ReadFile(fname)
 	if err != nil {
 		return "", err
 	}

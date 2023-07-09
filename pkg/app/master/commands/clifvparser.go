@@ -6,7 +6,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -263,7 +262,7 @@ func ParseTokenSetFile(filePath string) (map[string]struct{}, error) {
 		return tokens, err
 	}
 
-	fileData, err := ioutil.ReadFile(fullPath) //[]byte
+	fileData, err := os.ReadFile(fullPath) //[]byte
 	if err != nil {
 		return tokens, err
 	}
@@ -492,7 +491,7 @@ func ParsePathsFile(filePath string) (map[string]*fsutil.AccessInfo, error) {
 		return paths, err
 	}
 
-	fileData, err := ioutil.ReadFile(fullPath) //[]byte
+	fileData, err := os.ReadFile(fullPath) //[]byte
 	if err != nil {
 		return paths, err
 	}
@@ -550,7 +549,7 @@ func ParsePathsCreportFile(filePath string) (map[string]*fsutil.AccessInfo, erro
 		return paths, err
 	}
 
-	fileData, err := ioutil.ReadFile(fullPath) //[]byte
+	fileData, err := os.ReadFile(fullPath) //[]byte
 	if err != nil {
 		return paths, err
 	}
@@ -782,7 +781,7 @@ func ParseHTTPProbeExecFile(filePath string) ([]string, error) {
 		return appCalls, err
 	}
 
-	fileData, err := ioutil.ReadFile(fullPath)
+	fileData, err := os.ReadFile(fullPath)
 	if err != nil {
 		return appCalls, err
 	}
@@ -820,7 +819,7 @@ func ParseLinesWithCommentsFile(filePath string) ([]string, error) {
 		return output, err
 	}
 
-	fileData, err := ioutil.ReadFile(fullPath)
+	fileData, err := os.ReadFile(fullPath)
 	if err != nil {
 		return output, err
 	}

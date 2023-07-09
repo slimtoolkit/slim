@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
-	"io/ioutil"
+	"os"
 	"net/http"
 	"net/url"
 	"strings"
@@ -113,7 +113,7 @@ func loadAPISpecFromEndpoint(client *http.Client, endpoint string) (*openapi3.T,
 	}
 
 	if res.Body != nil {
-		rdata, err := ioutil.ReadAll(res.Body)
+		rdata, err := io.ReadAll(res.Body)
 		if err != nil {
 			log.Debugf("http.CustomProbe.loadAPISpecFromEndpoint.response.read - error=%v", err)
 			return nil, err
@@ -127,7 +127,7 @@ func loadAPISpecFromEndpoint(client *http.Client, endpoint string) (*openapi3.T,
 }
 
 func loadAPISpecFromFile(name string) (*openapi3.T, error) {
-	rdata, err := ioutil.ReadFile(name)
+	rdata, err := os.ReadFile(name)
 	if err != nil {
 		log.Debugf("http.CustomProbe.loadAPISpecFromFile.ReadFile - error=%v", err)
 		return nil, err
@@ -337,7 +337,7 @@ func (p *CustomProbe) apiSpecEndpointCall(client *http.Client, endpoint, method 
 
 		if res != nil {
 			if res.Body != nil {
-				io.Copy(ioutil.Discard, res.Body)
+				io.Copy(io.Discard, res.Body)
 			}
 
 			defer res.Body.Close()

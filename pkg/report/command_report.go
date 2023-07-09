@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path/filepath"
 
@@ -496,12 +495,12 @@ func (p *Command) saveInfo(info interface{}) bool {
 		err := encoder.Encode(info)
 		errutil.FailOn(err)
 
-		err = ioutil.WriteFile(p.reportLocation, reportData.Bytes(), 0644)
+		err = os.WriteFile(p.reportLocation, reportData.Bytes(), 0644)
 		if err != nil && os.IsPermission(err) {
 			if pinfo, tmpErr := os.Stat(tmpPath); tmpErr == nil && pinfo.IsDir() {
 				p.reportLocation = filepath.Join(tmpPath, DefaultFilename)
 				log.Debugf("report.saveInfo - overriding command report file path to %v", p.reportLocation)
-				err = ioutil.WriteFile(p.reportLocation, reportData.Bytes(), 0644)
+				err = os.WriteFile(p.reportLocation, reportData.Bytes(), 0644)
 			} else {
 				fmt.Printf("report.Command.saveInfo: not saving report file - '%s'\n", p.reportLocation)
 				return false

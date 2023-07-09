@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
@@ -159,5 +159,5 @@ func GenerateFromInfo(
 		dfData.WriteByte('\n')
 	}
 
-	return ioutil.WriteFile(dockerfileLocation, dfData.Bytes(), 0644)
+	return os.WriteFile(dockerfileLocation, dfData.Bytes(), 0644)
 }
