@@ -555,6 +555,8 @@ The `--use-local-mounts` option is used to choose how the Slim sensor is added t
 - `--target` - you can specify the target docker container or its name/ID (not docker image name/ID) using the `--target`. Note that the target container must be running. You can use the `docker run` command to start the target container.
 - `--help` show help (default: false)
 
+See the "Debugging Using the `debug` Command" section for more information about this command.
+
 ### `REGISTRY` COMMAND OPTIONS
 
 #### `PULL` SUBCOMMAND OPTIONS
@@ -758,7 +760,9 @@ Some of the useful debugging commands include `cat /proc/<TARGET_PID>/cmdline`, 
 
 ### Debugging Using the `debug` Command
 
-The `debug` command is pretty basic and it does require the target container you are debugging has ipc sharable namespace. By default, in Docker containers are started with the IPC namespace being "non-sharable". A simple note is to start the target container using the docker run with the `--ipc 'shareable'` flag. The main mode for the debug command is to interact with the debugged target image through the `slim debug` command through terminal/interface.
+The current version of the `debug` command is pretty basic and it lacks a number of useful capabilities. It also require that the target container you are debugging has ipc mode set to `sharable`. By default, Docker containers are started with the IPC namespace being "non-sharable". When you start your container using the `docker run` command make sure to have the `--ipc 'shareable'` flag. 
+
+By default the `debug` command will provide you with an interactive terminal when it attaches the debugger side-car image to the debugged target container. Future versions will allow you to have different interaction modes with the target.
 
 #### Steps to debug your container (nginx example) 
 
