@@ -37,10 +37,11 @@ func OnCommand(
 	xc.Out.State("started")
 	xc.Out.Info("params",
 		ovars{
-			"target":          commandParams.TargetRef,
-			"debug-image":     commandParams.DebugContainerImage,
-			"debug-image-cmd": commandParams.DebugContainerImageCmd,
-			"attach-tty":      commandParams.AttachTty,
+			"target":      commandParams.TargetRef,
+			"debug-image": commandParams.DebugContainerImage,
+			"entrypoint":  commandParams.Entrypoint,
+			"cmd":         commandParams.Cmd,
+			"terminal":    commandParams.DoTerminal,
 		})
 
 	client, err := dockerclient.New(gparams.ClientConfig)
@@ -82,8 +83,9 @@ func OnCommand(
 
 	imageInspector, err := image.NewInspector(client, commandParams.DebugContainerImage)
 	options := container.ExecutionOptions{
-		Cmd:      commandParams.DebugContainerImageCmd,
-		Terminal: commandParams.AttachTty,
+		Entrypoint: commandParams.Entrypoint,
+		Cmd:        commandParams.Cmd,
+		Terminal:   commandParams.DoTerminal,
 	}
 	if imageInspector.NoImage() {
 		err := imageInspector.Pull(true, "", "", "")
@@ -123,7 +125,7 @@ func OnCommand(
 		errutil.WarnOn(err)
 	}()
 
-	if !commandParams.AttachTty {
+	if !commandParams.DoTerminal {
 		exe.ShowContainerLogs()
 	}
 
