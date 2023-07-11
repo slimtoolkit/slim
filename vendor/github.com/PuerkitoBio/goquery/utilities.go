@@ -2,6 +2,7 @@ package goquery
 
 import (
 	"bytes"
+	"io"
 
 	"golang.org/x/net/html"
 )
@@ -36,32 +37,48 @@ func NodeName(s *Selection) string {
 	if s.Length() == 0 {
 		return ""
 	}
-	switch n := s.Get(0); n.Type {
+	return nodeName(s.Get(0))
+}
+
+// nodeName returns the node name of the given html node.
+// See NodeName for additional details on behaviour.
+func nodeName(node *html.Node) string {
+	if node == nil {
+		return ""
+	}
+
+	switch node.Type {
 	case html.ElementNode, html.DoctypeNode:
-		return n.Data
+		return node.Data
 	default:
-		if n.Type >= 0 && int(n.Type) < len(nodeNames) {
-			return nodeNames[n.Type]
+		if int(node.Type) < len(nodeNames) {
+			return nodeNames[node.Type]
 		}
 		return ""
 	}
+}
+
+// Render renders the HTML of the first item in the selection and writes it to
+// the writer. It behaves the same as OuterHtml but writes to w instead of
+// returning the string.
+func Render(w io.Writer, s *Selection) error {
+	if s.Length() == 0 {
+		return nil
+	}
+	n := s.Get(0)
+	return html.Render(w, n)
 }
 
 // OuterHtml returns the outer HTML rendering of the first item in
 // the selection - that is, the HTML including the first element's
 // tag and attributes.
 //
-// Unlike InnerHtml, this is a function and not a method on the Selection,
+// Unlike Html, this is a function and not a method on the Selection,
 // because this is not a jQuery method (in javascript-land, this is
 // a property provided by the DOM).
 func OuterHtml(s *Selection) (string, error) {
 	var buf bytes.Buffer
-
-	if s.Length() == 0 {
-		return "", nil
-	}
-	n := s.Get(0)
-	if err := html.Render(&buf, n); err != nil {
+	if err := Render(&buf, s); err != nil {
 		return "", err
 	}
 	return buf.String(), nil

@@ -2,9 +2,14 @@
 *.o
 *.so
 *.sublime-*
+*.zip
 .DS_Store
 .idea/
+.tags*
 _cgo_*
+_gofuzz/crashers/
+_gofuzz/suppressions/
 _obj
 _test
 coverage.txt
+robots.txt-check/robots.txt-check

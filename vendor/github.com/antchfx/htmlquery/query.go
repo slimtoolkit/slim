@@ -5,11 +5,11 @@ package htmlquery
 
 import (
 	"bufio"
-	"bytes"
 	"fmt"
 	"io"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/antchfx/xpath"
 	"golang.org/x/net/html"
@@ -55,10 +55,10 @@ func QueryAll(top *html.Node, expr string) ([]*html.Node, error) {
 	return nodes, nil
 }
 
-// Query searches the html.Node that matches by the specified XPath expr,
-// and return the first element of matched html.Node.
+// Query runs the given XPath expression against the given html.Node and
+// returns the first matching html.Node, or nil if no matches are found.
 //
-// Return an error if the expression `expr` cannot be parsed.
+// Returns an error if the expression `expr` cannot be parsed.
 func Query(top *html.Node, expr string) (*html.Node, error) {
 	exp, err := getQuery(expr)
 	if err != nil {
@@ -83,11 +83,6 @@ func QuerySelectorAll(top *html.Node, selector *xpath.Expr) []*html.Node {
 	for t.MoveNext() {
 		nav := t.Current().(*NodeNavigator)
 		n := getCurrentNode(nav)
-		// avoid adding duplicate nodes.
-		if len(elems) > 0 && (elems[0] == n || (nav.NodeType() == xpath.AttributeNode &&
-			nav.LocalName() == elems[0].Data && nav.Value() == InnerText(elems[0]))) {
-			continue
-		}
 		elems = append(elems, n)
 	}
 	return elems
@@ -143,23 +138,23 @@ func Parse(r io.Reader) (*html.Node, error) {
 
 // InnerText returns the text between the start and end tags of the object.
 func InnerText(n *html.Node) string {
-	var output func(*bytes.Buffer, *html.Node)
-	output = func(buf *bytes.Buffer, n *html.Node) {
+	var output func(*strings.Builder, *html.Node)
+	output = func(b *strings.Builder, n *html.Node) {
 		switch n.Type {
 		case html.TextNode:
-			buf.WriteString(n.Data)
+			b.WriteString(n.Data)
 			return
 		case html.CommentNode:
 			return
 		}
 		for child := n.FirstChild; child != nil; child = child.NextSibling {
-			output(buf, child)
+			output(b, child)
 		}
 	}
 
-	var buf bytes.Buffer
-	output(&buf, n)
-	return buf.String()
+	var b strings.Builder
+	output(&b, n)
+	return b.String()
 }
 
 // SelectAttr returns the attribute value with the specified name.
@@ -179,17 +174,30 @@ func SelectAttr(n *html.Node, name string) (val string) {
 	return
 }
 
-// OutputHTML returns the text including tags name.
-func OutputHTML(n *html.Node, self bool) string {
-	var buf bytes.Buffer
-	if self {
-		html.Render(&buf, n)
-	} else {
-		for n := n.FirstChild; n != nil; n = n.NextSibling {
-			html.Render(&buf, n)
+// ExistsAttr returns whether attribute with specified name exists.
+func ExistsAttr(n *html.Node, name string) bool {
+	if n == nil {
+		return false
+	}
+	for _, attr := range n.Attr {
+		if attr.Key == name {
+			return true
 		}
 	}
-	return buf.String()
+	return false
+}
+
+// OutputHTML returns the text including tags name.
+func OutputHTML(n *html.Node, self bool) string {
+	var b strings.Builder
+	if self {
+		html.Render(&b, n)
+	} else {
+		for n := n.FirstChild; n != nil; n = n.NextSibling {
+			html.Render(&b, n)
+		}
+	}
+	return b.String()
 }
 
 type NodeNavigator struct {

@@ -57,6 +57,7 @@ Supported Features
 
 - `(a, b, c)` : Evaluates each of its operands and concatenates the resulting sequences, in order, into a single result sequence
 
+- `(a/b)` : Selects all matches nodes as grouping set.
 
 #### Node Axes 
 
@@ -138,6 +139,7 @@ Supported Features
 `lang()`| ✗ |
 `last()`| ✓ |
 `local-name()`| ✓ |
+`matches()`| ✓ |
 `name()`| ✓ |
 `namespace-uri()`| ✓ |
 `normalize-space()`| ✓ |
@@ -158,15 +160,3 @@ Supported Features
 `translate()`| ✓ |
 `true()`| ✓ |
 `unparsed-entity-url()` | ✗ |
-
-Changelogs
-===
-
-2019-03-19 
-- optimize XPath `|` operation performance. [#33](https://github.com/antchfx/xpath/issues/33). Tips: suggest split into multiple subquery if you have a lot of `|` operations.
-
-2019-01-29
--  improvement `normalize-space` function. [#32](https://github.com/antchfx/xpath/issues/32)
-
-2018-12-07
--  supports XPath 2.0 Sequence expressions. [#30](https://github.com/antchfx/xpath/pull/30) by [@minherz](https://github.com/minherz).

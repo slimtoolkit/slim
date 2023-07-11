@@ -208,7 +208,7 @@ func (g *Group) findRule(path string) (ret *rule) {
 				// From Google's spec:
 				// The order of precedence for rules with wildcards is undefined.
 				if l := len(r.pattern.String()); l > prefixLen {
-					prefixLen = len(r.pattern.String())
+					prefixLen = l
 					ret = r
 				}
 			}

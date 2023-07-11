@@ -7,4 +7,4 @@ in [ICU](http://icu-project.org/)'s implementation.
 
 ## Documentation and Usage
 
-See [pkgdoc](http://go.pkgdoc.org/github.com/saintfish/chardet)
+See [pkgdoc](https://pkg.go.dev/github.com/saintfish/chardet)

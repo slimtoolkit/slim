@@ -106,25 +106,32 @@ type Collector struct {
 	// use c.SetRedirectHandler to set this value
 	redirectHandler func(req *http.Request, via []*http.Request) error
 	// CheckHead performs a HEAD request before every GET to pre-validate the response
-	CheckHead         bool
-	store             storage.Storage
-	debugger          debug.Debugger
-	robotsMap         map[string]*robotstxt.RobotsData
-	htmlCallbacks     []*htmlCallbackContainer
-	xmlCallbacks      []*xmlCallbackContainer
-	requestCallbacks  []RequestCallback
-	responseCallbacks []ResponseCallback
-	errorCallbacks    []ErrorCallback
-	scrapedCallbacks  []ScrapedCallback
-	requestCount      uint32
-	responseCount     uint32
-	backend           *httpBackend
-	wg                *sync.WaitGroup
-	lock              *sync.RWMutex
+	CheckHead bool
+	// TraceHTTP enables capturing and reporting request performance for crawler tuning.
+	// When set to true, the Response.Trace will be filled in with an HTTPTrace object.
+	TraceHTTP                bool
+	store                    storage.Storage
+	debugger                 debug.Debugger
+	robotsMap                map[string]*robotstxt.RobotsData
+	htmlCallbacks            []*htmlCallbackContainer
+	xmlCallbacks             []*xmlCallbackContainer
+	requestCallbacks         []RequestCallback
+	responseCallbacks        []ResponseCallback
+	responseHeadersCallbacks []ResponseHeadersCallback
+	errorCallbacks           []ErrorCallback
+	scrapedCallbacks         []ScrapedCallback
+	requestCount             uint32
+	responseCount            uint32
+	backend                  *httpBackend
+	wg                       *sync.WaitGroup
+	lock                     *sync.RWMutex
 }
 
 // RequestCallback is a type alias for OnRequest callback functions
 type RequestCallback func(*Request)
+
+// ResponseHeadersCallback is a type alias for OnResponseHeaders callback functions
+type ResponseHeadersCallback func(*Response)
 
 // ResponseCallback is a type alias for OnResponse callback functions
 type ResponseCallback func(*Response)
@@ -193,6 +200,10 @@ var (
 	ErrNoPattern = errors.New("No pattern defined in LimitRule")
 	// ErrEmptyProxyURL is the error type for empty Proxy URL list
 	ErrEmptyProxyURL = errors.New("Proxy URL list is empty")
+	// ErrAbortedAfterHeaders is the error returned when OnResponseHeaders aborts the transfer.
+	ErrAbortedAfterHeaders = errors.New("Aborted after receiving response headers")
+	// ErrQueueFull is the error returned when the queue is full
+	ErrQueueFull = errors.New("Queue MaxSize reached")
 )
 
 var envMap = map[string]func(*Collector, string){
@@ -235,6 +246,9 @@ var envMap = map[string]func(*Collector, string){
 	},
 	"PARSE_HTTP_ERROR_RESPONSE": func(c *Collector, val string) {
 		c.ParseHTTPErrorResponse = isYesString(val)
+	},
+	"TRACE_HTTP": func(c *Collector, val string) {
+		c.TraceHTTP = isYesString(val)
 	},
 	"USER_AGENT": func(c *Collector, val string) {
 		c.UserAgent = val
@@ -335,6 +349,14 @@ func IgnoreRobotsTxt() CollectorOption {
 	}
 }
 
+// TraceHTTP instructs the Collector to collect and report request trace data
+// on the Response.Trace.
+func TraceHTTP() CollectorOption {
+	return func(c *Collector) {
+		c.TraceHTTP = true
+	}
+}
+
 // ID sets the unique identifier of the Collector.
 func ID(id uint32) CollectorOption {
 	return func(c *Collector) {
@@ -343,9 +365,9 @@ func ID(id uint32) CollectorOption {
 }
 
 // Async turns on asynchronous network requests.
-func Async(a bool) CollectorOption {
+func Async(a ...bool) CollectorOption {
 	return func(c *Collector) {
-		c.Async = a
+		c.Async = true
 	}
 }
 
@@ -362,6 +384,13 @@ func Debugger(d debug.Debugger) CollectorOption {
 	return func(c *Collector) {
 		d.Init()
 		c.debugger = d
+	}
+}
+
+// CheckHead performs a HEAD request before every GET to pre-validate the response
+func CheckHead() CollectorOption {
+	return func(c *Collector) {
+		c.CheckHead = true
 	}
 }
 
@@ -382,6 +411,7 @@ func (c *Collector) Init() {
 	c.robotsMap = make(map[string]*robotstxt.RobotsData)
 	c.IgnoreRobotsTxt = true
 	c.ID = atomic.AddUint32(&collectorCounter, 1)
+	c.TraceHTTP = false
 }
 
 // Appengine will replace the Collector's backend http.Client
@@ -418,10 +448,13 @@ func (c *Collector) Visit(URL string) error {
 
 // HasVisited checks if the provided URL has been visited
 func (c *Collector) HasVisited(URL string) (bool, error) {
-	h := fnv.New64a()
-	h.Write([]byte(URL))
+	return c.checkHasVisited(URL, nil)
+}
 
-	return c.store.IsVisited(h.Sum64())
+// HasPosted checks if the provided URL and requestData has been visited
+// This method is useful more likely to prevent re-visit same URL and POST body
+func (c *Collector) HasPosted(URL string, requestData map[string]string) (bool, error) {
+	return c.checkHasVisited(URL, requestData)
 }
 
 // Head starts a collector job by creating a HEAD request.
@@ -503,21 +536,14 @@ func (c *Collector) UnmarshalRequest(r []byte) (*Request, error) {
 }
 
 func (c *Collector) scrape(u, method string, depth int, requestData io.Reader, ctx *Context, hdr http.Header, checkRevisit bool) error {
-	if err := c.requestCheck(u, method, depth, checkRevisit); err != nil {
-		return err
-	}
 	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return err
 	}
-	if !c.isDomainAllowed(parsedURL.Hostname()) {
-		return ErrForbiddenDomain
+	if err := c.requestCheck(u, parsedURL, method, requestData, depth, checkRevisit); err != nil {
+		return err
 	}
-	if method != "HEAD" && !c.IgnoreRobotsTxt {
-		if err = c.checkRobots(parsedURL); err != nil {
-			return err
-		}
-	}
+
 	if hdr == nil {
 		hdr = http.Header{"User-Agent": []string{c.UserAgent}}
 	}
@@ -613,8 +639,18 @@ func (c *Collector) fetch(u, method string, depth int, requestData io.Reader, ct
 		req.Header.Set("Accept", "*/*")
 	}
 
+	var hTrace *HTTPTrace
+	if c.TraceHTTP {
+		hTrace = &HTTPTrace{}
+		req = hTrace.WithTrace(req)
+	}
+	checkHeadersFunc := func(statusCode int, headers http.Header) bool {
+		c.handleOnResponseHeaders(&Response{Ctx: ctx, Request: request, StatusCode: statusCode, Headers: &headers})
+		return !request.abort
+	}
+
 	origURL := req.URL
-	response, err := c.backend.Cache(req, c.MaxBodySize, c.CacheDir)
+	response, err := c.backend.Cache(req, c.MaxBodySize, checkHeadersFunc, c.CacheDir)
 	if proxyURL, ok := req.Context().Value(ProxyURLKey).(string); ok {
 		request.ProxyURL = proxyURL
 	}
@@ -628,6 +664,7 @@ func (c *Collector) fetch(u, method string, depth int, requestData io.Reader, ct
 	atomic.AddUint32(&c.responseCount, 1)
 	response.Ctx = ctx
 	response.Request = request
+	response.Trace = hTrace
 
 	err = response.fixCharset(c.DetectCharset, request.ResponseCharacterEncoding)
 	if err != nil {
@@ -651,7 +688,7 @@ func (c *Collector) fetch(u, method string, depth int, requestData io.Reader, ct
 	return err
 }
 
-func (c *Collector) requestCheck(u, method string, depth int, checkRevisit bool) error {
+func (c *Collector) requestCheck(u string, parsedURL *url.URL, method string, requestData io.Reader, depth int, checkRevisit bool) error {
 	if u == "" {
 		return ErrMissingURL
 	}
@@ -668,10 +705,28 @@ func (c *Collector) requestCheck(u, method string, depth int, checkRevisit bool)
 			return ErrNoURLFiltersMatch
 		}
 	}
-	if checkRevisit && !c.AllowURLRevisit && method == "GET" {
+	if !c.isDomainAllowed(parsedURL.Hostname()) {
+		return ErrForbiddenDomain
+	}
+	if method != "HEAD" && !c.IgnoreRobotsTxt {
+		if err := c.checkRobots(parsedURL); err != nil {
+			return err
+		}
+	}
+	if checkRevisit && !c.AllowURLRevisit {
 		h := fnv.New64a()
 		h.Write([]byte(u))
-		uHash := h.Sum64()
+
+		var uHash uint64
+		if method == "GET" {
+			uHash = h.Sum64()
+		} else if requestData != nil {
+			h.Write(streamToByte(requestData))
+			uHash = h.Sum64()
+		} else {
+			return nil
+		}
+
 		visited, err := c.store.IsVisited(uHash)
 		if err != nil {
 			return err
@@ -765,6 +820,23 @@ func (c *Collector) OnRequest(f RequestCallback) {
 		c.requestCallbacks = make([]RequestCallback, 0, 4)
 	}
 	c.requestCallbacks = append(c.requestCallbacks, f)
+	c.lock.Unlock()
+}
+
+// OnResponseHeaders registers a function. Function will be executed on every response
+// when headers and status are already received, but body is not yet read.
+//
+// Like in OnRequest, you can call Request.Abort to abort the transfer. This might be
+// useful if, for example, you're following all hyperlinks, but want to avoid
+// downloading files.
+//
+// Be aware that using this will prevent HTTP/1.1 connection reuse, as
+// the only way to abort a download is to immediately close the connection.
+// HTTP/2 doesn't suffer from this problem, as it's possible to close
+// specific stream inside the connection.
+func (c *Collector) OnResponseHeaders(f ResponseHeadersCallback) {
+	c.lock.Lock()
+	c.responseHeadersCallbacks = append(c.responseHeadersCallbacks, f)
 	c.lock.Unlock()
 }
 
@@ -964,6 +1036,18 @@ func (c *Collector) handleOnResponse(r *Response) {
 	}
 }
 
+func (c *Collector) handleOnResponseHeaders(r *Response) {
+	if c.debugger != nil {
+		c.debugger.Event(createEvent("responseHeaders", r.Request.ID, c.ID, map[string]string{
+			"url":    r.Request.URL.String(),
+			"status": http.StatusText(r.StatusCode),
+		}))
+	}
+	for _, f := range c.responseHeadersCallbacks {
+		f(r)
+	}
+}
+
 func (c *Collector) handleOnHTML(resp *Response) error {
 	if len(c.htmlCallbacks) == 0 || !strings.Contains(strings.ToLower(resp.Headers.Get("Content-Type")), "html") {
 		return nil
@@ -973,7 +1057,7 @@ func (c *Collector) handleOnHTML(resp *Response) error {
 		return err
 	}
 	if href, found := doc.Find("base[href]").Attr("href"); found {
-		resp.Request.baseURL, _ = url.Parse(href)
+		resp.Request.baseURL, _ = resp.Request.URL.Parse(href)
 	}
 	for _, cc := range c.htmlCallbacks {
 		i := 0
@@ -1012,7 +1096,7 @@ func (c *Collector) handleOnXML(resp *Response) error {
 		if e := htmlquery.FindOne(doc, "//base"); e != nil {
 			for _, a := range e.Attr {
 				if a.Key == "href" {
-					resp.Request.baseURL, _ = url.Parse(a.Val)
+					resp.Request.baseURL, _ = resp.Request.URL.Parse(a.Val)
 					break
 				}
 			}
@@ -1154,6 +1238,7 @@ func (c *Collector) Clone() *Collector {
 		CheckHead:              c.CheckHead,
 		ParseHTTPErrorResponse: c.ParseHTTPErrorResponse,
 		UserAgent:              c.UserAgent,
+		TraceHTTP:              c.TraceHTTP,
 		store:                  c.store,
 		backend:                c.backend,
 		debugger:               c.debugger,
@@ -1209,6 +1294,17 @@ func (c *Collector) parseSettingsFromEnv() {
 			log.Println("Unknown environment variable:", pair[0])
 		}
 	}
+}
+
+func (c *Collector) checkHasVisited(URL string, requestData map[string]string) (bool, error) {
+	h := fnv.New64a()
+	h.Write([]byte(URL))
+
+	if requestData != nil {
+		h.Write(streamToByte(createFormReader(requestData)))
+	}
+
+	return c.store.IsVisited(h.Sum64())
 }
 
 // SanitizeFileName replaces dangerous characters in a string
@@ -1318,4 +1414,17 @@ func isMatchingFilter(fs []*regexp.Regexp, d []byte) bool {
 		}
 	}
 	return false
+}
+
+func streamToByte(r io.Reader) []byte {
+	buf := new(bytes.Buffer)
+	buf.ReadFrom(r)
+
+	if strReader, k := r.(*strings.Reader); k {
+		strReader.Seek(0, 0)
+	} else if bReader, kb := r.(*bytes.Reader); kb {
+		bReader.Seek(0, 0)
+	}
+
+	return buf.Bytes()
 }

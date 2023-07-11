@@ -2,7 +2,10 @@
 
 package xpath
 
-import "math"
+import (
+	"bytes"
+	"math"
+)
 
 // math.Round() is supported by Go 1.10+,
 // This method just compatible for version <1.10.
@@ -12,4 +15,8 @@ func round(f float64) int {
 		return 0
 	}
 	return int(f + math.Copysign(0.5, f))
+}
+
+func newStringBuilder() stringBuilder {
+	return &bytes.Buffer{}
 }

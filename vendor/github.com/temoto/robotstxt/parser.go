@@ -9,6 +9,7 @@ package robotstxt
 import (
 	"fmt"
 	"io"
+	"math"
 	"regexp"
 	"strconv"
 	"strings"
@@ -170,9 +171,7 @@ func (p *parser) parseLine() (li *lineInfo, err error) {
 			if !strings.HasPrefix(t2, "*") && !strings.HasPrefix(t2, "/") {
 				t2 = "/" + t2
 			}
-			if strings.HasSuffix(t2, "*") {
-				t2 = strings.TrimRight(t2, "*")
-			}
+			t2 = strings.TrimRightFunc(t2, isAsterisk)
 			// From google's spec:
 			// Google, Bing, Yahoo, and Ask support a limited form of
 			// "wildcards" for path values. These are:
@@ -239,6 +238,8 @@ func (p *parser) parseLine() (li *lineInfo, err error) {
 		p.popToken()
 		if cd, e := strconv.ParseFloat(t2, 64); e != nil {
 			return nil, e
+		} else if cd < 0 || math.IsInf(cd, 0) || math.IsNaN(cd) {
+			return nil, fmt.Errorf("Crawl-delay invalid value '%s'", t2)
 		} else {
 			return &lineInfo{t: lCrawlDelay, k: t1, vf: cd}, nil
 		}
@@ -263,4 +264,8 @@ func (p *parser) peekToken() (tok string, ok bool) {
 		return "", false
 	}
 	return p.tokens[p.pos], true
+}
+
+func isAsterisk(r rune) bool {
+	return r == '*'
 }

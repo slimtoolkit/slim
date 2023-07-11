@@ -36,7 +36,7 @@ func (p *parser) parseEscape() (result string, err error) {
 		for i = start; i < start+6 && i < len(p.s) && hexDigit(p.s[i]); i++ {
 			// empty
 		}
-		v, _ := strconv.ParseUint(p.s[start:i], 16, 21)
+		v, _ := strconv.ParseUint(p.s[start:i], 16, 64)
 		if len(p.s) > i {
 			switch p.s[i] {
 			case '\r':
@@ -97,10 +97,12 @@ func nameChar(c byte) bool {
 
 // parseIdentifier parses an identifier.
 func (p *parser) parseIdentifier() (result string, err error) {
-	startingDash := false
-	if len(p.s) > p.i && p.s[p.i] == '-' {
-		startingDash = true
+	const prefix = '-'
+	var numPrefix int
+
+	for len(p.s) > p.i && p.s[p.i] == prefix {
 		p.i++
+		numPrefix++
 	}
 
 	if len(p.s) <= p.i {
@@ -112,8 +114,8 @@ func (p *parser) parseIdentifier() (result string, err error) {
 	}
 
 	result, err = p.parseName()
-	if startingDash && err == nil {
-		result = "-" + result
+	if numPrefix > 0 && err == nil {
+		result = strings.Repeat(string(prefix), numPrefix) + result
 	}
 	return
 }
@@ -409,6 +411,19 @@ func (p *parser) parseAttributeSelector() (attrSelector, error) {
 	if p.i >= len(p.s) {
 		return attrSelector{}, errors.New("unexpected EOF in attribute selector")
 	}
+
+	// check if the attribute contains an ignore case flag
+	ignoreCase := false
+	if p.s[p.i] == 'i' || p.s[p.i] == 'I' {
+		ignoreCase = true
+		p.i++
+	}
+
+	p.skipWhitespace()
+	if p.i >= len(p.s) {
+		return attrSelector{}, errors.New("unexpected EOF in attribute selector")
+	}
+
 	if p.s[p.i] != ']' {
 		return attrSelector{}, fmt.Errorf("expected ']', found '%c' instead", p.s[p.i])
 	}
@@ -416,15 +431,17 @@ func (p *parser) parseAttributeSelector() (attrSelector, error) {
 
 	switch op {
 	case "=", "!=", "~=", "|=", "^=", "$=", "*=", "#=":
-		return attrSelector{key: key, val: val, operation: op, regexp: rx}, nil
+		return attrSelector{key: key, val: val, operation: op, regexp: rx, insensitive: ignoreCase}, nil
 	default:
 		return attrSelector{}, fmt.Errorf("attribute operator %q is not supported", op)
 	}
 }
 
-var errExpectedParenthesis = errors.New("expected '(' but didn't find it")
-var errExpectedClosingParenthesis = errors.New("expected ')' but didn't find it")
-var errUnmatchedParenthesis = errors.New("unmatched '('")
+var (
+	errExpectedParenthesis        = errors.New("expected '(' but didn't find it")
+	errExpectedClosingParenthesis = errors.New("expected ')' but didn't find it")
+	errUnmatchedParenthesis       = errors.New("unmatched '('")
+)
 
 // parsePseudoclassSelector parses a pseudoclass selector like :not(p) or a pseudo-element
 // For backwards compatibility, both ':' and '::' prefix are allowed for pseudo-elements.
@@ -552,6 +569,37 @@ func (p *parser) parsePseudoclassSelector() (out Sel, pseudoElement string, err 
 		out = emptyElementPseudoClassSelector{}
 	case "root":
 		out = rootPseudoClassSelector{}
+	case "link":
+		out = linkPseudoClassSelector{}
+	case "lang":
+		if !p.consumeParenthesis() {
+			return out, "", errExpectedParenthesis
+		}
+		if p.i == len(p.s) {
+			return out, "", errUnmatchedParenthesis
+		}
+		val, err := p.parseIdentifier()
+		if err != nil {
+			return out, "", err
+		}
+		val = strings.ToLower(val)
+		p.skipWhitespace()
+		if p.i >= len(p.s) {
+			return out, "", errors.New("unexpected EOF in pseudo selector")
+		}
+		if !p.consumeClosingParenthesis() {
+			return out, "", errExpectedClosingParenthesis
+		}
+		out = langPseudoClassSelector{lang: val}
+	case "enabled":
+		out = enabledPseudoClassSelector{}
+	case "disabled":
+		out = disabledPseudoClassSelector{}
+	case "checked":
+		out = checkedPseudoClassSelector{}
+	case "visited", "hover", "active", "focus", "target":
+		// Not applicable in a static context: never match.
+		out = neverMatchSelector{value: ":" + name}
 	case "after", "backdrop", "before", "cue", "first-letter", "first-line", "grammar-error", "marker", "placeholder", "selection", "spelling-error":
 		return nil, name, nil
 	default:
@@ -714,6 +762,9 @@ func (p *parser) parseSimpleSelectorSequence() (Sel, error) {
 	case '*':
 		// It's the universal selector. Just skip over it, since it doesn't affect the meaning.
 		p.i++
+		if p.i+2 < len(p.s) && p.s[p.i:p.i+2] == "|*" { // other version of universal selector
+			p.i += 2
+		}
 	case '#', '.', '[', ':':
 		// There's no type selector. Wait to process the other till the main loop.
 	default:

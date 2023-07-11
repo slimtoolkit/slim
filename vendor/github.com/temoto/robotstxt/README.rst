@@ -7,7 +7,7 @@ This is a robots.txt exclusion protocol implementation for Go language (golang).
 Build
 =====
 
-To build and run tests run `script/test` in source directory.
+To build and run tests run `go test` in source directory.
 
 
 Contribute
