@@ -21,8 +21,8 @@ import (
 	"sync"
 	"time"
 
-	"k8s.io/apimachinery/pkg/util/clock"
 	utilruntime "k8s.io/apimachinery/pkg/util/runtime"
+	"k8s.io/utils/clock"
 )
 
 // DelayingInterface is an Interface that can Add an item at a later time. This makes it easier to
@@ -33,36 +33,81 @@ type DelayingInterface interface {
 	AddAfter(item interface{}, duration time.Duration)
 }
 
-// NewDelayingQueue constructs a new workqueue with delayed queuing ability
+// DelayingQueueConfig specifies optional configurations to customize a DelayingInterface.
+type DelayingQueueConfig struct {
+	// Name for the queue. If unnamed, the metrics will not be registered.
+	Name string
+
+	// MetricsProvider optionally allows specifying a metrics provider to use for the queue
+	// instead of the global provider.
+	MetricsProvider MetricsProvider
+
+	// Clock optionally allows injecting a real or fake clock for testing purposes.
+	Clock clock.WithTicker
+
+	// Queue optionally allows injecting custom queue Interface instead of the default one.
+	Queue Interface
+}
+
+// NewDelayingQueue constructs a new workqueue with delayed queuing ability.
+// NewDelayingQueue does not emit metrics. For use with a MetricsProvider, please use
+// NewDelayingQueueWithConfig instead and specify a name.
 func NewDelayingQueue() DelayingInterface {
-	return NewDelayingQueueWithCustomClock(clock.RealClock{}, "")
+	return NewDelayingQueueWithConfig(DelayingQueueConfig{})
+}
+
+// NewDelayingQueueWithConfig constructs a new workqueue with options to
+// customize different properties.
+func NewDelayingQueueWithConfig(config DelayingQueueConfig) DelayingInterface {
+	if config.Clock == nil {
+		config.Clock = clock.RealClock{}
+	}
+
+	if config.Queue == nil {
+		config.Queue = NewWithConfig(QueueConfig{
+			Name:            config.Name,
+			MetricsProvider: config.MetricsProvider,
+			Clock:           config.Clock,
+		})
+	}
+
+	return newDelayingQueue(config.Clock, config.Queue, config.Name, config.MetricsProvider)
 }
 
 // NewDelayingQueueWithCustomQueue constructs a new workqueue with ability to
 // inject custom queue Interface instead of the default one
+// Deprecated: Use NewDelayingQueueWithConfig instead.
 func NewDelayingQueueWithCustomQueue(q Interface, name string) DelayingInterface {
-	return newDelayingQueue(clock.RealClock{}, q, name)
+	return NewDelayingQueueWithConfig(DelayingQueueConfig{
+		Name:  name,
+		Queue: q,
+	})
 }
 
-// NewNamedDelayingQueue constructs a new named workqueue with delayed queuing ability
+// NewNamedDelayingQueue constructs a new named workqueue with delayed queuing ability.
+// Deprecated: Use NewDelayingQueueWithConfig instead.
 func NewNamedDelayingQueue(name string) DelayingInterface {
-	return NewDelayingQueueWithCustomClock(clock.RealClock{}, name)
+	return NewDelayingQueueWithConfig(DelayingQueueConfig{Name: name})
 }
 
 // NewDelayingQueueWithCustomClock constructs a new named workqueue
-// with ability to inject real or fake clock for testing purposes
-func NewDelayingQueueWithCustomClock(clock clock.Clock, name string) DelayingInterface {
-	return newDelayingQueue(clock, NewNamed(name), name)
+// with ability to inject real or fake clock for testing purposes.
+// Deprecated: Use NewDelayingQueueWithConfig instead.
+func NewDelayingQueueWithCustomClock(clock clock.WithTicker, name string) DelayingInterface {
+	return NewDelayingQueueWithConfig(DelayingQueueConfig{
+		Name:  name,
+		Clock: clock,
+	})
 }
 
-func newDelayingQueue(clock clock.Clock, q Interface, name string) *delayingType {
+func newDelayingQueue(clock clock.WithTicker, q Interface, name string, provider MetricsProvider) *delayingType {
 	ret := &delayingType{
 		Interface:       q,
 		clock:           clock,
 		heartbeat:       clock.NewTicker(maxWait),
 		stopCh:          make(chan struct{}),
 		waitingForAddCh: make(chan *waitFor, 1000),
-		metrics:         newRetryMetrics(name),
+		metrics:         newRetryMetrics(name, provider),
 	}
 
 	go ret.waitingLoop()

@@ -45,7 +45,7 @@ import (
 // and their field paths and types are exactly the same, then ExtractInto can be
 // called with the root resource as the object and the subresource as the
 // applyConfiguration. This works for "status", obviously, because status is
-// represented by the exact same object as the root resource. This this does NOT
+// represented by the exact same object as the root resource. This does NOT
 // work, for example, with the "scale" subresources of Deployment, ReplicaSet and
 // StatefulSet. While the spec.replicas, status.replicas fields are in the same
 // exact field path locations as they are in autoscaling.Scale, the selector
@@ -74,6 +74,13 @@ func ExtractInto(object runtime.Object, objectType typed.ParseableType, fieldMan
 	m, ok := u.(map[string]interface{})
 	if !ok {
 		return fmt.Errorf("unable to convert managed fields for %s to unstructured, expected map, got %T", fieldManager, u)
+	}
+
+	// set the type meta manually if it doesn't exist to avoid missing kind errors
+	// when decoding from unstructured JSON
+	if _, ok := m["kind"]; !ok && object.GetObjectKind().GroupVersionKind().Kind != "" {
+		m["kind"] = object.GetObjectKind().GroupVersionKind().Kind
+		m["apiVersion"] = object.GetObjectKind().GroupVersionKind().GroupVersion().String()
 	}
 	if err := runtime.DefaultUnstructuredConverter.FromUnstructured(m, applyConfiguration); err != nil {
 		return fmt.Errorf("error extracting into obj from unstructured: %w", err)

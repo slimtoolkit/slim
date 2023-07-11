@@ -5,7 +5,7 @@ package loader
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -14,8 +14,16 @@ import (
 
 	"sigs.k8s.io/kustomize/api/ifc"
 	"sigs.k8s.io/kustomize/api/internal/git"
+	"sigs.k8s.io/kustomize/kyaml/errors"
 	"sigs.k8s.io/kustomize/kyaml/filesys"
 )
+
+// IsRemoteFile returns whether path has a url scheme that kustomize allows for
+// remote files. See https://github.com/kubernetes-sigs/kustomize/blob/master/examples/remoteBuild.md
+func IsRemoteFile(path string) bool {
+	u, err := url.Parse(path)
+	return err == nil && (u.Scheme == "http" || u.Scheme == "https")
+}
 
 // fileLoader is a kustomization's interface to files.
 //
@@ -113,6 +121,15 @@ func NewFileLoaderAtRoot(fSys filesys.FileSystem) *fileLoader {
 		RestrictionRootOnly, fSys, filesys.Separator)
 }
 
+// Repo returns the absolute path to the repo that contains Root if this fileLoader was created from a url
+// or the empty string otherwise.
+func (fl *fileLoader) Repo() string {
+	if fl.repoSpec != nil {
+		return fl.repoSpec.Dir.String()
+	}
+	return ""
+}
+
 // Root returns the absolute path that is prepended to any
 // relative paths used in Load.
 func (fl *fileLoader) Root() string {
@@ -122,7 +139,7 @@ func (fl *fileLoader) Root() string {
 func newLoaderOrDie(
 	lr LoadRestrictorFunc,
 	fSys filesys.FileSystem, path string) *fileLoader {
-	root, err := demandDirectoryRoot(fSys, path)
+	root, err := filesys.ConfirmDir(fSys, path)
 	if err != nil {
 		log.Fatalf("unable to make loader at '%s'; %v", path, err)
 	}
@@ -145,33 +162,14 @@ func newLoaderAtConfirmedDir(
 	}
 }
 
-// Assure that the given path is in fact a directory.
-func demandDirectoryRoot(
-	fSys filesys.FileSystem, path string) (filesys.ConfirmedDir, error) {
-	if path == "" {
-		return "", fmt.Errorf(
-			"loader root cannot be empty")
-	}
-	d, f, err := fSys.CleanedAbs(path)
-	if err != nil {
-		return "", err
-	}
-	if f != "" {
-		return "", fmt.Errorf(
-			"got file '%s', but '%s' must be a directory to be a root",
-			f, path)
-	}
-	return d, nil
-}
-
 // New returns a new Loader, rooted relative to current loader,
 // or rooted in a temp directory holding a git repo clone.
 func (fl *fileLoader) New(path string) (ifc.Loader, error) {
 	if path == "" {
-		return nil, fmt.Errorf("new root cannot be empty")
+		return nil, errors.Errorf("new root cannot be empty")
 	}
 
-	repoSpec, err := git.NewRepoSpecFromUrl(path)
+	repoSpec, err := git.NewRepoSpecFromURL(path)
 	if err == nil {
 		// Treat this as git repo clone request.
 		if err = fl.errIfRepoCycle(repoSpec); err != nil {
@@ -184,9 +182,9 @@ func (fl *fileLoader) New(path string) (ifc.Loader, error) {
 	if filepath.IsAbs(path) {
 		return nil, fmt.Errorf("new root '%s' cannot be absolute", path)
 	}
-	root, err := demandDirectoryRoot(fl.fSys, fl.root.Join(path))
+	root, err := filesys.ConfirmDir(fl.fSys, fl.root.Join(path))
 	if err != nil {
-		return nil, err
+		return nil, errors.WrapPrefixf(err, ErrRtNotDir.Error())
 	}
 	if err = fl.errIfGitContainmentViolation(root); err != nil {
 		return nil, err
@@ -223,6 +221,13 @@ func newLoaderAtGitClone(
 		return nil, fmt.Errorf(
 			"'%s' refers to file '%s'; expecting directory",
 			repoSpec.AbsPath(), f)
+	}
+	// Path in repo can contain symlinks that exit repo. We can only
+	// check for this after cloning repo.
+	if !root.HasPrefix(repoSpec.CloneDir()) {
+		_ = cleaner()
+		return nil, fmt.Errorf("%q refers to directory outside of repo %q", repoSpec.AbsPath(),
+			repoSpec.CloneDir())
 	}
 	return &fileLoader{
 		// Clones never allowed to escape root.
@@ -298,26 +303,11 @@ func (fl *fileLoader) errIfRepoCycle(newRepoSpec *git.RepoSpec) error {
 }
 
 // Load returns the content of file at the given path,
-// else an error.  Relative paths are taken relative
+// else an error. Relative paths are taken relative
 // to the root.
 func (fl *fileLoader) Load(path string) ([]byte, error) {
-	if u, err := url.Parse(path); err == nil && (u.Scheme == "http" || u.Scheme == "https") {
-		var hc *http.Client
-		if fl.http != nil {
-			hc = fl.http
-		} else {
-			hc = &http.Client{}
-		}
-		resp, err := hc.Get(path)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			return nil, err
-		}
-		return body, nil
+	if IsRemoteFile(path) {
+		return fl.httpClientGetContent(path)
 	}
 	if !filepath.IsAbs(path) {
 		path = fl.root.Join(path)
@@ -327,6 +317,30 @@ func (fl *fileLoader) Load(path string) ([]byte, error) {
 		return nil, err
 	}
 	return fl.fSys.ReadFile(path)
+}
+
+func (fl *fileLoader) httpClientGetContent(path string) ([]byte, error) {
+	var hc *http.Client
+	if fl.http != nil {
+		hc = fl.http
+	} else {
+		hc = &http.Client{}
+	}
+	resp, err := hc.Get(path)
+	if err != nil {
+		return nil, errors.Wrap(err)
+	}
+	defer resp.Body.Close()
+	// response unsuccessful
+	if resp.StatusCode < 200 || resp.StatusCode > 299 {
+		_, err = git.NewRepoSpecFromURL(path)
+		if err == nil {
+			return nil, errors.Errorf("URL is a git repository")
+		}
+		return nil, fmt.Errorf("%w: status code %d (%s)", ErrHTTP, resp.StatusCode, http.StatusText(resp.StatusCode))
+	}
+	content, err := io.ReadAll(resp.Body)
+	return content, errors.Wrap(err)
 }
 
 // Cleanup runs the cleaner.

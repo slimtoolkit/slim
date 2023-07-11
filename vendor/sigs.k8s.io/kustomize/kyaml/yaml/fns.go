@@ -197,36 +197,37 @@ func (c FieldClearer) Filter(rn *RNode) (*RNode, error) {
 		return nil, err
 	}
 
-	for i := 0; i < len(rn.Content()); i += 2 {
-		// if name matches, remove these 2 elements from the list because
-		// they are treated as a fieldName/fieldValue pair.
-		if rn.Content()[i].Value == c.Name {
-			if c.IfEmpty {
-				if len(rn.Content()[i+1].Content) > 0 {
-					continue
-				}
-			}
-
-			// save the item we are about to remove
-			removed := NewRNode(rn.Content()[i+1])
-			if len(rn.YNode().Content) > i+2 {
-				l := len(rn.YNode().Content)
-				// remove from the middle of the list
-				rn.YNode().Content = rn.Content()[:i]
-				rn.YNode().Content = append(
-					rn.YNode().Content,
-					rn.Content()[i+2:l]...)
-			} else {
-				// remove from the end of the list
-				rn.YNode().Content = rn.Content()[:i]
-			}
-
-			// return the removed field name and value
-			return removed, nil
+	var removed *RNode
+	visitFieldsWhileTrue(rn.Content(), func(key, value *yaml.Node, keyIndex int) bool {
+		if key.Value != c.Name {
+			return true
 		}
-	}
-	// nothing removed
-	return nil, nil
+
+		// the name matches: remove these 2 elements from the list because
+		// they are treated as a fieldName/fieldValue pair.
+		if c.IfEmpty {
+			if len(value.Content) > 0 {
+				return true
+			}
+		}
+
+		// save the item we are about to remove
+		removed = NewRNode(value)
+		if len(rn.YNode().Content) > keyIndex+2 {
+			l := len(rn.YNode().Content)
+			// remove from the middle of the list
+			rn.YNode().Content = rn.Content()[:keyIndex]
+			rn.YNode().Content = append(
+				rn.YNode().Content,
+				rn.Content()[keyIndex+2:l]...)
+		} else {
+			// remove from the end of the list
+			rn.YNode().Content = rn.Content()[:keyIndex]
+		}
+		return false
+	})
+
+	return removed, nil
 }
 
 func MatchElement(field, value string) ElementMatcher {
@@ -402,14 +403,15 @@ func (f FieldMatcher) Filter(rn *RNode) (*RNode, error) {
 		return nil, err
 	}
 
-	for i := 0; i < len(rn.Content()); i = IncrementFieldIndex(i) {
-		isMatchingField := rn.Content()[i].Value == f.Name
-		if isMatchingField {
-			requireMatchFieldValue := f.Value != nil
-			if !requireMatchFieldValue || rn.Content()[i+1].Value == f.Value.YNode().Value {
-				return NewRNode(rn.Content()[i+1]), nil
-			}
+	var returnNode *RNode
+	requireMatchFieldValue := f.Value != nil
+	visitMappingNodeFields(rn.Content(), func(key, value *yaml.Node) {
+		if !requireMatchFieldValue || value.Value == f.Value.YNode().Value {
+			returnNode = NewRNode(value)
 		}
+	}, f.Name)
+	if returnNode != nil {
+		return returnNode, nil
 	}
 
 	if f.Create != nil {
@@ -424,10 +426,44 @@ func Lookup(path ...string) PathGetter {
 	return PathGetter{Path: path}
 }
 
-// Lookup returns a PathGetter to lookup a field by its path and create it if it doesn't already
+// LookupCreate returns a PathGetter to lookup a field by its path and create it if it doesn't already
 // exist.
 func LookupCreate(kind yaml.Kind, path ...string) PathGetter {
 	return PathGetter{Path: path, Create: kind}
+}
+
+// ConventionalContainerPaths is a list of paths at which containers typically appear in workload APIs.
+// It is intended for use with LookupFirstMatch.
+var ConventionalContainerPaths = [][]string{
+	// e.g. Deployment, ReplicaSet, DaemonSet, Job, StatefulSet
+	{"spec", "template", "spec", "containers"},
+	// e.g. CronJob
+	{"spec", "jobTemplate", "spec", "template", "spec", "containers"},
+	// e.g. Pod
+	{"spec", "containers"},
+	// e.g. PodTemplate
+	{"template", "spec", "containers"},
+}
+
+// LookupFirstMatch returns a Filter for locating a value that may exist at one of several possible paths.
+// For example, it can be used with ConventionalContainerPaths to find the containers field in a standard workload resource.
+// If more than one of the paths exists in the resource, the first will be returned. If none exist,
+// nil will be returned. If an error is encountered during lookup, it will be returned.
+func LookupFirstMatch(paths [][]string) Filter {
+	return FilterFunc(func(object *RNode) (*RNode, error) {
+		var result *RNode
+		var err error
+		for _, path := range paths {
+			result, err = object.Pipe(PathGetter{Path: path})
+			if err != nil {
+				return nil, errors.Wrap(err)
+			}
+			if result != nil {
+				return result, nil
+			}
+		}
+		return nil, nil
+	})
 }
 
 // PathGetter returns the RNode under Path.
@@ -507,18 +543,20 @@ func (l PathGetter) getFilter(part, nextPart string, fieldPath *[]string) (Filte
 	case part == "-":
 		// part is a hyphen
 		return GetElementByIndex(-1), nil
+	case part == "*":
+		// PathGetter is not support for wildcard matching
+		return nil, errors.Errorf("wildcard is not supported in PathGetter")
 	case IsListIndex(part):
 		// part is surrounded by brackets
 		return l.elemFilter(part)
 	default:
 		// mapping node
 		*fieldPath = append(*fieldPath, part)
-		return l.fieldFilter(part, l.getKind(nextPart))
+		return l.fieldFilter(part, getPathPartKind(nextPart, l.Create))
 	}
 }
 
 func (l PathGetter) elemFilter(part string) (Filter, error) {
-	var match *RNode
 	name, value, err := SplitIndexNameValue(part)
 	if err != nil {
 		return nil, errors.Wrap(err)
@@ -533,10 +571,9 @@ func (l PathGetter) elemFilter(part string) (Filter, error) {
 		// append a ScalarNode
 		elem = NewScalarRNode(value)
 		elem.YNode().Style = l.Style
-		match = elem
 	} else {
 		// append a MappingNode
-		match = NewRNode(&yaml.Node{Kind: yaml.ScalarNode, Value: value, Style: l.Style})
+		match := NewRNode(&yaml.Node{Kind: yaml.ScalarNode, Value: value, Style: l.Style})
 		elem = NewRNode(&yaml.Node{
 			Kind:    yaml.MappingNode,
 			Content: []*yaml.Node{{Kind: yaml.ScalarNode, Value: name}, match.YNode()},
@@ -555,15 +592,18 @@ func (l PathGetter) fieldFilter(
 	return FieldMatcher{Name: name, Create: &RNode{value: &yaml.Node{Kind: kind, Style: l.Style}}}, nil
 }
 
-func (l PathGetter) getKind(nextPart string) yaml.Kind {
+func getPathPartKind(nextPart string, defaultKind yaml.Kind) yaml.Kind {
 	if IsListIndex(nextPart) {
 		// if nextPart is of the form [a=b], then it is an index into a Sequence
 		// so the current part must be a SequenceNode
 		return yaml.SequenceNode
 	}
+	if IsIdxNumber(nextPart) {
+		return yaml.SequenceNode
+	}
 	if nextPart == "" {
-		// final name in the path, use the l.Create defined Kind
-		return l.Create
+		// final name in the path, use the default kind provided
+		return defaultKind
 	}
 
 	// non-sequence intermediate Node
@@ -576,6 +616,56 @@ func SetField(name string, value *RNode) FieldSetter {
 
 func Set(value *RNode) FieldSetter {
 	return FieldSetter{Value: value}
+}
+
+// MapEntrySetter sets a map entry to a value. If it finds a key with the same
+// value, it will override both Key and Value RNodes, including style and any
+// other metadata. If it doesn't find the key, it will insert a new map entry.
+// It will set the field, even if it's empty or nil, unlike the FieldSetter.
+// This is useful for rebuilding some pre-existing RNode structure.
+type MapEntrySetter struct {
+	// Name is the name of the field or key to lookup in a MappingNode.
+	// If Name is unspecified, it will use the Key's Value
+	Name string `yaml:"name,omitempty"`
+
+	// Value is the value to set.
+	Value *RNode `yaml:"value,omitempty"`
+
+	// Key is the map key to set.
+	Key *RNode `yaml:"key,omitempty"`
+}
+
+func (s MapEntrySetter) Filter(rn *RNode) (*RNode, error) {
+	if rn == nil {
+		return nil, errors.Errorf("Can't set map entry on a nil RNode")
+	}
+	if err := ErrorIfInvalid(rn, yaml.MappingNode); err != nil {
+		return nil, err
+	}
+	if s.Name == "" {
+		s.Name = GetValue(s.Key)
+	}
+
+	content := rn.Content()
+	fieldStillNotFound := true
+	visitFieldsWhileTrue(content, func(key, value *yaml.Node, keyIndex int) bool {
+		if key.Value == s.Name {
+			content[keyIndex] = s.Key.YNode()
+			content[keyIndex+1] = s.Value.YNode()
+			fieldStillNotFound = false
+		}
+		return fieldStillNotFound
+	})
+	if !fieldStillNotFound {
+		return rn, nil
+	}
+
+	// create the field
+	rn.YNode().Content = append(
+		rn.YNode().Content,
+		s.Key.YNode(),
+		s.Value.YNode())
+	return rn, nil
 }
 
 // FieldSetter sets a field or map entry to a value.
@@ -605,6 +695,12 @@ type FieldSetter struct {
 func (s FieldSetter) Filter(rn *RNode) (*RNode, error) {
 	if s.StringValue != "" && s.Value == nil {
 		s.Value = NewScalarRNode(s.StringValue)
+	}
+
+	// need to set style for strings not recognized by yaml 1.1 to quoted if not previously set
+	// TODO: fix in upstream yaml library so this can be handled with yaml SetString
+	if s.Value.IsStringValue() && !s.OverrideStyle && s.Value.YNode().Style == 0 && IsYaml1_1NonString(s.Value.YNode()) {
+		s.Value.YNode().Style = yaml.DoubleQuotedStyle
 	}
 
 	if s.Name == "" {
@@ -709,12 +805,22 @@ func ErrorIfAnyInvalidAndNonNull(kind yaml.Kind, rn ...*RNode) error {
 	return nil
 }
 
-var nodeTypeIndex = map[yaml.Kind]string{
-	yaml.SequenceNode: "SequenceNode",
-	yaml.MappingNode:  "MappingNode",
-	yaml.ScalarNode:   "ScalarNode",
-	yaml.DocumentNode: "DocumentNode",
-	yaml.AliasNode:    "AliasNode",
+type InvalidNodeKindError struct {
+	expectedKind yaml.Kind
+	node         *RNode
+}
+
+func (e *InvalidNodeKindError) Error() string {
+	msg := fmt.Sprintf("wrong node kind: expected %s but got %s",
+		nodeKindString(e.expectedKind), nodeKindString(e.node.YNode().Kind))
+	if content, err := e.node.String(); err == nil {
+		msg += fmt.Sprintf(": node contents:\n%s", content)
+	}
+	return msg
+}
+
+func (e *InvalidNodeKindError) ActualNodeKind() Kind {
+	return e.node.YNode().Kind
 }
 
 func ErrorIfInvalid(rn *RNode, kind yaml.Kind) error {
@@ -724,11 +830,7 @@ func ErrorIfInvalid(rn *RNode, kind yaml.Kind) error {
 	}
 
 	if rn.YNode().Kind != kind {
-		s, _ := rn.String()
-		return errors.Errorf(
-			"wrong Node Kind for %s expected: %v was %v: value: {%s}",
-			strings.Join(rn.FieldPath(), "."),
-			nodeTypeIndex[kind], nodeTypeIndex[rn.YNode().Kind], strings.TrimSpace(s))
+		return &InvalidNodeKindError{node: rn, expectedKind: kind}
 	}
 
 	if kind == yaml.MappingNode {
@@ -748,6 +850,19 @@ func IsListIndex(p string) bool {
 	return strings.HasPrefix(p, "[") && strings.HasSuffix(p, "]")
 }
 
+// IsIdxNumber returns true if p is an index number.
+// e.g. 1
+func IsIdxNumber(p string) bool {
+	idx, err := strconv.Atoi(p)
+	return err == nil && idx >= 0
+}
+
+// IsWildcard returns true if p is matching every elements.
+// e.g. "*"
+func IsWildcard(p string) bool {
+	return p == "*"
+}
+
 // SplitIndexNameValue splits a lookup part Val index into the field name
 // and field value to match.
 // e.g. splits [name=nginx] into (name, nginx)
@@ -760,10 +875,4 @@ func SplitIndexNameValue(p string) (string, string, error) {
 		return "", "", fmt.Errorf("list path element must contain fieldName=fieldValue for element to match")
 	}
 	return parts[0], parts[1], nil
-}
-
-// IncrementFieldIndex increments i to point to the next field name element in
-// a slice of Contents.
-func IncrementFieldIndex(i int) int {
-	return i + 2
 }

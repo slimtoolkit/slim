@@ -93,6 +93,11 @@ type Cluster struct {
 	// attach, port forward).
 	// +optional
 	ProxyURL string `json:"proxy-url,omitempty"`
+	// DisableCompression allows client to opt-out of response compression for all requests to the server. This is useful
+	// to speed up requests (specifically lists) when client-server network bandwidth is ample, by saving time on
+	// compression (server-side) and decompression (client-side): https://github.com/kubernetes/kubernetes/issues/112296.
+	// +optional
+	DisableCompression bool `json:"disable-compression,omitempty"`
 	// Extensions holds additional information. This is useful for extenders so that reads and writes don't clobber unknown fields
 	// +optional
 	Extensions map[string]runtime.Object `json:"extensions,omitempty"`
@@ -124,7 +129,10 @@ type AuthInfo struct {
 	// Impersonate is the username to act-as.
 	// +optional
 	Impersonate string `json:"act-as,omitempty"`
-	// ImpersonateGroups is the groups to imperonate.
+	// ImpersonateUID is the uid to impersonate.
+	// +optional
+	ImpersonateUID string `json:"act-as-uid,omitempty"`
+	// ImpersonateGroups is the groups to impersonate.
 	// +optional
 	ImpersonateGroups []string `json:"act-as-groups,omitempty"`
 	// ImpersonateUserExtra contains additional information for impersonated user.

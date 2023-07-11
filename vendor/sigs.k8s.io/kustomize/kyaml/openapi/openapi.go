@@ -6,26 +6,43 @@ package openapi
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"os"
 	"path/filepath"
 	"reflect"
 	"strings"
+	"sync"
 
+	openapi_v2 "github.com/google/gnostic/openapiv2"
+	"google.golang.org/protobuf/proto"
 	"k8s.io/kube-openapi/pkg/validation/spec"
 	"sigs.k8s.io/kustomize/kyaml/errors"
 	"sigs.k8s.io/kustomize/kyaml/openapi/kubernetesapi"
 	"sigs.k8s.io/kustomize/kyaml/openapi/kustomizationapi"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
+	k8syaml "sigs.k8s.io/yaml"
 )
 
-// globalSchema contains global state information about the openapi
-var globalSchema openapiData
+var (
+	// schemaLock is the lock for schema related globals.
+	//
+	// NOTE: This lock helps with preventing panics that might occur due to the data
+	// race that concurrent access on this variable might cause but it doesn't
+	// fully fix the issue described in https://github.com/kubernetes-sigs/kustomize/issues/4824.
+	// For instance concurrently running goroutines where each of them calls SetSchema()
+	// and/or GetSchemaVersion might end up received nil errors (success) whereas the
+	// seconds one would overwrite the global variable that has been written by the
+	// first one.
+	schemaLock sync.RWMutex //nolint:gochecknoglobals
 
-// kubernetesOpenAPIVersion specifies which builtin kubernetes schema to use
-var kubernetesOpenAPIVersion string
+	// kubernetesOpenAPIVersion specifies which builtin kubernetes schema to use.
+	kubernetesOpenAPIVersion string //nolint:gochecknoglobals
 
-// customSchemaFile stores the custom OpenApi schema if it is provided
-var customSchema []byte
+	// globalSchema contains global state information about the openapi
+	globalSchema openapiData //nolint:gochecknoglobals
+
+	// customSchemaFile stores the custom OpenApi schema if it is provided
+	customSchema []byte //nolint:gochecknoglobals
+)
 
 // openapiData contains the parsed openapi state.  this is in a struct rather than
 // a list of vars so that it can be reset from tests.
@@ -47,6 +64,102 @@ type openapiData struct {
 	// schemaInit stores whether or not we've parsed the schema already,
 	// so that we only reparse the when necessary (to speed up performance)
 	schemaInit bool
+}
+
+type format string
+
+const (
+	JsonOrYaml format = "jsonOrYaml"
+	Proto      format = "proto"
+)
+
+// precomputedIsNamespaceScoped precomputes IsNamespaceScoped for known types. This avoids Schema creation,
+// which is expensive
+// The test output from TestIsNamespaceScopedPrecompute shows the expected map in go syntax,and can be copy and pasted
+// from the failure if it changes.
+var precomputedIsNamespaceScoped = map[yaml.TypeMeta]bool{
+	{APIVersion: "admissionregistration.k8s.io/v1", Kind: "MutatingWebhookConfiguration"}:        false,
+	{APIVersion: "admissionregistration.k8s.io/v1", Kind: "ValidatingWebhookConfiguration"}:      false,
+	{APIVersion: "admissionregistration.k8s.io/v1beta1", Kind: "MutatingWebhookConfiguration"}:   false,
+	{APIVersion: "admissionregistration.k8s.io/v1beta1", Kind: "ValidatingWebhookConfiguration"}: false,
+	{APIVersion: "apiextensions.k8s.io/v1", Kind: "CustomResourceDefinition"}:                    false,
+	{APIVersion: "apiextensions.k8s.io/v1beta1", Kind: "CustomResourceDefinition"}:               false,
+	{APIVersion: "apiregistration.k8s.io/v1", Kind: "APIService"}:                                false,
+	{APIVersion: "apiregistration.k8s.io/v1beta1", Kind: "APIService"}:                           false,
+	{APIVersion: "apps/v1", Kind: "ControllerRevision"}:                                          true,
+	{APIVersion: "apps/v1", Kind: "DaemonSet"}:                                                   true,
+	{APIVersion: "apps/v1", Kind: "Deployment"}:                                                  true,
+	{APIVersion: "apps/v1", Kind: "ReplicaSet"}:                                                  true,
+	{APIVersion: "apps/v1", Kind: "StatefulSet"}:                                                 true,
+	{APIVersion: "autoscaling/v1", Kind: "HorizontalPodAutoscaler"}:                              true,
+	{APIVersion: "autoscaling/v1", Kind: "Scale"}:                                                true,
+	{APIVersion: "autoscaling/v2beta1", Kind: "HorizontalPodAutoscaler"}:                         true,
+	{APIVersion: "autoscaling/v2beta2", Kind: "HorizontalPodAutoscaler"}:                         true,
+	{APIVersion: "batch/v1", Kind: "CronJob"}:                                                    true,
+	{APIVersion: "batch/v1", Kind: "Job"}:                                                        true,
+	{APIVersion: "batch/v1beta1", Kind: "CronJob"}:                                               true,
+	{APIVersion: "certificates.k8s.io/v1", Kind: "CertificateSigningRequest"}:                    false,
+	{APIVersion: "certificates.k8s.io/v1beta1", Kind: "CertificateSigningRequest"}:               false,
+	{APIVersion: "coordination.k8s.io/v1", Kind: "Lease"}:                                        true,
+	{APIVersion: "coordination.k8s.io/v1beta1", Kind: "Lease"}:                                   true,
+	{APIVersion: "discovery.k8s.io/v1", Kind: "EndpointSlice"}:                                   true,
+	{APIVersion: "discovery.k8s.io/v1beta1", Kind: "EndpointSlice"}:                              true,
+	{APIVersion: "events.k8s.io/v1", Kind: "Event"}:                                              true,
+	{APIVersion: "events.k8s.io/v1beta1", Kind: "Event"}:                                         true,
+	{APIVersion: "extensions/v1beta1", Kind: "Ingress"}:                                          true,
+	{APIVersion: "flowcontrol.apiserver.k8s.io/v1beta1", Kind: "FlowSchema"}:                     false,
+	{APIVersion: "flowcontrol.apiserver.k8s.io/v1beta1", Kind: "PriorityLevelConfiguration"}:     false,
+	{APIVersion: "networking.k8s.io/v1", Kind: "Ingress"}:                                        true,
+	{APIVersion: "networking.k8s.io/v1", Kind: "IngressClass"}:                                   false,
+	{APIVersion: "networking.k8s.io/v1", Kind: "NetworkPolicy"}:                                  true,
+	{APIVersion: "networking.k8s.io/v1beta1", Kind: "Ingress"}:                                   true,
+	{APIVersion: "networking.k8s.io/v1beta1", Kind: "IngressClass"}:                              false,
+	{APIVersion: "node.k8s.io/v1", Kind: "RuntimeClass"}:                                         false,
+	{APIVersion: "node.k8s.io/v1beta1", Kind: "RuntimeClass"}:                                    false,
+	{APIVersion: "policy/v1", Kind: "PodDisruptionBudget"}:                                       true,
+	{APIVersion: "policy/v1beta1", Kind: "PodDisruptionBudget"}:                                  true,
+	{APIVersion: "policy/v1beta1", Kind: "PodSecurityPolicy"}:                                    false, // remove after openapi upgrades to v1.25.
+	{APIVersion: "rbac.authorization.k8s.io/v1", Kind: "ClusterRole"}:                            false,
+	{APIVersion: "rbac.authorization.k8s.io/v1", Kind: "ClusterRoleBinding"}:                     false,
+	{APIVersion: "rbac.authorization.k8s.io/v1", Kind: "Role"}:                                   true,
+	{APIVersion: "rbac.authorization.k8s.io/v1", Kind: "RoleBinding"}:                            true,
+	{APIVersion: "rbac.authorization.k8s.io/v1beta1", Kind: "ClusterRole"}:                       false,
+	{APIVersion: "rbac.authorization.k8s.io/v1beta1", Kind: "ClusterRoleBinding"}:                false,
+	{APIVersion: "rbac.authorization.k8s.io/v1beta1", Kind: "Role"}:                              true,
+	{APIVersion: "rbac.authorization.k8s.io/v1beta1", Kind: "RoleBinding"}:                       true,
+	{APIVersion: "scheduling.k8s.io/v1", Kind: "PriorityClass"}:                                  false,
+	{APIVersion: "scheduling.k8s.io/v1beta1", Kind: "PriorityClass"}:                             false,
+	{APIVersion: "storage.k8s.io/v1", Kind: "CSIDriver"}:                                         false,
+	{APIVersion: "storage.k8s.io/v1", Kind: "CSINode"}:                                           false,
+	{APIVersion: "storage.k8s.io/v1", Kind: "StorageClass"}:                                      false,
+	{APIVersion: "storage.k8s.io/v1", Kind: "VolumeAttachment"}:                                  false,
+	{APIVersion: "storage.k8s.io/v1beta1", Kind: "CSIDriver"}:                                    false,
+	{APIVersion: "storage.k8s.io/v1beta1", Kind: "CSINode"}:                                      false,
+	{APIVersion: "storage.k8s.io/v1beta1", Kind: "CSIStorageCapacity"}:                           true,
+	{APIVersion: "storage.k8s.io/v1beta1", Kind: "StorageClass"}:                                 false,
+	{APIVersion: "storage.k8s.io/v1beta1", Kind: "VolumeAttachment"}:                             false,
+	{APIVersion: "v1", Kind: "ComponentStatus"}:                                                  false,
+	{APIVersion: "v1", Kind: "ConfigMap"}:                                                        true,
+	{APIVersion: "v1", Kind: "Endpoints"}:                                                        true,
+	{APIVersion: "v1", Kind: "Event"}:                                                            true,
+	{APIVersion: "v1", Kind: "LimitRange"}:                                                       true,
+	{APIVersion: "v1", Kind: "Namespace"}:                                                        false,
+	{APIVersion: "v1", Kind: "Node"}:                                                             false,
+	{APIVersion: "v1", Kind: "NodeProxyOptions"}:                                                 false,
+	{APIVersion: "v1", Kind: "PersistentVolume"}:                                                 false,
+	{APIVersion: "v1", Kind: "PersistentVolumeClaim"}:                                            true,
+	{APIVersion: "v1", Kind: "Pod"}:                                                              true,
+	{APIVersion: "v1", Kind: "PodAttachOptions"}:                                                 true,
+	{APIVersion: "v1", Kind: "PodExecOptions"}:                                                   true,
+	{APIVersion: "v1", Kind: "PodPortForwardOptions"}:                                            true,
+	{APIVersion: "v1", Kind: "PodProxyOptions"}:                                                  true,
+	{APIVersion: "v1", Kind: "PodTemplate"}:                                                      true,
+	{APIVersion: "v1", Kind: "ReplicationController"}:                                            true,
+	{APIVersion: "v1", Kind: "ResourceQuota"}:                                                    true,
+	{APIVersion: "v1", Kind: "Secret"}:                                                           true,
+	{APIVersion: "v1", Kind: "Service"}:                                                          true,
+	{APIVersion: "v1", Kind: "ServiceAccount"}:                                                   true,
+	{APIVersion: "v1", Kind: "ServiceProxyOptions"}:                                              true,
 }
 
 // ResourceSchema wraps the OpenAPI Schema.
@@ -121,7 +234,7 @@ func definitionRefsFromRNode(object *yaml.RNode) ([]string, error) {
 
 // parseOpenAPI reads openAPIPath yaml and converts it to RNode
 func parseOpenAPI(openAPIPath string) (*yaml.RNode, error) {
-	b, err := ioutil.ReadFile(openAPIPath)
+	b, err := os.ReadFile(openAPIPath)
 	if err != nil {
 		return nil, err
 	}
@@ -174,12 +287,17 @@ func schemaUsingField(object *yaml.RNode, field string) (*spec.Schema, error) {
 
 // AddSchema parses s, and adds definitions from s to the global schema.
 func AddSchema(s []byte) error {
-	return parse(s)
+	return parse(s, JsonOrYaml)
 }
 
 // ResetOpenAPI resets the openapi data to empty
 func ResetOpenAPI() {
+	schemaLock.Lock()
+	defer schemaLock.Unlock()
+
 	globalSchema = openapiData{}
+	customSchema = nil
+	kubernetesOpenAPIVersion = ""
 }
 
 // AddDefinitions adds the definitions to the global schema.
@@ -206,15 +324,17 @@ func AddDefinitions(definitions spec.Definitions) {
 		}
 		// cast the extension to a []map[string]string
 		exts, ok := gvk.([]interface{})
-		if !ok || len(exts) != 1 {
-			continue
-		}
-
-		typeMeta, ok := toTypeMeta(exts[0])
 		if !ok {
 			continue
 		}
-		globalSchema.schemaByResourceType[typeMeta] = &d
+
+		for i := range exts {
+			typeMeta, ok := toTypeMeta(exts[i])
+			if !ok {
+				continue
+			}
+			globalSchema.schemaByResourceType[typeMeta] = &d
+		}
 	}
 }
 
@@ -224,9 +344,8 @@ func toTypeMeta(ext interface{}) (yaml.TypeMeta, bool) {
 		return yaml.TypeMeta{}, false
 	}
 
-	g := m[groupKey].(string)
 	apiVersion := m[versionKey].(string)
-	if g != "" {
+	if g, ok := m[groupKey].(string); ok && g != "" {
 		apiVersion = g + "/" + apiVersion
 	}
 	return yaml.TypeMeta{Kind: m[kindKey].(string), APIVersion: apiVersion}, true
@@ -264,10 +383,17 @@ func GetSchema(s string, schema *spec.Schema) (*ResourceSchema, error) {
 // cluster-scoped by looking at the information in the openapi schema.
 // The second return value tells whether the provided type could be found
 // in the openapi schema. If the value is false here, the scope of the
-// resource is not known. If the type if found, the first return value will
+// resource is not known. If the type is found, the first return value will
 // be true if the resource is namespace-scoped, and false if the type is
 // cluster-scoped.
 func IsNamespaceScoped(typeMeta yaml.TypeMeta) (bool, bool) {
+	if res, f := precomputedIsNamespaceScoped[typeMeta]; f {
+		return res, true
+	}
+	return isNamespaceScopedFromSchema(typeMeta)
+}
+
+func isNamespaceScopedFromSchema(typeMeta yaml.TypeMeta) (bool, bool) {
 	initSchema()
 	isNamespaceScoped, found := globalSchema.namespaceabilityByResourceType[typeMeta]
 	return isNamespaceScoped, found
@@ -291,7 +417,7 @@ func SuppressBuiltInSchemaUse() {
 
 // Elements returns the Schema for the elements of an array.
 func (rs *ResourceSchema) Elements() *ResourceSchema {
-	// load the schema from swagger.json
+	// load the schema from swagger files
 	initSchema()
 
 	if len(rs.Schema.Type) != 1 || rs.Schema.Type[0] != "array" {
@@ -337,7 +463,7 @@ func (rs *ResourceSchema) Lookup(path ...string) *ResourceSchema {
 
 // Field returns the Schema for a field.
 func (rs *ResourceSchema) Field(field string) *ResourceSchema {
-	// load the schema from swagger.json
+	// load the schema from swagger files
 	initSchema()
 
 	// locate the Schema
@@ -350,7 +476,7 @@ func (rs *ResourceSchema) Field(field string) *ResourceSchema {
 		// (the key doesn't matter, they all have the same value type)
 		s = *rs.Schema.AdditionalProperties.Schema
 	default:
-		// no Schema found from either swagger.json or line comments
+		// no Schema found from either swagger files or line comments
 		return nil
 	}
 
@@ -436,43 +562,55 @@ const (
 	groupKey = "group"
 	// versionKey is the key to lookup the version from the GVK extension
 	versionKey = "version"
-	// kindKey is the the to lookup the kind from the GVK extension
+	// kindKey is the to lookup the kind from the GVK extension
 	kindKey = "kind"
 )
 
 // SetSchema sets the kubernetes OpenAPI schema version to use
 func SetSchema(openAPIField map[string]string, schema []byte, reset bool) error {
+	schemaLock.Lock()
+	defer schemaLock.Unlock()
+
 	// this should only be set once
 	schemaIsSet := (kubernetesOpenAPIVersion != "") || customSchema != nil
 	if schemaIsSet && !reset {
 		return nil
 	}
 
-	version, exists := openAPIField["version"]
-	if exists && schema != nil {
-		return fmt.Errorf("builtin version and custom schema provided, cannot use both")
-	}
+	version, versionProvided := openAPIField["version"]
 
-	if schema != nil { // use custom schema
+	// use custom schema
+	if schema != nil {
+		if versionProvided {
+			return fmt.Errorf("builtin version and custom schema provided, cannot use both")
+		}
 		customSchema = schema
 		kubernetesOpenAPIVersion = "custom"
+		// if the schema is changed, initSchema should parse the new schema
+		globalSchema.schemaInit = false
 		return nil
 	}
 
 	// use builtin version
-	kubernetesOpenAPIVersion = strings.ReplaceAll(version, ".", "")
+	kubernetesOpenAPIVersion = version
 	if kubernetesOpenAPIVersion == "" {
 		return nil
 	}
 	if _, ok := kubernetesapi.OpenAPIMustAsset[kubernetesOpenAPIVersion]; !ok {
 		return fmt.Errorf("the specified OpenAPI version is not built in")
 	}
+
 	customSchema = nil
+	// if the schema is changed, initSchema should parse the new schema
+	globalSchema.schemaInit = false
 	return nil
 }
 
 // GetSchemaVersion returns what kubernetes OpenAPI version is being used
 func GetSchemaVersion() string {
+	schemaLock.RLock()
+	defer schemaLock.RUnlock()
+
 	switch {
 	case kubernetesOpenAPIVersion == "" && customSchema == nil:
 		return kubernetesOpenAPIDefaultVersion
@@ -485,64 +623,83 @@ func GetSchemaVersion() string {
 
 // initSchema parses the json schema
 func initSchema() {
+	schemaLock.Lock()
+	defer schemaLock.Unlock()
+
 	if globalSchema.schemaInit {
 		return
 	}
 	globalSchema.schemaInit = true
 
+	// TODO(natasha41575): Accept proto-formatted schema files
 	if customSchema != nil {
-		err := parse(customSchema)
+		err := parse(customSchema, JsonOrYaml)
 		if err != nil {
-			panic("invalid schema file")
+			panic(fmt.Errorf("invalid schema file: %w", err))
 		}
-		if err = parse(kustomizationapi.MustAsset(kustomizationAPIAssetName)); err != nil {
-			// this should never happen
-			panic(err)
+	} else {
+		if kubernetesOpenAPIVersion == "" {
+			parseBuiltinSchema(kubernetesOpenAPIDefaultVersion)
+		} else {
+			parseBuiltinSchema(kubernetesOpenAPIVersion)
 		}
-		return
 	}
 
-	if kubernetesOpenAPIVersion == "" {
-		parseBuiltinSchema(kubernetesOpenAPIDefaultVersion)
-	} else {
-		parseBuiltinSchema(kubernetesOpenAPIVersion)
+	if err := parse(kustomizationapi.MustAsset(kustomizationAPIAssetName), JsonOrYaml); err != nil {
+		// this should never happen
+		panic(err)
 	}
 }
 
-// parseBuiltinSchema calls parse to parse the json schemas
+// parseBuiltinSchema calls parse to parse the json or proto schemas
 func parseBuiltinSchema(version string) {
 	if globalSchema.noUseBuiltInSchema {
 		// don't parse the built in schema
 		return
 	}
-
 	// parse the swagger, this should never fail
 	assetName := filepath.Join(
 		"kubernetesapi",
-		version,
-		"swagger.json")
+		strings.ReplaceAll(version, ".", "_"),
+		"swagger.pb")
 
-	if err := parse(kubernetesapi.OpenAPIMustAsset[version](assetName)); err != nil {
-		// this should never happen
-		panic(err)
-	}
-
-	if err := parse(kustomizationapi.MustAsset(kustomizationAPIAssetName)); err != nil {
+	if err := parse(kubernetesapi.OpenAPIMustAsset[version](assetName), Proto); err != nil {
 		// this should never happen
 		panic(err)
 	}
 }
 
-// parse parses and indexes a single json schema
-func parse(b []byte) error {
+// parse parses and indexes a single json or proto schema
+func parse(b []byte, format format) error {
 	var swagger spec.Swagger
+	switch {
+	case format == Proto:
+		doc := &openapi_v2.Document{}
+		// We parse protobuf and get an openapi_v2.Document here.
+		if err := proto.Unmarshal(b, doc); err != nil {
+			return fmt.Errorf("openapi proto unmarshalling failed: %w", err)
+		}
+		// convert the openapi_v2.Document back to Swagger
+		_, err := swagger.FromGnostic(doc)
+		if err != nil {
+			return errors.Wrap(err)
+		}
 
-	if err := swagger.UnmarshalJSON(b); err != nil {
-		return errors.Wrap(err)
+	case format == JsonOrYaml:
+		if len(b) > 0 && b[0] != byte('{') {
+			var err error
+			b, err = k8syaml.YAMLToJSON(b)
+			if err != nil {
+				return errors.Wrap(err)
+			}
+		}
+		if err := swagger.UnmarshalJSON(b); err != nil {
+			return errors.Wrap(err)
+		}
 	}
+
 	AddDefinitions(swagger.Definitions)
 	findNamespaceability(swagger.Paths)
-
 	return nil
 }
 
@@ -586,6 +743,9 @@ func findNamespaceability(paths *spec.Paths) {
 }
 
 func resolve(root interface{}, ref *spec.Ref) (*spec.Schema, error) {
+	if s, ok := root.(*spec.Schema); ok && s == nil {
+		return nil, nil
+	}
 	res, _, err := ref.GetPointer().Get(root)
 	if err != nil {
 		return nil, errors.Wrap(err)

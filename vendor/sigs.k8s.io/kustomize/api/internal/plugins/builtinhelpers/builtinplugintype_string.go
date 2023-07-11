@@ -15,22 +15,23 @@ func _() {
 	_ = x[HashTransformer-4]
 	_ = x[ImageTagTransformer-5]
 	_ = x[LabelTransformer-6]
-	_ = x[LegacyOrderTransformer-7]
-	_ = x[NamespaceTransformer-8]
-	_ = x[PatchJson6902Transformer-9]
-	_ = x[PatchStrategicMergeTransformer-10]
-	_ = x[PatchTransformer-11]
-	_ = x[PrefixSuffixTransformer-12]
-	_ = x[ReplicaCountTransformer-13]
-	_ = x[SecretGenerator-14]
-	_ = x[ValueAddTransformer-15]
-	_ = x[HelmChartInflationGenerator-16]
-	_ = x[ReplacementTransformer-17]
+	_ = x[NamespaceTransformer-7]
+	_ = x[PatchJson6902Transformer-8]
+	_ = x[PatchStrategicMergeTransformer-9]
+	_ = x[PatchTransformer-10]
+	_ = x[PrefixSuffixTransformer-11]
+	_ = x[PrefixTransformer-12]
+	_ = x[SuffixTransformer-13]
+	_ = x[ReplicaCountTransformer-14]
+	_ = x[SecretGenerator-15]
+	_ = x[ValueAddTransformer-16]
+	_ = x[HelmChartInflationGenerator-17]
+	_ = x[ReplacementTransformer-18]
 }
 
-const _BuiltinPluginType_name = "UnknownAnnotationsTransformerConfigMapGeneratorIAMPolicyGeneratorHashTransformerImageTagTransformerLabelTransformerLegacyOrderTransformerNamespaceTransformerPatchJson6902TransformerPatchStrategicMergeTransformerPatchTransformerPrefixSuffixTransformerReplicaCountTransformerSecretGeneratorValueAddTransformerHelmChartInflationGeneratorReplacementTransformer"
+const _BuiltinPluginType_name = "UnknownAnnotationsTransformerConfigMapGeneratorIAMPolicyGeneratorHashTransformerImageTagTransformerLabelTransformerNamespaceTransformerPatchJson6902TransformerPatchStrategicMergeTransformerPatchTransformerPrefixSuffixTransformerPrefixTransformerSuffixTransformerReplicaCountTransformerSecretGeneratorValueAddTransformerHelmChartInflationGeneratorReplacementTransformer"
 
-var _BuiltinPluginType_index = [...]uint16{0, 7, 29, 47, 65, 80, 99, 115, 137, 157, 181, 211, 227, 250, 273, 288, 307, 334, 356}
+var _BuiltinPluginType_index = [...]uint16{0, 7, 29, 47, 65, 80, 99, 115, 135, 159, 189, 205, 228, 245, 262, 285, 300, 319, 346, 368}
 
 func (i BuiltinPluginType) String() string {
 	if i < 0 || i >= BuiltinPluginType(len(_BuiltinPluginType_index)-1) {

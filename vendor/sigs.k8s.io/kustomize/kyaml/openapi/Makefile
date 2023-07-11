@@ -5,7 +5,8 @@ MYGOBIN = $(shell go env GOBIN)
 ifeq ($(MYGOBIN),)
 MYGOBIN = $(shell go env GOPATH)/bin
 endif
-API_VERSION := "v1.19.1"
+KIND_VERSION := "v0.11.1"
+API_VERSION ?= "v1.21.2"
 
 .PHONY: all
 all: \
@@ -27,20 +28,21 @@ nuke: clean
 	rm -r kubernetesapi/*
 
 $(MYGOBIN)/go-bindata:
-	go install github.com/go-bindata/go-bindata/v3/go-bindata
+	go install github.com/go-bindata/go-bindata/v3/go-bindata@latest
 
 $(MYGOBIN)/kind:
 	( \
 		set -e; \
 		d=$(shell mktemp -d); cd $$d; \
-		wget -O ./kind https://github.com/kubernetes-sigs/kind/releases/download/v0.7.0/kind-$(shell uname)-amd64; \
+		wget -O ./kind https://github.com/kubernetes-sigs/kind/releases/download/$(KIND_VERSION)/kind-$(shell uname)-amd64; \
 		chmod +x ./kind; \
 		mv ./kind $(MYGOBIN); \
 		rm -rf $$d; \
 	)
 
-$(MYGOBIN)/kpt:
-	../../hack/install_kpt.sh 0.34.0 $(MYGOBIN)
+.PHONY: kubernetesapi/openapiinfo.go
+kubernetesapi/openapiinfo.go:
+	./scripts/makeOpenApiInfoDotGo.sh
 
 kustomizationapi/swagger.go: $(MYGOBIN)/go-bindata kustomizationapi/swagger.json
 	$(MYGOBIN)/go-bindata \
@@ -48,14 +50,13 @@ kustomizationapi/swagger.go: $(MYGOBIN)/go-bindata kustomizationapi/swagger.json
 		-o kustomizationapi/swagger.go \
 		kustomizationapi/swagger.json
 
-.PHONY: kubernetesapi/openapiinfo.go
-kubernetesapi/openapiinfo.go:
-	./scripts/makeOpenApiInfoDotGo.sh
-
-.PHONY: kubernetesapi/swagger.json
-kubernetesapi/swagger.json: $(MYGOBIN)/kind $(MYGOBIN)/kpt
+.PHONY: kubernetesapi/swagger.pb
+kubernetesapi/swagger.pb: $(MYGOBIN)/kind $(MYGOBIN)/kustomize
 	./scripts/fetchSchemaFromCluster.sh $(API_VERSION)
 
 .PHONY: kubernetesapi/swagger.go
-kubernetesapi/swagger.go: $(MYGOBIN)/go-bindata kubernetesapi/swagger.json
+kubernetesapi/swagger.go: $(MYGOBIN)/go-bindata kubernetesapi/swagger.pb
 	./scripts/generateSwaggerDotGo.sh $(API_VERSION)
+
+$(MYGOBIN)/kustomize:
+	$(shell cd ../.. && MYGOBIN=$(MYGOBIN) make $(MYGOBIN)/kustomize)

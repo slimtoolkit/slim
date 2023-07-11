@@ -42,6 +42,11 @@ type LatencyMetric interface {
 	Observe(ctx context.Context, verb string, u url.URL, latency time.Duration)
 }
 
+// SizeMetric observes client response size partitioned by verb and host.
+type SizeMetric interface {
+	Observe(ctx context.Context, verb string, host string, size float64)
+}
+
 // ResultMetric counts response codes partitioned by method and host.
 type ResultMetric interface {
 	Increment(ctx context.Context, code string, method string, host string)
@@ -53,6 +58,12 @@ type CallsMetric interface {
 	Increment(exitCode int, callStatus string)
 }
 
+// RetryMetric counts the number of retries sent to the server
+// partitioned by code, method, and host.
+type RetryMetric interface {
+	IncrementRetry(ctx context.Context, code string, method string, host string)
+}
+
 var (
 	// ClientCertExpiry is the expiry time of a client certificate
 	ClientCertExpiry ExpiryMetric = noopExpiry{}
@@ -60,6 +71,10 @@ var (
 	ClientCertRotationAge DurationMetric = noopDuration{}
 	// RequestLatency is the latency metric that rest clients will update.
 	RequestLatency LatencyMetric = noopLatency{}
+	// RequestSize is the request size metric that rest clients will update.
+	RequestSize SizeMetric = noopSize{}
+	// ResponseSize is the response size metric that rest clients will update.
+	ResponseSize SizeMetric = noopSize{}
 	// RateLimiterLatency is the client side rate limiter latency metric.
 	RateLimiterLatency LatencyMetric = noopLatency{}
 	// RequestResult is the result metric that rest clients will update.
@@ -67,6 +82,9 @@ var (
 	// ExecPluginCalls is the number of calls made to an exec plugin, partitioned by
 	// exit code and call status.
 	ExecPluginCalls CallsMetric = noopCalls{}
+	// RequestRetry is the retry metric that tracks the number of
+	// retries sent to the server.
+	RequestRetry RetryMetric = noopRetry{}
 )
 
 // RegisterOpts contains all the metrics to register. Metrics may be nil.
@@ -74,9 +92,12 @@ type RegisterOpts struct {
 	ClientCertExpiry      ExpiryMetric
 	ClientCertRotationAge DurationMetric
 	RequestLatency        LatencyMetric
+	RequestSize           SizeMetric
+	ResponseSize          SizeMetric
 	RateLimiterLatency    LatencyMetric
 	RequestResult         ResultMetric
 	ExecPluginCalls       CallsMetric
+	RequestRetry          RetryMetric
 }
 
 // Register registers metrics for the rest client to use. This can
@@ -92,6 +113,12 @@ func Register(opts RegisterOpts) {
 		if opts.RequestLatency != nil {
 			RequestLatency = opts.RequestLatency
 		}
+		if opts.RequestSize != nil {
+			RequestSize = opts.RequestSize
+		}
+		if opts.ResponseSize != nil {
+			ResponseSize = opts.ResponseSize
+		}
 		if opts.RateLimiterLatency != nil {
 			RateLimiterLatency = opts.RateLimiterLatency
 		}
@@ -100,6 +127,9 @@ func Register(opts RegisterOpts) {
 		}
 		if opts.ExecPluginCalls != nil {
 			ExecPluginCalls = opts.ExecPluginCalls
+		}
+		if opts.RequestRetry != nil {
+			RequestRetry = opts.RequestRetry
 		}
 	})
 }
@@ -116,6 +146,10 @@ type noopLatency struct{}
 
 func (noopLatency) Observe(context.Context, string, url.URL, time.Duration) {}
 
+type noopSize struct{}
+
+func (noopSize) Observe(context.Context, string, string, float64) {}
+
 type noopResult struct{}
 
 func (noopResult) Increment(context.Context, string, string, string) {}
@@ -123,3 +157,7 @@ func (noopResult) Increment(context.Context, string, string, string) {}
 type noopCalls struct{}
 
 func (noopCalls) Increment(int, string) {}
+
+type noopRetry struct{}
+
+func (noopRetry) IncrementRetry(context.Context, string, string, string) {}

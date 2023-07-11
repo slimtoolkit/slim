@@ -25,6 +25,7 @@ import (
 	"strings"
 
 	"k8s.io/apimachinery/pkg/util/validation/field"
+	netutils "k8s.io/utils/net"
 )
 
 const qnameCharFmt string = "[A-Za-z0-9]"
@@ -190,7 +191,13 @@ func IsDNS1123Label(value string) []string {
 		errs = append(errs, MaxLenError(DNS1123LabelMaxLength))
 	}
 	if !dns1123LabelRegexp.MatchString(value) {
-		errs = append(errs, RegexError(dns1123LabelErrMsg, dns1123LabelFmt, "my-name", "123-abc"))
+		if dns1123SubdomainRegexp.MatchString(value) {
+			// It was a valid subdomain and not a valid label.  Since we
+			// already checked length, it must be dots.
+			errs = append(errs, "must not contain dots")
+		} else {
+			errs = append(errs, RegexError(dns1123LabelErrMsg, dns1123LabelFmt, "my-name", "123-abc"))
+		}
 	}
 	return errs
 }
@@ -333,7 +340,7 @@ func IsValidPortName(port string) []string {
 		errs = append(errs, "must contain only alpha-numeric characters (a-z, 0-9), and hyphens (-)")
 	}
 	if !portNameOneLetterRegexp.MatchString(port) {
-		errs = append(errs, "must contain at least one letter or number (a-z, 0-9)")
+		errs = append(errs, "must contain at least one letter (a-z)")
 	}
 	if strings.Contains(port, "--") {
 		errs = append(errs, "must not contain consecutive hyphens")
@@ -346,7 +353,7 @@ func IsValidPortName(port string) []string {
 
 // IsValidIP tests that the argument is a valid IP address.
 func IsValidIP(value string) []string {
-	if net.ParseIP(value) == nil {
+	if netutils.ParseIPSloppy(value) == nil {
 		return []string{"must be a valid IP address, (e.g. 10.9.8.7 or 2001:db8::ffff)"}
 	}
 	return nil
@@ -355,7 +362,7 @@ func IsValidIP(value string) []string {
 // IsValidIPv4Address tests that the argument is a valid IPv4 address.
 func IsValidIPv4Address(fldPath *field.Path, value string) field.ErrorList {
 	var allErrors field.ErrorList
-	ip := net.ParseIP(value)
+	ip := netutils.ParseIPSloppy(value)
 	if ip == nil || ip.To4() == nil {
 		allErrors = append(allErrors, field.Invalid(fldPath, value, "must be a valid IPv4 address"))
 	}
@@ -365,7 +372,7 @@ func IsValidIPv4Address(fldPath *field.Path, value string) field.ErrorList {
 // IsValidIPv6Address tests that the argument is a valid IPv6 address.
 func IsValidIPv6Address(fldPath *field.Path, value string) field.ErrorList {
 	var allErrors field.ErrorList
-	ip := net.ParseIP(value)
+	ip := netutils.ParseIPSloppy(value)
 	if ip == nil || ip.To4() != nil {
 		allErrors = append(allErrors, field.Invalid(fldPath, value, "must be a valid IPv6 address"))
 	}

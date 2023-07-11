@@ -1,26 +1,14 @@
+// Copyright 2022 The Kubernetes Authors.
+// SPDX-License-Identifier: Apache-2.0
+
 package utils
 
 import (
 	"fmt"
 	"strings"
 
-	"sigs.k8s.io/kustomize/api/konfig"
 	"sigs.k8s.io/kustomize/kyaml/resid"
 	"sigs.k8s.io/kustomize/kyaml/yaml"
-)
-
-const (
-	BuildAnnotationPreviousKinds      = konfig.ConfigAnnoDomain + "/previousKinds"
-	BuildAnnotationPreviousNames      = konfig.ConfigAnnoDomain + "/previousNames"
-	BuildAnnotationPrefixes           = konfig.ConfigAnnoDomain + "/prefixes"
-	BuildAnnotationSuffixes           = konfig.ConfigAnnoDomain + "/suffixes"
-	BuildAnnotationPreviousNamespaces = konfig.ConfigAnnoDomain + "/previousNamespaces"
-
-	// the following are only for patches, to specify whether they can change names
-	// and kinds of their targets
-	BuildAnnotationAllowNameChange = konfig.ConfigAnnoDomain + "/allowNameChange"
-	BuildAnnotationAllowKindChange = konfig.ConfigAnnoDomain + "/allowKindChange"
-	Allowed                        = "allowed"
 )
 
 // MakeResIds returns all of an RNode's current and previous Ids
@@ -47,7 +35,10 @@ func PrevIds(n *yaml.RNode) ([]resid.ResId, error) {
 	var ids []resid.ResId
 	// TODO: merge previous names and namespaces into one list of
 	//     pairs on one annotation so there is no chance of error
-	annotations := n.GetAnnotations()
+	annotations := n.GetAnnotations(
+		BuildAnnotationPreviousNames,
+		BuildAnnotationPreviousNamespaces,
+		BuildAnnotationPreviousKinds)
 	if _, ok := annotations[BuildAnnotationPreviousNames]; !ok {
 		return nil, nil
 	}
@@ -61,12 +52,10 @@ func PrevIds(n *yaml.RNode) ([]resid.ResId, error) {
 				"number of previous namespaces, " +
 				"number of previous kinds not equal")
 	}
+	apiVersion := n.GetApiVersion()
+	group, version := resid.ParseGroupVersion(apiVersion)
+	ids = make([]resid.ResId, 0, len(names))
 	for i := range names {
-		meta, err := n.GetMeta()
-		if err != nil {
-			return nil, err
-		}
-		group, version := resid.ParseGroupVersion(meta.APIVersion)
 		gvk := resid.Gvk{
 			Group:   group,
 			Version: version,

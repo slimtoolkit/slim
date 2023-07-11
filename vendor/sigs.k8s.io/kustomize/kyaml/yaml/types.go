@@ -39,9 +39,18 @@ func IsYNodeEmptyMap(n *yaml.Node) bool {
 	return n != nil && n.Kind == yaml.MappingNode && len(n.Content) == 0
 }
 
-// IsYNodeEmptyMap is true if the Node is a non-nil empty sequence.
+// IsYNodeEmptySeq is true if the Node is a non-nil empty sequence.
 func IsYNodeEmptySeq(n *yaml.Node) bool {
 	return n != nil && n.Kind == yaml.SequenceNode && len(n.Content) == 0
+}
+
+// IsYNodeNilOrEmpty is true if the Node is nil or appears empty.
+func IsYNodeNilOrEmpty(n *yaml.Node) bool {
+	return n == nil ||
+		IsYNodeTaggedNull(n) ||
+		IsYNodeEmptyMap(n) ||
+		IsYNodeEmptySeq(n) ||
+		IsYNodeZero(n)
 }
 
 // IsYNodeEmptyDoc is true if the node is a Document with no content.
@@ -139,16 +148,16 @@ type NameMeta struct {
 type ResourceMeta struct {
 	TypeMeta `json:",inline" yaml:",inline"`
 	// ObjectMeta is the metadata field of a Resource
-	ObjectMeta `yaml:"metadata,omitempty"`
+	ObjectMeta `json:"metadata,omitempty" yaml:"metadata,omitempty"`
 }
 
 // ObjectMeta contains metadata about a Resource
 type ObjectMeta struct {
 	NameMeta `json:",inline" yaml:",inline"`
 	// Labels is the metadata.labels field of a Resource
-	Labels map[string]string `yaml:"labels,omitempty"`
+	Labels map[string]string `json:"labels,omitempty" yaml:"labels,omitempty"`
 	// Annotations is the metadata.annotations field of a Resource.
-	Annotations map[string]string `yaml:"annotations,omitempty"`
+	Annotations map[string]string `json:"annotations,omitempty" yaml:"annotations,omitempty"`
 }
 
 // GetIdentifier returns a ResourceIdentifier that includes
