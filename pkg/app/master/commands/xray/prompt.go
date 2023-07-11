@@ -1,9 +1,9 @@
 package xray
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-
 	"github.com/c-bata/go-prompt"
+
+	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
 )
 
 var CommandSuggestion = prompt.Suggest{
