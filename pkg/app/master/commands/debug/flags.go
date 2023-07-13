@@ -32,7 +32,7 @@ const (
 	FlagTerminalUsage = "Attach interactive terminal to the debug container"
 
 	FlagListDebugImage      = "list-debug-images"
-	FlagListDebugImageUsage = "List possible debug images to use for the debug side-car container"
+	FlagListDebugImageUsage = "List possible debug images to use for the debug side-car container (use this flag by itself)"
 
 	FlagKubeconfig      = "kubeconfig"
 	FlagKubeconfigUsage = "Kubeconfig file location (k8s runtime)"
