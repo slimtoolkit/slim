@@ -1,5 +1,24 @@
 # Releases
 
+## 1.40.3 (7/13/2023)
+
+### New Features
+
+- Kubernetes runtime support for the `debug` command
+- `appbom` command in the main app and `--appbom` flag in the sensor
+
+### Improvements
+
+- More `debug` command flags
+- README docs for the `debug` command
+- Ability to detect the Docker Desktop unix socket
+- Code and logging cleanup
+
+### Bug Fixes
+
+- Sensor volume fix for sensor symlinks (to address the Homebrew installed problems with sensor)
+- Various dependency updates to get security fixes
+
 ## 1.40.2 (5/12/2023)
 
 ### Improvements
