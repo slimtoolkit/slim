@@ -742,17 +742,17 @@ You can use the `--http-probe-exec` and `--http-probe-exec-file` options to run 
 
 ### Debugging Using the `debug` Command
 
-The current version of the `debug` command is pretty basic and it lacks a number of useful capabilities. It also require that the target container you are debugging has ipc mode set to `sharable`. By default, Docker containers are started with the IPC namespace being "non-sharable". When you start your container using the `docker run` command make sure to have the `--ipc 'shareable'` flag. 
+The current version of the `debug` command is pretty basic and it lacks a number of useful capabilities. It will help you debug containers running in Docker or Kubernetes (use the `--runtime` flag and set it to `k8s` if you need to debug a container in Kubernetes). 
 
 By default the `debug` command will provide you with an interactive terminal when it attaches the debugger side-car image to the debugged target container. Future versions will allow you to have different interaction modes with the target.
 
-#### Steps to debug your container (nginx example) 
+#### Steps to debug your container (nginx Docker runtime example) 
 
 1. Start the target container you want to debug (it doesn't need to be minified)
 2. Run the debug command
 
 ```bash
->> docker run -it --rm -p 80:80 --ipc 'shareable' --name mycontainer nginx
+>> docker run -it --rm -p 80:80 --name mycontainer nginx
 ...
 
 >> slim debug mycontainer
