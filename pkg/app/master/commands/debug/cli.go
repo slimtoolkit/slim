@@ -15,9 +15,20 @@ const (
 	Alias = "dbg"
 )
 
+const (
+	DockerRuntime     = "docker"
+	KubernetesRuntime = "k8s"
+)
+
 type CommandParams struct {
+	/// the runtime environment type
+	Runtime string
 	/// the running container which we want to attach to
 	TargetRef string
+	/// the target namespace (k8s runtime)
+	TargetNamespace string
+	/// the target pod (k8s runtime)
+	TargetPod string
 	/// the name/id of the container image used for debugging
 	DebugContainerImage string
 	/// ENTRYPOINT used for launching the debugging image
@@ -26,6 +37,8 @@ type CommandParams struct {
 	Cmd []string
 	/// launch the debug container with an interactive terminal attached (like '--it' in docker)
 	DoTerminal bool
+	/// Kubeconfig file path (k8s runtime)
+	Kubeconfig string
 }
 
 var debugImages = map[string]string{
@@ -36,6 +49,7 @@ var debugImages = map[string]string{
 	KoolkitsJVMImage:      "JVM KoolKit - https://github.com/lightrun-platform/koolkits/blob/main/jvm/README.md",
 	DigitaloceanDoksImage: "Kubernetes manifests for investigation and troubleshooting - https://github.com/digitalocean/doks-debug",
 	ZinclabsUbuntuImage:   "Common utilities for debugging your cluster - https://github.com/openobserve/debug-container",
+	BusyboxImage:          "A lightweight image with common unix utilities - https://busybox.net/about.html",
 }
 
 var CLI = &cli.Command{
@@ -43,12 +57,16 @@ var CLI = &cli.Command{
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Flags: []cli.Flag{
+		cflag(FlagRuntime),
 		cflag(FlagTarget),
+		cflag(FlagNamespace),
+		cflag(FlagPod),
 		cflag(FlagDebugImage),
 		cflag(FlagEntrypoint),
 		cflag(FlagCmd),
 		cflag(FlagTerminal),
 		cflag(FlagListDebugImage),
+		cflag(FlagKubeconfig),
 	},
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleFormat))
@@ -67,9 +85,13 @@ var CLI = &cli.Command{
 		}
 
 		commandParams := &CommandParams{
+			Runtime:             ctx.String(FlagRuntime),
 			TargetRef:           ctx.String(FlagTarget),
+			TargetNamespace:     ctx.String(FlagNamespace),
+			TargetPod:           ctx.String(FlagPod),
 			DebugContainerImage: ctx.String(FlagDebugImage),
 			DoTerminal:          ctx.Bool(FlagTerminal),
+			Kubeconfig:          ctx.String(FlagKubeconfig),
 		}
 
 		if rawEntrypoint := ctx.String(FlagEntrypoint); rawEntrypoint != "" {
@@ -88,9 +110,14 @@ var CLI = &cli.Command{
 
 		if commandParams.TargetRef == "" {
 			if ctx.Args().Len() < 1 {
-				xc.Out.Error("param.target", "missing target")
-				cli.ShowCommandHelp(ctx, Name)
-				return nil
+				if commandParams.Runtime != KubernetesRuntime {
+					xc.Out.Error("param.target", "missing target")
+					cli.ShowCommandHelp(ctx, Name)
+					return nil
+				}
+				//NOTE:
+				//It's ok to not specify the target container for k8s
+				//We'll pick the default or first container in the target pod
 			} else {
 				commandParams.TargetRef = ctx.Args().First()
 				if ctx.Args().Len() > 1 && ctx.Args().Slice()[1] == "--" {

@@ -7,8 +7,17 @@ import (
 
 // Debug command flag names and usage descriptions
 const (
+	FlagRuntime      = "runtime"
+	FlagRuntimeUsage = "Runtime environment type"
+
 	FlagTarget      = "target"
 	FlagTargetUsage = "Target container (name or ID)"
+
+	FlagNamespace      = "namespace"
+	FlagNamespaceUsage = "Namespace to target (k8s runtime)"
+
+	FlagPod      = "pod"
+	FlagPodUsage = "Pod to target (k8s runtime)"
 
 	FlagDebugImage      = "debug-image"
 	FlagDebugImageUsage = "Debug image to use for the debug side-car container"
@@ -24,6 +33,9 @@ const (
 
 	FlagListDebugImage      = "list-debug-images"
 	FlagListDebugImageUsage = "List possible debug images to use for the debug side-car container"
+
+	FlagKubeconfig      = "kubeconfig"
+	FlagKubeconfigUsage = "Kubeconfig file location (k8s runtime)"
 )
 
 const (
@@ -34,14 +46,33 @@ const (
 	KoolkitsJVMImage      = "lightruncom/koolkits:jvm"
 	DigitaloceanDoksImage = "digitalocean/doks-debug:latest"
 	ZinclabsUbuntuImage   = "public.ecr.aws/zinclabs/debug-ubuntu-base:latest"
+	BusyboxImage          = "busybox:latest"
 )
 
 var Flags = map[string]cli.Flag{
+	FlagRuntime: &cli.StringFlag{
+		Name:    FlagRuntime,
+		Value:   DockerRuntime,
+		Usage:   FlagRuntimeUsage,
+		EnvVars: []string{"DSLIM_DBG_RT"},
+	},
 	FlagTarget: &cli.StringFlag{
 		Name:    FlagTarget,
 		Value:   "",
 		Usage:   FlagTargetUsage,
 		EnvVars: []string{"DSLIM_DBG_TARGET"},
+	},
+	FlagNamespace: &cli.StringFlag{
+		Name:    FlagNamespace,
+		Value:   "default",
+		Usage:   FlagNamespaceUsage,
+		EnvVars: []string{"DSLIM_DBG_TARGET_NS"},
+	},
+	FlagPod: &cli.StringFlag{
+		Name:    FlagPod,
+		Value:   "",
+		Usage:   FlagPodUsage,
+		EnvVars: []string{"DSLIM_DBG_TARGET_POD"},
 	},
 	FlagDebugImage: &cli.StringFlag{
 		Name:    FlagDebugImage,
@@ -72,6 +103,12 @@ var Flags = map[string]cli.Flag{
 		Value:   false,
 		Usage:   FlagListDebugImageUsage,
 		EnvVars: []string{"DSLIM_DBG_LIST_IMAGES"},
+	},
+	FlagKubeconfig: &cli.StringFlag{
+		Name:    FlagKubeconfig,
+		Value:   "${HOME}/.kube/config",
+		Usage:   FlagKubeconfigUsage,
+		EnvVars: []string{"DSLIM_DBG_KUBECONFIG"},
 	},
 }
 

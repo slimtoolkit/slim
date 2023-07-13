@@ -69,14 +69,15 @@ type VolumeInfo struct {
 }
 
 type ExecutionOptions struct {
-	Entrypoint   []string
-	Cmd          []string
-	PublishPorts map[dockerapi.Port][]dockerapi.PortBinding
-	EnvVars      []string
-	Volumes      []config.VolumeMount
-	LiveLogs     bool
-	Terminal     bool
-	IO           ExecutionIO
+	ContainerName string
+	Entrypoint    []string
+	Cmd           []string
+	PublishPorts  map[dockerapi.Port][]dockerapi.PortBinding
+	EnvVars       []string
+	Volumes       []config.VolumeMount
+	LiveLogs      bool
+	Terminal      bool
+	IO            ExecutionIO
 }
 
 type ExecutionIO struct {
@@ -155,7 +156,13 @@ func NewExecution(
 
 // Start starts a new container execution
 func (ref *Execution) Start() error {
-	ref.ContainerName = fmt.Sprintf(ContainerNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))
+	if ref.options.ContainerName != "" {
+		//we have an explicitly provided container name to use
+		//ideally we first validate that this name can be used...
+		ref.ContainerName = ref.options.ContainerName
+	} else {
+		ref.ContainerName = fmt.Sprintf(ContainerNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))
+	}
 
 	hostConfig := &dockerapi.HostConfig{
 		NetworkMode: ref.NetworkMode,
