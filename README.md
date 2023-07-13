@@ -551,12 +551,16 @@ The `--use-local-mounts` option is used to choose how the Slim sensor is added t
 
 ### `DEBUG` COMMAND OPTIONS
 
+- `--runtime` - Runtime environment type (values: `docker`, `k8s`; defaults to `docker`)
 - `--debug-image` - Debug image to use for the debug side-car container (default value for this flag is `nicolaka/netshoot`).
 - `--list-debug-images` - List possible debug images to use for the debug side-car container (for the `--debug-image` flag). This list is a ready to use set of debug images. You can use other images too.
 - `--target` - Target container name or ID (this can also be provided as the last param in the command line invocation of the `debug` command). Note that the target container must be running. You can use the `docker run` command to start the target container.
+- `--namespace` - Namespace to target [k8s runtime] (defaults to `default`)
+- `--pod` - Pod to target [k8s runtime]
 - `--cmd` - (Optional) custom CMD to use for the debug side-car container (alternatively pass custom CMD params after '--').
 - `--entrypoint` - (Optional) custom ENTRYPOINT to use for the debug side-car container.
 - `--terminal` - Attach interactive terminal to the debug container (default: true). When the interactive terminal is not enabled the debug container output will be printed out to the screen when the `debug` command exits.
+- `--kubeconfig` - Kubeconfig file location [k8s runtime]
 - `--help` show help (default: false)
 
 See the "Debugging Using the `debug` Command" section for more information about this command.
