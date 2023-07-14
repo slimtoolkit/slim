@@ -6,6 +6,7 @@
 
 - Kubernetes runtime support for the `debug` command
 - `appbom` command in the main app and `--appbom` flag in the sensor
+- `merge` command to merge two container images (optimized to merge two minified images).
 
 ### Improvements
 

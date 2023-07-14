@@ -276,7 +276,7 @@ Powered by Slim. It will help you understand and troubleshoot your application c
 
 ## BASIC USAGE INFO
 
-`slim [global flags] [xray|build|profile|run|debug|lint|update|version|appbom|help] [command-specific flags] <IMAGE_ID_OR_NAME>`
+`slim [global flags] [xray|build|profile|run|debug|lint|merge|update|version|appbom|help] [command-specific flags] <IMAGE_ID_OR_NAME>`
 
 If you don't specify any command `slim` will start in the interactive prompt mode.
 
@@ -289,6 +289,7 @@ If you don't specify any command `slim` will start in the interactive prompt mod
 - `registry` - Execute registry operations.
 - `profile` - Performs basic container image analysis and dynamic container analysis, but it doesn't generate an optimized image.
 - `run` - Runs one or more containers (for now runs a single container similar to `docker run`)
+- `merge` - Merge two container images (optimized to merge minified images).
 - `version` - Shows the version information.
 - `appbom` - Shows the application BOM (app composition/dependencies).
 - `update` - Updates Slim to the latest version.
@@ -309,9 +310,11 @@ Commands:
 - `xray` - Show what's in the container image and reverse engineer its Dockerfile
 - `lint` - Lint the target Dockerfile (or image, in the future)
 - `build` - Analyze the target container image along with its application and build an optimized image from it
-- `debug` - Debug the running target container.
+- `debug` - Debug the running target container. This command is useful for troubleshooting running containers created from minimal/minified or regular container images.
 - `registry` - Execute registry operations.
 - `profile` - Collect fat image information and generate a fat container report
+- `merge` - Merge two container images (optimized to merge minified images)
+- `appbom` - Shows the application BOM (app composition/dependencies)
 - `version` - Show app and docker version information
 - `update` - Update the app
 - `help` - Show help info
@@ -565,6 +568,14 @@ The `--use-local-mounts` option is used to choose how the Slim sensor is added t
 - `--help` show help (default: false)
 
 See the "Debugging Using the `debug` Command" section for more information about this command.
+
+### `MERGE` COMMAND OPTIONS
+
+- `--image` - Image to merge. Flag instance position determines the merge order. The command supports two instances of this flag.
+
+- `--use-last-image-metadata` - Use only the last image metadata for the merged image.
+
+- `--tag` - Custom tags for the output image (multiple instances).
 
 ### `REGISTRY` COMMAND OPTIONS
 
