@@ -47,6 +47,7 @@ const (
 	DigitaloceanDoksImage = "digitalocean/doks-debug:latest"
 	ZinclabsUbuntuImage   = "public.ecr.aws/zinclabs/debug-ubuntu-base:latest"
 	BusyboxImage          = "busybox:latest"
+	WolfiBaseImage        = "cgr.dev/chainguard/wolfi-base:latest"
 )
 
 var Flags = map[string]cli.Flag{

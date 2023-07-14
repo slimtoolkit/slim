@@ -50,6 +50,7 @@ var debugImages = map[string]string{
 	DigitaloceanDoksImage: "Kubernetes manifests for investigation and troubleshooting - https://github.com/digitalocean/doks-debug",
 	ZinclabsUbuntuImage:   "Common utilities for debugging your cluster - https://github.com/openobserve/debug-container",
 	BusyboxImage:          "A lightweight image with common unix utilities - https://busybox.net/about.html",
+	WolfiBaseImage:        "A lightweight Wolfi base image - https://github.com/chainguard-images/images/tree/main/images/wolfi-base",
 }
 
 var CLI = &cli.Command{
