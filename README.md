@@ -536,6 +536,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--sensor-ipc-endpoint` - Override sensor IPC endpoint
 - `--rta-onbuild-base-image` - Enable runtime analysis for onbuild base images (default: false)
 - `--rta-source-ptrace` - Enable PTRACE runtime analysis source (default: true)
+- `--image-build-engine` - Select image build engine: `internal` | `docker` | `none` (`internal` - build the output image without using Docker, `docker` - build the output image with Docker [default behavior], `none` - don't build the output image, allows you to do your own build with the tools you want to use, which you'll be able to do by pointing to the artifact directory where the `files.tar` and `Dockerfile` artifacts are located for the output image)
+- `--image-build-arch` - Select output image build architecture (use the standard container image names for the architectures without the OS part)
 - `--obfuscate-metadata` - Obfuscate the standard system and application metadata to make it more challenging to identify the image components (experimental flag, first version of obfuscation; inspired by the [`Malicious Compliance`](https://kccnceu2023.sched.com/event/1Hybu/malicious-compliance-reflections-on-trusting-container-scanners-ian-coldwater-independent-duffie-cooley-isovalent-brad-geesaman-ghost-security-rory-mccune-datadog) KubeCon EU 2023 talk)
 
 
