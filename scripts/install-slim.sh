@@ -10,9 +10,13 @@ function get_slim() {
   local URL=""
   local VER=""
 
-  # Get the current released tag_name
-  VER=$(curl -sL https://api.github.com/repos/docker-slim/docker-slim/releases \
+  if [ -n "$1" ]; then
+    VER=$1
+  else
+    # Get the current released tag_name
+    VER=$(curl -sL https://api.github.com/repos/slimtoolkit/slim/releases \
         | grep tag_name | head -n1 | cut -d'"' -f4)
+  fi
 
   if [ -n "${VER}" ]; then
     URL="https://downloads.dockerslim.com/releases/${VER}"
@@ -96,4 +100,6 @@ if [ "$(id -u)" -ne 0 ]; then
   exit 1
 fi
 
-get_slim
+get_slim $1
+
+# You can pass a specific version to install otherwise the latest version will be installed
