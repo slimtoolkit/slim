@@ -6,26 +6,27 @@ import (
 )
 
 // All supported instruction names
-var DOCKER_INSTRUCTION_NAMES []string = []string{
-	"Add",
-	"Arg",
-	"Cmd",
-	"Copy",
-	"Entrypoint",
-	"Env",
-	"Expose",
-	"From",
-	"Healthcheck",
-	"Label",
-	"Maintainer",
-	"Onbuild",
-	"Run",
-	"Shell",
-	"StopSignal",
-	"User",
-	"Volume",
-	"Workdir",
+var DOCKER_INSTRUCTION_NAMES map[string]bool = map[string]bool{
+		"Add": true,
+		"Arg": true,
+		"Cmd": true,
+		"Copy": true,
+		"Entrypoint": true,
+		"Env": true,
+		"Expose": true,
+		"From": true,
+		"Healthcheck": true,
+		"Label": true,
+		"Maintainer": true,
+		"Onbuild": true,
+		"Run": true,
+		"Shell": true,
+		"StopSignal": true,
+		"User": true,
+		"Volume": true,
+		"Workdir": true,
 }
+	
 
 type Field struct {
 	GlobalIndex int      `json:"start_index"`
@@ -58,12 +59,8 @@ type Format struct {
 
 func IsKnown(name string) bool {
 	name = strings.ToLower(name)
-	for _, instructionName := range DOCKER_INSTRUCTION_NAMES {
-		if instructionName == name {
-			return true
-		}
-	}
-	return false
+	_, ok := DOCKER_INSTRUCTION_NAMES[name]
+		return ok
 }
 
 func SupportsJSONForm() []string {
