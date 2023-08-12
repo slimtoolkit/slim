@@ -14,15 +14,6 @@ jobs:
         go: ['1.19']
     runs-on: 'ubuntu-latest'
     steps:
-      - uses: actions/cache@v3.3.1
-        with:
-          path: |
-            ~/.cache/go-build
-            ~/go/pkg/mod
-          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-          restore-keys: |
-            ${{ runner.os }}-go-
-
       - uses: actions/checkout@v3.5.3
         with:
           fetch-depth: 0
