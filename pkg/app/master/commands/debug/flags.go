@@ -46,37 +46,36 @@ const (
 	FlagTerminal      = "terminal"
 	FlagTerminalUsage = "Attach interactive terminal to the debug container"
 
-	//TBD for docker runtime
 	FlagRunAsTargetShell      = "run-as-target-shell"
-	FlagRunAsTargetShellUsage = "Attach interactive terminal to the debug container and run shell as if it's running in the target container environment"
+	FlagRunAsTargetShellUsage = "Attach interactive terminal to the debug container and run shell as if it's running in the target container environment."
 
 	FlagListSessions      = "list-sessions"
-	FlagListSessionsUsage = "List all debug sessions for the selected target (pod and optionally container for k8s or container for other runtimes)"
+	FlagListSessionsUsage = "List all debug sessions for the selected target (pod and optionally selected container for k8s or container for other runtimes)."
 
 	FlagShowSessionLogs      = "show-session-logs"
-	FlagShowSessionLogsUsage = "Show logs for the selected debug session (using namespace, pod, target container or debug session container name for k8s or debug session container name for other runtimes)"
+	FlagShowSessionLogsUsage = "Show logs for the selected debug session (using namespace, pod, target container or debug session container name for k8s or debug session container name for other runtimes)."
 
 	FlagSession      = "session"
-	FlagSessionUsage = "Debug session container name (used for debug sessoin actions)"
+	FlagSessionUsage = "Debug session container name (used for debug sessoin actions)."
 
 	FlagConnectSession      = "connect-session"
-	FlagConnectSessionUsage = "Connect to existing debug session"
+	FlagConnectSessionUsage = "Connect to existing debug session."
 
 	//TBD
 	FlagConnectLastSession      = "connect-last-session"
 	FlagConnectLastSessionUsage = "Connect to last debug session"
 
 	FlagListNamespaces      = "list-namespaces"
-	FlagListNamespacesUsage = "List names for available namespaces (use this flag by itself)"
+	FlagListNamespacesUsage = "List names for available namespaces (use this flag by itself)."
 
 	FlagListPods      = "list-pods"
-	FlagListPodsUsage = "List names for running pods in the selected namespace (use this flag by itself)"
+	FlagListPodsUsage = "List names for running pods in the selected namespace (use this flag by itself)."
 
 	FlagListDebuggableContainers      = "list-debuggable-containers"
-	FlagListDebuggableContainersUsage = "List container names for active containers that can be debugged (use this flag by itself)"
+	FlagListDebuggableContainersUsage = "List container names for active containers that can be debugged (use this flag by itself)."
 
 	FlagListDebugImage      = "list-debug-images"
-	FlagListDebugImageUsage = "List possible debug images to use for the debug side-car container (use this flag by itself)"
+	FlagListDebugImageUsage = "List possible debug images to use for the debug side-car container (use this flag by itself)."
 
 	FlagKubeconfig      = "kubeconfig"
 	FlagKubeconfigUsage = "Kubeconfig file location (k8s runtime)"

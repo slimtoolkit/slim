@@ -66,8 +66,13 @@ sh /.mint_debugger_shell_config.sh
 
 //exec sh...
 
-func configShell(sessionID string) string {
-	return strings.ReplaceAll(shellConfig, sidKey, sessionID)
+func configShell(sessionID string, isK8s bool) string {
+	result := strings.ReplaceAll(shellConfig, sidKey, sessionID)
+	if isK8s {
+		return result
+	}
+
+	return strings.ReplaceAll(result, "/$$$/", "/$$/")
 }
 
 var shellConfigAlt = `
@@ -136,6 +141,11 @@ EOF
 sh /.mint_debugger_shell_config.sh
 `
 
-func configShellAlt(sessionID string) string {
-	return strings.ReplaceAll(shellConfigAlt, sidKey, sessionID)
+func configShellAlt(sessionID string, isK8s bool) string {
+	result := strings.ReplaceAll(shellConfigAlt, sidKey, sessionID)
+	if isK8s {
+		return result
+	}
+
+	return strings.ReplaceAll(result, "/$$$/", "/$$/")
 }

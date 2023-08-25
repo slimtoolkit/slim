@@ -37,21 +37,21 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagKubeconfig), Description: FlagKubeconfigUsage},
 	},
 	Values: map[string]commands.CompleteValue{
-		commands.FullFlagName(FlagRuntime):                  completeRuntimes,
-		commands.FullFlagName(FlagTarget):                   completeTargets,
-		commands.FullFlagName(FlagDebugImage):               completeDebugImages,
+		commands.FullFlagName(FlagRuntime):                  completeRuntime,
+		commands.FullFlagName(FlagTarget):                   completeTarget,
+		commands.FullFlagName(FlagDebugImage):               completeDebugImage,
 		commands.FullFlagName(FlagTerminal):                 commands.CompleteTBool,
 		commands.FullFlagName(FlagRunAsTargetShell):         commands.CompleteTBool,
 		commands.FullFlagName(FlagListSessions):             commands.CompleteBool,
 		commands.FullFlagName(FlagShowSessionLogs):          commands.CompleteBool,
 		commands.FullFlagName(FlagConnectSession):           commands.CompleteBool,
-		commands.FullFlagName(FlagSession):                  completeSessions,
+		commands.FullFlagName(FlagSession):                  completeSession,
 		commands.FullFlagName(FlagListNamespaces):           commands.CompleteBool,
 		commands.FullFlagName(FlagListPods):                 commands.CompleteBool,
 		commands.FullFlagName(FlagListDebuggableContainers): commands.CompleteBool,
 		commands.FullFlagName(FlagListDebugImage):           commands.CompleteBool,
-		commands.FullFlagName(FlagNamespace):                completeNamespaces,
-		commands.FullFlagName(FlagPod):                      completePods,
+		commands.FullFlagName(FlagNamespace):                completeNamespace,
+		commands.FullFlagName(FlagPod):                      completePod,
 	},
 }
 
@@ -65,7 +65,7 @@ func getDebugImageValues() []prompt.Suggest {
 	return values
 }
 
-func completeDebugImages(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+func completeDebugImage(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(getDebugImageValues(), token, true)
 }
 
@@ -74,11 +74,11 @@ var runtimeValues = []prompt.Suggest{
 	{Text: KubernetesRuntime, Description: "Kubernetes runtime - debug a container running in Kubernetes"},
 }
 
-func completeRuntimes(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+func completeRuntime(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(runtimeValues, token, true)
 }
 
-func completeNamespaces(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+func completeNamespace(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	var values []prompt.Suggest
 	ccs := commands.GetCurrentCommandState()
 	if ccs != nil && ccs.Command == Name {
@@ -104,7 +104,7 @@ func completeNamespaces(ia *commands.InteractiveApp, token string, params prompt
 	return prompt.FilterHasPrefix(values, token, true)
 }
 
-func completePods(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+func completePod(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	var values []prompt.Suggest
 	ccs := commands.GetCurrentCommandState()
 	if ccs != nil && ccs.Command == Name {
@@ -137,7 +137,7 @@ func completePods(ia *commands.InteractiveApp, token string, params prompt.Docum
 	return prompt.FilterHasPrefix(values, token, true)
 }
 
-func completeTargets(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+func completeTarget(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	var values []prompt.Suggest
 	ccs := commands.GetCurrentCommandState()
 	if ccs != nil && ccs.Command == Name {
@@ -194,10 +194,12 @@ func completeTargets(ia *commands.InteractiveApp, token string, params prompt.Do
 	return prompt.FilterHasPrefix(values, token, true)
 }
 
-func completeSessions(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+func completeSession(ia *commands.InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	var values []prompt.Suggest
 	ccs := commands.GetCurrentCommandState()
 	if ccs != nil && ccs.Command == Name {
+		csessValStr := ccs.GetCFValue(FlagConnectSession) 
+
 		runtimeFlag := commands.FullFlagName(FlagRuntime)
 		rtFlagVals, found := ccs.CommandFlags[runtimeFlag]
 		if found && len(rtFlagVals) > 0 && rtFlagVals[0] == KubernetesRuntime {
@@ -208,12 +210,7 @@ func completeSessions(ia *commands.InteractiveApp, token string, params prompt.D
 				kubeconfig = kcFlagVals[0]
 			}
 
-			namespace := NamespaceDefault
-			namespaceFlag := commands.FullFlagName(FlagNamespace)
-			nsFlagVals, found := ccs.CommandFlags[namespaceFlag]
-			if found && len(nsFlagVals) > 0 {
-				namespace = nsFlagVals[0]
-			}
+			namespace := ccs.GetCFValueWithDefault(FlagNamespace,NamespaceDefault)
 
 			var pod string
 			podFlag := commands.FullFlagName(FlagPod)
@@ -222,18 +219,14 @@ func completeSessions(ia *commands.InteractiveApp, token string, params prompt.D
 				pod = podFlagVals[0]
 			}
 
-			var target string
-			targetFlag := commands.FullFlagName(FlagTarget)
-			targetFlagVals, found := ccs.CommandFlags[targetFlag]
-			if found && len(targetFlagVals) > 0 {
-				target = targetFlagVals[0]
-			}
+			target := ccs.GetCFValue(FlagTarget)
 
-			result, err := listDebugContainersWithConfig(
+			result, err := listK8sDebugContainersWithConfig(
 				kubeconfig,
 				namespace,
 				pod,
-				target)
+				target,
+				commands.IsTrueStr(csessValStr))
 
 			if err == nil {
 				for _, info := range result {
@@ -259,7 +252,9 @@ func completeSessions(ia *commands.InteractiveApp, token string, params prompt.D
 				target = targetFlagVals[0]
 			}
 
-			result, err := listDockerDebugContainersWithConfig(ccs.Dclient, target)
+			result, err := listDockerDebugContainersWithConfig(ccs.Dclient, 
+				target, 
+				commands.IsTrueStr(csessValStr))
 			if err == nil {
 				for _, info := range result {
 					desc := fmt.Sprintf("state: %s / start_time: %s / target: %s / image: %s",

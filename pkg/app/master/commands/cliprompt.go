@@ -96,8 +96,15 @@ func (ia *InteractiveApp) execute(command string) {
 		}
 	}
 
-	args := append([]string{AppName}, parts...)
+	args := []string{AppName}
+	for _, val := range parts {
+		if val == "" {
+			continue
+		}
 
+		args = append(args, val)
+	}
+	
 	if err := ia.app.Run(args); err != nil {
 		log.Fatal(err)
 	}
@@ -313,6 +320,20 @@ func newCurrentCommandState() *CurrentCommandState {
 		GlobalFlags:     map[string]string{},
 		CommandFlags:    map[string][]string{},
 	}
+}
+
+func (ref *CurrentCommandState) GetCFValue(name string) string {
+	return ref.GetCFValueWithDefault(name, "")
+}
+
+func (ref *CurrentCommandState) GetCFValueWithDefault(name string, dvalue string) string {
+	fullFlag := FullFlagName(name)
+	vals, found := ref.CommandFlags[fullFlag]
+	if found && len(vals) > 0 && vals[0] != "" {
+		return vals[0]
+	}
+
+	return dvalue
 }
 
 func saveCurrentCommandState(value *CurrentCommandState) {

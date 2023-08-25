@@ -839,3 +839,12 @@ func ParseLinesWithCommentsFile(filePath string) ([]string, error) {
 
 	return output, nil
 }
+
+func IsTrueStr(value string) bool {
+	if strings.ToLower(value) == "true" {
+		return true
+	}
+
+	return false
+}
+

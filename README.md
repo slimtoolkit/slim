@@ -558,15 +558,26 @@ The `--use-local-mounts` option is used to choose how the Slim sensor is added t
 ### `DEBUG` COMMAND OPTIONS
 
 - `--runtime` - Runtime environment type (values: `docker`, `k8s`; defaults to `docker`)
-- `--debug-image` - Debug image to use for the debug side-car container (default value for this flag is `nicolaka/netshoot`).
+- `--debug-image` - Debug image to use for the debug side-car container (default value for this flag is `busybox`).
 - `--list-debug-images` - List possible debug images to use for the debug side-car container (for the `--debug-image` flag). This list is a ready to use set of debug images. You can use other images too.
-- `--target` - Target container name or ID (this can also be provided as the last param in the command line invocation of the `debug` command). Note that the target container must be running. You can use the `docker run` command to start the target container.
+- `--target` - Target container name or ID (this can also be provided as the last param in the command line invocation of the `debug` command). Note that the target container must be running. You can use the `docker run` command to start the target container (or the kubernetes equivalent).
 - `--namespace` - Namespace to target [k8s runtime] (defaults to `default`)
 - `--pod` - Pod to target [k8s runtime]
 - `--cmd` - (Optional) custom CMD to use for the debug side-car container (alternatively pass custom CMD params after '--').
 - `--entrypoint` - (Optional) custom ENTRYPOINT to use for the debug side-car container.
 - `--terminal` - Attach interactive terminal to the debug container (default: true). When the interactive terminal is not enabled the debug container output will be printed out to the screen when the `debug` command exits.
 - `--kubeconfig` - Kubeconfig file location [k8s runtime]
+- `--workdir` - Custom WORKDIR to use for the debug side-car container.
+- `--env` - Environment variable to add to the debug side-car container.
+- `--run-as-target-shell` - Attach interactive terminal to the debug container and run shell as if it's running in the target container environment.
+- `--list-sessions` - List all debug sessions for the selected target (pod and optionally selected container for k8s or container for other runtimes).
+- `--show-session-logs` - Show logs for the selected debug session (using namespace, pod, target container or debug session container name for k8s or debug session container name for other runtimes).
+- `--session` - Debug session container name (used for debug sessoin actions).
+- `--connect-session` - Connect to existing debug session.
+- `--list-namespaces` - List names for available namespaces (use this flag by itself) [k8s runtime].
+- `--list-pods` - List names for running pods in the selected namespace (use this flag by itself) [k8s runtime].
+- `--list-debuggable-containers` - List container names for active containers that can be debugged (use this flag by itself).
+- `--list-debug-images` - List possible debug images to use for the debug side-car container (use this flag by itself).
 - `--help` show help (default: false)
 
 See the "Debugging Using the `debug` Command" section for more information about this command.
@@ -759,22 +770,86 @@ The current version of the `debug` command is pretty basic and it lacks a number
 
 By default the `debug` command will provide you with an interactive terminal when it attaches the debugger side-car image to the debugged target container. Future versions will allow you to have different interaction modes with the target.
 
-#### Steps to debug your container (nginx Docker runtime example) 
+#### The Debug Images
 
-1. Start the target container you want to debug (it doesn't need to be minified)
-2. Run the debug command
+You can use any container image as a debug image, but there's a list of pre-selected debug images you can choose.
 
+You can list all pre-selected debug images with the `--list-debug-images` and if you are using the interactive prompt mode there'll be an auto-complete dropdown menu for the `--debug-image` flag.
+
+Here's the current list of debug images:
+
+* `cgr.dev/chainguard/slim-toolkit-debug:latest` - a general purpose SlimToolkit debug image created by Chainguard
+* `cgr.dev/chainguard/wolfi-base:latest` - a basic lightweight Wolfi image
+* `busybox:latest` - a lightweight image with common unix utilities
+* `nicolaka/netshoot` - a network trouble-shooting swiss-army container
+* `lightruncom/koolkits:node` - a debug image for Node.js applications
+* `lightruncom/koolkits:python` - a debug image for Python applications
+* `lightruncom/koolkits:golang` - a debug image for Go applications
+* `lightruncom/koolkits:jvm` - a debug image for Java applications
+* `digitalocean/doks-debug:latest` - a kubernetes troubleshooting debug image
+* `public.ecr.aws/zinclabs/debug-ubuntu-base:latest` - an image with common debugging utilities 
+
+#### Steps to Debug Your Container (Kubernetes Runtime)
+
+1. Make sure the target environment you want to debug is up (the example k8s manifest creates a pod with the minimal nginx image from Chainguard and it has no shell):
 ```bash
->> docker run -it --rm -p 80:80 --name mycontainer nginx
-...
 
->> slim debug mycontainer
-...
+>> kubectl apply -f examples/k8s_nginx_cgr/manifest.yaml
 
 ```
-Now you should have an interactive shell into the debug container started by `slim` and you can type your regular shell commands to explore the debugger container and to explore the debugged target container.
+2. Run the debug command:
 
-### Debugging the "Hard Way"
+```bash
+
+>> slim debug --runtime=k8s --pod=example-pod example-container
+
+```
+or
+```bash
+
+>> slim debug --runtime=k8s --pod=example-pod --target=example-container
+
+```
+
+Now you should have an interactive shell into the debug container started by `slim` and you can type your regular shell commands.
+
+By default the `debug` command will connect the interactive terminal to the debugged container and it will run a shell as if it's running in the target container environment, so you will see the file system of the target container as if you are directly connected (you won't have to go through the `proc` file system). You can change this behavior by using the `--run-as-target-shell` (which is true by default). For example, this call will connect you to the debug container in a more traditional way: `slim debug --runtime=k8s --run-as-target-shell=false example-container`
+
+Also note that if you use the interactive `prompt` mode (when you run `slim` with no command line parameters) you will get auto-complete behavior for a number of flags: `--target`, `--namespace`, `--pod`, `--session`.
+
+Each time you try to debug an image `slim` will have a session that represents it. You'll be able to reconnect to the existing active debug sessions and you'll be able to get logs from all available sessions.
+
+#### Steps to Debug Your Container (Docker Runtime) 
+
+1. Start the target container you want to debug:
+```bash
+
+>> docker run -it --rm -p 80:80 --name mycontainer nginx
+
+```
+2. Run the debug command:
+
+```bash
+
+>> slim debug mycontainer
+
+```
+or
+```bash
+
+>> slim debug --target=mycontainer
+
+```
+
+Now you should have an interactive shell into the debug container started by `slim` and you can type your regular shell commands.
+
+By default the `debug` command will connect the interactive terminal to the debugged container and it will run a shell as if it's running in the target container environment, so you will see the file system of the target container as if you are directly connected (you won't have to go through the `proc` file system). You can change this behavior by using the `--run-as-target-shell` (which is true by default). For example, this call will connect you to the debug container in a more traditional way: `slim debug --run-as-target-shell=false mycontainer`
+
+Also note that if you use the interactive `prompt` mode (when you run `slim` with no command line parameters) you will get auto-complete behavior for a number of flags: `--target`, `--session`.
+
+Each time you try to debug an image `slim` will have a session that represents it. You'll be able to reconnect to the existing active debug sessions and you'll be able to get logs from all available sessions.
+
+### Debugging the "Hard Way" (Docker Runtime)
 
 You can create dedicated debugging side-car container images loaded with the tools you need for debugging target containers. This allows you to keep your production container images small. The debugging side-car containers attach to the running target containers.
 

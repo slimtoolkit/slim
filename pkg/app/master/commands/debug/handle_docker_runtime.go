@@ -51,7 +51,7 @@ func HandleDockerRuntime(
 		xc.Out.State("action.list_sessions", ovars{"target": commandParams.TargetRef})
 
 		//later will track/show additional debug session info
-		result, err := listDockerDebugContainers(client, commandParams.TargetRef)
+		result, err := listDockerDebugContainers(client, commandParams.TargetRef, false)
 		if err != nil {
 			logger.WithError(err).Error("listDockerDebugContainers")
 			xc.FailOn(err)
@@ -113,7 +113,7 @@ func HandleDockerRuntime(
 				"target":  commandParams.TargetRef,
 				"session": commandParams.Session})
 
-		result, err := listDockerDebugContainers(client, commandParams.TargetRef)
+		result, err := listDockerDebugContainers(client, commandParams.TargetRef, false)
 		if err != nil {
 			logger.WithError(err).Error("listDockerDebugContainers")
 			xc.FailOn(err)
@@ -154,7 +154,7 @@ func HandleDockerRuntime(
 				"target":  commandParams.TargetRef,
 				"session": commandParams.Session})
 
-		result, err := listDockerDebugContainers(client, commandParams.TargetRef)
+		result, err := listDockerDebugContainers(client, commandParams.TargetRef, true)
 		if err != nil {
 			logger.WithError(err).Error("listDockerDebugContainers")
 			xc.FailOn(err)
@@ -215,6 +215,22 @@ func HandleDockerRuntime(
 				"exit.code": -1,
 			})
 		xc.Exit(-1)
+	}
+
+	if commandParams.DoRunAsTargetShell {
+		logger.Trace("doRunAsTargetShell")
+		commandParams.Entrypoint = []string{"sh", "-c"}
+		shellConfig := configShell(sid, false)
+		if CgrSlimToolkitDebugImage == commandParams.DebugContainerImage {
+			shellConfig = configShellAlt(sid, false)
+		}
+
+		commandParams.Cmd = []string{shellConfig}
+	} else {
+		if len(commandParams.Cmd) == 0 &&
+			CgrSlimToolkitDebugImage == commandParams.DebugContainerImage {
+			commandParams.Cmd = []string{bashShellName}
+		}
 	}
 
 	options := container.ExecutionOptions{
@@ -306,7 +322,8 @@ func listDebuggableDockerContainersWithConfig(client *dockerapi.Client) (map[str
 
 func listDockerDebugContainers(
 	client *dockerapi.Client,
-	targetContainer string) (map[string]*DebugContainerInfo, error) {
+	targetContainer string,
+    onlyActive bool) (map[string]*DebugContainerInfo, error) {
 	containers, err := dockerutil.ListContainers(client, "", true)
 	if err != nil {
 		return nil, err
@@ -346,15 +363,24 @@ func listDockerDebugContainers(
 			info.State = CSTerminated
 		}
 
-		result[info.Name] = info
+		if onlyActive {
+			if info.State == CSRunning {
+				result[info.Name] = info
+			}
+		} else {
+			result[info.Name] = info
+		}
 	}
 
 	return result, nil
 }
 
-func listDockerDebugContainersWithConfig(client *dockerapi.Client, targetContainer string) (map[string]*DebugContainerInfo, error) {
+func listDockerDebugContainersWithConfig(
+	client *dockerapi.Client, 
+	targetContainer string,
+    onlyActive bool) (map[string]*DebugContainerInfo, error) {
 	//todo: pass the docker client config params instead of the existing client
-	return listDockerDebugContainers(client, targetContainer)
+	return listDockerDebugContainers(client, targetContainer, onlyActive)
 }
 
 func dumpDockerContainerLogs(

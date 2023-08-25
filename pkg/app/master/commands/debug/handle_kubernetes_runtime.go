@@ -155,7 +155,7 @@ func HandleKubernetesRuntime(
 				"target":    commandParams.TargetRef})
 
 		//later will track/show additional debug session info
-		result, err := listK8sDebugContainers(ctx, api, nsName, podName, commandParams.TargetRef)
+		result, err := listK8sDebugContainers(ctx, api, nsName, podName, commandParams.TargetRef, false)
 		if err != nil {
 			logger.WithError(err).Error("listK8sDebugContainers")
 			xc.FailOn(err)
@@ -230,7 +230,7 @@ func HandleKubernetesRuntime(
 				"session":   commandParams.Session})
 
 		if commandParams.Session == "" {
-			result, err := listK8sDebugContainers(ctx, api, nsName, podName, commandParams.TargetRef)
+			result, err := listK8sDebugContainers(ctx, api, nsName, podName, commandParams.TargetRef, false)
 			if err != nil {
 				logger.WithError(err).Error("listK8sDebugContainers")
 				xc.FailOn(err)
@@ -264,7 +264,7 @@ func HandleKubernetesRuntime(
 				"session":   commandParams.Session})
 
 		if commandParams.Session == "" {
-			result, err := listK8sDebugContainers(ctx, api, nsName, podName, commandParams.TargetRef)
+			result, err := listK8sDebugContainers(ctx, api, nsName, podName, commandParams.TargetRef, true)
 			if err != nil {
 				logger.WithError(err).Error("listK8sDebugContainers")
 				xc.FailOn(err)
@@ -418,9 +418,9 @@ func HandleKubernetesRuntime(
 	if commandParams.DoRunAsTargetShell {
 		logger.Trace("doRunAsTargetShell")
 		commandParams.Entrypoint = []string{"sh", "-c"}
-		shellConfig := configShell(sid)
+		shellConfig := configShell(sid, true)
 		if CgrSlimToolkitDebugImage == commandParams.DebugContainerImage {
-			shellConfig = configShellAlt(sid)
+			shellConfig = configShellAlt(sid, true)
 		}
 
 		commandParams.Cmd = []string{shellConfig}
@@ -798,7 +798,8 @@ func listK8sDebugContainers(
 	api *kubernetes.Clientset,
 	nsName string,
 	podName string,
-	targetContainer string) (map[string]*DebugContainerInfo, error) {
+	targetContainer string,
+    onlyActive bool) (map[string]*DebugContainerInfo, error) {
 
 	pod, err := api.CoreV1().Pods(nsName).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
@@ -809,7 +810,7 @@ func listK8sDebugContainers(
 		return nil, ErrPodNotRunning
 	}
 
-	result := map[string]*DebugContainerInfo{}
+	all := map[string]*DebugContainerInfo{}
 	for _, ec := range pod.Spec.EphemeralContainers {
 		if !strings.HasPrefix(ec.Name, containerNamePrefix) {
 			log.WithFields(log.Fields{
@@ -843,11 +844,12 @@ func listK8sDebugContainers(
 			TTY:                 ec.TTY,
 		}
 
-		result[info.Name] = info
+		all[info.Name] = info
 	}
 
+	result := map[string]*DebugContainerInfo{}
 	for _, status := range pod.Status.EphemeralContainerStatuses {
-		info, found := result[status.Name]
+		info, found := all[status.Name]
 		if !found {
 			continue
 		}
@@ -875,16 +877,25 @@ func listK8sDebugContainers(
 			info.StartTime = fmt.Sprintf("%v", status.State.Terminated.StartedAt)
 			info.FinishTime = fmt.Sprintf("%v", status.State.Terminated.FinishedAt)
 		}
+
+		if onlyActive {
+			if info.State == CSRunning {
+				result[info.Name] = info
+			}
+		} else {
+			result[info.Name] = info
+		}
 	}
 
 	return result, nil
 }
 
-func listDebugContainersWithConfig(
+func listK8sDebugContainersWithConfig(
 	kubeconfig string,
 	nsName string,
 	podName string,
-	targetContainer string) (map[string]*DebugContainerInfo, error) {
+	targetContainer string,
+	onlyActive bool) (map[string]*DebugContainerInfo, error) {
 	ctx := context.Background()
 
 	api, _, err := apiClientFromConfig(kubeconfig)
@@ -919,7 +930,7 @@ func listDebugContainersWithConfig(
 		return nil, err
 	}
 
-	result, err := listK8sDebugContainers(ctx, api, nsName, podName, targetContainer)
+	result, err := listK8sDebugContainers(ctx, api, nsName, podName, targetContainer, onlyActive)
 	if err != nil {
 		log.WithError(err).Error("listK8sDebugContainers")
 		return nil, err
