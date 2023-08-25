@@ -111,9 +111,14 @@ func (ia *InteractiveApp) complete(params prompt.Document) []prompt.Suggest {
 		return append(CommandSuggestions, GlobalFlagSuggestions...)
 	}
 
+	commandState := newCurrentCommandState()
+	commandState.Dclient = ia.dclient
+
 	currentToken := params.GetWordBeforeCursor()
+	commandState.CurrentToken = currentToken
 
 	allTokens := strings.Split(allParamsLine, " ")
+	commandState.AllTokensList = allTokens
 
 	var prevToken string
 	prevTokenIdx := -1
@@ -133,27 +138,85 @@ func (ia *InteractiveApp) complete(params prompt.Document) []prompt.Suggest {
 		}
 	}
 
+	commandState.PrevToken = prevToken
+	commandState.PrevTokenIdx = prevTokenIdx
+	commandState.State = InputStateCommand
+
 	if prevToken == "" {
+		saveCurrentCommandState(commandState)
+
 		suggestions := append(CommandSuggestions, GlobalFlagSuggestions...)
 		return prompt.FilterHasPrefix(suggestions, currentToken, true)
 	}
 
 	commandTokenIdx := -1
+	lastValueIdx := -1
+	var lastFlagName string
+
 	for i := 0; i <= prevTokenIdx; i++ {
-		if !strings.HasPrefix(allTokens[i], "--") {
-			commandTokenIdx = i
-			break
+		if strings.HasPrefix(allTokens[i], "--") {
+			lastFlagName = allTokens[i]
+			lastValueIdx = -1
+		} else {
+			if lastFlagName == "" {
+				//non-flag name token
+				//command token if the previous token was not a flag name
+				commandTokenIdx = i
+				break
+			}
+
+			if lastFlagName == "" {
+				lastValueIdx = i
+			} else {
+				lastFlagName = ""
+			}
 		}
 	}
 
+	if commandTokenIdx == -1 && lastValueIdx > -1 {
+		commandTokenIdx = lastValueIdx
+	}
+
 	if commandTokenIdx == -1 {
-		suggestions := append(CommandSuggestions, GlobalFlagSuggestions...)
-		return prompt.FilterHasPrefix(suggestions, currentToken, true)
+		saveCurrentCommandState(commandState)
+
+		if strings.HasPrefix(prevToken, "--") {
+			if completeValue, ok := GlobalFlagValueSuggestions[prevToken]; ok && completeValue != nil {
+				return completeValue(ia, currentToken, params)
+			}
+		} else {
+			suggestions := append(CommandSuggestions, GlobalFlagSuggestions...)
+			return prompt.FilterHasPrefix(suggestions, currentToken, true)
+		}
+
+		return []prompt.Suggest{}
 	}
 
 	commandToken := allTokens[commandTokenIdx]
 
+	commandState.CommandTokenIdx = commandTokenIdx
+	commandState.Command = commandToken
+
+	if strings.HasPrefix(commandState.CurrentToken, "--") {
+		commandState.State = InputStateCommandFlag
+	} else {
+		commandState.State = InputStateCommandFlagValue
+	}
+
+	lastFlagName = ""
+	for i := 0; i < commandTokenIdx; i++ {
+		if strings.HasPrefix(allTokens[i], "--") {
+			lastFlagName = allTokens[i]
+		} else {
+			if lastFlagName != "" {
+				commandState.GlobalFlags[lastFlagName] = allTokens[i]
+				lastFlagName = ""
+			}
+		}
+	}
+
 	if commandTokenIdx == (tokenCount - 1) {
+		saveCurrentCommandState(commandState)
 		if currentToken != "" {
 			//currentToken still points to the command token
 			return prompt.FilterHasPrefix(CommandSuggestions, currentToken, true)
@@ -165,6 +228,22 @@ func (ia *InteractiveApp) complete(params prompt.Document) []prompt.Suggest {
 				return []prompt.Suggest{}
 			}
 		}
+	} else {
+		lastFlagName = ""
+		for i := commandTokenIdx + 1; i < tokenCount; i++ {
+			if strings.HasPrefix(allTokens[i], "--") {
+				lastFlagName = allTokens[i]
+			} else {
+				if lastFlagName != "" {
+					valList := commandState.CommandFlags[lastFlagName]
+					valList = append(valList, allTokens[i])
+					commandState.CommandFlags[lastFlagName] = valList
+					lastFlagName = ""
+				}
+			}
+		}
+
+		saveCurrentCommandState(commandState)
 	}
 
 	cmdFlagSuggestions, ok := CommandFlagSuggestions[commandToken]
@@ -187,6 +266,8 @@ func (ia *InteractiveApp) Run() {
 	ia.appPrompt.Run()
 }
 
+/////////////////////////////////////////////
+
 type CompleteValue func(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest
 
 type FlagSuggestions struct {
@@ -199,6 +280,53 @@ var CommandFlagSuggestions = map[string]*FlagSuggestions{}
 var CommandSuggestions = []prompt.Suggest{
 	{Text: "exit", Description: "Exit app"},
 }
+
+const (
+	InputStateEmpty            = "empty"
+	InputStateGlobalFlag       = "global.flag"
+	InputStateGlobalFlagValue  = "global.flag.value"
+	InputStateCommand          = "command"
+	InputStateCommandFlag      = "command.flag"
+	InputStateCommandFlagValue = "command.flag.value"
+)
+
+type CurrentCommandState struct {
+	Dclient *dockerapi.Client
+	State   string
+
+	AllTokensList   []string
+	CurrentToken    string
+	PrevToken       string
+	PrevTokenIdx    int
+	CommandTokenIdx int
+
+	GlobalFlags  map[string]string
+	Command      string
+	CommandFlags map[string][]string
+}
+
+func newCurrentCommandState() *CurrentCommandState {
+	return &CurrentCommandState{
+		State:           InputStateEmpty,
+		PrevTokenIdx:    -1,
+		CommandTokenIdx: -1,
+		GlobalFlags:     map[string]string{},
+		CommandFlags:    map[string][]string{},
+	}
+}
+
+func saveCurrentCommandState(value *CurrentCommandState) {
+	//fmt.Printf("\nsaveCurrentCommandState: %#v\n\n",value)
+	gCurrentCommandState = value
+}
+
+var gCurrentCommandState *CurrentCommandState
+
+func GetCurrentCommandState() *CurrentCommandState {
+	return gCurrentCommandState
+}
+
+/////////////////////////////////////////////
 
 //NOTE: command packages will add their prompt command suggestion in their init()
 
@@ -219,6 +347,13 @@ var GlobalFlagSuggestions = []prompt.Suggest{
 	{Text: FullFlagName(FlagInContainer), Description: FlagInContainerUsage},
 	{Text: FullFlagName(FlagCheckVersion), Description: FlagCheckVersionUsage},
 	{Text: FullFlagName(FlagNoColor), Description: FlagNoColorUsage},
+}
+
+var GlobalFlagValueSuggestions = map[string]CompleteValue{
+	FullFlagName(FlagDebug):        CompleteBool,
+	FullFlagName(FlagVerbose):      CompleteBool,
+	FullFlagName(FlagNoColor):      CompleteBool,
+	FullFlagName(FlagCheckVersion): CompleteTBool,
 }
 
 func FullFlagName(name string) string {

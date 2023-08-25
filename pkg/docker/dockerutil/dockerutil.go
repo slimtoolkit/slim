@@ -2,6 +2,7 @@ package dockerutil
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
@@ -834,4 +835,121 @@ func ListVolumes(dclient *dockerapi.Client, nameFilter string) ([]string, error)
 	}
 
 	return names, nil
+}
+
+////////
+
+const (
+	CSCreated    = "created"
+	CSRestarting = "restarting"
+	CSRunning    = "running"
+	CSRemoving   = "removing"
+	CSPaused     = "paused"
+	CSExited     = "exited"
+	CSDead       = "dead"
+)
+
+type BasicContainerProps struct {
+	Name    string
+	Names   []string //names have "/" as the prefix
+	ID      string
+	Image   string //'spec' image ref (inspect to get the exact image ID)
+	Created int64
+	State   string
+	Status  string //e.g., "Up X seconds"
+	Command string //Entrypoint+Cmd in the shell format
+}
+
+func ListContainers(dclient *dockerapi.Client, nameFilter string, all bool) (map[string]BasicContainerProps, error) {
+	var err error
+	if dclient == nil {
+		unixSocketAddr := dockerclient.GetUnixSocketAddr()
+		if unixSocketAddr == "" {
+			return nil, fmt.Errorf("no unix socket found")
+		}
+
+		dclient, err = dockerapi.NewClient(unixSocketAddr)
+		if err != nil {
+			log.Errorf("dockerutil.ListContainers(%s): dockerapi.NewClient() error = %v", nameFilter, err)
+			return nil, err
+		}
+	}
+
+	listOptions := dockerapi.ListContainersOptions{
+		All: all, //if 'all' then also non-running containers are returned
+	}
+
+	if nameFilter != "" {
+		listOptions.Filters = map[string][]string{
+			"name": {nameFilter},
+		}
+	}
+
+	//note: will need to call 'inspect' to get additional container fields
+	containerList, err := dclient.ListContainers(listOptions)
+	if err != nil {
+		log.Errorf("dockerutil.ListContainers(%s): dockerapi.ListContainers() error = %v", nameFilter, err)
+		return nil, err
+	}
+
+	containers := map[string]BasicContainerProps{}
+	for _, containerInfo := range containerList {
+		var name string
+		if len(containerInfo.Names) > 0 {
+			name = strings.TrimPrefix(containerInfo.Names[0], "/")
+		}
+
+		info := BasicContainerProps{
+			Name:    name,
+			Names:   containerInfo.Names,
+			ID:      containerInfo.ID,
+			Created: containerInfo.Created,
+			Image:   containerInfo.Image,
+			State:   containerInfo.State,
+			Status:  containerInfo.Status,
+			Command: containerInfo.Command,
+		}
+
+		containers[name] = info
+	}
+
+	return containers, nil
+}
+
+func GetContainerLogs(dclient *dockerapi.Client, containerID string, rawTerminal bool) (string, string, error) {
+	var err error
+	if dclient == nil {
+		unixSocketAddr := dockerclient.GetUnixSocketAddr()
+		if unixSocketAddr == "" {
+			return "", "", fmt.Errorf("no unix socket found")
+		}
+
+		dclient, err = dockerapi.NewClient(unixSocketAddr)
+		if err != nil {
+			log.Errorf("dockerutil.GetContainerLogs(%s): dockerapi.NewClient() error = %v", containerID, err)
+			return "", "", err
+		}
+	}
+
+	var outData bytes.Buffer
+	outw := bufio.NewWriter(&outData)
+	var errData bytes.Buffer
+	errw := bufio.NewWriter(&errData)
+
+	options := dockerapi.LogsOptions{
+		Container:    containerID,
+		OutputStream: outw,
+		ErrorStream:  errw,
+		Stdout:       true,
+		Stderr:       true,
+		RawTerminal:  rawTerminal,
+	}
+
+	err = dclient.Logs(options)
+	if err != nil {
+		log.Errorf("error getting container logs => %v - %v", containerID, err)
+		return "", "", err
+	}
+
+	return outData.String(), errData.String(), nil
 }

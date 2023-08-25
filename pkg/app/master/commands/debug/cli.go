@@ -1,6 +1,8 @@
 package debug
 
 import (
+	"strings"
+
 	"github.com/urfave/cli/v2"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
@@ -18,7 +20,14 @@ const (
 const (
 	DockerRuntime     = "docker"
 	KubernetesRuntime = "k8s"
+	KubeconfigDefault = "${HOME}/.kube/config"
+	NamespaceDefault  = "default"
 )
+
+type NVPair struct {
+	Name  string
+	Value string
+}
 
 type CommandParams struct {
 	/// the runtime environment type
@@ -31,26 +40,67 @@ type CommandParams struct {
 	TargetPod string
 	/// the name/id of the container image used for debugging
 	DebugContainerImage string
-	/// ENTRYPOINT used for launching the debugging image
+	/// ENTRYPOINT used launching the debugging container
 	Entrypoint []string
-	/// CMD used for launching the debugging image
+	/// CMD used launching the debugging container
 	Cmd []string
+	/// WORKDIR used launching the debugging container
+	Workdir string
+	/// Environment variables used launching the debugging container
+	EnvVars []NVPair
 	/// launch the debug container with an interactive terminal attached (like '--it' in docker)
 	DoTerminal bool
+	/// make it look like shell is running in the target container
+	DoRunAsTargetShell bool
 	/// Kubeconfig file path (k8s runtime)
 	Kubeconfig string
+	/// Debug session container name
+	Session string
+	/// Simple (non-debug) action - list namespaces
+	ActionListNamespaces bool
+	/// Simple (non-debug) action - list pods
+	ActionListPods bool
+	/// Simple (non-debug) action - list debuggable container
+	ActionListDebuggableContainers bool
+	/// Simple (non-debug) action - list debug sessions
+	ActionListSessions bool
+	/// Simple (non-debug) action - show debug sessions logs
+	ActionShowSessionLogs bool
+	/// Simple (non-debug) action - connect to an existing debug session
+	ActionConnectSession bool
 }
 
 var debugImages = map[string]string{
-	NicolakaNetshootImage: "Network trouble-shooting swiss-army container - https://github.com/nicolaka/netshoot",
-	KoolkitsNodeImage:     "Node.js KoolKit - https://github.com/lightrun-platform/koolkits/tree/main/nodejs",
-	KoolkitsPythonImage:   "Python KoolKit - https://github.com/lightrun-platform/koolkits/tree/main/python",
-	KoolkitsGolangImage:   "Go KoolKit - https://github.com/lightrun-platform/koolkits/tree/main/golang",
-	KoolkitsJVMImage:      "JVM KoolKit - https://github.com/lightrun-platform/koolkits/blob/main/jvm/README.md",
-	DigitaloceanDoksImage: "Kubernetes manifests for investigation and troubleshooting - https://github.com/digitalocean/doks-debug",
-	ZinclabsUbuntuImage:   "Common utilities for debugging your cluster - https://github.com/openobserve/debug-container",
-	BusyboxImage:          "A lightweight image with common unix utilities - https://busybox.net/about.html",
-	WolfiBaseImage:        "A lightweight Wolfi base image - https://github.com/chainguard-images/images/tree/main/images/wolfi-base",
+	CgrSlimToolkitDebugImage: "Chainguard SlimToolkit debug image - https://edu.chainguard.dev/chainguard/chainguard-images/reference/slim-toolkit-debug",
+	WolfiBaseImage:           "A lightweight Wolfi base image - https://github.com/chainguard-images/images/tree/main/images/wolfi-base",
+	BusyboxImage:             "A lightweight image with common unix utilities - https://busybox.net/about.html",
+	NicolakaNetshootImage:    "Network trouble-shooting swiss-army container - https://github.com/nicolaka/netshoot",
+	KoolkitsNodeImage:        "Node.js KoolKit - https://github.com/lightrun-platform/koolkits/tree/main/nodejs",
+	KoolkitsPythonImage:      "Python KoolKit - https://github.com/lightrun-platform/koolkits/tree/main/python",
+	KoolkitsGolangImage:      "Go KoolKit - https://github.com/lightrun-platform/koolkits/tree/main/golang",
+	KoolkitsJVMImage:         "JVM KoolKit - https://github.com/lightrun-platform/koolkits/blob/main/jvm/README.md",
+	DigitaloceanDoksImage:    "Kubernetes manifests for investigation and troubleshooting - https://github.com/digitalocean/doks-debug",
+	ZinclabsUbuntuImage:      "Common utilities for debugging your cluster - https://github.com/openobserve/debug-container",
+}
+
+func ParseNameValueList(list []string) []NVPair {
+	var pairs []NVPair
+	for _, val := range list {
+		val = strings.TrimSpace(val)
+		if val == "" {
+			continue
+		}
+
+		parts := strings.SplitN(val, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		nv := NVPair{Name: parts[0], Value: parts[1]}
+		pairs = append(pairs, nv)
+	}
+
+	return pairs
 }
 
 var CLI = &cli.Command{
@@ -65,7 +115,17 @@ var CLI = &cli.Command{
 		cflag(FlagDebugImage),
 		cflag(FlagEntrypoint),
 		cflag(FlagCmd),
+		cflag(FlagWorkdir),
+		cflag(FlagEnv),
 		cflag(FlagTerminal),
+		cflag(FlagRunAsTargetShell),
+		cflag(FlagListSessions),
+		cflag(FlagShowSessionLogs),
+		cflag(FlagConnectSession),
+		cflag(FlagSession),
+		cflag(FlagListNamespaces),
+		cflag(FlagListPods),
+		cflag(FlagListDebuggableContainers),
 		cflag(FlagListDebugImage),
 		cflag(FlagKubeconfig),
 	},
@@ -78,6 +138,7 @@ var CLI = &cli.Command{
 		}
 
 		if ctx.Bool(FlagListDebugImage) {
+			xc.Out.State("action.list_debug_images")
 			for k, v := range debugImages {
 				xc.Out.Info("debug.image", ovars{"name": k, "description": v})
 			}
@@ -86,13 +147,47 @@ var CLI = &cli.Command{
 		}
 
 		commandParams := &CommandParams{
-			Runtime:             ctx.String(FlagRuntime),
-			TargetRef:           ctx.String(FlagTarget),
-			TargetNamespace:     ctx.String(FlagNamespace),
-			TargetPod:           ctx.String(FlagPod),
-			DebugContainerImage: ctx.String(FlagDebugImage),
-			DoTerminal:          ctx.Bool(FlagTerminal),
-			Kubeconfig:          ctx.String(FlagKubeconfig),
+			Runtime:                        ctx.String(FlagRuntime),
+			TargetRef:                      ctx.String(FlagTarget),
+			TargetNamespace:                ctx.String(FlagNamespace),
+			TargetPod:                      ctx.String(FlagPod),
+			DebugContainerImage:            ctx.String(FlagDebugImage),
+			DoTerminal:                     ctx.Bool(FlagTerminal),
+			DoRunAsTargetShell:             ctx.Bool(FlagRunAsTargetShell),
+			Kubeconfig:                     ctx.String(FlagKubeconfig),
+			Workdir:                        ctx.String(FlagWorkdir),
+			EnvVars:                        ParseNameValueList(ctx.StringSlice(FlagEnv)),
+			Session:                        ctx.String(FlagSession),
+			ActionListNamespaces:           ctx.Bool(FlagListNamespaces),
+			ActionListPods:                 ctx.Bool(FlagListPods),
+			ActionListDebuggableContainers: ctx.Bool(FlagListDebuggableContainers),
+			ActionListSessions:             ctx.Bool(FlagListSessions),
+			ActionShowSessionLogs:          ctx.Bool(FlagShowSessionLogs),
+			ActionConnectSession:           ctx.Bool(FlagConnectSession),
+		}
+
+		if commandParams.Runtime != KubernetesRuntime &&
+			(commandParams.ActionListNamespaces ||
+				commandParams.ActionListPods) {
+			var actionName string
+			if commandParams.ActionListNamespaces {
+				actionName = FlagListNamespaces
+			}
+
+			if commandParams.ActionListPods {
+				actionName = FlagListPods
+			}
+
+			xc.Out.Error("param", "unsupported runtime flag")
+			xc.Out.State("exited",
+				ovars{
+					"runtime.provided": commandParams.Runtime,
+					"runtime.required": KubernetesRuntime,
+					"action":           actionName,
+					"exit.code":        -1,
+				})
+
+			xc.Exit(-1)
 		}
 
 		if rawEntrypoint := ctx.String(FlagEntrypoint); rawEntrypoint != "" {
@@ -109,7 +204,23 @@ var CLI = &cli.Command{
 			}
 		}
 
-		if commandParams.TargetRef == "" {
+		//explicitly setting the entrypoint and/or cmd clears
+		//implies a custom debug session where the 'RATS' setting should be ignored
+		if len(commandParams.Entrypoint) > 0 || len(commandParams.Cmd) > 0 {
+			commandParams.DoRunAsTargetShell = false
+		}
+
+		if commandParams.DoRunAsTargetShell {
+			commandParams.DoTerminal = true
+		}
+
+		if !commandParams.ActionListNamespaces &&
+			!commandParams.ActionListPods &&
+			!commandParams.ActionListDebuggableContainers &&
+			!commandParams.ActionListSessions &&
+			!commandParams.ActionShowSessionLogs &&
+			!commandParams.ActionConnectSession &&
+			commandParams.TargetRef == "" {
 			if ctx.Args().Len() < 1 {
 				if commandParams.Runtime != KubernetesRuntime {
 					xc.Out.Error("param.target", "missing target")
@@ -136,7 +247,7 @@ var CLI = &cli.Command{
 		}
 
 		if commandParams.DebugContainerImage == "" {
-			commandParams.DebugContainerImage = NicolakaNetshootImage
+			commandParams.DebugContainerImage = BusyboxImage
 		}
 
 		OnCommand(

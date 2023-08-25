@@ -89,7 +89,7 @@ func NoColor() {
 
 type OutVars map[string]interface{}
 
-func (ref *Output) LogDump(logType, data string, params ...OutVars) {
+func (ref *Output) LogDump(logType string, data string, params ...OutVars) {
 	var info string
 	msg := map[string]string{}
 	var jsonData []byte

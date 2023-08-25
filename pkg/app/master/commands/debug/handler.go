@@ -49,38 +49,50 @@ func OnCommand(
 
 	xc.Out.Info("params", paramVars)
 
-	client, err := dockerclient.New(gparams.ClientConfig)
-	if err == dockerclient.ErrNoDockerInfo {
-		exitMsg := "missing Docker connection info"
-		if gparams.InContainer && gparams.IsDSImage {
-			exitMsg = "make sure to pass the Docker connect parameters to the slim app container"
-		}
-
-		xc.Out.Info("docker.connect.error",
-			ovars{
-				"message": exitMsg,
-			})
-
-		exitCode := commands.ECTCommon | commands.ECCNoDockerConnectInfo
-		xc.Out.State("exited",
-			ovars{
-				"exit.code": exitCode,
-				"version":   v.Current(),
-				"location":  fsutil.ExeDir(),
-			})
-		xc.Exit(exitCode)
-	}
-	xc.FailOn(err)
-
-	if gparams.Debug {
-		version.Print(xc, Name, logger, client, false, gparams.InContainer, gparams.IsDSImage)
-	}
+	sid := generateSessionID()
+	debugContainerName := generateContainerName(sid)
+	logger = logger.WithFields(
+		log.Fields{
+			"sid":                  sid,
+			"debug.container.name": debugContainerName,
+		})
 
 	switch commandParams.Runtime {
 	case DockerRuntime:
-		HandleDockerRuntime(logger, xc, gparams, commandParams, client)
+		client, err := dockerclient.New(gparams.ClientConfig)
+		if err == dockerclient.ErrNoDockerInfo {
+			exitMsg := "missing Docker connection info"
+			if gparams.InContainer && gparams.IsDSImage {
+				exitMsg = "make sure to pass the Docker connect parameters to the slim app container"
+			}
+
+			xc.Out.Info("docker.connect.error",
+				ovars{
+					"message": exitMsg,
+				})
+
+			exitCode := commands.ECTCommon | commands.ECCNoDockerConnectInfo
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": exitCode,
+					"version":   v.Current(),
+					"location":  fsutil.ExeDir(),
+				})
+			xc.Exit(exitCode)
+		}
+		xc.FailOn(err)
+
+		if gparams.Debug {
+			version.Print(xc, Name, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+		}
+
+		HandleDockerRuntime(logger, xc, gparams, commandParams, client, sid, debugContainerName)
 	case KubernetesRuntime:
-		HandleKubernetesRuntime(logger, xc, gparams, commandParams)
+		if gparams.Debug {
+			version.Print(xc, Name, logger, nil, false, gparams.InContainer, gparams.IsDSImage)
+		}
+
+		HandleKubernetesRuntime(logger, xc, gparams, commandParams, sid, debugContainerName)
 	default:
 		xc.Out.Error("runtime", "unsupported runtime")
 		xc.Out.State("exited",
