@@ -196,9 +196,9 @@ Elixir application images:
 
 ## RECENT UPDATES
 
-Latest version: 1.40.3 (7/13/2023)
+Latest version: 1.40.4 (8/25/2023)
 
-The 1.40.3 release adds the next version of the `debug` command with support for kubernetes.
+The 1.40.4 release update the `debug` command improving its support for kubernetes and enhancing the overall debugging experience.
 
 For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
@@ -215,15 +215,15 @@ slim update
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.40.3/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.3/dist_mac.zip`)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.40.4/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.4/dist_mac.zip`)
 
-   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.40.3/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.3/dist_mac_m1.zip`)
+   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.40.4/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.4/dist_mac_m1.zip`)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.40.3/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.3/dist_linux.tar.gz`)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.40.4/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.4/dist_linux.tar.gz`)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.40.3/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.3/dist_linux_arm.tar.gz`)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.40.4/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.4/dist_linux_arm.tar.gz`)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.40.3/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.3/dist_linux_arm64.tar.gz`)
+   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.40.4/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.4/dist_linux_arm64.tar.gz`)
 
 2. Unzip the package and optionally move it to your bin directory.
 
@@ -536,7 +536,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--sensor-ipc-endpoint` - Override sensor IPC endpoint
 - `--rta-onbuild-base-image` - Enable runtime analysis for onbuild base images (default: false)
 - `--rta-source-ptrace` - Enable PTRACE runtime analysis source (default: true)
-- `--image-build-engine` - Select image build engine: `internal` | `docker` | `none` (`internal` - build the output image without using Docker, `docker` - build the output image with Docker [default behavior], `none` - don't build the output image, allows you to do your own build with the tools you want to use, which you'll be able to do by pointing to the artifact directory where the `files.tar` and `Dockerfile` artifacts are located for the output image)
+- `--image-build-engine` - Select image build engine: `internal` | `docker` | `none` (`internal` - build the output image without using Docker [default behavior], `docker` - build the output image with Docker, `none` - don't build the output image, allows you to do your own build with the tools you want to use, which you'll be able to do by pointing to the artifact directory where the `files.tar` and `Dockerfile` artifacts are located for the output image)
 - `--image-build-arch` - Select output image build architecture (use the standard container image names for the architectures without the OS part)
 - `--obfuscate-metadata` - Obfuscate the standard system and application metadata to make it more challenging to identify the image components (experimental flag, first version of obfuscation; inspired by the [`Malicious Compliance`](https://kccnceu2023.sched.com/event/1Hybu/malicious-compliance-reflections-on-trusting-container-scanners-ian-coldwater-independent-duffie-cooley-isovalent-brad-geesaman-ghost-security-rory-mccune-datadog) KubeCon EU 2023 talk)
 
@@ -929,11 +929,11 @@ The demo runs on Mac OS X, but you can build a linux version. Note that these st
 
 1. Get the Slim app binaries:
 
-* [Mac](https://downloads.dockerslim.com/releases/1.40.3/dist_mac.zip),
-* [Mac M1](https://downloads.dockerslim.com/releases/1.40.3/dist_mac_m1.zip), 
-* [Linux](https://downloads.dockerslim.com/releases/1.40.3/dist_linux.tar.gz), 
-* [Linux ARM](https://downloads.dockerslim.com/releases/1.40.3/dist_linux_arm.tar.gz),
-* [Linux ARM64](https://downloads.dockerslim.com/releases/1.40.3/dist_linux_arm64.tar.gz) 
+* [Mac](https://downloads.dockerslim.com/releases/1.40.4/dist_mac.zip),
+* [Mac M1](https://downloads.dockerslim.com/releases/1.40.4/dist_mac_m1.zip), 
+* [Linux](https://downloads.dockerslim.com/releases/1.40.4/dist_linux.tar.gz), 
+* [Linux ARM](https://downloads.dockerslim.com/releases/1.40.4/dist_linux_arm.tar.gz),
+* [Linux ARM64](https://downloads.dockerslim.com/releases/1.40.4/dist_linux_arm64.tar.gz) 
 
 Unzip them and optionally add their directory to your `PATH` environment variable if you want to use the app from other locations.
 

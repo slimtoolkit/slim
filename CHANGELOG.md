@@ -1,5 +1,20 @@
 # Releases
 
+## 1.40.4 (8/25/2023)
+
+### Improvements
+
+- Auto-complete in the interactive `prompt` mode for the target, namespace, pod and session flags
+- Interactive `debug` command terminal that runs as if you are connected directly to the target image you are debugging (enabled by default)
+- Basic sessions for `debug` command
+- Ability to show logs for the existing `debug` command sessions
+- More `debug` command flags (see README)
+- README docs updates for the `debug` command
+
+### Bug Fixes
+
+- Many `debug` command bug fixes
+
 ## 1.40.3 (7/13/2023)
 
 ### New Features

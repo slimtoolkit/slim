@@ -510,7 +510,7 @@ var Flags = map[string]cli.Flag{
 	},
 	FlagImageBuildEngine: &cli.StringFlag{
 		Name:    FlagImageBuildEngine,
-		Value:   "docker",
+		Value:   IBEInternal,
 		Usage:   FlagImageBuildEngineUsage,
 		EnvVars: []string{"DSLIM_IMAGE_BUILD_ENG"},
 	},
