@@ -799,7 +799,7 @@ func listK8sDebugContainers(
 	nsName string,
 	podName string,
 	targetContainer string,
-    onlyActive bool) (map[string]*DebugContainerInfo, error) {
+	onlyActive bool) (map[string]*DebugContainerInfo, error) {
 
 	pod, err := api.CoreV1().Pods(nsName).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {

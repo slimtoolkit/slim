@@ -847,4 +847,3 @@ func IsTrueStr(value string) bool {
 
 	return false
 }
-

@@ -104,7 +104,7 @@ func (ia *InteractiveApp) execute(command string) {
 
 		args = append(args, val)
 	}
-	
+
 	if err := ia.app.Run(args); err != nil {
 		log.Fatal(err)
 	}

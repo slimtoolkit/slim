@@ -323,7 +323,7 @@ func listDebuggableDockerContainersWithConfig(client *dockerapi.Client) (map[str
 func listDockerDebugContainers(
 	client *dockerapi.Client,
 	targetContainer string,
-    onlyActive bool) (map[string]*DebugContainerInfo, error) {
+	onlyActive bool) (map[string]*DebugContainerInfo, error) {
 	containers, err := dockerutil.ListContainers(client, "", true)
 	if err != nil {
 		return nil, err
@@ -376,9 +376,9 @@ func listDockerDebugContainers(
 }
 
 func listDockerDebugContainersWithConfig(
-	client *dockerapi.Client, 
+	client *dockerapi.Client,
 	targetContainer string,
-    onlyActive bool) (map[string]*DebugContainerInfo, error) {
+	onlyActive bool) (map[string]*DebugContainerInfo, error) {
 	//todo: pass the docker client config params instead of the existing client
 	return listDockerDebugContainers(client, targetContainer, onlyActive)
 }

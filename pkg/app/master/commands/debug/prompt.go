@@ -198,7 +198,7 @@ func completeSession(ia *commands.InteractiveApp, token string, params prompt.Do
 	var values []prompt.Suggest
 	ccs := commands.GetCurrentCommandState()
 	if ccs != nil && ccs.Command == Name {
-		csessValStr := ccs.GetCFValue(FlagConnectSession) 
+		csessValStr := ccs.GetCFValue(FlagConnectSession)
 
 		runtimeFlag := commands.FullFlagName(FlagRuntime)
 		rtFlagVals, found := ccs.CommandFlags[runtimeFlag]
@@ -210,7 +210,7 @@ func completeSession(ia *commands.InteractiveApp, token string, params prompt.Do
 				kubeconfig = kcFlagVals[0]
 			}
 
-			namespace := ccs.GetCFValueWithDefault(FlagNamespace,NamespaceDefault)
+			namespace := ccs.GetCFValueWithDefault(FlagNamespace, NamespaceDefault)
 
 			var pod string
 			podFlag := commands.FullFlagName(FlagPod)
@@ -252,8 +252,8 @@ func completeSession(ia *commands.InteractiveApp, token string, params prompt.Do
 				target = targetFlagVals[0]
 			}
 
-			result, err := listDockerDebugContainersWithConfig(ccs.Dclient, 
-				target, 
+			result, err := listDockerDebugContainersWithConfig(ccs.Dclient,
+				target,
 				commands.IsTrueStr(csessValStr))
 			if err == nil {
 				for _, info := range result {
