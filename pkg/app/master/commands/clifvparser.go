@@ -876,7 +876,7 @@ func ParseEnvFile(filePath string) ([]string, error) {
 	lines := strings.Split(string(fileData), "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if len(line) != 0 {
+		if len(line) > 0 {
 			parts := strings.SplitN(line, "=", 2)
 			if len(parts) == 2 {
 				output = append(output, line)
