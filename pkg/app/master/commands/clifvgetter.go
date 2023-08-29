@@ -234,16 +234,21 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 
 	volumesList := ctx.StringSlice(FlagVolume)
 	labelsList := ctx.StringSlice(FlagLabel)
+	envList, err := ParseEnvFile(ctx.String(FlagEnvFile))
+	if err != nil {
+		return nil, err
+	}
+	env := ctx.StringSlice(FlagEnv)
+	envList = append(envList, env...)
 
 	overrides := &config.ContainerOverrides{
 		User:     ctx.String(FlagUser),
 		Workdir:  ctx.String(FlagWorkdir),
-		Env:      ctx.StringSlice(FlagEnv),
+		Env:      envList,
 		Network:  ctx.String(FlagNetwork),
 		Hostname: ctx.String(FlagHostname),
 	}
 
-	var err error
 	if len(exposePortList) > 0 {
 		overrides.ExposedPorts, err = ParseDockerExposeOpt(exposePortList)
 		if err != nil {

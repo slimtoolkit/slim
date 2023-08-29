@@ -153,6 +153,7 @@ const (
 	FlagCmd                = "cmd"
 	FlagWorkdir            = "workdir"
 	FlagEnv                = "env"
+	FlagEnvFile            = "env-file"
 	FlagLabel              = "label"
 	FlagVolume             = "volume"
 	FlagExpose             = "expose"
