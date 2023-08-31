@@ -1,3 +1,6 @@
+help: ## Print out the menu of command options
+	@echo "Available commands:"
+	@awk -F ':.*?## ' '/^[a-zA-Z0-9_-]+:.*?## / {printf "\033[36m%-20s\033[0m %s\n", $$1, $$2}' $(MAKEFILE_LIST)
 default: build_in_docker ## build docker-slim in docker by default
 
 build_in_docker:   ## build docker-slim in docker
@@ -20,8 +23,6 @@ build_dev:  ## build docker-slim for development (quickly), in bin/
 fmt:  ## format all golang files
 	'$(CURDIR)/scripts/src.fmt.sh'
 
-help: ## prints out the menu of command options
-	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 inspect: ## report suspicious constructs and linting errors
 	'$(CURDIR)/scripts/src.inspect.sh'
