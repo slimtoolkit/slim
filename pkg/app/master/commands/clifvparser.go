@@ -14,7 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/docker/go-connections/nat"
-	docker "github.com/fsouza/go-dockerclient"
+	"github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
 
