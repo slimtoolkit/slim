@@ -81,6 +81,7 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagCmd),
 		commands.Cflag(commands.FlagWorkdir),
 		commands.Cflag(commands.FlagEnv),
+		commands.Cflag(commands.FlagEnvFile),
 		commands.Cflag(commands.FlagLabel),
 		commands.Cflag(commands.FlagVolume),
 		commands.Cflag(commands.FlagLink),
