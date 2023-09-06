@@ -81,19 +81,6 @@ const (
 	FlagKubeconfigUsage = "Kubeconfig file location (k8s runtime)"
 )
 
-const (
-	CgrSlimToolkitDebugImage = "cgr.dev/chainguard/slim-toolkit-debug:latest"
-	WolfiBaseImage           = "cgr.dev/chainguard/wolfi-base:latest"
-	BusyboxImage             = "busybox:latest"
-	NicolakaNetshootImage    = "nicolaka/netshoot"
-	KoolkitsNodeImage        = "lightruncom/koolkits:node"
-	KoolkitsPythonImage      = "lightruncom/koolkits:python"
-	KoolkitsGolangImage      = "lightruncom/koolkits:golang"
-	KoolkitsJVMImage         = "lightruncom/koolkits:jvm"
-	DigitaloceanDoksImage    = "digitalocean/doks-debug:latest"
-	ZinclabsUbuntuImage      = "public.ecr.aws/zinclabs/debug-ubuntu-base:latest"
-)
-
 var Flags = map[string]cli.Flag{
 	FlagRuntime: &cli.StringFlag{
 		Name:    FlagRuntime,
