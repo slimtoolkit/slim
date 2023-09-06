@@ -14,7 +14,7 @@ BUILD_TIME="$(date -u '+%Y-%m-%d_%I:%M:%S%p')"
 TAG="current"
 REVISION="current"
 if hash git 2>/dev/null && [ -e $BDIR/.git ]; then
-  TAG="$(git describe --tags)"
+  TAG="$(git describe --tags --always)"
   REVISION="$(git rev-parse HEAD)"
 fi
 
