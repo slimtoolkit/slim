@@ -59,7 +59,7 @@ jobs:
       with:
         username: ${{ secrets.DOCKERHUB_USERNAME }}
         password: ${{ secrets.DOCKERHUB_TOKEN }}
-      # Push Docker Image to Registry
+      
     -  run: | 
-        docker tag node_alpine:slim-${{github.run_number}} ${{ secrets.DOCKERHUB_USERNAME }}/node_alpine:slim-${{github.run_number}} 
+        docker tag node_alpine.slim:latest ${{ secrets.DOCKERHUB_USERNAME }}/node_alpine:slim-${{github.run_number}} 
         docker push node_alpine:slim-${{github.run_number}}
