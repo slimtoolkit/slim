@@ -61,5 +61,5 @@ jobs:
         password: ${{ secrets.DOCKERHUB_TOKEN }}
       
     -  run: | 
-        docker tag node_alpine.slim:latest ${{ secrets.DOCKERHUB_USERNAME }}/node_alpine:slim-${{github.run_number}} 
-        docker push node_alpine:slim-${{github.run_number}}
+        docker tag node_alpine:slim-${{github.run_number}} ${{ secrets.DOCKERHUB_USERNAME }}/node_alpine:nodejs_slim_version 
+        docker push node_alpine:nodejs_slim_version
