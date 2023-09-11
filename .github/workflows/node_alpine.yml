@@ -8,6 +8,10 @@ on:
     branches: [ "slim-ci_cd_integration" ]
     paths: [ "ci_cd_integration/github_actions/node_alpine/**" ]
 
+defaults:
+ run:
+   working-directory: ci_cd_integration/github_actions/node_alpine
+   
 jobs:
   build-nodejs-app:
     runs-on: ubuntu-latest
