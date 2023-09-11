@@ -22,7 +22,7 @@ slim node_alpine:latest -t slim
 ```
 ### Push Docker Image to Registry
 ```
-docker image push node_alpine:slim
+docker image push [repository]:[tagname]
 ```
 
 ## References
