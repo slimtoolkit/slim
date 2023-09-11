@@ -61,4 +61,4 @@ jobs:
         tag: "slim"
 
     # Push Docker Image to Regristy
-    - run: docker image push ${{ secrets.DOCKERHUB_USERNAME }}/node_alpine:slim
+    - run: docker image push node_alpine:slim
