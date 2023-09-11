@@ -18,7 +18,7 @@ docker build -t node_alpine:${{github.run_number}}
 ```
 ### Slim Docker Image
 ```
-slim node_alpine:${{github.run_number}} -t slim
+slim node_alpine:${{github.run_number}} -t slim-${{github.run_number}}
 ```
 ### Push Docker Image to Registry
 ```
