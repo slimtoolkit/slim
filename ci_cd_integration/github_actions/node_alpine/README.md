@@ -22,7 +22,7 @@ slim node_alpine:${{github.run_number}} -t slim
 ```
 ### Push Docker Image to Registry
 ```
-docker image push node_alpine:${{github.run_number}} --all-tags
+docker image push node_alpine:${{github.run_number}}
 ```
 
 ## References
