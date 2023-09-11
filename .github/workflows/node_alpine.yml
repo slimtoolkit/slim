@@ -1,0 +1,60 @@
+# This workflow will do a clean installation of node dependencies, cache/restore them, build the source code, and run tests across different versions of node
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-nodejs
+
+name: Node.js CI
+
+on:
+  push:
+    branches: [ "slim-ci_cd_integration"]
+    paths: ["ci_cd_integration/github_actions/node_alpine"]
+  pull_request:
+    branches: [ "master" ]
+    paths: ["ci_cd_integration/github_actions/node_alpine"]
+
+jobs:
+  build-nodejs-app:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [14.x, 16.x, 18.x]
+        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+    steps:
+    - uses: actions/checkout@v3
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v3
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+    - run: npm run test
+    - run: npm install
+    - run: npm pack 
+    
+  docker-slim:
+   needs: build-nodejs-app
+   runs-on: ubuntu-latest
+   steps:
+    - name: Checkout
+      uses: actions/checkout@v3
+      
+    - name: Login to Docker Hub
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+        
+    - name: Build Docker Image
+      uses: docker/build-push-action@v4
+      with:
+        push: false
+        tags: node_alpine:latest
+        
+    - name: Slim Docker Image
+      uses: kitabisa/docker-slim-action@v1
+      env:
+        DSLIM_HTTP_PROBE: false
+      with:
+        target: node_alpine:latest
+        tag: "slim"
+
+    # Push Docker Image to Regristy
+    - run: docker image push ${{ secrets.DOCKERHUB_USERNAME }}/node_alpine --all-tags
