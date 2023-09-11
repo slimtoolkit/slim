@@ -1,12 +1,12 @@
-## Docker-Slim integration for a Nodejs application in a Github Actions CI/CD [workflow]()
+## Docker-Slim integration for a basic Nodejs app in a Github Actions CI [workflow](https://github.com/TomiwaAribisala-git/slim/blob/slim-ci_cd_integration/.github/workflows/node_alpine.yml)
 
 ### Test Nodejs app 
 ```
-npm run test
+npm install
 ```
 ### Install dependencies 
 ```
-npm install 
+npm run test 
 ```
 ### Build app artifact   
 ```
@@ -18,11 +18,11 @@ docker build -t node_alpine:latest
 ```
 ### Slim Docker Image
 ```
-slim node_alpine:latest -t node_alpine_slim:${{github.run_number}}
+slim node_alpine:latest -t slim
 ```
-### Push Slim Docker Image to Registry
+### Push Docker Image to Registry
 ```
-docker image push ${{ secrets.DOCKERHUB_USERNAME }}/node_alpine_slim:${{github.run_number}}
+docker image push ${{ secrets.DOCKERHUB_USERNAME }}/node_alpine --all-tags
 ```
 
 ## References

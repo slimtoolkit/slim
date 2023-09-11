@@ -47,6 +47,8 @@ jobs:
     - name: Build Docker Image
       uses: docker/build-push-action@v4
       with:
+        context: ci_cd_integration/github_actions/node_alpine
+        file: ci_cd_integration/github_actions/node_alpine/Dockerfile 
         push: false
         tags: node_alpine:latest
         
