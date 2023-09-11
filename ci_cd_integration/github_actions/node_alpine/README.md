@@ -8,7 +8,7 @@ npm run test
 ```
 npm install 
 ```
-### Build app artifact  
+### Build app artifact   
 ```
 npm pack
 ``` 
