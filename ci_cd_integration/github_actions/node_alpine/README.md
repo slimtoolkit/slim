@@ -20,9 +20,13 @@ docker build -t node_alpine:${{github.run_number}}
 ```
 slim node_alpine:${{github.run_number}} -t slim-${{github.run_number}}
 ```
+### Docker Login
+```
+docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN }}
+```
 ### Push Docker Image to Registry
 ```
-sudo docker push node_alpine:slim-${{github.run_number}} 
+docker push node_alpine:slim-${{github.run_number}} 
 ```
 
 ## References
