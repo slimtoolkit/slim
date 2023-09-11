@@ -14,15 +14,15 @@ npm pack
 ``` 
 ### Build Docker Image
 ```
-docker build -t ${{github.repository}}:latest
+docker build -t node_alpine:${{github.run_number}}
 ```
 ### Slim Docker Image
 ```
-slim ${{ github.repository }}:latest -t slim
+slim node_alpine:${{github.run_number}} -t slim
 ```
 ### Push Docker Image to Registry
 ```
-docker image push ${{ github.repository }} --all-tags
+docker image push node_alpine:${{github.run_number}} --all-tags
 ```
 
 ## References
