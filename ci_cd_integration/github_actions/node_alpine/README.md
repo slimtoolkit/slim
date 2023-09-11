@@ -26,11 +26,11 @@ docker login -u ${{ secrets.DOCKERHUB_USERNAME }} -p ${{ secrets.DOCKERHUB_TOKEN
 ```
 ### Tag Image
 ```
-docker tag node_alpine:slim-${{github.run_number}} ${{ secrets.DOCKERHUB_USERNAME }}/node_alpine:nodejs_slim_version
+docker tag node_alpine:slim-${{github.run_number}} ${{ secrets.DOCKERHUB_USERNAME }}/node_alpine:slim-${{github.run_number}}
 ```
 ### Push Docker Image to Registry
 ```
-docker push node_alpine:nodejs_slim_version
+docker push ${{ secrets.DOCKERHUB_USERNAME }}/node_alpine:slim-${{github.run_number}} 
 ```
 
 ## References
