@@ -4,7 +4,7 @@
 ```
 npm run test
 ```
-### Install dependencies
+### Install dependencies 
 ```
 npm install 
 ```
