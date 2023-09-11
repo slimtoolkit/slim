@@ -1,6 +1,6 @@
 ## Docker-Slim integration for a Nodejs application in a Github Actions CI/CD [workflow]()
 
-### Test Nodejs app
+### Test Nodejs app 
 ```
 npm run test
 ```
