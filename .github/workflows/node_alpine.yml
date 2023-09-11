@@ -50,15 +50,14 @@ jobs:
         context: ci_cd_integration/github_actions/node_alpine
         file: ci_cd_integration/github_actions/node_alpine/Dockerfile 
         push: false
-        tags: node_alpine:latest
+        tags: ${{ github.repository }}:latest
         
     - name: Slim Docker Image
       uses: kitabisa/docker-slim-action@v1
       env:
         DSLIM_HTTP_PROBE: false
       with:
-        target: node_alpine:latest
+        target: ${{ github.repository }}:latest
         tag: "slim"
-
-    # Push Docker Image to Regristy
-    - run: docker image push node_alpine:slim
+    
+    - run: docker image push "${{ github.repository }}" --all-tags
