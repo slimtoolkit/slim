@@ -50,14 +50,14 @@ jobs:
         context: ci_cd_integration/github_actions/node_alpine
         file: ci_cd_integration/github_actions/node_alpine/Dockerfile 
         push: false
-        tags: ${{ github.repository }}:latest
+        tags: node_alpine:${{github.run_number}}
         
     - name: Slim Docker Image
       uses: kitabisa/docker-slim-action@v1
       env:
         DSLIM_HTTP_PROBE: false
       with:
-        target: ${{ github.repository }}:latest
+        target: node_alpine:${{github.run_number}}
         tag: "slim"
     
-    - run: docker image push "${{ github.repository }}" --all-tags
+    - run: docker image push "node_alpine:${{github.run_number}}" --all-tags
