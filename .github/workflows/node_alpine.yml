@@ -6,7 +6,7 @@ name: Node.js CI
 on:
   push:
     branches: [ "slim-ci_cd_integration" ]
-    paths: [ "ci_cd_integration/github_actions/node_alpine" ]
+    paths: [ "ci_cd_integration/github_actions/node_alpine/**" ]
 
 jobs:
   build-nodejs-app:
