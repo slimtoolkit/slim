@@ -60,4 +60,4 @@ jobs:
         target: node_alpine:${{github.run_number}}
         tag: "slim-${{github.run_number}}"
     
-    # - run: docker image push "node_alpine:${{github.run_number}}" --all-tags
+    - run: docker push node_alpine:slim-${{github.run_number}}
