@@ -153,6 +153,7 @@ const (
 	FlagCmd                = "cmd"
 	FlagWorkdir            = "workdir"
 	FlagEnv                = "env"
+	FlagEnvFile            = "env-file"
 	FlagLabel              = "label"
 	FlagVolume             = "volume"
 	FlagExpose             = "expose"
@@ -262,6 +263,7 @@ const (
 	FlagCmdUsage                = "Override CMD analyzing image at runtime. To persist CMD changes in the output image, pass the --image-overrides=cmd or --image-overrides=all flag as well."
 	FlagWorkdirUsage            = "Override WORKDIR analyzing image at runtime. To persist WORKDIR changes in the output image, pass the --image-overrides=workdir or --image-overrides=all flag as well."
 	FlagEnvUsage                = "Override or add ENV only during runtime. To persist ENV additions or changes in the output image, pass the --image-overrides=env or --image-overrides=all flag as well."
+	FlagEnvFileUsage            = "File to override or add ENV only during runtime. To persist ENV additions or changes in the output image, pass the --image-overrides=env or --image-overrides=all flag as well."
 	FlagLabelUsage              = "Override or add LABEL analyzing image at runtime. To persist LABEL additions or changes in the output image, pass the --image-overrides=label or --image-overrides=all flag as well."
 	FlagVolumeUsage             = "Add VOLUME analyzing image at runtime. To persist VOLUME additions in the output image, pass the --image-overrides=volume or --image-overrides=all flag as well."
 	FlagExposeUsage             = "Use additional EXPOSE instructions analyzing image at runtime. To persist EXPOSE additions in the output image, pass the --image-overrides=expose or --image-overrides=all flag as well."
@@ -806,6 +808,12 @@ var CommonFlags = map[string]cli.Flag{
 		Value:   cli.NewStringSlice(),
 		Usage:   FlagEnvUsage,
 		EnvVars: []string{"DSLIM_RC_ENV"},
+	},
+	FlagEnvFile: &cli.StringFlag{
+		Name:    FlagEnvFile,
+		Value:   "",
+		Usage:   FlagEnvFileUsage,
+		EnvVars: []string{"DSLIM_RC_ENV_FILE"},
 	},
 	FlagLabel: &cli.StringSliceFlag{
 		Name:    FlagLabel,
