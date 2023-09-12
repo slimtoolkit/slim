@@ -5,7 +5,7 @@ name: Node.js CI
 
 on:
   push:
-    branches: [ "slim-ci_cd_integration" ]
+    branches: [ "master" ]
     paths: [ "ci_cd_integration/github_actions/node_alpine/**" ]
   pull_request:
     branches: [ "master" ]
