@@ -14,7 +14,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/docker/go-connections/nat"
-	"github.com/fsouza/go-dockerclient"
+	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
 
@@ -846,4 +846,42 @@ func IsTrueStr(value string) bool {
 	}
 
 	return false
+}
+
+func ParseEnvFile(filePath string) ([]string, error) {
+	var output []string
+
+	if filePath == "" {
+		return output, nil
+	}
+
+	fullPath, err := filepath.Abs(filePath)
+	if err != nil {
+		return output, err
+	}
+	_, err = os.Stat(fullPath)
+	if err != nil {
+		return output, err
+	}
+
+	fileData, err := os.ReadFile(fullPath)
+	if err != nil {
+		return output, err
+	}
+
+	if len(fileData) == 0 {
+		return output, nil
+	}
+
+	lines := strings.Split(string(fileData), "\n")
+	for _, line := range lines {
+		line = strings.TrimSpace(line)
+		if len(line) > 0 {
+			parts := strings.SplitN(line, "=", 2)
+			if len(parts) == 2 {
+				output = append(output, line)
+			}
+		}
+	}
+	return output, nil
 }
