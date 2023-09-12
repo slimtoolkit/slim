@@ -1,0 +1,36 @@
+pipeline {
+    agent any
+    stages {
+        stage("testing and building nodejs app") {
+            steps{
+                script {
+                    echo "testing and building nodejs app..."
+                    sh 'npm install'
+                    sh 'npm run test'
+                    sh 'npm pack'
+                }
+            }
+        }
+        stage("Build and Slim Docker Image") {
+            steps {
+                script {
+                    echo "building and slimming docker image..."
+                    sh 'docker build -t node_alpine:latest'
+                    sh 'slim build --target node_alpine:latest --tag node_alpine:slim-$BUILD_NUMBER'
+                    }
+                }
+            }
+        }
+        stage("Push Slim Image to Regristy") {
+            steps {
+                script {
+                    echo 'pushing image to docker regristry...'
+                    withCredentials([usernamePassword(credentialsId: 'docker-hub-credentials', passwordVariable: 'PASS', usernameVariable: 'USER')]) {
+                        sh 'docker tag node_alpine:slim-$BUILD_NUMBER $USER/node_alpine:slim-$BUILD_NUMBER'
+                        sh 'docker push $USER/node_alpine:slim-$BUILD_NUMBER'
+                    }
+                }
+            }
+        }
+    }
+}   
