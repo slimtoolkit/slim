@@ -6,7 +6,6 @@ sudo systemctl start docker
 sudo usermod -aG docker ec2-user
 docker [install Jenkins]
 docker [mount docker unix on Jenkins]
-
 docker exec [enter Jenkins container]
     apt install nodejs 
     apt install npm

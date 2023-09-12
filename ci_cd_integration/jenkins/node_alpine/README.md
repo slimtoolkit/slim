@@ -1,6 +1,6 @@
-## Docker-Slim integration for a basic Nodejs app in a Jenkins CI [Pipeline](slim/ci_cd_integration/jenkins/node_alpine/Jenkinsfile)
+## Docker-Slim integration for a basic Nodejs app in a Jenkins CI [Pipeline](./Jenkinsfile)
 
 ### Prerequisites
 - Spin up a AWS EC2 Instance (Ubuntu)
-- Execute [bash script]() in EC2 Instance
-- Add DockerHub username/password in Jenkins Credentials
+- Execute [bash script](./script.sh) commands in EC2 Instance
+- Add DockerHub username/password as Jenkins Credentials
