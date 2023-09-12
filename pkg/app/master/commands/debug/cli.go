@@ -70,19 +70,6 @@ type CommandParams struct {
 	ActionConnectSession bool
 }
 
-var debugImages = map[string]string{
-	CgrSlimToolkitDebugImage: "Chainguard SlimToolkit debug image - https://edu.chainguard.dev/chainguard/chainguard-images/reference/slim-toolkit-debug",
-	WolfiBaseImage:           "A lightweight Wolfi base image - https://github.com/chainguard-images/images/tree/main/images/wolfi-base",
-	BusyboxImage:             "A lightweight image with common unix utilities - https://busybox.net/about.html",
-	NicolakaNetshootImage:    "Network trouble-shooting swiss-army container - https://github.com/nicolaka/netshoot",
-	KoolkitsNodeImage:        "Node.js KoolKit - https://github.com/lightrun-platform/koolkits/tree/main/nodejs",
-	KoolkitsPythonImage:      "Python KoolKit - https://github.com/lightrun-platform/koolkits/tree/main/python",
-	KoolkitsGolangImage:      "Go KoolKit - https://github.com/lightrun-platform/koolkits/tree/main/golang",
-	KoolkitsJVMImage:         "JVM KoolKit - https://github.com/lightrun-platform/koolkits/blob/main/jvm/README.md",
-	DigitaloceanDoksImage:    "Kubernetes manifests for investigation and troubleshooting - https://github.com/digitalocean/doks-debug",
-	ZinclabsUbuntuImage:      "Common utilities for debugging your cluster - https://github.com/openobserve/debug-container",
-}
-
 func ParseNameValueList(list []string) []NVPair {
 	var pairs []NVPair
 	for _, val := range list {
