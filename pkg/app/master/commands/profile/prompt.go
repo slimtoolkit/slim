@@ -51,6 +51,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagCmd), Description: commands.FlagCmdUsage},
 		{Text: commands.FullFlagName(commands.FlagWorkdir), Description: commands.FlagWorkdirUsage},
 		{Text: commands.FullFlagName(commands.FlagEnv), Description: commands.FlagEnvUsage},
+		{Text: commands.FullFlagName(commands.FlagEnvFile), Description: commands.FlagEnvFileUsage},
 		{Text: commands.FullFlagName(commands.FlagLabel), Description: commands.FlagLabelUsage},
 		{Text: commands.FullFlagName(commands.FlagVolume), Description: commands.FlagVolumeUsage},
 		{Text: commands.FullFlagName(commands.FlagLink), Description: commands.FlagLinkUsage},

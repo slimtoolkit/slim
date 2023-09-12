@@ -234,6 +234,12 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 
 	volumesList := ctx.StringSlice(FlagVolume)
 	labelsList := ctx.StringSlice(FlagLabel)
+	envList, envErr := ParseEnvFile(ctx.String(FlagEnvFile))
+	if envErr != nil {
+		return nil, envErr
+	}
+	env := ctx.StringSlice(FlagEnv)
+	envList = append(envList, env...)
 
 	overrides := &config.ContainerOverrides{
 		User:     ctx.String(FlagUser),
