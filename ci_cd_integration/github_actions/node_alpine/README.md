@@ -1,4 +1,4 @@
-## Docker-Slim integration for a basic Nodejs app in a Github Actions CI [workflow](slim/.github/workflows/node_alpine.yml)
+## Docker-Slim integration for a basic Nodejs app in a Github Actions CI [workflow](../../../.github/workflows/node_alpine.yml)
 
 ### Test Nodejs app 
 ```
