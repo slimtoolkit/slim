@@ -15,9 +15,8 @@ pipeline {
             steps {
                 script {
                     echo "building and slimming docker image..."
-                    sh 'docker build -t node_alpine:latest .'
-                    sh 'slim build --target node_alpine:latest --tag node_alpine:slim-$BUILD_NUMBER'
-                    }
+                    sh 'docker build -t node_alpine:$BUILD_NUMBER .'
+                    sh 'docker run -it --rm -v /var/run/docker.sock:/var/run/docker.sock dslim/slim build --target node_alpine:$BUILD_NUMBER --tag node_alpine:slim-$BUILD_NUMBER'
                 }
             }
         }
