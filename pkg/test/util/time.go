@@ -6,10 +6,14 @@ import (
 )
 
 func Delayed(ctx context.Context, delay time.Duration, fn func()) {
+	timer := time.NewTimer(delay)
 	select {
 	case <-ctx.Done():
+		if !timer.Stop() {
+			<-timer.C
+		}
 		return
-	case <-time.After(delay):
+	case <-timer.C:
 		fn()
 	}
 }
