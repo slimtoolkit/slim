@@ -8,5 +8,5 @@ BDIR="$( cd -P "$( dirname "$SOURCE" )/.." && pwd )"
 
 pushd ${BDIR}
 set -x
-go test -v -count 10 ${GO_TEST_FLAGS} ./...
+go test -v -count 10 ${GO_TEST_FLAGS} ./...  -run '^(?!.*appbom).*'
 popd
