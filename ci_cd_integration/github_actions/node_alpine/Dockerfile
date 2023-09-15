@@ -1,13 +1,11 @@
 FROM node:13-alpine
 
-RUN mkdir -p /usr/app
+WORKDIR /usr/src/app
 
-COPY . /usr/app/
-
-WORKDIR /usr/app
-
-EXPOSE 3000
+COPY . ./
 
 RUN npm install
+
+EXPOSE 3000
 
 CMD ["node", "server.js"]
