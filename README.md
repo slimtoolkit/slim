@@ -633,6 +633,9 @@ docker run --volumes-from dcert -e DOCKER_HOST=$DOCKER_HOST -e DOCKER_TLS_VERIFY
 
 Different CI/CD services have different containerized environment designs that impose various restrictions that may impact the ability of the main app to communicate with the sensor app embedded in the temporary container Slim creates. Try adjusting the values for the `--sensor-ipc-mode` and `--sensor-ipc-endpoint` flags. This [`Google Cloud Build`](https://medium.com/google-cloud/integrating-dockerslim-container-minify-step-on-cloud-build-64da29fd58d1) blog post by Márton Kodok is a good reference for both of those flags. 
 
+### Using `*-file` Flags
+- There are several flags that accept file paths (`--include-path-file`, `--compose-file`, `--http-probe-cmd-file`, etc). You need volume mount the location of the referenced paths or the file paths themselves when you use the containerized version of Slim because the Slim app container won't have accept to the referenced files otherwise.
+
 ### CI/CD INTEGRATIONS
 
 #### Integrating Slim in Jenkins
@@ -671,10 +674,6 @@ docker build -t node_alpine:${{github.run_number}} .
 ```
 slim build --target node_alpine:${{github.run_number}} -tag slim-${{github.run_number}}
 ```
-
-### Using `*-file` Flags
-- 
-There are several flags that accept file paths (`--include-path-file`, `--compose-file`, `--http-probe-cmd-file`, etc). You need volume mount the location of the referenced paths or the file paths themselves when you use the containerized version of Slim because the Slim app container won't have accept to the referenced files otherwise.
 
 ## DOCKER CONNECT OPTIONS
 
