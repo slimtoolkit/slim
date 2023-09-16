@@ -633,8 +633,47 @@ docker run --volumes-from dcert -e DOCKER_HOST=$DOCKER_HOST -e DOCKER_TLS_VERIFY
 
 Different CI/CD services have different containerized environment designs that impose various restrictions that may impact the ability of the main app to communicate with the sensor app embedded in the temporary container Slim creates. Try adjusting the values for the `--sensor-ipc-mode` and `--sensor-ipc-endpoint` flags. This [`Google Cloud Build`](https://medium.com/google-cloud/integrating-dockerslim-container-minify-step-on-cloud-build-64da29fd58d1) blog post by Márton Kodok is a good reference for both of those flags. 
 
-### Using `*-file` Flags
+### CI/CD INTEGRATIONS
 
+#### Integrating Slim in Jenkins
+Given Jenkins is running as a containerized environment in a virtual machine(AWS EC2 Instance), the following example steps highlight integrating Slim in Jenkins: 
+- Make Docker commands available in Jenkins
+```
+docker run -p 8080:8080 -p 50000:50000 -d \  
+-v jenkins_home:/var/jenkins_home \ 
+-v /var/run/docker.sock:/var/run/docker.sock \ 
+-v $(which docker):/usr/bin/docker jenkins/jenkins:lts
+```
+- Enable Docker permissions
+```
+chmod 666 /var/run/docker.sock 
+```
+- Install Slim 
+```
+docker run dslim/slim
+```
+- Building an Image and Executing Slim commands
+```
+docker build -t node_alpine:$BUILD_NUMBER .'
+```
+```
+docker run --rm -v /var/run/docker.sock:/var/run/docker.sock dslim/slim \
+build --target node_alpine:$BUILD_NUMBER --tag node_alpine:slim-$BUILD_NUMBER \
+exit'
+```
+
+#### Integrating Slim in Github Actions
+Github Actions has Runners running docker in the background, the following example steps highlight integrating slim in Github Actions using [Docker Slim Github Action](https://github.com/marketplace/actions/docker-slim-github-action):
+- Building an Image and Executing Slim commands 
+```
+docker build -t node_alpine:${{github.run_number}}
+```  
+```
+slim build --target node_alpine:${{github.run_number}} -tag slim-${{github.run_number}}
+```
+
+### Using `*-file` Flags
+- 
 There are several flags that accept file paths (`--include-path-file`, `--compose-file`, `--http-probe-cmd-file`, etc). You need volume mount the location of the referenced paths or the file paths themselves when you use the containerized version of Slim because the Slim app container won't have accept to the referenced files otherwise.
 
 ## DOCKER CONNECT OPTIONS
