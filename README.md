@@ -654,19 +654,19 @@ docker run dslim/slim
 ```
 - Building an Image and Executing Slim commands
 ```
-docker build -t node_alpine:$BUILD_NUMBER .'
+docker build -t node_alpine:$BUILD_NUMBER .
 ```
 ```
 docker run --rm -v /var/run/docker.sock:/var/run/docker.sock dslim/slim \
 build --target node_alpine:$BUILD_NUMBER --tag node_alpine:slim-$BUILD_NUMBER \
-exit'
+exit
 ```
 
 #### Integrating Slim in Github Actions
 Github Actions has Runners running docker in the background, the following example steps highlight integrating slim in Github Actions using [Docker Slim Github Action](https://github.com/marketplace/actions/docker-slim-github-action):
 - Building an Image and Executing Slim commands 
 ```
-docker build -t node_alpine:${{github.run_number}}
+docker build -t node_alpine:${{github.run_number}} .
 ```  
 ```
 slim build --target node_alpine:${{github.run_number}} -tag slim-${{github.run_number}}
