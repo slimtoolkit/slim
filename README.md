@@ -651,9 +651,9 @@ docker run -p 8080:8080 -p 50000:50000 -d \
 ```
 chmod 666 /var/run/docker.sock 
 ```
-- Install Slim 
+- Pull Slim Image 
 ```
-docker run dslim/slim
+docker pull dslim/slim
 ```
 - Building an Image and Executing Slim commands
 ```
