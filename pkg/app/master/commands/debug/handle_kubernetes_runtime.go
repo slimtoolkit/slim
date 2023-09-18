@@ -301,7 +301,7 @@ func HandleKubernetesRuntime(
 				TTY:       doTTY,
 			}, scheme.ParameterCodec)
 
-		logger.Tracef("(connect to session) pod attach request URL:", req.URL())
+		logger.Tracef("(connect to session) pod attach request URL: %s", req.URL())
 
 		attach, err := remotecommand.NewSPDYExecutor(restConfig, http.MethodPost, req.URL())
 		if err != nil {
@@ -540,7 +540,7 @@ func HandleKubernetesRuntime(
 			TTY:       doTTY,
 		}, scheme.ParameterCodec)
 
-	logger.Tracef("pod attach request URL:", req.URL())
+	logger.Tracef("pod attach request URL: %s", req.URL())
 
 	attach, err := remotecommand.NewSPDYExecutor(restConfig, http.MethodPost, req.URL())
 	if err != nil {
