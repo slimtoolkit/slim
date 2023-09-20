@@ -666,7 +666,7 @@ exit
 ```
 
 #### Integrating Slim in Github Actions
-Github Actions has Runners running docker in the background, the following example steps highlight integrating slim in Github Actions using [Docker Slim Github Action](https://github.com/marketplace/actions/docker-slim-github-action):
+Github Actions has Runners running docker in the background, the following example steps highlight integrating slim in Github Actions using [Docker-Slim Github Action](https://github.com/marketplace/actions/docker-slim-github-action):
 - Building an Image and Executing Slim commands 
 ```
 docker build -t node_alpine:${{github.run_number}} .
