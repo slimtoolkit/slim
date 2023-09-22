@@ -681,7 +681,7 @@ chmod 666 /var/run/docker.sock
 docker pull dslim/slim
 ```
 #### Jenkinsfile Slim Stage
-Given you have completed the prerequisite steps above, you can build a docker image and minify the image size using Slim, this snippet stage should be highlighted in your Jenkinsfile stages as highlighted below.
+Given you have completed the prerequisite steps above, you can build a docker image and minify the image size using Slim using the snippet stage below which should be highlighted in your Jenkinsfile stages.
 ```
 stage("Build and Slim Docker Image") {
   steps {
