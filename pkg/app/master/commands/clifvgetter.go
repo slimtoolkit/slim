@@ -4,6 +4,7 @@ package commands
 
 import (
 	"encoding/json"
+	"fmt"
 	"os"
 	"strconv"
 	"strings"
@@ -225,7 +226,7 @@ func GetContinueAfterModeNames(continueAfter string) []string {
 	return strings.Split(continueAfter, "&")
 }
 
-func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error) {
+func GetContainerOverrides(xc *app.ExecutionContext, ctx *cli.Context) (*config.ContainerOverrides, error) {
 	const op = "commands.GetContainerOverrides"
 
 	doUseEntrypoint := ctx.String(FlagEntrypoint)
@@ -239,12 +240,12 @@ func GetContainerOverrides(ctx *cli.Context) (*config.ContainerOverrides, error)
 		return nil, envErr
 	}
 	env := ctx.StringSlice(FlagEnv)
-	envList = append(envList, env...)
+	envList = validateAndCleanEnvVariables(append(envList, env...), xc)
 
 	overrides := &config.ContainerOverrides{
 		User:     ctx.String(FlagUser),
 		Workdir:  ctx.String(FlagWorkdir),
-		Env:      ctx.StringSlice(FlagEnv),
+		Env:      envList,
 		Network:  ctx.String(FlagNetwork),
 		Hostname: ctx.String(FlagHostname),
 	}
@@ -406,4 +407,31 @@ func GetDockerClientConfig(ctx *cli.Context) *config.DockerClient {
 	getEnv(dockerclient.EnvDockerCertPath)
 
 	return config
+}
+
+func validateAndCleanEnvVariables(envList []string, xc *app.ExecutionContext) []string {
+	xc.Out.Info("Validating and cleaning environment variables")
+
+	envStaging := envList[:0]
+	for i, env := range envList {
+		envKeyValue := strings.Split(env, "=")
+		key := envKeyValue[0]
+		value := envKeyValue[1]
+		malformedKeyValue := false
+
+		if (len(key) < 1) && (len(value) > 0) {
+			xc.Out.Prompt(fmt.Sprintf("Missing environment variable KEY to override (idx: %v kv: %s). Excluding from final list", i, env))
+			malformedKeyValue = true
+		}
+		if (len(key) > 0) && (len(value) < 1) {
+			xc.Out.Prompt(fmt.Sprintf("Missing environment variable VALUE to override (idx: %v kv: %s). Excluding from final list", i, env))
+			malformedKeyValue = true
+		}
+		if !malformedKeyValue {
+			xc.Out.Prompt(fmt.Sprintf("Adding key value %s to final list", env))
+			envStaging = append(envStaging, env)
+		}
+	}
+
+	return envStaging
 }
