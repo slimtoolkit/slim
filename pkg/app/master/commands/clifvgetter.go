@@ -239,9 +239,8 @@ func GetContainerOverrides(xc *app.ExecutionContext, ctx *cli.Context) (*config.
 	if envErr != nil {
 		return nil, envErr
 	}
-	env := ctx.StringSlice(FlagEnv)
-	envList = validateAndCleanEnvVariables(append(envList, env...), xc)
-
+	env := validateAndCleanEnvVariables(ctx.StringSlice(FlagEnv), xc)
+	envList = append(envList, env...)
 	overrides := &config.ContainerOverrides{
 		User:     ctx.String(FlagUser),
 		Workdir:  ctx.String(FlagWorkdir),
@@ -412,24 +411,42 @@ func GetDockerClientConfig(ctx *cli.Context) *config.DockerClient {
 func validateAndCleanEnvVariables(envList []string, xc *app.ExecutionContext) []string {
 	xc.Out.Info("Validating and cleaning environment variables")
 
-	envStaging := envList[:0]
-	for i, env := range envList {
-		envKeyValue := strings.Split(env, "=")
+	var envStaging []string = envList[:0]
+
+	if len(envList) == 0 {
+		return envStaging
+	}
+
+	for i, kv := range envList {
+
+		if len(kv) == 0 {
+			continue
+		}
+
+		if !strings.ContainsAny(kv, "=") {
+			xc.Out.Prompt(fmt.Sprintf("Malformed env key/value (idx: %v kv: %s). Excluding from list", i, kv))
+			continue
+		}
+
+		envKeyValue := strings.Split(kv, "=")
 		key := envKeyValue[0]
 		value := envKeyValue[1]
 		malformedKeyValue := false
 
 		if (len(key) < 1) && (len(value) > 0) {
-			xc.Out.Prompt(fmt.Sprintf("Missing environment variable KEY to override (idx: %v kv: %s). Excluding from final list", i, env))
+			xc.Out.Prompt(fmt.Sprintf("Missing environment variable KEY to override (idx: %v kv: %s). Excluding from list", i, kv))
 			malformedKeyValue = true
 		}
 		if (len(key) > 0) && (len(value) < 1) {
-			xc.Out.Prompt(fmt.Sprintf("Missing environment variable VALUE to override (idx: %v kv: %s). Excluding from final list", i, env))
+			xc.Out.Prompt(fmt.Sprintf("Missing environment variable VALUE to override (idx: %v kv: %s). Excluding from list", i, kv))
 			malformedKeyValue = true
 		}
+
 		if !malformedKeyValue {
-			xc.Out.Prompt(fmt.Sprintf("Adding key value %s to final list", env))
-			envStaging = append(envStaging, env)
+			xc.Out.Prompt(fmt.Sprintf("Adding key value %s to list of env values", kv))
+			envStaging = append(envStaging, kv)
+		} else {
+			xc.Out.Prompt(fmt.Sprintf("Malformed env key/value (idx: %v kv: %s). Excluding from list", i, kv))
 		}
 	}
 
