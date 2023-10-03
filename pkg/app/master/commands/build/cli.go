@@ -459,7 +459,7 @@ var CLI = &cli.Command{
 		outputTags := ctx.StringSlice(FlagTag)
 
 		doImageOverrides := ctx.String(FlagImageOverrides)
-		overrides, err := commands.GetContainerOverrides(ctx)
+		overrides, err := commands.GetContainerOverrides(xc, ctx)
 		if err != nil {
 			xc.Out.Error("param.error.image.overrides", err.Error())
 			xc.Out.State("exited",
