@@ -411,13 +411,14 @@ func GetDockerClientConfig(ctx *cli.Context) *config.DockerClient {
 func validateAndCleanEnvVariables(envList []string, xc *app.ExecutionContext) []string {
 	xc.Out.Info("Validating and cleaning environment variables")
 
-	var envStaging []string = envList[:0]
+	var envStaging []string
 
 	if len(envList) == 0 {
 		return envStaging
 	}
 
 	for i, kv := range envList {
+		kv = strings.TrimSpace(kv)
 
 		if len(kv) == 0 {
 			continue
@@ -428,21 +429,11 @@ func validateAndCleanEnvVariables(envList []string, xc *app.ExecutionContext) []
 			continue
 		}
 
-		envKeyValue := strings.Split(kv, "=")
-		key := envKeyValue[0]
-		value := envKeyValue[1]
-		malformedKeyValue := false
+		envKeyValue := strings.SplitN(kv, "=", 2)
+		keyIsEmpty := len(strings.TrimSpace(envKeyValue[0])) == 0
+		valIsEmpty := len(strings.TrimSpace(envKeyValue[1])) == 0
 
-		if (len(key) < 1) && (len(value) > 0) {
-			xc.Out.Prompt(fmt.Sprintf("Missing environment variable KEY to override (idx: %v kv: %s). Excluding from list", i, kv))
-			malformedKeyValue = true
-		}
-		if (len(key) > 0) && (len(value) < 1) {
-			xc.Out.Prompt(fmt.Sprintf("Missing environment variable VALUE to override (idx: %v kv: %s). Excluding from list", i, kv))
-			malformedKeyValue = true
-		}
-
-		if !malformedKeyValue {
+		if len(envKeyValue) == 2 && !keyIsEmpty && !valIsEmpty {
 			xc.Out.Prompt(fmt.Sprintf("Adding key value %s to list of env values", kv))
 			envStaging = append(envStaging, kv)
 		} else {
