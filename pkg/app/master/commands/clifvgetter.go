@@ -239,7 +239,8 @@ func GetContainerOverrides(xc *app.ExecutionContext, ctx *cli.Context) (*config.
 	if envErr != nil {
 		return nil, envErr
 	}
-	env := validateAndCleanEnvVariables(ctx.StringSlice(FlagEnv), xc)
+	envList = validateAndCleanEnvVariables(xc, envList, "param.env-file.value")
+	env := validateAndCleanEnvVariables(xc, ctx.StringSlice(FlagEnv), "param.env")
 	envList = append(envList, env...)
 	overrides := &config.ContainerOverrides{
 		User:     ctx.String(FlagUser),
@@ -408,9 +409,7 @@ func GetDockerClientConfig(ctx *cli.Context) *config.DockerClient {
 	return config
 }
 
-func validateAndCleanEnvVariables(envList []string, xc *app.ExecutionContext) []string {
-	xc.Out.Info("Validating and cleaning environment variables")
-
+func validateAndCleanEnvVariables(xc *app.ExecutionContext, envList []string, errType string) []string {
 	var envStaging []string
 
 	if len(envList) == 0 {
@@ -425,19 +424,24 @@ func validateAndCleanEnvVariables(envList []string, xc *app.ExecutionContext) []
 		}
 
 		if !strings.ContainsAny(kv, "=") {
-			xc.Out.Prompt(fmt.Sprintf("Malformed env key/value (idx: %v kv: %s). Excluding from list", i, kv))
+			xc.Out.Error(errType, fmt.Sprintf("skipping malformed env var - (index=%d data='%s')", i, kv))
 			continue
 		}
 
 		envKeyValue := strings.SplitN(kv, "=", 2)
-		keyIsEmpty := len(strings.TrimSpace(envKeyValue[0])) == 0
-		valIsEmpty := len(strings.TrimSpace(envKeyValue[1])) == 0
+		if len(envKeyValue) != 2 {
+			xc.Out.Error(errType, fmt.Sprintf("skipping malformed env var - (index=%d data='%s')", i, kv))
+			continue
+		}
 
-		if len(envKeyValue) == 2 && !keyIsEmpty && !valIsEmpty {
-			xc.Out.Prompt(fmt.Sprintf("Adding key value %s to list of env values", kv))
+		keyIsEmpty := len(strings.TrimSpace(envKeyValue[0])) == 0
+		//no need to trim value (it may have spaces intentionally)
+		valIsEmpty := len(envKeyValue[1]) == 0
+
+		if !keyIsEmpty && !valIsEmpty {
 			envStaging = append(envStaging, kv)
 		} else {
-			xc.Out.Prompt(fmt.Sprintf("Malformed env key/value (idx: %v kv: %s). Excluding from list", i, kv))
+			xc.Out.Error(errType, fmt.Sprintf("skipping malformed env var - (index=%d data='%s')", i, kv))
 		}
 	}
 

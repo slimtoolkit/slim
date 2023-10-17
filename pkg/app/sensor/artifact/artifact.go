@@ -447,11 +447,9 @@ func (a *processor) ProcessReports(
 	logger.Debug("processing data...")
 
 	fileCount := 0
-	for _, processFileMap := range fanReport.ProcessFiles {
-		fileCount += len(processFileMap)
-	}
 	fileList := make([]string, 0, fileCount)
 	for _, processFileMap := range fanReport.ProcessFiles {
+		fileCount += len(processFileMap)
 		for fpath := range processFileMap {
 			fileList = append(fileList, fpath)
 		}

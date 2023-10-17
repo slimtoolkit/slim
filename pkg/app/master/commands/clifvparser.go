@@ -877,10 +877,8 @@ func ParseEnvFile(filePath string) ([]string, error) {
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
 		if len(line) > 0 {
-			parts := strings.SplitN(line, "=", 2)
-			if len(parts) == 2 {
-				output = append(output, line)
-			}
+			//env var format validation is done separately
+			output = append(output, line)
 		}
 	}
 	return output, nil
