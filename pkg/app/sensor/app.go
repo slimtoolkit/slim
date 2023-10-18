@@ -193,8 +193,6 @@ func Run() {
 		if errors.Is(err, monitor.ErrInsufficientPermissions) {
 			log.Info("sensor: Instrumented containers require root and ALL capabilities enabled. Example: `docker run --user root --cap-add ALL app:v1-instrumented`")
 		}
-		if errors.Is(err, monitor.ErrInsufficientPermissions) {
-		}
 	} else {
 		log.Info("sensor: run finished succesfully")
 	}
