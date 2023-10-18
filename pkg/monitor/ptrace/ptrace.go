@@ -22,6 +22,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/errors"
 	"github.com/docker-slim/docker-slim/pkg/launcher"
+	"github.com/docker-slim/docker-slim/pkg/mondel"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/system"
 )
@@ -36,6 +37,7 @@ const (
 
 func Run(
 	ctx context.Context,
+	del mondel.Publisher,
 	runOpt AppRunOpt,
 	// TODO(ivan): includeNew & origPaths logic should be applied at the artifact dumping stage.
 	includeNew bool,
@@ -51,7 +53,7 @@ func Run(
 	logger.Debug("call")
 	defer logger.Debug("exit")
 
-	app, err := newApp(ctx, runOpt, includeNew, origPaths, signalCh, errorCh)
+	app, err := newApp(ctx, del, runOpt, includeNew, origPaths, signalCh, errorCh)
 	if err != nil {
 		app.StateCh <- AppFailed
 		return nil, err
@@ -122,6 +124,8 @@ type App struct {
 	User      string
 	RunAsUser bool
 
+	del mondel.Publisher
+
 	appStdout io.Writer
 	appStderr io.Writer
 
@@ -170,6 +174,7 @@ type syscallEvent struct {
 
 func newApp(
 	ctx context.Context,
+	del mondel.Publisher,
 	runOpt AppRunOpt,
 	includeNew bool,
 	origPaths map[string]struct{},
@@ -185,6 +190,7 @@ func newApp(
 
 	a := App{
 		ctx:       ctx,
+		del:       del,
 		Cmd:       runOpt.Cmd,
 		Args:      runOpt.Args,
 		WorkDir:   runOpt.WorkDir,
@@ -251,9 +257,10 @@ func (app *App) processSyscallActivity(e *syscallEvent) {
 
 func (app *App) processFileActivity(e *syscallEvent) {
 	if e.pathParam != "" {
+		logger := app.logger.WithField("op", "processFileActivity")
 		p, found := syscallProcessors[int(e.callNum)]
 		if !found {
-			app.logger.WithField("op", "processFileActivity").Debugf("no syscall processor - %#v", e)
+			logger.Debugf("no syscall processor - %#v", e)
 			//shouldn't happen
 			return
 		}
@@ -290,6 +297,52 @@ func (app *App) processFileActivity(e *syscallEvent) {
 					fsa.Syscalls[int(e.callNum)] = struct{}{}
 
 					app.fsActivity[e.pathParam] = fsa
+				}
+
+				if app.del != nil {
+					//NOTE:
+					//not capturing the 'dirfd' syscall params necessary
+					//to reconstruct relative paths for some syscalls (todo: improve later)
+					delEvent := &report.MonitorDataEvent{
+						Source:   report.MDESourcePT,
+						Type:     report.MDETypeArtifact,
+						Pid:      int32(e.pid),
+						Artifact: e.pathParam, //note: might not be full path
+						OpNum:    e.callNum,
+						Op:       p.SyscallName(),
+					}
+
+					switch p.SyscallType() {
+					case CheckFileType:
+						delEvent.OpType = report.OpTypeCheck
+					case OpenFileType:
+						delEvent.OpType = report.OpTypeRead
+					}
+
+					if err := app.del.Publish(delEvent); err != nil {
+						logger.Tracef("app.del.Publish - not ok - %v", err)
+					}
+				}
+			}
+		}
+
+		if p.SyscallType() == ExecType {
+			if app.del != nil {
+				//NOTE:
+				//not capturing the 'dirfd' syscall params necessary
+				//to reconstruct relative paths for some syscalls (todo: improve later)
+				delEvent := &report.MonitorDataEvent{
+					Source:   report.MDESourcePT,
+					Type:     report.MDETypeArtifact,
+					Pid:      int32(e.pid),
+					Artifact: e.pathParam, //note: might not be full path
+					OpNum:    e.callNum,
+					Op:       p.SyscallName(),
+					OpType:   report.OpTypeExec,
+				}
+
+				if err := app.del.Publish(delEvent); err != nil {
+					logger.Tracef("app.del.Publish exec - not ok - %v", err)
 				}
 			}
 		}
@@ -741,6 +794,7 @@ func (app *App) collect() {
 				}
 
 				if genEvent {
+					//not waiting for the return call for the 'exec' syscalls (mostly)
 					evt := syscallEvent{
 						pid:       wpid,
 						callNum:   uint32(cstate.callNum),
@@ -752,7 +806,7 @@ func (app *App) collect() {
 					select {
 					case app.eventCh <- evt:
 					default:
-						logger.Debugf("[%d/%d]: event.onSyscall - wpid=%v app.eventCh send error (evt=%#v)",
+						logger.Warnf("[%d/%d]: event.onSyscall - wpid=%v app.eventCh send error (evt=%#v)",
 							app.cmd.Process.Pid, app.pgid, wpid, evt)
 					}
 				}
@@ -786,7 +840,7 @@ func (app *App) collect() {
 					select {
 					case app.eventCh <- evt:
 					default:
-						logger.Debugf("[%d/%d]: wpid=%v app.eventCh send error (evt=%#v)",
+						logger.Warnf("[%d/%d]: wpid=%v app.eventCh send error (evt=%#v)",
 							app.cmd.Process.Pid, app.pgid, wpid, evt)
 					}
 				}

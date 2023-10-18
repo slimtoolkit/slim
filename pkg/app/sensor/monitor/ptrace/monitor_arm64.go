@@ -16,6 +16,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/errors"
 	"github.com/docker-slim/docker-slim/pkg/launcher"
+	"github.com/docker-slim/docker-slim/pkg/mondel"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/system"
 )
@@ -51,6 +52,10 @@ type monitor struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
+	del mondel.Publisher
+
+	artifactsDir string
+
 	runOpt AppRunOpt
 
 	// TODO: Move the logic behind these two fields to the artifact processig stage.
@@ -66,6 +71,8 @@ type monitor struct {
 
 func NewMonitor(
 	ctx context.Context,
+	del mondel.Publisher,
+	artifactsDir string,
 	runOpt AppRunOpt,
 	includeNew bool,
 	origPaths map[string]struct{},
@@ -76,6 +83,10 @@ func NewMonitor(
 	return &monitor{
 		ctx:    ctx,
 		cancel: cancel,
+
+		del: del,
+
+		artifactsDir: artifactsDir,
 
 		runOpt: runOpt,
 

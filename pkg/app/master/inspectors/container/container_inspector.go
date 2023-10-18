@@ -49,6 +49,7 @@ const (
 	SensorMountPat       = "%s:/opt/_slim/bin/slim-sensor:ro"
 	VolumeSensorMountPat = "%s:/opt/_slim/bin:ro"
 	LabelName            = "_slim"
+	MondelArtifactTar    = "mondel.tar"
 )
 
 type ovars = app.OutVars
@@ -105,6 +106,7 @@ type Inspector struct {
 	DNSServers            []string
 	DNSSearchDomains      []string
 	DoShowContainerLogs   bool
+	DoEnableMondel        bool
 	RunTargetAsUser       bool
 	KeepPerms             bool
 	PathPerms             map[string]*fsutil.AccessInfo
@@ -181,6 +183,7 @@ func NewInspector(
 	dnsServers []string,
 	dnsSearchDomains []string,
 	showContainerLogs bool,
+	doEnableMondel bool,
 	runTargetAsUser bool,
 	keepPerms bool,
 	pathPerms map[string]*fsutil.AccessInfo,
@@ -234,6 +237,7 @@ func NewInspector(
 		DNSServers:            dnsServers,
 		DNSSearchDomains:      dnsSearchDomains,
 		DoShowContainerLogs:   showContainerLogs,
+		DoEnableMondel:        doEnableMondel,
 		RunTargetAsUser:       runTargetAsUser,
 		KeepPerms:             keepPerms,
 		PathPerms:             pathPerms,
@@ -493,6 +497,10 @@ func (i *Inspector) RunContainer() error {
 
 	if i.LogFormat != "" {
 		containerCmd = append(containerCmd, "-log-format", i.LogFormat)
+	}
+
+	if i.DoEnableMondel {
+		containerCmd = append(containerCmd, "-n")
 	}
 
 	i.ContainerName = fmt.Sprintf(ContainerNamePat, os.Getpid(), time.Now().UTC().Format("20060102150405"))
@@ -1172,6 +1180,7 @@ func (i *Inspector) ShutdownContainer() error {
 			deleteOrig = false
 		}
 
+		//copy the container report
 		reportLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, ReportArtifactTar)
 		reportRemotePath := filepath.Join(app.DefaultArtifactsDirPath, report.DefaultContainerReportFileName)
 		err := dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, reportRemotePath, reportLocalPath, true, deleteOrig)
@@ -1179,6 +1188,22 @@ func (i *Inspector) ShutdownContainer() error {
 			logger.WithError(err).WithField("container", i.ContainerID).Error("dockerutil.CopyFromContainer")
 			//can't call errutil.FailOn() because we won't cleanup the target container
 			return err
+		}
+
+		if i.DoEnableMondel {
+			//copy the monitor data event log (if available)
+			mondelLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, MondelArtifactTar)
+			mondelRemotePath := filepath.Join(app.DefaultArtifactsDirPath, report.DefaultMonDelFileName)
+			err = dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, mondelRemotePath, mondelLocalPath, true, deleteOrig)
+			if err != nil {
+				//not a failure because the log might not be there (just log it)
+				logger.WithFields(log.Fields{
+					"artifact.type": "mondel",
+					"local.path":    mondelLocalPath,
+					"remote.path":   mondelRemotePath,
+					"err":           err,
+				}).Debug("dockerutil.CopyFromContainer")
+			}
 		}
 
 		/*

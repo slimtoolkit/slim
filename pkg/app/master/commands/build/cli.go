@@ -63,6 +63,7 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagPublishExposedPorts),
 		commands.Cflag(commands.FlagRunTargetAsUser),
 		commands.Cflag(commands.FlagShowContainerLogs),
+		commands.Cflag(commands.FlagEnableMondelLogs),
 		cflag(FlagShowBuildLogs),
 		commands.Cflag(commands.FlagCopyMetaArtifacts),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
@@ -455,6 +456,7 @@ var CLI = &cli.Command{
 		doRunTargetAsUser := ctx.Bool(commands.FlagRunTargetAsUser)
 
 		doShowContainerLogs := ctx.Bool(commands.FlagShowContainerLogs)
+		doEnableMondel := ctx.Bool(commands.FlagEnableMondelLogs)
 		doShowBuildLogs := ctx.Bool(FlagShowBuildLogs)
 		outputTags := ctx.StringSlice(FlagTag)
 
@@ -777,6 +779,7 @@ var CLI = &cli.Command{
 			doCopyMetaArtifacts,
 			doRunTargetAsUser,
 			doShowContainerLogs,
+			doEnableMondel,
 			doShowBuildLogs,
 			commands.ParseImageOverrides(doImageOverrides),
 			overrides,

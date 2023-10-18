@@ -51,6 +51,7 @@ var CLI = &cli.Command{
 		//commands.Cflag(commands.FlagKeepPerms),
 		commands.Cflag(commands.FlagRunTargetAsUser),
 		commands.Cflag(commands.FlagShowContainerLogs),
+		commands.Cflag(commands.FlagEnableMondelLogs),
 		commands.Cflag(commands.FlagCopyMetaArtifacts),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
 		commands.Cflag(commands.FlagExec),
@@ -207,6 +208,8 @@ var CLI = &cli.Command{
 		doRunTargetAsUser := ctx.Bool(commands.FlagRunTargetAsUser)
 
 		doShowContainerLogs := ctx.Bool(commands.FlagShowContainerLogs)
+		doEnableMondel := ctx.Bool(commands.FlagEnableMondelLogs)
+
 		overrides, err := commands.GetContainerOverrides(xc, ctx)
 		if err != nil {
 			xc.Out.Error("param.error.container.overrides", err.Error())
@@ -300,6 +303,7 @@ var CLI = &cli.Command{
 			doCopyMetaArtifacts,
 			doRunTargetAsUser,
 			doShowContainerLogs,
+			doEnableMondel,
 			overrides,
 			ctx.StringSlice(commands.FlagLink),
 			ctx.StringSlice(commands.FlagEtcHostsMap),

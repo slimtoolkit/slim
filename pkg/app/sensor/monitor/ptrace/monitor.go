@@ -11,6 +11,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/errors"
+	"github.com/docker-slim/docker-slim/pkg/mondel"
 	"github.com/docker-slim/docker-slim/pkg/monitor/ptrace"
 	"github.com/docker-slim/docker-slim/pkg/report"
 )
@@ -23,6 +24,10 @@ type status struct {
 type monitor struct {
 	ctx    context.Context
 	cancel context.CancelFunc
+
+	del mondel.Publisher
+
+	artifactsDir string
 
 	runOpt AppRunOpt
 
@@ -44,6 +49,8 @@ type monitor struct {
 
 func NewMonitor(
 	ctx context.Context,
+	del mondel.Publisher,
+	artifactsDir string,
 	runOpt AppRunOpt,
 	includeNew bool,
 	origPaths map[string]struct{},
@@ -59,6 +66,10 @@ func NewMonitor(
 	return &monitor{
 		ctx:    ctx,
 		cancel: cancel,
+
+		del: del,
+
+		artifactsDir: artifactsDir,
 
 		runOpt: runOpt,
 
@@ -86,6 +97,7 @@ func (m *monitor) Start() error {
 	// Despite the name, ptrace.Run() is not blocking.
 	app, err := ptrace.Run(
 		m.ctx,
+		m.del,
 		m.runOpt,
 		m.includeNew,
 		m.origPaths,

@@ -474,14 +474,18 @@ func (a *processor) Archive() error {
 	}
 
 	// We archive everything in the /opt/_slim/artifacts folder
-	// except (rather legacy and potentially large) `files` and `files.tar` entries.
+	// except (potentially large data) `files` and `files.tar` entries.
+	// and the monitor data event log
+	// (which is used for local debugging or it should be streamed out of band)
 	// In particular, this may include:
 	//   - creport.json
 	//   - events.json
 	//   - app_stdout.log
 	//   - app_stderr.log
 	for _, f := range artifacts {
-		if f.Name() != app.ArtifactFilesDirName && f.Name() != filesArchiveName {
+		if f.Name() != app.ArtifactFilesDirName &&
+			f.Name() != filesArchiveName &&
+			f.Name() != report.DefaultMonDelFileName {
 			toArchive[filepath.Join(a.artifactsDirName, f.Name())] = struct{}{}
 		}
 	}

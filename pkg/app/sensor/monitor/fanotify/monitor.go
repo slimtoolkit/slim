@@ -9,10 +9,12 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+	"strings"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/docker-slim/docker-slim/pkg/errors"
+	"github.com/docker-slim/docker-slim/pkg/mondel"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	fanapi "github.com/docker-slim/docker-slim/pkg/third_party/madmo/fanotify"
 )
@@ -60,7 +62,10 @@ type monitor struct {
 	ctx    context.Context
 	cancel context.CancelFunc
 
-	mountPoint string
+	del mondel.Publisher
+
+	artifactsDir string
+	mountPoint   string
 
 	// TODO: Move the logic behind these two fields to the artifact processig stage.
 	includeNew bool
@@ -75,6 +80,8 @@ type monitor struct {
 
 func NewMonitor(
 	ctx context.Context,
+	del mondel.Publisher,
+	artifactsDir string,
 	mountPoint string,
 	includeNew bool,
 	origPaths map[string]struct{},
@@ -90,9 +97,12 @@ func NewMonitor(
 		ctx:    ctx,
 		cancel: cancel,
 
-		mountPoint: mountPoint,
-		includeNew: includeNew,
-		origPaths:  origPaths,
+		del: del,
+
+		artifactsDir: artifactsDir,
+		mountPoint:   mountPoint,
+		includeNew:   includeNew,
+		origPaths:    origPaths,
 
 		doneCh:  make(chan struct{}),
 		errorCh: errorCh,
@@ -222,9 +232,14 @@ func (m *monitor) Start() error {
 				continue
 			}
 
-			logger.Debugf("file path => %v", path)
-
 			data.File.Close()
+
+			logger.Debugf("file path => %v", path)
+			if strings.HasPrefix(path, m.artifactsDir) {
+				logger.Trace("skipping artifacts dir op...")
+				continue
+			}
+
 			if doNotify {
 				eventID++
 				e := Event{ID: eventID, Pid: data.Pid, File: path, IsRead: isRead, IsWrite: isWrite}
@@ -259,15 +274,37 @@ func (m *monitor) processEvent(e Event, fanReport *report.FanMonitorReport) {
 	logger := m.logger.WithField("op", "processEvent")
 	logger.Debugf("[%v] handling event %v", fanReport.EventCount, e)
 
+	if m.del != nil {
+		delEvent := &report.MonitorDataEvent{
+			Source:   report.MDESourceFan,
+			Type:     report.MDETypeArtifact,
+			Pid:      e.Pid,
+			Artifact: e.File,
+		}
+
+		if e.IsRead {
+			delEvent.OpType = report.OpTypeRead
+		}
+		if e.IsWrite {
+			delEvent.OpType = report.OpTypeWrite
+		}
+
+		if err := m.del.Publish(delEvent); err != nil {
+			logger.Tracef("m.del.Publish - not ok - %v", err)
+		}
+	}
+
 	if _, ok := m.origPaths[e.File]; !ok && !m.includeNew {
 		return
 	}
 
+	var newProcess *report.ProcessInfo
 	if e.ID == 1 {
 		//first event represents the main process
 		if pinfo, err := getProcessInfo(e.Pid); (err == nil) && (pinfo != nil) {
 			fanReport.MainProcess = pinfo
 			fanReport.Processes[strconv.Itoa(int(e.Pid))] = pinfo
+			newProcess = pinfo
 		}
 	} else {
 		if _, ok := fanReport.Processes[strconv.Itoa(int(e.Pid))]; !ok {
@@ -276,7 +313,24 @@ func (m *monitor) processEvent(e Event, fanReport *report.FanMonitorReport) {
 				// But if we consider this probability as too low to care about,
 				// then we should probably start caching getProcessInfo() calls :)
 				fanReport.Processes[strconv.Itoa(int(e.Pid))] = pinfo
+				newProcess = pinfo
 			}
+		}
+	}
+
+	if newProcess != nil && m.del != nil {
+		delEvent := &report.MonitorDataEvent{
+			Source:    report.MDESourceFan,
+			Type:      report.MDETypeProcess,
+			Pid:       newProcess.Pid,
+			ParentPid: newProcess.ParentPid,
+			Artifact:  newProcess.Path,
+			WorkDir:   newProcess.Cwd,
+			Root:      newProcess.Root,
+		}
+
+		if err := m.del.Publish(delEvent); err != nil {
+			logger.Tracef("m.del.Publish - not ok - %v", err)
 		}
 	}
 

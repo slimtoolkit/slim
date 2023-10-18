@@ -15,6 +15,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
+	"github.com/docker-slim/docker-slim/pkg/mondel"
 )
 
 const (
@@ -26,6 +27,7 @@ type Sensor struct {
 	exe execution.Interface
 
 	newMonitor monitor.NewCompositeMonitorFunc
+	del        mondel.Publisher
 	artifactor artifact.Processor
 
 	workDir    string
@@ -39,6 +41,7 @@ func NewSensor(
 	ctx context.Context,
 	exe execution.Interface,
 	newMonitor monitor.NewCompositeMonitorFunc,
+	del mondel.Publisher,
 	artifactor artifact.Processor,
 	workDir string,
 	mountPoint string,
@@ -49,6 +52,7 @@ func NewSensor(
 		ctx:             ctx,
 		exe:             exe,
 		newMonitor:      newMonitor,
+		del:             del,
 		artifactor:      artifactor,
 		workDir:         workDir,
 		mountPoint:      mountPoint,
@@ -87,6 +91,7 @@ func (s *Sensor) Run() error {
 		s.ctx,
 		cmd,
 		s.workDir,
+		s.del,
 		s.artifactor.ArtifactsDir(),
 		s.mountPoint,
 		origPaths,

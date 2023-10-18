@@ -16,6 +16,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/fanotify"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/ptrace"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
+	"github.com/docker-slim/docker-slim/pkg/mondel"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
@@ -99,6 +100,7 @@ type NewCompositeMonitorFunc func(
 	ctx context.Context,
 	cmd *command.StartMonitor,
 	workDir string,
+	del mondel.Publisher,
 	artifactsDir string,
 	mountPoint string,
 	origPaths map[string]struct{},
@@ -109,6 +111,7 @@ func NewCompositeMonitor(
 	ctx context.Context,
 	cmd *command.StartMonitor,
 	workDir string,
+	del mondel.Publisher,
 	artifactsDir string,
 	mountPoint string,
 	origPaths map[string]struct{},
@@ -120,6 +123,8 @@ func NewCompositeMonitor(
 
 	fanMon := fanotify.NewMonitor(
 		ctx,
+		del,
+		artifactsDir,
 		mountPoint,
 		cmd.IncludeNew,
 		origPaths,
@@ -151,6 +156,8 @@ func NewCompositeMonitor(
 
 	ptMon := ptrace.NewMonitor(
 		ctx,
+		del,
+		artifactsDir,
 		ptrace.AppRunOpt{
 			Cmd:                 cmd.AppName,
 			Args:                cmd.AppArgs,

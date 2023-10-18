@@ -123,6 +123,7 @@ const (
 
 	FlagRunTargetAsUser   = "run-target-as-user"
 	FlagShowContainerLogs = "show-clogs"
+	FlagEnableMondelLogs  = "enable-mondel" //Mon(itor) Data Event Log
 
 	FlagExcludePattern  = "exclude-pattern"
 	FlagExcludeMounts   = "exclude-mounts"
@@ -236,6 +237,7 @@ const (
 
 	FlagRunTargetAsUserUsage   = "Run target app as USER"
 	FlagShowContainerLogsUsage = "Show container logs"
+	FlagEnableMondelLogsUsage  = "Enable data event log for sensor monitors"
 
 	FlagExcludeMountsUsage   = "Exclude mounted volumes from image"
 	FlagExcludePatternUsage  = "Exclude path pattern (Glob/Match in Go and **) from image"
@@ -700,6 +702,11 @@ var CommonFlags = map[string]cli.Flag{
 		Name:    FlagShowContainerLogs,
 		Usage:   FlagShowContainerLogsUsage,
 		EnvVars: []string{"DSLIM_SHOW_CLOGS"},
+	},
+	FlagEnableMondelLogs: &cli.BoolFlag{
+		Name:    FlagEnableMondelLogs,
+		Usage:   FlagEnableMondelLogsUsage,
+		EnvVars: []string{"DSLIM_ENABLE_MONDEL"},
 	},
 	FlagSensorIPCMode: &cli.StringFlag{
 		Name:    FlagSensorIPCMode,

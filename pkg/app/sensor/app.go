@@ -24,6 +24,8 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone"
 	"github.com/docker-slim/docker-slim/pkg/appbom"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
+	"github.com/docker-slim/docker-slim/pkg/mondel"
+	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/sysenv"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
@@ -72,6 +74,10 @@ const (
 
 	artifactsDirFlagUsage   = "output director for all sensor artifacts"
 	artifactsDirFlagDefault = app.DefaultArtifactsDirPath
+
+	enableMondelFlag        = "mondel"
+	enableMondelFlagUsage   = "enable monitor data event logging"
+	enableMondelFlagDefault = false
 )
 
 var (
@@ -86,6 +92,7 @@ var (
 	lifecycleHookCommand *string        = flag.String("lifecycle-hook", lifecycleHookCommandFlagDefault, lifecycleHookCommandFlagUsage)
 	stopSignal           *string        = flag.String("stop-signal", stopSignalFlagDefault, stopSignalFlagUsage)
 	stopGracePeriod      *time.Duration = flag.Duration("stop-grace-period", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
+	enableMondel         *bool          = flag.Bool(enableMondelFlag, enableMondelFlagDefault, enableMondelFlagUsage)
 
 	errUnknownMode = errors.New("unknown sensor mode")
 )
@@ -102,6 +109,7 @@ func init() {
 	flag.StringVar(lifecycleHookCommand, "a", lifecycleHookCommandFlagDefault, lifecycleHookCommandFlagUsage)
 	flag.StringVar(stopSignal, "s", stopSignalFlagDefault, stopSignalFlagUsage)
 	flag.DurationVar(stopGracePeriod, "w", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
+	flag.BoolVar(enableMondel, "n", enableMondelFlagDefault, enableMondelFlagUsage)
 }
 
 func dumpAppBom() {
@@ -169,7 +177,10 @@ func Run() {
 
 	exe.HookSensorPostStart()
 
-	sen, err := newSensor(ctx, exe, *sensorMode, artifactor)
+	mondelFile := filepath.Join(*artifactsDir, report.DefaultMonDelFileName)
+	del := mondel.NewPublisher(ctx, *enableMondel, mondelFile)
+
+	sen, err := newSensor(ctx, exe, *sensorMode, artifactor, del, *artifactsDir)
 	if err != nil {
 		exe.Close()
 		errutil.WarnOn(artifactor.Archive())
@@ -230,6 +241,8 @@ func newSensor(
 	exe execution.Interface,
 	mode string,
 	artifactor artifact.Processor,
+	del mondel.Publisher,
+	artifactsDir string,
 ) (sensor, error) {
 	workDir, err := os.Getwd()
 	errutil.WarnOn(err)
@@ -253,6 +266,7 @@ func newSensor(
 			ctx,
 			exe,
 			monitor.NewCompositeMonitor,
+			del,
 			artifactor,
 			workDir,
 			mountPoint,
@@ -262,6 +276,7 @@ func newSensor(
 			ctx,
 			exe,
 			monitor.NewCompositeMonitor,
+			del,
 			artifactor,
 			workDir,
 			mountPoint,

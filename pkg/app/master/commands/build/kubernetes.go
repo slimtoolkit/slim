@@ -68,6 +68,7 @@ type kubeHandleOptions struct {
 	DoShowPullLogs            bool
 	DoShowBuildLogs           bool
 	DoShowContainerLogs       bool
+	DoEnableMondel            bool
 	DoDeleteFatImage          bool
 	DoRmFileArtifacts         bool
 	RtaOnbuildBaseImage       bool

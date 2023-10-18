@@ -87,6 +87,7 @@ func TestStartStopShutdown(t *testing.T) {
 		ctx,
 		exe,
 		newStubMonitorFunc(ctx, nil, nil),
+		nil,
 		&artifactorStub{},
 		"", "",
 	)
