@@ -29,8 +29,7 @@ var (
 		"sensor: ver=",
 		"sensor: creating monitors...",
 		"sensor: starting monitors...",
-		"sensor: monitor - saving report",
-		"sensor: done!",
+		"sensor: run finished succesfully",
 	}
 
 	sensorLifecycleHookSequence = []string{
@@ -544,7 +543,7 @@ func TestArchiveArtifacts_SensorFailure_NoCaps(t *testing.T) {
 		"sensor: creating monitors...",
 		"sensor: starting monitors...",
 		"sensor: composite monitor - FAN failed to start running", // <-- failure!
-		"sensor: done!",
+		"sensor: run finished with error",
 	}...)
 
 	sensor.AssertArtifactsArchiveContains(t, ctx,
