@@ -91,6 +91,9 @@ func (s *Sensor) Run() error {
 }
 
 func (s *Sensor) runWithoutMonitor() (monitor.CompositeMonitor, error) {
+	ticker := time.NewTicker(5 * time.Second)
+	defer ticker.Stop()
+
 	for {
 		select {
 		case cmd := <-s.exe.Commands():
@@ -107,7 +110,7 @@ func (s *Sensor) runWithoutMonitor() (monitor.CompositeMonitor, error) {
 				log.Warn("sensor: ignoring unknown or unexpected command => ", cmd)
 			} // eof: type switch
 
-		case <-time.After(5 * time.Second):
+		case <-ticker.C:
 			log.Debug(".")
 		} // eof: select
 	}
