@@ -35,6 +35,7 @@ func newStubMonitorFunc(
 		ctx context.Context,
 		cmd *command.StartMonitor,
 		workDir string,
+		del mondel.Publisher,
 		artifactsDir string,
 		mountPoint string,
 		origPaths map[string]struct{},
@@ -87,7 +88,7 @@ func TestStartStopShutdown(t *testing.T) {
 		ctx,
 		exe,
 		newStubMonitorFunc(ctx, nil, nil),
-		nil,
+		nil, //Monitor Data Event Log
 		&artifactorStub{},
 		"", "",
 	)
@@ -115,6 +116,7 @@ func TestShutdownBeforeStart(t *testing.T) {
 		ctx,
 		exe,
 		newStubMonitorFunc(ctx, nil, nil),
+		nil, //Monitor Data Event Log
 		&artifactorStub{},
 		"", "",
 	)
@@ -135,6 +137,7 @@ func TestStartFollowedByShutdown(t *testing.T) {
 		ctx,
 		exe,
 		newStubMonitorFunc(ctx, nil, nil),
+		nil, //Monitor Data Event Log
 		&artifactorStub{},
 		"", "",
 	)
@@ -156,6 +159,7 @@ func TestStopNonStartedMonitor(t *testing.T) {
 		ctx,
 		exe,
 		newStubMonitorFunc(ctx, nil, nil),
+		nil, //Monitor Data Event Log
 		&artifactorStub{},
 		"", "",
 	)

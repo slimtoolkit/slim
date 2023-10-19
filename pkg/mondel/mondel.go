@@ -53,7 +53,7 @@ func NewPublisher(ctx context.Context, enable bool, outputFile string) *publishe
 
 	f, err := os.OpenFile(ref.outputFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
 	if err != nil {
-		log.WithError(err).Error("os.OpenFile(%v)", err)
+		log.WithError(err).Errorf("os.OpenFile(%v)", ref.outputFile)
 	} else {
 		ref.output = f
 	}
