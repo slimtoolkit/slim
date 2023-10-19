@@ -24,6 +24,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/master/kubernetes"
 	"github.com/docker-slim/docker-slim/pkg/app/master/version"
 	"github.com/docker-slim/docker-slim/pkg/command"
+	"github.com/docker-slim/docker-slim/pkg/consts"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerclient"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
@@ -210,12 +211,13 @@ func OnCommand(
 	if kubeOpts.HasTargetSet() {
 		xc.Out.Info("params",
 			ovars{
-				"target.type":      "kubernetes.workload",
-				"target":           kubeOpts.Target.Workload,
-				"target.namespace": kubeOpts.Target.Namespace,
-				"target.container": kubeOpts.Target.Container,
-				"target.image":     kubeOpts.TargetOverride.Image,
-				"continue.mode":    continueAfter.Mode,
+				"target.type":        "kubernetes.workload",
+				"target":             kubeOpts.Target.Workload,
+				"target.namespace":   kubeOpts.Target.Namespace,
+				"target.container":   kubeOpts.Target.Container,
+				"target.image":       kubeOpts.TargetOverride.Image,
+				"continue.mode":      continueAfter.Mode,
+				"image-build-engine": imageBuildEngine,
 			})
 
 		kubeClient, err := kubernetes.NewClient(kubeOpts)
@@ -283,32 +285,35 @@ func OnCommand(
 	if len(composeFiles) > 0 && targetComposeSvc != "" {
 		xc.Out.Info("params",
 			ovars{
-				"target.type":   "compose.service",
-				"target":        targetRef,
-				"continue.mode": continueAfter.Mode,
-				"rt.as.user":    doRunTargetAsUser,
-				"keep.perms":    doKeepPerms,
-				"tags":          strings.Join(outputTags, ","),
+				"target.type":        "compose.service",
+				"target":             targetRef,
+				"continue.mode":      continueAfter.Mode,
+				"rt.as.user":         doRunTargetAsUser,
+				"keep.perms":         doKeepPerms,
+				"tags":               strings.Join(outputTags, ","),
+				"image-build-engine": imageBuildEngine,
 			})
 	} else if cbOpts.Dockerfile != "" {
 		xc.Out.Info("params",
 			ovars{
-				"target.type":   "dockerfile",
-				"context":       targetRef,
-				"file":          cbOpts.Dockerfile,
-				"continue.mode": continueAfter.Mode,
-				"rt.as.user":    doRunTargetAsUser,
-				"keep.perms":    doKeepPerms,
+				"target.type":        "dockerfile",
+				"context":            targetRef,
+				"file":               cbOpts.Dockerfile,
+				"continue.mode":      continueAfter.Mode,
+				"rt.as.user":         doRunTargetAsUser,
+				"keep.perms":         doKeepPerms,
+				"image-build-engine": imageBuildEngine,
 			})
 	} else {
 		xc.Out.Info("params",
 			ovars{
-				"target.type":   "image",
-				"target":        targetRef,
-				"continue.mode": continueAfter.Mode,
-				"rt.as.user":    doRunTargetAsUser,
-				"keep.perms":    doKeepPerms,
-				"tags":          strings.Join(outputTags, ","),
+				"target.type":        "image",
+				"target.image":       targetRef,
+				"continue.mode":      continueAfter.Mode,
+				"rt.as.user":         doRunTargetAsUser,
+				"keep.perms":         doKeepPerms,
+				"tags":               strings.Join(outputTags, ","),
+				"image-build-engine": imageBuildEngine,
 			})
 	}
 
@@ -1571,9 +1576,10 @@ func finishCommand(
 
 	xc.Out.Info("results",
 		ovars{
-			"image.name": cmdReport.MinifiedImage,
-			"image.size": cmdReport.MinifiedImageSizeHuman,
-			"has.data":   cmdReport.MinifiedImageHasData,
+			"image-build-engine": imageBuildEngine,
+			"image.name":         cmdReport.MinifiedImage,
+			"image.size":         cmdReport.MinifiedImageSizeHuman,
+			"has.data":           cmdReport.MinifiedImageHasData,
 		})
 
 	xc.Out.Info("results",
@@ -1588,13 +1594,17 @@ func finishCommand(
 
 	xc.Out.Info("results",
 		ovars{
-			"artifacts.dockerfile.reversed": "Dockerfile.fat",
+			"artifacts.dockerfile.reversed": consts.ReversedDockerfile,
 		})
 
-	xc.Out.Info("results",
-		ovars{
-			"artifacts.dockerfile.optimized": "Dockerfile",
-		})
+	if imageBuildEngine == IBEDocker ||
+		imageBuildEngine == IBEBuildKit {
+		//no minified Dockerfile when using IBEInternal (or IBENone)
+		xc.Out.Info("results",
+			ovars{
+				"artifacts.dockerfile.minified": "Dockerfile",
+			})
+	}
 
 	xc.Out.Info("results",
 		ovars{

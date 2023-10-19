@@ -7,19 +7,19 @@ import (
 	"regexp"
 	"strings"
 
+	docker "github.com/fsouza/go-dockerclient"
+	log "github.com/sirupsen/logrus"
+
+	"github.com/docker-slim/docker-slim/pkg/consts"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-
-	docker "github.com/fsouza/go-dockerclient"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
 	slimImageRepo          = "slim"
 	appArmorProfileName    = "apparmor-profile"
 	seccompProfileName     = "seccomp-profile"
-	fatDockerfileName      = "Dockerfile.fat"
 	appArmorProfileNamePat = "%s-apparmor-profile"
 	seccompProfileNamePat  = "%s-seccomp.json"
 	https                  = "https://"
@@ -306,7 +306,7 @@ func (i *Inspector) ProcessCollectedData() error {
 	if err != nil {
 		return err
 	}
-	fatImageDockerfileLocation := filepath.Join(i.ArtifactLocation, fatDockerfileName)
+	fatImageDockerfileLocation := filepath.Join(i.ArtifactLocation, consts.ReversedDockerfile)
 	err = reverse.SaveDockerfileData(fatImageDockerfileLocation, i.DockerfileInfo.Lines)
 	errutil.FailOn(err)
 

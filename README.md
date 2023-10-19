@@ -1154,14 +1154,7 @@ Yes. The `--cmd`, `--entrypoint`, and `--mount` options will help you minify you
 
 Notes:
 
-You can explore the artifacts Slim generates when it's creating a slim image. You'll find those in `<slim directory>/.images/<TARGET_IMAGE_ID>/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.fat`.
-
-If you'd like to see the artifacts without running the Slim app you can take a look at the `examples/artifacts` directory in this repo. It doesn't include any image files, but you'll find:
-
-- a reverse engineered Dockerfile (`Dockerfile.fat`)
-- a container report file (`creport.json`)
-- a sample AppArmor profile (which will be named based on your original image name)
-- and a sample Seccomp profile
+You can explore the artifacts Slim generates when it's creating a slim image. You'll find those in `<slim directory>/.images/<TARGET_IMAGE_ID>/artifacts`. One of the artifacts is a "reverse engineered" Dockerfile for the original image. It'll be called `Dockerfile.reversed`.
 
 If you don't want to create a minified image and only want to "reverse engineer" the Dockerfile you can use the `info` command.
 

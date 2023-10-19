@@ -188,7 +188,7 @@ var binDataReplace = []fsutil.ReplaceInfo{
 	{
 		PathSuffix: "/node",
 		Match:      "node.js/v",
-		Replace:    "dope,fu/v",
+		Replace:    "done,xu/v",
 	},
 }
 
