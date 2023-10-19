@@ -227,8 +227,19 @@ var CLI = &cli.Command{
 					//When there's 'no terminal' we show
 					//the debugger container log at the end.
 					//TODO: revisit the behavior later...
-					commandParams.DoTerminal = false
-					commandParams.Cmd = ctx.Args().Slice()[2:]
+					cmdSlice := ctx.Args().Slice()[2:]
+					var cmdClean []string
+					for _, v := range cmdSlice {
+						v = strings.TrimSpace(v)
+						if v != "" {
+							cmdClean = append(cmdClean, v)
+						}
+					}
+					if len(cmdClean) > 0 {
+						commandParams.Cmd = cmdClean
+						commandParams.DoTerminal = false
+						commandParams.DoRunAsTargetShell = false
+					}
 				}
 			}
 		}
