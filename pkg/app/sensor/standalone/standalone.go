@@ -139,6 +139,9 @@ func (s *Sensor) Run() error {
 }
 
 func (s *Sensor) runMonitor(mon monitor.CompositeMonitor) {
+	ticker := time.NewTicker(time.Second * 5)
+	defer ticker.Stop()
+
 loop:
 	for {
 		select {
@@ -149,7 +152,7 @@ loop:
 			log.WithError(err).Warn("sensor: non-critical monitor error condition")
 			s.exe.PubEvent(event.Error, monitor.NonCriticalError(err).Error())
 
-		case <-time.After(time.Second * 5):
+		case <-ticker.C:
 			log.Debug(".")
 		}
 
