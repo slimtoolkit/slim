@@ -33,6 +33,8 @@ type Sensor struct {
 	workDir    string
 	mountPoint string
 
+	signalCh chan os.Signal
+
 	stopSignal      os.Signal
 	stopGracePeriod time.Duration
 }
@@ -87,6 +89,8 @@ func (s *Sensor) Run() error {
 
 	s.exe.HookMonitorPreStart()
 
+	s.signalCh = initSignalForwardingChannel(s.ctx, s.stopSignal, s.stopGracePeriod)
+
 	mon, err := s.newMonitor(
 		s.ctx,
 		cmd,
@@ -95,7 +99,7 @@ func (s *Sensor) Run() error {
 		s.artifactor.ArtifactsDir(),
 		s.mountPoint,
 		origPaths,
-		initSignalForwardingChannel(s.ctx, s.stopSignal, s.stopGracePeriod),
+		s.signalCh,
 	)
 	if err != nil {
 		log.WithError(err).Error("sensor: failed to create composite monitor")
@@ -148,6 +152,14 @@ loop:
 		case <-mon.Done():
 			break loop
 
+		case cmd := <-s.exe.Commands():
+			log.Infof("sensor: recieved control command => %+v", cmd)
+			if cmd.GetName() == command.StopMonitorName {
+				s.signalCh <- s.stopSignal
+			} else {
+				log.Warnf("sensor: unsupported control command => %+v", cmd)
+			}
+
 		case err := <-mon.Errors():
 			log.WithError(err).Warn("sensor: non-critical monitor error condition")
 			s.exe.PubEvent(event.Error, monitor.NonCriticalError(err).Error())
@@ -174,13 +186,13 @@ func initSignalForwardingChannel(
 	ctx context.Context,
 	stopSignal os.Signal,
 	stopGracePeriod time.Duration,
-) <-chan os.Signal {
+) chan os.Signal {
 	signalCh := make(chan os.Signal, signalBufSize)
 
 	go func() {
 		log.Debug("sensor: starting forwarding signals to target app...")
 
-		ch := make(chan os.Signal)
+		ch := make(chan os.Signal, 64)
 		signal.Notify(ch)
 
 		for {
@@ -188,6 +200,7 @@ func initSignalForwardingChannel(
 			case <-ctx.Done():
 				log.Debug("sensor: forwarding signal to target app no more - sensor is done")
 				return
+
 			case s := <-ch:
 				if s != syscall.SIGCHLD {
 					// Due to ptrace, SIGCHLDs flood the output.
@@ -203,6 +216,7 @@ func initSignalForwardingChannel(
 					select {
 					case <-ctx.Done():
 						log.Debug("sensor: finished before grace timeout - dismantling SIGKILL")
+
 					case <-time.After(stopGracePeriod):
 						log.Debug("sensor: grace timeout expired - SIGKILL goes to target app")
 						signalCh <- syscall.SIGKILL
