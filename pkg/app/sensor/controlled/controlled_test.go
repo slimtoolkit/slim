@@ -13,6 +13,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/fanotify"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/ptrace"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
+	"github.com/docker-slim/docker-slim/pkg/mondel"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/test/stub/sensor/execution"
 	stubmonitor "github.com/docker-slim/docker-slim/pkg/test/stub/sensor/monitor"
