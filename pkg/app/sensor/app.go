@@ -22,6 +22,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/execution"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone/control"
 	"github.com/docker-slim/docker-slim/pkg/appbom"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/mondel"
@@ -75,7 +76,6 @@ const (
 	artifactsDirFlagUsage   = "output director for all sensor artifacts"
 	artifactsDirFlagDefault = app.DefaultArtifactsDirPath
 
-	enableMondelFlag        = "mondel"
 	enableMondelFlagUsage   = "enable monitor data event logging"
 	enableMondelFlagDefault = false
 )
@@ -92,10 +92,14 @@ var (
 	lifecycleHookCommand *string        = flag.String("lifecycle-hook", lifecycleHookCommandFlagDefault, lifecycleHookCommandFlagUsage)
 	stopSignal           *string        = flag.String("stop-signal", stopSignalFlagDefault, stopSignalFlagUsage)
 	stopGracePeriod      *time.Duration = flag.Duration("stop-grace-period", stopGracePeriodFlagDefault, stopGracePeriodFlagUsage)
-	enableMondel         *bool          = flag.Bool(enableMondelFlag, enableMondelFlagDefault, enableMondelFlagUsage)
+	enableMondel         *bool          = flag.Bool("mondel", enableMondelFlagDefault, enableMondelFlagUsage)
 
 	errUnknownMode = errors.New("unknown sensor mode")
 )
+
+func eventsFilePath() string {
+	return filepath.Join(*artifactsDir, "events.json")
+}
 
 func init() {
 	flag.BoolVar(getAppBom, "b", getAppBomFlagDefault, getAppBomFlagUsage)
@@ -112,20 +116,6 @@ func init() {
 	flag.BoolVar(enableMondel, "n", enableMondelFlagDefault, enableMondelFlagUsage)
 }
 
-func dumpAppBom() {
-	info := appbom.Get()
-	if info == nil {
-		return
-	}
-
-	var out bytes.Buffer
-	encoder := json.NewEncoder(&out)
-	encoder.SetEscapeHTML(false)
-	encoder.SetIndent(" ", " ")
-	_ = encoder.Encode(info)
-	fmt.Printf("%s\n", out.String())
-}
-
 // Run starts the sensor app
 func Run() {
 	flag.Parse()
@@ -136,6 +126,13 @@ func Run() {
 	}
 
 	errutil.FailOn(configureLogger(*enableDebug, *logLevel, *logFormat, *logFile))
+
+	ctx := context.Background()
+
+	if len(os.Args) > 1 && os.Args[1] == "control" {
+		runControlCommand(ctx)
+		return
+	}
 
 	activeCaps, maxCaps, err := sysenv.Capabilities(0)
 	errutil.WarnOn(err)
@@ -158,12 +155,11 @@ func Run() {
 	}
 	artifactor := artifact.NewProcessor(*artifactsDir, artifactsExtra)
 
-	ctx := context.Background()
 	exe, err := newExecution(
 		ctx,
 		*sensorMode,
 		*commandsFile,
-		filepath.Join(*artifactsDir, "events.json"),
+		eventsFilePath(),
 		*lifecycleHookCommand,
 	)
 	if err != nil {
@@ -285,4 +281,40 @@ func newSensor(
 
 	exe.PubEvent(event.StartMonitorFailed, errUnknownMode.Error())
 	return nil, errUnknownMode
+}
+
+func dumpAppBom() {
+	info := appbom.Get()
+	if info == nil {
+		return
+	}
+
+	var out bytes.Buffer
+	encoder := json.NewEncoder(&out)
+	encoder.SetEscapeHTML(false)
+	encoder.SetIndent(" ", " ")
+	_ = encoder.Encode(info)
+	fmt.Printf("%s\n", out.String())
+}
+
+// sensor control <stop-target-app|change-log-level|...>
+func runControlCommand(ctx context.Context) {
+	if len(os.Args) < 3 {
+		fmt.Fprintln(os.Stderr, "Missing control command")
+		os.Exit(1)
+	}
+
+	cmd := control.Command(os.Args[2])
+
+	switch cmd {
+	case control.StopTargetAppCommand:
+		if err := control.ExecuteStopTargetAppCommand(ctx, *commandsFile, eventsFilePath()); err != nil {
+			fmt.Fprintln(os.Stderr, "Error stopping target app:", err)
+			os.Exit(1)
+		}
+
+	default:
+		fmt.Fprintln(os.Stderr, "Unknown control command:", cmd)
+		os.Exit(1)
+	}
 }

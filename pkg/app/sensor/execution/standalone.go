@@ -12,6 +12,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone/control"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
@@ -54,8 +55,10 @@ func NewStandalone(
 		)
 	}
 
-	commandCh := make(chan command.Message, 1)
+	commandCh := make(chan command.Message, 10)
 	commandCh <- &cmd
+
+	go control.HandleControlCommandQueue(ctx, commandFileName, commandCh)
 
 	return &standaloneExe{
 		hookExecutor: hookExecutor{

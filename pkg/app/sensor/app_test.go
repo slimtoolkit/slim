@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone/control"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	testsensor "github.com/docker-slim/docker-slim/pkg/test/e2e/sensor"
@@ -556,4 +557,22 @@ func TestArchiveArtifacts_SensorFailure_NoCaps(t *testing.T) {
 func TestArchiveArtifacts_SensorFailure_NoRoot(t *testing.T) {
 	// It's a fairly common failure scenario.
 	t.Skip("Implement me!")
+}
+
+func TestControlCommands_StopTargetApp(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	sensor := testsensor.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleService)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartStandaloneOrFail(t, ctx, nil)
+
+	go testutil.Delayed(ctx, 5*time.Second, func() {
+		sensor.ExecuteControlCommandOrFail(t, ctx, control.StopTargetAppCommand)
+	})
+
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
 }
