@@ -3,7 +3,6 @@ package controlled_test
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
@@ -40,12 +39,12 @@ func newStubMonitorFunc(
 		artifactsDir string,
 		mountPoint string,
 		origPaths map[string]struct{},
-		signalCh <-chan os.Signal,
 	) (monitor.CompositeMonitor, error) {
 		return monitor.Compose(
 			cmd,
 			fanMon,
 			ptMon,
+			nil,
 			nil,
 		), nil
 	}

@@ -9,6 +9,7 @@ import (
 	"time"
 
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
 
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/artifact"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/execution"
@@ -16,10 +17,6 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/mondel"
-)
-
-const (
-	signalBufSize = 10
 )
 
 type Sensor struct {
@@ -37,6 +34,18 @@ type Sensor struct {
 
 	stopSignal      os.Signal
 	stopGracePeriod time.Duration
+
+	// The target app can be done before the stop signal is received
+	// because of two reasons:
+	//
+	// - App terminated on its own (e.g., a typical CLI use case)
+	//
+	// - The "stop monitor" control command was received.
+	//
+	// In the latter case, sensor needs to wait for the stop signal
+	// before proceeding with the shutdown because otherwise the container
+	// runtime may restart the container which is not desirable.
+	stopCommandReceived bool
 }
 
 func NewSensor(
@@ -89,8 +98,6 @@ func (s *Sensor) Run() error {
 
 	s.exe.HookMonitorPreStart()
 
-	s.signalCh = initSignalForwardingChannel(s.ctx, s.stopSignal, s.stopGracePeriod)
-
 	mon, err := s.newMonitor(
 		s.ctx,
 		cmd,
@@ -99,7 +106,6 @@ func (s *Sensor) Run() error {
 		s.artifactor.ArtifactsDir(),
 		s.mountPoint,
 		origPaths,
-		s.signalCh,
 	)
 	if err != nil {
 		log.WithError(err).Error("sensor: failed to create composite monitor")
@@ -107,6 +113,9 @@ func (s *Sensor) Run() error {
 		s.exe.PubEvent(event.StartMonitorFailed)
 		return err
 	}
+
+	s.signalCh = make(chan os.Signal, 1024)
+	go s.runSignalForwarder(mon)
 
 	if err := mon.Start(); err != nil {
 		log.WithError(err).Error("sensor: failed to start composite monitor")
@@ -138,6 +147,13 @@ func (s *Sensor) Run() error {
 		return fmt.Errorf("saving reports failed: %w", err)
 	}
 
+	if s.stopCommandReceived {
+		select {
+		case <-s.ctx.Done():
+		case <-s.signalCh:
+		}
+	}
+
 	s.exe.PubEvent(event.ShutdownSensorDone)
 	return nil
 }
@@ -153,11 +169,12 @@ loop:
 			break loop
 
 		case cmd := <-s.exe.Commands():
-			log.Infof("sensor: recieved control command => %+v", cmd)
+			log.Infof("sensor: recieved control command => %s", cmd.GetName())
 			if cmd.GetName() == command.StopMonitorName {
-				s.signalCh <- s.stopSignal
+				s.stopCommandReceived = true
+				s.signalTargetApp(mon, s.stopSignal)
 			} else {
-				log.Warnf("sensor: unsupported control command => %+v", cmd)
+				log.Warnf("sensor: unsupported control command => %s", cmd.GetName())
 			}
 
 		case err := <-mon.Errors():
@@ -182,50 +199,62 @@ loop:
 	}
 }
 
-func initSignalForwardingChannel(
-	ctx context.Context,
-	stopSignal os.Signal,
-	stopGracePeriod time.Duration,
-) chan os.Signal {
-	signalCh := make(chan os.Signal, signalBufSize)
+func (s *Sensor) runSignalForwarder(mon monitor.CompositeMonitor) {
+	log.Debug("sensor: starting forwarding signals to target app...")
 
-	go func() {
-		log.Debug("sensor: starting forwarding signals to target app...")
+	signal.Notify(s.signalCh)
 
-		ch := make(chan os.Signal, 64)
-		signal.Notify(ch)
+	for {
+		select {
+		case <-s.ctx.Done():
+			log.Debug("sensor: forwarding signal to target app no more - sensor is done")
+			return
 
-		for {
+		case sig := <-s.signalCh:
+			if s.stopCommandReceived && sig == s.stopSignal {
+				signal.Stop(s.signalCh)
+				close(s.signalCh)
+			}
+
 			select {
-			case <-ctx.Done():
-				log.Debug("sensor: forwarding signal to target app no more - sensor is done")
-				return
+			case <-mon.Done():
+				log.Debug("sensor: skipping signal forwarding - target app is done")
 
-			case s := <-ch:
-				if s != syscall.SIGCHLD {
+			default:
+				if sig != syscall.SIGCHLD {
 					// Due to ptrace, SIGCHLDs flood the output.
 					// TODO: Log SIGCHLD if ptrace-ing is off.
-					log.WithField("signal", s).Debug("sensor: forwarding signal to target app")
+					log.Debugf("sensor: forwarding signal %s to target app", unix.SignalName(sig.(syscall.Signal)))
 				}
-				signalCh <- s
-
-				if s == stopSignal {
-					log.Debug("sensor: recieved stop signal - starting grace period")
-
-					// Starting the grace period
-					select {
-					case <-ctx.Done():
-						log.Debug("sensor: finished before grace timeout - dismantling SIGKILL")
-
-					case <-time.After(stopGracePeriod):
-						log.Debug("sensor: grace timeout expired - SIGKILL goes to target app")
-						signalCh <- syscall.SIGKILL
-					}
-					return
-				}
+				s.signalTargetApp(mon, sig)
 			}
 		}
-	}()
+	}
+}
 
-	return signalCh
+func (s *Sensor) signalTargetApp(mon monitor.CompositeMonitor, sig os.Signal) {
+	mon.SignalTargetApp(sig)
+
+	if sig == s.stopSignal {
+		log.Debug("sensor: stop signal was sent to target app - starting grace period")
+
+		go func() {
+			// Starting the grace period.
+			timer := time.NewTimer(s.stopGracePeriod)
+			defer func() {
+				if !timer.Stop() {
+					<-timer.C
+				}
+			}()
+
+			select {
+			case <-mon.Done():
+				log.Debug("sensor: target app finished before grace timeout - dismantling SIGKILL")
+
+			case <-timer.C:
+				log.Debug("sensor: grace timeout expired - SIGKILL goes to target app")
+				mon.SignalTargetApp(syscall.SIGKILL)
+			}
+		}()
+	}
 }
