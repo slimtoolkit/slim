@@ -44,12 +44,14 @@ var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
+	Before:  commands.LoadParamsFromFile,
 	Subcommands: []*cli.Command{
 		{
 			Name:  PullCmdName,
 			Usage: PullCmdNameUsage,
 			Flags: []cli.Flag{
 				commands.Cflag(commands.FlagTarget),
+				commands.Cflag(commands.FlagCommandParamsFile),
 				cflag(FlagSaveToDocker),
 			},
 			Action: func(ctx *cli.Context) error {

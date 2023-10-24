@@ -22,10 +22,12 @@ var CLI = &cli.Command{
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Flags: []cli.Flag{
+		commands.Cflag(commands.FlagCommandParamsFile),
 		cflag(FlagImage),
 		cflag(FlagUseLastImageMetadata),
 		cflag(FlagTag),
 	},
+	Before: commands.LoadParamsFromFile,
 	Action: func(ctx *cli.Context) error {
 		if ctx.Args().Len() < 1 {
 			fmt.Printf("slim[%s]: missing target info...\n\n", Name)

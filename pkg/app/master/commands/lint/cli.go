@@ -18,6 +18,7 @@ var CLI = &cli.Command{
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Flags: []cli.Flag{
+		commands.Cflag(commands.FlagCommandParamsFile),
 		cflag(commands.FlagTarget),
 		cflag(FlagTargetType),
 		cflag(FlagSkipBuildContext),
@@ -33,6 +34,7 @@ var CLI = &cli.Command{
 		cflag(FlagShowSnippet),
 		cflag(FlagListChecks),
 	},
+	Before: commands.LoadParamsFromFile,
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleFormat))
 

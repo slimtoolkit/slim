@@ -32,6 +32,7 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagRegistryAccount),
 		commands.Cflag(commands.FlagRegistrySecret),
 		commands.Cflag(commands.FlagShowPullLogs),
+		commands.Cflag(commands.FlagCommandParamsFile),
 
 		commands.Cflag(commands.FlagComposeFile),
 		commands.Cflag(commands.FlagTargetComposeSvc),
@@ -167,6 +168,7 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagSensorIPCEndpoint),
 		commands.Cflag(commands.FlagSensorIPCMode),
 	}, commands.HTTPProbeFlags()...),
+	Before: commands.LoadParamsFromFile,
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleFormat))
 

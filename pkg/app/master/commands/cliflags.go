@@ -52,12 +52,13 @@ const (
 
 // Shared command flag names
 const (
-	FlagTarget           = "target"
-	FlagPull             = "pull"
-	FlagDockerConfigPath = "docker-config-path"
-	FlagRegistryAccount  = "registry-account"
-	FlagRegistrySecret   = "registry-secret"
-	FlagShowPullLogs     = "show-plogs"
+	FlagTarget            = "target"
+	FlagPull              = "pull"
+	FlagDockerConfigPath  = "docker-config-path"
+	FlagRegistryAccount   = "registry-account"
+	FlagRegistrySecret    = "registry-secret"
+	FlagShowPullLogs      = "show-plogs"
+	FlagCommandParamsFile = "command-params-file"
 
 	//Compose-related flags
 	FlagComposeFile                    = "compose-file"
@@ -170,12 +171,13 @@ const (
 
 // Shared command flag usage info
 const (
-	FlagTargetUsage           = "Target container image (name or ID)"
-	FlagPullUsage             = "Try pulling target if it's not available locally"
-	FlagDockerConfigPathUsage = "Docker config path (used to fetch registry credentials)"
-	FlagRegistryAccountUsage  = "Target registry account used when pulling images from private registries"
-	FlagRegistrySecretUsage   = "Target registry secret used when pulling images from private registries"
-	FlagShowPullLogsUsage     = "Show image pull logs"
+	FlagTargetUsage            = "Target container image (name or ID)"
+	FlagPullUsage              = "Try pulling target if it's not available locally"
+	FlagDockerConfigPathUsage  = "Docker config path (used to fetch registry credentials)"
+	FlagRegistryAccountUsage   = "Target registry account used when pulling images from private registries"
+	FlagRegistrySecretUsage    = "Target registry secret used when pulling images from private registries"
+	FlagShowPullLogsUsage      = "Show image pull logs"
+	FlagCommandParamsFileUsage = "File with command parameters (JSON format)"
 
 	//Compose-related flags
 	FlagComposeFileUsage                    = "Load container info from selected compose file(s)"
@@ -394,6 +396,11 @@ var CommonFlags = map[string]cli.Flag{
 		Name:    FlagShowPullLogs,
 		Usage:   FlagShowPullLogsUsage,
 		EnvVars: []string{"DSLIM_PLOG"},
+	},
+	FlagCommandParamsFile: &cli.StringFlag{
+		Name:    FlagCommandParamsFile,
+		Usage:   FlagCommandParamsFileUsage,
+		EnvVars: []string{"DSLIM_COMMAND_PARAMS_FILE"},
 	},
 	//
 	FlagComposeFile: &cli.StringSliceFlag{

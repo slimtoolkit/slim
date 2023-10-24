@@ -95,6 +95,7 @@ var CLI = &cli.Command{
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Flags: []cli.Flag{
+		commands.Cflag(commands.FlagCommandParamsFile),
 		cflag(FlagRuntime),
 		cflag(FlagTarget),
 		cflag(FlagNamespace),
@@ -116,6 +117,7 @@ var CLI = &cli.Command{
 		cflag(FlagListDebugImage),
 		cflag(FlagKubeconfig),
 	},
+	Before: commands.LoadParamsFromFile,
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleFormat))
 

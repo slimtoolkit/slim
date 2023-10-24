@@ -29,6 +29,7 @@ var CLI = &cli.Command{
 		commands.Cflag(commands.FlagRegistryAccount),
 		commands.Cflag(commands.FlagRegistrySecret),
 		commands.Cflag(commands.FlagShowPullLogs),
+		commands.Cflag(commands.FlagCommandParamsFile),
 		cflag(FlagChanges),
 		cflag(FlagChangesOutput),
 		cflag(FlagLayer),
@@ -55,6 +56,7 @@ var CLI = &cli.Command{
 		cflag(FlagExportAllDataArtifacts),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
 	},
+	Before: commands.LoadParamsFromFile,
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleFormat))
 

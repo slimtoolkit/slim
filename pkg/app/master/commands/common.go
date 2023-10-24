@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -258,6 +259,33 @@ func RunHostExecProbes(printState bool, xc *app.ExecutionContext, hostExecProbes
 			}
 		}
 	}
+}
+
+func LoadParamsFromFile(c *cli.Context) error {
+	filePath := c.String(FlagCommandParamsFile)
+	if filePath == "" {
+		return nil
+	}
+
+	fileContent, err := os.ReadFile(filePath)
+	if err != nil {
+		log.Errorf("LoadParamsFromFile(%s): error reading file: %v", filePath, err)
+		return err
+	}
+
+	var params map[string]interface{}
+	err = json.Unmarshal(fileContent, &params)
+	if err != nil {
+		log.Errorf("LoadParamsFromFile(%s): error parsing file: %v", filePath, err)
+		return err
+	}
+
+	for key, value := range params {
+		log.Debug("LoadParamsFromFile(): setting key=", key, " value=", value)
+		c.Set(key, value.(string))
+	}
+
+	return nil
 }
 
 func exeAppCall(appCall string) error {

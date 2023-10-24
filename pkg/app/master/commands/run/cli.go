@@ -98,6 +98,7 @@ var CLI = &cli.Command{
 		cflag(FlagRemove),
 		cflag(FlagDetach),
 	},
+	Before: commands.LoadParamsFromFile,
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleFormat))
 
