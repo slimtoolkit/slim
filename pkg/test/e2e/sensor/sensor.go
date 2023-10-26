@@ -17,6 +17,7 @@ import (
 
 	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/ipc"
@@ -76,6 +77,12 @@ func WithoutSensorCapabilities(caps ...string) sensorOpt {
 	}
 }
 
+func WithStopSignal(sig syscall.Signal) sensorOpt {
+	return func(s *Sensor) {
+		s.stopSignal = sig
+	}
+}
+
 type Sensor struct {
 	image          dockerapi.Image
 	contName       string
@@ -89,6 +96,7 @@ type Sensor struct {
 	capAdd           []string
 	capDrop          []string
 	user             string
+	stopSignal       syscall.Signal
 
 	// "Nullable"
 	contID      string
@@ -248,7 +256,9 @@ func (s *Sensor) StartStandalone(
 	s.rawCommands = string(rawCommands)
 
 	stopSignal := "SIGTERM"
-	if len(s.image.Config.StopSignal) > 0 {
+	if s.stopSignal != 0 {
+		stopSignal = unix.SignalName(s.stopSignal)
+	} else if len(s.image.Config.StopSignal) > 0 {
 		stopSignal = s.image.Config.StopSignal
 	}
 
