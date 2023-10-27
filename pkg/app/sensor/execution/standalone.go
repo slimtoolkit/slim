@@ -39,7 +39,7 @@ func NewStandalone(
 		)
 	}
 
-	eventFile, err := os.OpenFile(eventFileName, os.O_APPEND|os.O_WRONLY, 0644)
+	eventFile, err := os.OpenFile(eventFileName, os.O_APPEND|os.O_WRONLY|os.O_SYNC, 0644)
 	if err != nil {
 		return nil, fmt.Errorf(
 			"cannot create execution - open event file %q failed: %w",

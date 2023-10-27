@@ -14,6 +14,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/mondel"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
 
 var ErrPrematureShutdown = errors.New("sensor shutdown before monitor stop")
@@ -62,6 +63,24 @@ func NewSensor(
 //     -> ShutdownSensor command arrives => cancel monitoring, grumble, and exit
 //     -> Any other command              => grumble but keep waiting
 func (s *Sensor) Run() error {
+	s.exe.HookSensorPostStart()
+
+	err := s.run()
+	if err != nil {
+		s.exe.PubEvent(event.Error, err.Error())
+	}
+
+	// We have to dump the artifacts before invokin the pre-shutdown
+	// hook - it may want to upload the artifacts somewhere.
+	errutil.WarnOn(s.artifactor.Archive())
+
+	s.exe.HookSensorPreShutdown()
+	s.exe.PubEvent(event.ShutdownSensorDone)
+
+	return err
+}
+
+func (s *Sensor) run() error {
 	log.Info("sensor: waiting for commands...")
 
 	for {
@@ -73,14 +92,12 @@ func (s *Sensor) Run() error {
 		}
 
 		if mon == nil {
-			s.exe.PubEvent(event.ShutdownSensorDone)
 			return nil
 		}
 
 		s.exe.PubEvent(event.StartMonitorDone)
 
 		if err := s.runWithMonitor(mon); err != nil {
-			s.exe.PubEvent(event.ShutdownSensorDone)
 			return fmt.Errorf("run sensor with monitor failed: %w", err)
 		}
 
@@ -229,8 +246,4 @@ func (s *Sensor) processMonitoringResults(mon monitor.CompositeMonitor) error {
 		return fmt.Errorf("saving reports failed: %w", err)
 	}
 	return nil // Clean exit
-}
-
-func nonCriticalError(err error) error {
-	return fmt.Errorf("non-critical monitor error: %w", err)
 }

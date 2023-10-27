@@ -17,6 +17,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/mondel"
+	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 )
 
 type Sensor struct {
@@ -32,19 +33,8 @@ type Sensor struct {
 
 	signalCh chan os.Signal
 
-	stopSignal      os.Signal
-	stopGracePeriod time.Duration
-
-	// The target app can be done before the stop signal is received
-	// because of two reasons:
-	//
-	// - App terminated on its own (e.g., a typical CLI use case)
-	//
-	// - The "stop monitor" control command was received.
-	//
-	// In the latter case, sensor needs to wait for the stop signal
-	// before proceeding with the shutdown because otherwise the container
-	// runtime may restart the container which is not desirable.
+	stopSignal          os.Signal
+	stopGracePeriod     time.Duration
 	stopCommandReceived bool
 }
 
@@ -73,6 +63,41 @@ func NewSensor(
 }
 
 func (s *Sensor) Run() error {
+	s.exe.HookSensorPostStart()
+
+	err := s.run()
+	if err != nil {
+		s.exe.PubEvent(event.Error, err.Error())
+	}
+
+	// We have to dump the artifacts before invokin the pre-shutdown
+	// hook - it may want to upload the artifacts somewhere.
+	errutil.WarnOn(s.artifactor.Archive())
+
+	s.exe.HookSensorPreShutdown()
+	s.exe.PubEvent(event.ShutdownSensorDone)
+
+	// The target app can be done before the stop signal is received
+	// because of two reasons:
+	//
+	// - App terminated on its own (e.g., a typical CLI use case)
+	//
+	// - The "stop monitor" control command was received.
+	//
+	// In the latter case, sensor needs to wait for the stop signal
+	// before proceeding with the shutdown because otherwise the container
+	// runtime may restart the container which is not desirable.
+	if s.stopCommandReceived {
+		select {
+		case <-s.ctx.Done():
+		case <-s.signalCh:
+		}
+	}
+
+	return err
+}
+
+func (s *Sensor) run() error {
 	cmd, ok := (<-s.exe.Commands()).(*command.StartMonitor)
 	if !ok {
 		log.
@@ -147,14 +172,6 @@ func (s *Sensor) Run() error {
 		return fmt.Errorf("saving reports failed: %w", err)
 	}
 
-	if s.stopCommandReceived {
-		select {
-		case <-s.ctx.Done():
-		case <-s.signalCh:
-		}
-	}
-
-	s.exe.PubEvent(event.ShutdownSensorDone)
 	return nil
 }
 
@@ -199,6 +216,11 @@ loop:
 	}
 }
 
+// TODO: Combine the signal forwarder loop with the run monitor loop
+//
+//	to avoid competting event loops - this will simplify the code
+//	and let us avoid subtle race conditions when the stop signal
+//	arrives while the app is being stoped due to the stop control command.
 func (s *Sensor) runSignalForwarder(mon monitor.CompositeMonitor) {
 	log.Debug("sensor: starting forwarding signals to target app...")
 
