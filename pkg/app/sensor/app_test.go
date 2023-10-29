@@ -13,6 +13,7 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone/control"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	testsensor "github.com/docker-slim/docker-slim/pkg/test/e2e/sensor"
@@ -556,4 +557,71 @@ func TestArchiveArtifacts_SensorFailure_NoCaps(t *testing.T) {
 func TestArchiveArtifacts_SensorFailure_NoRoot(t *testing.T) {
 	// It's a fairly common failure scenario.
 	t.Skip("Implement me!")
+}
+
+func TestStopSignal_ForceKill(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	wrongStopSignal := syscall.SIGUSR1 // This signal isn't going to make Nginx exit.
+	sensor := testsensor.NewSensorOrFail(
+		t, ctx, t.TempDir(), runID, imageSimpleService,
+		testsensor.WithStopSignal(wrongStopSignal), // Emulate misconfiguration.
+	)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartStandaloneOrFail(t, ctx, nil)
+	go testutil.Delayed(ctx, 5*time.Second, func() {
+		// However, the sensor will terminate the target app
+		// anyway, when the grace period after receiving the
+		// stop signal is over.
+		sensor.SignalOrFail(t, ctx, wrongStopSignal)
+	})
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
+	sensor.AssertTargetAppLogsContain(t, ctx,
+		"nginx/1.21",
+		"start worker processes",
+		"sensor: stop signal was sent to target app - starting grace period",
+		"sensor: grace timeout expired - SIGKILL goes to target app",
+	)
+
+	sensor.DownloadArtifactsOrFail(t, ctx)
+	sensor.AssertReportIncludesFiles(t,
+		"/etc/nginx/nginx.conf",
+		"/etc/nginx/conf.d/default.conf",
+		"/var/cache/nginx",
+		"/var/run",
+		// Because the target app was terminated by SIGKILL,
+		// the pid file is not cleaned up.
+		"/run/nginx.pid",
+	)
+	sensor.AssertReportNotIncludesFiles(t,
+		"/bin/bash",
+		"/bin/cat",
+		"/etc/apt/sources.list",
+	)
+}
+
+func TestControlCommands_StopTargetApp(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	sensor := testsensor.NewSensorOrFail(t, ctx, t.TempDir(), runID, imageSimpleService)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartStandaloneOrFail(t, ctx, nil)
+
+	go testutil.Delayed(ctx, 5*time.Second, func() {
+		sensor.ExecuteControlCommandOrFail(t, ctx, control.StopTargetAppCommand)
+		// In the real world, there will be some time between
+		// the stop command and the target app signalling - maybe
+		// we need to simulate that here?
+		sensor.SignalOrFail(t, ctx, syscall.SIGQUIT)
+	})
+
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
 }

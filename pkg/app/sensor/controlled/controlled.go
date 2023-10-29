@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -138,9 +137,6 @@ func (s *Sensor) startMonitor(cmd *command.StartMonitor) (monitor.CompositeMonit
 		s.artifactor.ArtifactsDir(),
 		s.mountPoint,
 		origPaths,
-		// TODO: Do we need to forward signals to the target app in the controlled mode?
-		//       Sounds like a good idea but will change the historical behavior.
-		make(chan os.Signal),
 	)
 	if err != nil {
 		log.WithError(err).Error("sensor: failed to create composite monitor")

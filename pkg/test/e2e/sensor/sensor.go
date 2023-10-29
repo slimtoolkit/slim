@@ -17,10 +17,12 @@ import (
 
 	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
+	"golang.org/x/sys/unix"
 
 	"github.com/docker-slim/docker-slim/pkg/app"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/ipc"
 	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/sensor"
+	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone/control"
 	"github.com/docker-slim/docker-slim/pkg/ipc/channel"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/ipc/event"
@@ -75,6 +77,12 @@ func WithoutSensorCapabilities(caps ...string) sensorOpt {
 	}
 }
 
+func WithStopSignal(sig syscall.Signal) sensorOpt {
+	return func(s *Sensor) {
+		s.stopSignal = sig
+	}
+}
+
 type Sensor struct {
 	image          dockerapi.Image
 	contName       string
@@ -88,6 +96,7 @@ type Sensor struct {
 	capAdd           []string
 	capDrop          []string
 	user             string
+	stopSignal       syscall.Signal
 
 	// "Nullable"
 	contID      string
@@ -247,7 +256,9 @@ func (s *Sensor) StartStandalone(
 	s.rawCommands = string(rawCommands)
 
 	stopSignal := "SIGTERM"
-	if len(s.image.Config.StopSignal) > 0 {
+	if s.stopSignal != 0 {
+		stopSignal = unix.SignalName(s.stopSignal)
+	} else if len(s.image.Config.StopSignal) > 0 {
 		stopSignal = s.image.Config.StopSignal
 	}
 
@@ -311,6 +322,16 @@ func (s *Sensor) StartStandaloneOrFail(
 }
 
 func (s *Sensor) SendCommand(ctx context.Context, cmd command.Message) error {
+	msg, err := command.Encode(cmd)
+	if err != nil {
+		return fmt.Errorf("cannot encode command %q: %w", cmd, err)
+	}
+	log.Debugf("Sending command to the test sensor: %s", string(msg))
+
+	if len(s.contID) == 0 {
+		return errNotStarted
+	}
+
 	if s.client == nil {
 		return errors.New("IPC client isn't initialized - is sensor running?")
 	}
@@ -349,6 +370,34 @@ func (s *Sensor) SendStopCommand(ctx context.Context) error {
 func (s *Sensor) SendStopCommandOrFail(t *testing.T, ctx context.Context) {
 	if err := s.SendStopCommand(ctx); err != nil {
 		t.Fatal("Failed sending StopMonitor command:", err)
+	}
+}
+
+func (s *Sensor) ExecuteControlCommand(ctx context.Context, cmd control.Command) error {
+	if len(s.contID) == 0 {
+		return errNotStarted
+	}
+
+	if s.client != nil {
+		return fmt.Errorf("cannot execute control command - sensor is not in the standalone mode")
+	}
+
+	if out, err := containerExec(
+		ctx,
+		s.contID,
+		"/opt/_slim/sensor",
+		"control",
+		string(cmd),
+	); err != nil {
+		return fmt.Errorf("cannot execute control command: %w\n%s", err, string(out))
+	}
+
+	return nil
+}
+
+func (s *Sensor) ExecuteControlCommandOrFail(t *testing.T, ctx context.Context, cmd control.Command) {
+	if err := s.ExecuteControlCommand(ctx, cmd); err != nil {
+		t.Fatalf("Failed executing control command %s: %v", cmd, err)
 	}
 }
 

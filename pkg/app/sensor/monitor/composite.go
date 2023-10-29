@@ -22,6 +22,8 @@ import (
 )
 
 const (
+	signalChanBufSize = 10
+
 	errorChanBufSize   = 100
 	errorChanDrainTime = 200 * time.Millisecond
 
@@ -48,6 +50,8 @@ type CompositeMonitor interface {
 
 	// Just a helper getter.
 	StartCommand() *command.StartMonitor
+
+	SignalTargetApp(s os.Signal)
 
 	Cancel()
 
@@ -90,11 +94,15 @@ type monitor struct {
 	// Inspired by os/exec.Cmd
 	closeAfterDone []io.Closer
 
+	signalCh chan os.Signal
+
 	doneCh   chan struct{}
 	doneOnce sync.Once
 
 	errorCh chan error
 }
+
+var _ CompositeMonitor = (*monitor)(nil)
 
 type NewCompositeMonitorFunc func(
 	ctx context.Context,
@@ -104,7 +112,6 @@ type NewCompositeMonitorFunc func(
 	artifactsDir string,
 	mountPoint string,
 	origPaths map[string]struct{},
-	signalCh <-chan os.Signal,
 ) (CompositeMonitor, error)
 
 func NewCompositeMonitor(
@@ -115,7 +122,6 @@ func NewCompositeMonitor(
 	artifactsDir string,
 	mountPoint string,
 	origPaths map[string]struct{},
-	signalChan <-chan os.Signal,
 ) (CompositeMonitor, error) {
 	log.Info("sensor: creating monitors...")
 
@@ -154,6 +160,8 @@ func NewCompositeMonitor(
 		appStderr = sink
 	}
 
+	signalCh := make(chan os.Signal, signalChanBufSize)
+
 	ptMon := ptrace.NewMonitor(
 		ctx,
 		del,
@@ -171,11 +179,11 @@ func NewCompositeMonitor(
 		},
 		cmd.IncludeNew,
 		origPaths,
-		signalChan,
+		signalCh,
 		errorCh,
 	)
 
-	m := Compose(cmd, fanMon, ptMon, errorCh)
+	m := Compose(cmd, fanMon, ptMon, signalCh, errorCh)
 	m.closeAfterDone = closeAfterDone
 
 	return m, nil
@@ -185,6 +193,7 @@ func Compose(
 	cmd *command.StartMonitor,
 	fanMon fanotify.Monitor,
 	ptMon ptrace.Monitor,
+	signalCh chan os.Signal,
 	errorCh chan error,
 ) *monitor {
 	return &monitor{
@@ -194,7 +203,8 @@ func Compose(
 		fanMon: fanMon,
 		ptMon:  ptMon,
 
-		errorCh: errorCh,
+		signalCh: signalCh,
+		errorCh:  errorCh,
 	}
 }
 
@@ -235,6 +245,10 @@ func (m *monitor) Start() error {
 
 func (m *monitor) StartCommand() *command.StartMonitor {
 	return m.cmd
+}
+
+func (m *monitor) SignalTargetApp(s os.Signal) {
+	m.signalCh <- s
 }
 
 func (m *monitor) Cancel() {
