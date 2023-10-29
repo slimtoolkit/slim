@@ -3,7 +3,6 @@ package controlled_test
 import (
 	"context"
 	"errors"
-	"os"
 	"testing"
 	"time"
 
@@ -13,6 +12,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/fanotify"
 	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/ptrace"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
+	"github.com/docker-slim/docker-slim/pkg/mondel"
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/test/stub/sensor/execution"
 	stubmonitor "github.com/docker-slim/docker-slim/pkg/test/stub/sensor/monitor"
@@ -39,12 +39,12 @@ func newStubMonitorFunc(
 		artifactsDir string,
 		mountPoint string,
 		origPaths map[string]struct{},
-		signalCh <-chan os.Signal,
 	) (monitor.CompositeMonitor, error) {
 		return monitor.Compose(
 			cmd,
 			fanMon,
 			ptMon,
+			nil,
 			nil,
 		), nil
 	}

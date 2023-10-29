@@ -96,6 +96,12 @@ func containerInspect(ctx context.Context, contID string) (dockerapi.Container, 
 	return conts[0], nil
 }
 
+func containerExec(ctx context.Context, contID string, arg ...string) (string, error) {
+	cmd := exec.CommandContext(ctx, "docker", append([]string{"container", "exec", contID}, arg...)...)
+	out, err := cmd.CombinedOutput()
+	return string(out), err
+}
+
 func containerLogs(ctx context.Context, contID string) (string, error) {
 	cmd := exec.CommandContext(ctx, "docker", "container", "logs", contID)
 	out, err := cmd.CombinedOutput()

@@ -42,6 +42,9 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagTopChangesMax), Description: FlagTopChangesMaxUsage},
 		{Text: commands.FullFlagName(FlagDetectAllCertFiles), Description: FlagDetectAllCertFilesUsage},
 		{Text: commands.FullFlagName(FlagDetectAllCertPKFiles), Description: FlagDetectAllCertPKFilesUsage},
+		{Text: commands.FullFlagName(FlagDetectIdentities), Description: FlagDetectIdentitiesUsage},
+		{Text: commands.FullFlagName(FlagDetectIdentitiesParam), Description: FlagDetectIdentitiesParamUsage},
+		{Text: commands.FullFlagName(FlagDetectIdentitiesDumpRaw), Description: FlagDetectIdentitiesDumpRawUsage},
 		{Text: commands.FullFlagName(FlagExportAllDataArtifacts), Description: FlagExportAllDataArtifactsUsage},
 		{Text: commands.FullFlagName(commands.FlagRemoveFileArtifacts), Description: commands.FlagRemoveFileArtifactsUsage},
 	},
@@ -62,6 +65,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		commands.FullFlagName(FlagReuseSavedImage):              commands.CompleteTBool,
 		commands.FullFlagName(FlagDetectAllCertFiles):           commands.CompleteBool,
 		commands.FullFlagName(FlagDetectAllCertPKFiles):         commands.CompleteBool,
+		commands.FullFlagName(FlagDetectIdentities):             commands.CompleteTBool,
 		commands.FullFlagName(commands.FlagRemoveFileArtifacts): commands.CompleteBool,
 	},
 }
