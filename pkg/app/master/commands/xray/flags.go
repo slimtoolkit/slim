@@ -31,6 +31,22 @@ const (
 	FlagExportAllDataArtifacts = "export-all-data-artifacts"
 	FlagDetectAllCertFiles     = "detect-all-certs"
 	FlagDetectAllCertPKFiles   = "detect-all-cert-pks"
+
+	FlagDetectIdentities        = "detect-identities"
+	FlagDetectIdentitiesParam   = "detect-identities-param"
+	FlagDetectIdentitiesDumpRaw = "detect-identities-dump-raw"
+
+	FlagDetectScheduledTasks        = "detect-scheduled-tasks"
+	FlagDetectScheduledTasksParam   = "detect-scheduled-tasks-param"
+	FlagDetectScheduledTasksDumpRaw = "detect-scheduled-tasks-dump-raw"
+
+	FlagDetectServices        = "detect-services"
+	FlagDetectServicesParam   = "detect-services-param"
+	FlagDetectServicesDumpRaw = "detect-services-dump-raw"
+
+	FlagDetectSystemHooks        = "detect-system-hooks"
+	FlagDetectSystemHooksParam   = "detect-system-hooks-param"
+	FlagDetectSystemHooksDumpRaw = "detect-system-hooks-dump-raw"
 )
 
 // Xray command flag usage info
@@ -59,6 +75,22 @@ const (
 	FlagExportAllDataArtifactsUsage = "TAR archive file path to export all text data artifacts (if value is set to `.` then the archive file path defaults to `./data-artifacts.tar`)"
 	FlagDetectAllCertFilesUsage     = "Detect all certifcate files"
 	FlagDetectAllCertPKFilesUsage   = "Detect all certifcate private key files"
+
+	FlagDetectIdentitiesUsage        = "Detect system identities (users, groups) and their properties"
+	FlagDetectIdentitiesParamUsage   = "Input parameters for system identities detection"
+	FlagDetectIdentitiesDumpRawUsage = "Raw data dump options for system identities detection (values: no, console, directory or a tar archive file path where setting value to `.` defaults tar file path to `./raw-identities.tar`"
+
+	FlagDetectScheduledTasksUsage        = "Detect scheduled tasks and their properties"
+	FlagDetectScheduledTasksParamUsage   = "Input parameters for scheduled tasks detection"
+	FlagDetectScheduledTasksDumpRawUsage = "Raw data dump options for scheduled tasks detection (values: `no`, `console`, directory or a tar archive file path where setting value to `.` defaults tar file path to `./raw-scheduled-tasks.tar`"
+
+	FlagDetectServicesUsage        = "Detect services and their properties"
+	FlagDetectServicesParamUsage   = "Input parameters for services detection"
+	FlagDetectServicesDumpRawUsage = "Raw data dump options for services detection (values: no, console, directory or a tar archive file path where setting value to `.` defaults tar file path to `./raw-services.tar`"
+
+	FlagDetectSystemHooksUsage        = "Detect system hooks and their properties"
+	FlagDetectSystemHooksParamUsage   = "Input parameters for system hooks detection"
+	FlagDetectSystemHooksDumpRawUsage = "Raw data dump options for system hooks detection (values: no, console, directory or a tar archive file path where setting value to `.` defaults tar file path to `./raw-system-hooks.tar`"
 )
 
 var Flags = map[string]cli.Flag{
@@ -196,6 +228,78 @@ var Flags = map[string]cli.Flag{
 		Name:    FlagDetectAllCertPKFiles,
 		Usage:   FlagDetectAllCertPKFilesUsage,
 		EnvVars: []string{"DSLIM_XRAY_DETECT_ALL_CERT_PKS"},
+	},
+
+	FlagDetectIdentities: &cli.BoolFlag{
+		Name:    FlagDetectIdentities,
+		Value:   true, //enabled by default
+		Usage:   FlagDetectIdentitiesUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_IDENTITIES"},
+	},
+	FlagDetectIdentitiesParam: &cli.StringSliceFlag{
+		Name:    FlagDetectIdentitiesParam,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagDetectIdentitiesParamUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_IDENTITIES_PARAM"},
+	},
+	FlagDetectIdentitiesDumpRaw: &cli.StringFlag{
+		Name:    FlagDetectIdentitiesDumpRaw,
+		Usage:   FlagDetectIdentitiesDumpRawUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_IDENTITIES_DUMP_RAW"},
+	},
+
+	FlagDetectScheduledTasks: &cli.BoolFlag{
+		Name:    FlagDetectScheduledTasks,
+		Value:   true, //enabled by default
+		Usage:   FlagDetectScheduledTasksUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_SCHEDULED_TASKS"},
+	},
+	FlagDetectScheduledTasksParam: &cli.StringSliceFlag{
+		Name:    FlagDetectScheduledTasksParam,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagDetectScheduledTasksParamUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_SCHEDULED_TASKS_PARAM"},
+	},
+	FlagDetectScheduledTasksDumpRaw: &cli.StringFlag{
+		Name:    FlagDetectScheduledTasksDumpRaw,
+		Usage:   FlagDetectScheduledTasksDumpRawUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_SCHEDULED_TASKS_DUMP_RAW"},
+	},
+
+	FlagDetectServices: &cli.BoolFlag{
+		Name:    FlagDetectServices,
+		Value:   true, //enabled by default
+		Usage:   FlagDetectServicesUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_SERVICES"},
+	},
+	FlagDetectServicesParam: &cli.StringSliceFlag{
+		Name:    FlagDetectServicesParam,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagDetectServicesParamUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_SERVICES_PARAM"},
+	},
+	FlagDetectServicesDumpRaw: &cli.StringFlag{
+		Name:    FlagDetectServicesDumpRaw,
+		Usage:   FlagDetectServicesDumpRawUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_SERVICES_DUMP_RAW"},
+	},
+
+	FlagDetectSystemHooks: &cli.BoolFlag{
+		Name:    FlagDetectSystemHooks,
+		Value:   true, //enabled by default
+		Usage:   FlagDetectSystemHooksUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_SYSTEM_HOOKS"},
+	},
+	FlagDetectSystemHooksParam: &cli.StringSliceFlag{
+		Name:    FlagDetectSystemHooksParam,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagDetectSystemHooksParamUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_SYSTEM_HOOKS_PARAM"},
+	},
+	FlagDetectSystemHooksDumpRaw: &cli.StringFlag{
+		Name:    FlagDetectSystemHooksDumpRaw,
+		Usage:   FlagDetectSystemHooksDumpRawUsage,
+		EnvVars: []string{"DSLIM_XRAY_DETECT_SYSTEM_HOOKS_DUMP_RAW"},
 	},
 }
 

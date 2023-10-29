@@ -18,11 +18,38 @@ const (
 	Alias = "x"
 )
 
+type DetectOpParam struct {
+	/// Operation is enabled
+	Enabled bool
+	/// Dump/save raw data
+	DumpRaw bool
+	/// Dump raw data to console
+	IsConsoleOut bool
+	/// Dump raw data to directory (otherwise save to an archive file)
+	IsDirOut bool
+	/// Output path (directory or archive path)
+	OutputPath string
+	/// Input parameters for the operation
+	InputParams map[string]string
+}
+
+type CommandParams struct {
+	DetectIdentities     *DetectOpParam `json:"detect_identities,omitempty"`
+	DetectScheduledTasks *DetectOpParam `json:"detect_scheduled_tasks,omitempty"`
+	DetectServices       *DetectOpParam `json:"detect_services,omitempty"`
+	DetectSystemHooks    *DetectOpParam `json:"detect_system_hooks,omitempty"`
+
+	//todo: migrate simple bool param to DetectOpParam
+	DetectAllCertFiles   bool `json:"detect_all_cert_files,omitempty"`
+	DetectAllCertPKFiles bool `json:"detect_all_cert_pks,omitempty"`
+}
+
 var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Flags: []cli.Flag{
+		commands.Cflag(commands.FlagCommandParamsFile),
 		commands.Cflag(commands.FlagTarget),
 		commands.Cflag(commands.FlagPull),
 		commands.Cflag(commands.FlagDockerConfigPath),
@@ -53,10 +80,23 @@ var CLI = &cli.Command{
 		cflag(FlagShowSpecialPerms),
 		cflag(FlagChangeDataHash),
 		cflag(FlagExportAllDataArtifacts),
+		cflag(FlagDetectIdentities),
+		cflag(FlagDetectIdentitiesParam),
+		cflag(FlagDetectIdentitiesDumpRaw),
+		cflag(FlagDetectScheduledTasks),
+		cflag(FlagDetectScheduledTasksParam),
+		cflag(FlagDetectScheduledTasksDumpRaw),
+		cflag(FlagDetectServices),
+		cflag(FlagDetectServicesParam),
+		cflag(FlagDetectServicesDumpRaw),
+		cflag(FlagDetectSystemHooks),
+		cflag(FlagDetectSystemHooksParam),
+		cflag(FlagDetectSystemHooksDumpRaw),
 		commands.Cflag(commands.FlagRemoveFileArtifacts),
 	},
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleFormat))
+		_ = ctx.String(commands.FlagCommandParamsFile)
 
 		targetRef := ctx.String(commands.FlagTarget)
 
@@ -80,8 +120,77 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
-		doDetectAllCertFiles := ctx.Bool(FlagDetectAllCertFiles)
-		doDetectAllCertPKFiles := ctx.Bool(FlagDetectAllCertPKFiles)
+		detectIdentities, err := getDetectOpParam(ctx,
+			FlagDetectIdentities,
+			FlagDetectIdentitiesParam,
+			FlagDetectIdentitiesDumpRaw,
+			detectIdentitiesDumpRawDefault,
+			detectIdentitiesOpParamKeys)
+		if err != nil {
+			xc.Out.Error("param.detect_identities", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
+		detectScheduledTasks, err := getDetectOpParam(ctx,
+			FlagDetectScheduledTasks,
+			FlagDetectScheduledTasksParam,
+			FlagDetectScheduledTasksDumpRaw,
+			detectScheduledTasksDumpRawDefault,
+			detectScheduledTasksOpParamKeys)
+		if err != nil {
+			xc.Out.Error("param.detect_scheduled_tasks", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
+		detectServices, err := getDetectOpParam(ctx,
+			FlagDetectServices,
+			FlagDetectServicesParam,
+			FlagDetectServicesDumpRaw,
+			detectServicesDumpRawDefault,
+			detectServicesOpParamKeys)
+		if err != nil {
+			xc.Out.Error("param.detect_services", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
+		detectSystemHooks, err := getDetectOpParam(ctx,
+			FlagDetectSystemHooks,
+			FlagDetectSystemHooksParam,
+			FlagDetectSystemHooksDumpRaw,
+			detectSystemHooksDumpRawDefault,
+			detectSystemHooksOpParamKeys)
+		if err != nil {
+			xc.Out.Error("param.detect_system_hooks", err.Error())
+			xc.Out.State("exited",
+				ovars{
+					"exit.code": -1,
+				})
+			xc.Exit(-1)
+		}
+
+		//todo:
+		//1. migrate all param fields to CommandParams
+		//2. load command params from file if commands.FlagCommandParamsFile is provided
+		cparams := &CommandParams{
+			DetectAllCertFiles:   ctx.Bool(FlagDetectAllCertFiles),
+			DetectAllCertPKFiles: ctx.Bool(FlagDetectAllCertPKFiles),
+			DetectIdentities:     detectIdentities,
+			DetectScheduledTasks: detectScheduledTasks,
+			DetectServices:       detectServices,
+			DetectSystemHooks:    detectSystemHooks,
+		}
 
 		xdArtifactsPath := ctx.String(FlagExportAllDataArtifacts)
 
@@ -229,6 +338,7 @@ var CLI = &cli.Command{
 		OnCommand(
 			xc,
 			gcvalues,
+			cparams,
 			targetRef,
 			doPull,
 			dockerConfigPath,
@@ -257,8 +367,6 @@ var CLI = &cli.Command{
 			doReuseSavedImage,
 			doRmFileArtifacts,
 			utf8Detector,
-			doDetectAllCertFiles,
-			doDetectAllCertPKFiles,
 			xdArtifactsPath,
 		)
 
@@ -525,3 +633,84 @@ func parseDetectUTF8(raw string) (*dockerimage.UTF8Detector, error) {
 
 	return &detector, nil
 }
+
+func getDetectOpParam(
+	ctx *cli.Context,
+	enableFlag string,
+	kvListFlag string,
+	dumpRawFlag string,
+	defaultDumpRawFile string,
+	validOpParamKeys map[string]struct{}) (*DetectOpParam, error) {
+	var param DetectOpParam
+
+	enable := ctx.Bool(enableFlag)
+	kvList := ctx.StringSlice(kvListFlag)
+	dumpRaw := ctx.String(dumpRawFlag)
+
+	if enable == false && len(kvList) == 0 && dumpRaw == "" {
+		return &param, nil
+	}
+
+	param.Enabled = true
+	param.InputParams = map[string]string{}
+	for _, raw := range kvList {
+		raw = strings.TrimSpace(raw)
+		parts := strings.SplitN(raw, "=", 2)
+		if len(parts) != 2 {
+			continue
+		}
+
+		if parts[0] == "" || parts[1] == "" {
+			continue
+		}
+
+		if _, found := validOpParamKeys[parts[0]]; !found {
+			continue
+		}
+
+		param.InputParams[parts[0]] = parts[1]
+	}
+
+	if dumpRaw != "" {
+		param.DumpRaw = true
+		switch dumpRaw {
+		case ".":
+			param.OutputPath = defaultDumpRawFile
+			return &param, nil
+		case "console":
+			param.IsConsoleOut = true
+			return &param, nil
+		case "no":
+			return &param, nil
+		}
+
+		parts := strings.SplitN(dumpRaw, ":", 2)
+		if parts[1] == "" {
+			param.IsConsoleOut = true
+			return &param, nil
+		}
+
+		switch parts[0] {
+		case "dir":
+			param.IsDirOut = true
+		default: //"file"
+			param.OutputPath = parts[1]
+		}
+	}
+
+	return &param, nil
+}
+
+const (
+	detectIdentitiesDumpRawDefault     = "./raw-identities.tar"
+	detectScheduledTasksDumpRawDefault = "./raw-scheduled-tasks.tar"
+	detectServicesDumpRawDefault       = "./raw-services.tar"
+	detectSystemHooksDumpRawDefault    = "./raw-system-hooks.tar"
+)
+
+var (
+	detectIdentitiesOpParamKeys     = map[string]struct{}{} //no keys yet
+	detectScheduledTasksOpParamKeys = map[string]struct{}{} //no keys yet
+	detectServicesOpParamKeys       = map[string]struct{}{} //no keys yet
+	detectSystemHooksOpParamKeys    = map[string]struct{}{} //no keys yet
+)

@@ -13,6 +13,7 @@ var CommandSuggestion = prompt.Suggest{
 
 var CommandFlagSuggestions = &commands.FlagSuggestions{
 	Names: []prompt.Suggest{
+		{Text: commands.FullFlagName(commands.FlagCommandParamsFile), Description: commands.FlagCommandParamsFileUsage},
 		{Text: commands.FullFlagName(commands.FlagTarget), Description: commands.FlagTargetUsage},
 		{Text: commands.FullFlagName(commands.FlagPull), Description: commands.FlagPullUsage},
 		{Text: commands.FullFlagName(commands.FlagShowPullLogs), Description: commands.FlagShowPullLogsUsage},
@@ -45,6 +46,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(commands.FlagRemoveFileArtifacts), Description: commands.FlagRemoveFileArtifactsUsage},
 	},
 	Values: map[string]commands.CompleteValue{
+		commands.FullFlagName(commands.FlagCommandParamsFile):   commands.CompleteFile,
 		commands.FullFlagName(commands.FlagPull):                commands.CompleteBool,
 		commands.FullFlagName(commands.FlagShowPullLogs):        commands.CompleteBool,
 		commands.FullFlagName(commands.FlagDockerConfigPath):    commands.CompleteFile,

@@ -26,6 +26,7 @@ var CLI = &cli.Command{
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Flags: append([]cli.Flag{
+		commands.Cflag(commands.FlagCommandParamsFile),
 		commands.Cflag(commands.FlagTarget),
 		commands.Cflag(commands.FlagPull),
 		commands.Cflag(commands.FlagDockerConfigPath),
@@ -169,6 +170,7 @@ var CLI = &cli.Command{
 	}, commands.HTTPProbeFlags()...),
 	Action: func(ctx *cli.Context) error {
 		xc := app.NewExecutionContext(Name, ctx.String(commands.FlagConsoleFormat))
+		_ = ctx.String(commands.FlagCommandParamsFile)
 
 		cbOpts, err := GetContainerBuildOptions(ctx)
 		if err != nil {

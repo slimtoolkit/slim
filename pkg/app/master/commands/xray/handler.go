@@ -51,6 +51,7 @@ const (
 func OnCommand(
 	xc *app.ExecutionContext,
 	gparams *commands.GenericParams,
+	cparams *CommandParams,
 	targetRef string,
 	doPull bool,
 	dockerConfigPath string,
@@ -79,8 +80,6 @@ func OnCommand(
 	doReuseSavedImage bool,
 	doRmFileArtifacts bool,
 	utf8Detector *dockerimage.UTF8Detector,
-	doDetectAllCertFiles bool,
-	doDetectAllCertPKFiles bool,
 	xdArtifactsPath string,
 ) {
 	const cmdName = Name
@@ -337,6 +336,19 @@ func OnCommand(
 		logger.Debugf("exported image already exists - %s", iaPath)
 	}
 
+	pp := &dockerimage.ProcessorParams{
+		DetectIdentities: &dockerimage.DetectOpParam{
+			Enabled:      cparams.DetectIdentities.Enabled,
+			DumpRaw:      cparams.DetectIdentities.DumpRaw,
+			IsConsoleOut: cparams.DetectIdentities.IsConsoleOut,
+			IsDirOut:     cparams.DetectIdentities.IsDirOut,
+			OutputPath:   cparams.DetectIdentities.OutputPath,
+			InputParams:  cparams.DetectIdentities.InputParams,
+		},
+		DetectAllCertFiles:   cparams.DetectAllCertFiles,
+		DetectAllCertPKFiles: cparams.DetectAllCertPKFiles,
+	}
+
 	xc.Out.Info("image.data.inspection.process.image.start")
 	imagePkg, err := dockerimage.LoadPackage(
 		iaPath,
@@ -349,8 +361,7 @@ func OnCommand(
 		changePathMatchers,
 		changeDataMatchers,
 		utf8Detector,
-		doDetectAllCertFiles,
-		doDetectAllCertPKFiles)
+		pp)
 
 	errutil.FailOn(err)
 	xc.Out.Info("image.data.inspection.process.image.end")
@@ -483,6 +494,7 @@ func OnCommand(
 		changeDataHashMatchers,
 		changePathMatchers,
 		changeDataMatchers,
+		cparams,
 		cmdReport)
 
 	if doAddImageManifest {
@@ -604,6 +616,7 @@ func printImagePackage(
 	changeDataHashMatchers map[string]*dockerimage.ChangeDataHashMatcher,
 	changePathMatchers []*dockerimage.ChangePathMatcher,
 	changeDataMatchers map[string]*dockerimage.ChangeDataMatcher,
+	cparams *CommandParams,
 	cmdReport *report.XrayCommand) {
 	var allChangesCount int
 	var addChangesCount int
@@ -616,8 +629,33 @@ func printImagePackage(
 			"value": len(pkg.Layers),
 		})
 
+	//NOTE: all this cmdReport.ImageReport logic should be moved outside of this function
 	cmdReport.ImageReport = &dockerimage.ImageReport{
 		Stats: pkg.Stats,
+	}
+
+	if cparams.DetectIdentities.Enabled {
+		cmdReport.ImageReport.Identities = pkg.ProcessIdentityData()
+
+		if cmdReport.ImageReport.Identities != nil {
+			xc.Out.Info("image.identities.stats",
+				ovars{
+					"user_count":  len(cmdReport.ImageReport.Identities.Users),
+					"group_count": len(cmdReport.ImageReport.Identities.Groups),
+				})
+
+			for username, userInfo := range cmdReport.ImageReport.Identities.Users {
+				xc.Out.Info("image.identities.user",
+					ovars{
+						"username":          username,
+						"uid":               userInfo.UID,
+						"home":              userInfo.Home,
+						"shell":             userInfo.Shell,
+						"no_login_shell":    userInfo.NoLoginShell,
+						"no_password_login": userInfo.ShadowPassword.NoPasswordLogin,
+					})
+			}
+		}
 	}
 
 	for k := range pkg.Certs.Bundles {

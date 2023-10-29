@@ -28,6 +28,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/certdiscover"
 	"github.com/docker-slim/docker-slim/pkg/ipc/command"
 	"github.com/docker-slim/docker-slim/pkg/report"
+	"github.com/docker-slim/docker-slim/pkg/sysidentity"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	"github.com/docker-slim/docker-slim/pkg/version"
@@ -267,7 +268,7 @@ type Processor interface {
 	PrepareEnv(cmd *command.StartMonitor) error
 
 	// Dump the creport and the files to the artifacts folder.
-	ProcessReports(
+	Process(
 		cmd *command.StartMonitor,
 		mountPoint string,
 		peReport *report.PeMonitorReport,
@@ -432,7 +433,7 @@ func (a *processor) PrepareEnv(cmd *command.StartMonitor) error {
 	return nil
 }
 
-func (a *processor) ProcessReports(
+func (a *processor) Process(
 	cmd *command.StartMonitor,
 	mountPoint string,
 	peReport *report.PeMonitorReport,
@@ -440,7 +441,7 @@ func (a *processor) ProcessReports(
 	ptReport *report.PtMonitorReport,
 ) error {
 	//TODO: when peReport is available filter file events from fanReport
-	logger := log.WithField("op", "processor.ProcessReports")
+	logger := log.WithField("op", "processor.Process")
 	logger.Trace("call")
 	defer logger.Trace("exit")
 
@@ -1821,14 +1822,18 @@ copyBsaFiles:
 		}
 	}
 
-	if p.cmd.AppUser != "" {
+	//was conditional: if p.cmd.AppUser != ""
+	//NOTE:
+	//we may need the user info even if the caller didn't explicitly indicated it
+	//makes this conditional again when/if we can fully analyze the target app(s)
+	//to understand if it really needs the user info from the system
+	copyBasicUserInfo := func() {
 		//always copy the '/etc/passwd' file when we have a user
 		//later: do it only when AppUser is a name (not UID)
-		passwdFilePath := "/etc/passwd"
-		passwdFileTargetPath := fmt.Sprintf("%s/files%s", p.storeLocation, passwdFilePath)
-		if _, err := os.Stat(passwdFilePath); err == nil {
+		dstPasswdFilePath := fmt.Sprintf("%s/files%s", p.storeLocation, sysidentity.PasswdFilePath)
+		if _, err := os.Stat(sysidentity.PasswdFilePath); err == nil {
 			//if err := cpFile(passwdFilePath, passwdFileTargetPath); err != nil {
-			if err := fsutil.CopyRegularFile(p.cmd.KeepPerms, passwdFilePath, passwdFileTargetPath, true); err != nil {
+			if err := fsutil.CopyRegularFile(p.cmd.KeepPerms, sysidentity.PasswdFilePath, dstPasswdFilePath, true); err != nil {
 				log.Debugf("sensor: monitor - error copying user info file => %v", err)
 			}
 		} else {
@@ -1839,6 +1844,8 @@ copyBsaFiles:
 			}
 		}
 	}
+
+	copyBasicUserInfo()
 
 copyIncludes:
 	for inPath, isDir := range includePaths {

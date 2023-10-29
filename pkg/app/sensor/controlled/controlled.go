@@ -222,14 +222,14 @@ func (s *Sensor) processMonitoringResults(mon monitor.CompositeMonitor) error {
 		return fmt.Errorf("composite monitor failed: %w", err)
 	}
 
-	if err := s.artifactor.ProcessReports(
+	if err := s.artifactor.Process(
 		mon.StartCommand(),
 		s.mountPoint,
 		report.PeReport,
 		report.FanReport,
 		report.PtReport,
 	); err != nil {
-		log.WithError(err).Error("sensor: artifact.ProcessReports() failed")
+		log.WithError(err).Error("sensor: artifact.Process() failed")
 		return fmt.Errorf("saving reports failed: %w", err)
 	}
 	return nil // Clean exit

@@ -13,6 +13,7 @@ var CommandSuggestion = prompt.Suggest{
 
 var CommandFlagSuggestions = &commands.FlagSuggestions{
 	Names: []prompt.Suggest{
+		{Text: commands.FullFlagName(commands.FlagCommandParamsFile), Description: commands.FlagCommandParamsFileUsage},
 		{Text: commands.FullFlagName(commands.FlagTarget), Description: commands.FlagTargetUsage},
 		{Text: commands.FullFlagName(commands.FlagComposeFile), Description: commands.FlagComposeFileUsage},
 		{Text: commands.FullFlagName(commands.FlagTargetComposeSvc), Description: commands.FlagTargetComposeSvcUsage},
@@ -160,6 +161,7 @@ var CommandFlagSuggestions = &commands.FlagSuggestions{
 		{Text: commands.FullFlagName(FlagObfuscateMetadata), Description: FlagObfuscateMetadataUsage},
 	},
 	Values: map[string]commands.CompleteValue{
+		commands.FullFlagName(commands.FlagCommandParamsFile): commands.CompleteFile,
 		//NOTE: with FlagPull target complete needs to check remote registries too
 		commands.FullFlagName(commands.FlagPull):                           commands.CompleteBool,
 		commands.FullFlagName(commands.FlagShowPullLogs):                   commands.CompleteBool,

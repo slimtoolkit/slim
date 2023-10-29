@@ -23,6 +23,7 @@ import (
 
 	"github.com/docker-slim/docker-slim/pkg/certdiscover"
 	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
+	"github.com/docker-slim/docker-slim/pkg/sysidentity"
 	"github.com/docker-slim/docker-slim/pkg/system"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 )
@@ -44,6 +45,7 @@ type Package struct {
 	SpecialPermRefs SpecialPermsRefsInfo
 	Certs           CertsRefInfo
 	CACerts         CertsRefInfo
+	IdentityData    *sysidentity.DataSet
 }
 
 type CertsRefInfo struct {
@@ -84,6 +86,7 @@ type ImageReport struct {
 	Certs        CertsInfo                        `json:"certs"`
 	CACerts      CertsInfo                        `json:"ca_certs"`
 	BuildInfo    *BuildKitBuildInfo               `json:"build_info,omitempty"`
+	Identities   *sysidentity.Report              `json:"identities,omitempty"`
 }
 
 type DuplicateFilesReport struct {
@@ -429,6 +432,7 @@ func newPackage() *Package {
 			PrivateKeys:     map[string]struct{}{},
 			PrivateKeyLinks: map[string]string{},
 		},
+		IdentityData: sysidentity.NewDataSet(),
 	}
 
 	return &pkg
@@ -454,6 +458,34 @@ func newLayer(id string, topChangesMax int) *Layer {
 	return &layer
 }
 
+//todo: refactor, so we don't have duplicated structures
+
+type DetectOpParam struct {
+	/// Operation is enabled
+	Enabled bool
+	/// Dump/save raw data
+	DumpRaw bool
+	/// Dump raw data to console
+	IsConsoleOut bool
+	/// Dump raw data to directory (otherwise save to an archive file)
+	IsDirOut bool
+	/// Output path (directory or archive path)
+	OutputPath string
+	/// Input parameters for the operation
+	InputParams map[string]string
+}
+
+// todo: add other processor params (passed separately for now)
+type ProcessorParams struct {
+	DetectIdentities     *DetectOpParam
+	DetectScheduledTasks *DetectOpParam
+	DetectServices       *DetectOpParam
+	DetectSystemHooks    *DetectOpParam
+
+	DetectAllCertFiles   bool
+	DetectAllCertPKFiles bool
+}
+
 func LoadPackage(archivePath string,
 	imageID string,
 	skipObjects bool,
@@ -464,8 +496,7 @@ func LoadPackage(archivePath string,
 	changePathMatchers []*ChangePathMatcher,
 	changeDataMatchers map[string]*ChangeDataMatcher,
 	utf8Detector *UTF8Detector,
-	doDetectAllCertFiles bool,
-	doDetectAllCertPKFiles bool,
+	processorParams *ProcessorParams,
 ) (*Package, error) {
 	imageID = dockerutil.CleanImageID(imageID)
 
@@ -582,8 +613,7 @@ func LoadPackage(archivePath string,
 						cpmDumps,
 						changeDataMatchers,
 						utf8Detector,
-						doDetectAllCertFiles,
-						doDetectAllCertPKFiles,
+						processorParams,
 					)
 					if err != nil {
 						log.Errorf("dockerimage.LoadPackage: error reading layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
@@ -858,6 +888,20 @@ func LoadPackage(archivePath string,
 	return pkg, nil
 }
 
+func (ref *Package) ProcessIdentityData() *sysidentity.Report {
+	if ref.IdentityData == nil {
+		return nil
+	}
+
+	report, err := sysidentity.NewReportFromData(ref.IdentityData)
+	if err != nil {
+		log.Errorf("dockerimage.Package.ProcessIdentityData: error - %v", err)
+		return nil
+	}
+
+	return report
+}
+
 func hasChangePathMatcherDumps(changePathMatchers []*ChangePathMatcher) bool {
 	for _, cpm := range changePathMatchers {
 		if cpm.PathPattern != "" && cpm.Dump {
@@ -895,8 +939,7 @@ func layerFromStream(
 	cpmDumps bool,
 	changeDataMatchers map[string]*ChangeDataMatcher,
 	utf8Detector *UTF8Detector,
-	doDetectAllCertFiles bool,
-	doDetectAllCertPKFiles bool,
+	processorParams *ProcessorParams,
 ) (*Layer, error) {
 
 	layer := newLayer(layerID, topChangesMax)
@@ -1083,8 +1126,7 @@ func layerFromStream(
 					cpmDumps,
 					changeDataMatchers,
 					utf8Detector,
-					doDetectAllCertFiles,
-					doDetectAllCertPKFiles,
+					processorParams,
 				)
 				if err != nil {
 					log.Errorf("layerFromStream: error inspecting layer file (%s) - (%v) - %v", object.Name, layerID, err)
@@ -1168,8 +1210,7 @@ func inspectFile(
 	cpmDumps bool,
 	changeDataMatchers map[string]*ChangeDataMatcher,
 	utf8Detector *UTF8Detector,
-	doDetectAllCertFiles bool,
-	doDetectAllCertPKFiles bool,
+	processorParams *ProcessorParams,
 ) error {
 	//TODO: refactor and enhance the OS Distro detection logic
 	fullPath := object.Name
@@ -1197,21 +1238,28 @@ func inspectFile(
 		isKnownCertFile = true
 	}
 
-	if system.IsOSReleaseFile(fullPath) ||
+	if (processorParams.DetectIdentities.Enabled &&
+		sysidentity.IsSourceFile(fullPath)) ||
+		system.IsOSReleaseFile(fullPath) ||
 		system.IsOSShellsFile(fullPath) ||
 		len(changeDataMatchers) > 0 ||
 		cpmDumps ||
 		cdhmDumps ||
 		utf8Detector != nil ||
-		(!isKnownCertFile && doDetectAllCertFiles) ||
-		(!isKnownCertFile && doDetectAllCertPKFiles) {
+		(!isKnownCertFile && processorParams.DetectAllCertFiles) ||
+		(!isKnownCertFile && processorParams.DetectAllCertPKFiles) {
 		data, err := io.ReadAll(reader)
 		if err != nil {
 			return err
 		}
 
+		if processorParams.DetectIdentities.Enabled &&
+			sysidentity.IsSourceFile(fullPath) {
+			pkg.IdentityData.AddData(fullPath, data)
+		}
+
 		if !isKnownCertFile {
-			if doDetectAllCertFiles {
+			if processorParams.DetectAllCertFiles {
 				//NOTE:
 				//not limiting detection to the main cert directories,
 				//but checking the CA cert dir prefix to know where to put it
@@ -1224,7 +1272,7 @@ func inspectFile(
 				}
 			}
 
-			if doDetectAllCertPKFiles {
+			if processorParams.DetectAllCertPKFiles {
 				//NOTE: not limiting detection to the main cert private key directories
 				if certdiscover.IsPrivateKeyData(data) {
 					if certdiscover.IsCACertPKDirPath(fullPath) {

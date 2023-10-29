@@ -70,7 +70,7 @@ func (a *artifactorStub) Archive() error {
 	return nil
 }
 
-func (a *artifactorStub) ProcessReports(
+func (a *artifactorStub) Process(
 	cmd *command.StartMonitor,
 	mountPoint string,
 	peReport *report.PeMonitorReport,

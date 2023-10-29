@@ -123,14 +123,14 @@ func (s *Sensor) Run() error {
 	s.exe.HookMonitorPostShutdown()
 	s.exe.PubEvent(event.StopMonitorDone)
 
-	if err := s.artifactor.ProcessReports(
+	if err := s.artifactor.Process(
 		cmd,
 		s.mountPoint,
 		report.PeReport,
 		report.FanReport,
 		report.PtReport,
 	); err != nil {
-		log.WithError(err).Error("sensor: artifact.ProcessReports() failed")
+		log.WithError(err).Error("sensor: artifact.Process() failed")
 		return fmt.Errorf("saving reports failed: %w", err)
 	}
 
