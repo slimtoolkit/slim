@@ -993,6 +993,73 @@ func (p *store) saveWorkdir(excludePatterns []string) {
 	//resolve symlinks
 }
 
+/////////////////////////////////////////////////////////
+
+const (
+	ziDirOne    = "/usr/lib/zoneinfo"
+	ziDirTwo    = "/usr/share/zoneinfo"
+	ziDirThree  = "/usr/share/zoneinfo-icu"
+	ziEnv       = "TZDIR" //TODO: lookup zoneinfo data path from TZDIR
+	ziTimezone  = "/etc/timezone"
+	ziLocaltime = "/etc/localtime"
+)
+
+var ziDirs = []string{
+	ziDirOne,
+	ziDirTwo,
+	ziDirThree,
+}
+
+var ziFiles = []string{
+	ziTimezone,
+	ziLocaltime,
+}
+
+func (p *store) saveZoneInfo() {
+	if !p.cmd.IncludeZoneInfo {
+		return
+	}
+
+	for _, fp := range ziFiles {
+		if !fsutil.Exists(fp) {
+			log.Debugf("sensor.store.saveZoneInfo: no target file '%s' (skipping...)", fp)
+			continue
+		}
+
+		log.Tracef("sensor.store.saveZoneInfo: copy %s", fp)
+		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, fp)
+		if fsutil.Exists(dstPath) {
+			log.Debugf("sensor.store.saveZoneInfo: already copied target file '%s' (skipping...)", dstPath)
+			continue
+		}
+
+		if err := fsutil.CopyFile(p.cmd.KeepPerms, fp, dstPath, true); err != nil {
+			log.Debugf("sensor.store.saveZoneInfo: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
+		}
+	}
+
+	for _, dp := range ziDirs {
+		if !fsutil.DirExists(dp) {
+			log.Debugf("sensor.store.saveZoneInfo: no target directory '%s' (skipping...)", dp)
+			continue
+		}
+
+		log.Tracef("sensor.store.saveZoneInfo: copy dir %s", dp)
+		dstPath := fmt.Sprintf("%s/files%s", p.storeLocation, dp)
+
+		err, errs := fsutil.CopyDir(p.cmd.KeepPerms, dp, dstPath, true, true, nil, nil, nil)
+		if err != nil {
+			log.Debugf("sensor.store.saveZoneInfo: fsutil.CopyDir(%s,%s) error: %v", dp, dstPath, err)
+		}
+
+		if len(errs) > 0 {
+			log.Debugf("sensor.store.saveZoneInfo: fsutil.CopyDir(%v,%v) copy errors: %+v", dp, dstPath, errs)
+		}
+	}
+}
+
+/////////////////////////////////////////////////////////
+
 const (
 	osLibDir          = "/lib/"
 	osUsrLibDir       = "/usr/lib/"
@@ -1960,8 +2027,8 @@ copyBinIncludes:
 	p.saveWorkdir(excludePatterns)
 
 	p.saveOSLibsNetwork()
-
 	p.saveCertsData()
+	p.saveZoneInfo()
 
 	if fsutil.DirExists("/tmp") {
 		tdTargetPath := fmt.Sprintf("%s/files/tmp", p.storeLocation)

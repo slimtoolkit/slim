@@ -260,8 +260,8 @@ func OnCommand(
 		false, //doIncludeCertPKDirs
 		false, //doIncludeNew
 		false, //doIncludeOSLibsNet
+		false, //doIncludeZoneInfo
 		nil,   //selectedNetNames
-		//nil,
 		gparams.Debug,
 		logLevel,
 		logFormat,

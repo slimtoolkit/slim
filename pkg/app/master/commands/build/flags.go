@@ -50,6 +50,8 @@ const (
 
 	FlagIncludeOSLibsNet = "include-oslibs-net"
 
+	FlagIncludeZoneInfo = "include-zoneinfo"
+
 	FlagIncludeCertAll     = "include-cert-all"
 	FlagIncludeCertBundles = "include-cert-bundles-only"
 	FlagIncludeCertDirs    = "include-cert-dirs"
@@ -139,6 +141,8 @@ const (
 	FlagIncludePathsCreportFileUsage = "Keep files from the referenced creport"
 
 	FlagIncludeOSLibsNetUsage = "Keep the common networking OS libraries"
+
+	FlagIncludeZoneInfoUsage = "Keep the OS/libc zoneinfo data"
 
 	FlagIncludeCertAllUsage     = "Keep all discovered cert files"
 	FlagIncludeCertBundlesUsage = "Keep only cert bundles"
@@ -297,6 +301,13 @@ var Flags = map[string]cli.Flag{
 		Value:   true, //enabled by default
 		Usage:   FlagIncludeOSLibsNetUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_OSLIBS_NET"},
+	},
+	////
+	FlagIncludeZoneInfo: &cli.BoolFlag{
+		Name:    FlagIncludeZoneInfo,
+		Value:   false,
+		Usage:   FlagIncludeZoneInfoUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_ZONEINFO"},
 	},
 	////
 	FlagIncludeCertAll: &cli.BoolFlag{

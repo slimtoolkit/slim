@@ -124,6 +124,7 @@ type Inspector struct {
 	DoIncludeCertPKDirs   bool
 	DoIncludeNew          bool
 	DoIncludeOSLibsNet    bool
+	DoIncludeZoneInfo     bool
 	SelectedNetworks      map[string]NetNameInfo
 	DoDebug               bool
 	LogLevel              string
@@ -201,6 +202,7 @@ func NewInspector(
 	doIncludeCertPKDirs bool,
 	doIncludeNew bool,
 	doIncludeOSLibsNet bool,
+	doIncludeZoneInfo bool,
 	selectedNetworks map[string]NetNameInfo,
 	//serviceAliases []string,
 	doDebug bool,
@@ -255,6 +257,7 @@ func NewInspector(
 		DoIncludeCertPKDirs:   doIncludeCertPKDirs,
 		DoIncludeNew:          doIncludeNew,
 		DoIncludeOSLibsNet:    doIncludeOSLibsNet,
+		DoIncludeZoneInfo:     doIncludeZoneInfo,
 		SelectedNetworks:      selectedNetworks,
 		DoDebug:               doDebug,
 		LogLevel:              logLevel,
@@ -813,6 +816,7 @@ func (i *Inspector) RunContainer() error {
 	cmd.IncludeCertPKDirs = i.DoIncludeCertPKDirs
 	cmd.IncludeNew = i.DoIncludeNew
 	cmd.IncludeOSLibsNet = i.DoIncludeOSLibsNet
+	cmd.IncludeZoneInfo = i.DoIncludeZoneInfo
 
 	if runAsUser != "" {
 		cmd.AppUser = runAsUser

@@ -1018,9 +1018,13 @@ func CopyDirOnly(clone bool, src, dst string) error {
 
 // CopyDir copies a directory
 func CopyDir(clone bool,
-	src, dst string,
-	copyRelPath, skipErrors bool,
-	excludePatterns []string, ignoreDirNames, ignoreFileNames map[string]struct{}) (error, []error) {
+	src string,
+	dst string,
+	copyRelPath bool,
+	skipErrors bool,
+	excludePatterns []string,
+	ignoreDirNames map[string]struct{},
+	ignoreFileNames map[string]struct{}) (error, []error) {
 	log.Debugf("CopyDir(%v,%v,%v,%v,%#v,...)", src, dst, copyRelPath, skipErrors, excludePatterns)
 
 	if src == "" {
