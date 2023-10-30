@@ -12,7 +12,7 @@ require (
 	github.com/compose-spec/compose-go v0.0.0-20210916141509-a7e1bc322970
 	github.com/docker-slim/go-update v0.0.0-20190422071557-ed40247aff59
 	github.com/docker-slim/uiprogress v0.0.0-20190505193231-9d4396e6d40b
-	github.com/docker/docker v23.0.1+incompatible
+	github.com/docker/docker v24.0.7+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.13.0
@@ -38,6 +38,7 @@ require (
 )
 
 require (
+	github.com/AdaLogics/go-fuzz-headers v0.0.0-20230811130428-ced1acdcaa24 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
 	github.com/Microsoft/go-winio v0.6.0 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect

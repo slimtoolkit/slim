@@ -87,7 +87,7 @@ func UnpackLayer(dest string, layer io.Reader, options *TarOptions) (size int64,
 				basename := filepath.Base(hdr.Name)
 				aufsHardlinks[basename] = hdr
 				if aufsTempdir == "" {
-					if aufsTempdir, err = os.MkdirTemp("", "dockerplnk"); err != nil {
+					if aufsTempdir, err = os.MkdirTemp(dest, "dockerplnk"); err != nil {
 						return 0, err
 					}
 					defer os.RemoveAll(aufsTempdir)
@@ -121,7 +121,7 @@ func UnpackLayer(dest string, layer io.Reader, options *TarOptions) (size int64,
 				if err != nil {
 					return 0, err
 				}
-				err = filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
+				err = filepath.WalkDir(dir, func(path string, info os.DirEntry, err error) error {
 					if err != nil {
 						if os.IsNotExist(err) {
 							err = nil // parent was deleted
@@ -132,8 +132,7 @@ func UnpackLayer(dest string, layer io.Reader, options *TarOptions) (size int64,
 						return nil
 					}
 					if _, exists := unpackedPaths[path]; !exists {
-						err := os.RemoveAll(path)
-						return err
+						return os.RemoveAll(path)
 					}
 					return nil
 				})
@@ -222,6 +221,25 @@ func ApplyLayer(dest string, layer io.Reader) (int64, error) {
 // Returns the size in bytes of the contents of the layer.
 func ApplyUncompressedLayer(dest string, layer io.Reader, options *TarOptions) (int64, error) {
 	return applyLayerHandler(dest, layer, options, false)
+}
+
+// IsEmpty checks if the tar archive is empty (doesn't contain any entries).
+func IsEmpty(rd io.Reader) (bool, error) {
+	decompRd, err := DecompressStream(rd)
+	if err != nil {
+		return true, fmt.Errorf("failed to decompress archive: %v", err)
+	}
+	defer decompRd.Close()
+
+	tarReader := tar.NewReader(decompRd)
+	if _, err := tarReader.Next(); err != nil {
+		if err == io.EOF {
+			return true, nil
+		}
+		return false, fmt.Errorf("failed to read next archive header: %v", err)
+	}
+
+	return false, nil
 }
 
 // do the bulk load of ApplyLayer, but allow for not calling DecompressStream
