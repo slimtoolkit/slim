@@ -130,7 +130,10 @@ func Run() {
 	ctx := context.Background()
 
 	if len(os.Args) > 1 && os.Args[1] == "control" {
-		runControlCommand(ctx)
+		if err := runControlCommand(ctx); err != nil {
+			fmt.Fprintln(os.Stderr, "Control command failed: "+err.Error())
+			os.Exit(1)
+		}
 		return
 	}
 
@@ -167,12 +170,6 @@ func Run() {
 		errutil.FailOn(err) // calls os.Exit(1)
 	}
 
-	// There is a number of errutil.FailOn() below, so no way to rely on defer:
-	// We need to make sure `exe` is closed before archiving - otherwise some
-	// artifacts might be missing due to the non-flushed buffers!
-
-	exe.HookSensorPostStart()
-
 	mondelFile := filepath.Join(*artifactsDir, report.DefaultMonDelFileName)
 	del := mondel.NewPublisher(ctx, *enableMondel, mondelFile)
 
@@ -184,7 +181,6 @@ func Run() {
 	}
 
 	if err := sen.Run(); err != nil {
-		exe.PubEvent(event.Error, err.Error())
 		log.WithError(err).Error("sensor: run finished with error")
 		if errors.Is(err, monitor.ErrInsufficientPermissions) {
 			log.Info("sensor: Instrumented containers require root and ALL capabilities enabled. Example: `docker run --user root --cap-add ALL app:v1-instrumented`")
@@ -194,13 +190,7 @@ func Run() {
 	}
 
 	exe.Close()
-	errutil.WarnOn(artifactor.Archive())
 
-	// We have to "stop" the execution and dump the artifacts
-	// before calling the pre-shutdown hook (that may want to
-	// upload the artifacts somewhere).
-	// Not ideal calling it after exe.Close() but should be safe.
-	exe.HookSensorPreShutdown()
 	log.Info("sensor: exiting...")
 }
 
@@ -297,24 +287,31 @@ func dumpAppBom() {
 	fmt.Printf("%s\n", out.String())
 }
 
-// sensor control <stop-target-app|change-log-level|...>
-func runControlCommand(ctx context.Context) {
+// sensor control <stop-target-app|wait-for-event|change-log-level|...>
+func runControlCommand(ctx context.Context) error {
 	if len(os.Args) < 3 {
-		fmt.Fprintln(os.Stderr, "Missing control command")
-		os.Exit(1)
+		return errors.New("missing command")
 	}
 
 	cmd := control.Command(os.Args[2])
 
 	switch cmd {
 	case control.StopTargetAppCommand:
-		if err := control.ExecuteStopTargetAppCommand(ctx, *commandsFile, eventsFilePath()); err != nil {
-			fmt.Fprintln(os.Stderr, "Error stopping target app:", err)
-			os.Exit(1)
+		if err := control.ExecuteStopTargetAppCommand(ctx, *commandsFile); err != nil {
+			return fmt.Errorf("error stopping target app: %w", err)
+		}
+
+	case control.WaitForEventCommand:
+		if len(os.Args) < 4 {
+			return errors.New("missing event name")
+		}
+		if err := control.ExecuteWaitEvenCommand(ctx, eventsFilePath(), event.Type(os.Args[3])); err != nil {
+			return fmt.Errorf("error waiting for sensor event: %w", err)
 		}
 
 	default:
-		fmt.Fprintln(os.Stderr, "Unknown control command:", cmd)
-		os.Exit(1)
+		return fmt.Errorf("unknown command: %s", cmd)
 	}
+
+	return nil
 }

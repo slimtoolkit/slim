@@ -615,7 +615,10 @@ func TestControlCommands_StopTargetApp(t *testing.T) {
 
 	go testutil.Delayed(ctx, 5*time.Second, func() {
 		sensor.ExecuteControlCommandOrFail(t, ctx, control.StopTargetAppCommand)
-		// In the real world, there will be some time between
+		sensor.WaitForEventOrFail(t, ctx, event.StopMonitorDone)
+		sensor.WaitForEventOrFail(t, ctx, event.ShutdownSensorDone)
+
+		// In the real world, there might be some (long) time between
 		// the stop command and the target app signalling - maybe
 		// we need to simulate that here?
 		sensor.SignalOrFail(t, ctx, syscall.SIGQUIT)

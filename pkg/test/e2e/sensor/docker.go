@@ -98,12 +98,18 @@ func containerInspect(ctx context.Context, contID string) (dockerapi.Container, 
 
 func containerExec(ctx context.Context, contID string, arg ...string) (string, error) {
 	cmd := exec.CommandContext(ctx, "docker", append([]string{"container", "exec", contID}, arg...)...)
+
+	log.Debug("Executing: ", cmd.String())
+
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
 
 func containerLogs(ctx context.Context, contID string) (string, error) {
 	cmd := exec.CommandContext(ctx, "docker", "container", "logs", contID)
+
+	log.Debug("Executing: ", cmd.String())
+
 	out, err := cmd.CombinedOutput()
 	return string(out), err
 }
