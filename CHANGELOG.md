@@ -1,5 +1,28 @@
 # Releases
 
+## 1.40.5 (11/1/2023)
+
+### New Features
+
+- Sensor `control` commands to control sensor execution when running in the standalone mode (first command: `stop-target-app`).
+- `xray` - detect system identities (users, groups) and their properties (`--detect-identities` flag, enabled by default).
+- `build` - Keep the OS/libc zoneinfo data (`--include-zoneinfo` flag, disabled by default).
+- `build`/`profile` - Mon(itor) Data Event Log (aka `mondel`) - optional data event log for sensor monitors to log/stream monitor events (`--enable-mondel` main app flag, `--mondel`/`-n` sensor flag(s)).
+
+### Improvements
+
+- `target-app-running` sensor lifecycle hook.
+- `build`/`profile`: `--env-file` to load env vars from a file.
+- `build`/`profile`: basic input validation to ignore malformed env var data for the `--env` flag.
+- `build`: Using internal output image builder by default (`--image-build-engine` flag)
+- Renamed the reverse engineered Dockerfile from `Dockerfile.fat` 
+to `Dockerfile.reversed`
+
+### Bug Fixes
+
+- Various bug fixes
+
+
 ## 1.40.4 (8/25/2023)
 
 ### Improvements

@@ -196,9 +196,9 @@ Elixir application images:
 
 ## RECENT UPDATES
 
-Latest version: 1.40.4 (8/25/2023)
+Latest version: `1.40.5` (`11/1/2023`)
 
-The 1.40.4 release update the `debug` command improving its support for kubernetes and enhancing the overall debugging experience.
+The 1.40.5 release introduces a number of new features and improvements for the `debug`, `xray`, `build` and `profile` commands in addition to introducing monitor even log and control commands in the sensor.
 
 For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
 
@@ -215,15 +215,15 @@ slim update
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.40.4/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.4/dist_mac.zip`)
+   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.40.5/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.5/dist_mac.zip`)
 
-   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.40.4/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.4/dist_mac_m1.zip`)
+   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.40.5/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.5/dist_mac_m1.zip`)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.40.4/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.4/dist_linux.tar.gz`)
+   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.40.5/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.5/dist_linux.tar.gz`)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.40.4/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.4/dist_linux_arm.tar.gz`)
+   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.40.5/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.5/dist_linux_arm.tar.gz`)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.40.4/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.4/dist_linux_arm64.tar.gz`)
+   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.40.5/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.5/dist_linux_arm64.tar.gz`)
 
 2. Unzip the package and optionally move it to your bin directory.
 
@@ -387,6 +387,7 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--detect-utf8` - Detect utf8 files and optionally extract the discovered utf8 file content (possible values: "true" or "dump" or "dump:output_target.tgz" or "dump:output_target.tgz::max_size_bytes" or "dump:output_target.tgz:::max_size_bytes").
 - `--detect-all-certs` - Detect all certifcate files
 - `--detect-all-cert-pks` - Detect all certifcate private key files
+- `--detect-identities` - Detect system identities (users, groups) and their properties (default: true)
 - `--change-match-layers-only` - Show only layers with change matches (default: false).
 - `--export-all-data-artifacts` - TAR archive file path to export all text data artifacts (if value is set to `.` then the archive file path defaults to `./data-artifacts.tar`)
 - `--remove-file-artifacts` - Remove file artifacts when command is done (note: you'll loose the reverse engineered Dockerfile)
@@ -472,6 +473,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-cert-pk-dirs` - Keep known cert private key directories and all files in them
 - `--include-new` - Keep new files created by target during dynamic analysis (default value: true)
 - `--include-oslibs-net` - Keep the common networking OS libraries (default value: true)
+- `--include-zoneinfo` - Keep the OS/libc zoneinfo data (default value: false)
 - `--include-app-nuxt-dir` - Keep the root Nuxt.js app directory (default value: false)
 - `--include-app-nuxt-build-dir` - Keep the build Nuxt.js app directory (default value: false)
 - `--include-app-nuxt-dist-dir` - Keep the dist Nuxt.js app directory (default value: false)
@@ -491,7 +493,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--exclude-mounts` - Exclude mounted volumes from image (default value: true)
 - `--label` - Override or add LABEL analyzing image at runtime [can use this flag multiple times]
 - `--volume` - Add VOLUME analyzing image at runtime [can use this flag multiple times]
-- `--env` - Override ENV analyzing image at runtime [can use this flag multiple times]
+- `--env` - Add ENV analyzing target image at runtime [can use this flag multiple times]
+- `--env-file` - Load multiple environment variables from a file when analyzing target image at runtime.
 - `--workdir` - Override WORKDIR analyzing image at runtime
 - `--network` - Override default container network settings analyzing image at runtime
 - `--expose` - Use additional EXPOSE instructions analyzing image at runtime [can use this flag multiple times]
@@ -539,7 +542,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--image-build-engine` - Select image build engine: `internal` | `docker` | `none` (`internal` - build the output image without using Docker [default behavior], `docker` - build the output image with Docker, `none` - don't build the output image, allows you to do your own build with the tools you want to use, which you'll be able to do by pointing to the artifact directory where the `files.tar` and `Dockerfile` artifacts are located for the output image)
 - `--image-build-arch` - Select output image build architecture (use the standard container image names for the architectures without the OS part)
 - `--obfuscate-metadata` - Obfuscate the standard system and application metadata to make it more challenging to identify the image components (experimental flag, first version of obfuscation; inspired by the [`Malicious Compliance`](https://kccnceu2023.sched.com/event/1Hybu/malicious-compliance-reflections-on-trusting-container-scanners-ian-coldwater-independent-duffie-cooley-isovalent-brad-geesaman-ghost-security-rory-mccune-datadog) KubeCon EU 2023 talk)
-
+- `--enable-mondel` - Enable monitor data event log for sensor monitors to log/stream the events captured by those monitors (default: false)
 
 In the interactive CLI prompt mode you must specify the target image using the `--target` flag while in the traditional CLI mode you can use the `--target` flag or you can specify the target image as the last value in the command.
 
@@ -1078,11 +1081,11 @@ The demo runs on Mac OS X, but you can build a linux version. Note that these st
 
 1. Get the Slim app binaries:
 
-* [Mac](https://downloads.dockerslim.com/releases/1.40.4/dist_mac.zip),
-* [Mac M1](https://downloads.dockerslim.com/releases/1.40.4/dist_mac_m1.zip), 
-* [Linux](https://downloads.dockerslim.com/releases/1.40.4/dist_linux.tar.gz), 
-* [Linux ARM](https://downloads.dockerslim.com/releases/1.40.4/dist_linux_arm.tar.gz),
-* [Linux ARM64](https://downloads.dockerslim.com/releases/1.40.4/dist_linux_arm64.tar.gz) 
+* [Mac](https://downloads.dockerslim.com/releases/1.40.5/dist_mac.zip),
+* [Mac M1](https://downloads.dockerslim.com/releases/1.40.5/dist_mac_m1.zip), 
+* [Linux](https://downloads.dockerslim.com/releases/1.40.5/dist_linux.tar.gz), 
+* [Linux ARM](https://downloads.dockerslim.com/releases/1.40.5/dist_linux_arm.tar.gz),
+* [Linux ARM64](https://downloads.dockerslim.com/releases/1.40.5/dist_linux_arm64.tar.gz) 
 
 Unzip them and optionally add their directory to your `PATH` environment variable if you want to use the app from other locations.
 
