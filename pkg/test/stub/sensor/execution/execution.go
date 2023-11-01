@@ -51,6 +51,10 @@ func (e *executionStub) HookMonitorPreStart() {
 	// noop
 }
 
+func (e *executionStub) HookTargetAppRunning() {
+	// noop
+}
+
 func (e *executionStub) HookMonitorPostShutdown() {
 	// noop
 }

@@ -14,6 +14,7 @@ const (
 	sensorPostStart     kind = "sensor-post-start"
 	sensorPreShutdown   kind = "sensor-pre-shutdown"
 	monitorPreStart     kind = "monitor-pre-start"
+	targetAppRunning    kind = "target-app-running"
 	monitorPostShutdown kind = "monitor-post-shutdown"
 	monitorFailed       kind = "monitor-failed"
 )
@@ -33,6 +34,10 @@ func (h *hookExecutor) HookSensorPreShutdown() {
 
 func (h *hookExecutor) HookMonitorPreStart() {
 	h.doHook(monitorPreStart)
+}
+
+func (h *hookExecutor) HookTargetAppRunning() {
+	h.doHook(targetAppRunning)
 }
 
 func (h *hookExecutor) HookMonitorPostShutdown() {

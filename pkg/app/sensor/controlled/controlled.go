@@ -174,6 +174,9 @@ func (s *Sensor) runWithMonitor(mon monitor.CompositeMonitor) error {
 	log.Debug("sensor: monitor.worker - waiting to stop monitoring...")
 	log.Debug("sensor: error collector - waiting for errors...")
 
+	ticker := time.NewTicker(time.Second * 5)
+	defer ticker.Stop()
+
 	// Only two ways out of this: either StopMonitor or ShutdownSensor.
 	stopCommandReceived := false
 
@@ -202,7 +205,8 @@ loop:
 			log.WithError(err).Warn("sensor: non-critical monitor error condition")
 			s.exe.PubEvent(event.Error, monitor.NonCriticalError(err).Error())
 
-		case <-time.After(time.Second * 5):
+		case <-ticker.C:
+			s.exe.HookTargetAppRunning()
 			log.Debug(".")
 		} // eof: select
 	}

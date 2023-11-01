@@ -199,6 +199,7 @@ loop:
 			s.exe.PubEvent(event.Error, monitor.NonCriticalError(err).Error())
 
 		case <-ticker.C:
+			s.exe.HookTargetAppRunning()
 			log.Debug(".")
 		}
 
