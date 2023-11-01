@@ -27,6 +27,7 @@ type GlobalAppOptions struct {
 	NoColor      *bool   `json:"no_color,omitempty"`
 	Debug        *bool   `json:"debug,omitempty"`
 	Verbose      *bool   `json:"verbose,omitempty"`
+	Quiet        *bool   `json:"quiet,omitempty"`
 	LogLevel     *string `json:"log_level,omitempty"`
 	Log          *string `json:"log,omitempty"`
 	LogFormat    *string `json:"log_format,omitempty"`

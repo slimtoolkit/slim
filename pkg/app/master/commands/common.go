@@ -54,6 +54,7 @@ type GenericParams struct {
 	CheckVersion   bool
 	Debug          bool
 	Verbose        bool
+	QuietCLIMode   bool
 	LogLevel       string
 	LogFormat      string
 	ConsoleOutput  string

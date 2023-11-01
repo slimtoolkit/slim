@@ -17,7 +17,7 @@ const (
 
 // NOTES: Mitigating variable expansion done by kubernetes & shell/heredoc
 var shellConfig = `
-set -euo pipefail
+set -eu
 
 cat << 'EOF' > /.mint_debugger_shell_config.sh
 #!/bin/sh
@@ -76,7 +76,7 @@ func configShell(sessionID string, isK8s bool) string {
 }
 
 var shellConfigAlt = `
-set -euo pipefail
+set -eu
 
 cat << 'EOF' > /.mint_debugger_shell_config.sh
 #!/bin/sh

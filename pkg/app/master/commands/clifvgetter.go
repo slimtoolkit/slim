@@ -331,6 +331,10 @@ func UpdateGlobalFlagValues(appOpts *config.AppOptions, values *GenericParams) *
 		values.Verbose = *appOpts.Global.Verbose
 	}
 
+	if appOpts.Global.Quiet != nil {
+		values.QuietCLIMode = *appOpts.Global.Quiet
+	}
+
 	if appOpts.Global.LogLevel != nil {
 		values.LogLevel = *appOpts.Global.LogLevel
 	}
@@ -367,6 +371,7 @@ func GlobalFlagValues(ctx *cli.Context) (*GenericParams, error) {
 		CheckVersion:   ctx.Bool(FlagCheckVersion),
 		Debug:          ctx.Bool(FlagDebug),
 		Verbose:        ctx.Bool(FlagVerbose),
+		QuietCLIMode:   ctx.Bool(FlagQuietCLIMode),
 		LogLevel:       ctx.String(FlagLogLevel),
 		LogFormat:      ctx.String(FlagLogFormat),
 		ConsoleOutput:  ctx.String(FlagConsoleFormat),

@@ -16,6 +16,7 @@ const (
 	FlagCheckVersion  = "check-version"
 	FlagDebug         = "debug"
 	FlagVerbose       = "verbose"
+	FlagQuietCLIMode  = "quiet"
 	FlagLogLevel      = "log-level"
 	FlagLog           = "log"
 	FlagLogFormat     = "log-format"
@@ -36,6 +37,7 @@ const (
 	FlagCheckVersionUsage  = "check if the current version is outdated"
 	FlagDebugUsage         = "enable debug logs"
 	FlagVerboseUsage       = "enable info logs"
+	FlagQuietCLIModeUsage  = "Quiet CLI execution mode"
 	FlagLogLevelUsage      = "set the logging level ('trace', 'debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')"
 	FlagLogUsage           = "log file to store logs"
 	FlagLogFormatUsage     = "set the format used by logs ('text' (default), or 'json')"
@@ -297,12 +299,19 @@ func GlobalFlags() []cli.Flag {
 			EnvVars: []string{"DSLIM_CHECK_VERSION"},
 		},
 		&cli.BoolFlag{
-			Name:  FlagDebug,
-			Usage: FlagDebugUsage,
+			Name:    FlagDebug,
+			Usage:   FlagDebugUsage,
+			EnvVars: []string{"DSLIM_DEBUG"},
 		},
 		&cli.BoolFlag{
-			Name:  FlagVerbose,
-			Usage: "enable info logs",
+			Name:    FlagVerbose,
+			Usage:   "enable info logs",
+			EnvVars: []string{"DSLIM_VERBOSE"},
+		},
+		&cli.BoolFlag{
+			Name:    FlagQuietCLIMode,
+			Usage:   FlagQuietCLIModeUsage,
+			EnvVars: []string{"DSLIM_QUIET"},
 		},
 		&cli.StringFlag{
 			Name:    FlagLogLevel,

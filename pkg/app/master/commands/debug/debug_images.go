@@ -1,5 +1,9 @@
 package debug
 
+import (
+//"strings"
+)
+
 const (
 	CgrSlimToolkitDebugImage = "cgr.dev/chainguard/slim-toolkit-debug:latest"
 	WolfiBaseImage           = "cgr.dev/chainguard/wolfi-base:latest"
@@ -26,4 +30,22 @@ var debugImages = map[string]string{
 	DigitaloceanDoksImage:    "Kubernetes manifests for investigation and troubleshooting - https://github.com/digitalocean/doks-debug",
 	ZinclabsUbuntuImage:      "Common utilities for debugging your cluster - https://github.com/openobserve/debug-container",
 	InfuserImage:             "Tea package manager image - https://github.com/teaxyz/infuser",
+}
+
+func ShellCommandPrefix(imageName string) []string {
+	shellName := defaultShellName
+	//TODO:
+	//Need to have a reliable solution to deal with
+	//the dynamic library dependencies for bash
+	//before we default to it in interactive debug shells
+	//Need to work out the compat issues linking the shared
+	//object dir(s) from the debugging container
+	//if strings.Contains(imageName, "lightruncom/koolkits") ||
+	//   strings.Contains(imageName, "ubuntu") ||
+	//   strings.Contains(imageName, "debian") {
+	//   	shellName = bashShellName
+	//   	//debian/ubuntu-based images link 'sh' to 'dash', which doesn't support 'set -o pipefail'
+	//}
+
+	return []string{shellName, "-c"}
 }
