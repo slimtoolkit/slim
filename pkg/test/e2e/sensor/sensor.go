@@ -39,6 +39,8 @@ const (
 	AppStderrFileName = "app_stderr.log"
 	EventsFileName    = "events.json"
 	runArchiveName    = "run.tar"
+
+	sensorExePath = "/opt/_slim/sensor"
 )
 
 var (
@@ -178,10 +180,10 @@ func (s *Sensor) StartControlled(ctx context.Context) error {
 			[]string{
 				"--name", s.contName,
 				"--user", s.user,
-				"--volume", s.sensorExePath + ":/opt/_slim/sensor",
+				"--volume", s.sensorExePath + ":" + sensorExePath,
 				"--publish", fmt.Sprintf("%d", channel.CmdPort),
 				"--publish", fmt.Sprintf("%d", channel.EvtPort),
-				"--entrypoint", "/opt/_slim/sensor",
+				"--entrypoint", sensorExePath,
 			},
 		),
 		s.image.ID,
@@ -275,9 +277,9 @@ func (s *Sensor) StartStandalone(
 			[]string{
 				"--name", s.contName,
 				"--user", s.user,
-				"--volume", s.sensorExePath + ":/opt/_slim/sensor",
+				"--volume", s.sensorExePath + ":" + sensorExePath,
 				"--volume", commandsFilePath + ":/opt/_slim/commands.json",
-				"--entrypoint", "/opt/_slim/sensor",
+				"--entrypoint", sensorExePath,
 			},
 		),
 		s.image.ID,
@@ -385,7 +387,7 @@ func (s *Sensor) ExecuteControlCommand(ctx context.Context, cmd control.Command)
 	if out, err := containerExec(
 		ctx,
 		s.contID,
-		"/opt/_slim/sensor",
+		sensorExePath,
 		"control",
 		string(cmd),
 	); err != nil {
@@ -398,6 +400,31 @@ func (s *Sensor) ExecuteControlCommand(ctx context.Context, cmd control.Command)
 func (s *Sensor) ExecuteControlCommandOrFail(t *testing.T, ctx context.Context, cmd control.Command) {
 	if err := s.ExecuteControlCommand(ctx, cmd); err != nil {
 		t.Fatalf("Failed executing control command %s: %v", cmd, err)
+	}
+}
+
+func (s *Sensor) WaitForEvent(ctx context.Context, evt event.Type) error {
+	if len(s.contID) == 0 {
+		return errNotStarted
+	}
+
+	if out, err := containerExec(
+		ctx,
+		s.contID,
+		sensorExePath,
+		"control",
+		string(control.WaitForEventCommand),
+		string(evt),
+	); err != nil {
+		return fmt.Errorf("cannot wait for sensor event %s: %w\n%s", evt, err, string(out))
+	}
+
+	return nil
+}
+
+func (s *Sensor) WaitForEventOrFail(t *testing.T, ctx context.Context, evt event.Type) {
+	if err := s.WaitForEvent(ctx, evt); err != nil {
+		t.Fatalf("Failed waiting for sensor event %s: %v", evt, err)
 	}
 }
 

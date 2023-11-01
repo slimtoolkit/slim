@@ -14,6 +14,7 @@ type Interface interface {
 	HookSensorPostStart()
 	HookSensorPreShutdown()
 	HookMonitorPreStart()
+	HookTargetAppRunning()
 	HookMonitorPostShutdown()
 	HookMonitorFailed()
 }
