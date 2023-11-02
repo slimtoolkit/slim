@@ -230,15 +230,14 @@ slim update
 Linux (for non-intel replace `dist_linux` with the platform-specific extracted path):
 ```
 tar -xvf dist_linux.tar.gz
-mv  dist_linux/docker-slim /usr/local/bin/
-mv  dist_linux/slim-sensor /usr/local/bin/
 mv  dist_linux/slim /usr/local/bin/
+mv  dist_linux/slim-sensor /usr/local/bin/
 ```
 Mac:
 ```
 unzip ds.zip
-mv  dist_mac/docker-slim /usr/local/bin/
-mv  dist_mac/docker-slim-sensor /usr/local/bin/
+mv  dist_mac/slim /usr/local/bin/
+mv  dist_mac/slim-sensor /usr/local/bin/
 ```
 
 3. Add the location where you unzipped the package to your PATH environment variable (optional).
