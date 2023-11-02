@@ -279,7 +279,17 @@ func (i *Inspector) Inspect() error {
 
 func (i *Inspector) processImageName() {
 	if len(i.ImageRecordInfo.RepoTags) > 0 {
-		if rtInfo := strings.Split(i.ImageRecordInfo.RepoTags[0], ":"); len(rtInfo) > 1 {
+		//try to find the repo/tag that matches the image ref (if it's not an image ID)
+		//then pick the first available repo/tag if we can't
+		imageName := i.ImageRecordInfo.RepoTags[0]
+		for _, current := range i.ImageRecordInfo.RepoTags {
+			if strings.HasPrefix(current, i.ImageRef) {
+				imageName = current
+				break
+			}
+		}
+
+		if rtInfo := strings.Split(imageName, ":"); len(rtInfo) > 1 {
 			if rtInfo[0] == "<none>" {
 				rtInfo[0] = strings.TrimLeft(i.ImageRecordInfo.ID, "sha256:")[0:8]
 			}
@@ -309,6 +319,10 @@ func (i *Inspector) ProcessCollectedData() error {
 	fatImageDockerfileLocation := filepath.Join(i.ArtifactLocation, consts.ReversedDockerfile)
 	err = reverse.SaveDockerfileData(fatImageDockerfileLocation, i.DockerfileInfo.Lines)
 	errutil.FailOn(err)
+	//save the reversed Dockerfile with the old name too (tmp compat)
+	fatImageDockerfileLocationOld := filepath.Join(i.ArtifactLocation, consts.ReversedDockerfileOldName)
+	err = reverse.SaveDockerfileData(fatImageDockerfileLocationOld, i.DockerfileInfo.Lines)
+	errutil.WarnOn(err)
 
 	return nil
 }
