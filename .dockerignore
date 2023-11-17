@@ -1,5 +1,6 @@
 **
 !dist_linux/**
+!dist_linux_arm64/**
 !build/package/docker/.ds.container.d3e2c84f976743bdb92a7044ef12e381
 **/.DS_Store
 **/*.command
