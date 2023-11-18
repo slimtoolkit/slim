@@ -20,6 +20,10 @@ func NewExecution() *executionStub {
 	}
 }
 
+func (e *executionStub) State() string {
+	return ""
+}
+
 func (e *executionStub) Commands() <-chan command.Message {
 	return e.commands
 }
