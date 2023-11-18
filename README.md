@@ -1222,7 +1222,7 @@ Run `make build` on linux or `make build_m1` on Macs (or `./scripts/src.build.sh
 
 Note:
 
-Try using the latest version of Go building the Slim app. The current version of Go used to build the Slim app is 1.19.
+Try using the latest version of Go building the Slim app. The current version of Go used to build the Slim app is 1.21.
 
 ##### Gitpod
 

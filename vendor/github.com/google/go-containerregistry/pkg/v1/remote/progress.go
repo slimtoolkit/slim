@@ -29,6 +29,8 @@ type progress struct {
 }
 
 func (p *progress) total(delta int64) {
+	p.Lock()
+	defer p.Unlock()
 	atomic.AddInt64(&p.lastUpdate.Total, delta)
 }
 
@@ -46,6 +48,11 @@ func (p *progress) err(err error) error {
 		p.updates <- v1.Update{Error: err}
 	}
 	return err
+}
+
+func (p *progress) Close(err error) {
+	_ = p.err(err)
+	close(p.updates)
 }
 
 type progressReader struct {

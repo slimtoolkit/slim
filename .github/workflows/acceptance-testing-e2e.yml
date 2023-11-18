@@ -17,7 +17,7 @@ jobs:
       - name: Set up Go development environment
         uses: actions/setup-go@v4.1.0
         with:
-          go-version: '1.19.0'
+          go-version: '1.21.4'
 
       - name: Build Slim (multi-arch)
         run: make build
@@ -69,7 +69,7 @@ jobs:
       - name: Set up Go development environment
         uses: actions/setup-go@v4.1.0
         with:
-          go-version: '1.19.0'
+          go-version: '1.21.4'
 
       - name: Download Slim app binaries
         uses: actions/download-artifact@v3.0.2

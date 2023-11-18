@@ -130,6 +130,8 @@ func (l *Layer) Uncompressed() (io.ReadCloser, error) {
 
 // Compressed implements v1.Layer.
 func (l *Layer) Compressed() (io.ReadCloser, error) {
+	l.mu.Lock()
+	defer l.mu.Unlock()
 	if l.consumed {
 		return nil, ErrConsumed
 	}

@@ -16,8 +16,8 @@ package transport
 
 import (
 	"context"
-	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/google/go-containerregistry/pkg/authn"
 	"github.com/google/go-containerregistry/pkg/name"
@@ -59,7 +59,7 @@ func NewWithContext(ctx context.Context, reg name.Registry, auth authn.Authentic
 
 	// First we ping the registry to determine the parameters of the authentication handshake
 	// (if one is even necessary).
-	pr, err := ping(ctx, reg, t)
+	pr, err := Ping(ctx, reg, t)
 	if err != nil {
 		return nil, err
 	}
@@ -69,39 +69,32 @@ func NewWithContext(ctx context.Context, reg name.Registry, auth authn.Authentic
 		t = NewUserAgent(t, "")
 	}
 
+	scheme := "https"
+	if pr.Insecure {
+		scheme = "http"
+	}
+
 	// Wrap t in a transport that selects the appropriate scheme based on the ping response.
 	t = &schemeTransport{
-		scheme:   pr.scheme,
+		scheme:   scheme,
 		registry: reg,
 		inner:    t,
 	}
 
-	switch pr.challenge.Canonical() {
-	case anonymous, basic:
+	if strings.ToLower(pr.Scheme) != "bearer" {
 		return &Wrapper{&basicTransport{inner: t, auth: auth, target: reg.RegistryStr()}}, nil
-	case bearer:
-		// We require the realm, which tells us where to send our Basic auth to turn it into Bearer auth.
-		realm, ok := pr.parameters["realm"]
-		if !ok {
-			return nil, fmt.Errorf("malformed www-authenticate, missing realm: %v", pr.parameters)
-		}
-		service := pr.parameters["service"]
-		bt := &bearerTransport{
-			inner:    t,
-			basic:    auth,
-			realm:    realm,
-			registry: reg,
-			service:  service,
-			scopes:   scopes,
-			scheme:   pr.scheme,
-		}
-		if err := bt.refresh(ctx); err != nil {
-			return nil, err
-		}
-		return &Wrapper{bt}, nil
-	default:
-		return nil, fmt.Errorf("unrecognized challenge: %s", pr.challenge)
 	}
+
+	bt, err := fromChallenge(reg, auth, t, pr)
+	if err != nil {
+		return nil, err
+	}
+	bt.scopes = scopes
+
+	if err := bt.refresh(ctx); err != nil {
+		return nil, err
+	}
+	return &Wrapper{bt}, nil
 }
 
 // Wrapper results in *not* wrapping supplied transport with additional logic such as retries, useragent and debug logging

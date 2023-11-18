@@ -44,6 +44,11 @@ func getManifest(r string, opt ...Option) (*remote.Descriptor, error) {
 	return remote.Get(ref, o.Remote...)
 }
 
+// Get calls remote.Get and returns an uninterpreted response.
+func Get(r string, opt ...Option) (*remote.Descriptor, error) {
+	return getManifest(r, opt...)
+}
+
 // Head performs a HEAD request for a manifest and returns a content descriptor
 // based on the registry's response.
 func Head(r string, opt ...Option) (*v1.Descriptor, error) {

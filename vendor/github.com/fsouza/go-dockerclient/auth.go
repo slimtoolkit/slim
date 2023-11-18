@@ -6,11 +6,11 @@ package docker
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
@@ -263,16 +263,26 @@ type AuthStatus struct {
 //
 // See https://goo.gl/6nsZkH for more details.
 func (c *Client) AuthCheck(conf *AuthConfiguration) (AuthStatus, error) {
+	return c.AuthCheckWithContext(conf, context.TODO())
+}
+
+// AuthCheckWithContext validates the given credentials. It returns nil if successful. The context object
+// can be used to cancel the request.
+//
+// For Docker API versions >= 1.23, the AuthStatus struct will be populated, otherwise it will be empty.
+//
+// See https://goo.gl/6nsZkH for more details.
+func (c *Client) AuthCheckWithContext(conf *AuthConfiguration, ctx context.Context) (AuthStatus, error) {
 	var authStatus AuthStatus
 	if conf == nil {
 		return authStatus, errors.New("conf is nil")
 	}
-	resp, err := c.do(http.MethodPost, "/auth", doOptions{data: conf})
+	resp, err := c.do(http.MethodPost, "/auth", doOptions{data: conf, context: ctx})
 	if err != nil {
 		return authStatus, err
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return authStatus, err
 	}
@@ -318,7 +328,7 @@ func NewAuthConfigurationsFromCredsHelpers(registry string) (*AuthConfiguration,
 
 func getHelperProviderFromDockerCfg(pathsToTry []string, registry string) (string, error) {
 	for _, path := range pathsToTry {
-		content, err := ioutil.ReadFile(path)
+		content, err := os.ReadFile(path)
 		if err != nil {
 			// if we can't read the file keep going
 			continue

@@ -19,6 +19,10 @@ import (
 	"context"
 	"io"
 	"sync"
+	"time"
+
+	api "github.com/docker/docker/api/types"
+	"github.com/docker/docker/api/types/container"
 
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
@@ -30,7 +34,9 @@ type image struct {
 	ref          name.Reference
 	opener       *imageOpener
 	tarballImage v1.Image
+	computed     bool
 	id           *v1.Hash
+	configFile   *v1.ConfigFile
 
 	once sync.Once
 	err  error
@@ -121,6 +127,28 @@ func (i *image) initialize() error {
 	return i.err
 }
 
+func (i *image) compute() error {
+	// Don't re-compute if already computed.
+	if i.computed {
+		return nil
+	}
+
+	inspect, _, err := i.opener.client.ImageInspectWithRaw(i.opener.ctx, i.ref.String())
+	if err != nil {
+		return err
+	}
+
+	configFile, err := i.computeConfigFile(inspect)
+	if err != nil {
+		return err
+	}
+
+	i.configFile = configFile
+	i.computed = true
+
+	return nil
+}
+
 func (i *image) Layers() ([]v1.Layer, error) {
 	if err := i.initialize(); err != nil {
 		return nil, err
@@ -154,16 +182,19 @@ func (i *image) ConfigName() (v1.Hash, error) {
 }
 
 func (i *image) ConfigFile() (*v1.ConfigFile, error) {
-	if err := i.initialize(); err != nil {
+	if err := i.compute(); err != nil {
 		return nil, err
 	}
-	return i.tarballImage.ConfigFile()
+	return i.configFile.DeepCopy(), nil
 }
 
 func (i *image) RawConfigFile() ([]byte, error) {
 	if err := i.initialize(); err != nil {
 		return nil, err
 	}
+
+	// RawConfigFile cannot be generated from "docker inspect" because Docker Engine API returns serialized data,
+	// and formatting information of the raw config such as indent and prefix will be lost.
 	return i.tarballImage.RawConfigFile()
 }
 
@@ -200,4 +231,120 @@ func (i *image) LayerByDiffID(h v1.Hash) (v1.Layer, error) {
 		return nil, err
 	}
 	return i.tarballImage.LayerByDiffID(h)
+}
+
+func (i *image) configHistory(author string) ([]v1.History, error) {
+	historyItems, err := i.opener.client.ImageHistory(i.opener.ctx, i.ref.String())
+	if err != nil {
+		return nil, err
+	}
+
+	history := make([]v1.History, len(historyItems))
+	for j, h := range historyItems {
+		history[j] = v1.History{
+			Author: author,
+			Created: v1.Time{
+				Time: time.Unix(h.Created, 0).UTC(),
+			},
+			CreatedBy:  h.CreatedBy,
+			Comment:    h.Comment,
+			EmptyLayer: h.Size == 0,
+		}
+	}
+	return history, nil
+}
+
+func (i *image) diffIDs(rootFS api.RootFS) ([]v1.Hash, error) {
+	diffIDs := make([]v1.Hash, len(rootFS.Layers))
+	for j, l := range rootFS.Layers {
+		h, err := v1.NewHash(l)
+		if err != nil {
+			return nil, err
+		}
+		diffIDs[j] = h
+	}
+	return diffIDs, nil
+}
+
+func (i *image) computeConfigFile(inspect api.ImageInspect) (*v1.ConfigFile, error) {
+	diffIDs, err := i.diffIDs(inspect.RootFS)
+	if err != nil {
+		return nil, err
+	}
+
+	history, err := i.configHistory(inspect.Author)
+	if err != nil {
+		return nil, err
+	}
+
+	created, err := time.Parse(time.RFC3339Nano, inspect.Created)
+	if err != nil {
+		return nil, err
+	}
+
+	return &v1.ConfigFile{
+		Architecture:  inspect.Architecture,
+		Author:        inspect.Author,
+		Container:     inspect.Container,
+		Created:       v1.Time{Time: created},
+		DockerVersion: inspect.DockerVersion,
+		History:       history,
+		OS:            inspect.Os,
+		RootFS: v1.RootFS{
+			Type:    inspect.RootFS.Type,
+			DiffIDs: diffIDs,
+		},
+		Config:    i.computeImageConfig(inspect.Config),
+		OSVersion: inspect.OsVersion,
+	}, nil
+}
+
+func (i *image) computeImageConfig(config *container.Config) v1.Config {
+	if config == nil {
+		return v1.Config{}
+	}
+
+	c := v1.Config{
+		AttachStderr:    config.AttachStderr,
+		AttachStdin:     config.AttachStdin,
+		AttachStdout:    config.AttachStdout,
+		Cmd:             config.Cmd,
+		Domainname:      config.Domainname,
+		Entrypoint:      config.Entrypoint,
+		Env:             config.Env,
+		Hostname:        config.Hostname,
+		Image:           config.Image,
+		Labels:          config.Labels,
+		OnBuild:         config.OnBuild,
+		OpenStdin:       config.OpenStdin,
+		StdinOnce:       config.StdinOnce,
+		Tty:             config.Tty,
+		User:            config.User,
+		Volumes:         config.Volumes,
+		WorkingDir:      config.WorkingDir,
+		ArgsEscaped:     config.ArgsEscaped,
+		NetworkDisabled: config.NetworkDisabled,
+		MacAddress:      config.MacAddress,
+		StopSignal:      config.StopSignal,
+		Shell:           config.Shell,
+	}
+
+	if config.Healthcheck != nil {
+		c.Healthcheck = &v1.HealthConfig{
+			Test:        config.Healthcheck.Test,
+			Interval:    config.Healthcheck.Interval,
+			Timeout:     config.Healthcheck.Timeout,
+			StartPeriod: config.Healthcheck.StartPeriod,
+			Retries:     config.Healthcheck.Retries,
+		}
+	}
+
+	if len(config.ExposedPorts) > 0 {
+		c.ExposedPorts = map[string]struct{}{}
+		for port := range c.ExposedPorts {
+			c.ExposedPorts[port] = struct{}{}
+		}
+	}
+
+	return c
 }

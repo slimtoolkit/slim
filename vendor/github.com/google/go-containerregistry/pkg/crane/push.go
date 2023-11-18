@@ -25,7 +25,7 @@ import (
 
 // Load reads the tarball at path as a v1.Image.
 func Load(path string, opt ...Option) (v1.Image, error) {
-	return LoadTag(path, "")
+	return LoadTag(path, "", opt...)
 }
 
 // LoadTag reads a tag from the tarball at path as a v1.Image.

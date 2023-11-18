@@ -17,7 +17,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/httputil"
@@ -240,19 +239,19 @@ func NewVersionedTLSClient(endpoint string, cert, key, ca, apiVersionString stri
 	var keyPEMBlock []byte
 	var caPEMCert []byte
 	if _, err := os.Stat(cert); !os.IsNotExist(err) {
-		certPEMBlock, err = ioutil.ReadFile(cert)
+		certPEMBlock, err = os.ReadFile(cert)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if _, err := os.Stat(key); !os.IsNotExist(err) {
-		keyPEMBlock, err = ioutil.ReadFile(key)
+		keyPEMBlock, err = os.ReadFile(key)
 		if err != nil {
 			return nil, err
 		}
 	}
 	if _, err := os.Stat(ca); !os.IsNotExist(err) {
-		caPEMCert, err = ioutil.ReadFile(ca)
+		caPEMCert, err = os.ReadFile(ca)
 		if err != nil {
 			return nil, err
 		}
@@ -417,7 +416,7 @@ func (c *Client) getServerAPIVersionString() (version string, err error) {
 	if resp.StatusCode != http.StatusOK {
 		return "", fmt.Errorf("received unexpected status %d while trying to retrieve the server version", resp.StatusCode)
 	}
-	var versionResponse map[string]interface{}
+	var versionResponse map[string]any
 	if err := json.NewDecoder(resp.Body).Decode(&versionResponse); err != nil {
 		return "", err
 	}
@@ -428,7 +427,7 @@ func (c *Client) getServerAPIVersionString() (version string, err error) {
 }
 
 type doOptions struct {
-	data      interface{}
+	data      any
 	forceJSON bool
 	headers   map[string]string
 	context   context.Context
@@ -486,7 +485,7 @@ func (c *Client) do(method, path string, doOptions doOptions) (*http.Response, e
 
 		return nil, chooseError(ctx, err)
 	}
-	if resp.StatusCode < 200 || resp.StatusCode >= 400 {
+	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusBadRequest {
 		return nil, newError(resp)
 	}
 	return resp, nil
@@ -512,7 +511,7 @@ type streamOptions struct {
 func chooseError(ctx context.Context, err error) error {
 	select {
 	case <-ctx.Done():
-		return ctx.Err()
+		return context.Cause(ctx)
 	default:
 		return err
 	}
@@ -565,10 +564,10 @@ func (c *Client) streamURL(method, url string, streamOptions streamOptions) erro
 	protocol := c.endpointURL.Scheme
 	address := c.endpointURL.Path
 	if streamOptions.stdout == nil {
-		streamOptions.stdout = ioutil.Discard
+		streamOptions.stdout = io.Discard
 	}
 	if streamOptions.stderr == nil {
-		streamOptions.stderr = ioutil.Discard
+		streamOptions.stderr = io.Discard
 	}
 
 	if protocol == unixProtocol || protocol == namedPipeProtocol {
@@ -711,7 +710,7 @@ type hijackOptions struct {
 	in             io.Reader
 	stdout         io.Writer
 	stderr         io.Writer
-	data           interface{}
+	data           any
 }
 
 // CloseWaiter is an interface with methods for closing the underlying resource
@@ -798,10 +797,10 @@ func (c *Client) hijack(method, path string, hijackOptions hijackOptions) (Close
 			// will "hang" until the container terminates, even though you're not reading
 			// stdout/stderr
 			if hijackOptions.stdout == nil {
-				hijackOptions.stdout = ioutil.Discard
+				hijackOptions.stdout = io.Discard
 			}
 			if hijackOptions.stderr == nil {
-				hijackOptions.stderr = ioutil.Discard
+				hijackOptions.stderr = io.Discard
 			}
 
 			go func() {
@@ -874,7 +873,7 @@ func (c *Client) getURL(path string) string {
 	return fmt.Sprintf("%s%s", urlStr, path)
 }
 
-func (c *Client) getPath(basepath string, opts interface{}) (string, error) {
+func (c *Client) getPath(basepath string, opts any) (string, error) {
 	queryStr, requiredAPIVersion := queryStringVersion(opts)
 	return c.pathVersionCheck(basepath, queryStr, requiredAPIVersion)
 }
@@ -913,7 +912,7 @@ func (c *Client) getFakeNativeURL(path string) string {
 	return fmt.Sprintf("%s%s", urlStr, path)
 }
 
-func queryStringVersion(opts interface{}) (string, APIVersion) {
+func queryStringVersion(opts any) (string, APIVersion) {
 	if opts == nil {
 		return "", nil
 	}
@@ -952,7 +951,7 @@ func queryStringVersion(opts interface{}) (string, APIVersion) {
 	return items.Encode(), apiVersion
 }
 
-func queryString(opts interface{}) string {
+func queryString(opts any) string {
 	s, _ := queryStringVersion(opts)
 	return s
 }
@@ -1024,7 +1023,7 @@ func newError(resp *http.Response) *Error {
 		Message string `json:"message"`
 	}
 	defer resp.Body.Close()
-	data, err := ioutil.ReadAll(resp.Body)
+	data, err := io.ReadAll(resp.Body)
 	if err != nil {
 		return &Error{Status: resp.StatusCode, Message: fmt.Sprintf("cannot read body, err: %v", err)}
 	}

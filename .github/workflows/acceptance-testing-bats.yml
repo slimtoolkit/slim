@@ -11,7 +11,7 @@ jobs:
   test:
     strategy:
       matrix:
-        go: ['1.19']
+        go: ['1.21']
     runs-on: 'ubuntu-latest'
     steps:
       - uses: actions/checkout@v4.1.0

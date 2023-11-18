@@ -196,6 +196,7 @@ func (l Path) WriteBlob(hash v1.Hash, r io.ReadCloser) error {
 }
 
 func (l Path) writeBlob(hash v1.Hash, size int64, rc io.ReadCloser, renamer func() (v1.Hash, error)) error {
+	defer rc.Close()
 	if hash.Hex == "" && renamer == nil {
 		panic("writeBlob called an invalid hash and no renamer")
 	}

@@ -40,6 +40,24 @@ func Write(tag name.Tag, img v1.Image, options ...Option) (string, error) {
 		return "", err
 	}
 
+	// If we already have this image by this image ID, we can skip loading it.
+	id, err := img.ConfigName()
+	if err != nil {
+		return "", fmt.Errorf("computing image ID: %w", err)
+	}
+	if resp, _, err := o.client.ImageInspectWithRaw(o.ctx, id.String()); err == nil {
+		want := tag.String()
+
+		// If we already have this tag, we can skip tagging it.
+		for _, have := range resp.RepoTags {
+			if have == want {
+				return "", nil
+			}
+		}
+
+		return "", o.client.ImageTag(o.ctx, id.String(), want)
+	}
+
 	pr, pw := io.Pipe()
 	go func() {
 		pw.CloseWithError(tarball.Write(tag, img, pw))

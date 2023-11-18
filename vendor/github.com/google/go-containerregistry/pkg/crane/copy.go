@@ -15,13 +15,15 @@
 package crane
 
 import (
+	"errors"
 	"fmt"
+	"net/http"
 
-	"github.com/google/go-containerregistry/internal/legacy"
 	"github.com/google/go-containerregistry/pkg/logs"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1/remote"
-	"github.com/google/go-containerregistry/pkg/v1/types"
+	"github.com/google/go-containerregistry/pkg/v1/remote/transport"
+	"golang.org/x/sync/errgroup"
 )
 
 // Copy copies a remote image or index from src to dst.
@@ -37,52 +39,143 @@ func Copy(src, dst string, opt ...Option) error {
 		return fmt.Errorf("parsing reference for %q: %w", dst, err)
 	}
 
+	puller, err := remote.NewPuller(o.Remote...)
+	if err != nil {
+		return err
+	}
+
+	if tag, ok := dstRef.(name.Tag); ok {
+		if o.noclobber {
+			logs.Progress.Printf("Checking existing tag %v", tag)
+			head, err := puller.Head(o.ctx, tag)
+			var terr *transport.Error
+			if errors.As(err, &terr) {
+				if terr.StatusCode != http.StatusNotFound && terr.StatusCode != http.StatusForbidden {
+					return err
+				}
+			} else if err != nil {
+				return err
+			}
+
+			if head != nil {
+				return fmt.Errorf("refusing to clobber existing tag %s@%s", tag, head.Digest)
+			}
+		}
+	}
+
+	pusher, err := remote.NewPusher(o.Remote...)
+	if err != nil {
+		return err
+	}
+
 	logs.Progress.Printf("Copying from %v to %v", srcRef, dstRef)
-	desc, err := remote.Get(srcRef, o.Remote...)
+	desc, err := puller.Get(o.ctx, srcRef)
 	if err != nil {
 		return fmt.Errorf("fetching %q: %w", src, err)
 	}
 
-	switch desc.MediaType {
-	case types.OCIImageIndex, types.DockerManifestList:
-		// Handle indexes separately.
-		if o.Platform != nil {
-			// If platform is explicitly set, don't copy the whole index, just the appropriate image.
-			if err := copyImage(desc, dstRef, o); err != nil {
-				return fmt.Errorf("failed to copy image: %w", err)
-			}
-		} else {
-			if err := copyIndex(desc, dstRef, o); err != nil {
-				return fmt.Errorf("failed to copy index: %w", err)
-			}
-		}
-	case types.DockerManifestSchema1, types.DockerManifestSchema1Signed:
-		// Handle schema 1 images separately.
-		if err := legacy.CopySchema1(desc, srcRef, dstRef, o.Remote...); err != nil {
-			return fmt.Errorf("failed to copy schema 1 image: %w", err)
-		}
-	default:
-		// Assume anything else is an image, since some registries don't set mediaTypes properly.
-		if err := copyImage(desc, dstRef, o); err != nil {
-			return fmt.Errorf("failed to copy image: %w", err)
-		}
+	if o.Platform == nil {
+		return pusher.Push(o.ctx, dstRef, desc)
 	}
 
-	return nil
-}
-
-func copyImage(desc *remote.Descriptor, dstRef name.Reference, o Options) error {
+	// If platform is explicitly set, don't copy the whole index, just the appropriate image.
 	img, err := desc.Image()
 	if err != nil {
 		return err
 	}
-	return remote.Write(dstRef, img, o.Remote...)
+	return pusher.Push(o.ctx, dstRef, img)
 }
 
-func copyIndex(desc *remote.Descriptor, dstRef name.Reference, o Options) error {
-	idx, err := desc.ImageIndex()
+// CopyRepository copies every tag from src to dst.
+func CopyRepository(src, dst string, opt ...Option) error {
+	o := makeOptions(opt...)
+
+	srcRepo, err := name.NewRepository(src, o.Name...)
 	if err != nil {
 		return err
 	}
-	return remote.WriteIndex(dstRef, idx, o.Remote...)
+
+	dstRepo, err := name.NewRepository(dst, o.Name...)
+	if err != nil {
+		return fmt.Errorf("parsing reference for %q: %w", dst, err)
+	}
+
+	puller, err := remote.NewPuller(o.Remote...)
+	if err != nil {
+		return err
+	}
+
+	ignoredTags := map[string]struct{}{}
+	if o.noclobber {
+		// TODO: It would be good to propagate noclobber down into remote so we can use Etags.
+		have, err := puller.List(o.ctx, dstRepo)
+		if err != nil {
+			var terr *transport.Error
+			if errors.As(err, &terr) {
+				// Some registries create repository on first push, so listing tags will fail.
+				// If we see 404 or 403, assume we failed because the repository hasn't been created yet.
+				if !(terr.StatusCode == http.StatusNotFound || terr.StatusCode == http.StatusForbidden) {
+					return err
+				}
+			} else {
+				return err
+			}
+		}
+		for _, tag := range have {
+			ignoredTags[tag] = struct{}{}
+		}
+	}
+
+	pusher, err := remote.NewPusher(o.Remote...)
+	if err != nil {
+		return err
+	}
+
+	lister, err := puller.Lister(o.ctx, srcRepo)
+	if err != nil {
+		return err
+	}
+
+	g, ctx := errgroup.WithContext(o.ctx)
+	g.SetLimit(o.jobs)
+
+	for lister.HasNext() {
+		tags, err := lister.Next(ctx)
+		if err != nil {
+			return err
+		}
+
+		for _, tag := range tags.Tags {
+			tag := tag
+
+			if o.noclobber {
+				if _, ok := ignoredTags[tag]; ok {
+					logs.Progress.Printf("Skipping %s due to no-clobber", tag)
+					continue
+				}
+			}
+
+			g.Go(func() error {
+				srcTag, err := name.ParseReference(src+":"+tag, o.Name...)
+				if err != nil {
+					return fmt.Errorf("failed to parse tag: %w", err)
+				}
+				dstTag, err := name.ParseReference(dst+":"+tag, o.Name...)
+				if err != nil {
+					return fmt.Errorf("failed to parse tag: %w", err)
+				}
+
+				logs.Progress.Printf("Fetching %s", srcTag)
+				desc, err := puller.Get(ctx, srcTag)
+				if err != nil {
+					return err
+				}
+
+				logs.Progress.Printf("Pushing %s", dstTag)
+				return pusher.Push(ctx, dstTag, desc)
+			})
+		}
+	}
+
+	return g.Wait()
 }

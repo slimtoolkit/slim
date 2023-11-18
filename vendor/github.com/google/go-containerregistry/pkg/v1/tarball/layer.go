@@ -160,6 +160,8 @@ func WithCompressedCaching(l *layer) {
 // WithEstargzOptions is a functional option that allow the caller to pass
 // through estargz.Options to the underlying compression layer.  This is
 // only meaningful when estargz is enabled.
+//
+// Deprecated: WithEstargz is deprecated, and will be removed in a future release.
 func WithEstargzOptions(opts ...estargz.Option) LayerOption {
 	return func(l *layer) {
 		l.estgzopts = opts
@@ -167,6 +169,8 @@ func WithEstargzOptions(opts ...estargz.Option) LayerOption {
 }
 
 // WithEstargz is a functional option that explicitly enables estargz support.
+//
+// Deprecated: WithEstargz is deprecated, and will be removed in a future release.
 func WithEstargz(l *layer) {
 	oguncompressed := l.uncompressedopener
 	estargz := func() (io.ReadCloser, error) {
@@ -238,6 +242,7 @@ func LayerFromOpener(opener Opener, opts ...LayerOption) (v1.Layer, error) {
 	}
 
 	if estgz := os.Getenv("GGCR_EXPERIMENT_ESTARGZ"); estgz == "1" {
+		logs.Warn.Println("GGCR_EXPERIMENT_ESTARGZ is deprecated, and will be removed in a future release.")
 		opts = append([]LayerOption{WithEstargz}, opts...)
 	}
 

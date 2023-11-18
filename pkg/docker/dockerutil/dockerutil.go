@@ -310,8 +310,8 @@ func SaveImage(dclient *dockerapi.Client, imageRef, local string, extract, remov
 
 		}
 
-		tarOptions.IDMap.UIDMaps = arc.IDMapping.UIDs()
-		tarOptions.IDMap.GIDMaps = arc.IDMapping.GIDs()
+		tarOptions.IDMap.UIDMaps = arc.IDMapping.UIDMaps
+		tarOptions.IDMap.GIDMaps = arc.IDMapping.GIDMaps
 
 		err = arc.Untar(afile, dstDir, tarOptions)
 		if err != nil {
@@ -669,8 +669,8 @@ func CopyFromContainer(dclient *dockerapi.Client, containerID, remote, local str
 			//GIDMaps:  arc.IDMapping.GIDs(),
 		}
 
-		tarOptions.IDMap.UIDMaps = arc.IDMapping.UIDs()
-		tarOptions.IDMap.GIDMaps = arc.IDMapping.GIDs()
+		tarOptions.IDMap.UIDMaps = arc.IDMapping.UIDMaps
+		tarOptions.IDMap.GIDMaps = arc.IDMapping.GIDMaps
 
 		err = arc.Untar(afile, dstDir, tarOptions)
 		if err != nil {

@@ -80,3 +80,19 @@ func (m MediaType) IsConfig() bool {
 	}
 	return false
 }
+
+func (m MediaType) IsSchema1() bool {
+	switch m {
+	case DockerManifestSchema1, DockerManifestSchema1Signed:
+		return true
+	}
+	return false
+}
+
+func (m MediaType) IsLayer() bool {
+	switch m {
+	case DockerLayer, DockerUncompressedLayer, OCILayer, OCILayerZStd, OCIUncompressedLayer, DockerForeignLayer, OCIRestrictedLayer, OCIUncompressedRestrictedLayer:
+		return true
+	}
+	return false
+}

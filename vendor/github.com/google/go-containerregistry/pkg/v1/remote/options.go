@@ -37,16 +37,23 @@ type options struct {
 	auth                           authn.Authenticator
 	keychain                       authn.Keychain
 	transport                      http.RoundTripper
-	platform                       v1.Platform
 	context                        context.Context
 	jobs                           int
 	userAgent                      string
 	allowNondistributableArtifacts bool
-	updates                        chan<- v1.Update
-	pageSize                       int
+	progress                       *progress
 	retryBackoff                   Backoff
 	retryPredicate                 retry.Predicate
-	filter                         map[string]string
+	retryStatusCodes               []int
+
+	// Only these options can overwrite Reuse()d options.
+	platform v1.Platform
+	pageSize int
+	filter   map[string]string
+
+	// Set by Reuse, we currently store one or the other.
+	puller *Puller
+	pusher *Pusher
 }
 
 var defaultPlatform = v1.Platform{
@@ -60,7 +67,7 @@ type Backoff = retry.Backoff
 var defaultRetryPredicate retry.Predicate = func(err error) bool {
 	// Various failure modes here, as we're often reading from and writing to
 	// the network.
-	if retry.IsTemporary(err) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) {
+	if retry.IsTemporary(err) || errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) || errors.Is(err, syscall.EPIPE) || errors.Is(err, syscall.ECONNRESET) || errors.Is(err, net.ErrClosed) {
 		logs.Warn.Printf("retrying %v", err)
 		return true
 	}
@@ -83,12 +90,14 @@ var fastBackoff = Backoff{
 	Steps:    3,
 }
 
-var retryableStatusCodes = []int{
+var defaultRetryStatusCodes = []int{
 	http.StatusRequestTimeout,
 	http.StatusInternalServerError,
 	http.StatusBadGateway,
 	http.StatusServiceUnavailable,
 	http.StatusGatewayTimeout,
+	499, // nginx-specific, client closed request
+	522, // Cloudflare-specific, connection timeout
 }
 
 const (
@@ -112,17 +121,20 @@ var DefaultTransport http.RoundTripper = &http.Transport{
 	IdleConnTimeout:       90 * time.Second,
 	TLSHandshakeTimeout:   10 * time.Second,
 	ExpectContinueTimeout: 1 * time.Second,
+	// We usually are dealing with 2 hosts (at most), split MaxIdleConns between them.
+	MaxIdleConnsPerHost: 50,
 }
 
-func makeOptions(target authn.Resource, opts ...Option) (*options, error) {
+func makeOptions(opts ...Option) (*options, error) {
 	o := &options{
-		transport:      DefaultTransport,
-		platform:       defaultPlatform,
-		context:        context.Background(),
-		jobs:           defaultJobs,
-		pageSize:       defaultPageSize,
-		retryPredicate: defaultRetryPredicate,
-		retryBackoff:   defaultRetryBackoff,
+		transport:        DefaultTransport,
+		platform:         defaultPlatform,
+		context:          context.Background(),
+		jobs:             defaultJobs,
+		pageSize:         defaultPageSize,
+		retryPredicate:   defaultRetryPredicate,
+		retryBackoff:     defaultRetryBackoff,
+		retryStatusCodes: defaultRetryStatusCodes,
 	}
 
 	for _, option := range opts {
@@ -136,12 +148,6 @@ func makeOptions(target authn.Resource, opts ...Option) (*options, error) {
 		// It is a better experience to explicitly tell a caller their auth is misconfigured
 		// than potentially fail silently when the correct auth is overridden by option misuse.
 		return nil, errors.New("provide an option for either authn.Authenticator or authn.Keychain, not both")
-	case o.keychain != nil:
-		auth, err := o.keychain.Resolve(target)
-		if err != nil {
-			return nil, err
-		}
-		o.auth = auth
 	case o.auth == nil:
 		o.auth = authn.Anonymous
 	}
@@ -157,7 +163,7 @@ func makeOptions(target authn.Resource, opts ...Option) (*options, error) {
 		}
 
 		// Wrap the transport in something that can retry network flakes.
-		o.transport = transport.NewRetry(o.transport, transport.WithRetryPredicate(defaultRetryPredicate), transport.WithRetryStatusCodes(retryableStatusCodes...))
+		o.transport = transport.NewRetry(o.transport, transport.WithRetryPredicate(defaultRetryPredicate), transport.WithRetryStatusCodes(o.retryStatusCodes...))
 
 		// Wrap this last to prevent transport.New from double-wrapping.
 		if o.userAgent != "" {
@@ -273,7 +279,8 @@ func WithNondistributable(o *options) error {
 // should provide a buffered channel to avoid potential deadlocks.
 func WithProgress(updates chan<- v1.Update) Option {
 	return func(o *options) error {
-		o.updates = updates
+		o.progress = &progress{updates: updates}
+		o.progress.lastUpdate = &v1.Update{}
 		return nil
 	}
 }
@@ -305,6 +312,14 @@ func WithRetryPredicate(predicate retry.Predicate) Option {
 	}
 }
 
+// WithRetryStatusCodes sets which http response codes will be retried.
+func WithRetryStatusCodes(codes ...int) Option {
+	return func(o *options) error {
+		o.retryStatusCodes = codes
+		return nil
+	}
+}
+
 // WithFilter sets the filter querystring for HTTP operations.
 func WithFilter(key string, value string) Option {
 	return func(o *options) error {
@@ -312,6 +327,23 @@ func WithFilter(key string, value string) Option {
 			o.filter = map[string]string{}
 		}
 		o.filter[key] = value
+		return nil
+	}
+}
+
+// Reuse takes a Puller or Pusher and reuses it for remote interactions
+// rather than starting from a clean slate. For example, it will reuse token exchanges
+// when possible and avoid sending redundant HEAD requests.
+//
+// Reuse will take precedence over other options passed to most remote functions because
+// most options deal with setting up auth and transports, which Reuse intetionally skips.
+func Reuse[I *Puller | *Pusher](i I) Option {
+	return func(o *options) error {
+		if puller, ok := any(i).(*Puller); ok {
+			o.puller = puller
+		} else if pusher, ok := any(i).(*Pusher); ok {
+			o.pusher = pusher
+		}
 		return nil
 	}
 }

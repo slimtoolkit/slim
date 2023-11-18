@@ -27,13 +27,17 @@ import (
 
 // Options hold the options that crane uses when calling other packages.
 type Options struct {
-	Name     []name.Option
-	Remote   []remote.Option
-	Platform *v1.Platform
-	Keychain authn.Keychain
+	Name      []name.Option
+	Remote    []remote.Option
+	Platform  *v1.Platform
+	Keychain  authn.Keychain
+	Transport http.RoundTripper
 
-	transport http.RoundTripper
+	auth      authn.Authenticator
 	insecure  bool
+	jobs      int
+	noclobber bool
+	ctx       context.Context
 }
 
 // GetOptions exposes the underlying []remote.Option, []name.Option, and
@@ -50,6 +54,8 @@ func makeOptions(opts ...Option) Options {
 			remote.WithAuthFromKeychain(authn.DefaultKeychain),
 		},
 		Keychain: authn.DefaultKeychain,
+		jobs:     4,
+		ctx:      context.Background(),
 	}
 
 	for _, o := range opts {
@@ -58,13 +64,15 @@ func makeOptions(opts ...Option) Options {
 
 	// Allow for untrusted certificates if the user
 	// passed Insecure but no custom transport.
-	if opt.insecure && opt.transport == nil {
+	if opt.insecure && opt.Transport == nil {
 		transport := remote.DefaultTransport.(*http.Transport).Clone()
 		transport.TLSClientConfig = &tls.Config{
 			InsecureSkipVerify: true, //nolint: gosec
 		}
 
 		WithTransport(transport)(&opt)
+	} else if opt.Transport == nil {
+		opt.Transport = remote.DefaultTransport
 	}
 
 	return opt
@@ -79,7 +87,7 @@ type Option func(*Options)
 func WithTransport(t http.RoundTripper) Option {
 	return func(o *Options) {
 		o.Remote = append(o.Remote, remote.WithTransport(t))
-		o.transport = t
+		o.Transport = t
 	}
 }
 
@@ -122,6 +130,7 @@ func WithAuth(auth authn.Authenticator) Option {
 	return func(o *Options) {
 		// Replace the default keychain at position 0.
 		o.Remote[0] = remote.WithAuth(auth)
+		o.auth = auth
 	}
 }
 
@@ -144,6 +153,26 @@ func WithNondistributable() Option {
 // WithContext is a functional option for setting the context.
 func WithContext(ctx context.Context) Option {
 	return func(o *Options) {
+		o.ctx = ctx
 		o.Remote = append(o.Remote, remote.WithContext(ctx))
+	}
+}
+
+// WithJobs sets the number of concurrent jobs to run.
+//
+// The default number of jobs is GOMAXPROCS.
+func WithJobs(jobs int) Option {
+	return func(o *Options) {
+		if jobs > 0 {
+			o.jobs = jobs
+		}
+		o.Remote = append(o.Remote, remote.WithJobs(o.jobs))
+	}
+}
+
+// WithNoClobber modifies behavior to avoid overwriting existing tags, if possible.
+func WithNoClobber(noclobber bool) Option {
+	return func(o *Options) {
+		o.noclobber = noclobber
 	}
 }

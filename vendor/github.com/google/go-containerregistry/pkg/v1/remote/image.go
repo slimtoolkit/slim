@@ -16,6 +16,7 @@ package remote
 
 import (
 	"bytes"
+	"context"
 	"io"
 	"net/http"
 	"net/url"
@@ -37,7 +38,9 @@ var acceptableImageMediaTypes = []types.MediaType{
 
 // remoteImage accesses an image from a remote registry
 type remoteImage struct {
-	fetcher
+	fetcher      fetcher
+	ref          name.Reference
+	ctx          context.Context
 	manifestLock sync.Mutex // Protects manifest
 	manifest     []byte
 	configLock   sync.Mutex // Protects config
@@ -84,7 +87,7 @@ func (r *remoteImage) RawManifest() ([]byte, error) {
 	// NOTE(jonjohnsonjr): We should never get here because the public entrypoints
 	// do type-checking via remote.Descriptor. I've left this here for tests that
 	// directly instantiate a remoteImage.
-	manifest, desc, err := r.fetchManifest(r.Ref, acceptableImageMediaTypes)
+	manifest, desc, err := r.fetcher.fetchManifest(r.ctx, r.ref, acceptableImageMediaTypes)
 	if err != nil {
 		return nil, err
 	}
@@ -117,7 +120,7 @@ func (r *remoteImage) RawConfigFile() ([]byte, error) {
 		return r.config, nil
 	}
 
-	body, err := r.fetchBlob(r.context, m.Config.Size, m.Config.Digest)
+	body, err := r.fetcher.fetchBlob(r.ctx, m.Config.Size, m.Config.Digest)
 	if err != nil {
 		return nil, err
 	}
@@ -139,9 +142,26 @@ func (r *remoteImage) Descriptor() (*v1.Descriptor, error) {
 	return r.descriptor, err
 }
 
+func (r *remoteImage) ConfigLayer() (v1.Layer, error) {
+	if _, err := r.RawManifest(); err != nil {
+		return nil, err
+	}
+	m, err := partial.Manifest(r)
+	if err != nil {
+		return nil, err
+	}
+
+	return partial.CompressedToLayer(&remoteImageLayer{
+		ri:     r,
+		ctx:    r.ctx,
+		digest: m.Config.Digest,
+	})
+}
+
 // remoteImageLayer implements partial.CompressedLayer
 type remoteImageLayer struct {
 	ri     *remoteImage
+	ctx    context.Context
 	digest v1.Hash
 }
 
@@ -152,7 +172,7 @@ func (rl *remoteImageLayer) Digest() (v1.Hash, error) {
 
 // Compressed implements partial.CompressedLayer
 func (rl *remoteImageLayer) Compressed() (io.ReadCloser, error) {
-	urls := []url.URL{rl.ri.url("blobs", rl.digest.String())}
+	urls := []url.URL{rl.ri.fetcher.url("blobs", rl.digest.String())}
 
 	// Add alternative layer sources from URLs (usually none).
 	d, err := partial.BlobDescriptor(rl, rl.digest)
@@ -165,7 +185,7 @@ func (rl *remoteImageLayer) Compressed() (io.ReadCloser, error) {
 	}
 
 	// We don't want to log binary layers -- this can break terminals.
-	ctx := redact.NewContext(rl.ri.context, "omitting binary blobs from logs")
+	ctx := redact.NewContext(rl.ctx, "omitting binary blobs from logs")
 
 	for _, s := range d.URLs {
 		u, err := url.Parse(s)
@@ -186,7 +206,7 @@ func (rl *remoteImageLayer) Compressed() (io.ReadCloser, error) {
 			return nil, err
 		}
 
-		resp, err := rl.ri.Client.Do(req.WithContext(ctx))
+		resp, err := rl.ri.fetcher.Do(req.WithContext(ctx))
 		if err != nil {
 			lastErr = err
 			continue
@@ -244,13 +264,14 @@ func (rl *remoteImageLayer) Descriptor() (*v1.Descriptor, error) {
 
 // See partial.Exists.
 func (rl *remoteImageLayer) Exists() (bool, error) {
-	return rl.ri.blobExists(rl.digest)
+	return rl.ri.fetcher.blobExists(rl.ri.ctx, rl.digest)
 }
 
 // LayerByDigest implements partial.CompressedLayer
 func (r *remoteImage) LayerByDigest(h v1.Hash) (partial.CompressedLayer, error) {
 	return &remoteImageLayer{
 		ri:     r,
+		ctx:    r.ctx,
 		digest: h,
 	}, nil
 }
