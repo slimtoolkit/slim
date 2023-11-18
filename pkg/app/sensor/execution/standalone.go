@@ -82,8 +82,12 @@ func (e *standaloneExe) Commands() <-chan command.Message {
 func (e *standaloneExe) PubEvent(name event.Type, data ...interface{}) {
 	encoder := json.NewEncoder(e.eventFile)
 	encoder.SetEscapeHTML(false)
+	evt := event.Message{Name: name}
+	if len(data) > 0 {
+		evt.Data = data[0]
+	}
 
-	if err := encoder.Encode(event.Message{Name: name, Data: data}); err != nil {
+	if err := encoder.Encode(evt); err != nil {
 		log.WithError(err).Warn("sensor: failed dumping event")
 	}
 }

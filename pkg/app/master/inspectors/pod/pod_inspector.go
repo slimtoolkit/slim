@@ -662,6 +662,8 @@ func (i *Inspector) sensorCommandStart() error {
 					"status": "received.unexpected",
 					"data":   fmt.Sprintf("%+v", evt),
 				})
+
+			//TODO: dump temp container logs
 			return event.ErrUnexpectedEvent
 		}
 	}

@@ -269,7 +269,15 @@ func newSensor(
 		), nil
 	}
 
-	exe.PubEvent(event.StartMonitorFailed, errUnknownMode.Error())
+	exe.PubEvent(event.StartMonitorFailed,
+		&event.StartMonitorFailedData{
+			Component: event.ComSensorConstructor,
+			State:     event.StateSensorTypeCreating,
+			Context: map[string]string{
+				event.CtxSensorType: mode,
+			},
+			Errors: []string{errUnknownMode.Error()},
+		})
 	return nil, errUnknownMode
 }
 

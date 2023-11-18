@@ -289,7 +289,11 @@ func OnCommand(
 
 	logger.Info("starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
-	errutil.FailOn(err)
+	if err != nil {
+		containerInspector.ShowContainerLogs()
+		containerInspector.ShutdownContainer(true)
+		xc.FailOn(err)
+	}
 
 	xc.Out.Info("container",
 		ovars{
@@ -321,7 +325,7 @@ func OnCommand(
 
 			logger.Info("shutting down 'fat' container...")
 			containerInspector.FinishMonitoring()
-			_ = containerInspector.ShutdownContainer()
+			_ = containerInspector.ShutdownContainer(false)
 
 			xc.Out.State("exited", ovars{"exit.code": -1})
 			xc.Exit(-1)
@@ -451,7 +455,7 @@ func OnCommand(
 	containerInspector.FinishMonitoring()
 
 	logger.Info("shutting down 'fat' container...")
-	err = containerInspector.ShutdownContainer()
+	err = containerInspector.ShutdownContainer(false)
 	errutil.WarnOn(err)
 
 	if execFail {

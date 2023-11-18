@@ -98,20 +98,35 @@ func (s *Sensor) Run() error {
 }
 
 func (s *Sensor) run() error {
-	cmd, ok := (<-s.exe.Commands()).(*command.StartMonitor)
+	raw := <-s.exe.Commands()
+	cmd, ok := (raw).(*command.StartMonitor)
 	if !ok {
 		log.
 			WithField("cmd", fmt.Sprintf("%+v", cmd)).
 			Error("sensor: unexpected start monitor command")
 		s.exe.HookMonitorFailed()
-		s.exe.PubEvent(event.StartMonitorFailed)
+
+		s.exe.PubEvent(event.StartMonitorFailed,
+			&event.StartMonitorFailedData{
+				Component: event.ComSensorCmdServer,
+				State:     event.StateCmdStartMonCmdWaiting,
+				Context: map[string]string{
+					event.CtxCmdType: string(raw.GetName()),
+				},
+			})
+
 		return fmt.Errorf("unexpected start monitor command: %+v", cmd)
 	}
 
 	if err := s.artifactor.PrepareEnv(cmd); err != nil {
 		log.WithError(err).Error("sensor: artifactor.PrepareEnv() failed")
 		s.exe.HookMonitorFailed()
-		s.exe.PubEvent(event.StartMonitorFailed)
+		s.exe.PubEvent(event.StartMonitorFailed,
+			&event.StartMonitorFailedData{
+				Component: event.ComSensorCmdServer,
+				State:     event.StateEnvPreparing,
+				Errors:    []string{err.Error()},
+			})
 		return fmt.Errorf("failed to prepare artifacts env: %w", err)
 	}
 
@@ -135,7 +150,12 @@ func (s *Sensor) run() error {
 	if err != nil {
 		log.WithError(err).Error("sensor: failed to create composite monitor")
 		s.exe.HookMonitorFailed()
-		s.exe.PubEvent(event.StartMonitorFailed)
+		s.exe.PubEvent(event.StartMonitorFailed,
+			&event.StartMonitorFailedData{
+				Component: event.ComSensorCmdServer,
+				State:     event.StateMonCreating,
+				Errors:    []string{err.Error()},
+			})
 		return err
 	}
 
@@ -145,7 +165,12 @@ func (s *Sensor) run() error {
 	if err := mon.Start(); err != nil {
 		log.WithError(err).Error("sensor: failed to start composite monitor")
 		s.exe.HookMonitorFailed()
-		s.exe.PubEvent(event.StartMonitorFailed)
+		s.exe.PubEvent(event.StartMonitorFailed,
+			&event.StartMonitorFailedData{
+				Component: event.ComSensorCmdServer,
+				State:     event.StateMonStarting,
+				Errors:    []string{err.Error()},
+			})
 		return err
 	}
 	s.exe.PubEvent(event.StartMonitorDone)

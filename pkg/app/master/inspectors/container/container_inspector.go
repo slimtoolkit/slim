@@ -28,6 +28,7 @@ import (
 	"github.com/docker-slim/docker-slim/pkg/report"
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
+	"github.com/docker-slim/docker-slim/pkg/util/jsonutil"
 	v "github.com/docker-slim/docker-slim/pkg/version"
 
 	containertypes "github.com/docker/docker/api/types/container"
@@ -640,6 +641,7 @@ func (i *Inspector) RunContainer() error {
 	if err != nil {
 		return err
 	}
+	// note: now need to cleanup the created container if there's an error
 
 	if i.ContainerName != containerInfo.Name {
 		logger.Debugf("Container name mismatch expected=%v got=%v", i.ContainerName, containerInfo.Name)
@@ -743,12 +745,17 @@ func (i *Inspector) RunContainer() error {
 		return err
 	}
 
-	errutil.FailWhen(i.ContainerInfo.NetworkSettings == nil, "slim: error => no network info")
+	if i.ContainerInfo.NetworkSettings == nil {
+		return fmt.Errorf("slim: error => no network info")
+	}
 
 	if hCfg := i.ContainerInfo.HostConfig; hCfg != nil && !i.isHostNetworked() {
 		logger.Debugf("container HostConfig.NetworkMode => %s len(ports)=%d",
 			hCfg.NetworkMode, len(i.ContainerInfo.NetworkSettings.Ports))
-		errutil.FailWhen(len(i.ContainerInfo.NetworkSettings.Ports) < len(commsExposedPorts), "slim: error => missing comms ports")
+
+		if len(i.ContainerInfo.NetworkSettings.Ports) < len(commsExposedPorts) {
+			return fmt.Errorf("slim: error => missing comms ports")
+		}
 	}
 
 	logger.Debugf("container NetworkSettings.Ports => %#v", i.ContainerInfo.NetworkSettings.Ports)
@@ -907,6 +914,8 @@ func (i *Inspector) RunContainer() error {
 					})
 			}
 
+			//not returning an error, exiting, need to clean up the container
+			i.ShutdownContainer(true)
 			i.xc.Exit(-124)
 		}
 
@@ -915,9 +924,10 @@ func (i *Inspector) RunContainer() error {
 				i.xc.Out.Info("event.startmonitor.done",
 					ovars{
 						"status": "received.unexpected",
-						"data":   fmt.Sprintf("%+v", evt),
+						"data":   jsonutil.ToString(evt),
 					})
 			}
+
 			return event.ErrUnexpectedEvent
 		}
 	}
@@ -1144,7 +1154,12 @@ func (i *Inspector) ShowContainerLogs() {
 }
 
 // ShutdownContainer terminates the container inspector instance execution
-func (i *Inspector) ShutdownContainer() error {
+func (i *Inspector) ShutdownContainer(terminateOnly bool) error {
+	if i.ContainerID == "" {
+		//no container to shutdown...
+		return nil
+	}
+
 	if i.isDone.IsOn() {
 		return nil
 	}
@@ -1174,76 +1189,79 @@ func (i *Inspector) ShutdownContainer() error {
 		}
 
 		if err := i.APIClient.RemoveContainer(removeOption); err != nil {
-			logger.Info("error removing container =>", err)
+			logger.Infof("error removing container ('%v')... terminating container", err)
+			_ = i.APIClient.KillContainer(dockerapi.KillContainerOptions{ID: i.ContainerID})
 		}
 	}()
 
-	if !i.DoUseLocalMounts {
-		deleteOrig := true
-		if i.DoKeepTmpArtifacts {
-			deleteOrig = false
-		}
-
-		//copy the container report
-		reportLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, ReportArtifactTar)
-		reportRemotePath := filepath.Join(app.DefaultArtifactsDirPath, report.DefaultContainerReportFileName)
-		err := dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, reportRemotePath, reportLocalPath, true, deleteOrig)
-		if err != nil {
-			logger.WithError(err).WithField("container", i.ContainerID).Error("dockerutil.CopyFromContainer")
-			//can't call errutil.FailOn() because we won't cleanup the target container
-			return err
-		}
-
-		if i.DoEnableMondel {
-			//copy the monitor data event log (if available)
-			mondelLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, MondelArtifactTar)
-			mondelRemotePath := filepath.Join(app.DefaultArtifactsDirPath, report.DefaultMonDelFileName)
-			err = dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, mondelRemotePath, mondelLocalPath, true, deleteOrig)
-			if err != nil {
-				//not a failure because the log might not be there (just log it)
-				logger.WithFields(log.Fields{
-					"artifact.type": "mondel",
-					"local.path":    mondelLocalPath,
-					"remote.path":   mondelRemotePath,
-					"err":           err,
-				}).Debug("dockerutil.CopyFromContainer")
+	if !terminateOnly {
+		if !i.DoUseLocalMounts {
+			deleteOrig := true
+			if i.DoKeepTmpArtifacts {
+				deleteOrig = false
 			}
-		}
 
-		/*
-			//ALTERNATIVE WAY TO XFER THE FILE ARTIFACTS
-			filesOutLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, FileArtifactsArchiveTar)
-			filesTarRemotePath := filepath.Join(app.DefaultArtifactsDirPath, fileArtifactsTar)
-			err = dockerutil.CopyFromContainer(i.APIClient,
-				i.ContainerID,
-				filesTarRemotePath,
-				filesOutLocalPath,
-				true,
-				false) //make it 'true' once tested/debugged
+			//copy the container report
+			reportLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, ReportArtifactTar)
+			reportRemotePath := filepath.Join(app.DefaultArtifactsDirPath, report.DefaultContainerReportFileName)
+			err := dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, reportRemotePath, reportLocalPath, true, deleteOrig)
 			if err != nil {
-				errutil.FailOn(err)
+				logger.WithError(err).WithField("container", i.ContainerID).Error("dockerutil.CopyFromContainer")
+				//can't call errutil.FailOn() because we won't cleanup the target container
+				return err
 			}
-		*/
 
-		filesOutLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, FileArtifactsOutTar)
-		filesRemotePath := filepath.Join(app.DefaultArtifactsDirPath, app.ArtifactFilesDirName)
-		err = dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, filesRemotePath, filesOutLocalPath, false, false)
-		if err != nil {
-			logger.WithError(err).WithField("container", i.ContainerID).Error("dockerutil.CopyFromContainer")
-			//can't call errutil.FailOn() because we won't cleanup the target container
-			return err
-		}
+			if i.DoEnableMondel {
+				//copy the monitor data event log (if available)
+				mondelLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, MondelArtifactTar)
+				mondelRemotePath := filepath.Join(app.DefaultArtifactsDirPath, report.DefaultMonDelFileName)
+				err = dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, mondelRemotePath, mondelLocalPath, true, deleteOrig)
+				if err != nil {
+					//not a failure because the log might not be there (just log it)
+					logger.WithFields(log.Fields{
+						"artifact.type": "mondel",
+						"local.path":    mondelLocalPath,
+						"remote.path":   mondelRemotePath,
+						"err":           err,
+					}).Debug("dockerutil.CopyFromContainer")
+				}
+			}
 
-		//NOTE: possible enhancement (if the original filemode bits still get lost)
-		//(alternative to archiving files in the container to preserve filemodes)
-		//Rewrite the filemode bits using the data from creport.json,
-		//but creport.json also needs to be enhanced to use
-		//octal filemodes for the file records
-		err = dockerutil.PrepareContainerDataArchive(filesOutLocalPath, fileArtifactsTar, app.ArtifactFilesDirName+"/", deleteOrig)
-		if err != nil {
-			logger.WithError(err).WithField("container", i.ContainerID).Error("dockerutil.PrepareContainerDataArchive")
-			//can't call errutil.FailOn() because we won't cleanup the target container
-			return err
+			/*
+				//ALTERNATIVE WAY TO XFER THE FILE ARTIFACTS
+				filesOutLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, FileArtifactsArchiveTar)
+				filesTarRemotePath := filepath.Join(app.DefaultArtifactsDirPath, fileArtifactsTar)
+				err = dockerutil.CopyFromContainer(i.APIClient,
+					i.ContainerID,
+					filesTarRemotePath,
+					filesOutLocalPath,
+					true,
+					false) //make it 'true' once tested/debugged
+				if err != nil {
+					errutil.FailOn(err)
+				}
+			*/
+
+			filesOutLocalPath := filepath.Join(i.LocalVolumePath, ArtifactsDir, FileArtifactsOutTar)
+			filesRemotePath := filepath.Join(app.DefaultArtifactsDirPath, app.ArtifactFilesDirName)
+			err = dockerutil.CopyFromContainer(i.APIClient, i.ContainerID, filesRemotePath, filesOutLocalPath, false, false)
+			if err != nil {
+				logger.WithError(err).WithField("container", i.ContainerID).Error("dockerutil.CopyFromContainer")
+				//can't call errutil.FailOn() because we won't cleanup the target container
+				return err
+			}
+
+			//NOTE: possible enhancement (if the original filemode bits still get lost)
+			//(alternative to archiving files in the container to preserve filemodes)
+			//Rewrite the filemode bits using the data from creport.json,
+			//but creport.json also needs to be enhanced to use
+			//octal filemodes for the file records
+			err = dockerutil.PrepareContainerDataArchive(filesOutLocalPath, fileArtifactsTar, app.ArtifactFilesDirName+"/", deleteOrig)
+			if err != nil {
+				logger.WithError(err).WithField("container", i.ContainerID).Error("dockerutil.PrepareContainerDataArchive")
+				//can't call errutil.FailOn() because we won't cleanup the target container
+				return err
+			}
 		}
 	}
 

@@ -49,5 +49,10 @@ func (e *controlledExe) Commands() <-chan command.Message {
 }
 
 func (e *controlledExe) PubEvent(etype event.Type, data ...interface{}) {
-	e.ipcServer.TryPublishEvt(&event.Message{Name: etype, Data: data}, 3)
+	evt := &event.Message{Name: etype}
+	if len(data) > 0 {
+		evt.Data = data[0]
+	}
+
+	e.ipcServer.TryPublishEvt(evt, 3)
 }

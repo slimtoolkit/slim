@@ -1124,10 +1124,11 @@ func OnCommand(
 
 	logger.Info("starting instrumented 'fat' container...")
 	err = containerInspector.RunContainer()
-	if err != nil && containerInspector.DoShowContainerLogs {
+	if err != nil {
 		containerInspector.ShowContainerLogs()
+		containerInspector.ShutdownContainer(true)
+		xc.FailOn(err)
 	}
-	xc.FailOn(err)
 
 	containerName := containerInspector.ContainerName
 	containerID := containerInspector.ContainerID
@@ -1141,7 +1142,7 @@ func OnCommand(
 		if containerInspector != nil {
 			xc.Out.State("container.target.shutdown.start")
 			containerInspector.FinishMonitoring()
-			_ = containerInspector.ShutdownContainer()
+			_ = containerInspector.ShutdownContainer(false)
 			xc.Out.State("container.target.shutdown.done")
 		}
 	}
@@ -1179,7 +1180,7 @@ func OnCommand(
 	containerInspector.FinishMonitoring()
 
 	logger.Info("shutting down 'fat' container...")
-	err = containerInspector.ShutdownContainer()
+	err = containerInspector.ShutdownContainer(false)
 	errutil.WarnOn(err)
 
 	if depServicesExe != nil {
@@ -1287,7 +1288,7 @@ func monitorContainer(
 			//note: should be handled by inspectorCleanup
 			//logger.Info("shutting down 'fat' container...")
 			//containerInspector.FinishMonitoring()
-			//_ = containerInspector.ShutdownContainer()
+			//_ = containerInspector.ShutdownContainer(false)
 
 			exitCode := commands.ECTBuild | ecbImageBuildError
 			xc.Out.State("exited",

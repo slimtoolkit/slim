@@ -87,7 +87,13 @@ func (s *Sensor) run() error {
 		mon, err := s.runWithoutMonitor()
 		if err != nil {
 			s.exe.HookMonitorFailed()
-			s.exe.PubEvent(event.StartMonitorFailed)
+			s.exe.PubEvent(event.StartMonitorFailed,
+				&event.StartMonitorFailedData{
+					Component: event.ComMonitorRunner, //TODO: need to get to the real component
+					State:     s.exe.State(),
+					Errors:    []string{err.Error()},
+				})
+
 			return fmt.Errorf("run sensor without monitor failed: %w", err)
 		}
 

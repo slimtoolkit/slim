@@ -6,6 +6,7 @@ import (
 )
 
 type Interface interface {
+	State() string
 	Commands() <-chan command.Message
 	PubEvent(etype event.Type, data ...interface{})
 	Close()

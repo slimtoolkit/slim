@@ -2,6 +2,7 @@ package execution
 
 import (
 	"context"
+	"fmt"
 	"os/exec"
 
 	"github.com/docker-slim/docker-slim/pkg/util/errutil"
@@ -20,8 +21,13 @@ const (
 )
 
 type hookExecutor struct {
-	ctx context.Context
-	cmd string
+	ctx      context.Context
+	cmd      string
+	lastHook kind
+}
+
+func (h *hookExecutor) State() string {
+	return fmt.Sprintf("%s/%s", h.cmd, string(h.lastHook))
 }
 
 func (h *hookExecutor) HookSensorPostStart() {
@@ -53,6 +59,7 @@ func (h *hookExecutor) doHook(k kind) {
 		return
 	}
 
+	h.lastHook = k
 	cmd := exec.CommandContext(h.ctx, h.cmd, string(k))
 	out, err := cmd.CombinedOutput()
 
