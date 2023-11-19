@@ -19,15 +19,15 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
-	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/ipc"
-	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/sensor"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone/control"
-	"github.com/docker-slim/docker-slim/pkg/ipc/channel"
-	"github.com/docker-slim/docker-slim/pkg/ipc/command"
-	"github.com/docker-slim/docker-slim/pkg/ipc/event"
-	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
+	"github.com/slimtoolkit/slim/pkg/app"
+	"github.com/slimtoolkit/slim/pkg/app/master/inspectors/ipc"
+	"github.com/slimtoolkit/slim/pkg/app/master/inspectors/sensor"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/standalone/control"
+	"github.com/slimtoolkit/slim/pkg/ipc/channel"
+	"github.com/slimtoolkit/slim/pkg/ipc/command"
+	"github.com/slimtoolkit/slim/pkg/ipc/event"
+	"github.com/slimtoolkit/slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
 )
 
 const (

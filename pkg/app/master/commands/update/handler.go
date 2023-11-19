@@ -1,7 +1,7 @@
 package update
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/app/master/update"
+	"github.com/slimtoolkit/slim/pkg/app/master/update"
 )
 
 // OnCommand implements the 'update' command

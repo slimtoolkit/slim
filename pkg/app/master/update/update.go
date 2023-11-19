@@ -11,15 +11,15 @@ import (
 	"runtime"
 	"time"
 
-	vchecker "github.com/docker-slim/docker-slim/pkg/app/master/version"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
-	vinfo "github.com/docker-slim/docker-slim/pkg/version"
+	vchecker "github.com/slimtoolkit/slim/pkg/app/master/version"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
+	vinfo "github.com/slimtoolkit/slim/pkg/version"
 
 	"github.com/c4milo/unpackit"
-	"github.com/docker-slim/go-update"
-	"github.com/docker-slim/uiprogress"
 	log "github.com/sirupsen/logrus"
+	"github.com/slimtoolkit/go-update"
+	"github.com/slimtoolkit/uiprogress"
 )
 
 const (

@@ -5,9 +5,9 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
-	v "github.com/docker-slim/docker-slim/pkg/version"
+	"github.com/slimtoolkit/slim/pkg/app"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
+	v "github.com/slimtoolkit/slim/pkg/version"
 
 	log "github.com/sirupsen/logrus"
 )

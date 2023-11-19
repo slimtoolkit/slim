@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/config"
-	"github.com/docker-slim/docker-slim/pkg/consts"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
+	"github.com/slimtoolkit/slim/pkg/app/master/config"
+	"github.com/slimtoolkit/slim/pkg/consts"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerfile"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
 
 	docker "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"

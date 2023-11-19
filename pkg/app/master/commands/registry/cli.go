@@ -3,10 +3,10 @@ package registry
 import (
 	"fmt"
 
-	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-
 	"github.com/urfave/cli/v2"
+
+	"github.com/slimtoolkit/slim/pkg/app"
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
 )
 
 const (

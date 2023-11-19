@@ -1,4 +1,4 @@
-module github.com/docker-slim/docker-slim
+module github.com/slimtoolkit/slim
 
 go 1.21
 
@@ -10,8 +10,6 @@ require (
 	github.com/c4milo/unpackit v0.0.0-20170704181138-4ed373e9ef1c
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/compose-spec/compose-go v0.0.0-20210916141509-a7e1bc322970
-	github.com/docker-slim/go-update v0.0.0-20190422071557-ed40247aff59
-	github.com/docker-slim/uiprogress v0.0.0-20190505193231-9d4396e6d40b
 	github.com/docker/docker v24.0.7+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/dustin/go-humanize v1.0.0
@@ -27,6 +25,8 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/segmentio/ksuid v1.0.4
 	github.com/sirupsen/logrus v1.9.3
+	github.com/slimtoolkit/go-update v0.0.0-20231119011834-99945ebd76f7
+	github.com/slimtoolkit/uiprogress v0.0.0-20231119012247-4a052fb12f37
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 	github.com/urfave/cli/v2 v2.3.0
 	golang.org/x/net v0.18.0
@@ -40,6 +40,7 @@ require (
 require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Microsoft/go-winio v0.6.1 // indirect
+	github.com/bradfitz/iter v0.0.0-20191230175014-e8f45d346db8 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
 	github.com/distribution/distribution/v3 v3.0.0-20210316161203-a01c71e2477e // indirect
@@ -62,7 +63,9 @@ require (
 	github.com/google/gnostic v0.5.7-v3refs // indirect
 	github.com/google/go-cmp v0.5.9 // indirect
 	github.com/google/gofuzz v1.2.0 // indirect
+	github.com/gosuri/uilive v0.0.4 // indirect
 	github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7 // indirect
+	github.com/hooklift/assert v0.1.0 // indirect
 	github.com/imdario/mergo v0.3.13 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
@@ -86,6 +89,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
+	github.com/slimtoolkit/uilive v0.0.2 // indirect
 	github.com/spf13/cobra v1.7.0 // indirect
 	github.com/spf13/pflag v1.0.5 // indirect
 	github.com/temoto/robotstxt v1.1.2 // indirect
@@ -118,14 +122,10 @@ require (
 	github.com/antchfx/htmlquery v1.3.0 // indirect
 	github.com/antchfx/xmlquery v1.3.17 // indirect
 	github.com/antchfx/xpath v1.2.4 // indirect
-	github.com/bradfitz/iter v0.0.0-20191230175014-e8f45d346db8 // indirect
 	github.com/containerd/containerd v1.7.9 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
-	github.com/docker-slim/uilive v0.0.2 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/google/uuid v1.3.0
-	github.com/gosuri/uilive v0.0.3 // indirect
-	github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/pgzip v1.2.4 // indirect
 	github.com/mattn/go-colorable v0.1.12 // indirect

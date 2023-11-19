@@ -8,7 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/detector/binfile"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/detector/binfile"
 
 	log "github.com/sirupsen/logrus"
 )

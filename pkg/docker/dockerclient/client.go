@@ -6,9 +6,9 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/config"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	"github.com/fsouza/go-dockerclient"
+	"github.com/slimtoolkit/slim/pkg/app/master/config"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
 
 	log "github.com/sirupsen/logrus"
 )

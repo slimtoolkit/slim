@@ -13,12 +13,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/master/config"
-
 	dockerapi "github.com/fsouza/go-dockerclient"
 	"github.com/moby/term"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/slimtoolkit/slim/pkg/app"
+	"github.com/slimtoolkit/slim/pkg/app/master/config"
 )
 
 //Custom I/O for terminal later
@@ -376,7 +376,7 @@ func (ref *Execution) Stop() error {
 	if err != nil {
 		if _, ok := err.(*dockerapi.ContainerNotRunning); ok {
 			if ref.logger != nil {
-				ref.logger.Info("can't stop the docker-slim container (container is not running)...")
+				ref.logger.Info("can't stop the 'slim' container (container is not running)...")
 			}
 		} else {
 			if ref.logger != nil {

@@ -6,10 +6,10 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/parser"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/spec"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerignore"
-	"github.com/docker-slim/docker-slim/pkg/docker/linter/check"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerfile/parser"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerfile/spec"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerignore"
+	"github.com/slimtoolkit/slim/pkg/docker/linter/check"
 
 	log "github.com/sirupsen/logrus"
 )

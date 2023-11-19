@@ -5,7 +5,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/signals"
+	"github.com/slimtoolkit/slim/pkg/app/master/signals"
 )
 
 // Run starts the master app

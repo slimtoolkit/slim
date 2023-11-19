@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	goerr "errors"
 
-	"github.com/docker-slim/docker-slim/pkg/errors"
+	"github.com/slimtoolkit/slim/pkg/errors"
 )
 
 // Event errors

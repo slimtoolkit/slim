@@ -1,7 +1,7 @@
 package build
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
 
 	"github.com/c-bata/go-prompt"
 )

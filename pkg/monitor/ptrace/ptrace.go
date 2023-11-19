@@ -20,11 +20,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
-	"github.com/docker-slim/docker-slim/pkg/errors"
-	"github.com/docker-slim/docker-slim/pkg/launcher"
-	"github.com/docker-slim/docker-slim/pkg/mondel"
-	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/system"
+	"github.com/slimtoolkit/slim/pkg/errors"
+	"github.com/slimtoolkit/slim/pkg/launcher"
+	"github.com/slimtoolkit/slim/pkg/mondel"
+	"github.com/slimtoolkit/slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/system"
 )
 
 type AppState string
@@ -663,7 +663,7 @@ func (app *App) collect() {
 					// We'd been observing this behavior a lot with short&fast Go programs,
 					// and regular `strace -f ./app` would produce similar results.
 					// Sending this error event back to the master process would make
-					// the `docker-slim build` command fail with the exit code -124.
+					// the `slim build` command fail with the exit code -124.
 					logger.Debugf("trace syscall - (likely) tracee terminated pid=%v sig=%v error - %v (errno=%d)", callPid, callSig, err, err.(syscall.Errno))
 				} else {
 					logger.Errorf("trace syscall pid=%v sig=%v error - %v (errno=%d)", callPid, callSig, err, err.(syscall.Errno))

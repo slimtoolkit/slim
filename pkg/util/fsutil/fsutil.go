@@ -15,8 +15,8 @@ import (
 
 	"golang.org/x/sys/unix"
 
-	"github.com/docker-slim/docker-slim/pkg/pdiscover"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/pdiscover"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
 
 	"github.com/bmatcuk/doublestar"
 	log "github.com/sirupsen/logrus"

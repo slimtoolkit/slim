@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/app/sensor"
+	"github.com/slimtoolkit/slim/pkg/app/sensor"
 )
 
 func main() {

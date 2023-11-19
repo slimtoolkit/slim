@@ -10,10 +10,10 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/consts"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/consts"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerfile/reverse"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerutil"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
 )
 
 const (

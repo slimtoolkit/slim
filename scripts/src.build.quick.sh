@@ -14,9 +14,9 @@ if hash git 2>/dev/null && [ -e $BDIR/.git ]; then
   REVISION="$(git rev-parse HEAD)"
 fi
 
-LD_FLAGS="-s -w -X github.com/docker-slim/docker-slim/pkg/version.appVersionTag=${TAG} -X github.com/docker-slim/docker-slim/pkg/version.appVersionRev=${REVISION} -X github.com/docker-slim/docker-slim/pkg/version.appVersionTime=${BUILD_TIME}"
+LD_FLAGS="-s -w -X github.com/slimtoolkit/slim/pkg/version.appVersionTag=${TAG} -X github.com/slimtoolkit/slim/pkg/version.appVersionRev=${REVISION} -X github.com/slimtoolkit/slim/pkg/version.appVersionTime=${BUILD_TIME}"
 
-go generate github.com/docker-slim/docker-slim/pkg/appbom
+go generate github.com/slimtoolkit/slim/pkg/appbom
 
 BINDIR="${BDIR}/bin"
 mkdir -p "$BINDIR"

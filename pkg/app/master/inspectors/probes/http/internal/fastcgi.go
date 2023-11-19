@@ -197,7 +197,7 @@ func (t FastCGITransport) buildEnv(r *http.Request) (map[string]string, error) {
 		"REQUEST_SCHEME":    requestScheme,
 		"SERVER_NAME":       reqHost,
 		"SERVER_PROTOCOL":   r.Proto,
-		"SERVER_SOFTWARE":   "docker-slim/v0.0.0",
+		"SERVER_SOFTWARE":   "slimtoolkit/v0.0.0",
 
 		// Other variables
 		"DOCUMENT_ROOT": root,

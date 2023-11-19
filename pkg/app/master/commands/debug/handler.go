@@ -1,19 +1,19 @@
 package debug
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-	//"github.com/docker-slim/docker-slim/pkg/app/master/container"
-	//"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/image"
-	"github.com/docker-slim/docker-slim/pkg/app/master/version"
-	"github.com/docker-slim/docker-slim/pkg/command"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerclient"
-	"github.com/docker-slim/docker-slim/pkg/report"
-	//"github.com/docker-slim/docker-slim/pkg/util/errutil"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
-	v "github.com/docker-slim/docker-slim/pkg/version"
-
 	log "github.com/sirupsen/logrus"
+
+	"github.com/slimtoolkit/slim/pkg/app"
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
+	//"github.com/slimtoolkit/slim/pkg/app/master/container"
+	//"github.com/slimtoolkit/slim/pkg/app/master/inspectors/image"
+	"github.com/slimtoolkit/slim/pkg/app/master/version"
+	"github.com/slimtoolkit/slim/pkg/command"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerclient"
+	"github.com/slimtoolkit/slim/pkg/report"
+	//"github.com/slimtoolkit/slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
+	v "github.com/slimtoolkit/slim/pkg/version"
 )
 
 const appName = commands.AppName

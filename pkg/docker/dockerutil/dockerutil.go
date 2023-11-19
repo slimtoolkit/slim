@@ -16,8 +16,8 @@ import (
 	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerclient"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerclient"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
 )
 
 var (

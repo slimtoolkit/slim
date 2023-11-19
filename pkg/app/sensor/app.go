@@ -16,21 +16,21 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/artifact"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/controlled"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/execution"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone/control"
-	"github.com/docker-slim/docker-slim/pkg/appbom"
-	"github.com/docker-slim/docker-slim/pkg/ipc/event"
-	"github.com/docker-slim/docker-slim/pkg/mondel"
-	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/sysenv"
-	"github.com/docker-slim/docker-slim/pkg/system"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-	"github.com/docker-slim/docker-slim/pkg/version"
+	"github.com/slimtoolkit/slim/pkg/app"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/artifact"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/controlled"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/execution"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/monitor"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/standalone"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/standalone/control"
+	"github.com/slimtoolkit/slim/pkg/appbom"
+	"github.com/slimtoolkit/slim/pkg/ipc/event"
+	"github.com/slimtoolkit/slim/pkg/mondel"
+	"github.com/slimtoolkit/slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/sysenv"
+	"github.com/slimtoolkit/slim/pkg/system"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/version"
 )
 
 const (
@@ -55,7 +55,7 @@ const (
 	logFileFlagUsage   = "enable logging redirection to a file (allowing to keep sensor's output separate from the target app's output)"
 	logFileFlagDefault = ""
 
-	sensorModeFlagUsage   = "set the sensor execution mode ('controlled' when sensor expect the driver docker-slim app to manipulate its lifecycle; or 'standalone' when sensor depends on nothing but the target app"
+	sensorModeFlagUsage   = "set the sensor execution mode ('controlled' when sensor expect the driver 'slim' app to manipulate its lifecycle; or 'standalone' when sensor depends on nothing but the target app"
 	sensorModeFlagDefault = sensorModeControlled
 
 	commandsFileFlagUsage   = "provide a JSONL-encoded file with one ore more sensor commands (standalone mode only)"

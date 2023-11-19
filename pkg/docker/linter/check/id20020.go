@@ -6,7 +6,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/docker/instruction"
+	"github.com/slimtoolkit/slim/pkg/docker/instruction"
 )
 
 const (

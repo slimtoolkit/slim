@@ -14,7 +14,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
-	"github.com/docker-slim/docker-slim/pkg/system"
+	"github.com/slimtoolkit/slim/pkg/system"
 )
 
 // copied from libcontainer

@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
 	log "github.com/sirupsen/logrus"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
 )
 
 func configureLogger(

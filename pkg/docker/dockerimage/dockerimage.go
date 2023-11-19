@@ -21,11 +21,11 @@ import (
 	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/certdiscover"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
-	"github.com/docker-slim/docker-slim/pkg/sysidentity"
-	"github.com/docker-slim/docker-slim/pkg/system"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
+	"github.com/slimtoolkit/slim/pkg/certdiscover"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerutil"
+	"github.com/slimtoolkit/slim/pkg/sysidentity"
+	"github.com/slimtoolkit/slim/pkg/system"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
 )
 
 const (

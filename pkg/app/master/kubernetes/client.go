@@ -3,8 +3,6 @@ package kubernetes
 import (
 	"context"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/config"
-
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
@@ -14,6 +12,8 @@ import (
 	"k8s.io/client-go/dynamic"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/clientcmd"
+
+	"github.com/slimtoolkit/slim/pkg/app/master/config"
 )
 
 type Client struct {

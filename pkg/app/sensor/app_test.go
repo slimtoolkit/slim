@@ -13,11 +13,11 @@ import (
 	"github.com/google/uuid"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/standalone/control"
-	"github.com/docker-slim/docker-slim/pkg/ipc/event"
-	"github.com/docker-slim/docker-slim/pkg/report"
-	testsensor "github.com/docker-slim/docker-slim/pkg/test/e2e/sensor"
-	testutil "github.com/docker-slim/docker-slim/pkg/test/util"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/standalone/control"
+	"github.com/slimtoolkit/slim/pkg/ipc/event"
+	"github.com/slimtoolkit/slim/pkg/report"
+	testsensor "github.com/slimtoolkit/slim/pkg/test/e2e/sensor"
+	testutil "github.com/slimtoolkit/slim/pkg/test/util"
 )
 
 const (

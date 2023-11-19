@@ -21,17 +21,17 @@ import (
 	"github.com/bmatcuk/doublestar/v3"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/detector/binfile"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/inspector/sodeps"
-	"github.com/docker-slim/docker-slim/pkg/artifact"
-	"github.com/docker-slim/docker-slim/pkg/certdiscover"
-	"github.com/docker-slim/docker-slim/pkg/ipc/command"
-	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/sysidentity"
-	"github.com/docker-slim/docker-slim/pkg/system"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
-	"github.com/docker-slim/docker-slim/pkg/version"
+	"github.com/slimtoolkit/slim/pkg/app"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/detector/binfile"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/inspector/sodeps"
+	"github.com/slimtoolkit/slim/pkg/artifact"
+	"github.com/slimtoolkit/slim/pkg/certdiscover"
+	"github.com/slimtoolkit/slim/pkg/ipc/command"
+	"github.com/slimtoolkit/slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/sysidentity"
+	"github.com/slimtoolkit/slim/pkg/system"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
+	"github.com/slimtoolkit/slim/pkg/version"
 )
 
 const (

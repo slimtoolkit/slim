@@ -7,7 +7,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/docker-slim/uilive"
+	"github.com/slimtoolkit/uilive"
 )
 
 // Out is the default writer to render progress bars to

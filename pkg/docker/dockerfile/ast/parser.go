@@ -13,8 +13,8 @@ import (
 	"strings"
 	"unicode"
 
-	"github.com/docker-slim/docker-slim/pkg/docker/instruction"
 	"github.com/pkg/errors"
+	"github.com/slimtoolkit/slim/pkg/docker/instruction"
 )
 
 const (

@@ -10,12 +10,12 @@ import (
 	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-	"github.com/docker-slim/docker-slim/pkg/app/master/container"
-	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/image"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/app"
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
+	"github.com/slimtoolkit/slim/pkg/app/master/container"
+	"github.com/slimtoolkit/slim/pkg/app/master/inspectors/image"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerutil"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
 )
 
 // HandleDockerRuntime implements support for the docker runtime

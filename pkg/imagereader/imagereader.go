@@ -9,7 +9,7 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/imagebuilder"
+	"github.com/slimtoolkit/slim/pkg/imagebuilder"
 )
 
 type Instance struct {

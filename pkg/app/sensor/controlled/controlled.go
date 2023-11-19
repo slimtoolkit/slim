@@ -8,13 +8,13 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/artifact"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/execution"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor"
-	"github.com/docker-slim/docker-slim/pkg/ipc/command"
-	"github.com/docker-slim/docker-slim/pkg/ipc/event"
-	"github.com/docker-slim/docker-slim/pkg/mondel"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/artifact"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/execution"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/monitor"
+	"github.com/slimtoolkit/slim/pkg/ipc/command"
+	"github.com/slimtoolkit/slim/pkg/ipc/event"
+	"github.com/slimtoolkit/slim/pkg/mondel"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
 )
 
 var ErrPrematureShutdown = errors.New("sensor shutdown before monitor stop")

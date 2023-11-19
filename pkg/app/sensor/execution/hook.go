@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"os/exec"
 
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
 	log "github.com/sirupsen/logrus"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
 )
 
 type kind string

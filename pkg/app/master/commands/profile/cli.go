@@ -6,9 +6,9 @@ import (
 
 	"github.com/urfave/cli/v2"
 
-	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-	"github.com/docker-slim/docker-slim/pkg/app/master/config"
+	"github.com/slimtoolkit/slim/pkg/app"
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
+	"github.com/slimtoolkit/slim/pkg/app/master/config"
 )
 
 const (

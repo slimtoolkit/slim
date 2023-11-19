@@ -6,8 +6,8 @@ import (
 	"os"
 	"strings"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-	"github.com/docker-slim/docker-slim/pkg/app/master/config"
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
+	"github.com/slimtoolkit/slim/pkg/app/master/config"
 
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"

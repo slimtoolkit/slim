@@ -18,9 +18,9 @@ if hash git 2>/dev/null && [ -e $BDIR/.git ]; then
   REVISION="$(git rev-parse HEAD)"
 fi
 
-LD_FLAGS="-s -w -X github.com/docker-slim/docker-slim/pkg/version.appVersionTag=${TAG} -X github.com/docker-slim/docker-slim/pkg/version.appVersionRev=${REVISION} -X github.com/docker-slim/docker-slim/pkg/version.appVersionTime=${BUILD_TIME}"
+LD_FLAGS="-s -w -X github.com/slimtoolkit/slim/pkg/version.appVersionTag=${TAG} -X github.com/slimtoolkit/slim/pkg/version.appVersionRev=${REVISION} -X github.com/slimtoolkit/slim/pkg/version.appVersionTime=${BUILD_TIME}"
 
-go generate github.com/docker-slim/docker-slim/pkg/appbom
+go generate github.com/slimtoolkit/slim/pkg/appbom
 
 pushd ${BDIR}/cmd/slim
 GOOS=darwin GOARCH=arm64 go build -mod=vendor -trimpath -ldflags="${LD_FLAGS}" -a -tags 'netgo osusergo' -o "${BDIR}/bin/mac_m1/slim"

@@ -11,11 +11,11 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app"
-	//"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-	"github.com/docker-slim/docker-slim/pkg/system"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
-	v "github.com/docker-slim/docker-slim/pkg/version"
+	"github.com/slimtoolkit/slim/pkg/app"
+	//"github.com/slimtoolkit/slim/pkg/app/master/commands"
+	"github.com/slimtoolkit/slim/pkg/system"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
+	v "github.com/slimtoolkit/slim/pkg/version"
 )
 
 const (
@@ -163,7 +163,7 @@ func Print(xc *app.ExecutionContext, cmdNameParam string, logger *log.Entry, cli
 
 // Check checks the app version
 func Check(inContainer, isDSImage bool) *CheckVersionInfo {
-	logger := log.WithFields(log.Fields{"app": "docker-slim"})
+	logger := log.WithFields(log.Fields{"app": "slim"})
 
 	client := http.Client{
 		Timeout: 13 * time.Second,

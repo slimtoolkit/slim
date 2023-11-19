@@ -5,12 +5,12 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker-slim/go-update"
 	log "github.com/sirupsen/logrus"
+	"github.com/slimtoolkit/go-update"
 
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
-	vinfo "github.com/docker-slim/docker-slim/pkg/version"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
+	vinfo "github.com/slimtoolkit/slim/pkg/version"
 )
 
 const (

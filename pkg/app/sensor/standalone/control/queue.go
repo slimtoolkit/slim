@@ -10,7 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/ipc/command"
+	"github.com/slimtoolkit/slim/pkg/ipc/command"
 )
 
 func HandleControlCommandQueue(ctx context.Context, commandsFile string, commandCh chan command.Message) {

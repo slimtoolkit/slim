@@ -18,7 +18,7 @@ var signals = []os.Signal{
 func InitHandlers() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, signals...)
-	log.Debugf("docker-slim: listening for signals - %+v", signals)
+	log.Debugf("slim: listening for signals - %+v", signals)
 	go func() {
 		for {
 			select {
@@ -27,10 +27,10 @@ func InitHandlers() {
 			case sig := <-sigChan:
 				switch sig {
 				case syscall.SIGUSR1:
-					log.Debug("docker-slim: continue signal")
+					log.Debug("slim: continue signal")
 					AppContinueChan <- struct{}{}
 				default:
-					log.Debugf("docker-slim: other signal (%v)...", sig)
+					log.Debugf("slim: other signal (%v)...", sig)
 				}
 			}
 		}

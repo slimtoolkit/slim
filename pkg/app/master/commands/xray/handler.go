@@ -7,23 +7,23 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-	"github.com/docker-slim/docker-slim/pkg/app/master/inspectors/image"
-	"github.com/docker-slim/docker-slim/pkg/app/master/version"
-	"github.com/docker-slim/docker-slim/pkg/command"
-	"github.com/docker-slim/docker-slim/pkg/docker/buildpackinfo"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerclient"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerutil"
-	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
-	v "github.com/docker-slim/docker-slim/pkg/version"
-
 	//"github.com/bmatcuk/doublestar/v3"
 	"github.com/dustin/go-humanize"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/slimtoolkit/slim/pkg/app"
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
+	"github.com/slimtoolkit/slim/pkg/app/master/inspectors/image"
+	"github.com/slimtoolkit/slim/pkg/app/master/version"
+	"github.com/slimtoolkit/slim/pkg/command"
+	"github.com/slimtoolkit/slim/pkg/docker/buildpackinfo"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerclient"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerimage"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerutil"
+	"github.com/slimtoolkit/slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
+	v "github.com/slimtoolkit/slim/pkg/version"
 )
 
 const appName = commands.AppName

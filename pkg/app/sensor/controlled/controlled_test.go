@@ -6,16 +6,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/artifact"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/controlled"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/fanotify"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/ptrace"
-	"github.com/docker-slim/docker-slim/pkg/ipc/command"
-	"github.com/docker-slim/docker-slim/pkg/mondel"
-	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/test/stub/sensor/execution"
-	stubmonitor "github.com/docker-slim/docker-slim/pkg/test/stub/sensor/monitor"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/artifact"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/controlled"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/monitor"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/monitor/fanotify"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/monitor/ptrace"
+	"github.com/slimtoolkit/slim/pkg/ipc/command"
+	"github.com/slimtoolkit/slim/pkg/mondel"
+	"github.com/slimtoolkit/slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/test/stub/sensor/execution"
+	stubmonitor "github.com/slimtoolkit/slim/pkg/test/stub/sensor/monitor"
 )
 
 // Stubs

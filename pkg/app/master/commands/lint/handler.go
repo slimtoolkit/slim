@@ -4,17 +4,17 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/docker-slim/docker-slim/pkg/app"
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-	"github.com/docker-slim/docker-slim/pkg/app/master/version"
-	"github.com/docker-slim/docker-slim/pkg/command"
-	"github.com/docker-slim/docker-slim/pkg/docker/linter"
-	"github.com/docker-slim/docker-slim/pkg/docker/linter/check"
-	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-
 	dockerapi "github.com/fsouza/go-dockerclient"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/slimtoolkit/slim/pkg/app"
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
+	"github.com/slimtoolkit/slim/pkg/app/master/version"
+	"github.com/slimtoolkit/slim/pkg/command"
+	"github.com/slimtoolkit/slim/pkg/docker/linter"
+	"github.com/slimtoolkit/slim/pkg/docker/linter/check"
+	"github.com/slimtoolkit/slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
 )
 
 const appName = commands.AppName
@@ -58,7 +58,7 @@ func OnCommand(
 		if err == dockerclient.ErrNoDockerInfo {
 			exitMsg := "missing Docker connection info"
 			if gparams.InContainer && gparams.IsDSImage {
-				exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
+				exitMsg = "make sure to pass the Docker connect parameters to the 'slim' container"
 			}
 			fmt.Printf("cmd=%s info=docker.connect.error message='%s'\n", cmdName, exitMsg)
 			fmt.Printf("cmd=%s state=exited version=%s location='%s'\n", cmdName, v.Current(), fsutil.ExeDir())

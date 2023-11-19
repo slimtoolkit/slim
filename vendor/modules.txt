@@ -69,18 +69,6 @@ github.com/davecgh/go-spew/spew
 ## explicit; go 1.15
 github.com/distribution/distribution/v3/digestset
 github.com/distribution/distribution/v3/reference
-# github.com/docker-slim/go-update v0.0.0-20190422071557-ed40247aff59
-## explicit
-github.com/docker-slim/go-update
-github.com/docker-slim/go-update/internal/binarydist
-github.com/docker-slim/go-update/internal/osext
-# github.com/docker-slim/uilive v0.0.2
-## explicit
-github.com/docker-slim/uilive
-# github.com/docker-slim/uiprogress v0.0.0-20190505193231-9d4396e6d40b
-## explicit
-github.com/docker-slim/uiprogress
-github.com/docker-slim/uiprogress/util/strutil
 # github.com/docker/cli v24.0.0+incompatible
 ## explicit
 github.com/docker/cli/cli/config
@@ -274,13 +262,13 @@ github.com/google/uuid
 # github.com/gorilla/websocket v1.4.2
 ## explicit; go 1.12
 github.com/gorilla/websocket
-# github.com/gosuri/uilive v0.0.3
-## explicit
+# github.com/gosuri/uilive v0.0.4
+## explicit; go 1.10
 # github.com/gregjones/httpcache v0.0.0-20180305231024-9cad4c3443a7
 ## explicit
 github.com/gregjones/httpcache
-# github.com/hooklift/assert v0.0.0-20170704181755-9d1defd6d214
-## explicit
+# github.com/hooklift/assert v0.1.0
+## explicit; go 1.14
 # github.com/imdario/mergo v0.3.13
 ## explicit; go 1.13
 github.com/imdario/mergo
@@ -401,6 +389,18 @@ github.com/segmentio/ksuid
 # github.com/sirupsen/logrus v1.9.3
 ## explicit; go 1.13
 github.com/sirupsen/logrus
+# github.com/slimtoolkit/go-update v0.0.0-20231119011834-99945ebd76f7
+## explicit
+github.com/slimtoolkit/go-update
+github.com/slimtoolkit/go-update/internal/binarydist
+github.com/slimtoolkit/go-update/internal/osext
+# github.com/slimtoolkit/uilive v0.0.2
+## explicit
+github.com/slimtoolkit/uilive
+# github.com/slimtoolkit/uiprogress v0.0.0-20231119012247-4a052fb12f37
+## explicit
+github.com/slimtoolkit/uiprogress
+github.com/slimtoolkit/uiprogress/util/strutil
 # github.com/spf13/cobra v1.7.0
 ## explicit; go 1.15
 github.com/spf13/cobra

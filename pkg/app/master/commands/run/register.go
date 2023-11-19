@@ -1,7 +1,7 @@
 package run
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
 )
 
 func RegisterCommand() {

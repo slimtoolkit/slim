@@ -7,7 +7,7 @@ There are two ways to provide the Go executable hash to "appbom":
 Using "go generate" to hash the Go binary:
 
 go generate ./...
-go generate github.com/docker-slim/docker-slim/pkg/appbom
+go generate github.com/slimtoolkit/slim/pkg/appbom
 
 With "go generate" you also need to use embedding (enabled by default).
 If you can't use "embed" you can disable it with the "appbom_noembed" tag:
@@ -18,11 +18,11 @@ If you disable embedding then you'll need to pass the Go executable hash using "
 
 Mac:
 
-go build -ldflags "-X github.com/docker-slim/docker-slim/pkg/appbom.GoBinHash=sha256:$(shasum -a 256 $(go env GOROOT)/bin/go | head -c 64)"
+go build -ldflags "-X github.com/slimtoolkit/slim/pkg/appbom.GoBinHash=sha256:$(shasum -a 256 $(go env GOROOT)/bin/go | head -c 64)"
 
 Linux:
 
-go build -ldflags "-X github.com/docker-slim/docker-slim/pkg/appbom.GoBinHash=sha256:$(sha256sum $(go env GOROOT)/bin/go | head -c 64)"
+go build -ldflags "-X github.com/slimtoolkit/slim/pkg/appbom.GoBinHash=sha256:$(sha256sum $(go env GOROOT)/bin/go | head -c 64)"
 
 You can use "-ldflags" instead of go generate/embed if that approach works better for you.
 */

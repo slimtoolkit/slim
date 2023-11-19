@@ -9,13 +9,13 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/command"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/reverse"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerimage"
-	"github.com/docker-slim/docker-slim/pkg/docker/linter/check"
-	"github.com/docker-slim/docker-slim/pkg/system"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
-	"github.com/docker-slim/docker-slim/pkg/version"
+	"github.com/slimtoolkit/slim/pkg/command"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerfile/reverse"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerimage"
+	"github.com/slimtoolkit/slim/pkg/docker/linter/check"
+	"github.com/slimtoolkit/slim/pkg/system"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/version"
 )
 
 // DefaultFilename is the default name for the command report

@@ -18,8 +18,8 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/imagebuilder"
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
+	"github.com/slimtoolkit/slim/pkg/imagebuilder"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
 )
 
 const (
@@ -133,7 +133,7 @@ func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
 	}
 
 	if imgConfig.Author == "" {
-		imgConfig.Author = "docker-slim"
+		imgConfig.Author = "slimtoolkit"
 	}
 
 	if !options.ImageConfig.Created.IsZero() {

@@ -13,12 +13,12 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/fanotify"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/ptrace"
-	"github.com/docker-slim/docker-slim/pkg/ipc/command"
-	"github.com/docker-slim/docker-slim/pkg/mondel"
-	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/monitor/fanotify"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/monitor/ptrace"
+	"github.com/slimtoolkit/slim/pkg/ipc/command"
+	"github.com/slimtoolkit/slim/pkg/mondel"
+	"github.com/slimtoolkit/slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
 )
 
 const (

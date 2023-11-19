@@ -9,8 +9,8 @@ import (
 
 	"github.com/fatih/color"
 
-	"github.com/docker-slim/docker-slim/pkg/consts"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/consts"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
 )
 
 const (

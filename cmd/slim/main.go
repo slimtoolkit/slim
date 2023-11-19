@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master"
+	"github.com/slimtoolkit/slim/pkg/app/master"
 )
 
 func main() {

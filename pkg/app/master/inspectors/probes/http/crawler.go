@@ -9,7 +9,7 @@ import (
 	"github.com/gocolly/colly/v2"
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/config"
+	"github.com/slimtoolkit/slim/pkg/app/master/config"
 )
 
 const (

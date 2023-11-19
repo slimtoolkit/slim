@@ -6,7 +6,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/docker-slim/docker-slim/pkg/docker/instruction"
+	"github.com/slimtoolkit/slim/pkg/docker/instruction"
 )
 
 // ImageConfig describes the container image configurations (aka ConfigFile or V1Image/Image in other libraries)

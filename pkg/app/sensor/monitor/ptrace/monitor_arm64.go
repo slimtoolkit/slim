@@ -14,11 +14,11 @@ import (
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/sys/unix"
 
-	"github.com/docker-slim/docker-slim/pkg/errors"
-	"github.com/docker-slim/docker-slim/pkg/launcher"
-	"github.com/docker-slim/docker-slim/pkg/mondel"
-	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/system"
+	"github.com/slimtoolkit/slim/pkg/errors"
+	"github.com/slimtoolkit/slim/pkg/launcher"
+	"github.com/slimtoolkit/slim/pkg/mondel"
+	"github.com/slimtoolkit/slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/system"
 )
 
 type syscallEvent struct {

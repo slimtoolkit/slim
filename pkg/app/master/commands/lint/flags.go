@@ -1,10 +1,10 @@
 package lint
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-
 	log "github.com/sirupsen/logrus"
 	"github.com/urfave/cli/v2"
+
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
 )
 
 // Lint command flag names

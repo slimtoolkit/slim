@@ -2,7 +2,7 @@
 package spec
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/docker/instruction"
+	"github.com/slimtoolkit/slim/pkg/docker/instruction"
 )
 
 type ParentImage struct {

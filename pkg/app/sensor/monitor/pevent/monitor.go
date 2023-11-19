@@ -4,9 +4,9 @@
 package pevent
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/pdiscover"
-	"github.com/docker-slim/docker-slim/pkg/report"
-	"github.com/docker-slim/docker-slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/pdiscover"
+	"github.com/slimtoolkit/slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
 
 	log "github.com/sirupsen/logrus"
 )

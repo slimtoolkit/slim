@@ -1,10 +1,10 @@
 package lint
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-	"github.com/docker-slim/docker-slim/pkg/docker/linter/check"
-
 	"github.com/c-bata/go-prompt"
+
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
+	"github.com/slimtoolkit/slim/pkg/docker/linter/check"
 )
 
 var CommandSuggestion = prompt.Suggest{

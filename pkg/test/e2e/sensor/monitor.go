@@ -1,8 +1,8 @@
 package sensor
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
-	"github.com/docker-slim/docker-slim/pkg/ipc/command"
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
+	"github.com/slimtoolkit/slim/pkg/ipc/command"
 )
 
 type StartMonitorOpt func(*command.StartMonitor)

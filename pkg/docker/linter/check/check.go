@@ -2,9 +2,9 @@
 package check
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerfile/spec"
-	"github.com/docker-slim/docker-slim/pkg/docker/dockerignore"
-	"github.com/docker-slim/docker-slim/pkg/docker/instruction"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerfile/spec"
+	"github.com/slimtoolkit/slim/pkg/docker/dockerignore"
+	"github.com/slimtoolkit/slim/pkg/docker/instruction"
 )
 
 type Context struct {

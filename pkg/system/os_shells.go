@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/docker-slim/docker-slim/pkg/util/fsutil"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
 )
 
 const (

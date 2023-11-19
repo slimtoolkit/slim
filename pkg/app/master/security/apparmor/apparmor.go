@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"text/template"
 
-	"github.com/docker-slim/docker-slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/report"
 )
 
 const appArmorTemplate = `
@@ -101,7 +101,7 @@ func GenProfile(artifactLocation string, profileName string) error {
 						PermSet:  report.PermSetFromFlags(aprops.Flags),
 					})
 			default:
-				//logrus.Printf("docker-slim: genAppArmorProfile - other artifact => %v\n", aprops)
+				//logrus.Printf("slim: genAppArmorProfile - other artifact => %v\n", aprops)
 				//note: most are Symlinks
 			}
 		}

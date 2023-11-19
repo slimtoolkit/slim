@@ -12,7 +12,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/docker-slim/go-update/internal/osext"
+	"github.com/slimtoolkit/go-update/internal/osext"
 )
 
 var (

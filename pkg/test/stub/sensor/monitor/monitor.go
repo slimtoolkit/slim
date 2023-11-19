@@ -3,9 +3,9 @@ package monitor
 import (
 	"context"
 
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/fanotify"
-	"github.com/docker-slim/docker-slim/pkg/app/sensor/monitor/ptrace"
-	"github.com/docker-slim/docker-slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/monitor/fanotify"
+	"github.com/slimtoolkit/slim/pkg/app/sensor/monitor/ptrace"
+	"github.com/slimtoolkit/slim/pkg/report"
 )
 
 // Base monitor stub.

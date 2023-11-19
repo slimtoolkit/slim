@@ -3,7 +3,7 @@ package install
 import (
 	"github.com/c-bata/go-prompt"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/commands"
+	"github.com/slimtoolkit/slim/pkg/app/master/commands"
 )
 
 var CommandSuggestion = prompt.Suggest{

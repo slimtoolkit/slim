@@ -1,8 +1,8 @@
 package ptrace
 
 import (
-	"github.com/docker-slim/docker-slim/pkg/monitor/ptrace"
-	"github.com/docker-slim/docker-slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/monitor/ptrace"
+	"github.com/slimtoolkit/slim/pkg/report"
 )
 
 type AppRunOpt = ptrace.AppRunOpt

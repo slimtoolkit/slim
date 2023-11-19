@@ -3,14 +3,14 @@ package kubernetes
 import (
 	"errors"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/config"
-
 	appsv1 "k8s.io/api/apps/v1"
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/kubernetes/scheme"
+
+	"github.com/slimtoolkit/slim/pkg/app/master/config"
 )
 
 const (

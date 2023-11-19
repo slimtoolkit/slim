@@ -10,10 +10,10 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/docker-slim/docker-slim/pkg/errors"
-	"github.com/docker-slim/docker-slim/pkg/mondel"
-	"github.com/docker-slim/docker-slim/pkg/monitor/ptrace"
-	"github.com/docker-slim/docker-slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/errors"
+	"github.com/slimtoolkit/slim/pkg/mondel"
+	"github.com/slimtoolkit/slim/pkg/monitor/ptrace"
+	"github.com/slimtoolkit/slim/pkg/report"
 )
 
 type status struct {

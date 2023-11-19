@@ -4,11 +4,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/docker-slim/docker-slim/pkg/app/master/config"
-
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	"k8s.io/cli-runtime/pkg/resource"
 	"k8s.io/client-go/kubernetes/scheme"
+
+	"github.com/slimtoolkit/slim/pkg/app/master/config"
 )
 
 // TODO: Start supporting CRDs - currently the hardcoded client-go scheme usage

@@ -11,8 +11,8 @@ import (
 
 	docker "github.com/fsouza/go-dockerclient"
 
-	"github.com/docker-slim/docker-slim/pkg/consts"
-	v "github.com/docker-slim/docker-slim/pkg/version"
+	"github.com/slimtoolkit/slim/pkg/consts"
+	v "github.com/slimtoolkit/slim/pkg/version"
 )
 
 // note: dup (todo: refactor)
