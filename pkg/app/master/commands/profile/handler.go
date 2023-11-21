@@ -82,7 +82,7 @@ func OnCommand(
 	logLevel string,
 	logFormat string) {
 	printState := true
-	logger := log.WithFields(log.Fields{"app": appName, "command": Name})
+	logger := log.WithFields(log.Fields{"app": appName, "cmd": Name})
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 

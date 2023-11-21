@@ -21,7 +21,7 @@ func OnCommand(
 	xc *app.ExecutionContext,
 	doDebug, inContainer, isDSImage bool,
 	clientConfig *config.DockerClient) {
-	logger := log.WithFields(log.Fields{"app": "slim", "command": command.Version})
+	logger := log.WithFields(log.Fields{"app": "slim", "cmd": command.Version})
 
 	client, err := dockerclient.New(clientConfig)
 	if err == dockerclient.ErrNoDockerInfo {

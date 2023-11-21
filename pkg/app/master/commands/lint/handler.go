@@ -38,7 +38,7 @@ func OnCommand(
 	doShowSnippet bool,
 	doListChecks bool) {
 	const cmdName = Name
-	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
+	logger := log.WithFields(log.Fields{"app": appName, "cmd": cmdName})
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 

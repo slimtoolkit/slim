@@ -29,7 +29,7 @@ func OnCommand(
 	isDSImage bool,
 	binDir bool,
 	dockerCLIPlugin bool) {
-	logger := log.WithFields(log.Fields{"app": "slim", "command": "install"})
+	logger := log.WithFields(log.Fields{"app": "slim", "cmd": "install"})
 
 	appPath, err := os.Executable()
 	errutil.FailOn(err)

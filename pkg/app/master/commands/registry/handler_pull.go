@@ -5,7 +5,7 @@ import (
 
 	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
-	gocrv1 "github.com/google/go-containerregistry/pkg/v1"
+	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
 	log "github.com/sirupsen/logrus"
 
@@ -30,7 +30,10 @@ func OnPullCommand(
 	gparams *commands.GenericParams,
 	cparams *PullCommandParams) {
 	cmdName := fullCmdName(PullCmdName)
-	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
+	logger := log.WithFields(log.Fields{
+		"app": appName,
+		"cmd": cmdName,
+		"sub": PullCmdName})
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -105,136 +108,20 @@ func OnPullCommand(
 	}
 }
 
-// OnPushCommand implements the 'registry push' docker-slim command
-func OnPushCommand(
-	xc *app.ExecutionContext,
-	gparams *commands.GenericParams) {
-	cmdName := fullCmdName(PushCmdName)
-	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	Name := fmt.Sprintf("cmd=%s", cmdName)
-
-	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
-
-	cmdReport := report.NewRegistryCommand(gparams.ReportLocation, gparams.InContainer)
-	cmdReport.State = command.StateStarted
-
-	xc.Out.State("started")
-
-	client, err := dockerclient.New(gparams.ClientConfig)
-	if err == dockerclient.ErrNoDockerInfo {
-		exitMsg := "missing Docker connection info"
-		if gparams.InContainer && gparams.IsDSImage {
-			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
-		}
-
-		xc.Out.Info("docker.connect.error",
-			ovars{
-				"message": exitMsg,
-			})
-
-		exitCode := commands.ECTCommon | commands.ECCNoDockerConnectInfo
-		xc.Out.State("exited",
-			ovars{
-				"exit.code": exitCode,
-				"version":   v.Current(),
-				"location":  fsutil.ExeDir(),
-			})
-		xc.Exit(exitCode)
-	}
-	errutil.FailOn(err)
-
-	if gparams.Debug {
-		version.Print(xc, Name, logger, client, false, gparams.InContainer, gparams.IsDSImage)
-	}
-
-	xc.Out.State("completed")
-	cmdReport.State = command.StateCompleted
-	xc.Out.State("done")
-
-	vinfo := <-viChan
-	version.PrintCheckVersion(xc, "", vinfo)
-
-	cmdReport.State = command.StateDone
-	if cmdReport.Save() {
-		xc.Out.Info("report",
-			ovars{
-				"file": cmdReport.ReportLocation(),
-			})
-	}
-}
-
-// OnCopyCommand implements the 'registry copy' docker-slim command
-func OnCopyCommand(
-	xc *app.ExecutionContext,
-	gparams *commands.GenericParams) {
-	cmdName := fullCmdName(CopyCmdName)
-	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
-	Name := fmt.Sprintf("cmd=%s", cmdName)
-
-	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
-
-	cmdReport := report.NewRegistryCommand(gparams.ReportLocation, gparams.InContainer)
-	cmdReport.State = command.StateStarted
-
-	xc.Out.State("started")
-
-	client, err := dockerclient.New(gparams.ClientConfig)
-	if err == dockerclient.ErrNoDockerInfo {
-		exitMsg := "missing Docker connection info"
-		if gparams.InContainer && gparams.IsDSImage {
-			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
-		}
-
-		xc.Out.Info("docker.connect.error",
-			ovars{
-				"message": exitMsg,
-			})
-
-		exitCode := commands.ECTCommon | commands.ECCNoDockerConnectInfo
-		xc.Out.State("exited",
-			ovars{
-				"exit.code": exitCode,
-				"version":   v.Current(),
-				"location":  fsutil.ExeDir(),
-			})
-		xc.Exit(exitCode)
-	}
-	errutil.FailOn(err)
-
-	if gparams.Debug {
-		version.Print(xc, Name, logger, client, false, gparams.InContainer, gparams.IsDSImage)
-	}
-
-	xc.Out.State("completed")
-	cmdReport.State = command.StateCompleted
-	xc.Out.State("done")
-
-	vinfo := <-viChan
-	version.PrintCheckVersion(xc, "", vinfo)
-
-	cmdReport.State = command.StateDone
-	if cmdReport.Save() {
-		xc.Out.Info("report",
-			ovars{
-				"file": cmdReport.ReportLocation(),
-			})
-	}
-}
-
 func outImageInfo(
 	xc *app.ExecutionContext,
-	targetImage gocrv1.Image) {
+	targetImage v1.Image) {
 	cn, err := targetImage.ConfigName()
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	d, err := targetImage.Digest()
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	cf, err := targetImage.ConfigFile()
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	m, err := targetImage.Manifest()
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	xc.Out.Info("image.info",
 		ovars{

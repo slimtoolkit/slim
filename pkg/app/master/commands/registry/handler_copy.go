@@ -1,6 +1,12 @@
-package convert
+package registry
 
 import (
+	//"github.com/google/go-containerregistry/pkg/crane"
+	//"github.com/google/go-containerregistry/pkg/name"
+	//gocrv1 "github.com/google/go-containerregistry/pkg/v1"
+	//"github.com/google/go-containerregistry/pkg/v1/daemon"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/slimtoolkit/slim/pkg/app"
 	"github.com/slimtoolkit/slim/pkg/app/master/commands"
 	"github.com/slimtoolkit/slim/pkg/app/master/version"
@@ -10,38 +16,30 @@ import (
 	"github.com/slimtoolkit/slim/pkg/util/errutil"
 	"github.com/slimtoolkit/slim/pkg/util/fsutil"
 	v "github.com/slimtoolkit/slim/pkg/version"
-
-	log "github.com/sirupsen/logrus"
 )
 
-const appName = commands.AppName
-
-type ovars = app.OutVars
-
-// OnCommand implements the 'convert' command
-func OnCommand(
+// OnCopyCommand implements the 'registry copy' command
+func OnCopyCommand(
 	xc *app.ExecutionContext,
-	gparams *commands.GenericParams,
-	targetRef string) {
-	const cmdName = Name
-	logger := log.WithFields(log.Fields{"app": appName, "cmd": cmdName})
+	gparams *commands.GenericParams) {
+	cmdName := fullCmdName(CopyCmdName)
+	logger := log.WithFields(log.Fields{
+		"app": appName,
+		"cmd": cmdName,
+		"sub": CopyCmdName})
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
-	cmdReport := report.NewConvertCommand(gparams.ReportLocation, gparams.InContainer)
+	cmdReport := report.NewRegistryCommand(gparams.ReportLocation, gparams.InContainer)
 	cmdReport.State = command.StateStarted
 
 	xc.Out.State("started")
-	xc.Out.Info("params",
-		ovars{
-			"target": targetRef,
-		})
 
 	client, err := dockerclient.New(gparams.ClientConfig)
 	if err == dockerclient.ErrNoDockerInfo {
 		exitMsg := "missing Docker connection info"
 		if gparams.InContainer && gparams.IsDSImage {
-			exitMsg = "make sure to pass the Docker connect parameters to the slim app container"
+			exitMsg = "make sure to pass the Docker connect parameters to the docker-slim container"
 		}
 
 		xc.Out.Info("docker.connect.error",

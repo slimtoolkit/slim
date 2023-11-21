@@ -83,7 +83,7 @@ func OnCommand(
 	xdArtifactsPath string,
 ) {
 	const cmdName = Name
-	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
+	logger := log.WithFields(log.Fields{"app": appName, "cmd": cmdName})
 
 	changeDataMatchers := map[string]*dockerimage.ChangeDataMatcher{}
 	for _, cdm := range changeDataMatcherList {

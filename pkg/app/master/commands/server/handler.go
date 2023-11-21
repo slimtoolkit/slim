@@ -22,7 +22,7 @@ type ovars = app.OutVars
 func OnCommand(
 	xc *app.ExecutionContext,
 	gparams *commands.GenericParams) {
-	logger := log.WithFields(log.Fields{"app": appName, "command": Name})
+	logger := log.WithFields(log.Fields{"app": appName, "cmd": Name})
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 

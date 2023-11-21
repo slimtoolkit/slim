@@ -35,7 +35,7 @@ func OnCommand(
 	gparams *commands.GenericParams,
 	cparams *CommandParams) {
 	const cmdName = Name
-	logger := log.WithFields(log.Fields{"app": appName, "command": cmdName})
+	logger := log.WithFields(log.Fields{"app": appName, "cmd": cmdName})
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
