@@ -229,7 +229,7 @@ slim update
 
 Linux (for non-intel replace `dist_linux` with the platform-specific extracted path):
 ```
-tar -xvf dist_linux.tar.gz
+tar -xvf ds.tar.gz
 mv  dist_linux/slim /usr/local/bin/
 mv  dist_linux/slim-sensor /usr/local/bin/
 ```
