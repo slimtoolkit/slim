@@ -326,7 +326,26 @@ func (app *App) processFileActivity(e *syscallEvent) {
 			}
 		}
 
-		if p.SyscallType() == ExecType {
+		if p.SyscallType() == ExecType &&
+			!p.FailedReturnStatus(e.retVal) {
+			if fsa, ok := app.fsActivity[e.pathParam]; ok {
+				fsa.OpsAll++
+				fsa.Pids[e.pid] = struct{}{}
+				fsa.Syscalls[int(e.callNum)] = struct{}{}
+			} else {
+				fsa := &report.FSActivityInfo{
+					OpsAll:       1,
+					OpsCheckFile: 0,
+					Pids:         map[int]struct{}{},
+					Syscalls:     map[int]struct{}{},
+				}
+
+				fsa.Pids[e.pid] = struct{}{}
+				fsa.Syscalls[int(e.callNum)] = struct{}{}
+
+				app.fsActivity[e.pathParam] = fsa
+			}
+
 			if app.del != nil {
 				//NOTE:
 				//not capturing the 'dirfd' syscall params necessary
