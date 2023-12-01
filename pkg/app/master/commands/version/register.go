@@ -5,6 +5,9 @@ import (
 )
 
 func RegisterCommand() {
-	commands.CLI = append(commands.CLI, CLI)
-	commands.CommandSuggestions = append(commands.CommandSuggestions, CommandSuggestion)
+	commands.AddCLICommand(
+		Name,
+		CLI,
+		CommandSuggestion,
+		nil)
 }

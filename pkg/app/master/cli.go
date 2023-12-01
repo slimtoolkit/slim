@@ -191,6 +191,6 @@ func newCLI() *cli.App {
 		return nil
 	}
 
-	cliApp.Commands = commands.CLI
+	cliApp.Commands = commands.Get()
 	return cliApp
 }

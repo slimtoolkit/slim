@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/c-bata/go-prompt"
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
@@ -304,4 +305,24 @@ func exeAppCall(appCall string) error {
 
 ///////////////////////////////////////
 
-var CLI []*cli.Command
+// var CLI []*cli.Command
+var cliCommands []*cli.Command
+
+func AddCLICommand(
+	name string,
+	cmd *cli.Command,
+	cmdSuggestion prompt.Suggest,
+	flagSuggestions *FlagSuggestions) {
+	cliCommands = append(cliCommands, cmd)
+	if flagSuggestions != nil {
+		CommandFlagSuggestions[name] = flagSuggestions
+	}
+
+	if cmdSuggestion.Text != "" {
+		CommandSuggestions = append(CommandSuggestions, cmdSuggestion)
+	}
+}
+
+func Get() []*cli.Command {
+	return cliCommands
+}
