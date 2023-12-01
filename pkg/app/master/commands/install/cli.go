@@ -9,7 +9,7 @@ import (
 const (
 	Name  = "install"
 	Usage = "Installs slim"
-	Alias = "i"
+	Alias = "in"
 )
 
 const (

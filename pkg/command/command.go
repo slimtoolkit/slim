@@ -6,6 +6,7 @@ const (
 	Profile      Type = "profile"
 	Xray         Type = "xray"
 	Lint         Type = "lint"
+	Images       Type = "images"
 	Containerize Type = "containerize"
 	Convert      Type = "convert"
 	Merge        Type = "merge"

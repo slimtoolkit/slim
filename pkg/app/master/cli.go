@@ -18,6 +18,7 @@ import (
 	"github.com/slimtoolkit/slim/pkg/app/master/commands/dockerclipm"
 	"github.com/slimtoolkit/slim/pkg/app/master/commands/edit"
 	"github.com/slimtoolkit/slim/pkg/app/master/commands/help"
+	"github.com/slimtoolkit/slim/pkg/app/master/commands/images"
 	"github.com/slimtoolkit/slim/pkg/app/master/commands/install"
 	"github.com/slimtoolkit/slim/pkg/app/master/commands/lint"
 	"github.com/slimtoolkit/slim/pkg/app/master/commands/merge"
@@ -49,6 +50,7 @@ func registerCommands() {
 	lint.RegisterCommand()
 	build.RegisterCommand()
 	merge.RegisterCommand()
+	images.RegisterCommand()
 	registry.RegisterCommand()
 	profile.RegisterCommand()
 	version.RegisterCommand()

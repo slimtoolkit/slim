@@ -181,6 +181,14 @@ type LintCommand struct {
 	Errors          map[string]error         `json:"errors,omitempty"` //map[CHECK_ID]ERROR_INFO
 }
 
+// Output Version for 'images'
+const OVImagesCommand = "1.0"
+
+// ImagesCommand is the 'images' command report data
+type ImagesCommand struct {
+	Command
+}
+
 // Output Version for 'containerize'
 const OVContainerizeCommand = "1.0"
 
@@ -322,6 +330,21 @@ func NewLintCommand(reportLocation string, containerized bool) *LintCommand {
 			reportLocation: reportLocation,
 			Version:        OVLintCommand, //lint command 'results' version (report and artifacts)
 			Type:           command.Lint,
+			State:          command.StateUnknown,
+		},
+	}
+
+	cmd.Command.init(containerized)
+	return cmd
+}
+
+// NewImagesCommand creates a new 'images' command report
+func NewImagesCommand(reportLocation string, containerized bool) *ImagesCommand {
+	cmd := &ImagesCommand{
+		Command: Command{
+			reportLocation: reportLocation,
+			Version:        OVImagesCommand, //images command 'results' version (report and artifacts)
+			Type:           command.Images,
 			State:          command.StateUnknown,
 		},
 	}

@@ -3,14 +3,15 @@ package app
 import (
 	"encoding/json"
 	"fmt"
-	"log"
 	"os"
+	"runtime/debug"
 	"strings"
 
 	"github.com/fatih/color"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/slimtoolkit/slim/pkg/consts"
-	"github.com/slimtoolkit/slim/pkg/util/errutil"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
 	v "github.com/slimtoolkit/slim/pkg/version"
 )
 
@@ -52,18 +53,27 @@ func (ref *ExecutionContext) doCleanup() {
 func (ref *ExecutionContext) FailOn(err error) {
 	if err != nil {
 		ref.doCleanup()
-	}
 
-	if ref.Out != nil {
-		ref.Out.Info("fail.on", OutVars{"version": v.Current()})
-	}
+		//not using FailOn from errutil to control the flow/output better
+		stackData := debug.Stack()
+		log.WithError(err).WithFields(log.Fields{
+			"stack": string(stackData),
+		}).Fatal("terminating")
 
-	errutil.FailOn(err)
+		if ref.Out != nil {
+			ref.Out.Info("fail.on", OutVars{"version": v.Current()})
+		}
+
+		ShowCommunityInfo(ref.Out.JSONFlag)
+	}
 }
 
 func (ref *ExecutionContext) exit(exitCode int) {
 	if ref.Out != nil {
-		ref.Out.Info("exit", OutVars{"code": exitCode, "version": v.Current()})
+		ref.Out.Info("exit", OutVars{
+			"code":     exitCode,
+			"version":  v.Current(),
+			"location": fsutil.ExeDir()})
 	}
 
 	ShowCommunityInfo(ref.Out.JSONFlag)
