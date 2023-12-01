@@ -11,6 +11,7 @@ import (
 
 	"github.com/slimtoolkit/slim/pkg/consts"
 	"github.com/slimtoolkit/slim/pkg/util/errutil"
+	v "github.com/slimtoolkit/slim/pkg/version"
 )
 
 const (
@@ -53,10 +54,18 @@ func (ref *ExecutionContext) FailOn(err error) {
 		ref.doCleanup()
 	}
 
+	if ref.Out != nil {
+		ref.Out.Info("fail.on", OutVars{"version": v.Current()})
+	}
+
 	errutil.FailOn(err)
 }
 
 func (ref *ExecutionContext) exit(exitCode int) {
+	if ref.Out != nil {
+		ref.Out.Info("exit", OutVars{"code": exitCode, "version": v.Current()})
+	}
+
 	ShowCommunityInfo(ref.Out.JSONFlag)
 	os.Exit(exitCode)
 }
