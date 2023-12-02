@@ -9,27 +9,27 @@ import (
 	"github.com/urfave/cli/v2"
 
 	"github.com/slimtoolkit/slim/pkg/app"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/appbom"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/build"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/containerize"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/convert"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/debug"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/dockerclipm"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/edit"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/help"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/images"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/install"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/lint"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/merge"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/probe"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/profile"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/registry"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/run"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/server"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/update"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/version"
-	"github.com/slimtoolkit/slim/pkg/app/master/commands/xray"
+	"github.com/slimtoolkit/slim/pkg/app/master/command"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/appbom"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/build"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/containerize"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/convert"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/debug"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/dockerclipm"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/edit"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/help"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/images"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/install"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/lint"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/merge"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/probe"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/profile"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/registry"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/run"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/server"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/update"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/version"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/xray"
 	"github.com/slimtoolkit/slim/pkg/app/master/config"
 	"github.com/slimtoolkit/slim/pkg/system"
 	"github.com/slimtoolkit/slim/pkg/util/fsutil"
@@ -81,12 +81,12 @@ func newCLI() *cli.App {
 		cli.ShowAppHelp(ctx)
 	}
 
-	cliApp.Flags = commands.GlobalFlags()
+	cliApp.Flags = command.GlobalFlags()
 
 	cliApp.Before = func(ctx *cli.Context) error {
-		gparams, err := commands.GlobalFlagValues(ctx)
+		gparams, err := command.GlobalFlagValues(ctx)
 		if err != nil {
-			log.Errorf("commands.GlobalFlagValues error - %v", err)
+			log.Errorf("command.GlobalFlagValues error - %v", err)
 			return err
 		}
 
@@ -96,10 +96,10 @@ func newCLI() *cli.App {
 			return err
 		}
 
-		gparams = commands.UpdateGlobalFlagValues(appParams, gparams)
+		gparams = command.UpdateGlobalFlagValues(appParams, gparams)
 
-		ctx.Context = commands.CLIContextSave(ctx.Context, commands.GlobalParams, gparams)
-		ctx.Context = commands.CLIContextSave(ctx.Context, commands.AppParams, appParams)
+		ctx.Context = command.CLIContextSave(ctx.Context, command.GlobalParams, gparams)
+		ctx.Context = command.CLIContextSave(ctx.Context, command.AppParams, appParams)
 
 		if gparams.NoColor {
 			app.NoColor()
@@ -163,7 +163,7 @@ func newCLI() *cli.App {
 	}
 
 	cliApp.After = func(ctx *cli.Context) error {
-		gcvalues, err := commands.GlobalFlagValues(ctx)
+		gcvalues, err := command.GlobalFlagValues(ctx)
 		if err != nil {
 			return err
 		}
@@ -174,25 +174,25 @@ func newCLI() *cli.App {
 		//tmp hack
 		if !strings.Contains(strings.Join(os.Args, " "), " docker-cli-plugin-metadata") {
 			if doShowCommunityInfo {
-				app.ShowCommunityInfo(ctx.String(commands.FlagConsoleFormat))
+				app.ShowCommunityInfo(ctx.String(command.FlagConsoleFormat))
 			}
 		}
 		return nil
 	}
 
 	cliApp.Action = func(ctx *cli.Context) error {
-		gcvalues, err := commands.GlobalFlagValues(ctx)
+		gcvalues, err := command.GlobalFlagValues(ctx)
 		if err != nil {
 			return err
 		}
 
 		//disable community info in interactive mode (too noisy)
 		doShowCommunityInfo = false
-		ia := commands.NewInteractiveApp(cliApp, gcvalues)
+		ia := command.NewInteractiveApp(cliApp, gcvalues)
 		ia.Run()
 		return nil
 	}
 
-	cliApp.Commands = commands.Get()
+	cliApp.Commands = command.GetCommands()
 	return cliApp
 }
