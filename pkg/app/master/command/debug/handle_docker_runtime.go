@@ -202,7 +202,10 @@ func HandleDockerRuntime(
 	}
 
 	imageInspector, err := image.NewInspector(client, commandParams.DebugContainerImage)
-	if imageInspector.NoImage() {
+	errutil.FailOn(err)
+	noImage, err := imageInspector.NoImage()
+	errutil.FailOn(err)
+	if noImage {
 		err := imageInspector.Pull(true, "", "", "")
 		xc.FailOn(err)
 	}

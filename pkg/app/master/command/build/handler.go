@@ -1505,7 +1505,9 @@ func finishCommand(
 	newImageInspector, err := image.NewInspector(client, minifiedImageName)
 	xc.FailOn(err)
 
-	if newImageInspector.NoImage() {
+	noImage, err := imageInspector.NoImage()
+	errutil.FailOn(err)
+	if noImage {
 		xc.Out.Info("results",
 			ovars{
 				"message": "minified image not found",

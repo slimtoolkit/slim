@@ -78,7 +78,9 @@ func OnCommand(
 	imageInspector, err := image.NewInspector(client, cparams.TargetRef)
 	errutil.FailOn(err)
 
-	if imageInspector.NoImage() {
+	noImage, err := imageInspector.NoImage()
+	errutil.FailOn(err)
+	if noImage {
 		if cparams.DoPull {
 			xc.Out.Info("target.image",
 				ovars{

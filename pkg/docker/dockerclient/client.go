@@ -7,10 +7,12 @@ import (
 	"path/filepath"
 
 	"github.com/fsouza/go-dockerclient"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/slimtoolkit/slim/pkg/app/master/config"
 	"github.com/slimtoolkit/slim/pkg/util/errutil"
-
-	log "github.com/sirupsen/logrus"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
+	"github.com/slimtoolkit/slim/pkg/util/jsonutil"
 )
 
 const (
@@ -31,31 +33,99 @@ func UserDockerSocket() string {
 	return filepath.Join(home, unixUserSocketSuffix)
 }
 
-func GetUnixSocketAddr() string {
+type SocketInfo struct {
+	Address       string `json:"address"`
+	FilePath      string `json:"file_path"`
+	FileType      string `json:"type"`
+	FilePerms     string `json:"perms"`
+	SymlinkTarget string `json:"symlink_target,omitempty"`
+	TargetPerms   string `json:"target_perms,omitempty"`
+	TargetType    string `json:"target_type,omitempty"`
+	CanRead       bool   `json:"can_read"`
+	CanWrite      bool   `json:"can_write"`
+}
+
+func getSocketInfo(filePath string) (*SocketInfo, error) {
+	info := &SocketInfo{
+		FileType: "file",
+		FilePath: filePath,
+	}
+
+	fi, err := os.Lstat(info.FilePath)
+	if err != nil {
+		log.Errorf("dockerclient.getSocketInfo.os.Lstat(%s): error - %v", filePath, err)
+		return nil, err
+	}
+
+	if fi.Mode()&os.ModeSymlink != 0 {
+		info.SymlinkTarget, err = os.Readlink(info.FilePath)
+		if err != nil {
+			log.Errorf("dockerclient.getSocketInfo.os.Readlink(%s): error - %v", filePath, err)
+			return nil, err
+		}
+		info.FileType = "symlink"
+		info.FilePerms = fmt.Sprintf("%#o", fi.Mode().Perm())
+		if info.SymlinkTarget != "" {
+			tfi, err := os.Lstat(info.SymlinkTarget)
+			if err != nil {
+				log.Errorf("dockerclient.getSocketInfo.os.Lstat(%s): error - %v", info.SymlinkTarget, err)
+				return nil, err
+			}
+
+			info.TargetPerms = fmt.Sprintf("%#o", tfi.Mode().Perm())
+			if tfi.Mode()&os.ModeSymlink != 0 {
+				info.TargetType = "symlink"
+			}
+		}
+	}
+
+	info.CanRead, err = fsutil.HasReadAccess(info.FilePath)
+	if err != nil {
+		log.Errorf("dockerclient.getSocketInfo.fsutil.HasReadAccess(%s): error - %v", info.FilePath, err)
+		return nil, err
+	}
+
+	info.CanWrite, err = fsutil.HasWriteAccess(info.FilePath)
+	if err != nil {
+		log.Errorf("dockerclient.getSocketInfo.fsutil.HasWriteAccess(%s): error - %v", info.FilePath, err)
+		return nil, err
+	}
+
+	return info, nil
+}
+
+func GetUnixSocketAddr() (*SocketInfo, error) {
 	//note: may move this to dockerutil
 	if _, err := os.Stat(UnixSocketPath); err == nil {
-		log.Tracef("dockerclient.GetUnixSocketAddr(): found - %s", UnixSocketPath)
-		return UnixSocketAddr
+		socketInfo, err := getSocketInfo(UnixSocketPath)
+		if err != nil {
+			return nil, err
+		}
+
+		socketInfo.Address = UnixSocketAddr
+		log.Debugf("dockerclient.GetUnixSocketAddr(): found => %s", jsonutil.ToString(socketInfo))
+		return socketInfo, nil
 	}
 
 	userDockerSocket := UserDockerSocket()
 	if _, err := os.Stat(userDockerSocket); err == nil {
-		log.Tracef("dockerclient.GetUnixSocketAddr(): found - %s", userDockerSocket)
-		return fmt.Sprintf("unix://%s", userDockerSocket)
+		socketInfo, err := getSocketInfo(userDockerSocket)
+		if err != nil {
+			return nil, err
+		}
+
+		socketInfo.Address = fmt.Sprintf("unix://%s", userDockerSocket)
+		log.Debugf("dockerclient.GetUnixSocketAddr(): found => %s", jsonutil.ToString(socketInfo))
+		return socketInfo, nil
 	}
 
-	return ""
+	return nil, fmt.Errorf("docker socket not found")
 }
 
 // New creates a new Docker client instance
 func New(config *config.DockerClient) (*docker.Client, error) {
 	var client *docker.Client
 	var err error
-
-	unixSocketAddr := GetUnixSocketAddr()
-	if unixSocketAddr == "" && config.Env[EnvDockerHost] == "" && config.Host == "" {
-		return nil, ErrNoDockerInfo
-	}
 
 	newTLSClient := func(host string, certPath string, verify bool) (*docker.Client, error) {
 		var ca []byte
@@ -134,11 +204,20 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 		log.Debug("dockerclient.New: new Docker client (env) [5]")
 
 	case config.Host == "" && config.Env[EnvDockerHost] == "":
-		config.Host = GetUnixSocketAddr()
-		if config.Host == "" {
+		socketInfo, err := GetUnixSocketAddr()
+		if err != nil {
+			return nil, err
+		}
+
+		if socketInfo == nil || socketInfo.Address == "" {
 			return nil, fmt.Errorf("no unix socket found")
 		}
 
+		if socketInfo.CanRead == false || socketInfo.CanWrite == false {
+			return nil, fmt.Errorf("insufficient socket permissions (can_read=%v can_write=%v)", socketInfo.CanRead, socketInfo.CanWrite)
+		}
+
+		config.Host = socketInfo.Address
 		client, err = docker.NewClient(config.Host)
 		if err != nil {
 			return nil, err

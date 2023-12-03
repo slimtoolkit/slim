@@ -43,7 +43,9 @@ func inspectFatImage(
 	imageInspector, err := image.NewInspector(client, targetRef)
 	xc.FailOn(err)
 
-	if imageInspector.NoImage() {
+	noImage, err := imageInspector.NoImage()
+	errutil.FailOn(err)
+	if noImage {
 		if doPull {
 			xc.Out.Info("target.image",
 				ovars{

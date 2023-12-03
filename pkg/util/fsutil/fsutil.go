@@ -274,6 +274,32 @@ func IsTarFile(target string) bool {
 	return true
 }
 
+func HasReadAccess(dst string) (bool, error) {
+	err := unix.Access(dst, unix.R_OK)
+	if err == nil {
+		return true, nil
+	}
+
+	if err == unix.EACCES {
+		return false, nil
+	}
+
+	return false, err
+}
+
+func HasWriteAccess(dst string) (bool, error) {
+	err := unix.Access(dst, unix.W_OK)
+	if err == nil {
+		return true, nil
+	}
+
+	if err == unix.EACCES {
+		return false, nil
+	}
+
+	return false, err
+}
+
 // SetAccess updates the access permissions on the destination
 func SetAccess(dst string, access *AccessInfo) error {
 	if dst == "" || access == nil {

@@ -21,6 +21,7 @@ import (
 	"github.com/slimtoolkit/slim/pkg/imagebuilder/internalbuilder"
 	"github.com/slimtoolkit/slim/pkg/imagereader"
 	"github.com/slimtoolkit/slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/util/errutil"
 	"github.com/slimtoolkit/slim/pkg/util/fsutil"
 	v "github.com/slimtoolkit/slim/pkg/version"
 )
@@ -86,7 +87,9 @@ func OnCommand(
 		imageInspector, err := image.NewInspector(client, imageRef)
 		xc.FailOn(err)
 
-		if imageInspector.NoImage() {
+		noImage, err := imageInspector.NoImage()
+		errutil.FailOn(err)
+		if noImage {
 			xc.Out.Error(fmt.Sprintf("%s.image.not.found", name), "make sure the target image already exists locally")
 
 			cmdReport.State = cmd.StateError
