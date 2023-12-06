@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
@@ -33,6 +34,10 @@ const (
 	AppStarted AppState = "app.started"
 	AppFailed  AppState = "app.failed"
 	AppDone    AppState = "app.done"
+)
+
+const (
+	cwdFD = unix.AT_FDCWD // AT_FDCWD = -0x64
 )
 
 func Run(
@@ -166,6 +171,7 @@ func (a *App) PGID() int {
 const eventBufSize = 2000
 
 type syscallEvent struct {
+	returned  bool
 	pid       int
 	callNum   uint32
 	retVal    uint64
@@ -267,7 +273,7 @@ func (app *App) processFileActivity(e *syscallEvent) {
 
 		if (p.SyscallType() == CheckFileType ||
 			p.SyscallType() == OpenFileType) &&
-			!p.FailedReturnStatus(e.retVal) {
+			p.OKReturnStatus(e.retVal) {
 			//todo: filter "/proc/", "/sys/", "/dev/" externally
 			if e.pathParam != "." &&
 				e.pathParam != "/proc" &&
@@ -327,7 +333,8 @@ func (app *App) processFileActivity(e *syscallEvent) {
 		}
 
 		if p.SyscallType() == ExecType &&
-			!p.FailedReturnStatus(e.retVal) {
+			(!e.returned || //need to catch exec calls that haven't completed yet
+				(e.returned && p.OKReturnStatus(e.retVal))) {
 			if fsa, ok := app.fsActivity[e.pathParam]; ok {
 				fsa.OpsAll++
 				fsa.Pids[e.pid] = struct{}{}
@@ -815,6 +822,7 @@ func (app *App) collect() {
 				if genEvent {
 					//not waiting for the return call for the 'exec' syscalls (mostly)
 					evt := syscallEvent{
+						returned:  false,
 						pid:       wpid,
 						callNum:   uint32(cstate.callNum),
 						pathParam: cstate.pathParam,
@@ -839,6 +847,7 @@ func (app *App) collect() {
 
 			if cstate.gotCallNum && cstate.gotRetVal {
 				evt := syscallEvent{
+					returned:  true,
 					pid:       wpid,
 					callNum:   uint32(cstate.callNum),
 					retVal:    cstate.retVal,
@@ -983,8 +992,8 @@ func onSyscall(pid int, cstate *syscallState) (bool, error) {
 
 	if processor, found := syscallProcessors[int(cstate.callNum)]; found && processor != nil {
 		processor.OnCall(pid, regs, cstate)
-		genEvent := processor.EventOnCall()
-		return genEvent, nil
+		doGenEvent := processor.EventOnCall()
+		return doGenEvent, nil
 	}
 
 	return false, nil
@@ -1008,6 +1017,10 @@ func onSyscallReturn(pid int, cstate *syscallState) error {
 }
 
 ///////////////////////////////////
+
+func getIntVal(ptr uint64) int {
+	return int(int32(ptr))
+}
 
 func getIntParam(pid int, ptr uint64) int {
 	return int(int32(ptr))
@@ -1056,6 +1069,8 @@ type SyscallProcessor interface {
 	OnReturn(pid int, regs syscall.PtraceRegs, cstate *syscallState)
 	FailedCall(cstate *syscallState) bool
 	FailedReturnStatus(retVal uint64) bool
+	OKCall(cstate *syscallState) bool
+	OKReturnStatus(retVal uint64) bool
 }
 
 type StringParamPos int
@@ -1092,7 +1107,7 @@ func (ref *syscallProcessorCore) SyscallName() string {
 func (ref *syscallProcessorCore) OnCall(pid int, regs syscall.PtraceRegs, cstate *syscallState) {
 	pth := ""
 	dir := ""
-	cwd, _ := os.Readlink(fmt.Sprintf("/proc/%d/cwd", pid))
+	var fd int
 
 	switch ref.StringParam {
 	case SPPNo:
@@ -1101,23 +1116,29 @@ func (ref *syscallProcessorCore) OnCall(pid int, regs syscall.PtraceRegs, cstate
 	case SPPOne:
 		pth = getStringParam(pid, system.CallFirstParam(regs))
 	case SPPTwo:
-		fd := getIntParam(pid, system.CallFirstParam(regs))
-		if fd > 0 {
+		fd = getIntParam(pid, system.CallFirstParam(regs))
+		//cwdFD < 0 / (stdin=0/stdout=1/stderr=2)
+		if fd > 2 {
 			dir, _ = os.Readlink(fmt.Sprintf("/proc/%d/fd/%d", pid, fd))
 		}
 		pth = getStringParam(pid, system.CallSecondParam(regs))
 	default:
 		panic("unreachable")
 	}
-	if len(pth) > 0 && pth[0] != '/' {
+
+	if len(pth) == 0 || (len(pth) > 0 && pth[0] != '/') {
 		if dir != "" {
 			pth = path.Join(dir, pth)
-		} else if cwd != "" {
-			pth = path.Join(cwd, pth)
+		} else if fd == cwdFD {
+			//todo: track cwd with process/pid (so we don't need to look it up later for each call)
+			cwd, _ := os.Readlink(fmt.Sprintf("/proc/%d/cwd", pid))
+			if cwd != "" {
+				pth = path.Join(cwd, pth)
+			}
 		}
 	}
 
-	cstate.pathParam = pth
+	cstate.pathParam = filepath.Clean(pth)
 }
 
 func (ref *syscallProcessorCore) OnReturn(pid int, regs syscall.PtraceRegs, cstate *syscallState) {
@@ -1126,9 +1147,9 @@ func (ref *syscallProcessorCore) OnReturn(pid int, regs syscall.PtraceRegs, csta
 	//TODO: get/use error code enums
 
 	if cstate.pathParamErr == nil {
-		log.Tracef("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s('%s') = %d", pid, cstate.callNum, ref.Name, cstate.pathParam, int(cstate.retVal))
+		log.Tracef("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s('%s') = %x/%d", pid, cstate.callNum, ref.Name, cstate.pathParam, cstate.retVal, getIntVal(cstate.retVal))
 	} else {
-		log.Debugf("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s(<unknown>/'%s') = %d [pp err => %v]", pid, cstate.callNum, ref.Name, cstate.pathParam, int(cstate.retVal), cstate.pathParamErr)
+		log.Debugf("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s(<unknown>/'%s') = %x/%d [pp err => %v]", pid, cstate.callNum, ref.Name, cstate.pathParam, cstate.retVal, getIntVal(cstate.retVal), cstate.pathParamErr)
 	}
 }
 
@@ -1144,6 +1165,14 @@ func (ref *checkFileSyscallProcessor) FailedReturnStatus(retVal uint64) bool {
 	return retVal != 0
 }
 
+func (ref *checkFileSyscallProcessor) OKCall(cstate *syscallState) bool {
+	return cstate.retVal == 0
+}
+
+func (ref *checkFileSyscallProcessor) OKReturnStatus(retVal uint64) bool {
+	return retVal == 0
+}
+
 func (ref *checkFileSyscallProcessor) EventOnCall() bool {
 	return false
 }
@@ -1153,11 +1182,27 @@ type openFileSyscallProcessor struct {
 }
 
 func (ref *openFileSyscallProcessor) FailedCall(cstate *syscallState) bool {
-	return cstate.retVal < 0
+	fd := getIntVal(cstate.retVal)
+	return fd < 0
 }
 
 func (ref *openFileSyscallProcessor) FailedReturnStatus(retVal uint64) bool {
-	return retVal < 0
+	fd := getIntVal(retVal)
+	return fd < 0
+}
+
+func (ref *openFileSyscallProcessor) OKCall(cstate *syscallState) bool {
+	fd := getIntVal(cstate.retVal)
+	//need to make sure it works for readlink which returns the number of read bytes
+	//(later: has its own processor)
+	return fd >= 0
+}
+
+func (ref *openFileSyscallProcessor) OKReturnStatus(retVal uint64) bool {
+	fd := getIntVal(retVal)
+	//need to make sure it works for readlink which returns the number of read bytes
+	//(later: has its own processor)
+	return fd >= 0
 }
 
 func (ref *openFileSyscallProcessor) EventOnCall() bool {
@@ -1169,11 +1214,23 @@ type execSyscallProcessor struct {
 }
 
 func (ref *execSyscallProcessor) FailedCall(cstate *syscallState) bool {
-	return cstate.retVal < 0
+	fd := getIntVal(cstate.retVal)
+	return fd < 0
 }
 
 func (ref *execSyscallProcessor) FailedReturnStatus(retVal uint64) bool {
-	return retVal < 0
+	fd := getIntVal(retVal)
+	return fd < 0
+}
+
+func (ref *execSyscallProcessor) OKCall(cstate *syscallState) bool {
+	fd := getIntVal(cstate.retVal)
+	return fd >= 0
+}
+
+func (ref *execSyscallProcessor) OKReturnStatus(retVal uint64) bool {
+	fd := getIntVal(retVal)
+	return fd >= 0
 }
 
 func (ref *execSyscallProcessor) EventOnCall() bool {
@@ -1184,38 +1241,6 @@ func (ref *execSyscallProcessor) EventOnCall() bool {
 var syscallProcessors = map[int]SyscallProcessor{}
 
 func init() {
-	//stat(const char *filename,struct stat *statbuf)
-	addSyscallProcessor(&checkFileSyscallProcessor{
-		syscallProcessorCore: &syscallProcessorCore{
-			Name:        "stat",
-			Type:        CheckFileType,
-			StringParam: SPPOne,
-		},
-	})
-	//lstat(fconst char *filename, struct stat *statbuf)
-	addSyscallProcessor(&checkFileSyscallProcessor{
-		syscallProcessorCore: &syscallProcessorCore{
-			Name:        "lstat",
-			Type:        CheckFileType,
-			StringParam: SPPOne,
-		},
-	})
-	//access(const char *filename, int mode)
-	addSyscallProcessor(&checkFileSyscallProcessor{
-		syscallProcessorCore: &syscallProcessorCore{
-			Name:        "access",
-			Type:        CheckFileType,
-			StringParam: SPPOne,
-		},
-	})
-	//statfs(const char *pathname, struct statfs *buf)
-	addSyscallProcessor(&checkFileSyscallProcessor{
-		syscallProcessorCore: &syscallProcessorCore{
-			Name:        "statfs",
-			Type:        CheckFileType,
-			StringParam: SPPOne,
-		},
-	})
 	//readlink(const char *path, char *buf, int bufsiz)
 	//on success, returns the number of bytes placed in buf. On error, returns -1
 	//reusing "open" processor because the call error return values are similar
@@ -1268,14 +1293,7 @@ func init() {
 			StringParam: SPPTwo,
 		},
 	})
-	//faccessat(int dfd, const char *filename, int mode)
-	addSyscallProcessor(&checkFileSyscallProcessor{
-		syscallProcessorCore: &syscallProcessorCore{
-			Name:        "faccessat",
-			Type:        CheckFileType,
-			StringParam: SPPTwo,
-		},
-	})
+
 	//openat(int dfd, const char *filename, int flags, int mode)
 	addSyscallProcessor(&openFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
@@ -1292,12 +1310,64 @@ func init() {
 			StringParam: SPPTwo,
 		},
 	})
+
+	//"check" system calls with file paths:
+
+	//access(const char *filename, int mode)
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "access",
+			Type:        CheckFileType,
+			StringParam: SPPOne,
+		},
+	})
+	//faccessat(int dfd, const char *filename, int mode)
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "faccessat",
+			Type:        CheckFileType,
+			StringParam: SPPTwo,
+		},
+	})
+	//stat(const char *filename,struct stat *statbuf)
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "stat",
+			Type:        CheckFileType,
+			StringParam: SPPOne,
+		},
+	})
+	//lstat(fconst char *filename, struct stat *statbuf)
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "lstat",
+			Type:        CheckFileType,
+			StringParam: SPPOne,
+		},
+	})
+	//statfs(const char *pathname, struct statfs *buf)
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "statfs",
+			Type:        CheckFileType,
+			StringParam: SPPOne,
+		},
+	})
 	//statx(int dirfd, const char *pathname, int flags, unsigned int mask, struct statx *statxbuf)
 	//dirfd: AT_FDCWD
 	//flags: AT_EMPTY_PATH
 	addSyscallProcessor(&checkFileSyscallProcessor{
 		syscallProcessorCore: &syscallProcessorCore{
 			Name:        "statx",
+			Type:        CheckFileType,
+			StringParam: SPPTwo,
+		},
+	})
+	//newfstatat/fstatat(int dirfd, const char *restrict pathname, struct stat *restrict statbuf, int flags)
+	//dirfd: AT_FDCWD
+	addSyscallProcessor(&checkFileSyscallProcessor{
+		syscallProcessorCore: &syscallProcessorCore{
+			Name:        "newfstatat",
 			Type:        CheckFileType,
 			StringParam: SPPTwo,
 		},
