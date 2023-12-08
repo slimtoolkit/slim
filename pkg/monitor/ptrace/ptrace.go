@@ -1018,8 +1018,33 @@ func onSyscallReturn(pid int, cstate *syscallState) error {
 
 ///////////////////////////////////
 
+func fdName(fd int) string {
+	switch fd {
+	case 0:
+		return "STDIN"
+	case 1:
+		return "STDOUT"
+	case 2:
+		return "STDERR"
+	case cwdFD:
+		return "AT_FDCWD"
+	}
+
+	return ""
+}
+
 func getIntVal(ptr uint64) int {
 	return int(int32(ptr))
+}
+
+func errnoName(ptr uint64) string {
+	val := int(int32(ptr))
+	if val >= 0 {
+		return ""
+	}
+
+	val *= -1
+	return unix.ErrnoName(syscall.Errno(val))
 }
 
 func getIntParam(pid int, ptr uint64) int {
@@ -1126,6 +1151,9 @@ func (ref *syscallProcessorCore) OnCall(pid int, regs syscall.PtraceRegs, cstate
 		panic("unreachable")
 	}
 
+	//fmt.Printf("[pid=%d][1]ptrace.SPC.OnCall[%v/%v](fd=[%x/%d/%s]/pth:'%s')\n",
+	//	pid, ref.Num, ref.Name, fd, fd, fdName(fd), pth)
+
 	if len(pth) == 0 || (len(pth) > 0 && pth[0] != '/') {
 		if dir != "" {
 			pth = path.Join(dir, pth)
@@ -1139,17 +1167,26 @@ func (ref *syscallProcessorCore) OnCall(pid int, regs syscall.PtraceRegs, cstate
 	}
 
 	cstate.pathParam = filepath.Clean(pth)
+	//fmt.Printf("[pid=%d][2]ptrace.SPC.OnCall[%v/%v](fd=[%x/%d/%s]/pp:'%s')\n",
+	//	pid, ref.Num, ref.Name, fd, fd, fdName(fd), cstate.pathParam)
 }
 
 func (ref *syscallProcessorCore) OnReturn(pid int, regs syscall.PtraceRegs, cstate *syscallState) {
 	//for stat/check syscalls:
 	//-2 => -ENOENT (No such file or directory)
-	//TODO: get/use error code enums
+	intRetVal := getIntVal(cstate.retVal)
+	errnoStr := errnoName(cstate.retVal)
 
 	if cstate.pathParamErr == nil {
-		log.Tracef("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s('%s') = %x/%d", pid, cstate.callNum, ref.Name, cstate.pathParam, cstate.retVal, getIntVal(cstate.retVal))
+		//fmt.Printf("[pid=%d][3]ptrace.SPC.OnReturn[%v/%v](pp:'%s') = %x/%d/%s\n",
+		//	pid, cstate.callNum, ref.Name, cstate.pathParam, cstate.retVal, intRetVal, errnoStr)
+
+		log.Tracef("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s('%s') = %x/%d/%s", pid, cstate.callNum, ref.Name, cstate.pathParam, cstate.retVal, intRetVal, errnoStr)
 	} else {
-		log.Debugf("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s(<unknown>/'%s') = %x/%d [pp err => %v]", pid, cstate.callNum, ref.Name, cstate.pathParam, cstate.retVal, getIntVal(cstate.retVal), cstate.pathParamErr)
+		log.Debugf("checkFileSyscallProcessor.OnReturn: [%d] {%d}%s(<unknown>/'%s') = %x/%d/%s [pp err => %v]", pid, cstate.callNum, ref.Name, cstate.pathParam, cstate.retVal, intRetVal, errnoStr, cstate.pathParamErr)
+
+		//fmt.Printf("[pid=%d][3err]ptrace.SPC.OnReturn[%v/%v](pp:'%s'/ppe: '%v') = %x/%d/%s\n",
+		//	pid, cstate.callNum, ref.Name, cstate.pathParam, cstate.pathParamErr, cstate.retVal, intRetVal, errnoStr)
 	}
 }
 

@@ -405,8 +405,9 @@ func (p *CustomProbe) Start() {
 						for i := 0; i < maxRetryCount; i++ {
 							err = wc.Connect()
 							if err != nil {
-								log.Debugf("HTTP probe - ws target not ready yet (retry again later)...")
+								log.Debugf("HTTP probe - ws target not ready yet (retry again later) [err=%v]...", err)
 								time.Sleep(notReadyErrorWait * time.Second)
+								continue
 							}
 
 							wc.CheckConnection()
