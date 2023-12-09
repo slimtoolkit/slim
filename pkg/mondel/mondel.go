@@ -9,9 +9,11 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/slimtoolkit/slim/pkg/acounter"
 	"github.com/slimtoolkit/slim/pkg/report"
 )
 
@@ -31,6 +33,7 @@ type publisher struct {
 	outputFile string
 	output     *os.File
 	eventCh    chan *report.MonitorDataEvent
+	seqNumber  acounter.Type
 }
 
 func NewPublisher(ctx context.Context, enable bool, outputFile string) *publisher {
@@ -66,9 +69,12 @@ func NewPublisher(ctx context.Context, enable bool, outputFile string) *publishe
 }
 
 func (ref *publisher) Publish(event *report.MonitorDataEvent) error {
-	if !ref.enable {
+	if !ref.enable || event == nil {
 		return nil
 	}
+
+	event.Timestamp = time.Now().UTC().UnixNano()
+	event.SeqNumber = ref.seqNumber.Inc()
 
 	select {
 	case ref.eventCh <- event:

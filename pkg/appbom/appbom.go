@@ -387,3 +387,5 @@ func Get() *Info {
 
 	return info
 }
+
+//TODO: have an option to add package metadata (from deps.dev and osv.dev)

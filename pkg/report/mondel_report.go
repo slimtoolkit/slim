@@ -26,15 +26,18 @@ const (
 )
 
 type MonitorDataEvent struct {
+	Timestamp int64  `json:"ts"`
+	SeqNumber uint64 `json:"sn"`
 	Source    string `json:"s"`
 	Type      string `json:"t"`
 	Pid       int32  `json:"p,omitempty"`
 	ParentPid int32  `json:"pp,omitempty"`
-	Artifact  string `json:"a,omitempty"`  //used for exe path for process events
-	OpType    string `json:"o,omitempty"`  //operation type
-	Op        string `json:"op,omitempty"` //operation
+	Artifact  string `json:"a,omitempty"`  // used for exe path for process events
+	OpType    string `json:"o,omitempty"`  // operation type
+	Op        string `json:"op,omitempty"` // operation
 	OpNum     uint32 `json:"n,omitempty"`
 	WorkDir   string `json:"w,omitempty"`
 	Root      string `json:"r,omitempty"`
 	Cmd       string `json:"c,omitempty"`
+	State     string `json:"st,omitempty"`
 }
