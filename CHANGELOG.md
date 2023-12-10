@@ -1,5 +1,27 @@
 # Releases
 
+## 1.40.7 (12/9/2023)
+
+### New Features
+
+- Simple `registry image-index-create` command to create multi-architecture images.
+- Simple `images` command to list container images.
+
+### Improvements
+
+- Improved ptmon syscall handling.
+- Enhanced `mondel` events with timestamps and sequence numbers.
+- Extra docker socket validation checks.
+- Version info on exit/failure.
+- Temp container cleanup improvements.
+- ARM image build scripts for the containerized distribution.
+
+### Bug Fixes
+
+- Websocket http probe bug fix.
+- Various ptmod bug fixes.
+
+
 ## 1.40.5/1.40.6 (11/2/2023)
 
 ### New Features
