@@ -35,6 +35,7 @@ const (
 	// of the paths on the sensor side won't be unnoticed.
 	CommandsFileName  = "commands.json"
 	SensorLogFileName = "sensor.log"
+	MondelFileName    = "mondel.ndjson"
 	AppStdoutFileName = "app_stdout.log"
 	AppStderrFileName = "app_stderr.log"
 	EventsFileName    = "events.json"
@@ -52,6 +53,12 @@ type sensorOpt func(*Sensor)
 func WithSensorLogsToFile() sensorOpt {
 	return func(s *Sensor) {
 		s.useLogFile = true
+	}
+}
+
+func WithEnableMondel() sensorOpt {
+	return func(s *Sensor) {
+		s.enableMondel = true
 	}
 }
 
@@ -93,6 +100,7 @@ type Sensor struct {
 
 	// "Opts"
 	useLogFile       bool
+	enableMondel     bool
 	artifactsDirPath string
 	lifecycleHook    string
 	capAdd           []string
@@ -110,6 +118,8 @@ type Sensor struct {
 	creport    *report.ContainerReport
 	rawCReport string
 	rawEvents  string
+	mondel     []report.MonitorDataEvent
+	rawMondel  string
 }
 
 func NewSensor(
@@ -508,6 +518,24 @@ func (s *Sensor) DownloadArtifacts(ctx context.Context) error {
 		s.creport = &creport
 	}
 
+	if s.enableMondel {
+		mondelFilePath := filepath.Join(s.localArtifactsDirPath(), MondelFileName)
+		rawMondel, err := os.ReadFile(mondelFilePath)
+		if err != nil {
+			return fmt.Errorf("cannot read %s file: %w", MondelFileName, err)
+		}
+
+		s.rawMondel = string(rawMondel)
+
+		for _, line := range strings.Split(strings.TrimSpace(s.rawMondel), "\n") {
+			var evt report.MonitorDataEvent
+			if err := json.Unmarshal([]byte(line), &evt); err != nil {
+				return fmt.Errorf("cannot decode test sensor's mondel line %#q: %w", line, err)
+			}
+			s.mondel = append(s.mondel, evt)
+		}
+	}
+
 	if s.client == nil {
 		rawEvents, err := os.ReadFile(filepath.Join(s.localArtifactsDirPath(), EventsFileName))
 		if err != nil {
@@ -515,6 +543,7 @@ func (s *Sensor) DownloadArtifacts(ctx context.Context) error {
 		}
 		s.rawEvents = string(rawEvents)
 	}
+
 	return nil
 }
 
@@ -583,15 +612,16 @@ func (s *Sensor) PrintState(ctx context.Context) {
 		WithField("creport downloaded", s.creport != nil).
 		Info("Printing out test sensor state")
 
-	if s.creport != nil {
+	if len(s.rawCReport) > 0 {
 		fmt.Fprintln(os.Stderr, "-=== Container report ===-")
-		encoder := json.NewEncoder(os.Stderr)
-		encoder.SetEscapeHTML(false)
-		encoder.SetIndent("", "  ")
-		if err := encoder.Encode(s.creport); err != nil {
-			log.WithError(err).Error("Cannot print out container report")
-		}
+		fmt.Fprintln(os.Stderr, s.rawCReport)
 		fmt.Fprintln(os.Stderr, "-=== eof: Container report ===-")
+	}
+
+	if len(s.rawMondel) > 0 {
+		fmt.Fprintln(os.Stderr, "-=== Container MonDEL ===-")
+		fmt.Fprintln(os.Stderr, s.rawMondel)
+		fmt.Fprintln(os.Stderr, "-=== eof: Container MonDEL ===-")
 	}
 
 	if len(s.rawEvents) > 0 {
@@ -753,6 +783,57 @@ func (s *Sensor) AssertReportNotIncludesFiles(t *testing.T, filepath ...string) 
 	}
 }
 
+func (s *Sensor) AssertMondelIncludesFiles(t *testing.T, filepath ...string) {
+	if s.mondel == nil {
+		t.Fatal("No sensor mondel file found")
+	}
+
+	index := mondelEventByFilePath(s.mondel)
+	for _, f := range filepath {
+		if _, found := index[f]; !found {
+			t.Errorf("Expected file %q not found in the mondel file", f)
+		}
+	}
+}
+
+func (s *Sensor) AssertMondelNotIncludesFiles(t *testing.T, filepath ...string) {
+	if s.mondel == nil {
+		t.Fatal("No sensor mondel file found")
+	}
+
+	index := mondelEventByFilePath(s.mondel)
+	for _, f := range filepath {
+		if _, found := index[f]; found {
+			t.Errorf("Unexpected file %q found in the mondel file", f)
+		}
+	}
+}
+
+func (s *Sensor) AssertReportAndMondelFileListsMatch(t *testing.T) {
+	if s.creport == nil {
+		t.Fatal("No sensor report found")
+	}
+
+	if len(s.mondel) == 0 {
+		t.Fatal("No sensor mondel file found")
+	}
+
+	uniqMondelFiles := mondelEventByFilePath(s.mondel)
+	uniqCReportFiles := artifactsByFilePath(s.creport.Image.Files)
+
+	for f := range uniqMondelFiles {
+		if _, found := uniqCReportFiles[f]; !found {
+			t.Errorf("File %q found in mondel but not in container report", f)
+		}
+	}
+
+	for f := range uniqCReportFiles {
+		if _, found := uniqMondelFiles[f]; !found {
+			t.Errorf("File %q found in container report but not in mondel", f)
+		}
+	}
+}
+
 func (s *Sensor) AssertArtifactsArchiveContains(
 	t *testing.T,
 	ctx context.Context,
@@ -809,6 +890,9 @@ func (s *Sensor) commonStartFlags() []string {
 	}
 	if s.useLogFile {
 		flags = append(flags, "-o", filepath.Join(s.remoteArtifactsDirPath(), SensorLogFileName))
+	}
+	if s.enableMondel {
+		flags = append(flags, "-n")
 	}
 	if len(s.lifecycleHook) > 0 {
 		flags = append(flags, "-a", s.lifecycleHook)
@@ -924,6 +1008,14 @@ func artifactsByFilePath(files []*report.ArtifactProps) map[string]*report.Artif
 		if props != nil {
 			dict[props.FilePath] = props
 		}
+	}
+	return dict
+}
+
+func mondelEventByFilePath(events []report.MonitorDataEvent) map[string]report.MonitorDataEvent {
+	dict := make(map[string]report.MonitorDataEvent)
+	for _, evt := range events {
+		dict[evt.Artifact] = evt
 	}
 	return dict
 }

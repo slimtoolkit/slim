@@ -290,7 +290,10 @@ func (m *monitor) processEvent(e Event, fanReport *report.FanMonitorReport) {
 		}
 
 		if err := m.del.Publish(delEvent); err != nil {
-			logger.Tracef("m.del.Publish - not ok - %v", err)
+			logger.Errorf(
+				"mondel publish event failed - source=%v type=%v: %v",
+				delEvent.Source, delEvent.Type, err,
+			)
 		}
 	}
 
@@ -328,9 +331,11 @@ func (m *monitor) processEvent(e Event, fanReport *report.FanMonitorReport) {
 			WorkDir:   newProcess.Cwd,
 			Root:      newProcess.Root,
 		}
-
 		if err := m.del.Publish(delEvent); err != nil {
-			logger.Tracef("m.del.Publish - not ok - %v", err)
+			logger.Errorf(
+				"mondel publish event failed - source=%v type=%v: %v",
+				delEvent.Source, delEvent.Type, err,
+			)
 		}
 	}
 

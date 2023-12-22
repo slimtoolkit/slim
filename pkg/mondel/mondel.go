@@ -15,6 +15,7 @@ import (
 
 	"github.com/slimtoolkit/slim/pkg/acounter"
 	"github.com/slimtoolkit/slim/pkg/report"
+	"github.com/slimtoolkit/slim/pkg/util/fsutil"
 )
 
 const eventBufSize = 10000
@@ -28,12 +29,11 @@ type Publisher interface {
 }
 
 type publisher struct {
-	ctx        context.Context
-	enable     bool
-	outputFile string
-	output     *os.File
-	eventCh    chan *report.MonitorDataEvent
-	seqNumber  acounter.Type
+	ctx       context.Context
+	enable    bool
+	output    *os.File
+	eventCh   chan *report.MonitorDataEvent
+	seqNumber acounter.Type
 }
 
 func NewPublisher(ctx context.Context, enable bool, outputFile string) *publisher {
@@ -45,26 +45,36 @@ func NewPublisher(ctx context.Context, enable bool, outputFile string) *publishe
 	defer logger.Trace("exit")
 
 	ref := &publisher{
-		ctx:        ctx,
-		enable:     enable,
-		outputFile: outputFile,
+		ctx:    ctx,
+		enable: enable,
 	}
 
 	if !ref.enable {
 		return ref
 	}
 
-	f, err := os.OpenFile(ref.outputFile, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0644)
+	// fsutil.Touch() creates potentially missing folder(s).
+	if err := fsutil.Touch(outputFile); err != nil {
+		log.WithError(err).Errorf("cannot create mondel file %q - fsutil.Touch() failed", outputFile)
+		ref.enable = false
+		return ref
+	}
+
+	// Using O_SYNC because there is another process (art_collector) that is
+	// reading from this file. If we don't use O_SYNC, then the file may not
+	// be flushed to disk for too long.
+	f, err := os.OpenFile(outputFile, os.O_APPEND|os.O_WRONLY|os.O_SYNC, 0644)
 	if err != nil {
-		log.WithError(err).Errorf("os.OpenFile(%v)", ref.outputFile)
-	} else {
-		ref.output = f
+		log.WithError(err).Errorf("os.OpenFile(%v)", outputFile)
+		ref.enable = false
+		return ref
 	}
 
 	ref.output = f
 	ref.eventCh = make(chan *report.MonitorDataEvent, eventBufSize)
 
 	go ref.process()
+
 	return ref
 }
 
@@ -77,8 +87,12 @@ func (ref *publisher) Publish(event *report.MonitorDataEvent) error {
 	event.SeqNumber = ref.seqNumber.Inc()
 
 	select {
+	case <-ref.ctx.Done():
+		return ref.ctx.Err()
+
 	case ref.eventCh <- event:
 		return nil
+
 	default:
 		log.Debugf("mondel.publisher.Publish: dropped event (%#v)", event)
 		return ErrEventDropped
@@ -90,11 +104,21 @@ func (ref *publisher) process() {
 	logger.Trace("call")
 	defer logger.Trace("exit")
 
+	var buf bytes.Buffer
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+
 done:
 	for {
 		select {
 		case <-ref.ctx.Done():
 			logger.Debug("done - stopping...")
+			// Flush any remaining data in the buffer
+			if buf.Len() > 0 {
+				if _, err := ref.output.WriteString(buf.String()); err != nil {
+					logger.Errorf("Error writing remaining data: %v", err)
+				}
+			}
 			break done
 
 		case evt := <-ref.eventCh:
@@ -103,21 +127,20 @@ done:
 				logger.Debugf("could not encode - %v", encoded)
 				continue
 			}
+			buf.WriteString(encoded)
 
-			if ref.output != nil {
-				_, err := ref.output.WriteString(encoded)
-				if err != nil {
-					logger.Tracef("TMP: error writing - %v (%s)\n", err, encoded)
+		case <-ticker.C:
+			// Flush the buffer every second
+			if buf.Len() > 0 {
+				if _, err := ref.output.Write(buf.Bytes()); err != nil {
+					logger.Errorf("Error writing batch: %v", err)
 				}
-			} else {
-				fmt.Printf("%s", encoded)
+				buf.Reset()
 			}
 		}
 	}
 
-	if ref.output != nil {
-		ref.output.Close()
-	}
+	ref.output.Close()
 }
 
 func encodeEvent(event *report.MonitorDataEvent) (string, error) {
