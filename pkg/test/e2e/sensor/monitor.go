@@ -1,7 +1,7 @@
 package sensor
 
 import (
-	"github.com/slimtoolkit/slim/pkg/app/master/commands"
+	mastercommand "github.com/slimtoolkit/slim/pkg/app/master/command"
 	"github.com/slimtoolkit/slim/pkg/ipc/command"
 )
 
@@ -48,7 +48,7 @@ func WithAppStderrToFile() StartMonitorOpt {
 
 func WithPreserves(path ...string) StartMonitorOpt {
 	return func(cmd *command.StartMonitor) {
-		cmd.Preserves = commands.ParsePaths(path)
+		cmd.Preserves = mastercommand.ParsePaths(path)
 	}
 }
 

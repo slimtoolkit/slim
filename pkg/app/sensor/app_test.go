@@ -628,3 +628,45 @@ func TestControlCommands_StopTargetApp(t *testing.T) {
 
 	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
 }
+
+func TestEnableMondel(t *testing.T) {
+	runID := newTestRun(t)
+	ctx := context.Background()
+
+	sensor := testsensor.NewSensorOrFail(
+		t, ctx, t.TempDir(), runID, imageSimpleService,
+		testsensor.WithEnableMondel(),
+	)
+	defer sensor.Cleanup(t, ctx)
+
+	sensor.StartStandaloneOrFail(t, ctx, nil)
+	go testutil.Delayed(ctx, 5*time.Second, func() {
+		sensor.SignalOrFail(t, ctx, syscall.SIGTERM)
+	})
+	sensor.WaitOrFail(t, ctx)
+
+	sensor.AssertSensorLogsContain(t, ctx, sensorFullLifecycleSequence...)
+
+	sensor.DownloadArtifactsOrFail(t, ctx)
+
+	sensor.AssertMondelIncludesFiles(t,
+		"/etc/nginx/nginx.conf",
+		"/etc/nginx/conf.d/default.conf",
+
+		// TODO: investigate why these files are not included in the mondel (but are in the creport).
+		// "/bin/sh",
+		// "/var/cache/nginx",
+		// "/var/run",
+	)
+	sensor.AssertMondelNotIncludesFiles(t,
+		"/bin/bash",
+		"/bin/cat",
+		"/etc/apt/sources.list",
+
+		// TODO: investigate why this file is included in the mondel (but not in the creport).
+		// "/run/nginx.pid",
+	)
+
+	// Uncomment when the mondel and creport file sets are synced.
+	// sensor.AssertReportAndMondelFileListsMatch(t)
+}

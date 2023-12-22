@@ -326,7 +326,10 @@ func (app *App) processFileActivity(e *syscallEvent) {
 					}
 
 					if err := app.del.Publish(delEvent); err != nil {
-						logger.Tracef("app.del.Publish - not ok - %v", err)
+						logger.Errorf(
+							"mondel publish event failed - source=%v type=%v: %v",
+							delEvent.Source, delEvent.Type, err,
+						)
 					}
 				}
 			}
@@ -368,7 +371,10 @@ func (app *App) processFileActivity(e *syscallEvent) {
 				}
 
 				if err := app.del.Publish(delEvent); err != nil {
-					logger.Tracef("app.del.Publish exec - not ok - %v", err)
+					logger.Errorf(
+						"mondel publish event failed - source=%v type=%v op_type=%v: %v",
+						delEvent.Source, delEvent.Type, delEvent.OpType, err,
+					)
 				}
 			}
 		}
