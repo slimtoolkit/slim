@@ -24,11 +24,11 @@ func OnServerCommand(
 	xc *app.ExecutionContext,
 	gparams *command.GenericParams,
 	cparams *ServerCommandParams) {
-	cmdName := fullCmdName(PushCmdName)
+	cmdName := fullCmdName(ServerCmdName)
 	logger := log.WithFields(log.Fields{
 		"app": appName,
 		"cmd": cmdName,
-		"sub": PushCmdName})
+		"sub": ServerCmdName})
 
 	viChan := version.CheckAsync(gparams.CheckVersion, gparams.InContainer, gparams.IsDSImage)
 
@@ -69,13 +69,10 @@ func OnServerCommand(
 		opts = append(opts, registry.WithReferrersSupport(true))
 	}
 
-	err = http.ListenAndServe(":5000", registry.New(opts...))
-	errutil.FailOn(err)
+	xc.Out.Message("Starting registry server on port 5000")
 
-	xc.Out.Info("registry.server",
-		ovars{
-			"url": "http://localhost:5000/",
-		})
+	err = http.ListenAndServe("127.0.0.1:5000", registry.New(opts...))
+	errutil.FailOn(err)
 
 	xc.Out.State(cmd.StateCompleted)
 	cmdReport.State = cmd.StateCompleted
