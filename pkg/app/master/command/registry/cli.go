@@ -25,6 +25,9 @@ const (
 
 	ImageIndexCreateCmdName      = "image-index-create"
 	ImageIndexCreateCmdNameUsage = "Create an image index (aka manifest list) with the referenced images (already in the target registry)"
+
+	ServerCmdName      = "server"
+	ServerCmdNameUsage = "Start a registry server"
 )
 
 func fullCmdName(subCmdName string) string {
@@ -91,6 +94,25 @@ func ImageIndexCreateCommandFlagValues(ctx *cli.Context) (*ImageIndexCreateComma
 		AsManifestList:      ctx.Bool(FlagAsManifestList),
 		InsecureRefs:        ctx.Bool(FlagInsecureRefs),
 		DumpRawManifest:     ctx.Bool(FlagDumpRawManifest),
+	}
+
+	return values, nil
+}
+
+type ServerCommandParams struct {
+	*CommonCommandParams
+	EnableReferrersAPI bool
+}
+
+func ServerCommandFlagValues(ctx *cli.Context) (*ServerCommandParams, error) {
+	common, err := CommonCommandFlagValues(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	values := &ServerCommandParams{
+		CommonCommandParams: common,
+		EnableReferrersAPI:  ctx.Bool(FlagEnableReferrersAPI),
 	}
 
 	return values, nil
@@ -191,6 +213,25 @@ var CLI = &cli.Command{
 
 				xc := app.NewExecutionContext(fullCmdName(ImageIndexCreateCmdName), ctx.String(command.FlagConsoleFormat))
 				OnImageIndexCreateCommand(xc, gcvalues, cparams)
+				return nil
+			},
+		},
+		{
+			Name:  ServerCmdName,
+			Usage: ServerCmdNameUsage,
+			Action: func(ctx *cli.Context) error {
+				gcvalues, err := command.GlobalFlagValues(ctx)
+				if err != nil {
+					return err
+				}
+
+				cparams, err := ServerCommandFlagValues(ctx)
+				if err != nil {
+					return err
+				}
+
+				xc := app.NewExecutionContext(fullCmdName(ServerCmdName), ctx.String(command.FlagConsoleFormat))
+				OnServerCommand(xc, gcvalues, cparams)
 				return nil
 			},
 		},
