@@ -1,7 +1,9 @@
 package registry
 
 import (
+	"net"
 	"net/http"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -69,23 +71,37 @@ func OnServerCommand(
 		opts = append(opts, registry.WithReferrersSupport(true))
 	}
 
-	xc.Out.Message("Starting registry server on port 5000")
-
-	err = http.ListenAndServe("127.0.0.1:5000", registry.New(opts...))
+	l, err := net.Listen("tcp", "127.0.0.1:5000")
 	errutil.FailOn(err)
 
-	xc.Out.State(cmd.StateCompleted)
-	cmdReport.State = cmd.StateCompleted
-	xc.Out.State(cmd.StateDone)
+	xc.Out.Message("Starting registry server on port 5000")
 
-	vinfo := <-viChan
-	version.PrintCheckVersion(xc, "", vinfo)
+	// We want to print the command report and the version check report after the command has executed
+	// The command execution is considered to be successful when the server has successfully started up
 
-	cmdReport.State = cmd.StateDone
-	if cmdReport.Save() {
-		xc.Out.Info("report",
-			ovars{
-				"file": cmdReport.ReportLocation(),
-			})
-	}
+	// As http.Serve() is a blocking call, we need to run the reporting tasks in a separate goroutine
+	// To achieve this, we wait for 3 seconds for the server to start up and then print the reports
+	// In case the server fails to start up, the process will exit and the reports will not be printed
+	// This is a hack, but it works for now
+	go func() {
+		time.Sleep(3 * time.Second)
+
+		xc.Out.State(cmd.StateCompleted)
+		cmdReport.State = cmd.StateCompleted
+		xc.Out.State(cmd.StateDone)
+
+		vinfo := <-viChan
+		version.PrintCheckVersion(xc, "", vinfo)
+
+		cmdReport.State = cmd.StateDone
+		if cmdReport.Save() {
+			xc.Out.Info("report",
+				ovars{
+					"file": cmdReport.ReportLocation(),
+				})
+		}
+	}()
+
+	err = http.Serve(l, registry.New(opts...))
+	errutil.FailOn(err)
 }
