@@ -79,7 +79,7 @@ func (ia *InteractiveApp) execute(command string) {
 	}
 
 	if parts[0] == "exit" {
-		app.ShowCommunityInfo(FlagConsoleFormat)
+		app.ShowCommunityInfo(OutputFormatText)
 		os.Exit(0)
 	}
 
@@ -359,7 +359,7 @@ var GlobalFlagSuggestions = []prompt.Suggest{
 	{Text: FullFlagName(FlagLogLevel), Description: FlagLogLevelUsage},
 	{Text: FullFlagName(FlagLog), Description: FlagLogUsage},
 	{Text: FullFlagName(FlagLogFormat), Description: FlagLogFormatUsage},
-	{Text: FullFlagName(FlagConsoleFormat), Description: FlagConsoleFormatUsage},
+	{Text: FullFlagName(FlagOutputFormat), Description: FlagOutputFormatUsage},
 	{Text: FullFlagName(FlagUseTLS), Description: FlagUseTLSUsage},
 	{Text: FullFlagName(FlagVerifyTLS), Description: FlagVerifyTLSUsage},
 	{Text: FullFlagName(FlagTLSCertPath), Description: FlagTLSCertPathUsage},
@@ -404,8 +404,8 @@ var continueAfterValues = []prompt.Suggest{
 }
 
 var consoleOutputValues = []prompt.Suggest{
-	{Text: "text", Description: "Default, console output in text format"},
-	{Text: "json", Description: "Use json if you want JSON console output"},
+	{Text: OutputFormatText, Description: "Default, output in text format (as a table in quiet CLI mode)"},
+	{Text: OutputFormatJSON, Description: "JSON output format"},
 }
 
 var ipcModeValues = []prompt.Suggest{

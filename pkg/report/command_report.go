@@ -266,6 +266,15 @@ type RegistryCommand struct {
 	TargetReference string `json:"target_reference"`
 }
 
+// Output Version for 'vulnerability'
+const OVVulnerabilityCommand = "1.0"
+
+// VulnerabilityCommand is the 'vulnerability' command report data
+type VulnerabilityCommand struct {
+	Command
+	Operation string `json:"operation"`
+}
+
 func (cmd *Command) init(containerized bool) {
 	cmd.Containerized = containerized
 	cmd.Engine = version.Current()
@@ -480,6 +489,21 @@ func NewRegistryCommand(reportLocation string, containerized bool) *RegistryComm
 			reportLocation: reportLocation,
 			Version:        OVRegistryCommand, //registry command 'results' version (report and artifacts)
 			Type:           command.Registry,
+			State:          command.StateUnknown,
+		},
+	}
+
+	cmd.Command.init(containerized)
+	return cmd
+}
+
+// NewVulnerabilityCommand creates a new 'registry' command report
+func NewVulnerabilityCommand(reportLocation string, containerized bool) *VulnerabilityCommand {
+	cmd := &VulnerabilityCommand{
+		Command: Command{
+			reportLocation: reportLocation,
+			Version:        OVVulnerabilityCommand,
+			Type:           command.Vulnerability,
 			State:          command.StateUnknown,
 		},
 	}

@@ -46,23 +46,13 @@ func PrintCheckVersion(
 			fmt.Printf("%s info=version status=OUTDATED local=%s current=%s\n", printPrefix, v.Tag(), info.Current)
 			fmt.Printf("%s info=message message='%s'\n", printPrefix, msg)
 		} else {
-			if xc.Out.JSONFlag == "json" {
-				xc.Out.Info("version",
-					app.OutVars{
-						"status":  "OUTDATED",
-						"local":   v.Tag(),
-						"current": info.Current,
-					})
-				xc.Out.Message(msg)
-			} else {
-				xc.Out.Info("version",
-					app.OutVars{
-						"status":  "OUTDATED",
-						"local":   v.Tag(),
-						"current": info.Current,
-					})
-				xc.Out.Message(msg)
-			}
+			xc.Out.Info("version",
+				app.OutVars{
+					"status":  "OUTDATED",
+					"local":   v.Tag(),
+					"current": info.Current,
+				})
+			xc.Out.Message(msg)
 		}
 	}
 }

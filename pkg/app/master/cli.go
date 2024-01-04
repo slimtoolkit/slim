@@ -29,6 +29,7 @@ import (
 	"github.com/slimtoolkit/slim/pkg/app/master/command/server"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/update"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/version"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/vulnerability"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/xray"
 	"github.com/slimtoolkit/slim/pkg/app/master/config"
 	"github.com/slimtoolkit/slim/pkg/system"
@@ -52,6 +53,7 @@ func registerCommands() {
 	merge.RegisterCommand()
 	images.RegisterCommand()
 	registry.RegisterCommand()
+	vulnerability.RegisterCommand()
 	profile.RegisterCommand()
 	version.RegisterCommand()
 	appbom.RegisterCommand()
@@ -84,11 +86,7 @@ func newCLI() *cli.App {
 	cliApp.Flags = command.GlobalFlags()
 
 	cliApp.Before = func(ctx *cli.Context) error {
-		gparams, err := command.GlobalFlagValues(ctx)
-		if err != nil {
-			log.Errorf("command.GlobalFlagValues error - %v", err)
-			return err
-		}
+		gparams := command.GlobalFlagValues(ctx)
 
 		appParams, err := config.NewAppOptionsFromFile(fsutil.ResolveImageStateBasePath(gparams.StatePath))
 		if err != nil {
@@ -157,16 +155,15 @@ func newCLI() *cli.App {
 		//NOTE: not displaying the community info here to reduce noise
 		//tmp hack
 		//if !strings.Contains(strings.Join(os.Args, " "), " docker-cli-plugin-metadata") {
-		//   app.ShowCommunityInfo(gparams.ConsoleOutput)
+		//   app.ShowCommunityInfo(gparams.OutputFormat)
 		//}
 		return nil
 	}
 
 	cliApp.After = func(ctx *cli.Context) error {
-		gcvalues, err := command.GlobalFlagValues(ctx)
-		if err != nil {
-			return err
-		}
+		//todo: get already fetched gcvalues from ctx.Context
+		gcvalues := command.GlobalFlagValues(ctx)
+
 		if gcvalues.QuietCLIMode {
 			return nil
 		}
@@ -174,17 +171,15 @@ func newCLI() *cli.App {
 		//tmp hack
 		if !strings.Contains(strings.Join(os.Args, " "), " docker-cli-plugin-metadata") {
 			if doShowCommunityInfo {
-				app.ShowCommunityInfo(ctx.String(command.FlagConsoleFormat))
+				app.ShowCommunityInfo(ctx.String(command.FlagOutputFormat))
 			}
 		}
 		return nil
 	}
 
 	cliApp.Action = func(ctx *cli.Context) error {
-		gcvalues, err := command.GlobalFlagValues(ctx)
-		if err != nil {
-			return err
-		}
+		//todo: get already fetched gcvalues from ctx.Context
+		gcvalues := command.GlobalFlagValues(ctx)
 
 		//disable community info in interactive mode (too noisy)
 		doShowCommunityInfo = false

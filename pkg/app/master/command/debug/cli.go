@@ -117,12 +117,11 @@ var CLI = &cli.Command{
 		cflag(FlagKubeconfig),
 	},
 	Action: func(ctx *cli.Context) error {
-		xc := app.NewExecutionContext(Name, ctx.String(command.FlagConsoleFormat))
-
-		gcvalues, err := command.GlobalFlagValues(ctx)
-		if err != nil {
-			return err
-		}
+		gcvalues := command.GlobalFlagValues(ctx)
+		xc := app.NewExecutionContext(
+			Name,
+			gcvalues.QuietCLIMode,
+			gcvalues.OutputFormat)
 
 		if ctx.Bool(FlagListDebugImage) {
 			xc.Out.State("action.list_debug_images")
@@ -177,6 +176,7 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
+		var err error
 		if rawEntrypoint := ctx.String(FlagEntrypoint); rawEntrypoint != "" {
 			commandParams.Entrypoint, err = command.ParseExec(rawEntrypoint)
 			if err != nil {

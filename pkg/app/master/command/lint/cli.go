@@ -34,7 +34,11 @@ var CLI = &cli.Command{
 		cflag(FlagListChecks),
 	},
 	Action: func(ctx *cli.Context) error {
-		xc := app.NewExecutionContext(Name, ctx.String(command.FlagConsoleFormat))
+		gcvalues := command.GlobalFlagValues(ctx)
+		xc := app.NewExecutionContext(
+			Name,
+			gcvalues.QuietCLIMode,
+			gcvalues.OutputFormat)
 
 		doListChecks := ctx.Bool(FlagListChecks)
 
@@ -49,16 +53,6 @@ var CLI = &cli.Command{
 					targetRef = ctx.Args().First()
 				}
 			}
-		}
-
-		gcvalues, err := command.GlobalFlagValues(ctx)
-		if err != nil {
-			xc.Out.Error("param.global", err.Error())
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
 		}
 
 		targetType := ctx.String(FlagTargetType)

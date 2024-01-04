@@ -335,6 +335,10 @@ func UpdateGlobalFlagValues(appOpts *config.AppOptions, values *GenericParams) *
 		values.QuietCLIMode = *appOpts.Global.Quiet
 	}
 
+	if appOpts.Global.OutputFormat != nil {
+		values.OutputFormat = *appOpts.Global.OutputFormat
+	}
+
 	if appOpts.Global.LogLevel != nil {
 		values.LogLevel = *appOpts.Global.LogLevel
 	}
@@ -366,7 +370,7 @@ func UpdateGlobalFlagValues(appOpts *config.AppOptions, values *GenericParams) *
 	return values
 }
 
-func GlobalFlagValues(ctx *cli.Context) (*GenericParams, error) {
+func GlobalFlagValues(ctx *cli.Context) *GenericParams {
 	values := GenericParams{
 		CheckVersion:   ctx.Bool(FlagCheckVersion),
 		Debug:          ctx.Bool(FlagDebug),
@@ -374,7 +378,7 @@ func GlobalFlagValues(ctx *cli.Context) (*GenericParams, error) {
 		QuietCLIMode:   ctx.Bool(FlagQuietCLIMode),
 		LogLevel:       ctx.String(FlagLogLevel),
 		LogFormat:      ctx.String(FlagLogFormat),
-		ConsoleOutput:  ctx.String(FlagConsoleFormat),
+		OutputFormat:   ctx.String(FlagOutputFormat),
 		Log:            ctx.String(FlagLog),
 		StatePath:      ctx.String(FlagStatePath),
 		ReportLocation: ctx.String(FlagCommandReport),
@@ -389,7 +393,7 @@ func GlobalFlagValues(ctx *cli.Context) (*GenericParams, error) {
 
 	values.ClientConfig = GetDockerClientConfig(ctx)
 
-	return &values, nil
+	return &values
 }
 
 func GetDockerClientConfig(ctx *cli.Context) *config.DockerClient {

@@ -2,6 +2,7 @@ package command
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
@@ -23,6 +24,10 @@ import (
 
 const (
 	ImagesStateRootPath = "images"
+)
+
+var (
+	ErrNoGlobalParams = errors.New("No global params")
 )
 
 type ovars = app.OutVars
@@ -58,7 +63,7 @@ type GenericParams struct {
 	QuietCLIMode   bool
 	LogLevel       string
 	LogFormat      string
-	ConsoleOutput  string
+	OutputFormat   string
 	Log            string
 	StatePath      string
 	ReportLocation string

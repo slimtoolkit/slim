@@ -27,18 +27,17 @@ var CLI = &cli.Command{
 		cflag(FlagTag),
 	},
 	Action: func(ctx *cli.Context) error {
+		gfvalues := command.GlobalFlagValues(ctx)
+		xc := app.NewExecutionContext(
+			Name,
+			gfvalues.QuietCLIMode,
+			gfvalues.OutputFormat)
+
 		if ctx.Args().Len() < 1 {
-			fmt.Printf("slim[%s]: missing target info...\n\n", Name)
+			xc.Out.Error("param.target", "missing target image ID/name")
 			cli.ShowCommandHelp(ctx, Name)
 			return nil
 		}
-
-		gfvalues, err := command.GlobalFlagValues(ctx)
-		if err != nil {
-			return err
-		}
-
-		xc := app.NewExecutionContext(Name, ctx.String(command.FlagConsoleFormat))
 
 		cfvalues, err := CommandFlagValues(xc, ctx)
 		if err != nil {

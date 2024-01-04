@@ -87,7 +87,11 @@ var CLI = &cli.Command{
 		command.Cflag(command.FlagSensorIPCMode),
 	}, command.HTTPProbeFlags()...),
 	Action: func(ctx *cli.Context) error {
-		xc := app.NewExecutionContext(Name, ctx.String(command.FlagConsoleFormat))
+		gcvalues := command.GlobalFlagValues(ctx)
+		xc := app.NewExecutionContext(
+			Name,
+			gcvalues.QuietCLIMode,
+			gcvalues.OutputFormat)
 
 		targetRef := ctx.String(command.FlagTarget)
 		if targetRef == "" {
@@ -98,11 +102,6 @@ var CLI = &cli.Command{
 			} else {
 				targetRef = ctx.Args().First()
 			}
-		}
-
-		gcvalues, err := command.GlobalFlagValues(ctx)
-		if err != nil {
-			return err
 		}
 
 		crOpts, err := command.GetContainerRunOptions(ctx)

@@ -12,7 +12,6 @@ import (
 	"github.com/slimtoolkit/slim/pkg/app/master/command"
 	"github.com/slimtoolkit/slim/pkg/app/master/config"
 	"github.com/slimtoolkit/slim/pkg/artifact"
-	"github.com/slimtoolkit/slim/pkg/util/errutil"
 )
 
 const (
@@ -170,7 +169,17 @@ var CLI = &cli.Command{
 		command.Cflag(command.FlagSensorIPCMode),
 	}, command.HTTPProbeFlags()...),
 	Action: func(ctx *cli.Context) error {
-		xc := app.NewExecutionContext(Name, ctx.String(command.FlagConsoleFormat))
+		gparams, ok := command.CLIContextGet(ctx.Context, command.GlobalParams).(*command.GenericParams)
+		if !ok || gparams == nil {
+			return command.ErrNoGlobalParams
+		}
+
+		xc := app.NewExecutionContext(
+			Name,
+			gparams.QuietCLIMode,
+			gparams.OutputFormat)
+
+		//NOTE: this is a placeholder to load all command params from a file
 		_ = ctx.String(command.FlagCommandParamsFile)
 
 		cbOpts, err := GetContainerBuildOptions(ctx)
@@ -265,16 +274,6 @@ var CLI = &cli.Command{
 			return nil
 		}
 
-		gparams, ok := command.CLIContextGet(ctx.Context, command.GlobalParams).(*command.GenericParams)
-		if !ok || gparams == nil {
-			xc.Out.Error("param.global", "missing params")
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
-		}
-
 		appOpts, ok := command.CLIContextGet(ctx.Context, command.AppParams).(*config.AppOptions)
 		if !kubeOpts.HasTargetSet() && (!ok || appOpts == nil) {
 			log.Debug("param.error.app.options - no app params")
@@ -354,7 +353,7 @@ var CLI = &cli.Command{
 		var execFileCmd []byte
 		if len(execFile) > 0 {
 			execFileCmd, err = os.ReadFile(execFile)
-			errutil.FailOn(err)
+			xc.FailOn(err)
 
 			if !strings.Contains(continueAfter.Mode, config.CAMExec) {
 				if continueAfter.Mode == "" {

@@ -114,12 +114,11 @@ var CLI = &cli.Command{
 				cflag(FlagSaveToDocker),
 			},
 			Action: func(ctx *cli.Context) error {
-				xc := app.NewExecutionContext(fullCmdName(PullCmdName), ctx.String(command.FlagConsoleFormat))
-
-				gcvalues, err := command.GlobalFlagValues(ctx)
-				if err != nil {
-					return err
-				}
+				gcvalues := command.GlobalFlagValues(ctx)
+				xc := app.NewExecutionContext(
+					fullCmdName(PullCmdName),
+					gcvalues.QuietCLIMode,
+					gcvalues.OutputFormat)
 
 				cparams, err := PullCommandFlagValues(ctx)
 				if err != nil {
@@ -144,12 +143,12 @@ var CLI = &cli.Command{
 			Name:  PushCmdName,
 			Usage: PushCmdNameUsage,
 			Action: func(ctx *cli.Context) error {
-				gcvalues, err := command.GlobalFlagValues(ctx)
-				if err != nil {
-					return err
-				}
+				gcvalues := command.GlobalFlagValues(ctx)
+				xc := app.NewExecutionContext(
+					fullCmdName(PushCmdName),
+					gcvalues.QuietCLIMode,
+					gcvalues.OutputFormat)
 
-				xc := app.NewExecutionContext(fullCmdName(PushCmdName), ctx.String(command.FlagConsoleFormat))
 				OnPushCommand(xc, gcvalues)
 				return nil
 			},
@@ -158,12 +157,12 @@ var CLI = &cli.Command{
 			Name:  CopyCmdName,
 			Usage: CopyCmdNameUsage,
 			Action: func(ctx *cli.Context) error {
-				gcvalues, err := command.GlobalFlagValues(ctx)
-				if err != nil {
-					return err
-				}
+				gcvalues := command.GlobalFlagValues(ctx)
+				xc := app.NewExecutionContext(
+					fullCmdName(CopyCmdName),
+					gcvalues.QuietCLIMode,
+					gcvalues.OutputFormat)
 
-				xc := app.NewExecutionContext(fullCmdName(CopyCmdName), ctx.String(command.FlagConsoleFormat))
 				OnCopyCommand(xc, gcvalues)
 				return nil
 			},
@@ -179,17 +178,17 @@ var CLI = &cli.Command{
 				cflag(FlagDumpRawManifest),
 			},
 			Action: func(ctx *cli.Context) error {
-				gcvalues, err := command.GlobalFlagValues(ctx)
-				if err != nil {
-					return err
-				}
+				gcvalues := command.GlobalFlagValues(ctx)
+				xc := app.NewExecutionContext(
+					fullCmdName(ImageIndexCreateCmdName),
+					gcvalues.QuietCLIMode,
+					gcvalues.OutputFormat)
 
 				cparams, err := ImageIndexCreateCommandFlagValues(ctx)
 				if err != nil {
 					return err
 				}
 
-				xc := app.NewExecutionContext(fullCmdName(ImageIndexCreateCmdName), ctx.String(command.FlagConsoleFormat))
 				OnImageIndexCreateCommand(xc, gcvalues, cparams)
 				return nil
 			},

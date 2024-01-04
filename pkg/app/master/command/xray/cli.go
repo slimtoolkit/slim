@@ -95,11 +95,20 @@ var CLI = &cli.Command{
 		command.Cflag(command.FlagRemoveFileArtifacts),
 	},
 	Action: func(ctx *cli.Context) error {
-		xc := app.NewExecutionContext(Name, ctx.String(command.FlagConsoleFormat))
+		gcvalues, ok := command.CLIContextGet(ctx.Context, command.GlobalParams).(*command.GenericParams)
+		if !ok || gcvalues == nil {
+			return command.ErrNoGlobalParams
+		}
+
+		xc := app.NewExecutionContext(
+			Name,
+			gcvalues.QuietCLIMode,
+			gcvalues.OutputFormat)
+
+		//NOTE: this is a placeholder to load all command params from a file
 		_ = ctx.String(command.FlagCommandParamsFile)
 
 		targetRef := ctx.String(command.FlagTarget)
-
 		if targetRef == "" {
 			if ctx.Args().Len() < 1 {
 				xc.Out.Error("param.target", "missing image ID/name")
@@ -108,16 +117,6 @@ var CLI = &cli.Command{
 			} else {
 				targetRef = ctx.Args().First()
 			}
-		}
-
-		gcvalues, err := command.GlobalFlagValues(ctx)
-		if err != nil {
-			xc.Out.Error("param.global", err.Error())
-			xc.Out.State("exited",
-				ovars{
-					"exit.code": -1,
-				})
-			xc.Exit(-1)
 		}
 
 		detectIdentities, err := getDetectOpParam(ctx,

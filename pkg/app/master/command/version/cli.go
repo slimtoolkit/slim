@@ -18,19 +18,18 @@ var CLI = &cli.Command{
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Action: func(ctx *cli.Context) error {
-		doDebug := ctx.Bool(command.FlagDebug)
-		inContainer, isDSImage := command.IsInContainer(ctx.Bool(command.FlagInContainer))
-		clientConfig := command.GetDockerClientConfig(ctx)
-
-		xc := app.NewExecutionContext(Name, ctx.String(command.FlagConsoleFormat))
+		gcvalues := command.GlobalFlagValues(ctx)
+		xc := app.NewExecutionContext(
+			Name,
+			gcvalues.QuietCLIMode,
+			gcvalues.OutputFormat)
 
 		OnCommand(xc,
-			doDebug,
-			inContainer,
-			isDSImage,
-			clientConfig)
+			gcvalues.Debug,
+			gcvalues.InContainer,
+			gcvalues.IsDSImage,
+			gcvalues.ClientConfig)
 
-		//app.ShowCommunityInfo()
 		return nil
 	},
 }

@@ -22,12 +22,11 @@ var CLI = &cli.Command{
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Action: func(ctx *cli.Context) error {
-		gcvalues, err := command.GlobalFlagValues(ctx)
-		if err != nil {
-			return err
-		}
-
-		xc := app.NewExecutionContext(Name, ctx.String(command.FlagConsoleFormat))
+		gcvalues := command.GlobalFlagValues(ctx)
+		xc := app.NewExecutionContext(
+			Name,
+			gcvalues.QuietCLIMode,
+			gcvalues.OutputFormat)
 
 		OnCommand(
 			xc,

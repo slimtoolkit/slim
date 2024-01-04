@@ -1,8 +1,6 @@
 package edit
 
 import (
-	"fmt"
-
 	"github.com/urfave/cli/v2"
 
 	"github.com/slimtoolkit/slim/pkg/app"
@@ -20,20 +18,22 @@ var CLI = &cli.Command{
 	Aliases: []string{Alias},
 	Usage:   Usage,
 	Action: func(ctx *cli.Context) error {
-		if ctx.Args().Len() < 1 {
-			fmt.Printf("slim[%s]: missing target info...\n\n", Name)
-			cli.ShowCommandHelp(ctx, Name)
-			return nil
+		gcvalues := command.GlobalFlagValues(ctx)
+		xc := app.NewExecutionContext(
+			Name,
+			gcvalues.QuietCLIMode,
+			gcvalues.OutputFormat)
+
+		targetRef := ctx.String(command.FlagTarget)
+		if targetRef == "" {
+			if ctx.Args().Len() < 1 {
+				xc.Out.Error("param.target", "missing target image ID/name")
+				cli.ShowCommandHelp(ctx, Name)
+				return nil
+			} else {
+				targetRef = ctx.Args().First()
+			}
 		}
-
-		gcvalues, err := command.GlobalFlagValues(ctx)
-		if err != nil {
-			return err
-		}
-
-		targetRef := ctx.Args().First()
-
-		xc := app.NewExecutionContext(Name, ctx.String(command.FlagConsoleFormat))
 
 		OnCommand(
 			xc,
