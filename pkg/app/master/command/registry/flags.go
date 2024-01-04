@@ -7,28 +7,30 @@ import (
 
 // Registry command flag names
 const (
-	FlagUseDockerCreds  = "use-docker-credentials"
-	FlagCredsAccount    = "account"
-	FlagCredsSecret     = "secret"
-	FlagSaveToDocker    = "save-to-docker"
-	FlagImageIndexName  = "image-index-name"
-	FlagImageName       = "image-name"
-	FlagAsManifestList  = "as-manifest-list"
-	FlagInsecureRefs    = "insecure-refs"
-	FlagDumpRawManifest = "dump-raw-manifest"
+	FlagUseDockerCreds     = "use-docker-credentials"
+	FlagCredsAccount       = "account"
+	FlagCredsSecret        = "secret"
+	FlagSaveToDocker       = "save-to-docker"
+	FlagImageIndexName     = "image-index-name"
+	FlagImageName          = "image-name"
+	FlagAsManifestList     = "as-manifest-list"
+	FlagInsecureRefs       = "insecure-refs"
+	FlagDumpRawManifest    = "dump-raw-manifest"
+	FlagEnableReferrersAPI = "with-referrer-api"
 )
 
 // Registry command flag usage info
 const (
-	FlagUseDockerCredsUsage  = "Use the registry credentials from the default Docker config file"
-	FlagCredsAccountUsage    = "Registry credentials account"
-	FlagCredsSecretUsage     = "Registry credentials secret"
-	FlagSaveToDockerUsage    = "Save pulled image to docker"
-	FlagImageIndexNameUsage  = "Image index name to use"
-	FlagImageNameUsage       = "Target image name to include in image index"
-	FlagAsManifestListUsage  = "Create image index with the manifest list media type instead of the default OCI image index type"
-	FlagInsecureRefsUsage    = "Allow the referenced images from insecure registry connections"
-	FlagDumpRawManifestUsage = "Dump raw manifest for the created image index"
+	FlagUseDockerCredsUsage     = "Use the registry credentials from the default Docker config file"
+	FlagCredsAccountUsage       = "Registry credentials account"
+	FlagCredsSecretUsage        = "Registry credentials secret"
+	FlagSaveToDockerUsage       = "Save pulled image to docker"
+	FlagImageIndexNameUsage     = "Image index name to use"
+	FlagImageNameUsage          = "Target image name to include in image index"
+	FlagAsManifestListUsage     = "Create image index with the manifest list media type instead of the default OCI image index type"
+	FlagInsecureRefsUsage       = "Allow the referenced images from insecure registry connections"
+	FlagDumpRawManifestUsage    = "Dump raw manifest for the created image index"
+	FlagEnableReferrersAPIUsage = "Enables the referrers API endpoint (OCI 1.1+) for the registry server"
 )
 
 var Flags = map[string]cli.Flag{
@@ -85,6 +87,12 @@ var Flags = map[string]cli.Flag{
 		Value:   false, //defaults to false
 		Usage:   FlagDumpRawManifestUsage,
 		EnvVars: []string{"DSLIM_REG_IIC_DUMP_MANIFEST"},
+	},
+	FlagEnableReferrersAPI: &cli.BoolFlag{
+		Name:    FlagEnableReferrersAPI,
+		Value:   false, //defaults to false
+		Usage:   FlagEnableReferrersAPIUsage,
+		EnvVars: []string{"DSLIM_REG_ENABLE_REFERRERS_API"},
 	},
 }
 
