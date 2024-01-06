@@ -71,7 +71,6 @@ func OnImageIndexCreateCommand(
 		version.Print(xc, cmdName, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
-	//========================================
 	if len(cparams.ImageNames) == 0 {
 		xc.FailOn(fmt.Errorf("no image references for image index"))
 	}

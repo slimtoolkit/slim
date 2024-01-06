@@ -1,10 +1,13 @@
 package registry
 
 import (
-	//"github.com/google/go-containerregistry/pkg/crane"
-	//"github.com/google/go-containerregistry/pkg/name"
-	//gocrv1 "github.com/google/go-containerregistry/pkg/v1"
-	//"github.com/google/go-containerregistry/pkg/v1/daemon"
+	"context"
+	"os"
+
+	"github.com/google/go-containerregistry/pkg/name"
+	"github.com/google/go-containerregistry/pkg/v1/daemon"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
+	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/slimtoolkit/slim/pkg/app"
@@ -13,7 +16,6 @@ import (
 	cmd "github.com/slimtoolkit/slim/pkg/command"
 	"github.com/slimtoolkit/slim/pkg/docker/dockerclient"
 	"github.com/slimtoolkit/slim/pkg/report"
-	"github.com/slimtoolkit/slim/pkg/util/errutil"
 	"github.com/slimtoolkit/slim/pkg/util/fsutil"
 	v "github.com/slimtoolkit/slim/pkg/version"
 )
@@ -21,7 +23,8 @@ import (
 // OnPushCommand implements the 'registry push' command
 func OnPushCommand(
 	xc *app.ExecutionContext,
-	gparams *command.GenericParams) {
+	gparams *command.GenericParams,
+	cparams *PushCommandParams) {
 	cmdName := fullCmdName(PushCmdName)
 	logger := log.WithFields(log.Fields{
 		"app": appName,
@@ -56,10 +59,38 @@ func OnPushCommand(
 			})
 		xc.Exit(exitCode)
 	}
-	errutil.FailOn(err)
+	xc.FailOn(err)
 
 	if gparams.Debug {
 		version.Print(xc, cmdName, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+	}
+
+	remoteOpts := []remote.Option{
+		remote.WithContext(context.Background()),
+	}
+	remoteOpts, err = ConfigureAuth(cparams.CommonCommandParams, remoteOpts)
+	xc.FailOn(err)
+
+	nameOpts := []name.Option{
+		name.WeakValidation,
+		name.Insecure,
+	}
+
+	//todo: add support for other target types too
+	if cparams.TargetType == ttDocker {
+		tarPath, err := uniqueTarFilePath()
+		xc.FailOn(err)
+
+		err = saveDockerImage(cparams.TargetRef, tarPath, nameOpts)
+		xc.FailOn(err)
+
+		remoteImageName := cparams.TargetRef
+		if cparams.AsTag != "" {
+			remoteImageName = cparams.AsTag
+		}
+
+		err = pushImageFromTar(tarPath, remoteImageName, nameOpts, remoteOpts)
+		xc.FailOn(err)
 	}
 
 	xc.Out.State(cmd.StateCompleted)
@@ -76,4 +107,59 @@ func OnPushCommand(
 				"file": cmdReport.ReportLocation(),
 			})
 	}
+}
+
+func uniqueTarFilePath() (string, error) {
+	f, err := os.CreateTemp("", "saved-image-*.tar")
+	if err != nil {
+		return "", err
+	}
+
+	defer f.Close()
+	defer os.Remove(f.Name())
+	return f.Name(), nil
+}
+
+func saveDockerImage(
+	localImageName string,
+	tarPath string,
+	nameOpts []name.Option) error {
+	ref, err := name.ParseReference(localImageName, nameOpts...)
+	if err != nil {
+		return err
+	}
+
+	img, err := daemon.Image(ref)
+	if err != nil {
+		return err
+	}
+
+	if err := tarball.WriteToFile(tarPath, ref, img); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func pushImageFromTar(
+	tarPath string,
+	remoteImageName string,
+	nameOpts []name.Option,
+	remoteOpts []remote.Option) error {
+	ref, err := name.ParseReference(remoteImageName, nameOpts...)
+	if err != nil {
+		return err
+	}
+
+	img, err := tarball.ImageFromPath(tarPath, nil)
+	if err != nil {
+		return err
+	}
+
+	err = remote.Write(ref, img, remoteOpts...)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

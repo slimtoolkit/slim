@@ -72,6 +72,47 @@ func PullCommandFlagValues(ctx *cli.Context) (*PullCommandParams, error) {
 	return values, nil
 }
 
+type PushCommandParams struct {
+	*CommonCommandParams
+	TargetRef  string
+	TargetType string
+	AsTag      string
+}
+
+const (
+	ttDocker = "tt.docker"
+	ttTar    = "tt.tar"
+	ttOCI    = "tt.oci"
+)
+
+func PushCommandFlagValues(ctx *cli.Context) (*PushCommandParams, error) {
+	common, err := CommonCommandFlagValues(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	values := &PushCommandParams{
+		CommonCommandParams: common,
+		AsTag:               ctx.String(FlagAs),
+	}
+
+	if val := ctx.String(FlagDocker); val != "" {
+		//todo: validate that this local docker image exists
+		values.TargetRef = val
+		values.TargetType = ttDocker
+	} else if val := ctx.String(FlagTar); val != "" {
+		//todo: validate that this local tar file exists
+		values.TargetRef = val
+		values.TargetType = ttTar
+	} else if val := ctx.String(FlagOCI); val != "" {
+		//todo: validate that this local directory exists
+		values.TargetRef = val
+		values.TargetType = ttOCI
+	}
+
+	return values, nil
+}
+
 type ImageIndexCreateCommandParams struct {
 	*CommonCommandParams
 	ImageIndexName  string
@@ -101,7 +142,15 @@ func ImageIndexCreateCommandFlagValues(ctx *cli.Context) (*ImageIndexCreateComma
 
 type ServerCommandParams struct {
 	*CommonCommandParams
-	EnableReferrersAPI bool
+	Domain       string
+	Address      string
+	Port         uint
+	UseHTTPS     bool
+	CertPath     string
+	KeyPath      string
+	ReferrersAPI bool
+	StorePath    string
+	UseMemStore  bool
 }
 
 func ServerCommandFlagValues(ctx *cli.Context) (*ServerCommandParams, error) {
@@ -112,7 +161,15 @@ func ServerCommandFlagValues(ctx *cli.Context) (*ServerCommandParams, error) {
 
 	values := &ServerCommandParams{
 		CommonCommandParams: common,
-		EnableReferrersAPI:  ctx.Bool(FlagEnableReferrersAPI),
+		Domain:              ctx.String(FlagDomain),
+		Address:             ctx.String(FlagAddress),
+		Port:                ctx.Uint(FlagPort),
+		UseHTTPS:            ctx.Bool(FlagHTTPS),
+		CertPath:            ctx.String(FlagCertPath),
+		KeyPath:             ctx.String(FlagKeyPath),
+		ReferrersAPI:        ctx.Bool(FlagReferrersAPI),
+		StorePath:           ctx.String(FlagStorePath),
+		UseMemStore:         ctx.Bool(FlagMemStore),
 	}
 
 	return values, nil
@@ -164,6 +221,12 @@ var CLI = &cli.Command{
 		{
 			Name:  PushCmdName,
 			Usage: PushCmdNameUsage,
+			Flags: []cli.Flag{
+				cflag(FlagAs),
+				cflag(FlagDocker),
+				cflag(FlagTar),
+				cflag(FlagOCI),
+			},
 			Action: func(ctx *cli.Context) error {
 				gcvalues := command.GlobalFlagValues(ctx)
 				xc := app.NewExecutionContext(
@@ -171,7 +234,23 @@ var CLI = &cli.Command{
 					gcvalues.QuietCLIMode,
 					gcvalues.OutputFormat)
 
-				OnPushCommand(xc, gcvalues)
+				cparams, err := PushCommandFlagValues(ctx)
+				if err != nil {
+					xc.Out.Error("params", err.Error())
+					return err
+				}
+
+				if cparams.TargetType == "" {
+					if ctx.Args().Len() < 1 {
+						xc.Out.Error("params.target", "missing pull target")
+						return fmt.Errorf("no target selected")
+					}
+
+					cparams.TargetRef = ctx.Args().First()
+					cparams.TargetType = ttDocker
+				}
+
+				OnPushCommand(xc, gcvalues, cparams)
 				return nil
 			},
 		},
@@ -218,17 +297,27 @@ var CLI = &cli.Command{
 		{
 			Name:  ServerCmdName,
 			Usage: ServerCmdNameUsage,
+			Flags: []cli.Flag{
+				cflag(FlagDomain),
+				cflag(FlagAddress),
+				cflag(FlagPort),
+				cflag(FlagHTTPS),
+				cflag(FlagCertPath),
+				cflag(FlagKeyPath),
+				cflag(FlagReferrersAPI),
+			},
 			Action: func(ctx *cli.Context) error {
 				gcvalues := command.GlobalFlagValues(ctx)
+				xc := app.NewExecutionContext(
+					fullCmdName(ServerCmdName),
+					gcvalues.QuietCLIMode,
+					gcvalues.OutputFormat)
 
 				cparams, err := ServerCommandFlagValues(ctx)
 				if err != nil {
 					return err
 				}
 
-				xc := app.NewExecutionContext(fullCmdName(ServerCmdName),
-					gcvalues.QuietCLIMode,
-					gcvalues.OutputFormat)
 				OnServerCommand(xc, gcvalues, cparams)
 				return nil
 			},

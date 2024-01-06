@@ -1,12 +1,13 @@
 package registry
 
 import (
+	"context"
 	"fmt"
 
-	"github.com/google/go-containerregistry/pkg/crane"
 	"github.com/google/go-containerregistry/pkg/name"
 	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/daemon"
+	"github.com/google/go-containerregistry/pkg/v1/remote"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/slimtoolkit/slim/pkg/app"
@@ -74,8 +75,22 @@ func OnPullCommand(
 		version.Print(xc, cmdName, logger, client, false, gparams.InContainer, gparams.IsDSImage)
 	}
 
+	remoteOpts := []remote.Option{
+		remote.WithContext(context.Background()),
+	}
+	remoteOpts, err = ConfigureAuth(cparams.CommonCommandParams, remoteOpts)
+	xc.FailOn(err)
+
+	nameOpts := []name.Option{
+		name.WeakValidation,
+		name.Insecure,
+	}
+
+	ref, err := name.ParseReference(cparams.TargetRef, nameOpts...)
+	errutil.FailOn(err)
+
 	//todo: pass a custom client to Pull (based on `client` above)
-	targetImage, err := crane.Pull(cparams.TargetRef)
+	targetImage, err := remote.Image(ref, remoteOpts...)
 	errutil.FailOn(err)
 	outImageInfo(xc, targetImage)
 
