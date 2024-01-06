@@ -599,40 +599,75 @@ See the "Debugging Using the `debug` Command" section for more information about
 
 For the operations that require authentication you can reuse the registry credentials from Docker (do `docker login` first and then use the `--use-docker-credentials` flag with the `registry` command) or you can specify the auth info using the `--account` and `--secret` flags).
 
+Current sub-commands: `pull`, `push`, `image-index-create`, `server`.
+
+There's also a placeholder for `copy`, but it doesn't do anything yet. Great opportunity to contribute ;-)
+
+Shared command level flags:
+
+- `--use-docker-credentials` - Use the registry credentials from the default Docker config file.
+- `--account` - Registry credentials account.
+- `--secret` - Registry credentials secret.
+
 #### `PULL` SUBCOMMAND OPTIONS
 
-USAGE: `slim registry pull [IMAGE]`
+USAGE: `slim [GLOBAL FLAGS] registry [SHARED FLAGS] pull [FLAGS] [IMAGE]`
+
+Flags:
 
 - `--target value` - Target container image (name or ID) [$DSLIM_TARGET]
 - `--save-to-docker`- Save pulled image to docker (default: true) [$DSLIM_REG_PULL_SAVE_TO_DOCKER]
 
 #### `PUSH` SUBCOMMAND OPTIONS
 
-USAGE: `slim registry push [IMAGE]`
+USAGE: `slim [GLOBAL FLAGS] registry [SHARED FLAGS] push [FLAGS] [IMAGE]`
+
+Flags:
+
+- `--docker` -- Push local docker image.
+- `--tar` -- Push image from a local tar file.
+- `--as` -- Tag the selected image with the specified name before pushing.
+
+Note that `slim registry push LOCAL_DOCKER_IMAGE_NAME` is a shortcut for `slim registry push --docker LOCAL_DOCKER_IMAGE_NAME`.
+
+Normally you have to explicitly tag the target image to have a name that's appropriate for the destination registry. The `--as` flag is a convinient way to tag the image while you are pushing it. Here's an example pushing a local Docker `nginx` image to a local registry: `slim registry push --docker nginx --as localhost:5000/nginx`
+
+You can create a local registry using the `server` subcommand. See the `server` sub-command section below for more details.
 
 #### `COPY` SUBCOMMAND OPTIONS
 
 USAGE: `slim registry copy [SRC_IMAGE] [DST_IMAGE]`
 
+NOTE: Just a placeholder for now (TBD)
+
 #### `IMAGE-INDEX-CREATE` SUBCOMMAND OPTIONS
 
 USAGE: `slim registry image-index-create --image-index-name [MULTI-ARCH_IMAGE_TAG] --image-name [IMAGE_ONE] --image-name [IMAGE_TWO]`
 
-Other useful flags: 
+Flags: 
 
+- `--image-index-name` - Image index name to use.
+- `--image-name` - Target image name to include in image index.
 - `--as-manifest-list` - Create image index with the manifest list media type instead of the default OCI image index type.
 - `--dump-raw-manifest` - Dump raw manifest for the created image index.
 - `--insecure-refs` - Allow the referenced images from insecure registry connections.
 
 #### `SERVER` SUBCOMMAND OPTIONS
 
-Starts a server which implements the [OCI API spec](https://github.com/opencontainers/distribution-spec/blob/v1.0.1/spec.md) on port 5000
+Starts a server which implements the [OCI API spec](https://github.com/opencontainers/distribution-spec/blob/v1.0.1/spec.md) on port 5000 by default.
 
-USAGE: `slim registry server`
+USAGE: `slim [GLOBAL FLAGS] registry server [FLAGS]`
 
-Other useful flags: 
+Flags:
 
-- `--with-referrer-api` - Enables the [referrers API endpoint](https://github.com/opencontainers/distribution-spec/blob/v1.1.0-rc3/spec.md#enabling-the-referrers-api) (OCI 1.1+)
+- `--address` - Registry server address to listen on (default: `0.0.0.0`)
+- `--port` - Registry server port (default: 5000)
+- `--https` - Use HTTPS.
+- `--cert-path` - Cert path for use with HTTPS (for use when not using autocert).
+- `--key-path` - Key path for use with HTTPS (for use when not using autocert).
+- `--domain` - Domain to use for registry server (to get certs). Only works if the registry is internet accessible (see `autocert` Go docs for more details).
+- `--referrers-api` - Enables the [referrers API endpoint](https://github.com/opencontainers/distribution-spec/blob/v1.1.0-rc3/spec.md#enabling-the-referrers-api) (OCI 1.1+). Enabled by default (set to `false` to disable).
+
 
 ## RUNNING CONTAINERIZED
 
