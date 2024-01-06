@@ -624,6 +624,16 @@ Other useful flags:
 - `--dump-raw-manifest` - Dump raw manifest for the created image index.
 - `--insecure-refs` - Allow the referenced images from insecure registry connections.
 
+#### `SERVER` SUBCOMMAND OPTIONS
+
+Starts a server which implements the [OCI API spec](https://github.com/opencontainers/distribution-spec/blob/v1.0.1/spec.md) on port 5000
+
+USAGE: `slim registry server`
+
+Other useful flags: 
+
+- `--with-referrer-api` - Enables the [referrers API endpoint](https://github.com/opencontainers/distribution-spec/blob/v1.1.0-rc3/spec.md#enabling-the-referrers-api) (OCI 1.1+)
+
 ## RUNNING CONTAINERIZED
 
 The current version of Slim is able to run in containers. It will try to detect if it's running in a containerized environment, but you can also tell Slim explicitly using the `--in-container` global flag.

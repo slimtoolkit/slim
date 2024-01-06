@@ -219,17 +219,16 @@ var CLI = &cli.Command{
 			Name:  ServerCmdName,
 			Usage: ServerCmdNameUsage,
 			Action: func(ctx *cli.Context) error {
-				gcvalues, err := command.GlobalFlagValues(ctx)
-				if err != nil {
-					return err
-				}
+				gcvalues := command.GlobalFlagValues(ctx)
 
 				cparams, err := ServerCommandFlagValues(ctx)
 				if err != nil {
 					return err
 				}
 
-				xc := app.NewExecutionContext(fullCmdName(ServerCmdName), ctx.String(command.FlagConsoleFormat))
+				xc := app.NewExecutionContext(fullCmdName(ServerCmdName),
+					gcvalues.QuietCLIMode,
+					gcvalues.OutputFormat)
 				OnServerCommand(xc, gcvalues, cparams)
 				return nil
 			},
