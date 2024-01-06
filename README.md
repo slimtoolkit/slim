@@ -23,7 +23,7 @@ Note that **DockerSlim** is now just **Slim** (**SlimToolkit** is the full name,
 
 ## Overview
 
-Slim allows developers to inspect, optimize and debug their containers using its `xray`, `lint`, `build`, `debug` (and other) commands. It simplifies and improves your developer experience building, customizing and using containers. It makes your containers better, smaller and more secure while providing advanced visibility and improved usability working with the original and minified containers.
+Slim allows developers to inspect, optimize and debug their containers using its `xray`, `lint`, `build`, `debug`, `run`, `registry`, `vulnerability` (and other) commands. It simplifies and improves your developer experience building, customizing and using containers. It makes your containers better, smaller and more secure while providing advanced visibility and improved usability working with the original and minified containers.
 
 Don't change anything in your container image and minify it by up to 30x making it secure too! Optimizing images isn't the only thing it can do though. It can also help you understand and author better container images.
 
@@ -162,7 +162,9 @@ Elixir application images:
   - [`XRAY` COMMAND OPTIONS](#xray-command-options)
   - [`BUILD` COMMAND OPTIONS](#build-command-options)
   - [`DEBUG` COMMAND OPTIONS](#debug-command-options)
+  - [`RUN` COMMAND OPTIONS](#run-command-options)
   - [`REGISTRY` COMMAND OPTIONS](#registry-command-options)
+  - [`VULNERABILITY` COMMAND OPTIONS](#vulnerability-command-options)
 - [RUNNING CONTAINERIZED](#running-containerized)
 - [DOCKER CONNECT OPTIONS](#docker-connect-options)
 - [HTTP PROBE COMMANDS](#http-probe-commands)
@@ -275,7 +277,7 @@ Powered by Slim. It will help you understand and troubleshoot your application c
 
 ## BASIC USAGE INFO
 
-`slim [global flags] [xray|build|profile|run|debug|lint|merge|update|version|appbom|help] [command-specific flags] <IMAGE_ID_OR_NAME>`
+`slim [global flags] [xray|build|profile|run|debug|lint|merge|images|registry|vulnerability|update|version|appbom|help] [command-specific flags] <IMAGE_ID_OR_NAME>`
 
 If you don't specify any command `slim` will start in the interactive prompt mode.
 
@@ -285,11 +287,12 @@ If you don't specify any command `slim` will start in the interactive prompt mod
 - `lint` - Analyzes container instructions in Dockerfiles (Docker image support is WIP)
 - `build` - Analyzes, profiles and optimizes your container image generating the supported security profiles. This is the most popular command.
 - `debug` - Debug the running target container. This command is useful for troubleshooting running containers created from minimal/minified or regular container images.
-- `registry` - Execute registry operations.
+- `registry` - Execute registry operations (`pull`, `push`, `copy`, `server`).
 - `profile` - Performs basic container image analysis and dynamic container analysis, but it doesn't generate an optimized image.
 - `run` - Runs one or more containers (for now runs a single container similar to `docker run`)
 - `merge` - Merge two container images (optimized to merge minified images).
 - `images` - Get information about container images.
+- `vulnerability` - Execute vulnerability related tools and operations (`epss`).
 - `version` - Shows the version information.
 - `appbom` - Shows the application BOM (app composition/dependencies).
 - `update` - Updates Slim to the latest version.
@@ -311,10 +314,11 @@ Commands:
 - `lint` - Lint the target Dockerfile (or image, in the future)
 - `build` - Analyze the target container image along with its application and build an optimized image from it
 - `debug` - Debug the running target container. This command is useful for troubleshooting running containers created from minimal/minified or regular container images.
-- `registry` - Execute registry operations.
+- `registry` - Execute registry operations (`pull`, `push`, `copy`, `server`).
 - `profile` - Collect fat image information and generate a fat container report
 - `merge` - Merge two container images (optimized to merge minified images)
 - `images` - Get information about container images.
+- `vulnerability` - Execute vulnerability related tools and operations (`epss`).
 - `appbom` - Shows the application BOM (app composition/dependencies)
 - `version` - Show app and docker version information
 - `update` - Update the app
@@ -587,13 +591,40 @@ The `--use-local-mounts` option is used to choose how the Slim sensor is added t
 
 See the "Debugging Using the `debug` Command" section for more information about this command.
 
+### `RUN` COMMAND OPTIONS
+
+Run one or more containers
+
+USAGE: `slim [GLOBAL FLAGS] run [FLAGS] [IMAGE]`
+
+Flags:
+
+- `--target` - Target container image to run. Same as specifying the target container image as the last value for the command. Used mostly for the interactive prompt mode where you need to select flag names.
+- `--pull` - Pull the target image before trying to run it.
+- `--docker-config-path` - Docker config path (used to fetch registry credentials).
+- `--registry-account` - Target registry account used when pulling images from private registries.
+- `--registry-secret` - Target registry secret used when pulling images from private registries.
+- `--show-plogs` - Show image pull logs.
+- `--entrypoint` - Override ENTRYPOINT running the target image.
+- `--cmd` - Override CMD running the target image.
+- `--live-logs` - Show live logs for the container (cant use with --terminal).
+- `--terminal` - Attach interactive terminal to the container.
+- `--publish` - Map container port to host port (format => port | hostPort:containerPort | hostIP:hostPort:containerPort | hostIP::containerPort ).
+- `--rm` - Remove the container when it exits.
+- `--detach` - Start the container and do not wait for it to exit.
+
 ### `MERGE` COMMAND OPTIONS
+
+Merge two container images. Optimized to merge minified images.
+
+Flags:
 
 - `--image` - Image to merge. Flag instance position determines the merge order. The command supports two instances of this flag.
 
 - `--use-last-image-metadata` - Use only the last image metadata for the merged image.
 
 - `--tag` - Custom tags for the output image (multiple instances).
+
 
 ### `REGISTRY` COMMAND OPTIONS
 
@@ -603,7 +634,7 @@ Current sub-commands: `pull`, `push`, `image-index-create`, `server`.
 
 There's also a placeholder for `copy`, but it doesn't do anything yet. Great opportunity to contribute ;-)
 
-Shared command level flags:
+Shared Command Level Flags:
 
 - `--use-docker-credentials` - Use the registry credentials from the default Docker config file.
 - `--account` - Registry credentials account.
@@ -667,6 +698,46 @@ Flags:
 - `--key-path` - Key path for use with HTTPS (for use when not using autocert).
 - `--domain` - Domain to use for registry server (to get certs). Only works if the registry is internet accessible (see `autocert` Go docs for more details).
 - `--referrers-api` - Enables the [referrers API endpoint](https://github.com/opencontainers/distribution-spec/blob/v1.1.0-rc3/spec.md#enabling-the-referrers-api) (OCI 1.1+). Enabled by default (set to `false` to disable).
+
+### `VULNERABILITY` COMMAND OPTIONS
+
+USAGE: `slim [GLOBAL FLAGS] vulnerability [SHARED FLAGS] [SUBCOMMAND] [FLAGS]`
+
+Current sub-commands: 
+
+* `epss` - Gets EPPS information for the target vulnerabilities or based on the selected vulnerability filters.
+
+Shared Command Level Flags:
+
+- `--cve` - Target vulnerability CVE ID (can specify multiple times to target multiple vulnerabilities).
+
+#### `EPSS` SUBCOMMAND OPTIONS
+
+USAGE: `slim [GLOBAL FLAGS] vulnerability [SHARED FLAGS] epss [FLAGS]`
+
+Flags:
+
+- `--op` - EPSS operation (`lookup` | `list`).
+- `--date` - Date for the EPSS information (YYYY-MM-DD format). Works with the `lookup` and `list` operations.
+- `--with-history` - Return EPSS results with historical data. Works with the `lookup` and `list` operations.
+- `--limit` - Limit the number of returned records.
+- `offset` - Offset where to start returning records.
+- `filter-cve-id-pattern` - 'CVE ID pattern' ESPP list operation filter.
+- `filter-days-since-added` - 'days since added' ESPP list operation filter.
+- `filter-score-gt` - 'score is greater than' ESPP list operation filter.
+- `filter-score-lt` - 'score is less than' ESPP list operation filter.
+- `filter-percentile-gt` - 'percentile is greater than' ESPP list operation filter.
+- `filter-percentile-lt` - 'percentile is less than' ESPP list operation filter.
+- `filter-order-records` - 'order returned records' ESPP list operation filter ('score-desc' | 'score-asc' | 'percentile-desc' | 'percentile-asc').
+
+Examples:
+
+* `slim --quiet vulnerability --cve CVE-2021-21315 epss`
+* `slim --output-format=json vulnerability --cve CVE-2021-21315 epss`
+* `slim --quiet --output-format=json vulnerability --cve CVE-2021-21315 --cve CVE-2023-49070 epss`
+* `slim --quiet vulnerability --cve CVE-2021-21315 epss --with-history --date 2022-12-13`
+* `slim --quiet vulnerability epss --op list --date 2024-01-05`
+* `slim --quiet vulnerability epss --op list --filter-cve-id-pattern 2023 --filter-score-gt 0.92 --limit 2 --offset 3`
 
 
 ## RUNNING CONTAINERIZED
