@@ -1,9 +1,11 @@
 package images
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/dustin/go-humanize"
+	"github.com/jedib0t/go-pretty/v6/table"
 	log "github.com/sirupsen/logrus"
 
 	"github.com/slimtoolkit/slim/pkg/app"
@@ -14,6 +16,7 @@ import (
 	"github.com/slimtoolkit/slim/pkg/docker/dockerutil"
 	"github.com/slimtoolkit/slim/pkg/report"
 	"github.com/slimtoolkit/slim/pkg/util/fsutil"
+	"github.com/slimtoolkit/slim/pkg/util/jsonutil"
 	v "github.com/slimtoolkit/slim/pkg/version"
 )
 
@@ -69,15 +72,25 @@ func OnCommand(
 	images, err := dockerutil.ListImages(client, "")
 	xc.FailOn(err)
 
-	for name, info := range images {
-		fields := ovars{
-			"name":    name,
-			"id":      info.ID,
-			"size":    humanize.Bytes(uint64(info.Size)),
-			"created": time.Unix(info.Created, 0).Format(time.RFC3339),
+	if xc.Out.Quiet {
+		if xc.Out.OutputFormat == command.OutputFormatJSON {
+			fmt.Printf("%s\n", jsonutil.ToPretty(images))
+			return
 		}
 
-		xc.Out.Info("image", fields)
+		printImagesTable(images)
+		return
+	} else {
+		for name, info := range images {
+			fields := ovars{
+				"name":    name,
+				"id":      info.ID,
+				"size":    humanize.Bytes(uint64(info.Size)),
+				"created": time.Unix(info.Created, 0).Format(time.RFC3339),
+			}
+
+			xc.Out.Info("image", fields)
+		}
 	}
 
 	xc.Out.State("completed")
@@ -94,4 +107,22 @@ func OnCommand(
 				"file": cmdReport.ReportLocation(),
 			})
 	}
+}
+
+func printImagesTable(images map[string]dockerutil.BasicImageProps) {
+	tw := table.NewWriter()
+	tw.AppendHeader(table.Row{"Name", "ID", "Size", "Created"})
+
+	for name, info := range images {
+		tw.AppendRow(table.Row{
+			name,
+			info.ID,
+			humanize.Bytes(uint64(info.Size)),
+			time.Unix(info.Created, 0).Format(time.RFC3339),
+		})
+	}
+
+	tw.SetStyle(table.StyleLight)
+	tw.Style().Options.DrawBorder = false
+	fmt.Printf("%s\n", tw.Render())
 }

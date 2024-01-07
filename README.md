@@ -23,7 +23,7 @@ Note that **DockerSlim** is now just **Slim** (**SlimToolkit** is the full name,
 
 ## Overview
 
-Slim allows developers to inspect, optimize and debug their containers using its `xray`, `lint`, `build`, `debug`, `run`, `registry`, `vulnerability` (and other) commands. It simplifies and improves your developer experience building, customizing and using containers. It makes your containers better, smaller and more secure while providing advanced visibility and improved usability working with the original and minified containers.
+Slim allows developers to inspect, optimize and debug their containers using its `xray`, `lint`, `build`, `debug`, `run`, `images`, `merge`, `registry`, `vulnerability` (and other) commands. It simplifies and improves your developer experience building, customizing and using containers. It makes your containers better, smaller and more secure while providing advanced visibility and improved usability working with the original and minified containers.
 
 Don't change anything in your container image and minify it by up to 30x making it secure too! Optimizing images isn't the only thing it can do though. It can also help you understand and author better container images.
 
@@ -291,7 +291,7 @@ If you don't specify any command `slim` will start in the interactive prompt mod
 - `profile` - Performs basic container image analysis and dynamic container analysis, but it doesn't generate an optimized image.
 - `run` - Runs one or more containers (for now runs a single container similar to `docker run`)
 - `merge` - Merge two container images (optimized to merge minified images).
-- `images` - Get information about container images.
+- `images` - Get information about container images (example: `slim --quiet images`).
 - `vulnerability` - Execute vulnerability related tools and operations (`epss`).
 - `version` - Shows the version information.
 - `appbom` - Shows the application BOM (app composition/dependencies).
