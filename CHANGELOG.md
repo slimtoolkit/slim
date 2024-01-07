@@ -1,5 +1,24 @@
 # Releases
 
+## 1.40.8 (1/7/2024)
+
+### New Features
+
+- New `vulnerability` command and the `epss` subcommand to lookup EPSS scores for vulnerabilities.
+- Simple `registry server` command to have a local OCI registry (thank you Sarvesh Raj, @sarveshraj, for your contribution!).
+- Simple `registry push` command to push local images to a registry.
+- Simple `images` command to list container images.
+- RPM packaging for the apps (thank you Rohan Jamadagni, @Rohansjamadagni, for your contribution!)
+
+### Improvements
+
+- Enhanced `registry pull` command to pull images from authenticated registries.
+- `quiet` mode improvements (WIP) to hide the standard execution context output when it's enabled.
+- `quiet` mode for the `images` command.
+- Interactive prompt updates to include the `images`, `registry` and `vulnerability` commands and a couple of global flags.
+- Monitor Data Event Log (mondel) enhancement to improve the write path.
+
+
 ## 1.40.7 (12/9/2023)
 
 ### New Features
