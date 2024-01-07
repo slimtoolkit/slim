@@ -200,7 +200,6 @@ Elixir application images:
 
 Latest version: `1.40.8` (`1/7/2024`)
 
-HERE HERE WIP WIP
 The 1.40.8 release adds a simple container registry (`registry server` command) and introduces the `vulnerability` command and the `epss` subcommand to lookup vulnerability exploitation probability score data.
 
 For more info about the latest release see the [`CHANGELOG`](CHANGELOG.md).
