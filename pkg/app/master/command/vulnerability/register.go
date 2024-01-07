@@ -9,5 +9,5 @@ func RegisterCommand() {
 		Name,
 		CLI,
 		CommandSuggestion,
-		nil)
+		CommandFlagSuggestions)
 }

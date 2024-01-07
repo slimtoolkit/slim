@@ -359,6 +359,7 @@ var GlobalFlagSuggestions = []prompt.Suggest{
 	{Text: FullFlagName(FlagLogLevel), Description: FlagLogLevelUsage},
 	{Text: FullFlagName(FlagLog), Description: FlagLogUsage},
 	{Text: FullFlagName(FlagLogFormat), Description: FlagLogFormatUsage},
+	{Text: FullFlagName(FlagQuietCLIMode), Description: FlagQuietCLIModeUsage},
 	{Text: FullFlagName(FlagOutputFormat), Description: FlagOutputFormatUsage},
 	{Text: FullFlagName(FlagUseTLS), Description: FlagUseTLSUsage},
 	{Text: FullFlagName(FlagVerifyTLS), Description: FlagVerifyTLSUsage},
@@ -371,6 +372,8 @@ var GlobalFlagSuggestions = []prompt.Suggest{
 }
 
 var GlobalFlagValueSuggestions = map[string]CompleteValue{
+	FullFlagName(FlagQuietCLIMode): CompleteBool,
+	FullFlagName(FlagOutputFormat): CompleteOutputFormat,
 	FullFlagName(FlagDebug):        CompleteBool,
 	FullFlagName(FlagVerbose):      CompleteBool,
 	FullFlagName(FlagNoColor):      CompleteBool,
@@ -434,7 +437,7 @@ func CompleteContinueAfter(ia *InteractiveApp, token string, params prompt.Docum
 	return prompt.FilterHasPrefix(continueAfterValues, token, true)
 }
 
-func CompleteConsoleOutput(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
+func CompleteOutputFormat(ia *InteractiveApp, token string, params prompt.Document) []prompt.Suggest {
 	return prompt.FilterHasPrefix(consoleOutputValues, token, true)
 }
 
