@@ -328,6 +328,7 @@ func (m *monitor) processEvent(e Event, fanReport *report.FanMonitorReport) {
 			Pid:       newProcess.Pid,
 			ParentPid: newProcess.ParentPid,
 			Artifact:  newProcess.Path,
+			Cmd:       newProcess.Cmd,
 			WorkDir:   newProcess.Cwd,
 			Root:      newProcess.Root,
 		}
