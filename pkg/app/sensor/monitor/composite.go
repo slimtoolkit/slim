@@ -84,6 +84,7 @@ type CompositeMonitor interface {
 // composite monitor using fresh instances of the underlying mons.
 type monitor struct {
 	cmd *command.StartMonitor
+	del mondel.Publisher
 
 	startedAt time.Time
 
@@ -183,7 +184,7 @@ func NewCompositeMonitor(
 		errorCh,
 	)
 
-	m := Compose(cmd, fanMon, ptMon, signalCh, errorCh)
+	m := Compose(cmd, del, fanMon, ptMon, signalCh, errorCh)
 	m.closeAfterDone = closeAfterDone
 
 	return m, nil
@@ -191,6 +192,7 @@ func NewCompositeMonitor(
 
 func Compose(
 	cmd *command.StartMonitor,
+	del mondel.Publisher,
 	fanMon fanotify.Monitor,
 	ptMon ptrace.Monitor,
 	signalCh chan os.Signal,
@@ -198,7 +200,7 @@ func Compose(
 ) *monitor {
 	return &monitor{
 		cmd: cmd,
-
+		del: del,
 		// TODO: peMon:  peMon,
 		fanMon: fanMon,
 		ptMon:  ptMon,
@@ -286,6 +288,11 @@ func (m *monitor) Done() <-chan struct{} {
 			log.Debug("sensor: composite monitor - fanmon is done")
 
 			closeAll(m.closeAfterDone)
+
+			//need to call del.Stop here to make sure we get all drained monitor events
+			if m.del != nil {
+				m.del.Stop()
+			}
 
 			// The composite is done when all its subordinates are done.
 			close(m.doneCh)

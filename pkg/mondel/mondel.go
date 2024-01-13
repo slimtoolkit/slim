@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -26,9 +27,11 @@ var (
 
 type Publisher interface {
 	Publish(event *report.MonitorDataEvent) error
+	Stop()
 }
 
 type publisher struct {
+	stopped   chan struct{}
 	ctx       context.Context
 	enable    bool
 	output    *os.File
@@ -45,8 +48,9 @@ func NewPublisher(ctx context.Context, enable bool, outputFile string) *publishe
 	defer logger.Trace("exit")
 
 	ref := &publisher{
-		ctx:    ctx,
-		enable: enable,
+		stopped: make(chan struct{}),
+		ctx:     ctx,
+		enable:  enable,
 	}
 
 	if !ref.enable {
@@ -78,6 +82,10 @@ func NewPublisher(ctx context.Context, enable bool, outputFile string) *publishe
 	return ref
 }
 
+func (ref *publisher) Stop() {
+	close(ref.stopped)
+}
+
 func (ref *publisher) Publish(event *report.MonitorDataEvent) error {
 	if !ref.enable || event == nil {
 		return nil
@@ -86,7 +94,12 @@ func (ref *publisher) Publish(event *report.MonitorDataEvent) error {
 	event.Timestamp = time.Now().UTC().UnixNano()
 	event.SeqNumber = ref.seqNumber.Inc()
 
+	logger := log.WithField("op", "mondel.publisher.Publish")
 	select {
+	case <-ref.stopped:
+		logger.Debugf("publisher stopped - dropped event (%#v)", event)
+		return ErrEventDropped
+		return nil
 	case <-ref.ctx.Done():
 		return ref.ctx.Err()
 
@@ -94,7 +107,7 @@ func (ref *publisher) Publish(event *report.MonitorDataEvent) error {
 		return nil
 
 	default:
-		log.Debugf("mondel.publisher.Publish: dropped event (%#v)", event)
+		logger.Debugf("dropped event (%#v)", event)
 		return ErrEventDropped
 	}
 }
@@ -103,23 +116,51 @@ func (ref *publisher) process() {
 	logger := log.WithField("op", "mondel.publisher.process")
 	logger.Trace("call")
 	defer logger.Trace("exit")
+	defer func() {
+		err := ref.output.Close()
+		logger.Tracef("closed ref.output (e=%v)", err)
+	}()
 
 	var buf bytes.Buffer
 	ticker := time.NewTicker(1 * time.Second)
 	defer ticker.Stop()
 
-done:
-	for {
-		select {
-		case <-ref.ctx.Done():
-			logger.Debug("done - stopping...")
-			// Flush any remaining data in the buffer
+	var once sync.Once
+	finish := func() {
+		once.Do(func() {
+			close(ref.eventCh)
+
+			logger.Debugf("draining eventCh - %d", len(ref.eventCh))
+			for evt := range ref.eventCh {
+				encoded, err := encodeEvent(evt)
+				if err != nil {
+					logger.Debugf("could not encode - %v", encoded)
+					continue
+				}
+				buf.WriteString(encoded)
+			}
+
 			if buf.Len() > 0 {
-				if _, err := ref.output.WriteString(buf.String()); err != nil {
-					logger.Errorf("Error writing remaining data: %v", err)
+				logger.Debugf("saving leftover data - %d", buf.Len())
+				if _, err := ref.output.Write(buf.Bytes()); err != nil {
+					logger.Errorf("Error writing batch: %v", err)
 				}
 			}
-			break done
+
+			logger.Debug("finish(): done")
+		})
+	}
+
+	for {
+		select {
+		case <-ref.stopped:
+			logger.Debug("done - finishing....")
+			finish()
+			return
+		case <-ref.ctx.Done():
+			logger.Debug("done - finishing....")
+			finish()
+			return
 
 		case evt := <-ref.eventCh:
 			encoded, err := encodeEvent(evt)
@@ -139,8 +180,6 @@ done:
 			}
 		}
 	}
-
-	ref.output.Close()
 }
 
 func encodeEvent(event *report.MonitorDataEvent) (string, error) {
