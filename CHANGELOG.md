@@ -1,5 +1,13 @@
 # Releases
 
+## 1.40.9 (1/15/2024)
+
+### Improvements
+
+- Added command parameter information to process events in `mondel`.
+- Enhanced `mondel` event capture to prevent event data loss on sensor shutdown.
+
+
 ## 1.40.8 (1/7/2024)
 
 ### New Features
