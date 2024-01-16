@@ -115,6 +115,7 @@ func OnCommand(
 	pathPerms map[string]*fsutil.AccessInfo,
 
 	excludePatterns map[string]*fsutil.AccessInfo,
+	doExcludeVarLockFiles bool,
 	preservePaths map[string]*fsutil.AccessInfo,
 	includePaths map[string]*fsutil.AccessInfo,
 	includeBins map[string]*fsutil.AccessInfo,
@@ -1080,6 +1081,7 @@ func OnCommand(
 		doKeepPerms,
 		pathPerms,
 		excludePatterns,
+		doExcludeVarLockFiles,
 		preservePaths,
 		includePaths,
 		includeBins,

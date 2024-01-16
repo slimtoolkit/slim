@@ -76,8 +76,8 @@ var CLI = &cli.Command{
 		command.Cflag(command.FlagNetwork),
 		command.Cflag(command.FlagHostname),
 		command.Cflag(command.FlagExpose),
-		command.Cflag(command.FlagExcludeMounts),
-		command.Cflag(command.FlagExcludePattern), //should remove too (no need)
+		//command.Cflag(command.FlagExcludeMounts),
+		//command.Cflag(command.FlagExcludePattern), //should remove too (no need)
 		command.Cflag(command.FlagMount),
 		command.Cflag(command.FlagContinueAfter),
 		command.Cflag(command.FlagUseLocalMounts),
@@ -229,7 +229,7 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
-		excludePatterns := command.ParsePaths(ctx.StringSlice(command.FlagExcludePattern))
+		//excludePatterns := command.ParsePaths(ctx.StringSlice(command.FlagExcludePattern))
 
 		//includePaths := command.ParsePaths(ctx.StringSlice(command.FlagIncludePath))
 		//moreIncludePaths, err := command.ParsePathsFile(ctx.String(command.FlagIncludePathFile))
@@ -270,14 +270,14 @@ var CLI = &cli.Command{
 
 		//doKeepTmpArtifacts := ctx.Bool(command.FlagKeepTmpArtifacts)
 
-		doExcludeMounts := ctx.Bool(command.FlagExcludeMounts)
-		if doExcludeMounts {
-			for mpath := range volumeMounts {
-				excludePatterns[mpath] = nil
-				mpattern := fmt.Sprintf("%s/**", mpath)
-				excludePatterns[mpattern] = nil
-			}
-		}
+		//doExcludeMounts := ctx.Bool(command.FlagExcludeMounts)
+		//if doExcludeMounts {
+		//	for mpath := range volumeMounts {
+		//		excludePatterns[mpath] = nil
+		//		mpattern := fmt.Sprintf("%s/**", mpath)
+		//		excludePatterns[mpattern] = nil
+		//	}
+		//}
 
 		commandReport := ctx.String(command.FlagCommandReport)
 		if commandReport == "off" {
@@ -311,7 +311,7 @@ var CLI = &cli.Command{
 			volumeMounts,
 			//doKeepPerms,
 			//pathPerms,
-			excludePatterns,
+			//excludePatterns,
 			//includePaths,
 			//includeBins,
 			//includeExes,

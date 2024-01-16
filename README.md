@@ -496,6 +496,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 - `--path-perms-file` - File with path permissions to set (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 - `--exclude-pattern` - Exclude path pattern ([Glob/Match in Go](https://golang.org/pkg/path/filepath/#Match) and `**`) from image
+- `--exclude-varlock-files` - Exclude the files in the var and run lock directory (default value: true)
 - `--exclude-mounts` - Exclude mounted volumes from image (default value: true)
 - `--label` - Override or add LABEL analyzing image at runtime [can use this flag multiple times]
 - `--volume` - Add VOLUME analyzing image at runtime [can use this flag multiple times]

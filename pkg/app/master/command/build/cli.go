@@ -118,8 +118,6 @@ var CLI = &cli.Command{
 		cflag(FlagRemoveEnv),
 		cflag(FlagRemoveLabel),
 		cflag(FlagRemoveVolume),
-		command.Cflag(command.FlagExcludeMounts),
-		command.Cflag(command.FlagExcludePattern),
 		cflag(FlagPreservePath),
 		cflag(FlagPreservePathFile),
 		cflag(FlagIncludePath),
@@ -158,6 +156,11 @@ var CLI = &cli.Command{
 		cflag(FlagKeepPerms),
 		cflag(FlagPathPerms),
 		cflag(FlagPathPermsFile),
+		//"EXCLUDE" FLAGS - START
+		cflag(FlagExcludePattern),
+		cflag(FlagExcludeVarLockFiles),
+		cflag(FlagExcludeMounts),
+		//"EXCLUDE" FLAGS - END
 		cflag(FlagObfuscateMetadata),
 		command.Cflag(command.FlagContinueAfter),
 		command.Cflag(command.FlagUseLocalMounts),
@@ -493,7 +496,7 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
-		excludePatterns := command.ParsePaths(ctx.StringSlice(command.FlagExcludePattern))
+		excludePatterns := command.ParsePaths(ctx.StringSlice(FlagExcludePattern))
 
 		preservePaths := command.ParsePaths(ctx.StringSlice(FlagPreservePath))
 		morePreservePaths, err := command.ParsePathsFile(ctx.String(FlagPreservePathFile))
@@ -708,7 +711,8 @@ var CLI = &cli.Command{
 
 		doKeepTmpArtifacts := ctx.Bool(FlagKeepTmpArtifacts)
 
-		doExcludeMounts := ctx.Bool(command.FlagExcludeMounts)
+		doExcludeVarLockFiles := ctx.Bool(FlagExcludeVarLockFiles)
+		doExcludeMounts := ctx.Bool(FlagExcludeMounts)
 		if doExcludeMounts {
 			for mpath := range volumeMounts {
 				excludePatterns[mpath] = nil
@@ -796,6 +800,7 @@ var CLI = &cli.Command{
 			doKeepPerms,
 			pathPerms,
 			excludePatterns,
+			doExcludeVarLockFiles,
 			preservePaths,
 			includePaths,
 			includeBins,

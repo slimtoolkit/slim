@@ -112,6 +112,7 @@ type Inspector struct {
 	KeepPerms             bool
 	PathPerms             map[string]*fsutil.AccessInfo
 	ExcludePatterns       map[string]*fsutil.AccessInfo
+	DoExcludeVarLockFiles bool
 	PreservePaths         map[string]*fsutil.AccessInfo
 	IncludePaths          map[string]*fsutil.AccessInfo
 	IncludeBins           map[string]*fsutil.AccessInfo
@@ -190,6 +191,7 @@ func NewInspector(
 	keepPerms bool,
 	pathPerms map[string]*fsutil.AccessInfo,
 	excludePatterns map[string]*fsutil.AccessInfo,
+	doExcludeVarLockFiles bool,
 	preservePaths map[string]*fsutil.AccessInfo,
 	includePaths map[string]*fsutil.AccessInfo,
 	includeBins map[string]*fsutil.AccessInfo,
@@ -245,6 +247,7 @@ func NewInspector(
 		KeepPerms:             keepPerms,
 		PathPerms:             pathPerms,
 		ExcludePatterns:       excludePatterns,
+		DoExcludeVarLockFiles: doExcludeVarLockFiles,
 		PreservePaths:         preservePaths,
 		IncludePaths:          includePaths,
 		IncludeBins:           includeBins,
@@ -787,6 +790,8 @@ func (i *Inspector) RunContainer() error {
 	if len(i.ExcludePatterns) > 0 {
 		cmd.Excludes = pathMapKeys(i.ExcludePatterns)
 	}
+
+	cmd.ExcludeVarLockFiles = i.DoExcludeVarLockFiles
 
 	if len(i.PreservePaths) > 0 {
 		cmd.Preserves = i.PreservePaths

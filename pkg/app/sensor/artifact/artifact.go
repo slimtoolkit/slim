@@ -1421,6 +1421,11 @@ func (p *store) saveArtifacts() {
 	excludePatterns := p.cmd.Excludes
 	excludePatterns = append(excludePatterns, "/opt/_slim")
 	excludePatterns = append(excludePatterns, "/opt/_slim/**")
+	if p.cmd.ExcludeVarLockFiles {
+		excludePatterns = append(excludePatterns, "/var/lock/**")
+		excludePatterns = append(excludePatterns, "/run/lock/**")
+	}
+
 	log.Debugf("saveArtifacts - excludePatterns(%v): %+v", len(excludePatterns), excludePatterns)
 
 	includePaths = preparePaths(getKeys(p.cmd.Includes))

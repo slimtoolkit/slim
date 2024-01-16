@@ -80,7 +80,21 @@ const (
 
 	FlagKeepPerms = "keep-perms"
 
+	//"EXCLUDE" FLAGS:
+
+	FlagExcludePattern      = "exclude-pattern"
+	FlagExcludePatternUsage = "Exclude path pattern (Glob/Match in Go and **) from image"
+
+	FlagExcludeVarLockFiles      = "exclude-varlock-files"
+	FlagExcludeVarLockFilesUsage = "Exclude the files in the var and run lock directory"
+	//NOTES:
+	// also "exclude-varlock-new-files" <- related to "include-new"
+
+	FlagExcludeMounts      = "exclude-mounts"
+	FlagExcludeMountsUsage = "Exclude mounted volumes from image"
+
 	//Flags to edit (modify, add and remove) image metadata
+
 	FlagNewEntrypoint = "new-entrypoint"
 	FlagNewCmd        = "new-cmd"
 	FlagNewLabel      = "new-label"
@@ -410,6 +424,26 @@ var Flags = map[string]cli.Flag{
 		Usage:   FlagKeepPermsUsage,
 		EnvVars: []string{"DSLIM_KEEP_PERMS"},
 	},
+	//"EXCLUDE" FLAGS - START
+	FlagExcludePattern: &cli.StringSliceFlag{
+		Name:    FlagExcludePattern,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagExcludePatternUsage,
+		EnvVars: []string{"DSLIM_EXCLUDE_PATTERN"},
+	},
+	FlagExcludeVarLockFiles: &cli.BoolFlag{
+		Name:    FlagExcludeVarLockFiles, //true by default
+		Value:   true,
+		Usage:   FlagExcludeVarLockFilesUsage,
+		EnvVars: []string{"DSLIM_EXCLUDE_VARLOCK"},
+	},
+	FlagExcludeMounts: &cli.BoolFlag{
+		Name:    FlagExcludeMounts, //true by default
+		Value:   true,
+		Usage:   FlagExcludeMountsUsage,
+		EnvVars: []string{"DSLIM_EXCLUDE_MOUNTS"},
+	},
+	//"EXCLUDE" FLAGS - END
 	FlagNewEntrypoint: &cli.StringFlag{
 		Name:    FlagNewEntrypoint,
 		Value:   "",

@@ -133,8 +133,6 @@ const (
 	FlagShowContainerLogs = "show-clogs"
 	FlagEnableMondelLogs  = "enable-mondel" //Mon(itor) Data Event Log
 
-	FlagExcludePattern  = "exclude-pattern"
-	FlagExcludeMounts   = "exclude-mounts"
 	FlagUseLocalMounts  = "use-local-mounts"
 	FlagUseSensorVolume = "use-sensor-volume"
 	FlagContinueAfter   = "continue-after"
@@ -248,8 +246,6 @@ const (
 	FlagShowContainerLogsUsage = "Show container logs"
 	FlagEnableMondelLogsUsage  = "Enable data event log for sensor monitors"
 
-	FlagExcludeMountsUsage   = "Exclude mounted volumes from image"
-	FlagExcludePatternUsage  = "Exclude path pattern (Glob/Match in Go and **) from image"
 	FlagUseLocalMountsUsage  = "Mount local paths for target container artifact input and output"
 	FlagUseSensorVolumeUsage = "Sensor volume name to use"
 	FlagContinueAfterUsage   = "Select continue mode: enter | signal | probe | timeout-number-in-seconds | container.probe"
@@ -753,18 +749,6 @@ var CommonFlags = map[string]cli.Flag{
 		Value:   "",
 		Usage:   FlagExecFileUsage,
 		EnvVars: []string{"DSLIM_RC_EXE_FILE"},
-	},
-	FlagExcludeMounts: &cli.BoolFlag{
-		Name:    FlagExcludeMounts, //true by default
-		Value:   true,
-		Usage:   FlagExcludeMountsUsage,
-		EnvVars: []string{"DSLIM_EXCLUDE_MOUNTS"},
-	},
-	FlagExcludePattern: &cli.StringSliceFlag{
-		Name:    FlagExcludePattern,
-		Value:   cli.NewStringSlice(),
-		Usage:   FlagExcludePatternUsage,
-		EnvVars: []string{"DSLIM_EXCLUDE_PATTERN"},
 	},
 	FlagUseLocalMounts: &cli.BoolFlag{
 		Name:    FlagUseLocalMounts,

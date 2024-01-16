@@ -68,7 +68,7 @@ func OnCommand(
 	explicitVolumeMounts map[string]config.VolumeMount,
 	//doKeepPerms bool,
 	//pathPerms map[string]*fsutil.AccessInfo,
-	excludePatterns map[string]*fsutil.AccessInfo,
+	//excludePatterns map[string]*fsutil.AccessInfo,
 	//includePaths map[string]*fsutil.AccessInfo,
 	//includeBins map[string]*fsutil.AccessInfo,
 	//includeExes map[string]*fsutil.AccessInfo,
@@ -248,7 +248,8 @@ func OnCommand(
 		doRunTargetAsUser,
 		false, //doKeepPerms,
 		nil,   //pathPerms,
-		excludePatterns,
+		nil,   //excludePatterns,
+		false, //doExcludeVarLockFiles
 		nil,   //preservePaths,
 		nil,   //includePaths,
 		nil,   //includeBins,
