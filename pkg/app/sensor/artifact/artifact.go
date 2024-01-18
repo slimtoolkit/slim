@@ -675,8 +675,10 @@ func (p *store) prepareArtifact(artifactFileName string) {
 	case srcLinkFileInfo.Mode().IsDir():
 		log.Debugf("prepareArtifact - is a directory (shouldn't see it) - %v", artifactFileName)
 		props.FileType = report.DirArtifactType
+		p.rawNames[artifactFileName] = props
 	default:
 		log.Debugf("prepareArtifact - other type (shouldn't see it) - %v", artifactFileName)
+		p.rawNames[artifactFileName] = props
 	}
 }
 
@@ -692,13 +694,16 @@ func (p *store) prepareArtifacts() {
 		log.Debug("prepareArtifacts - ptMonReport.Enabled")
 		for artifactFileName, fsaInfo := range p.ptMonReport.FSActivity {
 			artifactInfo, found := p.rawNames[artifactFileName]
-			if found {
+			if found && artifactInfo != nil {
 				artifactInfo.FSActivity = fsaInfo
 			} else {
-				log.Debugf("prepareArtifacts - fsa artifact => %v", artifactFileName)
+				log.Debugf("prepareArtifacts [%v] - fsa artifact => %v", found, artifactFileName)
+				if found && artifactInfo == nil {
+					log.Debugf("prepareArtifacts - fsa artifact (found, but no info) => %v", artifactFileName)
+				}
 				p.prepareArtifact(artifactFileName)
 				artifactInfo, found := p.rawNames[artifactFileName]
-				if found {
+				if found && artifactInfo != nil {
 					artifactInfo.FSActivity = fsaInfo
 				} else {
 					log.Debugf("[warn] prepareArtifacts - fsa artifact - missing in rawNames => %v", artifactFileName)
