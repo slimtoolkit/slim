@@ -1,5 +1,12 @@
 # Releases
 
+## 1.40.10 (1/17/2024)
+
+### Bug Fixes
+
+- Sensor artifact (post-)processing bug fix for additional PT generated artifacts.
+
+
 ## 1.40.9 (1/15/2024)
 
 ### Improvements
