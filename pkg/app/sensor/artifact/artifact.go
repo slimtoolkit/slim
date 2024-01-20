@@ -31,7 +31,6 @@ import (
 	"github.com/slimtoolkit/slim/pkg/sysidentity"
 	"github.com/slimtoolkit/slim/pkg/system"
 	"github.com/slimtoolkit/slim/pkg/util/fsutil"
-	"github.com/slimtoolkit/slim/pkg/version"
 )
 
 const (
@@ -282,16 +281,16 @@ type Processor interface {
 }
 
 type processor struct {
+	seReport         *report.SensorReport
 	artifactsDirName string
-
 	// Extra files to put into the artifacts archive before exiting.
 	artifactsExtra []string
-
-	origPathMap map[string]struct{}
+	origPathMap    map[string]struct{}
 }
 
-func NewProcessor(artifactsDirName string, artifactsExtra []string) Processor {
+func NewProcessor(seReport *report.SensorReport, artifactsDirName string, artifactsExtra []string) Processor {
 	return &processor{
+		seReport:         seReport,
 		artifactsDirName: artifactsDirName,
 		artifactsExtra:   artifactsExtra,
 	}
@@ -458,7 +457,7 @@ func (a *processor) Process(
 
 	logger.Debugf("len(fanReport.ProcessFiles)=%v / fileCount=%v", len(fanReport.ProcessFiles), fileCount)
 	allFilesMap := findSymlinks(fileList, mountPoint, cmd.Excludes)
-	return saveResults(a.origPathMap, a.artifactsDirName, cmd, allFilesMap, fanReport, ptReport, peReport)
+	return saveResults(a.origPathMap, a.artifactsDirName, cmd, allFilesMap, fanReport, ptReport, peReport, a.seReport)
 }
 
 func (a *processor) Archive() error {
@@ -507,10 +506,19 @@ func saveResults(
 	fanMonReport *report.FanMonitorReport,
 	ptMonReport *report.PtMonitorReport,
 	peReport *report.PeMonitorReport,
+	seReport *report.SensorReport,
 ) error {
 	log.Debugf("saveResults(%v,...)", len(fileNames))
 
-	artifactStore := newStore(origPathMap, artifactsDirName, fileNames, fanMonReport, ptMonReport, peReport, cmd)
+	artifactStore := newStore(origPathMap,
+		artifactsDirName,
+		fileNames,
+		fanMonReport,
+		ptMonReport,
+		peReport,
+		seReport,
+		cmd)
+
 	artifactStore.prepareArtifacts()
 	artifactStore.saveArtifacts()
 	artifactStore.enumerateArtifacts()
@@ -529,6 +537,7 @@ type store struct {
 	fanMonReport  *report.FanMonitorReport
 	ptMonReport   *report.PtMonitorReport
 	peMonReport   *report.PeMonitorReport
+	seReport      *report.SensorReport
 	rawNames      map[string]*report.ArtifactProps
 	nameList      []string
 	resolve       map[string]struct{}
@@ -546,6 +555,7 @@ func newStore(
 	fanMonReport *report.FanMonitorReport,
 	ptMonReport *report.PtMonitorReport,
 	peMonReport *report.PeMonitorReport,
+	seReport *report.SensorReport,
 	cmd *command.StartMonitor) *store {
 	store := &store{
 		origPathMap:   origPathMap,
@@ -553,6 +563,7 @@ func newStore(
 		fanMonReport:  fanMonReport,
 		ptMonReport:   ptMonReport,
 		peMonReport:   peMonReport,
+		seReport:      seReport,
 		rawNames:      rawNames,
 		nameList:      make([]string, 0, len(rawNames)),
 		resolve:       map[string]struct{}{},
@@ -2382,11 +2393,21 @@ func (p *store) saveReport() error {
 	defer logger.Trace("exit")
 
 	creport := report.ContainerReport{
-		SensorVersion: version.Current(),
+		Sensor: p.seReport,
 		Monitors: report.MonitorReports{
 			Pt:  p.ptMonReport,
 			Fan: p.fanMonReport,
 		},
+	}
+
+	if p.cmd != nil {
+		creport.StartCommand = &report.StartCommandReport{
+			AppName:       p.cmd.AppName,
+			AppArgs:       p.cmd.AppArgs,
+			AppUser:       p.cmd.AppUser,
+			AppEntrypoint: p.cmd.AppEntrypoint,
+			AppCmd:        p.cmd.AppCmd,
+		}
 	}
 
 	sinfo := system.GetSystemInfo()

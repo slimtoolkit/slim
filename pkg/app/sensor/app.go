@@ -126,9 +126,7 @@ func Run() {
 	}
 
 	errutil.FailOn(configureLogger(*enableDebug, *logLevel, *logFormat, *logFile))
-
 	ctx := context.Background()
-
 	if len(os.Args) > 1 && os.Args[1] == "control" {
 		if err := runControlCommand(ctx); err != nil {
 			fmt.Fprintln(os.Stderr, "Control command failed: "+err.Error())
@@ -139,8 +137,14 @@ func Run() {
 
 	activeCaps, maxCaps, err := sysenv.Capabilities(0)
 	errutil.WarnOn(err)
-	log.Infof("sensor: ver=%v", version.Current())
-	log.Debugf("sensor: args => %#v", os.Args)
+
+	sr := &report.SensorReport{
+		Version: version.Current(),
+		Args:    os.Args,
+	}
+
+	log.Infof("sensor: ver=%v", sr.Version)
+	log.Debugf("sensor: args => %#v", sr.Args)
 
 	log.Tracef("sensor: uid=%v euid=%v", os.Getuid(), os.Geteuid())
 	log.Tracef("sensor: privileged => %v", sysenv.IsPrivileged())
@@ -156,7 +160,7 @@ func Run() {
 	if len(*logFile) > 0 {
 		artifactsExtra = append(artifactsExtra, *logFile)
 	}
-	artifactor := artifact.NewProcessor(*artifactsDir, artifactsExtra)
+	artifactor := artifact.NewProcessor(sr, *artifactsDir, artifactsExtra)
 
 	exe, err := newExecution(
 		ctx,
