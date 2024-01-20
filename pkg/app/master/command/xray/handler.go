@@ -40,12 +40,55 @@ const (
 )
 
 const (
+	// image.ref.name and image.version are supposed to represent
+	// the corresponding target image identity properties
+	// but sometimes it's base image properties
+	// (when the builder doesn't set its own values inheriting the base image tags)
+
+	ociLabelImageName = "org.opencontainers.image.ref.name"
+
+	ociLabelImageVersion = "org.opencontainers.image.version"
+	lsLabelImageVersion  = "org.label-schema.version"
+
+	// image build source info
+	ociLabelImageSource = "org.opencontainers.image.source"
+	lsLabelImageSource  = "org.label-schema.vcs-url"
+
+	//SCM repo revision info (could be commit hash, tag, branch)
+	ociLabelImageRevision = "org.opencontainers.image.revision"
+	lsLabelImageRevision  = "org.label-schema.vcs-ref"
+
+	ociLabelImageURL = "org.opencontainers.image.url"
+	lsLabelImageURL  = "org.label-schema.url"
+
+	ociLabelImageTitle = "org.opencontainers.image.title"
+	lsLabelImageTitle  = "org.label-schema.name"
+
+	ociLabelImageDesc = "org.opencontainers.image.description"
+	lsLabelImageDesc  = "org.label-schema.description"
+
+	ociLabelImageDocs = "org.opencontainers.image.documentation"
+	lsLabelImageDocs  = "org.label-schema.usage"
+
+	ociLabelImageVendor = "org.opencontainers.image.vendor" //high level 'author' info
+	lsLabelImageVendor  = "org.label-schema.vendor"
+
 	ociLabelImageAuthors      = "org.opencontainers.image.authors"
 	ociLabelBaseImageDigest   = "org.opencontainers.image.base.digest"
 	ociLabelBaseImageName     = "org.opencontainers.image.base.name"
 	azureLabelBaseImageName   = "image.base.ref.name"
 	azureLabelBaseImageDigest = "image.base.digest"
+
+	lsLabelDockerCmd      = "org.label-schema.docker.cmd"
+	lsLabelDockerCmdDevel = "org.label-schema.docker.cmd.devel"
+	lsLabelDockerCmdTest  = "org.label-schema.docker.cmd.test"
+	lsLabelDockerCmdDebug = "org.label-schema.docker.debug"
+	lsLabelDockerCmdHelp  = "org.label-schema.docker.cmd.help"
+	lsLabelDockerParams   = "org.label-schema.docker.params"
 )
+
+// OCI label info:
+// https://specs.opencontainers.org/image-spec/annotations/
 
 // OnCommand implements the 'xray' command
 func OnCommand(

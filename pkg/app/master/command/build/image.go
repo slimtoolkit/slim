@@ -97,7 +97,7 @@ func inspectFatImage(
 	if imageInspector.ImageInfo.Config != nil &&
 		len(imageInspector.ImageInfo.Config.Labels) > 0 {
 		for labelName := range imageInspector.ImageInfo.Config.Labels {
-			if labelName == consts.ContainerLabelName {
+			if labelName == consts.DSLabelVersion {
 				xc.Out.Info("target.image.error",
 					ovars{
 						"status":  "image.already.optimized",
@@ -356,10 +356,25 @@ func buildOutputImage(
 		UpdateBuildOptionsWithOverrides(&opts, imageOverrideSelectors, overrides)
 
 		if imageInspector.ImageRef != "" {
-			opts.ImageConfig.Config.Labels[consts.SourceImageLabelName] = imageInspector.ImageRef
+			opts.ImageConfig.Config.Labels[consts.DSLabelSourceImage] = imageInspector.ImageRef
 		}
 
-		opts.ImageConfig.Config.Labels[consts.ContainerLabelName] = v.Current()
+		var sourceImageID string
+		if imageInspector.ImageInfo != nil &&
+			imageInspector.ImageInfo.ID != "" {
+			sourceImageID = imageInspector.ImageInfo.ID
+		}
+
+		if sourceImageID == "" &&
+			imageInspector.ImageRecordInfo.ID != "" {
+			sourceImageID = imageInspector.ImageRecordInfo.ID
+		}
+
+		if sourceImageID != "" {
+			opts.ImageConfig.Config.Labels[consts.DSLabelSourceImageID] = sourceImageID
+		}
+
+		opts.ImageConfig.Config.Labels[consts.DSLabelVersion] = v.Current()
 
 		//(new) instructions have higher value precedence over the runtime overrides
 		UpdateBuildOptionsWithNewInstructions(&opts, instructions)

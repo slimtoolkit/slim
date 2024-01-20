@@ -67,7 +67,7 @@ func GenerateFromInfo(
 	var dfData bytes.Buffer
 	dfData.WriteString("FROM scratch\n")
 
-	dsInfoLabel := fmt.Sprintf("LABEL %s=\"%s\"\n", consts.ContainerLabelName, v.Current())
+	dsInfoLabel := fmt.Sprintf("LABEL %s=\"%s\"\n", consts.DSLabelVersion, v.Current())
 	dfData.WriteString(dsInfoLabel)
 
 	if len(labels) > 0 {

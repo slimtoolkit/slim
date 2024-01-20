@@ -263,10 +263,6 @@ func NewImageBuilder(
 		}
 	}
 
-	if sourceImage != "" {
-		builder.Labels[consts.SourceImageLabelName] = sourceImage
-	}
-
 	//instructions have higher value precedence over the runtime overrides
 	if instructions != nil {
 		log.Debugf("NewImageBuilder: Using new image instructions => %+v", instructions)
@@ -340,6 +336,14 @@ func NewImageBuilder(
 
 			builder.Env = newEnv
 		}
+	}
+
+	if sourceImage != "" {
+		builder.Labels[consts.DSLabelSourceImage] = sourceImage
+	}
+
+	if imageInfo != nil && imageInfo.ID != "" {
+		builder.Labels[consts.DSLabelSourceImageID] = imageInfo.ID
 	}
 
 	builder.BuildOptions.OutputStream = &builder.BuildLog
