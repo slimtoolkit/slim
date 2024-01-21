@@ -279,39 +279,22 @@ func NewInspector(
 	}
 
 	if overrides == nil {
-		inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Entrypoint...)
-		inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Cmd...)
+		inspector.FatContainerCmd = BuildStartupCommand(
+			imageInspector.ImageInfo.Config.Entrypoint,
+			imageInspector.ImageInfo.Config.Cmd,
+			imageInspector.ImageInfo.Config.Shell,
+			false, nil, false, nil,
+		)
 	} else {
-		if len(overrides.Entrypoint) > 0 || overrides.ClearEntrypoint {
-			inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Entrypoint...)
-
-			if len(overrides.Cmd) > 0 || overrides.ClearCmd {
-				inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
-			}
-			//note: not using CMD from image if there's an override for ENTRYPOINT
-		} else {
-			inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Entrypoint...)
-
-			if len(overrides.Cmd) > 0 || overrides.ClearCmd {
-				inspector.FatContainerCmd = append(inspector.FatContainerCmd, overrides.Cmd...)
-			} else {
-				inspector.FatContainerCmd = append(inspector.FatContainerCmd, imageInspector.ImageInfo.Config.Cmd...)
-			}
-		}
-	}
-
-	emptyIdx := -1
-	for idx, val := range inspector.FatContainerCmd {
-		val = strings.TrimSpace(val)
-		if val != "" {
-			break
-		}
-
-		emptyIdx = idx
-	}
-
-	if emptyIdx > -1 {
-		inspector.FatContainerCmd = inspector.FatContainerCmd[emptyIdx+1:]
+		inspector.FatContainerCmd = BuildStartupCommand(
+			imageInspector.ImageInfo.Config.Entrypoint,
+			imageInspector.ImageInfo.Config.Cmd,
+			imageInspector.ImageInfo.Config.Shell,
+			overrides.ClearEntrypoint,
+			overrides.Entrypoint,
+			overrides.ClearCmd,
+			overrides.Cmd,
+		)
 	}
 
 	logger.Debugf("FatContainerCmd - %+v", inspector.FatContainerCmd)
