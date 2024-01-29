@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	EnvDockerAPIVer      = "DOCKER_API_VERSION"
 	EnvDockerHost        = "DOCKER_HOST"
 	EnvDockerTLSVerify   = "DOCKER_TLS_VERIFY"
 	EnvDockerCertPath    = "DOCKER_CERT_PATH"
@@ -23,6 +24,13 @@ const (
 	UnixSocketAddr       = "unix:///var/run/docker.sock"
 	unixUserSocketSuffix = ".docker/run/docker.sock"
 )
+
+var EnvVarNames = []string{
+	EnvDockerHost,
+	EnvDockerTLSVerify,
+	EnvDockerCertPath,
+	EnvDockerAPIVer,
+}
 
 var (
 	ErrNoDockerInfo = errors.New("no docker info")
@@ -127,7 +135,7 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 	var client *docker.Client
 	var err error
 
-	newTLSClient := func(host string, certPath string, verify bool) (*docker.Client, error) {
+	newTLSClient := func(host string, certPath string, verify bool, apiVersion string) (*docker.Client, error) {
 		var ca []byte
 
 		cert, err := os.ReadFile(filepath.Join(certPath, "cert.pem"))
@@ -148,7 +156,7 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 			}
 		}
 
-		return docker.NewVersionedTLSClientFromBytes(host, cert, key, ca, "")
+		return docker.NewVersionedTLSClientFromBytes(host, cert, key, ca, apiVersion)
 	}
 
 	switch {
@@ -156,7 +164,7 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 		config.UseTLS &&
 		config.VerifyTLS &&
 		config.TLSCertPath != "":
-		client, err = newTLSClient(config.Host, config.TLSCertPath, true)
+		client, err = newTLSClient(config.Host, config.TLSCertPath, true, config.APIVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -167,7 +175,7 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 		config.UseTLS &&
 		!config.VerifyTLS &&
 		config.TLSCertPath != "":
-		client, err = newTLSClient(config.Host, config.TLSCertPath, false)
+		client, err = newTLSClient(config.Host, config.TLSCertPath, false, config.APIVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -176,9 +184,13 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 
 	case config.Host != "" &&
 		!config.UseTLS:
-		client, err = docker.NewClient(config.Host)
+		client, err = docker.NewVersionedClient(config.Host, config.APIVersion)
 		if err != nil {
 			return nil, err
+		}
+
+		if config.APIVersion != "" {
+			client.SkipServerVersionCheck = true
 		}
 
 		log.Debug("dockerclient.New: new Docker client [3]")
@@ -188,7 +200,7 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 		config.Env[EnvDockerTLSVerify] == "1" &&
 		config.Env[EnvDockerCertPath] != "" &&
 		config.Env[EnvDockerHost] != "":
-		client, err = newTLSClient(config.Env[EnvDockerHost], config.Env[EnvDockerCertPath], false)
+		client, err = newTLSClient(config.Env[EnvDockerHost], config.Env[EnvDockerCertPath], false, config.APIVersion)
 		if err != nil {
 			return nil, err
 		}
@@ -218,9 +230,13 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 		}
 
 		config.Host = socketInfo.Address
-		client, err = docker.NewClient(config.Host)
+		client, err = docker.NewVersionedClient(config.Host, config.APIVersion)
 		if err != nil {
 			return nil, err
+		}
+
+		if config.APIVersion != "" {
+			client.SkipServerVersionCheck = true
 		}
 
 		log.Debug("dockerclient.New: new Docker client (default) [6]")
@@ -235,6 +251,14 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 		}
 
 		log.Debug("dockerclient.New: configured DOCKER_HOST env var")
+	}
+
+	if config.APIVersion != "" && config.Env[EnvDockerAPIVer] == "" {
+		if err := os.Setenv(EnvDockerAPIVer, config.APIVersion); err != nil {
+			errutil.WarnOn(err)
+		}
+
+		log.Debug("dockerclient.New: configured DOCKER_API_VERSION env var")
 	}
 
 	return client, nil

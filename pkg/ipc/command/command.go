@@ -67,6 +67,7 @@ type StartMonitor struct {
 	IncludeCertPKAll             bool                          `json:"include_cert_pk_all,omitempty"`
 	IncludeCertPKDirs            bool                          `json:"include_cert_pk_dirs,omitempty"`
 	IncludeNew                   bool                          `json:"include_new,omitempty"`
+	IncludeSSHClient             bool                          `json:"include_ssh_client,omitempty"`
 	IncludeOSLibsNet             bool                          `json:"include_oslibs_net,omitempty"`
 	IncludeZoneInfo              bool                          `json:"include_zoneinfo,omitempty"`
 	IncludeAppNuxtDir            bool                          `json:"include_app_nuxt_dir,omitempty"`

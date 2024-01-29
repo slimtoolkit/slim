@@ -20,6 +20,7 @@ const (
 	FlagLogLevel      = "log-level"
 	FlagLog           = "log"
 	FlagLogFormat     = "log-format"
+	FlagAPIVersion    = "crt-api-version"
 	FlagUseTLS        = "tls"
 	FlagVerifyTLS     = "tls-verify"
 	FlagTLSCertPath   = "tls-cert-path"
@@ -50,6 +51,7 @@ const (
 	FlagUseTLSUsage        = "use TLS"
 	FlagVerifyTLSUsage     = "verify TLS"
 	FlagTLSCertPathUsage   = "path to TLS cert files"
+	FlagAPIVersionUsage    = "Container runtime API version"
 	FlagHostUsage          = "Docker host address or socket (prefix with 'tcp://' or 'unix://')"
 	FlagStatePathUsage     = "app state base path"
 	FlagInContainerUsage   = "app is running in a container"
@@ -347,7 +349,13 @@ func GlobalFlags() []cli.Flag {
 		&cli.StringFlag{
 			Name:  FlagTLSCertPath,
 			Value: "",
-			Usage: "path to TLS cert files",
+			Usage: FlagTLSCertPathUsage,
+		},
+		&cli.StringFlag{
+			Name:    FlagAPIVersion,
+			Value:   "1.24", //Docker Engine v25.x depricates APIs below 1.24
+			Usage:   FlagAPIVersionUsage,
+			EnvVars: []string{"DSLIM_CRT_API_VER"},
 		},
 		&cli.StringFlag{
 			Name:  FlagHost,
@@ -390,6 +398,7 @@ var CommonFlags = map[string]cli.Flag{
 	},
 	FlagPull: &cli.BoolFlag{
 		Name:    FlagPull,
+		Value:   true, //enabled by default
 		Usage:   FlagPullUsage,
 		EnvVars: []string{"DSLIM_PULL"},
 	},

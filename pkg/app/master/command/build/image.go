@@ -411,16 +411,19 @@ func buildOutputImage(
 			}
 		}
 
-		err = engine.Build(opts)
+		imageResult, err := engine.Build(opts)
 		if err != nil {
 			onError(err)
 		}
 
-		outputImageName = customImageTag // engine.RepoName
+		outputImageName = imageResult.Name // customImageTag // engine.RepoName
+		cmdReport.MinifiedImageID = imageResult.ID
+		cmdReport.MinifiedImageDigest = imageResult.Digest
 		imageCreated = true
 	case IBEBuildKit:
 	case IBEDocker:
-		engine, err := builder.NewImageBuilder(client,
+		engine, err := builder.NewImageBuilder(
+			client,
 			customImageTag,
 			additionalTags,
 			imageInspector.ImageInfo,
@@ -473,9 +476,10 @@ func buildOutputImage(
 	}
 
 	cmdReport.State = cmd.StateCompleted
+	cmdReport.ImageCreated = imageCreated
 	cmdReport.MinifiedImage = outputImageName
 	cmdReport.MinifiedImageHasData = hasData
-	cmdReport.ImageCreated = imageCreated
+
 	xc.Out.State("completed")
 
 	return outputImageName

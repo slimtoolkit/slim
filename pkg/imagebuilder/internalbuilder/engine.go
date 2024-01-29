@@ -48,18 +48,18 @@ func New(
 	return engine, nil
 }
 
-func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
+func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) (*imagebuilder.ImageResult, error) {
 	if len(options.ImageConfig.Config.Entrypoint) == 0 &&
 		len(options.ImageConfig.Config.Cmd) == 0 {
-		return fmt.Errorf("missing startup info")
+		return nil, fmt.Errorf("missing startup info")
 	}
 
 	if len(options.Layers) == 0 {
-		return fmt.Errorf("no layers")
+		return nil, fmt.Errorf("no layers")
 	}
 
 	if len(options.Layers) > 255 {
-		return fmt.Errorf("too many layers")
+		return nil, fmt.Errorf("too many layers")
 	}
 
 	switch options.ImageConfig.Architecture {
@@ -67,7 +67,7 @@ func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
 		options.ImageConfig.Architecture = "amd64"
 	case "arm64", "amd64":
 	default:
-		return fmt.Errorf("bad architecture value")
+		return nil, fmt.Errorf("bad architecture value")
 	}
 
 	var img v1.Image
@@ -75,7 +75,7 @@ func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
 		//same as FROM scratch
 		img = empty.Image
 	} else {
-		return fmt.Errorf("custom base images are not supported yet")
+		return nil, fmt.Errorf("custom base images are not supported yet")
 	}
 
 	imgRunConfig := v1.Config{
@@ -144,7 +144,7 @@ func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
 
 	img, err := mutate.ConfigFile(img, imgConfig)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	var layersToAdd []v1.Layer
@@ -154,65 +154,67 @@ func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
 			i, layerInfo.Type, layerInfo.Source)
 
 		if layerInfo.Source == "" {
-			return fmt.Errorf("empty image layer data source")
+			return nil, fmt.Errorf("empty image layer data source")
 		}
 
 		if !fsutil.Exists(layerInfo.Source) {
-			return fmt.Errorf("image layer data source path doesnt exist - %s", layerInfo.Source)
+			return nil, fmt.Errorf("image layer data source path doesnt exist - %s", layerInfo.Source)
 		}
 
 		switch layerInfo.Type {
 		case imagebuilder.TarSource:
 			if !fsutil.IsRegularFile(layerInfo.Source) {
-				return fmt.Errorf("image layer data source path is not a file - %s", layerInfo.Source)
+				return nil, fmt.Errorf("image layer data source path is not a file - %s", layerInfo.Source)
 			}
 
 			if !fsutil.IsTarFile(layerInfo.Source) {
-				return fmt.Errorf("image layer data source path is not a tar file - %s", layerInfo.Source)
+				return nil, fmt.Errorf("image layer data source path is not a tar file - %s", layerInfo.Source)
 			}
 
 			layer, err := layerFromTar(layerInfo)
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			layersToAdd = append(layersToAdd, layer)
 		case imagebuilder.DirSource:
 			if !fsutil.IsDir(layerInfo.Source) {
-				return fmt.Errorf("image layer data source path is not a directory - %s", layerInfo.Source)
+				return nil, fmt.Errorf("image layer data source path is not a directory - %s", layerInfo.Source)
 			}
 
 			layer, err := layerFromDir(layerInfo)
 			if err != nil {
-				return err
+				return nil, err
 			}
 
 			layersToAdd = append(layersToAdd, layer)
 		default:
-			return fmt.Errorf("unknown image data source - %v", layerInfo.Source)
+			return nil, fmt.Errorf("unknown image data source - %v", layerInfo.Source)
 		}
 	}
 
 	log.Debug("DefaultSimpleBuilder.Build: adding layers to image")
 	newImg, err := mutate.AppendLayers(img, layersToAdd...)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if len(options.Tags) == 0 {
-		return fmt.Errorf("missing tags")
+		return nil, fmt.Errorf("missing tags")
 	}
 
 	tag, err := name.NewTag(options.Tags[0])
 	if err != nil {
-		return err
+		return nil, err
 	}
+
+	otherTags := options.Tags[1:]
 
 	if ref.PushToDaemon {
 		log.Debug("DefaultSimpleBuilder.Build: saving image to Docker")
 		imageLoadResponseStr, err := daemon.Write(tag, newImg)
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		log.Debugf("DefaultSimpleBuilder.Build: pushed image to daemon - %s", imageLoadResponseStr)
@@ -220,7 +222,6 @@ func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
 			//TBD (need execution context to display the build logs)
 		}
 
-		otherTags := options.Tags[1:]
 		if len(otherTags) > 0 {
 			log.Debug("DefaultSimpleBuilder.Build: adding other tags")
 
@@ -242,7 +243,16 @@ func (ref *Engine) Build(options imagebuilder.SimpleBuildOptions) error {
 		//TBD
 	}
 
-	return nil
+	id, _ := newImg.ConfigName()
+	digest, _ := newImg.Digest()
+	result := &imagebuilder.ImageResult{
+		Name:      options.Tags[0],
+		OtherTags: otherTags,
+		ID:        fmt.Sprintf("%s:%s", id.Algorithm, id.Hex),
+		Digest:    fmt.Sprintf("%s:%s", digest.Algorithm, digest.Hex),
+	}
+
+	return result, nil
 }
 
 func layerFromTar(input imagebuilder.LayerDataInfo) (v1.Layer, error) {

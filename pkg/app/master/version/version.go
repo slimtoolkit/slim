@@ -83,13 +83,14 @@ func Print(xc *app.ExecutionContext, cmdNameParam string, logger *log.Entry, cli
 
 	if checkVersion {
 		vinfo := Check(inContainer, isDSImage)
-		outdated := "unknown"
 		current := "unknown"
 		if vinfo != nil && vinfo.Status == "success" {
-			outdated = fmt.Sprintf("%v", vinfo.Outdated)
+			if vinfo.Outdated {
+				ovApp["status"] = "OUTDATED"
+			}
 			current = vinfo.Current
 		}
-		ovApp["outdated"] = outdated
+
 		ovApp["current"] = current
 		ovApp["verdict"] = GetCheckVersionVerdict(vinfo)
 	}
@@ -138,11 +139,11 @@ func Print(xc *app.ExecutionContext, cmdNameParam string, logger *log.Entry, cli
 			xc.Exit(-1)
 		}
 		ovDockerClient := ovars{
-			"cmd":              cmdNameParam,
-			"api.version":      ver.Get("ApiVersion"),
-			"mini.api.version": ver.Get("MinAPIVersion"),
-			"build.time":       ver.Get("BuildTime"),
-			"git.commit":       ver.Get("GitCommit"),
+			"cmd":             cmdNameParam,
+			"api.version":     ver.Get("ApiVersion"),
+			"min.api.version": ver.Get("MinAPIVersion"),
+			"build.time":      ver.Get("BuildTime"),
+			"git.commit":      ver.Get("GitCommit"),
 		}
 		xc.Out.Info("dclient", ovDockerClient)
 	} else {

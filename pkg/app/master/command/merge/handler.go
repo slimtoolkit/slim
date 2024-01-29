@@ -240,7 +240,7 @@ func OnCommand(
 	index2, err := tarMapFromFile(f2)
 	xc.FailOn(err)
 
-	fmt.Printf("Updating tar map with first tar data...\n")
+	logger.Debug("updating tar map with first tar data...")
 	for p, info := range index2 {
 		other, found := index[p]
 		if !found {
@@ -299,8 +299,15 @@ func OnCommand(
 		false)
 	xc.FailOn(err)
 
-	err = engine.Build(*ibo)
+	imageResult, err := engine.Build(*ibo)
 	xc.FailOn(err)
+
+	xc.Out.Info("results.output",
+		ovars{
+			"image.name":   imageResult.Name,
+			"image.id":     imageResult.ID,
+			"image.digest": imageResult.Digest,
+		})
 
 	ensureImage("output", outputTags[0], cmdReport)
 	xc.Out.State("output.image.generate.done")

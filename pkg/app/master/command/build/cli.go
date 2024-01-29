@@ -134,6 +134,7 @@ var CLI = &cli.Command{
 		cflag(FlagAppImageDockerfile),
 		cflag(FlagIncludePathsCreportFile),
 		cflag(FlagIncludeOSLibsNet),
+		cflag(FlagIncludeSSHClient),
 		cflag(FlagIncludeZoneInfo),
 		cflag(FlagIncludeCertAll),
 		cflag(FlagIncludeCertBundles),
@@ -694,6 +695,7 @@ var CLI = &cli.Command{
 			xc.Exit(-1)
 		}
 
+		doIncludeSSHClient := ctx.Bool(FlagIncludeSSHClient)
 		doIncludeOSLibsNet := ctx.Bool(FlagIncludeOSLibsNet)
 
 		doIncludeZoneInfo := ctx.Bool(FlagIncludeZoneInfo)
@@ -812,6 +814,7 @@ var CLI = &cli.Command{
 			appImageStartInstGroup,
 			appImageStartInst,
 			appImageDockerfileInsts,
+			doIncludeSSHClient,
 			doIncludeOSLibsNet,
 			doIncludeZoneInfo,
 			doIncludeCertAll,

@@ -262,6 +262,7 @@ func OnCommand(
 		false, //doIncludeCertPKAll
 		false, //doIncludeCertPKDirs
 		false, //doIncludeNew
+		false, //doIncludeSSHClient
 		false, //doIncludeOSLibsNet
 		false, //doIncludeZoneInfo
 		nil,   //selectedNetNames

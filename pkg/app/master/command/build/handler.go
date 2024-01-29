@@ -127,6 +127,7 @@ func OnCommand(
 	appImageStartInstGroup int,
 	appImageStartInst string,
 	appImageDockerfileInsts []string,
+	doIncludeSSHClient bool,
 	doIncludeOSLibsNet bool,
 	doIncludeZoneInfo bool,
 	doIncludeCertAll bool,
@@ -1094,6 +1095,7 @@ func OnCommand(
 		doIncludeCertPKAll,
 		doIncludeCertPKDirs,
 		doIncludeNew,
+		doIncludeSSHClient,
 		doIncludeOSLibsNet,
 		doIncludeZoneInfo,
 		selectedNetworks,
@@ -1550,6 +1552,11 @@ func finishCommand(
 			OS:            imageInspector.ImageInfo.OS,
 		}
 
+		if cmdReport.MinifiedImageID != newImageInspector.ImageInfo.ID {
+			logger.Errorf("finishCommand: output image ID mismatch '%s' != '%s'",
+				cmdReport.MinifiedImageID, newImageInspector.ImageInfo.ID)
+		}
+
 		for k := range imageInspector.ImageInfo.Config.ExposedPorts {
 			cmdReport.SourceImage.ExposedPorts = append(cmdReport.SourceImage.ExposedPorts, string(k))
 		}
@@ -1581,11 +1588,21 @@ func finishCommand(
 	cmdReport.SeccompProfileName = imageInspector.SeccompProfileName
 	cmdReport.AppArmorProfileName = imageInspector.AppArmorProfileName
 
+	//todo:
+	//need to enhance the 'docker' image builder to provide
+	//the output image metadata (until then we have this quick 'fix')
+	if cmdReport.MinifiedImageID == "" {
+		cmdReport.MinifiedImageID = newImageInspector.ImageInfo.ID
+		//also need the digest...
+	}
+
 	xc.Out.Info("results",
 		ovars{
 			"image-build-engine": imageBuildEngine,
 			"image.name":         cmdReport.MinifiedImage,
 			"image.size":         cmdReport.MinifiedImageSizeHuman,
+			"image.id":           cmdReport.MinifiedImageID,
+			"image.digest":       cmdReport.MinifiedImageDigest,
 			"has.data":           cmdReport.MinifiedImageHasData,
 		})
 

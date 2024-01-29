@@ -120,6 +120,7 @@ var CommandFlagSuggestions = &command.FlagSuggestions{
 		{Text: command.FullFlagName(FlagAppImageStartInst), Description: FlagAppImageStartInstUsage},
 		{Text: command.FullFlagName(FlagAppImageDockerfile), Description: FlagAppImageDockerfileUsage},
 		{Text: command.FullFlagName(FlagIncludePathsCreportFile), Description: FlagIncludePathsCreportFileUsage},
+		{Text: command.FullFlagName(FlagIncludeSSHClient), Description: FlagIncludeSSHClientUsage},
 		{Text: command.FullFlagName(FlagIncludeOSLibsNet), Description: FlagIncludeOSLibsNetUsage},
 		{Text: command.FullFlagName(FlagIncludeCertAll), Description: FlagIncludeCertAllUsage},
 		{Text: command.FullFlagName(FlagIncludeCertBundles), Description: FlagIncludeCertBundlesUsage},
@@ -164,7 +165,7 @@ var CommandFlagSuggestions = &command.FlagSuggestions{
 	Values: map[string]command.CompleteValue{
 		command.FullFlagName(command.FlagCommandParamsFile): command.CompleteFile,
 		//NOTE: with FlagPull target complete needs to check remote registries too
-		command.FullFlagName(command.FlagPull):                           command.CompleteBool,
+		command.FullFlagName(command.FlagPull):                           command.CompleteTBool,
 		command.FullFlagName(command.FlagShowPullLogs):                   command.CompleteBool,
 		command.FullFlagName(command.FlagDockerConfigPath):               command.CompleteFile,
 		command.FullFlagName(command.FlagTarget):                         command.CompleteImage,
@@ -202,6 +203,7 @@ var CommandFlagSuggestions = &command.FlagSuggestions{
 		command.FullFlagName(FlagIncludeShell):                           command.CompleteBool,
 		command.FullFlagName(FlagIncludeWorkdir):                         command.CompleteBool,
 		command.FullFlagName(FlagIncludeAppImageAll):                     command.CompleteBool,
+		command.FullFlagName(FlagIncludeSSHClient):                       command.CompleteBool,
 		command.FullFlagName(FlagIncludeOSLibsNet):                       command.CompleteBool,
 		command.FullFlagName(FlagIncludeCertAll):                         command.CompleteBool,
 		command.FullFlagName(FlagIncludeCertBundles):                     command.CompleteBool,

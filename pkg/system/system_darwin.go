@@ -84,4 +84,7 @@ var osNames = map[uint64]struct {
 	18: {"Mojave", "10.14."},
 	19: {"Catalina", "10.15."},
 	20: {"Big Sur", "11."},
+	21: {"Monterey", "12."},
+	22: {"Ventura", "13."},
+	23: {"Sonoma", "14."},
 }

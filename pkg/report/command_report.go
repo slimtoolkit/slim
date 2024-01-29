@@ -117,6 +117,8 @@ type BuildCommand struct {
 	MinifiedImageSize      int64                `json:"minified_image_size"`
 	MinifiedImageSizeHuman string               `json:"minified_image_size_human"`
 	MinifiedImage          string               `json:"minified_image"`
+	MinifiedImageID        string               `json:"minified_image_id"`
+	MinifiedImageDigest    string               `json:"minified_image_digest"`
 	MinifiedImageHasData   bool                 `json:"minified_image_has_data"`
 	MinifiedBy             float64              `json:"minified_by"`
 	ArtifactLocation       string               `json:"artifact_location"`

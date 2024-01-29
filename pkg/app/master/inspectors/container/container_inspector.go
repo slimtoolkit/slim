@@ -125,6 +125,7 @@ type Inspector struct {
 	DoIncludeCertPKAll    bool
 	DoIncludeCertPKDirs   bool
 	DoIncludeNew          bool
+	DoIncludeSSHClient    bool
 	DoIncludeOSLibsNet    bool
 	DoIncludeZoneInfo     bool
 	SelectedNetworks      map[string]NetNameInfo
@@ -204,6 +205,7 @@ func NewInspector(
 	doIncludeCertPKAll bool,
 	doIncludeCertPKDirs bool,
 	doIncludeNew bool,
+	doIncludeSSHClient bool,
 	doIncludeOSLibsNet bool,
 	doIncludeZoneInfo bool,
 	selectedNetworks map[string]NetNameInfo,
@@ -260,6 +262,7 @@ func NewInspector(
 		DoIncludeCertPKAll:    doIncludeCertPKAll,
 		DoIncludeCertPKDirs:   doIncludeCertPKDirs,
 		DoIncludeNew:          doIncludeNew,
+		DoIncludeSSHClient:    doIncludeSSHClient,
 		DoIncludeOSLibsNet:    doIncludeOSLibsNet,
 		DoIncludeZoneInfo:     doIncludeZoneInfo,
 		SelectedNetworks:      selectedNetworks,
@@ -810,6 +813,7 @@ func (i *Inspector) RunContainer() error {
 	cmd.IncludeCertPKAll = i.DoIncludeCertPKAll
 	cmd.IncludeCertPKDirs = i.DoIncludeCertPKDirs
 	cmd.IncludeNew = i.DoIncludeNew
+	cmd.IncludeSSHClient = i.DoIncludeSSHClient
 	cmd.IncludeOSLibsNet = i.DoIncludeOSLibsNet
 	cmd.IncludeZoneInfo = i.DoIncludeZoneInfo
 

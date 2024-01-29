@@ -131,9 +131,16 @@ type DataParams struct {
 	//TODO: add useful fields (e.g., to filter directory files or to use specific file perms, etc)
 }
 
+type ImageResult struct {
+	ID        string   `json:"id,omitempty"`
+	Digest    string   `json:"digest,omitempty"`
+	Name      string   `json:"name,omitempty"`
+	OtherTags []string `json:"other_tags,omitempty"`
+}
+
 type SimpleBuildEngine interface {
 	Name() string
-	Build(options SimpleBuildOptions) error
+	Build(options SimpleBuildOptions) (*ImageResult, error)
 }
 
 func SimpleBuildOptionsFromDockerfileData(data string, ignoreExeInstructions bool) (*SimpleBuildOptions, error) {

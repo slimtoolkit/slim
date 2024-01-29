@@ -35,6 +35,7 @@ type GlobalAppOptions struct {
 	UseTLS       *bool   `json:"tls,omitempty"`
 	VerifyTLS    *bool   `json:"tls_verify,omitempty"`
 	TLSCertPath  *string `json:"tls_cert_path,omitempty"`
+	APIVersion   *string `json:"api_version,omitempty"`
 	Host         *string `json:"host,omitempty"`
 	ArchiveState *string `json:"archive_state,omitempty"`
 }
@@ -208,6 +209,7 @@ type DockerClient struct {
 	VerifyTLS   bool
 	TLSCertPath string
 	Host        string
+	APIVersion  string
 	Env         map[string]string
 }
 

@@ -367,6 +367,10 @@ func UpdateGlobalFlagValues(appOpts *config.AppOptions, values *GenericParams) *
 		values.ClientConfig.Host = *appOpts.Global.Host
 	}
 
+	if appOpts.Global.APIVersion != nil {
+		values.ClientConfig.APIVersion = *appOpts.Global.APIVersion
+	}
+
 	return values
 }
 
@@ -398,6 +402,7 @@ func GlobalFlagValues(ctx *cli.Context) *GenericParams {
 
 func GetDockerClientConfig(ctx *cli.Context) *config.DockerClient {
 	config := &config.DockerClient{
+		APIVersion:  ctx.String(FlagAPIVersion),
 		UseTLS:      ctx.Bool(FlagUseTLS),
 		VerifyTLS:   ctx.Bool(FlagVerifyTLS),
 		TLSCertPath: ctx.String(FlagTLSCertPath),
@@ -411,9 +416,9 @@ func GetDockerClientConfig(ctx *cli.Context) *config.DockerClient {
 		}
 	}
 
-	getEnv(dockerclient.EnvDockerHost)
-	getEnv(dockerclient.EnvDockerTLSVerify)
-	getEnv(dockerclient.EnvDockerCertPath)
+	for _, ev := range dockerclient.EnvVarNames {
+		getEnv(ev)
+	}
 
 	return config
 }

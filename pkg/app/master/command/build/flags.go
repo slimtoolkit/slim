@@ -50,6 +50,13 @@ const (
 
 	FlagIncludeOSLibsNet = "include-oslibs-net"
 
+	FlagIncludeSSHClient           = "include-ssh-client"
+	FlagIncludeSSHClientUsage      = "Keep the common SSH client components and configs"
+	FlagIncludeSSHClientAll        = "include-ssh-client-all"
+	FlagIncludeSSHClientAllUsage   = "Keep all SSH client components and configs"
+	FlagIncludeSSHClientBasic      = "include-ssh-client-basic"
+	FlagIncludeSSHClientBasicUsage = "Keep the basic SSH client components and configs"
+
 	FlagIncludeZoneInfo = "include-zoneinfo"
 
 	FlagIncludeCertAll     = "include-cert-all"
@@ -315,6 +322,13 @@ var Flags = map[string]cli.Flag{
 		Value:   true, //enabled by default
 		Usage:   FlagIncludeOSLibsNetUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_OSLIBS_NET"},
+	},
+	////
+	FlagIncludeSSHClient: &cli.BoolFlag{
+		Name:    FlagIncludeSSHClient,
+		Value:   false, //disabled by default (for now)
+		Usage:   FlagIncludeSSHClientUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_SSH_CLIENT"},
 	},
 	////
 	FlagIncludeZoneInfo: &cli.BoolFlag{

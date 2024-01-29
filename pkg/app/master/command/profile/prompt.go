@@ -72,7 +72,7 @@ var CommandFlagSuggestions = &command.FlagSuggestions{
 		{Text: command.FullFlagName(command.FlagSensorIPCEndpoint), Description: command.FlagSensorIPCEndpointUsage},
 	},
 	Values: map[string]command.CompleteValue{
-		command.FullFlagName(command.FlagPull):                   command.CompleteBool,
+		command.FullFlagName(command.FlagPull):                   command.CompleteTBool,
 		command.FullFlagName(command.FlagShowPullLogs):           command.CompleteBool,
 		command.FullFlagName(command.FlagTarget):                 command.CompleteImage,
 		command.FullFlagName(command.FlagShowContainerLogs):      command.CompleteBool,

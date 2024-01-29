@@ -1036,6 +1036,7 @@ func (p *store) saveZoneInfo() {
 		return
 	}
 
+	log.Trace("sensor.store.saveZoneInfo")
 	for _, fp := range ziFiles {
 		if !fsutil.Exists(fp) {
 			log.Debugf("sensor.store.saveZoneInfo: no target file '%s' (skipping...)", fp)
@@ -1077,6 +1078,254 @@ func (p *store) saveZoneInfo() {
 /////////////////////////////////////////////////////////
 
 const (
+	sshUserSSHDir    = ".ssh"
+	sshUserSSHDirPat = "/.ssh/"
+	sshEtc           = "/etc/ssh"
+	sshLibOpenSSH    = "/usr/lib/openssh"
+	sshDefaultExeDir = "/usr/bin"
+
+	sshExeName        = "ssh"
+	sshAddExeName     = "ssh-add"
+	sshAgentExeName   = "ssh-agent"
+	sshKeygenExeName  = "ssh-keygen"
+	sshKeyscanExeName = "ssh-keyscan"
+	sshArgv0ExeName   = "ssh-argv0"
+	sshCopyIDExeName  = "ssh-copy-id"
+)
+
+var sshConfigDirs = []string{
+	sshEtc,
+}
+
+var sshBinDirs = []string{
+	sshLibOpenSSH,
+}
+
+var sshExeNames = []string{
+	sshExeName,
+	sshAddExeName,
+	sshAgentExeName,
+	sshKeygenExeName,
+	sshKeyscanExeName,
+	sshArgv0ExeName,
+	sshCopyIDExeName,
+}
+
+func homeDirs() []string {
+	dirMap := map[string]struct{}{}
+	var done bool
+	if fsutil.Exists(sysidentity.PasswdFilePath) {
+		info, err := sysidentity.ReadPasswdFile(sysidentity.PasswdFilePath)
+		if err != nil {
+			log.Debugf("sensor.store.homeDirs: error processing passwd: %v", err)
+		} else {
+			for _, pr := range info.Records {
+				if pr.NoLoginShell || pr.Home == "" {
+					continue
+				}
+
+				dirMap[pr.Home] = struct{}{}
+			}
+
+			done = true
+		}
+	}
+
+	if !done {
+		// hacky way to get the home directories for users...
+		rootDir := "/root"
+		if !fsutil.DirExists(rootDir) {
+			dirMap[rootDir] = struct{}{}
+		}
+
+		homeBaseDir := "/home"
+		hdFiles, err := os.ReadDir(homeBaseDir)
+		if err == nil {
+			for _, file := range hdFiles {
+				fullPath := filepath.Join(homeBaseDir, file.Name())
+				if fsutil.IsDir(fullPath) {
+					dirMap[fullPath] = struct{}{}
+				}
+			}
+		} else {
+			log.Debugf("sensor.store.homeDirs: error enumerating %s: %v", homeBaseDir, err)
+		}
+	}
+
+	var dirList []string
+	for dp := range dirMap {
+		dirList = append(dirList, dp)
+	}
+
+	return dirList
+}
+
+func (ref *store) saveSSHClient() {
+	if !ref.cmd.IncludeSSHClient {
+		return
+	}
+
+	log.Trace("sensor.store.saveSSHClient")
+	configDirs := append([]string{}, sshConfigDirs...)
+
+	// copy user config dirs
+	for _, dir := range homeDirs() {
+		dp := filepath.Join(dir, sshUserSSHDir)
+		if !fsutil.DirExists(dp) {
+			continue
+		}
+
+		configDirs = append(configDirs, dp)
+	}
+
+	// copy config dirs
+	for _, dp := range configDirs {
+		if !fsutil.DirExists(dp) {
+			log.Debugf("sensor.store.saveSSHClient: no target directory '%s' (skipping...)", dp)
+			continue
+		}
+
+		log.Tracef("sensor.store.saveSSHClient: copy dir %s", dp)
+		dstPath := fmt.Sprintf("%s/files%s", ref.storeLocation, dp)
+
+		err, errs := fsutil.CopyDir(ref.cmd.KeepPerms, dp, dstPath, true, true, nil, nil, nil)
+		if err != nil {
+			log.Debugf("sensor.store.saveSSHClient: fsutil.CopyDir(%s,%s) error: %v", dp, dstPath, err)
+		}
+
+		if len(errs) > 0 {
+			log.Debugf("sensor.store.saveSSHClient: fsutil.CopyDir(%v,%v) copy errors: %+v", dp, dstPath, errs)
+		}
+	}
+
+	// locate/resolve exes to full bin paths
+	allDepsMap := map[string]struct{}{}
+	for _, name := range sshExeNames {
+		exePath, err := exec.LookPath(name)
+		if err != nil {
+			log.Debugf("sensor.store.saveSSHClient - checking '%s' exe (not found: %s)", name, err)
+			exePath = filepath.Join(sshDefaultExeDir, name)
+		}
+
+		if !fsutil.Exists(exePath) {
+			log.Debugf("sensor.store.saveSSHClient - exe bin file not found - '%s' (skipping)", exePath)
+			continue
+		}
+
+		artifacts, err := sodeps.AllDependencies(exePath)
+		if err != nil {
+			log.Debugf("sensor.store.saveSSHClient - %s - error getting bin artifacts => %v", exePath, err)
+			// still add the bin path itself even if we had problems locating its deps
+			allDepsMap[exePath] = struct{}{}
+			continue
+		}
+
+		// artifacts includes exePath
+		for _, an := range artifacts {
+			allDepsMap[an] = struct{}{}
+		}
+	}
+
+	// copy bin dirs and identify bin deps
+	for _, dp := range sshBinDirs {
+		if !fsutil.DirExists(dp) {
+			log.Debugf("sensor.store.saveSSHClient: no target directory '%s' (skipping...)", dp)
+			continue
+		}
+
+		log.Tracef("sensor.store.saveSSHClient: copy dir %s", dp)
+		dstPath := fmt.Sprintf("%s/files%s", ref.storeLocation, dp)
+
+		err, errs := fsutil.CopyDir(ref.cmd.KeepPerms, dp, dstPath, true, true, nil, nil, nil)
+		if err != nil {
+			log.Debugf("sensor.store.saveSSHClient: fsutil.CopyDir(%s,%s) error: %v", dp, dstPath, err)
+		}
+
+		if len(errs) > 0 {
+			log.Debugf("sensor.store.saveSSHClient: fsutil.CopyDir(%v,%v) copy errors: %+v", dp, dstPath, errs)
+		}
+
+		dirFiles := map[string]struct{}{}
+		err = filepath.Walk(dp,
+			func(p string, info os.FileInfo, err error) error {
+				if err != nil {
+					log.Debugf("sensor.store.saveSSHClient: [bin dir path - %s] skipping %s with error: %v", dp, p, err)
+					return nil
+				}
+
+				p, err = filepath.Abs(p)
+				if err != nil {
+					return nil
+				}
+
+				dirFiles[p] = struct{}{}
+				return nil
+			})
+
+		if err != nil {
+			log.Debugf("sensor.store.saveSSHClient: error enumerating %s: %v", dp, err)
+		}
+
+		for fp := range dirFiles {
+			if !fsutil.Exists(fp) {
+				log.Debugf("sensor.store.saveSSHClient - bin dir (%s) file not found - '%s' (skipping)", dp, fp)
+				continue
+			}
+
+			if binProps, _ := binfile.Detected(fp); binProps != nil && binProps.IsBin {
+				binArtifacts, err := sodeps.AllDependencies(fp)
+				if err != nil {
+					// still add the bin path itself even if we had problems locating its deps
+					allDepsMap[fp] = struct{}{}
+					continue
+				}
+
+				for _, bpath := range binArtifacts {
+					bfpaths, err := resloveLink(bpath)
+					if err != nil {
+						log.Debugf("sensor.store.saveSSHClient: error resolving link - %s (%v)", bpath, err)
+						// still add the path...
+						allDepsMap[bpath] = struct{}{}
+						continue
+					}
+
+					for _, bfp := range bfpaths {
+						if bfp == "" {
+							continue
+						}
+
+						if !fsutil.Exists(bfp) {
+							continue
+						}
+
+						allDepsMap[bfp] = struct{}{}
+					}
+				}
+			} else {
+				allDepsMap[fp] = struct{}{}
+			}
+		}
+	}
+
+	// copy bin files and their deps
+	log.Tracef("sensor.store.saveSSHClient: - paths.len(%d) = %+v", len(allDepsMap), allDepsMap)
+	for fp := range allDepsMap {
+		if !fsutil.Exists(fp) {
+			continue
+		}
+
+		dstPath := fmt.Sprintf("%s/files%s", ref.storeLocation, fp)
+		if fsutil.Exists(dstPath) {
+			continue
+		}
+
+		if err := fsutil.CopyFile(ref.cmd.KeepPerms, fp, dstPath, true); err != nil {
+			log.Debugf("sensor.store.saveSSHClient: fsutil.CopyFile(%v,%v) error - %v", fp, dstPath, err)
+		}
+	}
+}
+
+const (
 	osLibDir          = "/lib/"
 	osUsrLibDir       = "/usr/lib/"
 	osUsrLib64Dir     = "/usr/lib64/"
@@ -1100,6 +1349,7 @@ func (p *store) saveOSLibsNetwork() {
 		return
 	}
 
+	log.Trace("sensor.store.saveOSLibsNetwork")
 	for _, fp := range osLibsNetFiles {
 		if !fsutil.Exists(fp) {
 			continue
@@ -2047,6 +2297,7 @@ copyBinIncludes:
 
 	p.saveWorkdir(excludePatterns)
 
+	p.saveSSHClient()
 	p.saveOSLibsNetwork()
 	p.saveCertsData()
 	p.saveZoneInfo()

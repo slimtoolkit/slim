@@ -81,7 +81,7 @@ func OnPushCommand(
 		tarPath, err := uniqueTarFilePath()
 		xc.FailOn(err)
 
-		err = saveDockerImage(cparams.TargetRef, tarPath, nameOpts)
+		err = saveDockerImage(logger, cparams.TargetRef, tarPath, nameOpts)
 		xc.FailOn(err)
 
 		remoteImageName := cparams.TargetRef
@@ -89,7 +89,7 @@ func OnPushCommand(
 			remoteImageName = cparams.AsTag
 		}
 
-		err = pushImageFromTar(tarPath, remoteImageName, nameOpts, remoteOpts)
+		err = pushImageFromTar(logger, tarPath, remoteImageName, nameOpts, remoteOpts)
 		xc.FailOn(err)
 	}
 
@@ -121,20 +121,28 @@ func uniqueTarFilePath() (string, error) {
 }
 
 func saveDockerImage(
+	logger *log.Entry,
 	localImageName string,
 	tarPath string,
 	nameOpts []name.Option) error {
+	logger = logger.WithField("op", "registry.saveDockerImage")
+	logger.Trace("call")
+	defer logger.Trace("exit")
+
 	ref, err := name.ParseReference(localImageName, nameOpts...)
 	if err != nil {
+		logger.WithError(err).Errorf("name.ParseReference(%s)", localImageName)
 		return err
 	}
 
 	img, err := daemon.Image(ref)
 	if err != nil {
+		logger.WithError(err).Errorf("daemon.Image(%s)", localImageName)
 		return err
 	}
 
 	if err := tarball.WriteToFile(tarPath, ref, img); err != nil {
+		logger.WithError(err).Errorf("tarball.WriteToFile(%s, %s)", tarPath, localImageName)
 		return err
 	}
 
@@ -142,22 +150,30 @@ func saveDockerImage(
 }
 
 func pushImageFromTar(
+	logger *log.Entry,
 	tarPath string,
 	remoteImageName string,
 	nameOpts []name.Option,
 	remoteOpts []remote.Option) error {
+	logger = logger.WithField("op", "registry.saveDockerImage")
+	logger.Trace("call")
+	defer logger.Trace("exit")
+
 	ref, err := name.ParseReference(remoteImageName, nameOpts...)
 	if err != nil {
+		logger.WithError(err).Errorf("name.ParseReference(%s)", remoteImageName)
 		return err
 	}
 
 	img, err := tarball.ImageFromPath(tarPath, nil)
 	if err != nil {
+		logger.WithError(err).Errorf("tarball.ImageFromPath(%s)", tarPath)
 		return err
 	}
 
 	err = remote.Write(ref, img, remoteOpts...)
 	if err != nil {
+		logger.WithError(err).Errorf("tarball.ImageFromPath(%s, %s)", tarPath, remoteImageName)
 		return err
 	}
 
