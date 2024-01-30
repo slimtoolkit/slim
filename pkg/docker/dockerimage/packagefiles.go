@@ -279,6 +279,10 @@ func (ref *PackageFiles) ListLayerFiles(selectors []FileSelector) ([]*LayerFiles
 			}
 
 			info := getFileMetadata(layerHeader)
+			if info == nil {
+				continue
+			}
+
 			if layerSelector.NoDirs && info.IsDir {
 				continue
 			}
@@ -405,9 +409,6 @@ func IsLayerMediaType(value types.MediaType) bool {
 }
 
 /*
-
-THINKING:
-(Local) "Image Files" ("List Files, Get File(s), Check File(s)")
 
 NOTE:
 TAR FILE LIST INCLUDES EXTRAS
