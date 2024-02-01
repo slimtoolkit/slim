@@ -501,6 +501,19 @@ type ProcessorParams struct {
 	DetectAllCertPKFiles bool
 }
 
+type LayerLocation struct {
+	Position int
+	Path string
+	LayerID string
+}
+
+type LayerLocationSource string
+
+const (
+	DockerManifestLayersLocation = "ll.dm.layers"
+	OCIImageManifestLocation = "ll.oci.imagemanifest"
+)
+
 func LoadPackage(archivePath string,
 	imageID string,
 	skipObjects bool,
@@ -566,105 +579,119 @@ func LoadPackage(archivePath string,
 		switch {
 		case hdr.Name == ociLayoutFileName:
 			var ociLayout OCILayout
-			if err := jsonFromStream(tr, &ociLayout); err != nil {
-				log.Errorf("dockerimage.LoadPackage: error reading oci-layout from archive(%v/%v) - %v", archivePath, ociLayoutFileName, err)
-				return nil, err
-			}
+			if err := jsonFromStream(hdr.Name, tr, &ociLayout); err != nil {
+				log.Debugf("dockerimage.LoadPackage: error reading oci-layout from archive(%v/%v) - %v", archivePath, ociLayoutFileName, err)
+				//not erroring right away (ok if we don't have a good oci layout if the Docker Manifest info is still there)
+			} else {
+				if ociLayout.Version != ociLayoutVersion {
+					log.Debugf("dockerimage.LoadPackage: unexpected version in oci-layout from archive(%v/%v) - %#v", archivePath, ociLayoutFileName, ociLayout)
+				}
 
-			if ociLayout.Version != ociLayoutVersion {
-				log.Debugf("dockerimage.LoadPackage: unexpected version in oci-layout from archive(%v/%v) - %#v", archivePath, ociLayoutFileName, ociLayout)
+				foundOCILayout = true
 			}
-
-			foundOCILayout = true
 
 		case hdr.Name == ociIndexFileName:
 			var ociIndex oci.Index
-			if err := jsonFromStream(tr, &ociIndex); err != nil {
-				log.Errorf("dockerimage.LoadPackage: error reading oci index from archive(%v/%v) - %v", archivePath, ociIndexFileName, err)
-				return nil, err
-			}
-
-			if ociIndex.MediaType == oci.MediaTypeImageIndex {
-				if len(ociIndex.Manifests) == 0 {
-					return nil, fmt.Errorf("dockerimage.LoadPackage: malformed index file - no image manifests")
-				}
-
-				// picking the first usable manifest descriptor (for now)
-				// make it selectable later
-				for _, md := range ociIndex.Manifests {
-					md := md
-					if md.MediaType == oci.MediaTypeImageManifest &&
-						md.Platform.OS == DefaultOS &&
-						md.Platform.Architecture == DefaultRuntimeArch() {
-						ociImageManifestDesc = &md
-						break
-					}
-				}
-
-				if ociImageManifestDesc == nil {
-					for _, md := range ociIndex.Manifests {
-						md := md
-						if md.MediaType == oci.MediaTypeImageManifest &&
-							md.Platform.OS == DefaultOS {
-							ociImageManifestDesc = &md
-							break
-						}
-					}
-
-					if ociImageManifestDesc == nil {
+			if err := jsonFromStream(hdr.Name, tr, &ociIndex); err != nil {
+				log.Debugf("dockerimage.LoadPackage: error reading oci index from archive(%v/%v) - %v", archivePath, ociIndexFileName, err)
+				//not erroring right away (ok if we don't have a good oci index if the Docker Manifest info is still there)
+			} else {
+				if ociIndex.MediaType == oci.MediaTypeImageIndex {
+					if len(ociIndex.Manifests) != 0 {
+						// picking the first usable manifest descriptor (for now)
+						// make it selectable later
 						for _, md := range ociIndex.Manifests {
 							md := md
-							if md.MediaType == oci.MediaTypeImageManifest {
+							if md.MediaType == oci.MediaTypeImageManifest &&
+								md.Platform != nil &&
+								md.Platform.OS == DefaultOS &&
+								md.Platform.Architecture == DefaultRuntimeArch() {
 								ociImageManifestDesc = &md
 								break
 							}
 						}
 
 						if ociImageManifestDesc == nil {
-							log.Debugf("dockerimage.LoadPackage: oci index from archive(%v/%v) has no image manifest references", archivePath, ociIndexFileName)
+							for _, md := range ociIndex.Manifests {
+								md := md
+								if md.MediaType == oci.MediaTypeImageManifest &&
+									md.Platform != nil &&
+									md.Platform.OS == DefaultOS {
+									ociImageManifestDesc = &md
+									break
+								}
+							}
 						}
-					}
+
+						if ociImageManifestDesc == nil {
+							for _, md := range ociIndex.Manifests {
+								md := md
+								if md.MediaType == oci.MediaTypeImageManifest {
+									ociImageManifestDesc = &md
+									break
+								}
+							}
+
+							if ociImageManifestDesc == nil {
+								log.Debugf("dockerimage.LoadPackage: oci index from archive(%s/%s) has no image manifest references - '%s'",
+									archivePath, ociIndexFileName, jsonutil.ToString(ociIndex))
+							}
+						}
+
+						if ociImageManifestDesc != nil {
+							log.Tracef("dockerimage.LoadPackage: archive(%v) - OCI Index - found image manifest = '%#v'", 
+							archivePath,  
+							ociImageManifestDesc)
+						}
+
+						//index file counts only if it's somewhat well structured
+						foundIndex = true
+					} else {
+						log.Debugf("dockerimage.LoadPackage: malformed index file - no image manifests")
+						//still ok if the Docker Manifest file has the data we need
+					}	
 				}
 			}
 
-			log.Tracef("dockerimage.LoadPackage: oci index from archive(%v/%v) = %s",
-				archivePath, ociIndexFileName, jsonutil.ToString(ociIndex))
-			foundIndex = true
+			log.Tracef("dockerimage.LoadPackage: oci index from archive(%v/%v) [found oci image manifest desc - '%v'] = %s",
+				archivePath, ociIndexFileName, ociImageManifestDesc != nil , jsonutil.ToString(ociIndex))
 
 		case hdr.Name == dockerManifestFileName:
 			var manifests []DockerManifestObject
-			if err := jsonFromStream(tr, &manifests); err != nil {
-				log.Errorf("dockerimage.LoadPackage: error reading manifest file from archive(%v/%v) - %v",
+			if err := jsonFromStream(hdr.Name, tr, &manifests); err != nil {
+				log.Debugf("dockerimage.LoadPackage: error reading manifest file from archive(%v/%v) - %v",
 					archivePath, dockerManifestFileName, err)
-				return nil, err
-			}
+				//not erroring right away (ok if we don't have a good Docker Manifest if the OCI Index and OCI Image Manifest info is still there)
+			} else {
+				if len(manifests) != 0 {
+					pkg.Manifest = &manifests[0]
+					/*
+						TODO: REFACTOR
+						use either v1 config name
+						or the config name from the OCI manifest
 
-			if len(manifests) == 0 {
-				return nil, fmt.Errorf("dockerimage.LoadPackage: malformed manifest file - no manifests")
-			}
+						for _, m := range manifests {
+							if m.Config == dv1ConfigObjectFileName {
+								manifest := m
+								pkg.Manifest = &manifest
+								break
+							}
+						}
+					*/
 
-			pkg.Manifest = &manifests[0]
-			/*
-				TODO: REFACTOR
-				use either v1 config name
-				or the config name from the OCI manifest
-
-				for _, m := range manifests {
-					if m.Config == dv1ConfigObjectFileName {
-						manifest := m
-						pkg.Manifest = &manifest
-						break
-					}
+					foundDockerManifest = true
+				} else {
+					log.Debugf("dockerimage.LoadPackage: malformed manifest file - no manifests")
+					//still ok if we have the OCI image manifest (referenced in the OCI index)
 				}
-			*/
+			}
 
 			log.Tracef("dockerimage.LoadPackage: Docker manifest from archive(%v/%v) = %s",
 				archivePath, dockerManifestFileName, jsonutil.ToString(manifests))
-			foundDockerManifest = true
 
 		case hdr.Name == dv1ConfigObjectFileName:
 			var imageConfig ConfigObject
-			if err := jsonFromStream(tr, &imageConfig); err != nil {
+			if err := jsonFromStream(hdr.Name, tr, &imageConfig); err != nil {
 				log.Errorf("dockerimage.LoadPackage: error reading config object from archive(%v/%v) - %v", archivePath, dv1ConfigObjectFileName, err)
 				return nil, err
 			}
@@ -681,8 +708,16 @@ func LoadPackage(archivePath string,
 		}
 	}
 
-	log.Tracef("dockerimage.LoadPackage: archiveFiles=%d [%d] from archive(%v) [dm=%v/dv1config=%v/dv1layer=%v]",
-		archivePath, len(archiveFiles), tarFileCount, foundDockerManifest, foundDockerV1Config, foundDockerV1Layer)
+	log.Tracef("dockerimage.LoadPackage: archive(%v) - tfc=%d, archiveFiles=%d [dm=%v/dv1config=%v/dv1layer=%v/ocilayout=%v/ociindex=%v/ociblobs=%v]",
+		archivePath, 
+		tarFileCount, 
+		len(archiveFiles),  
+		foundDockerManifest, 
+		foundDockerV1Config, 
+		foundDockerV1Layer, 
+		foundOCILayout, 
+		foundIndex, 
+		foundBlobsDir)
 
 	if foundOCILayout &&
 		foundBlobsDir &&
@@ -699,18 +734,50 @@ func LoadPackage(archivePath string,
 		pkg.Format = FormatDockerV1
 	}
 
+	log.Debugf("dockerimage.LoadPackage: pkg.Format=%s pkg.IsOCI=%v archive - (%s)", 
+		pkg.Format, pkg.IsOCI, archivePath)
+
 	var configObjectFileName string
+	//list of layer IDs based on their order in Docker Manifest or OCI Image Manifest
+	var layerSequence []LayerLocation
+	var ociLayerSequence []LayerLocation
+	var layerLocationSource LayerLocationSource
+
 	layerFileNames := map[string]struct{}{}
+	ociLayerFileNames := map[string]struct{}{}
+	nonLayerFileNames := map[string]string{}
 	if pkg.Manifest != nil {
 		if pkg.Manifest.Config != "" &&
 			pkg.Manifest.Config != dv1ConfigObjectFileName {
 			configObjectFileName = pkg.Manifest.Config
+			log.Tracef("dockerimage.LoadPackage: archive(%v) - DM - config object path = '%s'", archivePath, configObjectFileName)
 		}
 
 		if len(pkg.Manifest.Layers) > 0 {
-			for _, name := range pkg.Manifest.Layers {
-				layerFileNames[name] = struct{}{}
+			layerLocationSource = DockerManifestLayersLocation
+
+			for idx, layerPath := range pkg.Manifest.Layers {
+				parts := strings.Split(layerPath, "/")
+				var layerID string
+				if parts[0] == ociBlobDirName {
+					layerID = parts[2]
+				} else {
+					layerID = parts[0]
+				}
+
+				layerSequence = append(layerSequence,LayerLocation{
+					Position: idx,
+					Path: layerPath,
+					LayerID: layerID,
+				})
+
+				layerFileNames[layerPath] = struct{}{}
 			}
+
+			log.Tracef("dockerimage.LoadPackage: archive(%v) - DM - layer paths [%d] = '%#v'", 
+			archivePath, 
+			len(layerFileNames), 
+			layerFileNames)
 		} else {
 			// todo: figure out the layer file names from pkg.Manifest.LayerSources
 		}
@@ -723,7 +790,12 @@ func LoadPackage(archivePath string,
 		parts := strings.Split(ociImageManifestDesc.Digest.String(), ":")
 		if len(parts) == 2 {
 			ociImageManifestPath = filepath.Join(ociBlobDirName, parts[0], parts[1])
+			log.Tracef("dockerimage.LoadPackage: archive(%v) - found OCI image manifest path = '%s'", 
+			archivePath,  
+			ociImageManifestPath)
+
 			if _, found := archiveFiles[ociImageManifestPath]; !found {
+				//show an error, but don't exit
 				log.Errorf("dockerimage.LoadPackage: malformed oci image manifest path from archive(%s) - %s",
 					archivePath, ociImageManifestPath)
 				ociImageManifestPath = ""
@@ -753,11 +825,10 @@ func LoadPackage(archivePath string,
 
 			hdr.Name = filepath.Clean(hdr.Name)
 
-			if pkg.Config == nil &&
-				configObjectFileName != "" &&
+			if configObjectFileName != "" &&
 				hdr.Name == configObjectFileName {
 				var imageConfig ConfigObject
-				if err := jsonFromStream(tr, &imageConfig); err != nil {
+				if err := jsonFromStream(hdr.Name, tr, &imageConfig); err != nil {
 					log.Errorf("dockerimage.LoadPackage: error reading config object from archive(%v/%v) - %v", archivePath, configObjectFileName, err)
 					return nil, err
 				}
@@ -766,7 +837,14 @@ func LoadPackage(archivePath string,
 					imageConfig.BuildInfoDecoded, err = buildInfoDecode(imageConfig.BuildInfoRaw)
 				}
 
+				log.Tracef("dockerimage.LoadPackage: archive(%v) - loaded config object from path = '%s'", 
+				archivePath,  
+				configObjectFileName)
+
+				//possible to have a v1 pkg.Config already
+				//good to check if they are different
 				pkg.Config = &imageConfig
+				configObjectFileName = ""
 				continue
 			}
 
@@ -774,32 +852,50 @@ func LoadPackage(archivePath string,
 				ociImageManifestPath != "" &&
 				hdr.Name == ociImageManifestPath {
 				var ociImageManifest oci.Manifest
-				if err := jsonFromStream(tr, &ociImageManifest); err != nil {
+				if err := jsonFromStream(hdr.Name, tr, &ociImageManifest); err != nil {
 					log.Errorf("dockerimage.LoadPackage: error reading oci image manifest from archive(%v/%v) - %v", archivePath, ociImageManifestPath, err)
 					return nil, err
 				}
 
+				log.Tracef("dockerimage.LoadPackage: archive(%v) - loaded OCI Image Manifest from path = '%s'", 
+				archivePath,  
+				ociImageManifestPath)
+
 				pkg.ManifestOCI = &ociImageManifest
+				ociImageManifestPath = ""
 			}
 
-			if pkg.Config != nil && pkg.ManifestOCI != nil {
+			if configObjectFileName == "" && ociImageManifestPath == "" {
 				break
 			}
 		}
 	}
 
-	if pkg.Config == nil &&
-		configObjectFileName == "" &&
-		pkg.ManifestOCI != nil &&
+	if pkg.ManifestOCI != nil &&
 		pkg.ManifestOCI.Config.Digest.String() != "" {
 		// when we don't have a Docker manifest
 		parts := strings.Split(pkg.ManifestOCI.Config.Digest.String(), ":")
 		if len(parts) == 2 {
-			configObjectFileName = filepath.Join(ociBlobDirName, parts[0], parts[1])
-			if _, found := archiveFiles[configObjectFileName]; !found {
+			ociConfigObjectFileName := filepath.Join(ociBlobDirName, parts[0], parts[1])
+			log.Tracef("dockerimage.LoadPackage: archive(%v) - config object path from OCI Image Manifest = '%s'", 
+				archivePath,  
+				ociConfigObjectFileName)
+
+			if _, found := archiveFiles[ociConfigObjectFileName]; !found {
+				//show the error, but don't exit
 				log.Errorf("dockerimage.LoadPackage: malformed oci config object path from archive(%s) - %s",
-					archivePath, configObjectFileName)
+					archivePath, ociConfigObjectFileName)
+				//make it empty,so we don't attempt to extract the config again
 				configObjectFileName = ""
+			} else {
+				if ociConfigObjectFileName != configObjectFileName {
+					log.Debugf("dockerimage.LoadPackage: config object path mismatch (OCI='%s' != DM='%s') from archive(%s)",
+					ociConfigObjectFileName, configObjectFileName, archivePath)
+					//make sure we fetch and save the OCI config
+					configObjectFileName = ociConfigObjectFileName
+				} else {
+					configObjectFileName = ""
+				}
 			}
 		} else {
 			log.Errorf("dockerimage.LoadPackage: malformed oci config object digest from archive(%s) - %s",
@@ -807,10 +903,9 @@ func LoadPackage(archivePath string,
 		}
 	}
 
-	if len(layerFileNames) == 0 &&
-		pkg.ManifestOCI != nil {
+	if pkg.ManifestOCI != nil {
 		// get layers from oci image manifest
-		for _, layerInfo := range pkg.ManifestOCI.Layers {
+		for idx, layerInfo := range pkg.ManifestOCI.Layers {
 			// todo: add support for oci.MediaTypeImageLayerGzip and oci.MediaTypeImageLayerZstd
 			if layerInfo.MediaType == oci.MediaTypeImageLayer &&
 				layerInfo.Digest.String() != "" {
@@ -818,17 +913,67 @@ func LoadPackage(archivePath string,
 				if len(parts) == 2 {
 					layerFileName := filepath.Join(ociBlobDirName, parts[0], parts[1])
 					if _, found := archiveFiles[layerFileName]; !found {
+						//show error, but don't exit (exit if we have --strict-image-format)
 						log.Errorf("dockerimage.LoadPackage: malformed oci layer path from archive(%s) - %s",
 							archivePath, layerFileName)
 					} else {
-						layerFileNames[layerFileName] = struct{}{}
+						ociLayerSequence = append(ociLayerSequence, LayerLocation{
+							Position: idx,
+							Path: layerFileName,
+							LayerID: parts[1],
+						})
+
+						ociLayerFileNames[layerFileName] = struct{}{}
+
+						//cross reference the OCI layers with the Docker Manifest layers (if we have them)
+						
+						if len(layerFileNames) > 0 {
+							if _, layerFound := layerFileNames[layerFileName]; !layerFound {
+								log.Debugf("dockerimage.LoadPackage: oci layer path (%s) should be known already - archive(%s)",
+							 	layerFileName, archivePath)
+							}
+						}
+						
+						if len(layerSequence) >= len(ociLayerSequence) {
+							lsIdx := len(ociLayerSequence) - 1
+							if layerSequence[lsIdx].Path != ociLayerSequence[lsIdx].Path ||
+							   layerSequence[lsIdx].Position != ociLayerSequence[lsIdx].Position ||
+							   layerSequence[lsIdx].LayerID != ociLayerSequence[lsIdx].LayerID {
+							   		log.Debugf("dockerimage.LoadPackage: layerFileName=%s / OCI layer and DM layer sequence record mismatch lsIdx=%d ('%+v' / '%+v') - archive(%s)",
+							 		layerFileName, lsIdx, layerSequence[lsIdx], ociLayerSequence[lsIdx], archivePath)
+							   }
+						} else {
+							log.Debugf("dockerimage.LoadPackage: layerFileName=%s / OCI layer and DM layer sequence mismatch (%d / %d) - archive(%s)",
+							 	layerFileName, len(layerSequence), len(ociLayerSequence), archivePath)
+						}
 					}
 				} else {
 					log.Errorf("dockerimage.LoadPackage: malformed oci layer digest from archive(%s) - %s",
 						archivePath, layerInfo.Digest.String())
 				}
+			} else if layerInfo.MediaType != oci.MediaTypeImageLayer {
+				if layerInfo.Digest.String() != "" {
+					parts := strings.Split(layerInfo.Digest.String(), ":")
+					if len(parts) == 2 {
+						layerFileName := filepath.Join(ociBlobDirName, parts[0], parts[1])
+						nonLayerFileNames[layerFileName] = layerInfo.MediaType
+					} else {
+						log.Errorf("dockerimage.LoadPackage: malformed oci layer digest from archive(%s) - %s",
+						archivePath, layerInfo.Digest.String())
+					}
+				} else {
+					log.Debugf("dockerimage.LoadPackage: non-image layer, no digest '%s' - archive(%s)",
+						jsonutil.ToString(layerInfo), archivePath)
+				}
 			}
 		}
+	}
+
+	// a 'simple' way to decide when to use the OCI layer metadata (todo: review later)
+	if len(ociLayerFileNames) > len(layerFileNames) {
+		layerFileNames = ociLayerFileNames
+		layerSequence = ociLayerSequence
+		layerLocationSource = OCIImageManifestLocation
 	}
 
 	// now load the layers
@@ -851,9 +996,10 @@ func LoadPackage(archivePath string,
 		}
 
 		hdr.Name = filepath.Clean(hdr.Name)
-		if pkg.Config == nil && configObjectFileName != "" {
+		if configObjectFileName != "" &&
+		   hdr.Name == configObjectFileName {
 			var imageConfig ConfigObject
-			if err := jsonFromStream(tr, &imageConfig); err != nil {
+			if err := jsonFromStream(hdr.Name, tr, &imageConfig); err != nil {
 				log.Errorf("dockerimage.LoadPackage: error reading oci config object from archive(%v/%v) - %v", archivePath, configObjectFileName, err)
 				return nil, err
 			}
@@ -862,7 +1008,14 @@ func LoadPackage(archivePath string,
 				imageConfig.BuildInfoDecoded, err = buildInfoDecode(imageConfig.BuildInfoRaw)
 			}
 
+			log.Tracef("dockerimage.LoadPackage: archive(%v) - loaded config object from path = '%s'", 
+				archivePath,  
+				configObjectFileName)
+
+			//pkg.Config might alread point to a config (v1 or DM)
+			//todo: check the difference
 			pkg.Config = &imageConfig
+			configObjectFileName = ""
 			continue
 		}
 
@@ -924,6 +1077,8 @@ func LoadPackage(archivePath string,
 				}
 
 				layers[layerID] = layer
+				log.Debugf("dockerimage.LoadPackage: saved v1 layer '%s' from archive - %s", 
+						layerID, archivePath)
 
 			default:
 				if _, found := layerFileNames[hdr.Name]; found {
@@ -946,18 +1101,27 @@ func LoadPackage(archivePath string,
 						processorParams,
 					)
 					if err != nil {
-						log.Errorf("dockerimage.LoadPackage: error reading oci layer from archive(%v/%v) - %v", archivePath, hdr.Name, err)
+						log.Errorf("dockerimage.LoadPackage: error reading oci layer from archive(%s/%s) - %v", archivePath, hdr.Name, err)
 						return nil, err
 					}
 					layers[layerID] = layer
+					log.Debugf("dockerimage.LoadPackage: saved layer '%s' from archive - %s", 
+						layerID, archivePath)
 				}
 			}
 		}
 	}
 
-	if pkg.Manifest == nil {
-		return nil, fmt.Errorf("dockerimage.LoadPackage: missing manifest object for image ID=%s / archive='%s' / files=%+v",
-			imageID, archivePath, archiveFiles)
+	if pkg.Format == FormatOCI {
+		if pkg.ManifestOCI == nil {
+			return nil, fmt.Errorf("dockerimage.LoadPackage: missing OCI Image Manifest object for image ID=%s / archive='%s' / files=%+v",
+				imageID, archivePath, archiveFiles)
+		}
+	} else {
+		if pkg.Manifest == nil {
+			return nil, fmt.Errorf("dockerimage.LoadPackage: missing manifest object for image ID=%s / archive='%s' / files=%+v",
+				imageID, archivePath, archiveFiles)
+		}
 	}
 
 	if pkg.Config == nil {
@@ -965,13 +1129,27 @@ func LoadPackage(archivePath string,
 			imageID, archivePath, archiveFiles)
 	}
 
-	for idx, layerPath := range pkg.Manifest.Layers {
-		parts := strings.Split(layerPath, "/")
-		layerID := parts[0]
-		layer, ok := layers[layerID]
+	if len(layers) == 0 {
+		//todo: display non-image layer metadata if there are any
+		//todo: save non-image layer metadata/data
+		log.Debugf("dockerimage.LoadPackage: no image layers in archive - %s (%+v)", 
+		archivePath, layerFileNames)
+	}
+
+	if len(nonLayerFileNames) > 0 {
+		log.Debugf("dockerimage.LoadPackage: non-image layers in archive - %s (%s)", 
+		archivePath, jsonutil.ToString(nonLayerFileNames))
+	}
+
+	log.Debugf("dockerimage.LoadPackage: layerLocationSource=%v layerSequence='%#v' - archive='%s'",
+	layerLocationSource, layerSequence, archivePath)
+
+	for idx, layerLocationInfo := range layerSequence {
+		layer, ok := layers[layerLocationInfo.LayerID]
 		if !ok {
-			log.Errorf("dockerimage.LoadPackage: error missing layer in archive(%v/%v) - %v", archivePath, layerPath, err)
-			return nil, fmt.Errorf("dockerimage.LoadPackage: missing layer (%v) for image ID - %v", layerPath, imageID)
+			log.Errorf("dockerimage.LoadPackage: error missing layer (idx=%d layerPath=%s layerID=%s) archive=%s", 
+			idx, layerLocationInfo.Path, layerLocationInfo.LayerID, archivePath)
+			return nil, fmt.Errorf("dockerimage.LoadPackage: missing layer (%v) for image ID - %v", layerLocationInfo.Path, imageID)
 		}
 
 		layer.Index = idx
@@ -981,8 +1159,8 @@ func LoadPackage(archivePath string,
 			return nil, fmt.Errorf("dockerimage.LoadPackage: layer index mismatch - %v / %v", len(pkg.Layers)-1, layer.Index)
 		}
 
-		if layerPath != layer.Path {
-			return nil, fmt.Errorf("dockerimage.LoadPackage: layer path mismatch - %v / %v", layerPath, layer.Path)
+		if layerLocationInfo.Path != layer.Path {
+			return nil, fmt.Errorf("dockerimage.LoadPackage: layer path mismatch - %v / %v", layerLocationInfo.Path, layer.Path)
 		}
 
 		if idx == 0 {
@@ -1153,7 +1331,7 @@ func LoadPackage(archivePath string,
 			}
 		}
 
-		pkg.LayerIDRefs[layerID] = layer
+		pkg.LayerIDRefs[layerLocationInfo.LayerID] = layer
 
 		if pkg.Config.RootFS != nil && idx < len(pkg.Config.RootFS.DiffIDs) {
 			diffID := pkg.Config.RootFS.DiffIDs[idx]
@@ -1932,8 +2110,17 @@ func inspectFile(
 	return nil
 }
 
-func jsonFromStream(reader io.Reader, data interface{}) error {
-	return json.NewDecoder(reader).Decode(data)
+func jsonFromStream(name string, reader io.Reader, data interface{}) error {
+	raw, err := io.ReadAll(reader)
+	if err != nil {
+		return err
+	}
+
+	sr := strings.NewReader(string(raw))
+	//log.Tracef("dockerimage.LoadPackage.jsonFromStream: reading '%s'", name)
+	fmt.Printf("jsonFromStream: reading '%s' data='%s'\n\n", name, string(raw))
+	//tr := io.TeeReader(reader, os.Stdout)
+	return json.NewDecoder(sr).Decode(data)
 }
 
 type TarReadCloser struct {
