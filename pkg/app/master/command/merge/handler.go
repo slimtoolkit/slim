@@ -446,18 +446,3 @@ func tarFromMap(logger *log.Entry, outputPath string, tarMap map[string]*tfInfo)
 
 	return out.Name(), nil
 }
-
-func TarTypeName(flag byte) string {
-	switch flag {
-	case tar.TypeDir:
-		return "dir"
-	case tar.TypeReg, tar.TypeRegA:
-		return "file"
-	case tar.TypeSymlink:
-		return "symlink"
-	case tar.TypeLink:
-		return "hardlink"
-	default:
-		return fmt.Sprintf("%v", flag)
-	}
-}

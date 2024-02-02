@@ -151,7 +151,7 @@ type ProfileCommand struct {
 }
 
 // Output Version for 'xray'
-const OVXrayCommand = "1.2.2"
+const OVXrayCommand = "1.2.3"
 
 // XrayCommand is the 'xray' command report data
 type XrayCommand struct {

@@ -769,21 +769,21 @@ func (p *store) prepareArtifacts() {
 
 			bprops.Flags = p.getArtifactFlags(bpath)
 
-			fsType := "unknown"
+			fsType := report.UnknownArtifactTypeName
 			switch {
 			case bpathFileInfo.Mode().IsRegular():
-				fsType = "file"
+				fsType = report.FileArtifactTypeName
 				p.rawNames[bpath] = bprops
 				//use a separate file map, so we can save them last
 				//in case we are dealing with intermediate symlinks
 				//and to better track what bin deps are not covered by dynamic analysis
 				p.saFileMap[bpath] = bprops
 			case (bpathFileInfo.Mode() & os.ModeSymlink) != 0:
-				fsType = "symlink"
+				fsType = report.SymlinkArtifactTypeName
 				p.linkMap[bpath] = bprops
 				p.rawNames[bpath] = bprops
 			default:
-				fsType = "unexpected"
+				fsType = report.UnexpectedArtifactTypeName
 				log.Debugf("prepareArtifacts.binArtifacts[bsa] - unexpected ft - %s", bpath)
 			}
 

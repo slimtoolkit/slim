@@ -13,7 +13,56 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/tarball"
 	"github.com/google/go-containerregistry/pkg/v1/types"
+	log "github.com/sirupsen/logrus"
 )
+
+const (
+	DirType        = "dir"
+	FileType       = "file"
+	SymlinkType    = "symlink"
+	HardlinkType   = "hardlink"
+	OtherType      = "other"
+	UnknownType    = "unknown"
+	UnexpectedType = "unexpected"
+)
+
+func ObjectTypeFromTarType(flag byte) string {
+	switch flag {
+	case tar.TypeDir:
+		return DirType
+	case tar.TypeReg, tar.TypeRegA:
+		return FileType
+	case tar.TypeSymlink:
+		return SymlinkType
+	case tar.TypeLink:
+		return HardlinkType
+	default:
+		return fmt.Sprintf("other(%v)", flag)
+	}
+}
+
+func TarHeaderTypeName(flag byte) string {
+	switch flag {
+	case tar.TypeReg:
+		return "tar.TypeReg"
+	case tar.TypeRegA:
+		return "tar.TypeRegA"
+	case tar.TypeLink:
+		return "tar.TypeLink"
+	case tar.TypeSymlink:
+		return "tar.TypeSymlink"
+	case tar.TypeChar:
+		return "tar.TypeChar"
+	case tar.TypeBlock:
+		return "tar.TypeBlock"
+	case tar.TypeDir:
+		return "tar.TypeDir"
+	case tar.TypeFifo:
+		return "tar.TypeFifo"
+	default:
+		return fmt.Sprintf("other(%v)", flag)
+	}
+}
 
 type PackageFiles struct {
 	img       v1.Image
@@ -328,7 +377,7 @@ func getFileMetadata(header *tar.Header) *FileMetadata {
 	if isDelete {
 		if bname == whOpaqueDir {
 			isd := header.Typeflag == tar.TypeDir
-			fmt.Printf("special name: %s (header.Typeflag=%v/%s) / isd=%v\n", bname, header.Typeflag, thTypeName(header.Typeflag), isd)
+			log.Debugf("dockerimage.getFileMetadata - special name: %s (header.Typeflag=%v/%s) / isd=%v", bname, header.Typeflag, TarHeaderTypeName(header.Typeflag), isd)
 			isOpq = true
 			isDelete = false
 			fileName = dname
@@ -342,7 +391,7 @@ func getFileMetadata(header *tar.Header) *FileMetadata {
 	}
 
 	result := &FileMetadata{
-		Type:       thTypeName(header.Typeflag),
+		Type:       TarHeaderTypeName(header.Typeflag),
 		IsDir:      isDir,
 		IsDelete:   isDelete,
 		IsOpq:      isOpq,
@@ -371,29 +420,6 @@ const (
 
 //FileDataFromTar
 //FileReaderFromTar
-
-func thTypeName(tf byte) string {
-	switch tf {
-	case tar.TypeReg:
-		return "tar.TypeReg"
-	case tar.TypeRegA:
-		return "tar.TypeRegA"
-	case tar.TypeLink:
-		return "tar.TypeLink"
-	case tar.TypeSymlink:
-		return "tar.TypeSymlink"
-	case tar.TypeChar:
-		return "tar.TypeChar"
-	case tar.TypeBlock:
-		return "tar.TypeBlock"
-	case tar.TypeDir:
-		return "tar.TypeDir"
-	case tar.TypeFifo:
-		return "tar.TypeFifo"
-	default:
-		return "other"
-	}
-}
 
 func IsLayerMediaType(value types.MediaType) bool {
 	switch value {

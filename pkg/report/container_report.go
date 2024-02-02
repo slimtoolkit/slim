@@ -17,14 +17,23 @@ const (
 	UnknownArtifactType ArtifactType = 99
 )
 
+const (
+	DirArtifactTypeName        = "dir"
+	FileArtifactTypeName       = "file"
+	SymlinkArtifactTypeName    = "symlink"
+	HardlinkArtifactTypeName   = "hardlink"
+	UnknownArtifactTypeName    = "unknown"
+	UnexpectedArtifactTypeName = "unexpected"
+)
+
 // DefaultContainerReportFileName is the default container report file name
 const DefaultContainerReportFileName = "creport.json"
 
 var artifactTypeNames = map[ArtifactType]string{
-	DirArtifactType:     "Dir",
-	FileArtifactType:    "File",
-	SymlinkArtifactType: "Symlink",
-	UnknownArtifactType: "Unknown",
+	DirArtifactType:     DirArtifactTypeName,
+	FileArtifactType:    FileArtifactTypeName,
+	SymlinkArtifactType: SymlinkArtifactTypeName,
+	UnknownArtifactType: UnknownArtifactTypeName,
 }
 
 // String converts the artifact type ID to a string
@@ -33,10 +42,10 @@ func (t ArtifactType) String() string {
 }
 
 var artifactTypeValues = map[string]ArtifactType{
-	"Dir":     DirArtifactType,
-	"File":    FileArtifactType,
-	"Symlink": SymlinkArtifactType,
-	"Unknown": UnknownArtifactType,
+	DirArtifactTypeName:     DirArtifactType,
+	FileArtifactTypeName:    FileArtifactType,
+	SymlinkArtifactTypeName: SymlinkArtifactType,
+	UnknownArtifactTypeName: UnknownArtifactType,
 }
 
 // GetArtifactTypeValue maps an artifact type name to an artifact type ID

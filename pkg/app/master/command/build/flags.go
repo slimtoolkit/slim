@@ -34,10 +34,10 @@ const (
 	FlagIncludeExeFile   = "include-exe-file"
 	FlagIncludeShell     = "include-shell"
 
-	FlagIncludeDirBins = "include-dir-bins"
+	FlagIncludeDirBins      = "include-dir-bins"
 	FlagIncludeDirBinsUsage = "Keep binaries in the target directory (executables or shared objects) and their dependencies, which could be in other locations"
 
-	FlagIncludeWorkdir            = "include-workdir"
+	FlagIncludeWorkdir      = "include-workdir"
 	FlagIncludeWorkdirUsage = "Keep files in working directory"
 
 	//TBD
@@ -45,28 +45,28 @@ const (
 	FlagWorkdirExcludeUsage = "Exclude filter for artifacts when working directory is included"
 
 	FlagIncludeAppImageAddCopyAll = "include-app-image-addcopy-all" //TBD
-	FlagIncludeAppImageRun        = "include-app-image-run" //TBD
+	FlagIncludeAppImageRun        = "include-app-image-run"         //TBD
 
-	FlagIncludeAppImageAll        = "include-app-image-all"
-	FlagIncludeAppImageAllUsage   = "Keep everything in the app part of the container image"
+	FlagIncludeAppImageAll      = "include-app-image-all"
+	FlagIncludeAppImageAllUsage = "Keep everything in the app part of the container image"
 
-	FlagAppImageStartInst       = "app-image-start-instruction"
-	FlagAppImageStartInstUsage  = "Instruction (prefix) that indicates where the app starts in the container image"
+	FlagAppImageStartInst      = "app-image-start-instruction"
+	FlagAppImageStartInstUsage = "Instruction (prefix) that indicates where the app starts in the container image"
 
 	FlagAppImageStartLayerCount = "app-image-start-layer-count" //TBD
 
-	FlagAppImageStartInstGroup  = "app-image-start-instruction-group"
+	FlagAppImageStartInstGroup      = "app-image-start-instruction-group"
 	FlagAppImageStartInstGroupUsage = "Instruction group (reverse) index that indicates where the app starts in the container image"
 
-	FlagAppImageStartDetect     = "app-image-start-detect" //TBD
+	FlagAppImageStartDetect = "app-image-start-detect" //TBD
 
 	FlagAppImageDockerfile      = "app-image-dockerfile" //TODO: make it work with FlagBuildFromDockerfile too
-	FlagAppImageDockerfileUsage     = "Path to app image Dockerfile (used to determine where the application part of the image starts)"
+	FlagAppImageDockerfileUsage = "Path to app image Dockerfile (used to determine where the application part of the image starts)"
 
-	FlagIncludePathsCreportFile = "include-paths-creport-file"
+	FlagIncludePathsCreportFile      = "include-paths-creport-file"
 	FlagIncludePathsCreportFileUsage = "Keep files from the referenced creport"
 
-	FlagIncludeOSLibsNet = "include-oslibs-net"
+	FlagIncludeOSLibsNet      = "include-oslibs-net"
 	FlagIncludeOSLibsNetUsage = "Keep the common networking OS libraries"
 
 	FlagIncludeSSHClient           = "include-ssh-client"
