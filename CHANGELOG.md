@@ -1,5 +1,22 @@
 # Releases
 
+## 1.40.11 (2/2/2024)
+
+### New Features
+
+- New `build` command flags (`--include-dir-bins` and `--include-ssh-client`).
+- Simple `images` command to list container images.
+
+### Improvements
+
+- OCI image format support in `xray`.
+- Improved `xray` command reports to include object type information.
+
+### Bug Fixes
+
+- Fixes and dependency updates to support the new Docker Engine version (25.x).
+
+
 ## 1.40.10 (1/17/2024)
 
 ### Bug Fixes
