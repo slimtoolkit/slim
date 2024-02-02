@@ -1680,6 +1680,7 @@ func (p *store) saveCertsData() {
 
 func (p *store) saveArtifacts() {
 	var includePaths map[string]bool
+	var includeDirBinsList map[string]bool
 	var newPerms map[string]*fsutil.AccessInfo
 
 	syscall.Umask(0)
@@ -1699,6 +1700,12 @@ func (p *store) saveArtifacts() {
 
 	if includePaths == nil {
 		includePaths = map[string]bool{}
+	}
+
+	includeDirBinsList = preparePaths(getKeys(p.cmd.IncludeDirBinsList))
+	log.Debugf("saveArtifacts - includeDirBinsList(%d): %+v", len(includeDirBinsList), includeDirBinsList)
+	if includeDirBinsList == nil {
+		includeDirBinsList = map[string]bool{}
 	}
 
 	newPerms = getRecordsWithPerms(p.cmd.Includes)
@@ -2240,8 +2247,99 @@ copyIncludes:
 		}
 	}
 
-copyBinIncludes:
+	binPathMap := map[string]struct{}{}
 	for _, binPath := range p.cmd.IncludeBins {
+		binPathMap[binPath] = struct{}{}
+	}
+
+addExtraBinIncludes:
+	for inPath, isDir := range includeDirBinsList {
+		if !isDir {
+			log.Debugf("saveArtifacts - skipping non-directory in includeDirBinsList - %s", inPath)
+			continue
+		}
+
+		if artifact.IsFilteredPath(inPath) {
+			log.Debugf("saveArtifacts - skipping filtered path in includeDirBinsList - %s", inPath)
+			continue
+		}
+
+		for _, xpattern := range excludePatterns {
+			found, err := doublestar.Match(xpattern, inPath)
+			if err != nil {
+				log.Debugf("saveArtifacts - includeDirBinsList - [%s] excludePatterns Match error - %v\n", inPath, err)
+				//should only happen when the pattern is malformed
+				continue
+			}
+			if found {
+				log.Debugf("saveArtifacts - includeDirBinsList - [%s] - excluding (%s) ", inPath, xpattern)
+				continue addExtraBinIncludes
+			}
+		}
+
+		err := filepath.Walk(inPath,
+		func(pth string, info os.FileInfo, err error) error {
+			if strings.HasPrefix(pth, "/proc/") {
+				log.Debugf("skipping /proc file system objects... - '%s'", pth)
+				return filepath.SkipDir
+			}
+
+			if strings.HasPrefix(pth, "/sys/") {
+				log.Debugf("skipping /sys file system objects... - '%s'", pth)
+				return filepath.SkipDir
+			}
+
+			if strings.HasPrefix(pth, "/dev/") {
+				log.Debugf("skipping /dev file system objects... - '%s'", pth)
+				return filepath.SkipDir
+			}
+
+			// Optimization: Exclude folders early on to prevent slow enumerat
+			//               Can help with mounting big folders from the host.
+			// TODO: Combine this logic with the similar logic in findSymlinks().
+			for _, xpattern := range excludePatterns {
+				if match, _ := doublestar.Match(xpattern, pth); match {
+					if info.Mode().IsDir() {
+						return filepath.SkipDir
+					}
+					return nil
+				}
+			}
+
+			if err != nil {
+				log.Debugf("skipping %s with error: %v", pth, err)
+				return nil
+			}
+
+			if !info.Mode().IsRegular() {
+				return nil
+			}
+
+			pth, err = filepath.Abs(pth)
+			if err != nil {
+				return nil
+			}
+
+			if strings.HasPrefix(pth, "/proc/") ||
+				strings.HasPrefix(pth, "/sys/") ||
+				strings.HasPrefix(pth, "/dev/") {
+				return nil
+			}
+
+			if binProps, _ := binfile.Detected(pth); binProps != nil && binProps.IsBin {
+				binPathMap[pth] = struct{}{}
+			}
+
+			return nil
+		})
+
+		if err != nil {
+			log.Errorf("saveArtifacts - error enumerating includeDirBinsList dir (%s) - %v", inPath, err)
+		}
+	}
+
+copyBinIncludes:
+	for binPath := range binPathMap {
 		if artifact.IsFilteredPath(binPath) {
 			log.Debugf("saveArtifacts - skipping filtered include bin - %s", binPath)
 			continue

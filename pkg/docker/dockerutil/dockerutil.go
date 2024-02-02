@@ -63,18 +63,28 @@ func ImageToIdentity(info *dockerapi.Image) *ImageIdentity {
 		RepoDigests: info.RepoDigests,
 	}
 
+	uniqueTags := map[string]struct{}{}
 	for _, tag := range result.RepoTags {
 		parts := strings.Split(tag, ":")
 		if len(parts) == 2 {
-			result.ShortTags = append(result.ShortTags, parts[1])
+			uniqueTags[parts[1]] = struct{}{}
 		}
 	}
 
+	for k := range uniqueTags {
+		result.ShortTags = append(result.ShortTags, k)
+	}
+
+	uniqueDigests := map[string]struct{}{}
 	for _, digest := range result.RepoDigests {
 		parts := strings.Split(digest, "@")
 		if len(parts) == 2 {
-			result.ShortDigests = append(result.ShortDigests, parts[1])
+			uniqueDigests[parts[1]] = struct{}{}
 		}
+	}
+
+	for k := range uniqueDigests {
+		result.ShortDigests = append(result.ShortDigests, k)
 	}
 
 	return result

@@ -801,7 +801,7 @@ func (i *Inspector) RunContainer() error {
 	}
 
 	if len(i.IncludeDirBinsList) > 0 {
-		cmd.IncludeDirBinsList = pathMapKeys(i.IncludeDirBinsList)
+		cmd.IncludeDirBinsList = i.IncludeDirBinsList
 	}
 
 	if len(i.IncludeExes) > 0 {

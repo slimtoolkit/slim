@@ -391,7 +391,7 @@ func getFileMetadata(header *tar.Header) *FileMetadata {
 	}
 
 	result := &FileMetadata{
-		Type:       TarHeaderTypeName(header.Typeflag),
+		Type:       ObjectTypeFromTarType(header.Typeflag),
 		IsDir:      isDir,
 		IsDelete:   isDelete,
 		IsOpq:      isOpq,
