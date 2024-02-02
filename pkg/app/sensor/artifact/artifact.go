@@ -2278,60 +2278,60 @@ addExtraBinIncludes:
 		}
 
 		err := filepath.Walk(inPath,
-		func(pth string, info os.FileInfo, err error) error {
-			if strings.HasPrefix(pth, "/proc/") {
-				log.Debugf("skipping /proc file system objects... - '%s'", pth)
-				return filepath.SkipDir
-			}
+			func(pth string, info os.FileInfo, err error) error {
+				if strings.HasPrefix(pth, "/proc/") {
+					log.Debugf("skipping /proc file system objects... - '%s'", pth)
+					return filepath.SkipDir
+				}
 
-			if strings.HasPrefix(pth, "/sys/") {
-				log.Debugf("skipping /sys file system objects... - '%s'", pth)
-				return filepath.SkipDir
-			}
+				if strings.HasPrefix(pth, "/sys/") {
+					log.Debugf("skipping /sys file system objects... - '%s'", pth)
+					return filepath.SkipDir
+				}
 
-			if strings.HasPrefix(pth, "/dev/") {
-				log.Debugf("skipping /dev file system objects... - '%s'", pth)
-				return filepath.SkipDir
-			}
+				if strings.HasPrefix(pth, "/dev/") {
+					log.Debugf("skipping /dev file system objects... - '%s'", pth)
+					return filepath.SkipDir
+				}
 
-			// Optimization: Exclude folders early on to prevent slow enumerat
-			//               Can help with mounting big folders from the host.
-			// TODO: Combine this logic with the similar logic in findSymlinks().
-			for _, xpattern := range excludePatterns {
-				if match, _ := doublestar.Match(xpattern, pth); match {
-					if info.Mode().IsDir() {
-						return filepath.SkipDir
+				// Optimization: Exclude folders early on to prevent slow enumerat
+				//               Can help with mounting big folders from the host.
+				// TODO: Combine this logic with the similar logic in findSymlinks().
+				for _, xpattern := range excludePatterns {
+					if match, _ := doublestar.Match(xpattern, pth); match {
+						if info.Mode().IsDir() {
+							return filepath.SkipDir
+						}
+						return nil
 					}
+				}
+
+				if err != nil {
+					log.Debugf("skipping %s with error: %v", pth, err)
 					return nil
 				}
-			}
 
-			if err != nil {
-				log.Debugf("skipping %s with error: %v", pth, err)
+				if !info.Mode().IsRegular() {
+					return nil
+				}
+
+				pth, err = filepath.Abs(pth)
+				if err != nil {
+					return nil
+				}
+
+				if strings.HasPrefix(pth, "/proc/") ||
+					strings.HasPrefix(pth, "/sys/") ||
+					strings.HasPrefix(pth, "/dev/") {
+					return nil
+				}
+
+				if binProps, _ := binfile.Detected(pth); binProps != nil && binProps.IsBin {
+					binPathMap[pth] = struct{}{}
+				}
+
 				return nil
-			}
-
-			if !info.Mode().IsRegular() {
-				return nil
-			}
-
-			pth, err = filepath.Abs(pth)
-			if err != nil {
-				return nil
-			}
-
-			if strings.HasPrefix(pth, "/proc/") ||
-				strings.HasPrefix(pth, "/sys/") ||
-				strings.HasPrefix(pth, "/dev/") {
-				return nil
-			}
-
-			if binProps, _ := binfile.Detected(pth); binProps != nil && binProps.IsBin {
-				binPathMap[pth] = struct{}{}
-			}
-
-			return nil
-		})
+			})
 
 		if err != nil {
 			log.Errorf("saveArtifacts - error enumerating includeDirBinsList dir (%s) - %v", inPath, err)

@@ -122,6 +122,7 @@ var CLI = &cli.Command{
 		cflag(FlagPreservePathFile),
 		cflag(FlagIncludePath),
 		cflag(FlagIncludePathFile),
+		cflag(FlagIncludeDirBins),
 		cflag(FlagIncludeBin),
 		cflag(FlagIncludeBinFile),
 		cflag(FlagIncludeExeFile),
