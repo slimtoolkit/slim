@@ -116,6 +116,7 @@ type Inspector struct {
 	PreservePaths         map[string]*fsutil.AccessInfo
 	IncludePaths          map[string]*fsutil.AccessInfo
 	IncludeBins           map[string]*fsutil.AccessInfo
+	IncludeDirBinsList    map[string]*fsutil.AccessInfo
 	IncludeExes           map[string]*fsutil.AccessInfo
 	DoIncludeShell        bool
 	DoIncludeWorkdir      bool
@@ -196,6 +197,7 @@ func NewInspector(
 	preservePaths map[string]*fsutil.AccessInfo,
 	includePaths map[string]*fsutil.AccessInfo,
 	includeBins map[string]*fsutil.AccessInfo,
+	includeDirBinsList map[string]*fsutil.AccessInfo,
 	includeExes map[string]*fsutil.AccessInfo,
 	doIncludeShell bool,
 	doIncludeWorkdir bool,
@@ -253,6 +255,7 @@ func NewInspector(
 		PreservePaths:         preservePaths,
 		IncludePaths:          includePaths,
 		IncludeBins:           includeBins,
+		IncludeDirBinsList:    includeDirBinsList,
 		IncludeExes:           includeExes,
 		DoIncludeShell:        doIncludeShell,
 		DoIncludeWorkdir:      doIncludeWorkdir,
@@ -795,6 +798,10 @@ func (i *Inspector) RunContainer() error {
 
 	if len(i.IncludeBins) > 0 {
 		cmd.IncludeBins = pathMapKeys(i.IncludeBins)
+	}
+
+	if len(i.IncludeDirBinsList) > 0 {
+		cmd.IncludeDirBinsList = pathMapKeys(i.IncludeDirBinsList)
 	}
 
 	if len(i.IncludeExes) > 0 {

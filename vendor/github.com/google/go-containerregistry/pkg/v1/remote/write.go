@@ -280,6 +280,11 @@ func (w *writer) streamBlob(ctx context.Context, layer v1.Layer, streamLocation 
 	if _, ok := layer.(*stream.Layer); !ok {
 		// We can't retry streaming layers.
 		req.GetBody = getBody
+
+		// If we know the size, set it.
+		if size, err := layer.Size(); err == nil {
+			req.ContentLength = size
+		}
 	}
 	req.Header.Set("Content-Type", "application/octet-stream")
 

@@ -30,8 +30,12 @@ type diskHandler struct {
 
 func NewDiskBlobHandler(dir string) BlobHandler { return &diskHandler{dir: dir} }
 
+func (m *diskHandler) blobHashPath(h v1.Hash) string {
+	return filepath.Join(m.dir, h.Algorithm, h.Hex)
+}
+
 func (m *diskHandler) Stat(_ context.Context, _ string, h v1.Hash) (int64, error) {
-	fi, err := os.Stat(filepath.Join(m.dir, h.String()))
+	fi, err := os.Stat(m.blobHashPath(h))
 	if errors.Is(err, os.ErrNotExist) {
 		return 0, errNotFound
 	} else if err != nil {
@@ -40,7 +44,7 @@ func (m *diskHandler) Stat(_ context.Context, _ string, h v1.Hash) (int64, error
 	return fi.Size(), nil
 }
 func (m *diskHandler) Get(_ context.Context, _ string, h v1.Hash) (io.ReadCloser, error) {
-	return os.Open(filepath.Join(m.dir, h.String()))
+	return os.Open(m.blobHashPath(h))
 }
 func (m *diskHandler) Put(_ context.Context, _ string, h v1.Hash, rc io.ReadCloser) error {
 	// Put the temp file in the same directory to avoid cross-device problems
@@ -57,9 +61,11 @@ func (m *diskHandler) Put(_ context.Context, _ string, h v1.Hash, rc io.ReadClos
 	}(); err != nil {
 		return err
 	}
-
-	return os.Rename(f.Name(), filepath.Join(m.dir, h.String()))
+	if err := os.MkdirAll(filepath.Join(m.dir, h.Algorithm), os.ModePerm); err != nil {
+		return err
+	}
+	return os.Rename(f.Name(), m.blobHashPath(h))
 }
 func (m *diskHandler) Delete(_ context.Context, _ string, h v1.Hash) error {
-	return os.Remove(filepath.Join(m.dir, h.String()))
+	return os.Remove(m.blobHashPath(h))
 }

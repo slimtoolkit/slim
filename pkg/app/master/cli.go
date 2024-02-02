@@ -12,21 +12,21 @@ import (
 	"github.com/slimtoolkit/slim/pkg/app/master/command"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/appbom"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/build"
-	"github.com/slimtoolkit/slim/pkg/app/master/command/containerize"
-	"github.com/slimtoolkit/slim/pkg/app/master/command/convert"
+	//"github.com/slimtoolkit/slim/pkg/app/master/command/containerize"
+	//"github.com/slimtoolkit/slim/pkg/app/master/command/convert"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/debug"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/dockerclipm"
-	"github.com/slimtoolkit/slim/pkg/app/master/command/edit"
+	//"github.com/slimtoolkit/slim/pkg/app/master/command/edit"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/help"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/images"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/install"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/lint"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/merge"
-	"github.com/slimtoolkit/slim/pkg/app/master/command/probe"
+	//"github.com/slimtoolkit/slim/pkg/app/master/command/probe"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/profile"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/registry"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/run"
-	"github.com/slimtoolkit/slim/pkg/app/master/command/server"
+	//"github.com/slimtoolkit/slim/pkg/app/master/command/server"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/update"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/version"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/vulnerability"
@@ -60,13 +60,13 @@ func registerCommands() {
 	help.RegisterCommand()
 	update.RegisterCommand()
 	install.RegisterCommand()
-	edit.RegisterCommand()
-	probe.RegisterCommand()
-	convert.RegisterCommand()
+	//edit.RegisterCommand() - not doing anything yet
+	//probe.RegisterCommand() - not doing anything yet
+	//convert.RegisterCommand() - not doing anything yet
 	run.RegisterCommand()
-	server.RegisterCommand()
+	//server.RegisterCommand() - not doing anything yet
 	debug.RegisterCommand()
-	containerize.RegisterCommand()
+	//containerize.RegisterCommand() - not doing anything yet
 	dockerclipm.RegisterCommand()
 }
 

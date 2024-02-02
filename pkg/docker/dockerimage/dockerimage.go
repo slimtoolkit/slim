@@ -579,7 +579,7 @@ func LoadPackage(archivePath string,
 		switch {
 		case hdr.Name == ociLayoutFileName:
 			var ociLayout OCILayout
-			if err := jsonFromStream(hdr.Name, tr, &ociLayout); err != nil {
+			if err := jsonFromStream(archivePath, hdr.Name, tr, &ociLayout); err != nil {
 				log.Debugf("dockerimage.LoadPackage: error reading oci-layout from archive(%v/%v) - %v", archivePath, ociLayoutFileName, err)
 				//not erroring right away (ok if we don't have a good oci layout if the Docker Manifest info is still there)
 			} else {
@@ -592,11 +592,12 @@ func LoadPackage(archivePath string,
 
 		case hdr.Name == ociIndexFileName:
 			var ociIndex oci.Index
-			if err := jsonFromStream(hdr.Name, tr, &ociIndex); err != nil {
+			if err := jsonFromStream(archivePath, hdr.Name, tr, &ociIndex); err != nil {
 				log.Debugf("dockerimage.LoadPackage: error reading oci index from archive(%v/%v) - %v", archivePath, ociIndexFileName, err)
 				//not erroring right away (ok if we don't have a good oci index if the Docker Manifest info is still there)
 			} else {
 				if ociIndex.MediaType == oci.MediaTypeImageIndex {
+					// Docker bug (ociIndex.Manifests is null when image is saved by ID, not by name)
 					if len(ociIndex.Manifests) != 0 {
 						// picking the first usable manifest descriptor (for now)
 						// make it selectable later
@@ -658,7 +659,7 @@ func LoadPackage(archivePath string,
 
 		case hdr.Name == dockerManifestFileName:
 			var manifests []DockerManifestObject
-			if err := jsonFromStream(hdr.Name, tr, &manifests); err != nil {
+			if err := jsonFromStream(archivePath, hdr.Name, tr, &manifests); err != nil {
 				log.Debugf("dockerimage.LoadPackage: error reading manifest file from archive(%v/%v) - %v",
 					archivePath, dockerManifestFileName, err)
 				//not erroring right away (ok if we don't have a good Docker Manifest if the OCI Index and OCI Image Manifest info is still there)
@@ -691,7 +692,7 @@ func LoadPackage(archivePath string,
 
 		case hdr.Name == dv1ConfigObjectFileName:
 			var imageConfig ConfigObject
-			if err := jsonFromStream(hdr.Name, tr, &imageConfig); err != nil {
+			if err := jsonFromStream(archivePath, hdr.Name, tr, &imageConfig); err != nil {
 				log.Errorf("dockerimage.LoadPackage: error reading config object from archive(%v/%v) - %v", archivePath, dv1ConfigObjectFileName, err)
 				return nil, err
 			}
@@ -828,7 +829,7 @@ func LoadPackage(archivePath string,
 			if configObjectFileName != "" &&
 				hdr.Name == configObjectFileName {
 				var imageConfig ConfigObject
-				if err := jsonFromStream(hdr.Name, tr, &imageConfig); err != nil {
+				if err := jsonFromStream(archivePath, hdr.Name, tr, &imageConfig); err != nil {
 					log.Errorf("dockerimage.LoadPackage: error reading config object from archive(%v/%v) - %v", archivePath, configObjectFileName, err)
 					return nil, err
 				}
@@ -852,7 +853,7 @@ func LoadPackage(archivePath string,
 				ociImageManifestPath != "" &&
 				hdr.Name == ociImageManifestPath {
 				var ociImageManifest oci.Manifest
-				if err := jsonFromStream(hdr.Name, tr, &ociImageManifest); err != nil {
+				if err := jsonFromStream(archivePath, hdr.Name, tr, &ociImageManifest); err != nil {
 					log.Errorf("dockerimage.LoadPackage: error reading oci image manifest from archive(%v/%v) - %v", archivePath, ociImageManifestPath, err)
 					return nil, err
 				}
@@ -999,7 +1000,7 @@ func LoadPackage(archivePath string,
 		if configObjectFileName != "" &&
 		   hdr.Name == configObjectFileName {
 			var imageConfig ConfigObject
-			if err := jsonFromStream(hdr.Name, tr, &imageConfig); err != nil {
+			if err := jsonFromStream(archivePath, hdr.Name, tr, &imageConfig); err != nil {
 				log.Errorf("dockerimage.LoadPackage: error reading oci config object from archive(%v/%v) - %v", archivePath, configObjectFileName, err)
 				return nil, err
 			}
@@ -2110,16 +2111,16 @@ func inspectFile(
 	return nil
 }
 
-func jsonFromStream(name string, reader io.Reader, data interface{}) error {
+func jsonFromStream(source string, name string, reader io.Reader, data interface{}) error {
 	raw, err := io.ReadAll(reader)
 	if err != nil {
 		return err
 	}
 
 	sr := strings.NewReader(string(raw))
-	//log.Tracef("dockerimage.LoadPackage.jsonFromStream: reading '%s'", name)
-	fmt.Printf("jsonFromStream: reading '%s' data='%s'\n\n", name, string(raw))
-	//tr := io.TeeReader(reader, os.Stdout)
+	log.Tracef("dockerimage.LoadPackage.jsonFromStream: name='%s' data[%d]='%s' source='%s'", 
+		name, raw, len(raw), source)
+
 	return json.NewDecoder(sr).Decode(data)
 }
 

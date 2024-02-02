@@ -661,6 +661,9 @@ var CLI = &cli.Command{
 			}
 		}
 
+		//note: if path perms, ID change are provided they are applied to all matching binaries
+		includeDirBinsList := command.ParsePaths(ctx.StringSlice(FlagIncludeDirBins))
+
 		includeExes := command.ParsePaths(ctx.StringSlice(FlagIncludeExe))
 		moreIncludeExes, err := command.ParsePathsFile(ctx.String(FlagIncludeExeFile))
 		if err != nil {
@@ -806,6 +809,7 @@ var CLI = &cli.Command{
 			preservePaths,
 			includePaths,
 			includeBins,
+			includeDirBinsList,
 			includeExes,
 			doIncludeShell,
 			doIncludeWorkdir,

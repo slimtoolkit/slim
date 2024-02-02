@@ -333,6 +333,7 @@ Global options:
 - `--verbose` - enable info logs
 - `--log-level` - set the logging level ('debug', 'info', 'warn' (default), 'error', 'fatal', 'panic')
 - `--log-format` - set the format used by logs ('text' (default), or 'json')
+- `--crt-api-version` - Container runtime API version
 - `--quiet` - less verbose CLI execution mode
 - `--output-format` - set the output format to use ('text' (default), or 'json')
 - `--log` - log file to store logs
@@ -464,10 +465,12 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--entrypoint` - Override ENTRYPOINT analyzing image at runtime
 - `--cmd` - Override CMD analyzing image at runtime
 - `--mount` - Mount volume analyzing image (the mount parameter format is identical to the `-v` mount command in Docker) [can use this flag multiple times]
-- `--include-path` - Include directory or file from image [can use this flag multiple times] (optionally overwriting the artifact's permissions, user and group information; format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
-- `--include-path-file` - Load directory or file includes from a file (optionally overwriting the artifact's permissions, user and group information; format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
+- `--include-path` - Include directory (and what's in it) or file from image [can use this flag multiple times] (optionally overwriting the artifact's permissions, user and group information; full format: `targetPath:octalPermFlags#uid#gid`, mimimal format: `targetPath` ; see the non-default USER FAQ section for more details)
+- `--include-path-file` - Load directory or file includes from a file (optionally overwriting the artifact's permissions, user and group information; full format: `targetPath:octalPermFlags#uid#gid`, mimimal format: `targetPath` ; see the non-default USER FAQ section for more details)
+- `--include-paths-creport-file` - Keep files from the referenced creport
 - `--include-bin value` - Include binary from image (executable or shared object using its absolute path)
 - `--include-bin-file` - Load shared binary file includes from a file (similar to `--include-path-file`)
+- `--include-dir-bins value` - Include binaries in the target directory and include their dependencies, which could be in other locations (executables or shared objects using its absolute path)
 - `--include-exe value` - Include executable from image (by executable name)
 - `--include-exe-file` - Load executable file includes from a file (similar to `--include-path-file`)
 - `--include-shell` - Include basic shell functionality (default value: false)
@@ -479,6 +482,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-cert-pk-dirs` - Keep known cert private key directories and all files in them
 - `--include-new` - Keep new files created by target during dynamic analysis (default value: true)
 - `--include-oslibs-net` - Keep the common networking OS libraries (default value: true)
+- `--include-ssh-client` - Keep the common SSH client components and configs
 - `--include-zoneinfo` - Keep the OS/libc zoneinfo data (default value: false)
 - `--include-app-nuxt-dir` - Keep the root Nuxt.js app directory (default value: false)
 - `--include-app-nuxt-build-dir` - Keep the build Nuxt.js app directory (default value: false)
@@ -495,7 +499,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--preserve-path-file` - File with paths to keep from original image in their original state (changes to the selected container image files when it runs will be discarded).
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 - `--path-perms-file` - File with path permissions to set (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
-- `--exclude-pattern` - Exclude path pattern ([Glob/Match in Go](https://golang.org/pkg/path/filepath/#Match) and `**`) from image
+- `--exclude-pattern` - Exclude path pattern ([Glob/Match in Go](https://golang.org/pkg/path/filepath/#Match) and `**`) from image (useful when `--include-path` keeps a directory and you need to exclude / filter out some of the files in that directory)
 - `--exclude-varlock-files` - Exclude the files in the var and run lock directory (default value: true)
 - `--exclude-mounts` - Exclude mounted volumes from image (default value: true)
 - `--label` - Override or add LABEL analyzing image at runtime [can use this flag multiple times]

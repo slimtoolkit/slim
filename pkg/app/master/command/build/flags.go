@@ -34,21 +34,40 @@ const (
 	FlagIncludeExeFile   = "include-exe-file"
 	FlagIncludeShell     = "include-shell"
 
+	FlagIncludeDirBins = "include-dir-bins"
+	FlagIncludeDirBinsUsage = "Keep binaries in the target directory (executables or shared objects) and their dependencies, which could be in other locations"
+
 	FlagIncludeWorkdir            = "include-workdir"
-	FlagWorkdirExclude            = "workdir-exclude"
-	FlagIncludeAppImageAddCopyAll = "include-app-image-addcopy-all"
-	FlagIncludeAppImageRun        = "include-app-image-run"
+	FlagIncludeWorkdirUsage = "Keep files in working directory"
+
+	//TBD
+	FlagWorkdirExclude      = "workdir-exclude"
+	FlagWorkdirExcludeUsage = "Exclude filter for artifacts when working directory is included"
+
+	FlagIncludeAppImageAddCopyAll = "include-app-image-addcopy-all" //TBD
+	FlagIncludeAppImageRun        = "include-app-image-run" //TBD
+
 	FlagIncludeAppImageAll        = "include-app-image-all"
+	FlagIncludeAppImageAllUsage   = "Keep everything in the app part of the container image"
 
 	FlagAppImageStartInst       = "app-image-start-instruction"
-	FlagAppImageStartLayerCount = "app-image-start-layer-count"
+	FlagAppImageStartInstUsage  = "Instruction (prefix) that indicates where the app starts in the container image"
+
+	FlagAppImageStartLayerCount = "app-image-start-layer-count" //TBD
+
 	FlagAppImageStartInstGroup  = "app-image-start-instruction-group"
-	FlagAppImageStartDetect     = "app-image-start-detect"
+	FlagAppImageStartInstGroupUsage = "Instruction group (reverse) index that indicates where the app starts in the container image"
+
+	FlagAppImageStartDetect     = "app-image-start-detect" //TBD
+
 	FlagAppImageDockerfile      = "app-image-dockerfile" //TODO: make it work with FlagBuildFromDockerfile too
+	FlagAppImageDockerfileUsage     = "Path to app image Dockerfile (used to determine where the application part of the image starts)"
 
 	FlagIncludePathsCreportFile = "include-paths-creport-file"
+	FlagIncludePathsCreportFileUsage = "Keep files from the referenced creport"
 
 	FlagIncludeOSLibsNet = "include-oslibs-net"
+	FlagIncludeOSLibsNetUsage = "Keep the common networking OS libraries"
 
 	FlagIncludeSSHClient           = "include-ssh-client"
 	FlagIncludeSSHClientUsage      = "Keep the common SSH client components and configs"
@@ -151,17 +170,6 @@ const (
 	FlagIncludeBinUsage       = "Keep binary from original image (executable or shared object using its absolute path)"
 	FlagIncludeExeUsage       = "Keep executable from original image (by executable name)"
 	FlagIncludeShellUsage     = "Keep basic shell functionality"
-
-	FlagIncludeWorkdirUsage = "Keep files in working directory"
-
-	FlagIncludeAppImageAllUsage     = "Keep everything in the app part of the container image"
-	FlagAppImageStartInstGroupUsage = "Instruction group (reverse) index that indicates where the app starts in the container image"
-	FlagAppImageStartInstUsage      = "Instruction (prefix) that indicates where the app starts in the container image"
-	FlagAppImageDockerfileUsage     = "Path to app image Dockerfile (used to determine where the application part of the image starts)"
-
-	FlagIncludePathsCreportFileUsage = "Keep files from the referenced creport"
-
-	FlagIncludeOSLibsNetUsage = "Keep the common networking OS libraries"
 
 	FlagIncludeZoneInfoUsage = "Keep the OS/libc zoneinfo data"
 
@@ -270,6 +278,12 @@ var Flags = map[string]cli.Flag{
 		Value:   cli.NewStringSlice(),
 		Usage:   FlagIncludeBinUsage,
 		EnvVars: []string{"DSLIM_INCLUDE_BIN"},
+	},
+	FlagIncludeDirBins: &cli.StringSliceFlag{
+		Name:    FlagIncludeDirBins,
+		Value:   cli.NewStringSlice(),
+		Usage:   FlagIncludeDirBinsUsage,
+		EnvVars: []string{"DSLIM_INCLUDE_DIR_BINS"},
 	},
 	FlagIncludeExe: &cli.StringSliceFlag{
 		Name:    FlagIncludeExe,

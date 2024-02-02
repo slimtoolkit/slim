@@ -253,6 +253,7 @@ func OnCommand(
 		nil,   //preservePaths,
 		nil,   //includePaths,
 		nil,   //includeBins,
+		nil,   //includeDirBinsList,
 		nil,   //includeExes,
 		false, //doIncludeShell,
 		false, //doIncludeWorkdir,
