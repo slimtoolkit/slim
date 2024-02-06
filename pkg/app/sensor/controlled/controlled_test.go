@@ -42,6 +42,7 @@ func newStubMonitorFunc(
 	) (monitor.CompositeMonitor, error) {
 		return monitor.Compose(
 			cmd,
+			nil,
 			fanMon,
 			ptMon,
 			nil,

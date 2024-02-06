@@ -2122,7 +2122,7 @@ func jsonFromStream(source string, name string, reader io.Reader, data interface
 
 	sr := strings.NewReader(string(raw))
 	log.Tracef("dockerimage.LoadPackage.jsonFromStream: name='%s' data[%d]='%s' source='%s'",
-		name, raw, len(raw), source)
+		name, len(raw), string(raw), source)
 
 	return json.NewDecoder(sr).Decode(data)
 }
