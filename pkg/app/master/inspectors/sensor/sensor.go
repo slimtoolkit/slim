@@ -39,18 +39,29 @@ func EnsureLocalBinary(xc *app.ExecutionContext, logger *log.Entry, statePath st
 
 			xc.Out.State("exited",
 				ovars{
-					"exit.code": -125,
-					"component": "container.inspector",
-					"version":   v.Current(),
+					"exit.code":    -999,
+					"component":    "container.inspector",
+					"version":      v.Current(),
+					"location.exe": fsutil.ExeDir(),
 				})
 		}
 
-		xc.Exit(-125)
+		xc.Exit(-999)
 	}
 
 	if finfo, err := os.Lstat(sensorPath); err == nil {
 		logger.Debugf("sensor.EnsureLocalBinary: sensor (%s) perms => %#o", sensorPath, finfo.Mode().Perm())
 		if finfo.Mode().Perm()&fsutil.FilePermUserExe == 0 {
+			if printState {
+				xc.Out.Info("sensor.perms",
+					ovars{
+						"message":  "sensor missing execute permission",
+						"location": sensorPath,
+						"mode":     finfo.Mode().String(),
+						"perm":     finfo.Mode().Perm().String(),
+					})
+			}
+
 			logger.Debugf("sensor.EnsureLocalBinary: sensor (%s) missing execute permission", sensorPath)
 			updatedMode := finfo.Mode() | fsutil.FilePermUserExe | fsutil.FilePermGroupExe | fsutil.FilePermOtherExe
 			if err = os.Chmod(sensorPath, updatedMode); err != nil {

@@ -356,6 +356,66 @@ func SaveImage(dclient *dockerapi.Client, imageRef, local string, extract, remov
 	return nil
 }
 
+type VolumeInfo struct {
+	Created    time.Time
+	Mountpoint string
+	Size       uint64
+	FileCount  uint64
+}
+
+func GetVolumeInfo(dclient *dockerapi.Client, name string, fileCount bool) (*VolumeInfo, error) {
+	if name == "" {
+		return nil, ErrBadParam
+	}
+
+	var err error
+	if dclient == nil {
+		socketInfo, err := dockerclient.GetUnixSocketAddr()
+		if err != nil {
+			return nil, err
+		}
+
+		if socketInfo == nil || socketInfo.Address == "" {
+			return nil, fmt.Errorf("no unix socket found")
+		}
+
+		dclient, err = dockerapi.NewClient(socketInfo.Address)
+		if err != nil {
+			log.Errorf("dockerutil.GetVolumeInfo: dockerapi.NewClient() error = %v", err)
+			return nil, err
+		}
+	}
+
+	volume, err := dclient.InspectVolume(name)
+	if err != nil {
+		log.Errorf("dockerutil.GetVolumeInfo: dclient.InspectVolume() error = %v", err)
+		return nil, err
+	}
+
+	info := &VolumeInfo{
+		Created:    volume.CreatedAt,
+		Mountpoint: volume.Mountpoint,
+	}
+
+	return info, nil
+}
+
+func ListVolumeFiles(dclient *dockerapi.Client, name string) ([]string, error) {
+	if name == "" {
+		return nil, ErrBadParam
+	}
+
+	return nil, nil
+}
+
+func VolumePathExists(dclient *dockerapi.Client, volume string, pth string) (bool, error) {
+	if volume == "" || pth == "" {
+		return false, ErrBadParam
+	}
+
+	return false, nil
+}
+
 func HasVolume(dclient *dockerapi.Client, name string) error {
 	if name == "" {
 		return ErrBadParam

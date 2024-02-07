@@ -3,7 +3,7 @@ package container
 import (
 	"bufio"
 	"bytes"
-	goerr "errors"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
@@ -62,7 +62,7 @@ var (
 	evtPortSpecDefault = dockerapi.Port(fmt.Sprintf("%d/tcp", channel.EvtPort))
 )
 
-var ErrStartMonitorTimeout = goerr.New("start monitor timeout")
+var ErrStartMonitorTimeout = errors.New("start monitor timeout")
 
 const (
 	sensorVolumeBaseName = "slim-sensor"
@@ -680,7 +680,8 @@ func (i *Inspector) RunContainer() error {
 				if devent.ID == i.ContainerID {
 					if devent.Status == "die" {
 						nonZeroExitCode := false
-						if exitCodeStr, ok := devent.Actor.Attributes["exitCode"]; ok && exitCodeStr != "" && exitCodeStr != "0" {
+						exitCodeStr, ok := devent.Actor.Attributes["exitCode"]
+						if ok && exitCodeStr != "" && exitCodeStr != "0" {
 							nonZeroExitCode = true
 						}
 
@@ -688,8 +689,9 @@ func (i *Inspector) RunContainer() error {
 							if i.PrintState {
 								i.xc.Out.Info("container",
 									ovars{
-										"status": "crashed",
-										"id":     i.ContainerID,
+										"status":    "crashed",
+										"id":        i.ContainerID,
+										"exit.code": exitCodeStr,
 									})
 							}
 
@@ -698,11 +700,15 @@ func (i *Inspector) RunContainer() error {
 							if i.PrintState {
 								i.xc.Out.State("exited",
 									ovars{
-										"exit.code": -123,
-										"version":   v.Current(),
+										"exit.code":       -999,
+										"version":         v.Current(),
+										"location.exe":    fsutil.ExeDir(),
+										"location.sensor": sensorPath,
+										"sensor.filemode": fsutil.FileMode(sensorPath),
+										"sensor.volume":   volumeName,
 									})
 							}
-							i.xc.Exit(-123)
+							i.xc.Exit(-999)
 						}
 					}
 				}

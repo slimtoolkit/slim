@@ -1104,6 +1104,16 @@ func CopyDir(clone bool,
 
 ///////////////////////////////////////////////////////////////////////////////
 
+func FileMode(fileName string) string {
+	finfo, err := os.Lstat(fileName)
+	if err != nil {
+		log.Errorf("fsutil.FileMode(%s) - os.Lstat error - %v", fileName, err)
+		return ""
+	}
+
+	return finfo.Mode().String()
+}
+
 // ExeDir returns the directory information for the application
 func ExeDir() string {
 	exePath, err := pdiscover.GetOwnProcPath()
