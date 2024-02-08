@@ -12,7 +12,7 @@ import (
 const (
 	Name  = "registry"
 	Usage = "Execute registry operations"
-	Alias = "r"
+	Alias = "reg"
 
 	PullCmdName      = "pull"
 	PullCmdNameUsage = "Pull a container image from registry"

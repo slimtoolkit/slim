@@ -927,9 +927,15 @@ func Cflag(name string) cli.Flag {
 }
 
 func HTTPProbeFlags() []cli.Flag {
-	return []cli.Flag{
+	return append([]cli.Flag{
 		Cflag(FlagHTTPProbeOff),
 		Cflag(FlagHTTPProbe),
+		Cflag(FlagHTTPProbeExitOnFailure),
+	}, HTTPProbeFlagsBasic()...)
+}
+
+func HTTPProbeFlagsBasic() []cli.Flag {
+	return []cli.Flag{
 		Cflag(FlagHTTPProbeCmd),
 		Cflag(FlagHTTPProbeCmdFile),
 		Cflag(FlagHTTPProbeStartWait),
@@ -937,7 +943,6 @@ func HTTPProbeFlags() []cli.Flag {
 		Cflag(FlagHTTPProbeRetryWait),
 		Cflag(FlagHTTPProbePorts),
 		Cflag(FlagHTTPProbeFull),
-		Cflag(FlagHTTPProbeExitOnFailure),
 		Cflag(FlagHTTPProbeCrawl),
 		Cflag(FlagHTTPCrawlMaxDepth),
 		Cflag(FlagHTTPCrawlMaxPageCount),

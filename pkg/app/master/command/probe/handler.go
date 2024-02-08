@@ -7,6 +7,8 @@ import (
 
 	"github.com/slimtoolkit/slim/pkg/app"
 	"github.com/slimtoolkit/slim/pkg/app/master/command"
+	"github.com/slimtoolkit/slim/pkg/app/master/config"
+	"github.com/slimtoolkit/slim/pkg/app/master/probe/http"
 	"github.com/slimtoolkit/slim/pkg/app/master/version"
 	cmd "github.com/slimtoolkit/slim/pkg/command"
 	"github.com/slimtoolkit/slim/pkg/docker/dockerclient"
@@ -24,7 +26,10 @@ type ovars = app.OutVars
 func OnCommand(
 	xc *app.ExecutionContext,
 	gparams *command.GenericParams,
-	targetRef string) {
+	targetEndpoint string,
+	targetPorts []uint,
+	httpProbeOpts config.HTTPProbeOptions) {
+	printState := true
 	logger := log.WithFields(log.Fields{"app": appName, "cmd": Name})
 	cmdName := fmt.Sprintf("cmd=%s", Name)
 
@@ -36,7 +41,7 @@ func OnCommand(
 	xc.Out.State(cmd.StateStarted)
 	xc.Out.Info("params",
 		ovars{
-			"target": targetRef,
+			"target": targetEndpoint,
 		})
 
 	client, err := dockerclient.New(gparams.ClientConfig)
@@ -51,7 +56,7 @@ func OnCommand(
 				"message": exitMsg,
 			})
 
-		exitCode := command.ECTCommon | command.ECCNoDockerConnectInfo
+		exitCode := -222
 		xc.Out.State("exited",
 			ovars{
 				"exit.code": exitCode,
@@ -64,6 +69,22 @@ func OnCommand(
 
 	if gparams.Debug {
 		version.Print(xc, cmdName, logger, client, false, gparams.InContainer, gparams.IsDSImage)
+	}
+
+	probe, err := http.NewEndpointProbe(xc, targetEndpoint, targetPorts, httpProbeOpts, printState)
+	xc.FailOn(err)
+
+	probe.Start()
+
+	xc.Out.Prompt("waiting for the HTTP probe to finish")
+	<-probe.DoneChan()
+	xc.Out.Info("event",
+		ovars{
+			"message": "HTTP probe is done",
+		})
+
+	if probe != nil && probe.CallCount > 0 && probe.OkCount == 0 {
+		xc.Out.Error("probe.error", "no.successful.calls")
 	}
 
 	xc.Out.State(cmd.StateCompleted)

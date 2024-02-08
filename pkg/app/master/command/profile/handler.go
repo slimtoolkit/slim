@@ -16,7 +16,7 @@ import (
 	"github.com/slimtoolkit/slim/pkg/app/master/config"
 	"github.com/slimtoolkit/slim/pkg/app/master/inspectors/container"
 	"github.com/slimtoolkit/slim/pkg/app/master/inspectors/image"
-	"github.com/slimtoolkit/slim/pkg/app/master/inspectors/probes/http"
+	"github.com/slimtoolkit/slim/pkg/app/master/probe/http"
 	"github.com/slimtoolkit/slim/pkg/app/master/version"
 	cmd "github.com/slimtoolkit/slim/pkg/command"
 	"github.com/slimtoolkit/slim/pkg/docker/dockerclient"

@@ -315,7 +315,7 @@ var CLI = &cli.Command{
 
 		doPublishExposedPorts := ctx.Bool(command.FlagPublishExposedPorts)
 
-		httpProbeOpts := command.GetHTTPProbeOptions(xc, ctx)
+		httpProbeOpts := command.GetHTTPProbeOptions(xc, ctx, false)
 
 		continueAfter, err := command.GetContinueAfter(ctx)
 		if err != nil {

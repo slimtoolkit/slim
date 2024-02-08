@@ -54,11 +54,9 @@ func GetContainerRunOptions(ctx *cli.Context) (*config.ContainerRunOptions, erro
 	return &cro, nil
 }
 
-func GetHTTPProbeOptions(xc *app.ExecutionContext, ctx *cli.Context) config.HTTPProbeOptions {
+func GetHTTPProbeOptions(xc *app.ExecutionContext, ctx *cli.Context, doProbe bool) config.HTTPProbeOptions {
 	opts := config.HTTPProbeOptions{
-		Do:            ctx.Bool(FlagHTTPProbe) && !ctx.Bool(FlagHTTPProbeOff),
-		Full:          ctx.Bool(FlagHTTPProbeFull),
-		ExitOnFailure: ctx.Bool(FlagHTTPProbeExitOnFailure),
+		Full: ctx.Bool(FlagHTTPProbeFull),
 
 		StartWait:  ctx.Int(FlagHTTPProbeStartWait),
 		RetryCount: ctx.Int(FlagHTTPProbeRetryCount),
@@ -68,6 +66,13 @@ func GetHTTPProbeOptions(xc *app.ExecutionContext, ctx *cli.Context) config.HTTP
 		CrawlMaxPageCount:   ctx.Int(FlagHTTPCrawlMaxPageCount),
 		CrawlConcurrency:    ctx.Int(FlagHTTPCrawlConcurrency),
 		CrawlConcurrencyMax: ctx.Int(FlagHTTPMaxConcurrentCrawlers),
+	}
+
+	if doProbe {
+		opts.Do = true
+	} else {
+		opts.Do = ctx.Bool(FlagHTTPProbe) && !ctx.Bool(FlagHTTPProbeOff)
+		opts.ExitOnFailure = ctx.Bool(FlagHTTPProbeExitOnFailure)
 	}
 
 	cmds, err := GetHTTPProbes(ctx)

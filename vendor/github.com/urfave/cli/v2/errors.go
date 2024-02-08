@@ -47,6 +47,28 @@ func (m *multiError) Errors() []error {
 	return errs
 }
 
+type requiredFlagsErr interface {
+	error
+	getMissingFlags() []string
+}
+
+type errRequiredFlags struct {
+	missingFlags []string
+}
+
+func (e *errRequiredFlags) Error() string {
+	numberOfMissingFlags := len(e.missingFlags)
+	if numberOfMissingFlags == 1 {
+		return fmt.Sprintf("Required flag %q not set", e.missingFlags[0])
+	}
+	joinedMissingFlags := strings.Join(e.missingFlags, ", ")
+	return fmt.Sprintf("Required flags %q not set", joinedMissingFlags)
+}
+
+func (e *errRequiredFlags) getMissingFlags() []string {
+	return e.missingFlags
+}
+
 // ErrorFormatter is the interface that will suitably format the error output
 type ErrorFormatter interface {
 	Format(s fmt.State, verb rune)
@@ -61,7 +83,7 @@ type ExitCoder interface {
 
 type exitError struct {
 	exitCode int
-	message  interface{}
+	err      error
 }
 
 // NewExitError calls Exit to create a new ExitCoder.
@@ -76,21 +98,36 @@ func NewExitError(message interface{}, exitCode int) ExitCoder {
 //
 // This is the simplest way to trigger a non-zero exit code for an App without
 // having to call os.Exit manually. During testing, this behavior can be avoided
-// by overiding the ExitErrHandler function on an App or the package-global
+// by overriding the ExitErrHandler function on an App or the package-global
 // OsExiter function.
 func Exit(message interface{}, exitCode int) ExitCoder {
+	var err error
+
+	switch e := message.(type) {
+	case ErrorFormatter:
+		err = fmt.Errorf("%+v", message)
+	case error:
+		err = e
+	default:
+		err = fmt.Errorf("%+v", message)
+	}
+
 	return &exitError{
-		message:  message,
+		err:      err,
 		exitCode: exitCode,
 	}
 }
 
 func (ee *exitError) Error() string {
-	return fmt.Sprintf("%v", ee.message)
+	return ee.err.Error()
 }
 
 func (ee *exitError) ExitCode() int {
 	return ee.exitCode
+}
+
+func (ee *exitError) Unwrap() error {
+	return ee.err
 }
 
 // HandleExitCoder handles errors implementing ExitCoder by printing their

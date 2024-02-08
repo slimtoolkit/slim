@@ -22,7 +22,7 @@ import (
 	"github.com/slimtoolkit/slim/pkg/app/master/command/install"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/lint"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/merge"
-	//"github.com/slimtoolkit/slim/pkg/app/master/command/probe"
+	"github.com/slimtoolkit/slim/pkg/app/master/command/probe"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/profile"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/registry"
 	"github.com/slimtoolkit/slim/pkg/app/master/command/run"
@@ -47,9 +47,10 @@ func registerCommands() {
 	//registering commands explicitly instead of relying on init()
 	//also get to control the order of the commands in the interactive prompt
 
+	debug.RegisterCommand()
+	build.RegisterCommand()
 	xray.RegisterCommand()
 	lint.RegisterCommand()
-	build.RegisterCommand()
 	merge.RegisterCommand()
 	images.RegisterCommand()
 	registry.RegisterCommand()
@@ -61,11 +62,10 @@ func registerCommands() {
 	update.RegisterCommand()
 	install.RegisterCommand()
 	//edit.RegisterCommand() - not doing anything yet
-	//probe.RegisterCommand() - not doing anything yet
+	probe.RegisterCommand()
 	//convert.RegisterCommand() - not doing anything yet
 	run.RegisterCommand()
 	//server.RegisterCommand() - not doing anything yet
-	debug.RegisterCommand()
 	//containerize.RegisterCommand() - not doing anything yet
 	dockerclipm.RegisterCommand()
 }

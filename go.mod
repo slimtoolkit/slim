@@ -30,7 +30,7 @@ require (
 	github.com/slimtoolkit/go-update v0.0.0-20231119011834-99945ebd76f7
 	github.com/slimtoolkit/uiprogress v0.0.0-20231119012247-4a052fb12f37
 	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
-	github.com/urfave/cli/v2 v2.3.0
+	github.com/urfave/cli/v2 v2.27.1
 	golang.org/x/crypto v0.17.0
 	golang.org/x/net v0.18.0
 	golang.org/x/sys v0.15.0
@@ -45,7 +45,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.1 // indirect
 	github.com/bradfitz/iter v0.0.0-20191230175014-e8f45d346db8 // indirect
 	github.com/containerd/stargz-snapshotter/estargz v0.14.3 // indirect
-	github.com/cpuguy83/go-md2man/v2 v2.0.2 // indirect
+	github.com/cpuguy83/go-md2man/v2 v2.0.3 // indirect
 	github.com/distribution/distribution/v3 v3.0.0-20210316161203-a01c71e2477e // indirect
 	github.com/docker/cli v24.0.0+incompatible // indirect
 	github.com/docker/distribution v2.8.2+incompatible // indirect
@@ -99,6 +99,7 @@ require (
 	github.com/ulyssessouza/godotenv v1.3.1-0.20210806120901-e417b721114e // indirect
 	github.com/vbatts/tar-split v0.11.3 // indirect
 	github.com/xlab/treeprint v1.1.0 // indirect
+	github.com/xrash/smetrics v0.0.0-20231213231151-1d8dd44e695e // indirect
 	go.starlark.net v0.0.0-20200306205701-8dd3e2ee1dd5 // indirect
 	golang.org/x/mod v0.14.0 // indirect
 	golang.org/x/oauth2 v0.10.0 // indirect

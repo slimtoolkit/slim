@@ -19,28 +19,40 @@ var CLI = &cli.Command{
 	Name:    Name,
 	Aliases: []string{Alias},
 	Usage:   Usage,
+	Flags: append([]cli.Flag{
+		cflag(FlagTarget),
+		cflag(FlagPort),
+	}, command.HTTPProbeFlagsBasic()...),
 	Action: func(ctx *cli.Context) error {
-		gcvalues := command.GlobalFlagValues(ctx)
+		gparams, ok := command.CLIContextGet(ctx.Context, command.GlobalParams).(*command.GenericParams)
+		if !ok || gparams == nil {
+			return command.ErrNoGlobalParams
+		}
+
 		xc := app.NewExecutionContext(
 			Name,
-			gcvalues.QuietCLIMode,
-			gcvalues.OutputFormat)
+			gparams.QuietCLIMode,
+			gparams.OutputFormat)
 
-		targetRef := ctx.String(command.FlagTarget)
-		if targetRef == "" {
+		targetEndpoint := ctx.String(FlagTarget)
+		if targetEndpoint == "" {
 			if ctx.Args().Len() < 1 {
 				xc.Out.Error("param.target", "missing target")
 				cli.ShowCommandHelp(ctx, Name)
 				return nil
 			} else {
-				targetRef = ctx.Args().First()
+				targetEndpoint = ctx.Args().First()
 			}
 		}
 
+		httpProbeOpts := command.GetHTTPProbeOptions(xc, ctx, true)
+		targetPorts := ctx.UintSlice(FlagPort)
 		OnCommand(
 			xc,
-			gcvalues,
-			targetRef)
+			gparams,
+			targetEndpoint,
+			targetPorts,
+			httpProbeOpts)
 
 		return nil
 	},

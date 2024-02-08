@@ -53,6 +53,30 @@ type CustomProbe struct {
 	concurrentCrawlers chan struct{}
 }
 
+// NewEndpointProbe creates a new custom HTTP probe for an endpoint
+func NewEndpointProbe(
+	xc *app.ExecutionContext,
+	targetEndpoint string,
+	ports []uint,
+	opts config.HTTPProbeOptions,
+	printState bool,
+) (*CustomProbe, error) {
+	probe := newCustomProbe(xc, targetEndpoint, opts, printState)
+	if len(ports) == 0 {
+		ports = []uint{80}
+	}
+
+	for _, pnum := range ports {
+		probe.ports = append(probe.ports, fmt.Sprintf("%d", pnum))
+	}
+
+	if len(probe.opts.APISpecFiles) > 0 {
+		probe.loadAPISpecFiles()
+	}
+
+	return probe, nil
+}
+
 // NewContainerProbe creates a new custom HTTP probe
 func NewContainerProbe(
 	xc *app.ExecutionContext,
