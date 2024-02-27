@@ -6,7 +6,6 @@
 [![Youtube](https://img.shields.io/badge/-YouTube-red?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA?sub_confirmation=1)
 
 [![Gitpod ready-to-code](https://img.shields.io/badge/Gitpod-ready--to--code-908a85?logo=gitpod&style=for-the-badge)](https://gitpod.io/#https://github.com/slimtoolkit/slim)
-[![View Code Diagram badge for CodeSee](https://codesee-docs.s3.amazonaws.com/badge.svg)](https://app.codesee.io/maps/public/1cedd540-6451-11ec-a279-0572ca5abbdc)
 
 [![Install SlimToolkit](https://img.shields.io/badge/install-slim-blue?style=for-the-badge)](https://github.com/slimtoolkit/slim#installation)
 [![Get Examples](https://img.shields.io/badge/slim-app%20examples-green?style=for-the-badge)](https://github.com/slimtoolkit/examples)
@@ -1379,10 +1378,6 @@ Notes:
 ## CONTRIBUTING
 
 If the project sounds interesting or if you found a bug see [`CONTRIBUTING.md`](CONTRIBUTING.md) and submit a PR or open an issue! Non-code contributions including docs are highly appreciated! Open an issue even if you have a question or something is not clear.
-
-## DESIGN
-
-To learn more about the code take a look at this [interactive code diagram](https://app.codesee.io/maps/public/1cedd540-6451-11ec-a279-0572ca5abbdc) generated using [CodeSee](https://www.codesee.io) and watch the `Slim Code` videos on ['YouTube'](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA?sub_confirmation=1).
 
 ### CORE CONCEPTS
 
