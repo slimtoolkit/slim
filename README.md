@@ -81,10 +81,8 @@ Feel free to join any of these channels or just open a new [`Github issue`](http
 
 * [`CNCF Slack channel`](https://cloud-native.slack.com/archives/C059QP1RH1S)
 * [`Discord server`](https://discord.gg/9tDyxYS)
-* [`Gitter channel`](https://gitter.im/docker-slim/community)
-* [`Discussions`](https://github.com/slimtoolkit/slim/discussions) (new)
+* [`Discussions`](https://github.com/slimtoolkit/slim/discussions)
 * [`Twitter`](https://twitter.com/SlimToolkit)
-* [`YouTube channel`](https://www.youtube.com/channel/UCy7RHjJlaBhpCCbChrd8POA)
 
 ## Slim on the Internet
 
