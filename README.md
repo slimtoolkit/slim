@@ -214,15 +214,15 @@ slim update
 
 1. Download the zip package for your platform.
 
-   - [Latest Mac binaries](https://downloads.dockerslim.com/releases/1.40.11/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.11/dist_mac.zip`)
+   - [Latest Mac binaries](https://github.com/slimtoolkit/slim/releases/download/1.40.11/dist_mac.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.11/dist_mac.zip`)
 
-   - [Latest Mac M1 binaries](https://downloads.dockerslim.com/releases/1.40.11/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.11/dist_mac_m1.zip`)
+   - [Latest Mac M1 binaries](https://github.com/slimtoolkit/slim/releases/download/1.40.11/dist_mac_m1.zip) (`curl -L -o ds.zip https://downloads.dockerslim.com/releases/1.40.11/dist_mac_m1.zip`)
 
-   - [Latest Linux binaries](https://downloads.dockerslim.com/releases/1.40.11/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.11/dist_linux.tar.gz`)
+   - [Latest Linux binaries](https://github.com/slimtoolkit/slim/releases/download/1.40.11/dist_linux.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.11/dist_linux.tar.gz`)
 
-   - [Latest Linux ARM binaries](https://downloads.dockerslim.com/releases/1.40.11/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.11/dist_linux_arm.tar.gz`)
+   - [Latest Linux ARM binaries](https://github.com/slimtoolkit/slim/releases/download/1.40.11/dist_linux_arm.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.11/dist_linux_arm.tar.gz`)
 
-   - [Latest Linux ARM64 binaries](https://downloads.dockerslim.com/releases/1.40.11/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.11/dist_linux_arm64.tar.gz`)
+   - [Latest Linux ARM64 binaries](https://github.com/slimtoolkit/slim/releases/download/1.40.11/dist_linux_arm64.tar.gz) (`curl -L -o ds.tar.gz https://downloads.dockerslim.com/releases/1.40.11/dist_linux_arm64.tar.gz`)
 
 2. Unzip the package and optionally move it to your bin directory.
 
@@ -1213,11 +1213,11 @@ The demo runs on Mac OS X, but you can build a linux version. Note that these st
 
 1. Get the Slim app binaries:
 
-* [Mac](https://downloads.dockerslim.com/releases/1.40.11/dist_mac.zip),
-* [Mac M1](https://downloads.dockerslim.com/releases/1.40.11/dist_mac_m1.zip), 
-* [Linux](https://downloads.dockerslim.com/releases/1.40.11/dist_linux.tar.gz), 
-* [Linux ARM](https://downloads.dockerslim.com/releases/1.40.11/dist_linux_arm.tar.gz),
-* [Linux ARM64](https://downloads.dockerslim.com/releases/1.40.11/dist_linux_arm64.tar.gz) 
+* [Mac](https://github.com/slimtoolkit/slim/releases/download/1.40.11/dist_mac.zip),
+* [Mac M1](https://github.com/slimtoolkit/slim/releases/download/1.40.11/dist_mac_m1.zip), 
+* [Linux](https://github.com/slimtoolkit/slim/releases/download/1.40.11/dist_linux.tar.gz), 
+* [Linux ARM](https://github.com/slimtoolkit/slim/releases/download/1.40.11/dist_linux_arm.tar.gz),
+* [Linux ARM64](https://github.com/slimtoolkit/slim/releases/download/1.40.11/dist_linux_arm64.tar.gz) 
 
 Unzip them and optionally add their directory to your `PATH` environment variable if you want to use the app from other locations.
 
