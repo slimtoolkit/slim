@@ -10,7 +10,7 @@ require (
 	github.com/c4milo/unpackit v0.0.0-20170704181138-4ed373e9ef1c
 	github.com/cespare/xxhash/v2 v2.2.0
 	github.com/compose-spec/compose-go v0.0.0-20210916141509-a7e1bc322970
-	github.com/docker/docker v24.0.7+incompatible
+	github.com/docker/docker v24.0.9+incompatible
 	github.com/docker/go-connections v0.4.0
 	github.com/dustin/go-humanize v1.0.0
 	github.com/fatih/color v1.13.0
