@@ -147,7 +147,7 @@ func WithEnv(env []string) ProjectOptionsFn {
 	}
 }
 
-// WithDiscardEnvFiles sets discards the `env_file` section after resolving to
+// WithDiscardEnvFile sets discards the `env_file` section after resolving to
 // the `environment` section
 func WithDiscardEnvFile(o *ProjectOptions) error {
 	o.loadOptions = append(o.loadOptions, loader.WithDiscardEnvFiles)
@@ -401,7 +401,7 @@ func getAsEqualsMap(em []string) map[string]string {
 	return m
 }
 
-// getAsEqualsMap format a key : value map into key=value strings
+// getAsStringList format a key : value map into key=value strings
 func getAsStringList(em map[string]string) []string {
 	m := make([]string, 0, len(em))
 	for k, v := range em {
