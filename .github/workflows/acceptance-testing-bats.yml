@@ -19,7 +19,7 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - uses: actions/setup-go@v5.0.1
+      - uses: actions/setup-go@v5.0.2
         with:
           go-version: ${{ matrix.go }}
 
