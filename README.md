@@ -949,6 +949,10 @@ You can either use `--host` or `DOCKER_HOST` to point to the Docker Desktop's Un
 
 To configure Docker Desktop to create the default Unix socket open its UI and go to `Settings -> Advanced` where you need to check the `Enable default Docker socket (Requires password)` option.
 
+### COLIMA
+
+Similar to with Docker Desktop, but the socked will need to be configured to use `unix://${HOME}/.colima/<PROFILE>/docker.sock`.
+
 ## HTTP PROBE COMMANDS
 
 If the HTTP probe is enabled (note: it is enabled by default) it will default to running `GET /` with HTTP and then HTTPS on every exposed port. You can add additional commands using the `--http-probe-cmd` and `--http-probe-cmd-file` options.
