@@ -395,7 +395,7 @@ func buildOutputImage(
 			hasData = true
 		} else {
 			dataDir := filepath.Join(imageInspector.ArtifactLocation, "files")
-			if fsutil.Exists(dataTar) && fsutil.IsDir(dataDir) {
+			if fsutil.Exists(dataDir) && fsutil.IsDir(dataDir) {
 				layerInfo := imagebuilder.LayerDataInfo{
 					Type:   imagebuilder.DirSource,
 					Source: dataDir,
