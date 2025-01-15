@@ -189,7 +189,7 @@ const (
 	//Compose-related flags
 	FlagComposeFileUsage                    = "Load container info from selected compose file(s)"
 	FlagTargetComposeSvcUsage               = "Target service from compose file"
-	FlagTargetComposeSvcImageUsage          = "Override the container image name and/or tag when targetting a compose service using the target-compose-svc parameter (format: tag_name or image_name:tag_name)"
+	FlagTargetComposeSvcImageUsage          = "Override the container image name and/or tag when targeting a compose service using the target-compose-svc parameter (format: tag_name or image_name:tag_name)"
 	FlagComposeSvcStartWaitUsage            = "Number of seconds to wait before starting each compose service"
 	FlagComposeSvcNoPortsUsage              = "Do not publish ports for target service from compose file"
 	FlagDepExcludeComposeSvcAllUsage        = "Do not start any compose services as target dependencies"
@@ -211,7 +211,7 @@ const (
 	FlagTargetKubeWorkloadUsage          = "[Experimental] Target Kubernetes workload from the manifests (if --kube-manifest-file is provided) or in the default kubeconfig cluster (format: <resource>/<name>, e.g., deployments/foobar)"
 	FlagTargetKubeWorkloadNamespaceUsage = "[Experimental] Target Kubernetes workload namespace (if not set, the value from the manifest is used if provided, otherwise - \"default\")"
 	FlagTargetKubeWorkloadContainerUsage = "[Experimental] Target container in the Kubernetes workload's pod template spec"
-	FlagTargetKubeWorkloadImageUsage     = "[Experimental] Override the container image name and/or tag when targetting a Kubernetes workload (format: tag_name or image_name:tag_name)"
+	FlagTargetKubeWorkloadImageUsage     = "[Experimental] Override the container image name and/or tag when targeting a Kubernetes workload (format: tag_name or image_name:tag_name)"
 	FlagKubeManifestFileUsage            = "[Experimental] Kubernetes manifest(s) to apply before run"
 	FlagKubeKubeconfigFileUsage          = "[Experimental] Path to the kubeconfig file"
 

@@ -53,7 +53,7 @@ func OnCommand(
 		})
 
 	/*
-		do it only when targetting images
+		do it only when targeting images
 		client, err := dockerclient.New(gparams.ClientConfig)
 		if err == dockerclient.ErrNoDockerInfo {
 			exitMsg := "missing Docker connection info"
