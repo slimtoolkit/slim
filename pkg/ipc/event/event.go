@@ -30,7 +30,7 @@ type Message struct {
 	Data interface{} `json:"data,omitempty"`
 }
 
-// StartMonitorFailed contains additional context for the failure
+// StartMonitorFailedData contains additional context for the failure
 type StartMonitorFailedData struct {
 	Component string            `json:"component,omitempty"`
 	State     string            `json:"state,omitempty"`

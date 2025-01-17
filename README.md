@@ -383,14 +383,14 @@ To disable the version checks set the global `--check-version` flag to `false` (
 - `--change-data value` - Include changes for the files that match the data pattern (regex). Value formats: `<data regex>` | `dump:<output type>:<path pattern>:<data regex>` | `::<path pattern>:<data regex>` | `:::<data regex>` where `output type` is `console` or a directory name. If `value` starts with `dump:` the match will be 'dumped' to the selected `output type`. [can use this flag multiple times]
 - `--change-data-hash value` - Include changes for the files that match the provided data hashes (sha1). Value formats: `<sha1 hash>` | `dump:<output type>:<sha1 hash>` | `::<sha1 hash>` where `output type` is `console` or a directory name. If `value` starts with `dump:` the match will be 'dumped' to the selected `output type`. [can use this flag multiple times]
 - `--reuse-saved-image` - Reuse saved container image (default: true).
-- `--top-changes-max` - Maximum number of top changes to track (defalt: 20).
+- `--top-changes-max` - Maximum number of top changes to track (default: 20).
 - `--hash-data` - Generate file data hashes (default: false).
 - `--detect-duplicates` - Detect duplicate files based on their hashes (default: true).
 - `--show-duplicates` - Show all discovered duplicate file paths (default: false).
 - `--show-special-perms` - Show files with special permissions (setuid,setgid,sticky) (default: true)
 - `--detect-utf8` - Detect utf8 files and optionally extract the discovered utf8 file content (possible values: "true" or "dump" or "dump:output_target.tgz" or "dump:output_target.tgz::max_size_bytes" or "dump:output_target.tgz:::max_size_bytes").
-- `--detect-all-certs` - Detect all certifcate files
-- `--detect-all-cert-pks` - Detect all certifcate private key files
+- `--detect-all-certs` - Detect all certificate files
+- `--detect-all-cert-pks` - Detect all certificate private key files
 - `--detect-identities` - Detect system identities (users, groups) and their properties (default: true)
 - `--change-match-layers-only` - Show only layers with change matches (default: false).
 - `--export-all-data-artifacts` - TAR archive file path to export all text data artifacts (if value is set to `.` then the archive file path defaults to `./data-artifacts.tar`)
@@ -417,7 +417,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 
 - `--compose-file` - Load container info from selected compose file
 - `--target-compose-svc` - Target service from compose file
-- `--target-compose-svc-image` - Override the container image name and/or tag when targetting a compose service using the target-compose-svc parameter (format: tag_name or image_name:tag_name)
+- `--target-compose-svc-image` - Override the container image name and/or tag when targeting a compose service using the target-compose-svc parameter (format: tag_name or image_name:tag_name)
 - `--target-compose-svc-no-ports` - Do not publish ports for target service from compose file
 - `--dep-exclude-compose-svc-all` - Do not start any compose services as target dependencies
 - `--dep-include-compose-svc` - Include specific compose service as a target dependency (only selected services will be started)
@@ -462,8 +462,8 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--entrypoint` - Override ENTRYPOINT analyzing image at runtime
 - `--cmd` - Override CMD analyzing image at runtime
 - `--mount` - Mount volume analyzing image (the mount parameter format is identical to the `-v` mount command in Docker) [can use this flag multiple times]
-- `--include-path` - Include directory (and what's in it) or file from image [can use this flag multiple times] (optionally overwriting the artifact's permissions, user and group information; full format: `targetPath:octalPermFlags#uid#gid`, mimimal format: `targetPath` ; see the non-default USER FAQ section for more details)
-- `--include-path-file` - Load directory or file includes from a file (optionally overwriting the artifact's permissions, user and group information; full format: `targetPath:octalPermFlags#uid#gid`, mimimal format: `targetPath` ; see the non-default USER FAQ section for more details)
+- `--include-path` - Include directory (and what's in it) or file from image [can use this flag multiple times] (optionally overwriting the artifact's permissions, user and group information; full format: `targetPath:octalPermFlags#uid#gid`, minimal format: `targetPath` ; see the non-default USER FAQ section for more details)
+- `--include-path-file` - Load directory or file includes from a file (optionally overwriting the artifact's permissions, user and group information; full format: `targetPath:octalPermFlags#uid#gid`, minimal format: `targetPath` ; see the non-default USER FAQ section for more details)
 - `--include-paths-creport-file` - Keep files from the referenced creport
 - `--include-bin value` - Include binary from image (executable or shared object using its absolute path)
 - `--include-bin-file` - Load shared binary file includes from a file (similar to `--include-path-file`)
@@ -492,7 +492,7 @@ In the interactive CLI prompt mode you must specify the target image using the `
 - `--include-app-next-static-dir` - Keep the static public asset directory for Next.js apps (default value: false)
 - `--include-app-next-nodemodules-dir` - Keep the node modules directory for Next.js apps (default value: false)
 - `--include-node-package` - Keep node.js package by name [can use this flag multiple times]
-- `--preserve-path` - Keep path from orignal image in its initial state (changes to the selected container image files when it runs will be discarded). [can use this flag multiple times]
+- `--preserve-path` - Keep path from original image in its initial state (changes to the selected container image files when it runs will be discarded). [can use this flag multiple times]
 - `--preserve-path-file` - File with paths to keep from original image in their original state (changes to the selected container image files when it runs will be discarded).
 - `--path-perms` - Set path permissions/user/group in optimized image (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
 - `--path-perms-file` - File with path permissions to set (format: `target:octalPermFlags#uid#gid` ; see the non-default USER FAQ section for more details)
@@ -609,7 +609,7 @@ Flags:
 - `--show-plogs` - Show image pull logs.
 - `--entrypoint` - Override ENTRYPOINT running the target image.
 - `--cmd` - Override CMD running the target image.
-- `--live-logs` - Show live logs for the container (cant use with --terminal).
+- `--live-logs` - Show live logs for the container (can't use with --terminal).
 - `--terminal` - Attach interactive terminal to the container.
 - `--publish` - Map container port to host port (format => port | hostPort:containerPort | hostIP:hostPort:containerPort | hostIP::containerPort ).
 - `--rm` - Remove the container when it exits.
@@ -663,7 +663,7 @@ Flags:
 
 Note that `slim registry push LOCAL_DOCKER_IMAGE_NAME` is a shortcut for `slim registry push --docker LOCAL_DOCKER_IMAGE_NAME`.
 
-Normally you have to explicitly tag the target image to have a name that's appropriate for the destination registry. The `--as` flag is a convinient way to tag the image while you are pushing it. Here's an example pushing a local Docker `nginx` image to a local registry: `slim registry push --docker nginx --as localhost:5000/nginx`
+Normally you have to explicitly tag the target image to have a name that's appropriate for the destination registry. The `--as` flag is a convenient way to tag the image while you are pushing it. Here's an example pushing a local Docker `nginx` image to a local registry: `slim registry push --docker nginx --as localhost:5000/nginx`
 
 You can create a local registry using the `server` subcommand. See the `server` sub-command section below for more details.
 
@@ -792,7 +792,7 @@ sudo usermod -aG docker ec2-user
 ```
 docker run -p 8080:8080 -p 50000:50000 -d -v jenkins_home:/var/jenkins_home jenkins/jenkins:lts
 ```
-- Given Jenkins is now running as a containerized environment in the virtual machine, you need to make docker available in the Jenkins container, you can do this by bind mounting the virtual machine docker unix socket onto the jenkins container, note that to carry out this step you need to stop the running jenkins container, you can find the jenkins container ID by using the docker ps command, the commands to execute are highlighted below. This step is essential as it makes docker available in the Jenkins container, and with docker you can pull Slim Image which is to be used in furthur steps.
+- Given Jenkins is now running as a containerized environment in the virtual machine, you need to make docker available in the Jenkins container, you can do this by bind mounting the virtual machine docker unix socket onto the jenkins container, note that to carry out this step you need to stop the running jenkins container, you can find the jenkins container ID by using the docker ps command, the commands to execute are highlighted below. This step is essential as it makes docker available in the Jenkins container, and with docker you can pull Slim Image which is to be used in further steps.
 ```
 docker ps 
 ```
@@ -1239,7 +1239,7 @@ The extracted directory contains two binaries (and now it also contains a symlin
 
 4. Run the Slim app:
 
-`./slim build my/sample-node-app` <- run it from the location where you extraced the Slim app binaries (or update your `PATH` env var to include the directory where the Slim app binaries are located)
+`./slim build my/sample-node-app` <- run it from the location where you extracted the Slim app binaries (or update your `PATH` env var to include the directory where the Slim app binaries are located)
 
 Slim creates a special container based on the target image you provided. It also creates a resource directory where it stores the information it discovers about your image: `<slim directory>/.images/<TARGET_IMAGE_ID>`.
 
@@ -1337,7 +1337,7 @@ This problem shouldn't happen anymore because the exported artifacts are saved i
 
 If you run older versions of Slim you can get around this problem by running Slim from a root shell. That way it will have access to all exported files.
 
-Slim copies the relevant image artifacts trying to preserve their permissions. If the permissions are too restrictive the master app might not have sufficient priviledge to access these files when it's building the new minified image.
+Slim copies the relevant image artifacts trying to preserve their permissions. If the permissions are too restrictive the master app might not have sufficient privilege to access these files when it's building the new minified image.
 
 ## BUILD PROCESS
 

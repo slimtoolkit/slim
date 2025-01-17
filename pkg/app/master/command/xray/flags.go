@@ -73,8 +73,8 @@ const (
 	FlagShowSpecialPermsUsage       = "Show files with special permissions (setuid,setgid,sticky)"
 	FlagChangeMatchLayersOnlyUsage  = "Show only layers with change matches"
 	FlagExportAllDataArtifactsUsage = "TAR archive file path to export all text data artifacts (if value is set to `.` then the archive file path defaults to `./data-artifacts.tar`)"
-	FlagDetectAllCertFilesUsage     = "Detect all certifcate files"
-	FlagDetectAllCertPKFilesUsage   = "Detect all certifcate private key files"
+	FlagDetectAllCertFilesUsage     = "Detect all certificate files"
+	FlagDetectAllCertPKFilesUsage   = "Detect all certificate private key files"
 
 	FlagDetectIdentitiesUsage        = "Detect system identities (users, groups) and their properties"
 	FlagDetectIdentitiesParamUsage   = "Input parameters for system identities detection"
