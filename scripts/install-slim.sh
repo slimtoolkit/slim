@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-function get_slim() {
+function get_mint() {
   local DIST=""
   local EXT=""
   local FILENAME=""
@@ -14,14 +14,14 @@ function get_slim() {
     VER=$1
   else
     # Get the current released tag_name
-    VER=$(curl -sL https://api.github.com/repos/slimtoolkit/slim/releases \
+    VER=$(curl -sL https://api.github.com/repos/mintoolkit/mint/releases \
         | grep tag_name | head -n1 | cut -d'"' -f4)
   fi
 
   if [ -n "${VER}" ]; then
-    URL="https://downloads.dockerslim.com/releases/${VER}"
+    URL="https://github.com/mintoolkit/mint/releases/download/${VER}"
   else
-    echo "ERROR! Could not retrieve the current Slim version number."
+    echo "ERROR! Could not retrieve the current Mint version number."
     exit 1
   fi
 
@@ -76,16 +76,16 @@ function get_slim() {
 
   # /usr/local/bin should be present on Linux and macOS hosts. Just be sure.
   if [ -d /usr/local/bin ]; then
-    echo " - Placing slim in /usr/local/bin"
-    mv "${TMP_DIR}/dist_${DIST}/slim" /usr/local/bin/
-    mv "${TMP_DIR}/dist_${DIST}/slim-sensor" /usr/local/bin/
-    chmod +x /usr/local/bin/slim
-    chmod +x /usr/local/bin/slim-sensor
+    echo " - Placing mint in /usr/local/bin"
+    mv "${TMP_DIR}/dist_${DIST}/mint" /usr/local/bin/
+    mv "${TMP_DIR}/dist_${DIST}/mint-sensor" /usr/local/bin/
+    chmod +x /usr/local/bin/mint
+    chmod +x /usr/local/bin/mint-sensor
 
     echo " - Cleaning up"
     rm -rf "${TMP_DIR}"
     echo -en " - "
-    slim --version
+    mint --version
   else
     echo "ERROR! /usr/local/bin is not present. Install aborted."
     rm -rf "${TMP_DIR}"
@@ -93,13 +93,13 @@ function get_slim() {
   fi
 }
 
-echo "Slim scripted install"
+echo "Mint scripted install"
 
 if [ "$(id -u)" -ne 0 ]; then
   echo "ERROR! You must run this script as root."
   exit 1
 fi
 
-get_slim $1
+get_mint $1
 
 # You can pass a specific version to install otherwise the latest version will be installed
