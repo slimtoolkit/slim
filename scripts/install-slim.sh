@@ -81,6 +81,10 @@ function get_mint() {
     mv "${TMP_DIR}/dist_${DIST}/mint-sensor" /usr/local/bin/
     chmod +x /usr/local/bin/mint
     chmod +x /usr/local/bin/mint-sensor
+    mv "${TMP_DIR}/dist_${DIST}/slim" /usr/local/bin/
+    mv "${TMP_DIR}/dist_${DIST}/docker-slim" /usr/local/bin/
+    chmod +x /usr/local/bin/slim
+    chmod +x /usr/local/bin/docker-slim
 
     echo " - Cleaning up"
     rm -rf "${TMP_DIR}"
