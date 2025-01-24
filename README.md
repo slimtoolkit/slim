@@ -18,7 +18,9 @@
 
 Note that **DockerSlim** is now just **Slim** (**SlimToolkit** is the full name, so it's easier to find it online) to show its growing support for additional container tools and runtimes in the cloud native ecosystem.
 
-**Slim** is now a CNCF Sandbox project. It was created by [Kyle](https://github.com/kcq) [Quest](https://twitter.com/kcqon) and it's been improved by many [contributors](https://github.com/slimtoolkit/slim/graphs/contributors). The project is supported by [Slim.AI](https://slim.ai).
+**Slim** is now a CNCF Sandbox project. It was created by [Kyle](https://github.com/kcq) [Quest](https://twitter.com/kcqon) and it's been improved by many [contributors](https://github.com/slimtoolkit/slim/graphs/contributors). The project is supported by Root.io (formerly known as Slim.AI).
+ 
+Here's how Slim and Root work together: Slim helps you build optimized containers, while Root.io automatically fixes vulnerabilities without disrupting your workflows. Use Slim's open source toolkit to optimize containers, then keep them secure with Root's automated vulnerability remediation – from optimization to continuous security in one seamless journey. Learn more at www.root.io.
 
 ## Overview
 
