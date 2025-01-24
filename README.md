@@ -22,7 +22,7 @@ Note that **DockerSlim** is now just **Slim** (**SlimToolkit** is the full name,
 
 ## Overview
 
-Slim allows developers to inspect, optimize and debug their containers using its `xray`, `lint`, `build`, `debug`, `run`, `images`, `merge`, `registry`, `vulnerability` (and other) commands. It simplifies and improves your developer experience building, customizing and using containers. It makes your containers better, smaller and more secure while providing advanced visibility and improved usability working with the original and minified containers.
+SlimToolkit allows developers to inspect, optimize and debug their containers using its `xray`, `lint`, `build`, `debug`, `run`, `images`, `merge`, `registry`, `vulnerability` (and other) commands. It simplifies and improves your developer experience building, customizing and using containers. It makes your containers better, smaller and more secure while providing advanced visibility and improved usability working with the original and minified containers.
 
 Don't change anything in your container image and minify it by up to 30x making it secure too! Optimizing images isn't the only thing it can do though. It can also help you understand and author better container images.
 
@@ -30,11 +30,9 @@ Keep doing what you are doing. No need to change anything. Use the base image yo
 
 Don't worry about manually creating Seccomp and AppArmor security profiles. You shouldn't have to become an expert in Linux syscalls, Seccomp and AppArmor to have secure containers. Even if you do know enough about it wasting time reverse engineering your application behavior can be time-consuming.
 
-Slim will optimize and secure your containers by understanding your application and what it needs using various analysis techniques. It will throw away what you don't need, reducing the attack surface of your container. What if you need some of those extra things to debug your container? You can use dedicated debugging side-car containers for that (more details below).
+SlimToolkit will optimize and secure your containers by understanding your application and what it needs using various analysis techniques. It will throw away what you don't need, reducing the attack surface of your container. What if you need some of those extra things to debug your container? You can use dedicated debugging side-car containers for that (more details below).
 
-Understand your container image before and after you optimize it using the `xray` command in the `slim` app or the [**Slim.AI SaaS**](https://portal.slim.dev/login?invitecode=invite.1s85zlfnYX0p5TT1XKja49pAHbL) where you can get even more powerful insights including how your container image changed.
-
-Slim has been used with Node.js, Python, Ruby, Java, Go, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian, CentOS, Alpine and even Distroless.
+SlimToolkit has been used with Node.js, Python, Ruby, Java, Go, Rust, Elixir and PHP (some app types) running on Ubuntu, Debian, CentOS, Alpine and even Distroless.
 
 Note that some application stacks do require advanced container probing to make sure that all dynamically loaded components are detected. See the `--http-probe*` flags for more details to know how you can define custom probe commands. In some cases you might also need to use the `--include-path` flag to make sure everything your application needs is included (e.g., `ubuntu.com` python SPA app container image [example](https://github.com/slimtoolkit/examples/tree/master/3rdparty/ubuntu-com) where the client side template files are explicitly included).
 
@@ -83,7 +81,7 @@ Feel free to join any of these channels or just open a new [`Github issue`](http
 * [`Discussions`](https://github.com/slimtoolkit/slim/discussions)
 * [`Twitter`](https://twitter.com/SlimToolkit)
 
-## Slim on the Internet
+## SlimToolkit on the Internet
 
 ##### Books:
 * [`Everyone's Docker/Kubernetes`](https://www.amazon.co.jp/dp/429710461X) (Japanese)
@@ -874,9 +872,9 @@ pipeline {
 }   
 ```
 
-### Integrating Slim in Github Actions
-#### Docker-Slim Github Action
-Integrating Slim in Github Actions in your CI/CD workflow involves using the [Docker-Slim Github Action](https://github.com/marketplace/actions/docker-slim-github-action), this Action(snippet below) minifies a target docker image--IMAGE_NAME:latest in your workflow, making it smaller and adjusting the new slimmed image as IMAGE_NAME:slim.  
+### Integrating Slimtoolkit in Github Actions
+#### Github Action
+Integrating SlimToolkit in Github Actions in your CI/CD workflow involves using the [Docker-Slim Github Action](https://github.com/marketplace/actions/docker-slim-github-action), this Action(snippet below) minifies a target docker image--IMAGE_NAME:latest in your workflow, making it smaller and adjusting the new slimmed image as IMAGE_NAME:slim.  
 ```
 # Slim it!
 - uses: kitabisa/docker-slim-action@v1
@@ -1281,7 +1279,7 @@ You don't need to read the language spec and lots of books :-) Go through the [T
 
 ### What's the best application for Slim?
 
-Slim will work for any containerized application; however, Slim automates app interactions for applications with an HTTP API. You can use Slim even if your app doesn't have an HTTP API. You'll need to interact with your application manually to make sure Slim can observe your application behavior.
+SlimRToolkit will work for any containerized application; however, Slim automates app interactions for applications with an HTTP API. You can use Slim even if your app doesn't have an HTTP API. You'll need to interact with your application manually to make sure Slim can observe your application behavior.
 
 ### Can I use Slim with dockerized command line tools?
 
