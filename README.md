@@ -1367,6 +1367,8 @@ If you have a web browser, you can get a fully pre-configured development enviro
 
 [![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/slimtoolkit/slim)
 
+[![Open in Codeanywhere](https://codeanywhere.com/img/open-in-codeanywhere-btn.svg)](https://app.codeanywhere.com/#https://github.com/slimtoolkit/slim)
+
 
 ##### Additional Tools
 
