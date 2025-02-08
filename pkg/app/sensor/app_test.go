@@ -30,7 +30,7 @@ var (
 		"sensor: ver=",
 		"sensor: creating monitors...",
 		"sensor: starting monitors...",
-		"sensor: run finished succesfully",
+		"sensor: run finished successfully",
 	}
 
 	sensorLifecycleHookSequence = []string{

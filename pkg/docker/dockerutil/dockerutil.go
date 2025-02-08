@@ -147,8 +147,8 @@ func ListImages(dclient *dockerapi.Client, imageNameFilter string) (map[string]B
 	// dslimexamples/* <- all image names in the 'dslimexamples' namespace
 	// dslimexamples/ser* <- all image names starting with 'ser' in the 'dslimexamples' namespace
 	// dslimexamples/*python* <- all image names with 'python' in them in the 'dslimexamples' namespace
-	// */*python* <- all image names with 'python' in them in all namesapces (except the default namespace)
-	// */*alpine <- all image names ending with 'alpine' in all namesapces (except the default namespace)
+	// */*python* <- all image names with 'python' in them in all namespaces (except the default namespace)
+	// */*alpine <- all image names ending with 'alpine' in all namespaces (except the default namespace)
 	// * <- all image names with no/default namespace. note that no images with namespaces will be returned
 	var err error
 	if dclient == nil {

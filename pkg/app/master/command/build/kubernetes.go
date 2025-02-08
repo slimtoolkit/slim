@@ -210,7 +210,7 @@ func (h *kubeHandler) Handle(
 		opts.CustomImageTag,
 		opts.AdditionalTags,
 		opts.CBOpts,
-		nil, // TODO: overrrides
+		nil, // TODO: overrides
 		nil, // TODO: imageOverrideSelectors,
 		nil, // TODO: instructions,
 		opts.DoDeleteFatImage,

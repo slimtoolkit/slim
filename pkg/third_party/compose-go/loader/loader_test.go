@@ -840,7 +840,7 @@ volumes:
 	assert.ErrorContains(t, err, "external_volume")
 }
 
-func TestInvalidExternalAndDirverOptsCombination(t *testing.T) {
+func TestInvalidExternalAndDriverOptsCombination(t *testing.T) {
 	_, err := loadYAML(`
 volumes:
   external_volume:
