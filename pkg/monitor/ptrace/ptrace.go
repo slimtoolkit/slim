@@ -687,7 +687,7 @@ func (app *App) collect() {
 			err := syscall.PtraceSyscall(callPid, callSig)
 			if err != nil {
 				if strings.Contains(strings.ToLower(err.Error()), "no such process") {
-					// This is kinda-sorta normal situtaion when ptrace-ing:
+					// This is kinda-sorta normal situation when ptrace-ing:
 					//   - The tracee process might have been KILL-led
 					//   - A group-stop event in a multi-threaded program can have
 					//     a similar effect (see also https://linux.die.net/man/2/ptrace).
