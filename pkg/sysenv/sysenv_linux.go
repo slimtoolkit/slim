@@ -2,12 +2,12 @@ package sysenv
 
 import (
 	"fmt"
-	"golang.org/x/sys/unix"
 	"os"
 	"regexp"
 	"strings"
 
-	"github.com/syndtr/gocapability/capability"
+	"github.com/moby/sys/capability"
+	"golang.org/x/sys/unix"
 )
 
 const (
@@ -69,8 +69,12 @@ func IsPrivileged() bool {
 }
 
 func WithAllCapabilities() bool {
-	caps, err := capability.NewPid(0)
+	caps, err := capability.NewPid2(0)
 	if err != nil {
+		fmt.Printf("sysenv.WithAllCapabilities: error - %v\n", err)
+		return false
+	}
+	if err := caps.Load(); err != nil {
 		fmt.Printf("sysenv.WithAllCapabilities: error - %v\n", err)
 		return false
 	}
