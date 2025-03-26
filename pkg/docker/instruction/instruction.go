@@ -52,7 +52,7 @@ type Format struct {
 	SupportsNameValues bool
 	RequiresNameValues bool
 	SupportsSubInst    bool
-	IsDepricated       bool
+	IsDeprecated       bool
 }
 
 // Specs is a map of all available instructions and their format info (by name)
@@ -100,7 +100,7 @@ var Specs = map[string]Format{
 	},
 	Maintainer: {
 		Name:         Maintainer,
-		IsDepricated: true,
+		IsDeprecated: true,
 	},
 	Onbuild: {
 		Name:            Label,
