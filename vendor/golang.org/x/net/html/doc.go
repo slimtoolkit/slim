@@ -78,16 +78,11 @@ example, to process each anchor node in depth-first order:
 	if err != nil {
 		// ...
 	}
-	var f func(*html.Node)
-	f = func(n *html.Node) {
+	for n := range doc.Descendants() {
 		if n.Type == html.ElementNode && n.Data == "a" {
 			// Do something with n...
 		}
-		for c := n.FirstChild; c != nil; c = c.NextSibling {
-			f(c)
-		}
 	}
-	f(doc)
 
 The relevant specifications include:
 https://html.spec.whatwg.org/multipage/syntax.html and
@@ -104,7 +99,7 @@ tokenization, and tokenization and tree construction stages of the WHATWG HTML
 parsing specification respectively. While the tokenizer parses and normalizes
 individual HTML tokens, only the parser constructs the DOM tree from the
 tokenized HTML, as described in the tree construction stage of the
-specification, dynamically modifying or extending the docuemnt's DOM tree.
+specification, dynamically modifying or extending the document's DOM tree.
 
 If your use case requires semantically well-formed HTML documents, as defined by
 the WHATWG specification, the parser should be used rather than the tokenizer.
