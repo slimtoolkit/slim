@@ -352,6 +352,9 @@ github.com/moby/patternmatcher
 ## explicit; go 1.13
 github.com/moby/spdystream
 github.com/moby/spdystream/spdy
+# github.com/moby/sys/capability v0.4.0
+## explicit; go 1.21
+github.com/moby/sys/capability
 # github.com/moby/sys/sequential v0.5.0
 ## explicit; go 1.17
 github.com/moby/sys/sequential
@@ -433,9 +436,6 @@ github.com/spf13/pflag
 ## explicit; go 1.20
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
-## explicit
-github.com/syndtr/gocapability/capability
 # github.com/temoto/robotstxt v1.1.2
 ## explicit; go 1.11
 github.com/temoto/robotstxt
