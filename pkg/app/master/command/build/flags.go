@@ -148,7 +148,7 @@ const (
 	FlagCBONetwork          = "cbo-network"
 	FlagCBOCacheFrom        = "cbo-cache-from"
 
-	//Experimenal flags
+	//Experimental flags
 	FlagObfuscateMetadata = "obfuscate-metadata"
 )
 
@@ -163,7 +163,7 @@ const (
 
 	FlagPathPermsUsage        = "Set path permissions in optimized image"
 	FlagPathPermsFileUsage    = "File with path permissions to set"
-	FlagPreservePathUsage     = "Keep path from orignal image in its initial state (changes to the selected container image files when it runs will be discarded)"
+	FlagPreservePathUsage     = "Keep path from original image in its initial state (changes to the selected container image files when it runs will be discarded)"
 	FlagPreservePathFileUsage = "File with paths to keep from original image in their original state (changes to the selected container image files when it runs will be discarded)"
 	FlagIncludePathUsage      = "Keep path from original image"
 	FlagIncludePathFileUsage  = "File with paths to keep from original image"

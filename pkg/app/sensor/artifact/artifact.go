@@ -260,7 +260,7 @@ type Processor interface {
 	ArtifactsDir() string
 
 	// Enumerate all files under a given root (used later on to tell the files
-	// that were created during probing and the existed files appart).
+	// that were created during probing and the existed files apart).
 	GetCurrentPaths(root string, excludes []string) (map[string]struct{}, error)
 
 	// Create the artifacts folder, preserve some files, etc.
@@ -1281,7 +1281,7 @@ func (ref *store) saveSSHClient() {
 				}
 
 				for _, bpath := range binArtifacts {
-					bfpaths, err := resloveLink(bpath)
+					bfpaths, err := resolveLink(bpath)
 					if err != nil {
 						log.Debugf("sensor.store.saveSSHClient: error resolving link - %s (%v)", bpath, err)
 						// still add the path...
@@ -1391,7 +1391,7 @@ func (p *store) saveOSLibsNetwork() {
 			continue
 		}
 
-		fpaths, err := resloveLink(fpath)
+		fpaths, err := resolveLink(fpath)
 		if err != nil {
 			log.Debugf("sensor.store.saveOSLibsNetwork: error resolving link - %s", fpath)
 			continue
@@ -1420,7 +1420,7 @@ func (p *store) saveOSLibsNetwork() {
 				}
 
 				for _, bpath := range binArtifacts {
-					bfpaths, err := resloveLink(bpath)
+					bfpaths, err := resolveLink(bpath)
 					if err != nil {
 						log.Debugf("sensor.store.saveOSLibsNetwork: error resolving link - %s", bpath)
 						continue
@@ -1458,7 +1458,7 @@ func (p *store) saveOSLibsNetwork() {
 	}
 }
 
-func resloveLink(fpath string) ([]string, error) {
+func resolveLink(fpath string) ([]string, error) {
 	finfo, err := os.Lstat(fpath)
 	if err != nil {
 		return nil, err
@@ -1564,7 +1564,7 @@ func (p *store) saveCertsData() {
 						log.Debugf("sensor.store.saveCertsData.copyDirs: fsutil.CopySymlinkFile(%v,%v) error - %v", fname, dstPath, err)
 					}
 				} else {
-					log.Debugf("store.saveCertsData.copyDir: unexpected obect type - %s", fname)
+					log.Debugf("store.saveCertsData.copyDir: unexpected object type - %s", fname)
 				}
 			}
 		}
