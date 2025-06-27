@@ -2,35 +2,60 @@ package openapi3
 
 import (
 	"context"
-	"fmt"
-
-	"github.com/go-openapi/jsonpointer"
+	"sort"
 )
 
-type Callbacks map[string]*CallbackRef
+// Callback is specified by OpenAPI/Swagger standard version 3.
+// See https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#callback-object
+type Callback struct {
+	Extensions map[string]any `json:"-" yaml:"-"`
+	Origin     *Origin        `json:"__origin__,omitempty" yaml:"__origin__,omitempty"`
 
-var _ jsonpointer.JSONPointable = (*Callbacks)(nil)
-
-func (c Callbacks) JSONLookup(token string) (interface{}, error) {
-	ref, ok := c[token]
-	if ref == nil || !ok {
-		return nil, fmt.Errorf("object has no field %q", token)
-	}
-
-	if ref.Ref != "" {
-		return &Ref{Ref: ref.Ref}, nil
-	}
-	return ref.Value, nil
+	m map[string]*PathItem
 }
 
-// Callback is specified by OpenAPI/Swagger standard version 3.0.
-type Callback map[string]*PathItem
+// NewCallback builds a Callback object with path items in insertion order.
+func NewCallback(opts ...NewCallbackOption) *Callback {
+	Callback := NewCallbackWithCapacity(len(opts))
+	for _, opt := range opts {
+		opt(Callback)
+	}
+	return Callback
+}
 
-func (value Callback) Validate(ctx context.Context) error {
-	for _, v := range value {
+// NewCallbackOption describes options to NewCallback func
+type NewCallbackOption func(*Callback)
+
+// WithCallback adds Callback as an option to NewCallback
+func WithCallback(cb string, pathItem *PathItem) NewCallbackOption {
+	return func(callback *Callback) {
+		if p := pathItem; p != nil && cb != "" {
+			callback.Set(cb, p)
+		}
+	}
+}
+
+// Validate returns an error if Callback does not comply with the OpenAPI spec.
+func (callback *Callback) Validate(ctx context.Context, opts ...ValidationOption) error {
+	ctx = WithValidationOptions(ctx, opts...)
+
+	keys := make([]string, 0, callback.Len())
+	for key := range callback.Map() {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		v := callback.Value(key)
 		if err := v.Validate(ctx); err != nil {
 			return err
 		}
 	}
-	return nil
+
+	return validateExtensions(ctx, callback.Extensions)
+}
+
+// UnmarshalJSON sets Callbacks to a copy of data.
+func (callbacks *Callbacks) UnmarshalJSON(data []byte) (err error) {
+	*callbacks, _, err = unmarshalStringMapP[CallbackRef](data)
+	return
 }
