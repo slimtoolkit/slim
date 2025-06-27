@@ -22,6 +22,7 @@ require (
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510
 	github.com/gorilla/websocket v1.4.2
 	github.com/jedib0t/go-pretty/v6 v6.4.9
+	github.com/moby/sys/capability v0.4.0
 	github.com/moby/term v0.5.0
 	github.com/opencontainers/image-spec v1.1.0-rc5
 	github.com/pkg/errors v0.9.1
@@ -29,7 +30,6 @@ require (
 	github.com/sirupsen/logrus v1.9.3
 	github.com/slimtoolkit/go-update v0.0.0-20231119011834-99945ebd76f7
 	github.com/slimtoolkit/uiprogress v0.0.0-20231119012247-4a052fb12f37
-	github.com/syndtr/gocapability v0.0.0-20200815063812-42c35b437635
 	github.com/urfave/cli/v2 v2.27.1
 	golang.org/x/crypto v0.21.0
 	golang.org/x/net v0.23.0
