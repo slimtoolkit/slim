@@ -76,7 +76,7 @@ archlinux                 latest              ...        ...         467MB
 
 ## Community
 
-Feel free to join any of these channels or just open a new [`Github issue`](https://github.com/slimtoolkit/slim/issues) if you want to chat or if you need help.
+Feel free to join any of these channels or just open a new [`GitHub issue`](https://github.com/slimtoolkit/slim/issues) if you want to chat or if you need help.
 
 * [`CNCF Slack channel`](https://cloud-native.slack.com/archives/C059QP1RH1S)
 * [`Discord server`](https://discord.gg/9tDyxYS)
@@ -874,9 +874,9 @@ pipeline {
 }   
 ```
 
-### Integrating Slimtoolkit in Github Actions
-#### Github Action
-Integrating SlimToolkit in Github Actions in your CI/CD workflow involves using the [Docker-Slim Github Action](https://github.com/marketplace/actions/docker-slim-github-action), this Action(snippet below) minifies a target docker image--IMAGE_NAME:latest in your workflow, making it smaller and adjusting the new slimmed image as IMAGE_NAME:slim.  
+### Integrating Slimtoolkit in GitHub Actions
+#### GitHub Action
+Integrating SlimToolkit in GitHub Actions in your CI/CD workflow involves using the [Docker-Slim GitHub Action](https://github.com/marketplace/actions/docker-slim-github-action), this Action(snippet below) minifies a target docker image--IMAGE_NAME:latest in your workflow, making it smaller and adjusting the new slimmed image as IMAGE_NAME:slim.  
 ```
 # Slim it!
 - uses: kitabisa/docker-slim-action@v1
@@ -886,8 +886,8 @@ Integrating SlimToolkit in Github Actions in your CI/CD workflow involves using 
     target: IMAGE_NAME:latest
     tag: "slim"
 ```
-#### Github Actions Slim Workflow
-You can integrate the Docker-Slim Github Action in your workflow by inserting the Action after a [Docker Build/Push Github Action](https://github.com/docker/build-push-action), before [Docker Login Github Action](https://github.com/docker/login-action) and docker tag/push commands, a customized example workflow is highlighted below. Note that the environment variable tag--{{github.run_number}} in the workflow represents a unique incremental number allocated by Github Actions each time your workflow runs.
+#### GitHub Actions Slim Workflow
+You can integrate the Docker-Slim GitHub Action in your workflow by inserting the Action after a [Docker Build/Push GitHub Action](https://github.com/docker/build-push-action), before [Docker Login GitHub Action](https://github.com/docker/login-action) and docker tag/push commands, a customized example workflow is highlighted below. Note that the environment variable tag--{{github.run_number}} in the workflow represents a unique incremental number allocated by GitHub Actions each time your workflow runs.
 ```
 # Build the Docker image first
 - uses: docker/build-push-action@v4
@@ -915,9 +915,9 @@ You can integrate the Docker-Slim Github Action in your workflow by inserting th
    docker push ${{ secrets.DOCKERHUB_USERNAME }}/IMAGE_NAME:slim-{{github.run_number}}
 ```
 The workflow above indicates four steps:
-- A [Docker Build/Push Github Action](https://github.com/docker/build-push-action) for building a docker image with the image name/tag--IMAGE_NAME:{{github.run_number}}, you should give replace IMAGE_NAME with your desired image name. Note that this Action must have a false option to push the built image--given that you need the image slimmed/minified before pushing it to a container registry. 
-- A Docker-Slim Github Action which minifies the target image--IMAGE_NAME:{{github.run_number}}, this Action has the "slim-{{github.run_number}}" tag and adds this tag to the slimmed/minified docker image such that the image name/tag becomes IMAGE_NAME:slim-{{github.run_number}}.
-- A Docker Login Github Action which logs into your DockerHub container regristry account, you should store your DockerHub username and personal access token as secrets in the github repository meant for the workflow. Suppose your container registry is not DockerHub, you can check the [Docker Login Github Action documentation](https://github.com/docker/login-action) for the use case of logging into your desired container registry. 
+- A [Docker Build/Push GitHub Action](https://github.com/docker/build-push-action) for building a docker image with the image name/tag--IMAGE_NAME:{{github.run_number}}, you should give replace IMAGE_NAME with your desired image name. Note that this Action must have a false option to push the built image--given that you need the image slimmed/minified before pushing it to a container registry. 
+- A Docker-Slim GitHub Action which minifies the target image--IMAGE_NAME:{{github.run_number}}, this Action has the "slim-{{github.run_number}}" tag and adds this tag to the slimmed/minified docker image such that the image name/tag becomes IMAGE_NAME:slim-{{github.run_number}}.
+- A Docker Login GitHub Action which logs into your DockerHub container regristry account, you should store your DockerHub username and personal access token as secrets in the github repository meant for the workflow. Suppose your container registry is not DockerHub, you can check the [Docker Login GitHub Action documentation](https://github.com/docker/login-action) for the use case of logging into your desired container registry. 
 - A docker tag command for naming/tagging the slimmed image with your DockerHub account remote repository name which could be the same name(IMAGE_NAME) as the slimmed image; A docker push command to push the slimmed image to your Dockerhub account remote repository.
 
 
@@ -1011,7 +1011,7 @@ Commands in `probeCmds.json`:
      "resource": "/submit"
    },
    {
-     "procotol": "http",
+     "protocol": "http",
      "resource": "/api/call?arg=one"
    },
    {
@@ -1415,7 +1415,7 @@ DockerSlim was a `Docker Global Hack Day` \#`dockerhackday` project. It barely w
 
 ![DHD3](assets/images/dhd/docker_global_hackday3_red.png)
 
-Since then it's been improved and it works pretty well for its core use cases. It can be better though. That's why the project needs your help! You don't need to know much about the container internals, container runtimes and you don't need to know anything about Go. You can contribute in many different ways. For example, use Slim on your images and open Github issues documenting your experience even if it worked just fine :-)
+Since then it's been improved and it works pretty well for its core use cases. It can be better though. That's why the project needs your help! You don't need to know much about the container internals, container runtimes and you don't need to know anything about Go. You can contribute in many different ways. For example, use Slim on your images and open GitHub issues documenting your experience even if it worked just fine :-)
 
 ## LICENSE
 

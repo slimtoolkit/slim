@@ -129,7 +129,7 @@ func DecodeResponse(input []byte, options *DecodeOptions) (HTTPResponse, error) 
 	if response.IsBase64Encoded {
 		responseBodyBytes, err := base64.StdEncoding.DecodeString(string(response.Body))
 		if err != nil {
-			log.Fatalf("Some error occured during base64 decode. Error %s", err.Error())
+			log.Fatalf("Some error occurred during base64 decode. Error %s", err.Error())
 		}
 		response.Body = string(responseBodyBytes)
 	}

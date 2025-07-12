@@ -31,7 +31,7 @@ type monitor struct {
 
 	runOpt AppRunOpt
 
-	// TODO: Move the logic behind these two fields to the artifact processig stage.
+	// TODO: Move the logic behind these two fields to the artifact processing stage.
 	includeNew bool
 	origPaths  map[string]struct{}
 
@@ -127,9 +127,9 @@ func (m *monitor) Start() error {
 
 	// The sync part of the start was successful.
 
-	// Tracking the completetion of the monitor.
+	// Tracking the completion of the monitor.
 	go func() {
-		logger := m.logger.WithField("op", "sensor.pt.monitor.completetion.monitor")
+		logger := m.logger.WithField("op", "sensor.pt.monitor.completion.monitor")
 		logger.Info("call")
 		defer logger.Info("exit")
 
