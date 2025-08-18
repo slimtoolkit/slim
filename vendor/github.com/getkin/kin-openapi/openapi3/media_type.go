@@ -2,17 +2,22 @@ package openapi3
 
 import (
 	"context"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"sort"
 
-	"github.com/getkin/kin-openapi/jsoninfo"
 	"github.com/go-openapi/jsonpointer"
 )
 
 // MediaType is specified by OpenAPI/Swagger 3.0 standard.
+// See https://github.com/OAI/OpenAPI-Specification/blob/main/versions/3.0.3.md#media-type-object
 type MediaType struct {
-	ExtensionProps
+	Extensions map[string]any `json:"-" yaml:"-"`
+	Origin     *Origin        `json:"__origin__,omitempty" yaml:"__origin__,omitempty"`
 
 	Schema   *SchemaRef           `json:"schema,omitempty" yaml:"schema,omitempty"`
-	Example  interface{}          `json:"example,omitempty" yaml:"example,omitempty"`
+	Example  any                  `json:"example,omitempty" yaml:"example,omitempty"`
 	Examples Examples             `json:"examples,omitempty" yaml:"examples,omitempty"`
 	Encoding map[string]*Encoding `json:"encoding,omitempty" yaml:"encoding,omitempty"`
 }
@@ -37,7 +42,7 @@ func (mediaType *MediaType) WithSchemaRef(schema *SchemaRef) *MediaType {
 	return mediaType
 }
 
-func (mediaType *MediaType) WithExample(name string, value interface{}) *MediaType {
+func (mediaType *MediaType) WithExample(name string, value any) *MediaType {
 	example := mediaType.Examples
 	if example == nil {
 		example = make(map[string]*ExampleRef)
@@ -59,27 +64,103 @@ func (mediaType *MediaType) WithEncoding(name string, enc *Encoding) *MediaType 
 	return mediaType
 }
 
-func (mediaType *MediaType) MarshalJSON() ([]byte, error) {
-	return jsoninfo.MarshalStrictStruct(mediaType)
+// MarshalJSON returns the JSON encoding of MediaType.
+func (mediaType MediaType) MarshalJSON() ([]byte, error) {
+	x, err := mediaType.MarshalYAML()
+	if err != nil {
+		return nil, err
+	}
+	return json.Marshal(x)
 }
 
+// MarshalYAML returns the YAML encoding of MediaType.
+func (mediaType MediaType) MarshalYAML() (any, error) {
+	m := make(map[string]any, 4+len(mediaType.Extensions))
+	for k, v := range mediaType.Extensions {
+		m[k] = v
+	}
+	if x := mediaType.Schema; x != nil {
+		m["schema"] = x
+	}
+	if x := mediaType.Example; x != nil {
+		m["example"] = x
+	}
+	if x := mediaType.Examples; len(x) != 0 {
+		m["examples"] = x
+	}
+	if x := mediaType.Encoding; len(x) != 0 {
+		m["encoding"] = x
+	}
+	return m, nil
+}
+
+// UnmarshalJSON sets MediaType to a copy of data.
 func (mediaType *MediaType) UnmarshalJSON(data []byte) error {
-	return jsoninfo.UnmarshalStrictStruct(data, mediaType)
-}
-
-func (value *MediaType) Validate(ctx context.Context) error {
-	if value == nil {
-		return nil
+	type MediaTypeBis MediaType
+	var x MediaTypeBis
+	if err := json.Unmarshal(data, &x); err != nil {
+		return unmarshalError(err)
 	}
-	if schema := value.Schema; schema != nil {
-		if err := schema.Validate(ctx); err != nil {
-			return err
-		}
+	_ = json.Unmarshal(data, &x.Extensions)
+	delete(x.Extensions, originKey)
+	delete(x.Extensions, "schema")
+	delete(x.Extensions, "example")
+	delete(x.Extensions, "examples")
+	delete(x.Extensions, "encoding")
+	if len(x.Extensions) == 0 {
+		x.Extensions = nil
 	}
+	*mediaType = MediaType(x)
 	return nil
 }
 
-func (mediaType MediaType) JSONLookup(token string) (interface{}, error) {
+// Validate returns an error if MediaType does not comply with the OpenAPI spec.
+func (mediaType *MediaType) Validate(ctx context.Context, opts ...ValidationOption) error {
+	ctx = WithValidationOptions(ctx, opts...)
+
+	if mediaType == nil {
+		return nil
+	}
+	if schema := mediaType.Schema; schema != nil {
+		if err := schema.Validate(ctx); err != nil {
+			return err
+		}
+
+		if mediaType.Example != nil && mediaType.Examples != nil {
+			return errors.New("example and examples are mutually exclusive")
+		}
+
+		if vo := getValidationOptions(ctx); !vo.examplesValidationDisabled {
+			if example := mediaType.Example; example != nil {
+				if err := validateExampleValue(ctx, example, schema.Value); err != nil {
+					return fmt.Errorf("invalid example: %w", err)
+				}
+			}
+
+			if examples := mediaType.Examples; examples != nil {
+				names := make([]string, 0, len(examples))
+				for name := range examples {
+					names = append(names, name)
+				}
+				sort.Strings(names)
+				for _, k := range names {
+					v := examples[k]
+					if err := v.Validate(ctx); err != nil {
+						return fmt.Errorf("example %s: %w", k, err)
+					}
+					if err := validateExampleValue(ctx, v.Value.Value, schema.Value); err != nil {
+						return fmt.Errorf("example %s: %w", k, err)
+					}
+				}
+			}
+		}
+	}
+
+	return validateExtensions(ctx, mediaType.Extensions)
+}
+
+// JSONLookup implements https://pkg.go.dev/github.com/go-openapi/jsonpointer#JSONPointable
+func (mediaType MediaType) JSONLookup(token string) (any, error) {
 	switch token {
 	case "schema":
 		if mediaType.Schema != nil {
@@ -95,6 +176,6 @@ func (mediaType MediaType) JSONLookup(token string) (interface{}, error) {
 	case "encoding":
 		return mediaType.Encoding, nil
 	}
-	v, _, err := jsonpointer.GetForToken(mediaType.ExtensionProps, token)
+	v, _, err := jsonpointer.GetForToken(mediaType.Extensions, token)
 	return v, err
 }
