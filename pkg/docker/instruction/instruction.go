@@ -6,26 +6,27 @@ import (
 )
 
 // All supported instruction names
-const (
-	Add         = "add"
-	Arg         = "arg"
-	Cmd         = "cmd"
-	Copy        = "copy"
-	Entrypoint  = "entrypoint"
-	Env         = "env"
-	Expose      = "expose"
-	From        = "from"
-	Healthcheck = "healthcheck"
-	Label       = "label"
-	Maintainer  = "maintainer"
-	Onbuild     = "onbuild"
-	Run         = "run"
-	Shell       = "shell"
-	StopSignal  = "stopsignal"
-	User        = "user"
-	Volume      = "volume"
-	Workdir     = "workdir"
-)
+var DOCKER_INSTRUCTION_NAMES map[string]bool = map[string]bool{
+		"Add": true,
+		"Arg": true,
+		"Cmd": true,
+		"Copy": true,
+		"Entrypoint": true,
+		"Env": true,
+		"Expose": true,
+		"From": true,
+		"Healthcheck": true,
+		"Label": true,
+		"Maintainer": true,
+		"Onbuild": true,
+		"Run": true,
+		"Shell": true,
+		"StopSignal": true,
+		"User": true,
+		"Volume": true,
+		"Workdir": true,
+}
+	
 
 type Field struct {
 	GlobalIndex int      `json:"start_index"`
@@ -55,91 +56,13 @@ type Format struct {
 	IsDepricated       bool
 }
 
-// Specs is a map of all available instructions and their format info (by name)
-var Specs = map[string]Format{
-	Add: {
-		Name:             Add,
-		SupportsFlags:    true,
-		SupportsJSONForm: true,
-	},
-	Arg: {
-		Name:               Arg,
-		SupportsNameValues: true,
-	},
-	Cmd: {
-		Name:             Cmd,
-		SupportsJSONForm: true,
-	},
-	Copy: {
-		Name:             Copy,
-		SupportsFlags:    true,
-		SupportsJSONForm: true,
-	},
-	Entrypoint: {
-		Name:             Entrypoint,
-		SupportsJSONForm: true,
-	},
-	Env: {
-		Name:               Env,
-		RequiresNameValues: true,
-	},
-	Expose: {
-		Name: Expose,
-	},
-	From: {
-		Name:          From,
-		SupportsFlags: true,
-	},
-	Healthcheck: {
-		Name:             Healthcheck,
-		SupportsJSONForm: true,
-	},
-	Label: {
-		Name:               Label,
-		RequiresNameValues: true,
-	},
-	Maintainer: {
-		Name:         Maintainer,
-		IsDepricated: true,
-	},
-	Onbuild: {
-		Name:            Label,
-		SupportsSubInst: true,
-	},
-	Run: {
-		Name:             Run,
-		SupportsJSONForm: true,
-	},
-	Shell: {
-		Name:             Shell,
-		SupportsJSONForm: true,
-	},
-	StopSignal: {
-		Name: StopSignal,
-	},
-	User: {
-		Name: User,
-	},
-	Volume: {
-		Name:             Volume,
-		SupportsJSONForm: true,
-	},
-	Workdir: {
-		Name: Workdir,
-	},
-}
 
 func IsKnown(name string) bool {
 	name = strings.ToLower(name)
-	_, ok := Specs[name]
-	return ok
+	_, ok := DOCKER_INSTRUCTION_NAMES[name]
+		return ok
 }
 
 func SupportsJSONForm() []string {
-	var names []string
-	for _, spec := range Specs {
-		names = append(names, spec.Name)
-	}
-
-	return names
+	return DOCKER_INSTRUCTION_NAMES
 }
