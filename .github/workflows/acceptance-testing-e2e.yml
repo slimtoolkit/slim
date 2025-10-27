@@ -72,7 +72,7 @@ jobs:
           go-version: '1.21.4'
 
       - name: Download Slim app binaries
-        uses: actions/download-artifact@v5.0.0
+        uses: actions/download-artifact@v6.0.0
         with:
           name: ${{ matrix.bin_artifacts }}
           path: bin
@@ -125,7 +125,7 @@ jobs:
           path: e2e
 
       - name: Download Slim app binaries
-        uses: actions/download-artifact@v5.0.0
+        uses: actions/download-artifact@v6.0.0
         with:
           name: ${{ matrix.bin_artifacts }}
           path: bin
