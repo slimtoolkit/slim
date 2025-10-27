@@ -23,28 +23,28 @@ jobs:
         run: make build
 
       - name: Upload Slim app binaries (Linux, amd64)
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v5.0.0
         with:
           name: dist_linux
           path: dist_linux
           retention-days: 1
 
       - name: Upload Slim app binaries (Linux, arm64)
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v5.0.0
         with:
           name: dist_linux_arm64
           path: dist_linux_arm64
           retention-days: 1
 
       - name: Upload Slim app binaries (Linux, arm)
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v5.0.0
         with:
           name: dist_linux_arm
           path: dist_linux_arm
           retention-days: 1
 
       - name: Upload Slim app binaries (macOS, amd64)
-        uses: actions/upload-artifact@v4.6.2
+        uses: actions/upload-artifact@v5.0.0
         with:
           name: dist_mac
           path: dist_mac
