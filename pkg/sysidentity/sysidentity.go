@@ -161,7 +161,7 @@ func NewReportFromData(data *DataSet) (*Report, error) {
 			Name:     record.Group,
 			ID:       record.GID,
 			Members:  record.Members,
-			Password: record.Password, //todo: get the actual password infor from gshadow (if any)
+			Password: record.Password, //todo: get the actual password info from gshadow (if any)
 		}
 
 		report.Groups[groupInfo.Name] = groupInfo
@@ -268,7 +268,7 @@ type PasswdRecord struct {
 	GID          int    `json:"gid"`
 	Info         string `json:"info"`  //additional user identity info / GECOS
 	Home         string `json:"home"`  //home directory
-	Shell        string `json:"shell"` //shell exected when user logs in
+	Shell        string `json:"shell"` //shell executed when user logs in
 	RawData      string `json:"raw_data"`
 	NoLoginShell bool   `json:"no_login_shell"`
 }
