@@ -15,6 +15,7 @@ import (
 	"io"
 	"math/big"
 	"net/http"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"time"
@@ -65,7 +66,7 @@ func (c *Client) retryTimer() *retryTimer {
 // The n argument is always bounded between 1 and 30.
 // The returned value is always greater than 0.
 func defaultBackoff(n int, r *http.Request, res *http.Response) time.Duration {
-	const max = 10 * time.Second
+	const maxVal = 10 * time.Second
 	var jitter time.Duration
 	if x, err := rand.Int(rand.Reader, big.NewInt(1000)); err == nil {
 		// Set the minimum to 1ms to avoid a case where
@@ -85,10 +86,7 @@ func defaultBackoff(n int, r *http.Request, res *http.Response) time.Duration {
 		n = 30
 	}
 	d := time.Duration(1<<uint(n-1))*time.Second + jitter
-	if d > max {
-		return max
-	}
-	return d
+	return min(d, maxVal)
 }
 
 // retryAfter parses a Retry-After HTTP header value,
@@ -271,8 +269,26 @@ func (c *Client) httpClient() *http.Client {
 }
 
 // packageVersion is the version of the module that contains this package, for
-// sending as part of the User-Agent header. It's set in version_go112.go.
+// sending as part of the User-Agent header.
 var packageVersion string
+
+func init() {
+	// Set packageVersion if the binary was built in modules mode and x/crypto
+	// was not replaced with a different module.
+	info, ok := debug.ReadBuildInfo()
+	if !ok {
+		return
+	}
+	for _, m := range info.Deps {
+		if m.Path != "golang.org/x/crypto" {
+			continue
+		}
+		if m.Replace == nil {
+			packageVersion = m.Version
+		}
+		break
+	}
+}
 
 // userAgent returns the User-Agent header value. It includes the package name,
 // the module version (if available), and the c.UserAgent value (if set).
