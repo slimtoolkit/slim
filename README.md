@@ -1435,3 +1435,4 @@ The project follows the [CNCF Code of Conduct](https://github.com/cncf/foundatio
 
 [![Go Report Card](https://goreportcard.com/badge/github.com/slimtoolkit/slim)](https://goreportcard.com/report/github.com/slimtoolkit/slim)
 
+### Happy coding
