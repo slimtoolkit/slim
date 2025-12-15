@@ -1,3 +1,19 @@
+/*
+ * SPDX-FileCopyrightText: Copyright (c) 2025 NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+ * SPDX-License-Identifier: Apache-2.0
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ * http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package command
 
 import (
@@ -155,6 +171,7 @@ const (
 	FlagCROHostConfigFile = "cro-host-config-file"
 	FlagCROSysctl         = "cro-sysctl"
 	FlagCROShmSize        = "cro-shm-size"
+	FlagCRODeviceRequest  = "cro-device-request"
 
 	//Original Container Runtime Options (without cro- prefix)
 	FlagUser               = "user"
@@ -266,6 +283,7 @@ const (
 	FlagCROHostConfigFileUsage = "Base Docker host configuration file (JSON format) to use when running the container"
 	FlagCROSysctlUsage         = "Set namespaced kernel parameters in the created container"
 	FlagCROShmSizeUsage        = "Shared memory size for /dev/shm in the created container"
+	FlagCRODeviceRequestUsage  = "JSON string specifying device request configuration for the container"
 
 	FlagUserUsage               = "Override USER analyzing image at runtime"
 	FlagEntrypointUsage         = "Override ENTRYPOINT analyzing image at runtime. To persist ENTRYPOINT changes in the output image, pass the --image-overrides=entrypoint or --image-overrides=all flag as well."
@@ -912,6 +930,11 @@ var CommonFlags = map[string]cli.Flag{
 		Value:   true, //all sources are enabled by default
 		Usage:   FlagRTASourcePTUsage,
 		EnvVars: []string{"DSLIM_RTA_SRC_PT"},
+	},
+	FlagCRODeviceRequest: &cli.StringFlag{
+		Name:    FlagCRODeviceRequest,
+		Usage:   FlagCRODeviceRequestUsage,
+		EnvVars: []string{"DSLIM_CRO_DEVICE_REQUEST"},
 	},
 }
 
