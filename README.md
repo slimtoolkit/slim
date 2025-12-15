@@ -1281,7 +1281,7 @@ Yes! Either way, you should test your Docker images.
 
 ### How can I contribute if I don't know Go?
 
-You don't need to read the language spec and lots of books :-) Go through the [Tour of Go](https://tour.golang.org/welcome/1) and optionally read [50 Shades of Go](http://devs.cloudimmunity.com/gotchas-and-common-mistakes-in-go-golang/) and you'll be ready to contribute!
+You don't need to read the language spec and lots of books :-) Go through the [Tour of Go](https://tour.golang.org/welcome/1) and optionally read [50 Shades of Go](https://golang50shades.com/) and you'll be ready to contribute!
 
 ### What's the best application for Slim?
 
