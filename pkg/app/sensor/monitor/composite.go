@@ -240,6 +240,12 @@ func (m *monitor) Start() error {
 		return err
 	}
 
+	log.Warn("COMPOSITE MONITOR: Both FAN and PTRACE monitors started successfully")
+	log.Warnf("COMPOSITE MONITOR: RTASourcePT flag value: %v", m.cmd.RTASourcePT)
+	if !m.cmd.RTASourcePT {
+		log.Error("COMPOSITE MONITOR: RTASourcePT is FALSE - PTRACE SYSCALL TRACING IS DISABLED!")
+	}
+
 	m.startedAt = time.Now()
 
 	return nil
