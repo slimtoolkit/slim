@@ -7,6 +7,7 @@ package acme
 import (
 	"crypto"
 	"crypto/x509"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"net/http"
@@ -55,6 +56,10 @@ var (
 
 	// ErrNoAccount indicates that the Client's key has not been registered with the CA.
 	ErrNoAccount = errors.New("acme: account does not exist")
+
+	// errPreAuthorizationNotSupported indicates that the server does not
+	// support pre-authorization of identifiers.
+	errPreAuthorizationNotSupported = errors.New("acme: pre-authorization is not supported")
 )
 
 // A Subproblem describes an ACME subproblem as reported in an Error.
@@ -288,7 +293,7 @@ type Directory struct {
 	// KeyChangeURL allows to perform account key rollover flow.
 	KeyChangeURL string
 
-	// Term is a URI identifying the current terms of service.
+	// Terms is a URI identifying the current terms of service.
 	Terms string
 
 	// Website is an HTTP or HTTPS URL locating a website
@@ -527,6 +532,16 @@ type Challenge struct {
 	// when this challenge was used.
 	// The type of a non-nil value is *Error.
 	Error error
+
+	// Payload is the JSON-formatted payload that the client sends
+	// to the server to indicate it is ready to respond to the challenge.
+	// When unset, it defaults to an empty JSON object: {}.
+	// For most challenges, the client must not set Payload,
+	// see https://tools.ietf.org/html/rfc8555#section-7.5.1.
+	// Payload is used only for newer challenges (such as "device-attest-01")
+	// where the client must send additional data for the server to validate
+	// the challenge.
+	Payload json.RawMessage
 }
 
 // wireChallenge is ACME JSON challenge representation.
@@ -604,7 +619,7 @@ func (*certOptKey) privateCertOpt() {}
 //
 // In TLS ChallengeCert methods, the template is also used as parent,
 // resulting in a self-signed certificate.
-// The DNSNames field of t is always overwritten for tls-sni challenge certs.
+// The DNSNames or IPAddresses fields of t are always overwritten for tls-alpn challenge certs.
 func WithTemplate(t *x509.Certificate) CertOption {
 	return (*certOptTemplate)(t)
 }
