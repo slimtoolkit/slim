@@ -1,6 +1,44 @@
-**
-!dist_linux/**
-!dist_linux_arm64/**
-!build/package/docker/.ds.container.d3e2c84f976743bdb92a7044ef12e381
+# Ignore Git files
+.git
+.gitignore
+
+# Mac system files
+.DS_Store
 **/.DS_Store
+
+# Editor directories
+.vscode/
+.idea/
+
+# Build outputs
+dist/
+dist_linux/
+dist_linux_arm64/
+build/
+coverage/
+
+# Binary artifacts
+*.exe
+*.dll
+*.so
+*.dylib
+*.out
+*.test
+
+# Logs
+*.log
+
+# Ignore vendor folder (unless needed)
+vendor/
+
+# Temporary files
+*.tmp
+*.swp
+
+# Scripts and command outputs
 **/*.command
+
+# Cache
+.cache/
+npm-debug.log
+yarn-error.log

@@ -741,6 +741,38 @@ Examples:
 * `slim --quiet vulnerability epss --op list --date 2024-01-05`
 * `slim --quiet vulnerability epss --op list --filter-cve-id-pattern 2023 --filter-score-gt 0.92 --limit 2 --offset 3`
 
+## Building Slim from the Provided Dockerfiles (Contributor Guide)
+
+SlimToolkit includes Dockerfiles used to package the runtime CLI into minimal container images.  
+These images are useful for development, debugging, and testing container-based execution of Slim.
+
+### Build the main Slim runtime image
+
+```bash
+docker build \
+  -f build/package/docker/Dockerfile \
+  -t slim-dev:latest .
+
+Run Slim inside the container
+docker run --rm -it slim-dev:latest --help
+
+Build the ARM64 runtime image (Apple Silicon / ARM servers)
+docker build \
+  -f build/package/docker/Dockerfile.arm \
+  -t slim-dev-arm64:latest .
+
+Analyze a local Docker image using Slim inside a container
+docker run --rm -it \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  slim-dev:latest \
+  build your-image:tag
+
+Rebuild without cache
+docker build --no-cache \
+ -f build/package/docker/Dockerfile \
+  -t slim-dev:latest .
+
+
 
 ## RUNNING CONTAINERIZED
 
