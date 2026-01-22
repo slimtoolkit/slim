@@ -22,13 +22,13 @@ import (
 	"syscall"
 )
 
-// Flags used as first parameter to Initiliaze
+// Flags used as first parameter to Initialize
 const (
 	/* flags used for fanotify_init() */
 	FAN_CLOEXEC  = 0x00000001
 	FAN_NONBLOCK = 0x00000002
 
-	/* These are NOT bitwise flags.  Both bits are used togther.  */
+	/* These are NOT bitwise flags.  Both bits are used together.  */
 	FAN_CLASS_NOTIF       = 0x00000000
 	FAN_CLASS_CONTENT     = 0x00000004
 	FAN_CLASS_PRE_CONTENT = 0x00000008
@@ -73,7 +73,7 @@ const (
 const (
 	FAN_ACCESS        = 0x00000001 /* File was accessed */
 	FAN_MODIFY        = 0x00000002 /* File was modified */
-	FAN_CLOSE_WRITE   = 0x00000008 /* Writtable file closed */
+	FAN_CLOSE_WRITE   = 0x00000008 /* Writable file closed */
 	FAN_CLOSE_NOWRITE = 0x00000010 /* Unwrittable file closed */
 	FAN_OPEN          = 0x00000020 /* File was opened */
 

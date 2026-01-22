@@ -14,7 +14,7 @@ func init() {
 		Info: Info{
 			ID:           "ID.20019",
 			Name:         "Unnecessary Layer",
-			Description:  "RUN instruction will result in unnecessary layer (combine command with previous RUN instruciton)",
+			Description:  "RUN instruction will result in unnecessary layer (combine command with previous RUN instruction)",
 			DetailsURL:   "https://lint.dockersl.im/check/ID.20019",
 			MainMessage:  "RUN instruction will result in unnecessary layer",
 			MatchMessage: "Instruction: start=%d end=%d global_index=%d stage_id=%d stage_index=%d prev_start=%d prev_end=%d prev_global_index=%d prev_stage_index=%d",

@@ -585,7 +585,7 @@ func parseDetectUTF8(raw string) (*dockerimage.UTF8Detector, error) {
 					return nil, fmt.Errorf("malformed find utf8: %s", raw)
 				}
 				outTarget = parts[0]
-				_ = parts[1] // TODO implemement path pattern matcher
+				_ = parts[1] // TODO implement path pattern matcher
 				maxSizeBytes := parts[2]
 				var err error
 				detector.MaxSizeBytes, err = strconv.Atoi(maxSizeBytes)
@@ -598,8 +598,8 @@ func parseDetectUTF8(raw string) (*dockerimage.UTF8Detector, error) {
 					return nil, fmt.Errorf("malformed find utf8: %s", raw)
 				}
 				outTarget = parts[0]
-				_ = parts[1] // TODO implemement path pattern matcher
-				_ = parts[2] // TODO implemement data regex matcher
+				_ = parts[1] // TODO implement path pattern matcher
+				_ = parts[2] // TODO implement data regex matcher
 				maxSizeBytes := parts[3]
 				var err error
 				detector.MaxSizeBytes, err = strconv.Atoi(maxSizeBytes)

@@ -67,7 +67,7 @@ type monitor struct {
 	artifactsDir string
 	mountPoint   string
 
-	// TODO: Move the logic behind these two fields to the artifact processig stage.
+	// TODO: Move the logic behind these two fields to the artifact processing stage.
 	includeNew bool
 	origPaths  map[string]struct{}
 
@@ -129,7 +129,7 @@ func (m *monitor) Start() error {
 	}
 
 	// Sync part of the start was successful.
-	// Tracking the completetion of the monitor....
+	// Tracking the completion of the monitor....
 
 	go func() {
 		logger := m.logger.WithField("op", "collector")

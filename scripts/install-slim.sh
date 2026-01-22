@@ -29,7 +29,7 @@ function get_mint() {
   KERNEL=$(uname -s)
   MACHINE=$(uname -m)
 
-  # Determine the target distrubution
+  # Determine the target distribution
   if [ "${KERNEL}" == "Linux" ]; then
     EXT="tar.gz"
     if [ "${MACHINE}" == "x86_64" ]; then
