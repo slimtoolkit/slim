@@ -87,6 +87,15 @@ func (w *Workload) DefaultContainer() *corev1.Container {
 	return nil
 }
 
+func (w *Workload) SetContainer(ctr *corev1.Container) {
+	containers := w.Template().Spec.Containers
+	for i, c := range containers {
+		if c.Name == ctr.Name {
+			containers[i] = *ctr
+		}
+	}
+}
+
 func (w *Workload) TargetContainer() *corev1.Container {
 	if w.targetContainerName == "" {
 		return w.DefaultContainer()
