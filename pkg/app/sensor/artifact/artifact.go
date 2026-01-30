@@ -792,6 +792,100 @@ func (p *store) prepareArtifacts() {
 	}
 
 	p.resolveLinks()
+	p.deduplicateFileMap()
+}
+
+// deduplicateFileMap removes duplicate file paths that point to the same inode.
+// This fixes an issue where files accessed through multiple symlinked paths
+// (e.g., /usr/local/cuda-12.9/lib/file.so and /usr/local/cuda/lib64/file.so)
+// would be copied multiple times, with later copies potentially overwriting
+// with 0-byte content.
+func (p *store) deduplicateFileMap() {
+	log.Debugf("deduplicateFileMap - starting inode-based deduplication, fileMap has %d entries", len(p.fileMap))
+
+	// Build inode -> paths map for regular files only
+	inodeMap := make(map[uint64][]string)
+
+	for fpath := range p.fileMap {
+		info, err := os.Lstat(fpath)
+		if err != nil {
+			log.Warnf("deduplicateFileMap - error getting file info for %s: %v", fpath, err)
+			continue
+		}
+
+		// Only process regular files (not symlinks, directories, etc.)
+		if !info.Mode().IsRegular() {
+			log.Debugf("deduplicateFileMap - skipping non-regular file %s (mode: %v)", fpath, info.Mode())
+			continue
+		}
+
+		// Get the inode from the underlying syscall.Stat_t
+		if sys, ok := info.Sys().(*syscall.Stat_t); ok {
+			inode := sys.Ino
+			inodeMap[inode] = append(inodeMap[inode], fpath)
+		}
+	}
+
+	// For each inode with multiple paths, keep only the canonical path
+	duplicatesRemoved := 0
+	inodeCount := 0
+	for inode, paths := range inodeMap {
+		if len(paths) <= 1 {
+			continue
+		}
+
+		inodeCount++
+		log.Debugf("deduplicateFileMap - found %d paths for inode %d: %v", len(paths), inode, paths)
+
+		// Sort paths to get deterministic behavior
+		// CRITICAL: Prefer paths that DON'T go through symlinked directories
+		// /usr/local/cuda/ is a symlink, so paths through it may return 0 bytes
+		// Prefer /usr/local/cuda-12.9/ paths which are the real paths
+		sort.Slice(paths, func(i, j int) bool {
+			pi, pj := paths[i], paths[j]
+
+			// First priority: Prefer paths that don't go through /usr/local/cuda/ symlink
+			// These paths go through symlinked directories and often return 0 bytes
+			isThroughSymlink := func(p string) bool {
+				return strings.HasPrefix(p, "/usr/local/cuda/") && !strings.HasPrefix(p, "/usr/local/cuda-")
+			}
+			symI := isThroughSymlink(pi)
+			symJ := isThroughSymlink(pj)
+			if symI != symJ {
+				return !symI // Prefer path NOT through symlink
+			}
+
+			// Second priority: Check if either path has flags (indicating it was actually accessed)
+			propsI := p.fileMap[pi]
+			propsJ := p.fileMap[pj]
+
+			hasI := propsI != nil && len(propsI.Flags) > 0
+			hasJ := propsJ != nil && len(propsJ.Flags) > 0
+
+			// Prefer path with flags
+			if hasI && !hasJ {
+				return true
+			}
+			if !hasI && hasJ {
+				return false
+			}
+
+			// Third priority: Prefer longer paths (more canonical - /usr/local/cuda-12.9/targets/... is longer)
+			return len(pi) > len(pj)
+		})
+
+		// Keep the first (most canonical) path, remove the rest
+		canonicalPath := paths[0]
+		for _, dupPath := range paths[1:] {
+			log.Debugf("deduplicateFileMap - removing duplicate: %s (keeping %s)", dupPath, canonicalPath)
+			delete(p.fileMap, dupPath)
+			duplicatesRemoved++
+		}
+	}
+
+	if duplicatesRemoved > 0 {
+		log.Debugf("deduplicateFileMap - removed %d duplicate paths, fileMap now has %d entries", duplicatesRemoved, len(p.fileMap))
+	}
 }
 
 func (p *store) resolveLinks() {
@@ -1861,6 +1955,23 @@ copyFiles:
 			continue
 		}
 
+		// FIX: Skip files accessed through symlinked directories like /usr/local/cuda/
+		// The Docker overlay filesystem can return 0 bytes for files accessed through symlinks
+		// Files should be copied from canonical paths (e.g., /usr/local/cuda-12.9/) which work correctly
+		if strings.HasPrefix(srcFileName, "/usr/local/cuda/") && !strings.HasPrefix(srcFileName, "/usr/local/cuda-") {
+			// Resolve symlinks to get the canonical path
+			evalPath, evalErr := filepath.EvalSymlinks(srcFileName)
+			if evalErr == nil && evalPath != srcFileName {
+				if _, hasCanonical := p.fileMap[evalPath]; hasCanonical {
+					log.Debugf("saveArtifacts - skipping symlinked path %s (canonical path %s exists)", srcFileName, evalPath)
+					continue
+				}
+				// Use the resolved path instead
+				log.Debugf("saveArtifacts - using resolved path %s instead of %s", evalPath, srcFileName)
+				srcFileName = evalPath
+			}
+		}
+
 		filePath := fmt.Sprintf("%s/files%s", p.storeLocation, srcFileName)
 		log.Debug("saveArtifacts - saving file data => ", filePath)
 
@@ -1883,7 +1994,7 @@ copyFiles:
 					log.Debugf("saveArtifacts [%s,%s] - appMetadataFileUpdater => not updated / err = %v", srcFileName, filePath, err)
 				}
 			} else {
-				err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, filePath, true)
+				err := fsutil.CopyFile(p.cmd.KeepPerms, srcFileName, filePath, true)
 				if err != nil {
 					log.Debugf("saveArtifacts [%s,%s] - error saving file => %v", srcFileName, filePath, err)
 				} else {
@@ -1904,7 +2015,17 @@ copyFiles:
 				}
 			}
 		} else {
-			err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, filePath, true)
+			// Check if destination already exists - skip if it does to avoid overwriting
+			// a good copy with a potentially bad one
+			if fsutil.Exists(filePath) {
+				existingInfo, _ := os.Stat(filePath)
+				if existingInfo != nil && existingInfo.Size() > 0 {
+					log.Warnf("saveArtifacts - skipping %s, destination already exists with %d bytes", srcFileName, existingInfo.Size())
+					continue
+				}
+			}
+
+			err := fsutil.CopyFile(p.cmd.KeepPerms, srcFileName, filePath, true)
 			if err != nil {
 				log.Debugf("saveArtifacts - error saving file => %v", err)
 			}
@@ -2157,7 +2278,7 @@ copyBsaFiles:
 					log.Debugf("saveArtifacts[bsa] - saved file (%s)", dstFilePath)
 				}
 			} else {
-				err := fsutil.CopyRegularFile(p.cmd.KeepPerms, srcFileName, dstFilePath, true)
+				err := fsutil.CopyFile(p.cmd.KeepPerms, srcFileName, dstFilePath, true)
 				if err != nil {
 					log.Debugf("saveArtifacts[bsa] - error saving file => %v", err)
 				} else {
@@ -2178,7 +2299,7 @@ copyBsaFiles:
 		dstPasswdFilePath := fmt.Sprintf("%s/files%s", p.storeLocation, sysidentity.PasswdFilePath)
 		if _, err := os.Stat(sysidentity.PasswdFilePath); err == nil {
 			//if err := cpFile(passwdFilePath, passwdFileTargetPath); err != nil {
-			if err := fsutil.CopyRegularFile(p.cmd.KeepPerms, sysidentity.PasswdFilePath, dstPasswdFilePath, true); err != nil {
+			if err := fsutil.CopyFile(p.cmd.KeepPerms, sysidentity.PasswdFilePath, dstPasswdFilePath, true); err != nil {
 				log.Debugf("sensor: monitor - error copying user info file => %v", err)
 			}
 		} else {
@@ -2943,7 +3064,7 @@ func fixPy3CacheFile(src, dst string) error {
 
 	if _, err := os.Stat(dstPyFilePath); err != nil && os.IsNotExist(err) {
 		//if err := cpFile(srcPyFilePath, dstPyFilePath); err != nil {
-		if err := fsutil.CopyRegularFile(true, srcPyFilePath, dstPyFilePath, true); err != nil {
+		if err := fsutil.CopyFile(true, srcPyFilePath, dstPyFilePath, true); err != nil {
 			log.Debugf("sensor: monitor - fixPy3CacheFile - error copying file => %v", dstPyFilePath)
 			return err
 		}
@@ -2992,7 +3113,7 @@ func rbEnsureGemFiles(src, storeLocation, prefix string) error {
 
 					if _, err := os.Stat(extBuildFlagFilePathDst); err != nil && os.IsNotExist(err) {
 						//if err := cpFile(extBuildFlagFilePath, extBuildFlagFilePathDst); err != nil {
-						if err := fsutil.CopyRegularFile(true, extBuildFlagFilePath, extBuildFlagFilePathDst, true); err != nil {
+						if err := fsutil.CopyFile(true, extBuildFlagFilePath, extBuildFlagFilePathDst, true); err != nil {
 							log.Debugf("sensor: monitor - rbEnsureGemFiles - error copying file => %v", extBuildFlagFilePathDst)
 							return err
 						}
@@ -3129,7 +3250,7 @@ func nodeEnsurePackageFiles(keepPerms bool, src, storeLocation, prefix string) e
 		nodeGypFilePath := path.Join(filepath.Dir(src), nodeNPMNodeGypFile)
 		if _, err := os.Stat(nodeGypFilePath); err == nil {
 			nodeGypFilePathDst := fmt.Sprintf("%s%s%s", storeLocation, prefix, nodeGypFilePath)
-			if err := fsutil.CopyRegularFile(keepPerms, nodeGypFilePath, nodeGypFilePathDst, true); err != nil {
+			if err := fsutil.CopyFile(keepPerms, nodeGypFilePath, nodeGypFilePathDst, true); err != nil {
 				log.Debugf("sensor: nodeEnsurePackageFiles - error copying %s => %v", nodeGypFilePath, err)
 			}
 		}

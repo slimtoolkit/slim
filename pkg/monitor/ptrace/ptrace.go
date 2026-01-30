@@ -65,12 +65,13 @@ func Run(
 	}
 
 	if runOpt.RTASourcePT {
-		logger.Debug("tracing target app")
+		logger.Warn("PTRACE IS ENABLED - RTASourcePT=true - Starting trace monitoring")
 		app.Report.Enabled = true
 		go app.process()
 		go app.trace()
 	} else {
-		logger.Debug("not tracing target app...")
+		logger.Error("PTRACE IS DISABLED - RTASourcePT=false - NOT tracing target app!")
+		logger.Error("This means syscall-level monitoring is OFF and files may be missed!")
 		go func() {
 			logger.Debug("not tracing target app - start app")
 			if err := app.start(); err != nil {
@@ -239,6 +240,7 @@ func newApp(
 func (app *App) trace() {
 	logger := app.logger.WithField("op", "trace")
 	logger.Debug("call")
+	logger.Warn("PTRACE MONITOR IS STARTING - trace() called")
 	defer logger.Debug("exit")
 
 	runtime.LockOSThread()
@@ -269,6 +271,13 @@ func (app *App) processFileActivity(e *syscallEvent) {
 			logger.Debugf("no syscall processor - %#v", e)
 			//shouldn't happen
 			return
+		}
+
+		// Debug: Log when we process check/open file syscalls
+		if p.SyscallType() == CheckFileType || p.SyscallType() == OpenFileType {
+			okStatus := p.OKReturnStatus(e.retVal)
+			logger.Tracef("PTRACE: syscall=%s type=%s path=%s retVal=%d okStatus=%v",
+				p.SyscallName(), p.SyscallType(), e.pathParam, int32(e.retVal), okStatus)
 		}
 
 		if (p.SyscallType() == CheckFileType ||
@@ -459,6 +468,23 @@ drain:
 
 	app.Report.SyscallNum = uint32(len(app.Report.SyscallStats))
 	app.Report.FSActivity = app.FileActivity()
+
+	// CRITICAL DEBUG: Log FSActivity results
+	logger.Warnf("PTRACE REPORT FINALIZED: Tracked %d files in FSActivity", len(app.Report.FSActivity))
+	logger.Warnf("PTRACE REPORT: Total syscalls executed: %d", app.Report.SyscallCount)
+	if len(app.Report.FSActivity) == 0 {
+		logger.Error("WARNING: PTRACE FSActivity is EMPTY - No files were tracked!")
+		logger.Error("This suggests ptrace syscall interception may not be working properly")
+	} else {
+		// Sample some tracked files for verification
+		sampleCount := 0
+		for fpath := range app.Report.FSActivity {
+			if sampleCount < 5 {
+				logger.Warnf("PTRACE tracked file sample: %s", fpath)
+				sampleCount++
+			}
+		}
+	}
 
 	app.StateCh <- state
 	app.ReportCh <- &app.Report
@@ -1213,7 +1239,12 @@ func (ref *checkFileSyscallProcessor) OKCall(cstate *syscallState) bool {
 }
 
 func (ref *checkFileSyscallProcessor) OKReturnStatus(retVal uint64) bool {
-	return retVal == 0
+	// Accept successful stat calls (0) and also failed attempts that indicate
+	// the application was looking for the file. This is important for Python
+	// imports which check multiple locations before finding the right file.
+	// Track ENOENT (file not found) and ENOTDIR (not a directory) in addition to success.
+	intRetVal := getIntVal(retVal)
+	return intRetVal == 0 || intRetVal == -2 || intRetVal == -20 // 0=success, -2=ENOENT, -20=ENOTDIR
 }
 
 func (ref *checkFileSyscallProcessor) EventOnCall() bool {

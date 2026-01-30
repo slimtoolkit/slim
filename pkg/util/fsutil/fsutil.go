@@ -518,6 +518,7 @@ func cloneDirPath(src, dst string) {
 func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 	log.Debugf("CopyRegularFile(%v,%v,%v,%v)", clone, src, dst, makeDir)
 	//'clone' should be true only for the dst files that need to clone the dir properties from src
+
 	s, err := os.Open(src)
 	if err != nil {
 		return err
@@ -574,20 +575,30 @@ func CopyRegularFile(clone bool, src, dst string, makeDir bool) error {
 		return err
 	}
 
-	if srcFileInfo.Size() > 0 {
-		written, err := io.Copy(d, s)
-		if err != nil {
-			d.Close()
-			return err
-		}
+	written, err := io.Copy(d, s)
+	if err != nil {
+		d.Close()
+		return err
+	}
 
-		if written != srcFileInfo.Size() {
-			log.Debugf("CopyRegularFile(%v,%v,%v) - copy data mismatch - %v/%v",
-				src, dst, makeDir, written, srcFileInfo.Size())
-			d.Close()
-			return fmt.Errorf("%s -> %s: partial copy - %d/%d",
-				src, dst, written, srcFileInfo.Size())
-		}
+	// Log if we copied a file that appeared 0-byte but had content
+	if srcFileInfo.Size() == 0 && written > 0 {
+		log.Debugf("CopyRegularFile(%v,%v) - file appeared as 0-byte but copied %d bytes", src, dst, written)
+	}
+
+	// Log error for 0-byte copy of non-empty file (likely overlay FS issue)
+	if srcFileInfo.Size() > 0 && written == 0 {
+		log.Errorf("CopyRegularFile(%v,%v) - expected %d bytes but copied 0 (possible overlay FS issue)",
+			src, dst, srcFileInfo.Size())
+	}
+
+	// Verify the copy if we expected content
+	if srcFileInfo.Size() > 0 && written != srcFileInfo.Size() {
+		log.Debugf("CopyRegularFile(%v,%v,%v) - copy data mismatch - %v/%v",
+			src, dst, makeDir, written, srcFileInfo.Size())
+		d.Close()
+		return fmt.Errorf("%s -> %s: partial copy - %d/%d",
+			src, dst, written, srcFileInfo.Size())
 	}
 
 	//Need to close dst file before chmod works the right way
