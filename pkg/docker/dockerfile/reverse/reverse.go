@@ -692,7 +692,7 @@ func SaveDockerfileData(fatImageDockerfileLocation string, fatImageDockerfileLin
 
 func fixJSONArray(in string) string {
 	data := in
-	if data[0] == '[' {
+	if len(data) >= 2 && data[0] == '[' {
 		data = data[1 : len(data)-1]
 	}
 	outArray, err := shlex.Split(data)
@@ -781,6 +781,9 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 
 		//Splits the string into two parts - first part pointer to array of string and rest of the string with } in end.
 		instParts := strings.SplitN(cleanInst, "]", 2)
+		if len(instParts) < 2 {
+			return strTest, &config, fmt.Errorf("malformed HEALTHCHECK instruction: %q", data)
+		}
 		// Cleans HEALTHCHECK part and splits the first part further
 		parts := strings.SplitN(instParts[0], " ", 2)
 		// joins the first part of the string
@@ -797,6 +800,9 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 		instPart2 = strings.TrimSpace(instPart2)
 
 		paramParts := strings.SplitN(instPart2, " ", 4)
+		if len(paramParts) < 4 {
+			return strTest, &config, fmt.Errorf("malformed HEALTHCHECK parameters: %q", data)
+		}
 		for i, param := range paramParts {
 			paramParts[i] = strings.Trim(param, "\"'")
 		}
@@ -843,7 +849,7 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 					err = fmt.Errorf("got an invalid escape sequence: %s", paramParts[3])
 				}
 			}
-		} else {
+		} else if len(paramParts[3]) > 0 {
 			retries = int64((paramParts[3])[0])
 		}
 

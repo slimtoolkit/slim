@@ -108,3 +108,38 @@ func TestHealthCheck(t *testing.T) {
 		assert.Equal(t, testData.reconstructedHealthcheck, res)
 	}
 }
+
+func TestHealthCheckMalformed(t *testing.T) {
+	// A malformed HEALTHCHECK value from image history must not panic.
+	// It should return an error and let the caller skip the instruction.
+	malformed := []string{
+		`HEALTHCHECK &{[`,
+		`HEALTHCHECK &{[CMD]}`,
+		`HEALTHCHECK &{[CMD] 5s 10s 0s`,
+		`HEALTHCHECK &{["CMD"]`,
+	}
+
+	for _, in := range malformed {
+		require.NotPanics(t, func() {
+			_, _, err := deserialiseHealtheckInstruction(in)
+			assert.Error(t, err, "expected an error for %q", in)
+		}, "input %q must not panic", in)
+	}
+}
+
+func TestDockerfileFromHistoryDataMalformed(t *testing.T) {
+	// Crafted image history instructions must not crash the reconstruction.
+	crafted := []string{
+		`/bin/sh -c #(nop)  HEALTHCHECK &{[`,
+		`/bin/sh -c #(nop)  HEALTHCHECK &{[CMD] 5s 10s 0s`,
+		`/bin/sh -c #(nop)  ENTRYPOINT [`,
+		`/bin/sh -c #(nop)  CMD [`,
+	}
+
+	for _, createdBy := range crafted {
+		data := fmt.Sprintf(`[{"CreatedBy":%q,"Size":0}]`, createdBy)
+		require.NotPanics(t, func() {
+			_, _ = DockerfileFromHistoryData(data)
+		}, "CreatedBy %q must not panic", createdBy)
+	}
+}
