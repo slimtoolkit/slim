@@ -130,6 +130,65 @@ func GetUnixSocketAddr() (*SocketInfo, error) {
 	return nil, fmt.Errorf("docker socket not found")
 }
 
+// newVersionedClient builds a *docker.Client for host, honoring an explicit
+// apiVersion when the caller set one. When apiVersion is empty (a plain
+// "slim build"/"mint build" with no DOCKER_API_VERSION set - the common
+// case in every slimtoolkit/slim#646 and mintoolkit/mint#95 report),
+// go-dockerclient leaves the client's internal requestedAPIVersion nil for
+// its whole life (it only parses config.APIVersion into that field when the
+// string is non-empty), so every request the client sends omits the
+// "/vX.Y/" path segment. A daemon reached through a proxy - dind
+// (Docker-in-Docker: a CI runner's own container running a Docker daemon,
+// the topology behind every #646/#95 report) - reads an unversioned
+// request as coming from the oldest client it supports and rejects it
+// ("client version ... is too old"). Probing the daemon's real API version
+// with an initial Version() call and rebuilding the client with that
+// version populates requestedAPIVersion exactly as if the caller had set
+// DOCKER_API_VERSION by hand, which is the only workaround either issue
+// thread ever found.
+func newVersionedClient(host, apiVersion string) (*docker.Client, error) {
+	client, err := docker.NewVersionedClient(host, apiVersion)
+	if err != nil {
+		return nil, err
+	}
+
+	if apiVersion != "" {
+		client.SkipServerVersionCheck = true
+		return client, nil
+	}
+
+	env, err := client.Version()
+	if err != nil {
+		// Daemon unreachable or otherwise misbehaving: hand back the
+		// original unversioned client so callers see the same connection
+		// error they always would have, instead of masking it here.
+		return client, nil
+	}
+
+	discovered := env.Get("ApiVersion")
+	if discovered == "" {
+		return client, nil
+	}
+
+	versioned, err := docker.NewVersionedClient(host, discovered)
+	if err != nil {
+		return client, nil
+	}
+
+	// The just-discovered version must be trusted as-is: go-dockerclient's
+	// own internal version bootstrap (triggered lazily by the first request
+	// when SkipServerVersionCheck is false) builds its own "/version" probe
+	// through getURL(), which - now that requestedAPIVersion is set -
+	// prefixes even that bootstrap call with "/vX.Y/", so it would ask a
+	// real daemon for "/v1.44/version" instead of "/version" and fail to
+	// parse the (missing) result. Skipping that redundant self-check is
+	// exactly what happens today when a caller sets DOCKER_API_VERSION by
+	// hand (see the config.APIVersion != "" branches above).
+	versioned.SkipServerVersionCheck = true
+
+	return versioned, nil
+}
+
 // New creates a new Docker client instance
 func New(config *config.DockerClient) (*docker.Client, error) {
 	var client *docker.Client
@@ -184,13 +243,9 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 
 	case config.Host != "" &&
 		!config.UseTLS:
-		client, err = docker.NewVersionedClient(config.Host, config.APIVersion)
+		client, err = newVersionedClient(config.Host, config.APIVersion)
 		if err != nil {
 			return nil, err
-		}
-
-		if config.APIVersion != "" {
-			client.SkipServerVersionCheck = true
 		}
 
 		log.Debug("dockerclient.New: new Docker client [3]")
@@ -230,13 +285,9 @@ func New(config *config.DockerClient) (*docker.Client, error) {
 		}
 
 		config.Host = socketInfo.Address
-		client, err = docker.NewVersionedClient(config.Host, config.APIVersion)
+		client, err = newVersionedClient(config.Host, config.APIVersion)
 		if err != nil {
 			return nil, err
-		}
-
-		if config.APIVersion != "" {
-			client.SkipServerVersionCheck = true
 		}
 
 		log.Debug("dockerclient.New: new Docker client (default) [6]")
