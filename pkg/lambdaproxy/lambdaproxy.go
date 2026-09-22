@@ -66,11 +66,11 @@ type HTTPResponse struct {
 
 // encode and decode options - future placeholder for v1 and v2 options of lambda results
 type EncodeOptions struct {
-	version string `json:"version"`
+	version string
 }
 
 type DecodeOptions struct {
-	version string `json:"version"`
+	version string
 }
 
 // Add a helper for handling errors. This logs any error to os.Stderr
@@ -112,8 +112,7 @@ func EncodeRequest(input *HTTPRequest, options *EncodeOptions) ([]byte, error) {
 	encoder := json.NewEncoder(&b)
 	encoder.SetEscapeHTML(false)
 	if err := encoder.Encode(&encodeapiGatewayStruct); err != nil {
-		fmt.Errorf("Error encoding apiGatewayProxyRequest: %s", err)
-		return nil, err
+		return nil, fmt.Errorf("error encoding apiGatewayProxyRequest: %w", err)
 	}
 
 	return b.Bytes(), nil

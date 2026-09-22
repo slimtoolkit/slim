@@ -59,8 +59,6 @@ func getHTTPClient(proto string) (*http.Client, error) {
 	default:
 		return getHTTP1Client(), nil
 	}
-
-	return nil, fmt.Errorf("unsupported HTTP-family protocol %s", proto)
 }
 
 func getHTTPAddr(proto, targetHost, port string) string {

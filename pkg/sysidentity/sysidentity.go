@@ -565,7 +565,7 @@ func daysToDate(days int) (time.Time, error) {
 ////////////
 
 type GroupRecord struct {
-	Group      string   `json:"gid"`      //group name
+	Group      string   `json:"group"`    //group name
 	Password   string   `json:"password"` //password hash, usually empty / unused (actual password hashes are in gshadow)
 	GID        int      `json:"gid"`
 	MembersRaw string   `json:"members_raw"`
