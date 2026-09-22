@@ -579,6 +579,7 @@ func (ref *Execution) PrepareServices() error {
 	errCh := make(chan error, len(ref.AllServices))
 	var wg sync.WaitGroup
 	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
 	for name := range ref.AllServices {
 		wg.Add(1)
 		go func(svcName string) {
@@ -601,8 +602,6 @@ func (ref *Execution) PrepareServices() error {
 	default:
 		return nil
 	}
-
-	return nil
 }
 
 func (ref *Execution) PrepareService(ctx context.Context, name string) error {

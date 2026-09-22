@@ -99,7 +99,6 @@ func (ref *publisher) Publish(event *report.MonitorDataEvent) error {
 	case <-ref.stopped:
 		logger.Debugf("publisher stopped - dropped event (%#v)", event)
 		return ErrEventDropped
-		return nil
 	case <-ref.ctx.Done():
 		return ref.ctx.Err()
 

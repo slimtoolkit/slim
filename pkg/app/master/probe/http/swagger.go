@@ -273,13 +273,16 @@ func addPathOp(m *map[string]*openapi3.Operation, op *openapi3.Operation, name s
 
 func (p *CustomProbe) probeAPISpecEndpoints(proto, targetHost, port, prefix string, spec *openapi3.T) {
 	addr := getHTTPAddr(proto, targetHost, port)
+	if spec.Paths == nil {
+		return
+	}
 
 	if p.printState {
 		p.xc.Out.State("http.probe.api-spec.probe.endpoint.starting",
 			ovars{
 				"addr":      addr,
 				"prefix":    prefix,
-				"endpoints": len(spec.Paths),
+				"endpoints": spec.Paths.Len(),
 			})
 	}
 
@@ -289,7 +292,7 @@ func (p *CustomProbe) probeAPISpecEndpoints(proto, targetHost, port, prefix stri
 		return
 	}
 
-	for apiPath, pathInfo := range spec.Paths {
+	for apiPath, pathInfo := range spec.Paths.Map() {
 		//very primitive way to set the path params (will break for numeric values)
 		if strings.Contains(apiPath, "{") {
 			apiPath = strings.ReplaceAll(apiPath, "{", "")
