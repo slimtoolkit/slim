@@ -1,8 +1,8 @@
 package system
 
 const (
-	SyscallX86MaxNum64   = 435
-	SyscallX86LastName64 = "clone3"
+	SyscallX86MaxNum64   = 467
+	SyscallX86LastName64 = "open_tree_attr"
 )
 
 // line numbers are aligned with the syscall number (-10)
@@ -442,7 +442,39 @@ var syscallNumTableX86Family64 = [...]string{
 	"fsmount",
 	"fspick",
 	"pidfd_open",
-	"clone3", //435
+	"clone3",                  //435
+	"close_range",             //436
+	"openat2",                 //437
+	"pidfd_getfd",             //438
+	"faccessat2",              //439
+	"process_madvise",         //440
+	"epoll_pwait2",            //441
+	"mount_setattr",           //442
+	"quotactl_fd",             //443
+	"landlock_create_ruleset", //444
+	"landlock_add_rule",       //445
+	"landlock_restrict_self",  //446
+	"memfd_secret",            //447
+	"process_mrelease",        //448
+	"futex_waitv",             //449
+	"set_mempolicy_home_node", //450
+	"cachestat",               //451
+	"fchmodat2",               //452
+	"map_shadow_stack",        //453
+	"futex_wake",              //454
+	"futex_wait",              //455
+	"futex_requeue",           //456
+	"statmount",               //457
+	"listmount",               //458
+	"lsm_get_self_attr",       //459
+	"lsm_set_self_attr",       //460
+	"lsm_list_modules",        //461
+	"mseal",                   //462
+	"setxattrat",              //463
+	"getxattrat",              //464
+	"listxattrat",             //465
+	"removexattrat",           //466
+	"open_tree_attr",          //467
 }
 
 func callNameX86Family64(num uint32) string {
