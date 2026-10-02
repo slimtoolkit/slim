@@ -254,10 +254,10 @@ curl -sL https://raw.githubusercontent.com/slimtoolkit/slim/master/scripts/insta
 ### Homebrew
 
 ```
-brew install docker-slim
+brew install mintoolkit
 ```
 
-The Homebrew installer: https://formulae.brew.sh/formula/docker-slim
+The Homebrew installer: https://formulae.brew.sh/formula/mintoolkit
 
 ### Docker
 
