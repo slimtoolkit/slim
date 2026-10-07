@@ -208,9 +208,10 @@ type Connection struct {
 	nextStreamId     spdy.StreamId
 	receivedStreamId spdy.StreamId
 
-	pingIdLock sync.Mutex
-	pingId     uint32
-	pingChans  map[uint32]chan error
+	// pingLock protects pingChans and pingId
+	pingLock  sync.Mutex
+	pingId    uint32
+	pingChans map[uint32]chan error
 
 	shutdownLock sync.Mutex
 	shutdownChan chan error
@@ -223,7 +224,13 @@ type Connection struct {
 // NewConnection creates a new spdy connection from an existing
 // network connection.
 func NewConnection(conn net.Conn, server bool) (*Connection, error) {
-	framer, framerErr := spdy.NewFramer(conn, conn)
+	return NewConnectionWithOptions(conn, server)
+}
+
+// NewConnectionWithOptions creates a new spdy connection and applies frame
+// parsing limits via options.
+func NewConnectionWithOptions(conn net.Conn, server bool, opts ...spdy.FramerOption) (*Connection, error) {
+	framer, framerErr := spdy.NewFramerWithOptions(conn, conn, opts...)
 	if framerErr != nil {
 		return nil, framerErr
 	}
@@ -274,16 +281,20 @@ func NewConnection(conn net.Conn, server bool) (*Connection, error) {
 // returns the response time
 func (s *Connection) Ping() (time.Duration, error) {
 	pid := s.pingId
-	s.pingIdLock.Lock()
+	s.pingLock.Lock()
 	if s.pingId > 0x7ffffffe {
 		s.pingId = s.pingId - 0x7ffffffe
 	} else {
 		s.pingId = s.pingId + 2
 	}
-	s.pingIdLock.Unlock()
 	pingChan := make(chan error)
 	s.pingChans[pid] = pingChan
-	defer delete(s.pingChans, pid)
+	s.pingLock.Unlock()
+	defer func() {
+		s.pingLock.Lock()
+		delete(s.pingChans, pid)
+		s.pingLock.Unlock()
+	}()
 
 	frame := &spdy.PingFrame{Id: pid}
 	startTime := time.Now()
@@ -344,6 +355,9 @@ Loop:
 				debugMessage("frame read error: %s", err)
 			} else {
 				debugMessage("(%p) EOF received", s)
+			}
+			if spdyErr, ok := err.(*spdy.Error); ok && spdyErr.Err == spdy.InvalidControlFrame {
+				_ = s.conn.Close()
 			}
 			break
 		}
@@ -612,10 +626,14 @@ func (s *Connection) handleDataFrame(frame *spdy.DataFrame) error {
 }
 
 func (s *Connection) handlePingFrame(frame *spdy.PingFrame) error {
-	if s.pingId&0x01 != frame.Id&0x01 {
+	s.pingLock.Lock()
+	pingId := s.pingId
+	pingChan, pingOk := s.pingChans[frame.Id]
+	s.pingLock.Unlock()
+
+	if pingId&0x01 != frame.Id&0x01 {
 		return s.framer.WriteFrame(frame)
 	}
-	pingChan, pingOk := s.pingChans[frame.Id]
 	if pingOk {
 		close(pingChan)
 	}
@@ -703,7 +721,9 @@ func (s *Connection) shutdown(closeTimeout time.Duration) {
 
 	var timeout <-chan time.Time
 	if closeTimeout > time.Duration(0) {
-		timeout = time.After(closeTimeout)
+		timer := time.NewTimer(closeTimeout)
+		defer timer.Stop()
+		timeout = timer.C
 	}
 	streamsClosed := make(chan bool)
 
@@ -730,17 +750,23 @@ func (s *Connection) shutdown(closeTimeout time.Duration) {
 	}
 
 	if err != nil {
-		duration := 10 * time.Minute
-		time.AfterFunc(duration, func() {
-			select {
-			case err, ok := <-s.shutdownChan:
-				if ok {
-					debugMessage("Unhandled close error after %s: %s", duration, err)
-				}
-			default:
-			}
-		})
-		s.shutdownChan <- err
+		// default to 1 second
+		duration := time.Second
+		// if a closeTimeout was given, use that, clipped to 1s-10m
+		if closeTimeout > time.Second {
+			duration = closeTimeout
+		}
+		if duration > 10*time.Minute {
+			duration = 10 * time.Minute
+		}
+		timer := time.NewTimer(duration)
+		defer timer.Stop()
+		select {
+		case s.shutdownChan <- err:
+			// error was handled
+		case <-timer.C:
+			debugMessage("Unhandled close error after %s: %s", duration, err)
+		}
 	}
 	close(s.shutdownChan)
 }
@@ -799,7 +825,9 @@ func (s *Connection) CloseWait() error {
 func (s *Connection) Wait(waitTimeout time.Duration) error {
 	var timeout <-chan time.Time
 	if waitTimeout > time.Duration(0) {
-		timeout = time.After(waitTimeout)
+		timer := time.NewTimer(waitTimeout)
+		defer timer.Stop()
+		timeout = timer.C
 	}
 
 	select {
