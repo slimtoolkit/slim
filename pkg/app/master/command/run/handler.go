@@ -147,7 +147,7 @@ func OnCommand(
 		for {
 			select {
 			case evt := <-containerEventCh:
-				logger.Tracef("Exection Event: name=%s", evt.Event)
+				logger.Tracef("Execution Event: name=%s", evt.Event)
 				switch evt.Event {
 				case container.XEExitedCrash:
 					xc.Out.Info("target.container.event",

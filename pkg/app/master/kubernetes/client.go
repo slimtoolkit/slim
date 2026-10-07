@@ -95,7 +95,7 @@ func (c *Client) Delete(ctx context.Context, info *resource.Info) error {
 }
 
 // ResourceBuilderFunc is a helper function to avoid
-// passing KuberneteOptions through unrelated code.
+// passing KubernetesOptions through unrelated code.
 type ResourceBuilderFunc func() *resource.Builder
 
 func NewResourceBuilder(kubeOpts config.KubernetesOptions) *resource.Builder {

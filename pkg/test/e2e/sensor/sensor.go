@@ -732,7 +732,7 @@ func (s *Sensor) assertTargetAppStdFileEqualsTo(
 	}
 }
 
-// Checks the presense of the expected events AND the occurrence order.
+// Checks the presence of the expected events AND the occurrence order.
 func (s *Sensor) AssertSensorEventsFileContains(
 	t *testing.T,
 	ctx context.Context,

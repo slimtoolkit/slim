@@ -211,7 +211,7 @@ loop:
 			break loop
 
 		case cmd := <-s.exe.Commands():
-			log.Infof("sensor: recieved control command => %s", cmd.GetName())
+			log.Infof("sensor: received control command => %s", cmd.GetName())
 			if cmd.GetName() == command.StopMonitorName {
 				s.stopCommandReceived = true
 				s.signalTargetApp(mon, s.stopSignal)
@@ -246,7 +246,7 @@ loop:
 //
 //	to avoid competting event loops - this will simplify the code
 //	and let us avoid subtle race conditions when the stop signal
-//	arrives while the app is being stoped due to the stop control command.
+//	arrives while the app is being stopped due to the stop control command.
 func (s *Sensor) runSignalForwarder(mon monitor.CompositeMonitor) {
 	log.Debug("sensor: starting forwarding signals to target app...")
 

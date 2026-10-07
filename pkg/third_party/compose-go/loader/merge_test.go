@@ -877,7 +877,7 @@ func TestLoadMultipleConfigs(t *testing.T) {
 			"foo": map[string]interface{}{
 				"image":      "foo",
 				"entrypoint": "echo",
-				"command":    "hellow world",
+				"command":    "hello world",
 				"build": map[string]interface{}{
 					"context":    ".",
 					"dockerfile": "bar.Dockerfile",

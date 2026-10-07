@@ -58,7 +58,7 @@ type monitor struct {
 
 	runOpt AppRunOpt
 
-	// TODO: Move the logic behind these two fields to the artifact processig stage.
+	// TODO: Move the logic behind these two fields to the artifact processing stage.
 	includeNew bool
 	origPaths  map[string]struct{}
 

@@ -1014,7 +1014,7 @@ func LoadPackage(archivePath string,
 				archivePath,
 				configObjectFileName)
 
-			//pkg.Config might alread point to a config (v1 or DM)
+			//pkg.Config might already point to a config (v1 or DM)
 			//todo: check the difference
 			pkg.Config = &imageConfig
 			configObjectFileName = ""

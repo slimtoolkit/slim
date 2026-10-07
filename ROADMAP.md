@@ -1,9 +1,9 @@
 # High Level Project Roadmap
 
-This is a high level roadmap that identies the current areas of focus. Note that it's not a detailed list of every possible enhancement.
+This is a high level roadmap that identities the current areas of focus. Note that it's not a detailed list of every possible enhancement.
 
 * Community
-  * Collaborate with other CNCF projects to achieve mutually benefitial outcomes
+  * Collaborate with other CNCF projects to achieve mutually beneficial outcomes
   * Talks, outreach, community training
   * Engage with the community to increase project contributions
 
@@ -23,7 +23,7 @@ This is a high level roadmap that identies the current areas of focus. Note that
 * Build/Optimize engine
   * Error and logging enhancements to improve debuggability
   * Improved build flag documentation with examples
-  * Improved CI/build tool integration documentation (including Github Actions)
+  * Improved CI/build tool integration documentation (including GitHub Actions)
 
 * Integrations
   * Consign integrations for `xray` (reporting) and `build` (signing)

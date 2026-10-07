@@ -157,7 +157,7 @@ func isOpenAPI(data []byte) bool {
 }
 
 func apiSpecPrefix(spec *openapi3.T) (string, error) {
-	//for now get the api prefix from the first server struc
+	//for now get the api prefix from the first server struct
 	//later, support multiple prefixes if there's more than one server struct
 	var prefix string
 	for _, sinfo := range spec.Servers {

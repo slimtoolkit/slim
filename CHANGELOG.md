@@ -215,13 +215,13 @@ to `Dockerfile.reversed`
 ### New Features
 
 - Container probe feature to use one of the compose services to test/probe the target container (`--container-probe-compose-svc` flag and `container.probe` continue-after mode)
-- Ability to override the container image name and/or tag when targetting a compose service (`--target-compose-svc-image` flag)
+- Ability to override the container image name and/or tag when targeting a compose service (`--target-compose-svc-image` flag)
 - Ability to wait before executing the HTTP probes (`--http-probe-start-wait` flag)
 - Ability to wait before starting each compose service (`--compose-svc-start-wait` flag)
 - Basic FastCGI protocol support in HTTP probes (docs TBD)
 - New `registry` command and a basic `pull` subcommand
 - `--include-new` build flag to keep new files created by target during dynamic analysis
-- Supprot for stored global param in `slim.config.json`
+- Support for stored global param in `slim.config.json`
 
 
 ### Improvements

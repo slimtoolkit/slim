@@ -86,7 +86,7 @@ func showInfo(info map[string]string) {
 }
 
 func showCommunityInfo() {
-	fmt.Printf("slim: message='Github discussions' info='%s'\n", consts.CommunityDiscussions)
+	fmt.Printf("slim: message='GitHub discussions' info='%s'\n", consts.CommunityDiscussions)
 	fmt.Printf("slim: message='CNCF Slack' info='%s'\n", consts.CommunityCNCFSlack)
 	fmt.Printf("slim: message='join the Discord server to get help with this failure' info='%s'\n", consts.CommunityDiscord)
 	fmt.Printf("slim: message='join the Gitter channel to get help with this failure' info='%s'\n", consts.CommunityGitter)
