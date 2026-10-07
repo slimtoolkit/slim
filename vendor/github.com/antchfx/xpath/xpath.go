@@ -84,13 +84,13 @@ func (t *NodeIterator) Current() NodeNavigator {
 // MoveNext moves Navigator to the next match node.
 func (t *NodeIterator) MoveNext() bool {
 	n := t.query.Select(t)
-	if n != nil {
-		if !t.node.MoveTo(n) {
-			t.node = n.Copy()
-		}
-		return true
+	if n == nil {
+		return false
 	}
-	return false
+	if !t.node.MoveTo(n) {
+		t.node = n.Copy()
+	}
+	return true
 }
 
 // Select selects a node set using the specified XPath expression.
