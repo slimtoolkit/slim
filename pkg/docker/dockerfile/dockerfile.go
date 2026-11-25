@@ -12,40 +12,14 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 
 	"github.com/slimtoolkit/slim/pkg/consts"
+	"github.com/slimtoolkit/slim/pkg/docker/instruction"
 	v "github.com/slimtoolkit/slim/pkg/version"
 )
 
-// note: dup (todo: refactor)
 const (
-	//MAINTAINER:
-	instPrefixMaintainer = "MAINTAINER "
-	//ENTRYPOINT:
-	instTypeEntrypoint   = "ENTRYPOINT"
-	instPrefixEntrypoint = "ENTRYPOINT "
-	//CMD:
-	instTypeCmd   = "CMD"
-	instPrefixCmd = "CMD "
-	//USER:
-	instTypeUser   = "USER"
-	instPrefixUser = "USER "
-	//EXPOSE:
-	instTypeExpose   = "EXPOSE"
-	instPrefixExpose = "EXPOSE "
-	//WORKDIR:
-	instTypeWorkdir   = "WORKDIR"
-	instPrefixWorkdir = "WORKDIR "
-	//HEALTHCHECK:
-	instTypeHealthcheck   = "HEALTHCHECK"
-	instPrefixHealthcheck = "HEALTHCHECK "
-	//ONBUILD:
-	instTypeOnbuild = "ONBUILD"
-	//RUN:
-	instTypeRun   = "RUN"
-	instPrefixRun = "RUN "
-	//ADD:
-	instTypeAdd = "ADD"
-	//COPY:
-	instTypeCopy = "COPY"
+	instPrefixUser    = instruction.TypeUser + " "
+	instPrefixExpose  = instruction.TypeExpose + " "
+	instPrefixWorkdir = instruction.TypeWorkdir + " "
 )
 
 // GenerateFromInfo builds and saves a Dockerfile file object

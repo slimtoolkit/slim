@@ -15,6 +15,8 @@ import (
 	docker "github.com/fsouza/go-dockerclient"
 	"github.com/google/shlex"
 	log "github.com/sirupsen/logrus"
+
+	"github.com/slimtoolkit/slim/pkg/docker/instruction"
 )
 
 var (
@@ -105,64 +107,35 @@ const (
 )
 
 const (
-	//MAINTAINER:
-	instTypeMaintainer   = "MAINTAINER"
-	instPrefixMaintainer = "MAINTAINER "
-	//ENTRYPOINT:
-	instTypeEntrypoint   = "ENTRYPOINT"
-	instPrefixEntrypoint = "ENTRYPOINT "
-	//CMD:
-	instTypeCmd   = "CMD"
-	instPrefixCmd = "CMD "
-	//USER:
-	instTypeUser   = "USER"
-	instPrefixUser = "USER "
-	//EXPOSE:
-	instTypeExpose   = "EXPOSE"
-	instPrefixExpose = "EXPOSE "
-	//WORKDIR:
-	instTypeWorkdir   = "WORKDIR"
-	instPrefixWorkdir = "WORKDIR "
-	//HEALTHCHECK:
-	instTypeHealthcheck           = "HEALTHCHECK"
-	instPrefixHealthcheck         = "HEALTHCHECK "
-	instPrefixBasicEncHealthcheck = "HEALTHCHECK --"
-	//ONBUILD:
-	instTypeOnbuild = "ONBUILD"
-	//RUN:
-	instTypeRun   = "RUN"
-	instPrefixRun = "RUN "
-	//ADD:
-	instTypeAdd = "ADD"
-	//COPY:
-	instTypeCopy = "COPY"
-
-	instTypeVolume     = "VOLUME"
-	instTypeEnv        = "ENV"
-	instTypeLabel      = "LABEL"
-	instTypeStopSignal = "STOPSIGNAL"
-	instTypeShell      = "SHELL"
-	instTypeArg        = "ARG" //shouldn't see it as an standalone instruction
+	instPrefixMaintainer          = instruction.TypeMaintainer + " "
+	instPrefixEntrypoint          = instruction.TypeEntrypoint + " "
+	instPrefixCmd                 = instruction.TypeCmd + " "
+	instPrefixUser                = instruction.TypeUser + " "
+	instPrefixExpose              = instruction.TypeExpose + " "
+	instPrefixWorkdir             = instruction.TypeWorkdir + " "
+	instPrefixHealthcheck         = instruction.TypeHealthcheck + " "
+	instPrefixBasicEncHealthcheck = instruction.TypeHealthcheck + " --"
+	instPrefixRun                 = instruction.TypeRun + " "
 )
 
 var instructionTypes = map[string]struct{}{
-	instTypeRun:         {},
-	instTypeEntrypoint:  {},
-	instTypeCmd:         {},
-	instTypeUser:        {},
-	instTypeExpose:      {},
-	instTypeWorkdir:     {},
-	instTypeHealthcheck: {},
-	instTypeOnbuild:     {},
-	instTypeAdd:         {},
-	instTypeCopy:        {},
-	instTypeMaintainer:  {},
-	instTypeVolume:      {},
-	instTypeEnv:         {},
-	instTypeLabel:       {},
-	instTypeStopSignal:  {},
-	instTypeShell:       {},
-	instTypeArg:         {},
+	instruction.TypeRun:         {},
+	instruction.TypeEntrypoint:  {},
+	instruction.TypeCmd:         {},
+	instruction.TypeUser:        {},
+	instruction.TypeExpose:      {},
+	instruction.TypeWorkdir:     {},
+	instruction.TypeHealthcheck: {},
+	instruction.TypeOnbuild:     {},
+	instruction.TypeAdd:         {},
+	instruction.TypeCopy:        {},
+	instruction.TypeMaintainer:  {},
+	instruction.TypeVolume:      {},
+	instruction.TypeEnv:         {},
+	instruction.TypeLabel:       {},
+	instruction.TypeStopSignal:  {},
+	instruction.TypeShell:       {},
+	instruction.TypeArg:         {},
 }
 
 func isInstructionType(input string) bool {
@@ -415,7 +388,7 @@ func DockerfileFromHistoryStruct(imageHistory []docker.ImageHistory) (*Dockerfil
 				instInfo.Type = instParts[0]
 			}
 
-			if instInfo.Type == instTypeOnbuild {
+			if instInfo.Type == instruction.TypeOnbuild {
 				out.HasOnbuild = true
 			}
 
@@ -424,7 +397,7 @@ func DockerfileFromHistoryStruct(imageHistory []docker.ImageHistory) (*Dockerfil
 				instInfo.CommandAll = "# no instruction info"
 			}
 
-			if instInfo.Type == instTypeRun {
+			if instInfo.Type == instruction.TypeRun {
 				var cmdParts []string
 				cmds := strings.Replace(instParts[1], "\\", "", -1)
 				if strings.Contains(cmds, "&&") {
@@ -445,12 +418,12 @@ func DockerfileFromHistoryStruct(imageHistory []docker.ImageHistory) (*Dockerfil
 				}
 			}
 
-			if instInfo.Type == instTypeWorkdir {
+			if instInfo.Type == instruction.TypeWorkdir {
 				instInfo.SystemCommands = append(instInfo.SystemCommands, fmt.Sprintf("mkdir -p %s", instParts[1]))
 			}
 
 			switch instInfo.Type {
-			case instTypeAdd, instTypeCopy:
+			case instruction.TypeAdd, instruction.TypeCopy:
 				if strings.Contains(instInfo.Params, ":") && strings.Contains(instInfo.Params, " in ") {
 					pparts := strings.SplitN(instInfo.Params, ":", 2)
 					if len(pparts) == 2 {
@@ -469,7 +442,7 @@ func DockerfileFromHistoryStruct(imageHistory []docker.ImageHistory) (*Dockerfil
 				}
 			}
 
-			if instInfo.Type == instTypeHealthcheck {
+			if instInfo.Type == instruction.TypeHealthcheck {
 
 				healthInst, _, err := deserialiseHealtheckInstruction(instInfo.CommandAll)
 				if err != nil {
@@ -907,7 +880,7 @@ func deserialiseHealtheckInstruction(data string) (string, *docker.HealthConfig,
 		value      interface{}
 	}
 
-	healthInst := "HEALTHCHECK"
+	healthInst := instruction.TypeHealthcheck
 	for _, flag := range []HealthCheckFlag{
 		{flagFmtStr: "--interval=%v", isDefault: defaultInterval, value: config.Interval},
 		{flagFmtStr: "--timeout=%v", isDefault: defaultTimeout, value: config.Timeout},

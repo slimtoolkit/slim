@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// All supported instruction names
+// All supported instruction names (lowercase)
 const (
 	Add         = "add"
 	Arg         = "arg"
@@ -25,6 +25,28 @@ const (
 	User        = "user"
 	Volume      = "volume"
 	Workdir     = "workdir"
+)
+
+// All supported instruction type names (uppercase)
+const (
+	TypeAdd         = "ADD"
+	TypeArg         = "ARG"
+	TypeCmd         = "CMD"
+	TypeCopy        = "COPY"
+	TypeEntrypoint  = "ENTRYPOINT"
+	TypeEnv         = "ENV"
+	TypeExpose      = "EXPOSE"
+	TypeFrom        = "FROM"
+	TypeHealthcheck = "HEALTHCHECK"
+	TypeLabel       = "LABEL"
+	TypeMaintainer  = "MAINTAINER"
+	TypeOnbuild     = "ONBUILD"
+	TypeRun         = "RUN"
+	TypeShell       = "SHELL"
+	TypeStopSignal  = "STOPSIGNAL"
+	TypeUser        = "USER"
+	TypeVolume      = "VOLUME"
+	TypeWorkdir     = "WORKDIR"
 )
 
 type Field struct {
